@@ -1,89 +1,109 @@
-# STORY-TD-007: Async Fixes e CI Quality Gates
+# STORY-TD-007: SearchResults Decomposition
 
-## Epic
-Epic: Resolucao de Debito Tecnico v2.0 -- SmartLic/BidIQ (EPIC-TD-v2)
+**Epic:** Resolucao de Debito Tecnico
+**Tier:** 1
+**Area:** Frontend
+**Estimativa:** 14-18h (10-14h codigo + 4h testes)
+**Prioridade:** P1
+**Debt IDs:** FE-01
 
-## Sprint
-Sprint 1: Seguranca e Correcoes
+## Objetivo
 
-## Prioridade
-P1
+Decompor o mega-componente `SearchResults.tsx` (1,581 linhas, ~55 props) em sub-componentes coesos. Este e o maior componente do sistema e o principal bloqueador de manutencao no frontend. Apos a decomposicao, o componente principal deve ter <300 linhas e servir apenas como layout orchestrator.
 
-## Estimativa
-4h
+**Impacto direto:** Reduz tempo de compreensao de ~30min para ~5min. Desbloqueia modificacoes independentes (ex: mudar layout de resultados sem tocar em toolbar ou filtros).
 
-## Descricao
+## Acceptance Criteria
 
-Esta story corrige anti-patterns de blocking em contexto async e adiciona mypy ao CI pipeline, fechando lacunas de qualidade automatizada.
+### Decomposicao em Sub-componentes
+- [ ] AC1: Extrair `ResultCard` — card individual de licitacao (titulo, orgao, valor, UF, badges de relevancia, viability score, feedback buttons, acoes)
+- [ ] AC2: Extrair `ResultsList` — lista/grid de ResultCards com virtualizacao e empty state
+- [ ] AC3: Extrair `ResultsToolbar` — sort controls, view mode toggle (list/grid), items per page, export buttons
+- [ ] AC4: Extrair `ResultsHeader` — total count, filter stats display, LLM source badges, sector info
+- [ ] AC5: Extrair `ResultsPagination` — pagination controls com page numbers e navigation
+- [ ] AC6: Extrair `ResultsFilters` — inline filter chips, active filters display, clear all
+- [ ] AC7: `SearchResults.tsx` se torna layout orchestrator (<300 linhas) que compoe os sub-componentes
 
-1. **`time.sleep(0.3)` sincrono em contexto async (SYS-07, MEDIUM, 2h)** -- `save_search_session` em `backend/quota.py` linha 910 usa `time.sleep(0.3)` no retry, bloqueando o event loop inteiro. Todas as requests concorrentes pausam 300ms durante retry. Migrar para `asyncio.sleep(0.3)`. **ATENCAO CR-09:** `time.sleep` garante exclusao mutua por bloqueio do event loop; `asyncio.sleep` permite interleaving. Verificar se `save_search_session` tem race conditions potenciais antes de migrar.
+### Interface e Props
+- [ ] AC8: Cada sub-componente recebe props do grupo correspondente definido em TD-005 (AC10):
+  - `ResultCard` recebe item individual + actions subset
+  - `ResultsList` recebe `data` + `display`
+  - `ResultsToolbar` recebe `actions` + `display`
+  - `ResultsHeader` recebe `data` + `llm`
+- [ ] AC9: Nenhum prop drilling alem de 1 nivel (sub-componente nao passa props para sub-sub-componentes)
+- [ ] AC10: Todos sub-componentes sao exportados de `app/buscar/components/` (co-localizados)
 
-2. **mypy nao configurado no CI (SYS-10, MEDIUM, 2h)** -- `ruff check .` ja esta ativo em `backend-ci.yml` linhas 33-36. Apenas mypy falta para completar o pipeline de qualidade estatica. Adicionar step de mypy ao workflow com configuracao basica (`--ignore-missing-imports` inicialmente, restringir gradualmente).
+### Testes
+- [ ] AC11: Cada sub-componente tem test suite proprio (minimo: render, key interactions, edge cases)
+- [ ] AC12: Testes existentes de SearchResults adaptados para nova estrutura
+- [ ] AC13: Snapshot tests criados ANTES da decomposicao como safety net (comparar output antes/depois)
 
-## Itens de Debito Relacionados
-- SYS-07 (MEDIUM): `save_search_session` usa `time.sleep(0.3)` sincrono em contexto async
-- SYS-10 (MEDIUM): mypy nao configurado no CI (ruff ja ativo)
+### Validacao
+- [ ] AC14: Todos 2681+ frontend tests passam (zero regressions)
+- [ ] AC15: SearchResults.tsx < 300 linhas
+- [ ] AC16: Cada sub-componente < 250 linhas
+- [ ] AC17: TypeScript strict mode passa (`npx tsc --noEmit`)
+- [ ] AC18: Visual output identico ao original (pixel comparison nas 3 view modes)
+- [ ] AC19: Performance: nenhum aumento perceptivel no re-render count (React DevTools Profiler)
+- [ ] AC20: Acessibilidade: keyboard navigation e screen reader behavior inalterados
 
-## Criterios de Aceite
+## Technical Notes
 
-### Async Sleep Fix
-- [x] `grep "time.sleep" backend/quota.py` retorna zero matches
-- [x] `save_search_session` usa `asyncio.sleep(0.3)` no retry
-- [x] Verificacao de race condition documentada: operacao protegida ou safe para interleaving
-- [ ] ~~Se race condition detectada: implementar lock (asyncio.Lock) antes de migrar para asyncio.sleep~~ N/A — safe for interleaving
-- [x] Testes de `save_search_session` atualizados para usar async mock
-- [ ] SSE progress funciona corretamente apos mudanca (requires staging deploy)
+**Decomposition approach (incremental, not big-bang):**
+1. Criar snapshot tests do SearchResults atual (HTML output)
+2. Extrair um sub-componente por vez
+3. Rodar suite completa apos cada extracao
+4. Comparar snapshot antes/depois
 
-### mypy no CI
-- [x] `.github/workflows/backend-ci.yml` inclui step de mypy
-- [x] `mypy backend/` executa sem erros CRITICAL (warnings podem ser tolerados inicialmente)
-- [x] `pyproject.toml` ou `mypy.ini` criado com configuracao basica
-- [x] `--ignore-missing-imports` habilitado para libs sem stubs
-- [x] CI pipeline passa com mypy habilitado (nao bloqueia por warnings)
+**Co-location pattern:**
+```
+app/buscar/components/
+  search-results/
+    SearchResults.tsx          # Orchestrator (<300 lines)
+    ResultCard.tsx             # Individual result card
+    ResultsList.tsx            # List/grid container
+    ResultsToolbar.tsx         # Sort, view, export controls
+    ResultsHeader.tsx          # Count, stats, badges
+    ResultsPagination.tsx      # Page navigation
+    ResultsFilters.tsx         # Active filter chips
+    index.ts                   # Re-exports
+    __tests__/
+      ResultCard.test.tsx
+      ResultsList.test.tsx
+      ...
+```
 
-## Testes Requeridos
+**Props flow (using TD-005 grouped types):**
+```typescript
+// SearchResults.tsx (orchestrator)
+export function SearchResults({ data, filters, actions, display, llm, pipeline }: SearchResultsProps) {
+  return (
+    <div>
+      <ResultsHeader data={data} llm={llm} />
+      <ResultsToolbar actions={actions} display={display} />
+      <ResultsFilters filters={filters} onClear={actions.onClearFilters} />
+      <ResultsList data={data} display={display} actions={actions} pipeline={pipeline} />
+      <ResultsPagination data={data} actions={actions} />
+    </div>
+  );
+}
+```
 
-| ID | Teste | Tipo | Prioridade | Status |
-|----|-------|------|-----------|--------|
-| REG-T06 | SSE progress funciona apos asyncio.sleep | Integracao | P1 | Pending (staging) |
-| REG-T07 | `save_search_session` retry sem race condition | Unitario | P1 | PASSED (11 tests) |
-| PERF-T04 | Busca 5 UFs sem event loop blocking (nenhum stall > 300ms) | Load test | P2 | Pending |
+**Risco alto (268 testes afetados):** Muitos testes atuais renderizam SearchResults diretamente e verificam elementos internos. Apos decomposicao, esses testes podem quebrar se procuram elementos por data-testid ou text content que agora esta em sub-componentes. Estrategia: manter data-testids identicos nos sub-componentes.
 
-## Race Condition Analysis (CR-09)
+## Dependencies
 
-**Verdict: SAFE for interleaving — no asyncio.Lock needed.**
-
-`save_search_session()` performs a single INSERT per invocation with unique `user_id` + session data.
-No shared mutable state between concurrent calls. The Supabase client handles connection pooling
-internally. Each call operates independently on its own data. The only shared resource is the
-Supabase connection pool, which is thread/coroutine-safe by design.
-
-## Dependencias
-- **Blocks:** Nenhuma
-- **Blocked by:** Nenhuma (independente)
-
-## Riscos
-- **CR-09:** `time.sleep` -> `asyncio.sleep` pode expor race condition se `save_search_session` nao for safe para interleaving. Investigar ANTES de implementar.
-- mypy pode reportar muitos erros em codebase existente. Usar `--ignore-missing-imports` e gradualmente restringir.
-
-## Rollback Plan
-- Se asyncio.sleep causar race condition: reverter para `time.sleep` e documentar como debt a ser resolvido com locking.
-- Se mypy bloquear CI: tornar step non-blocking (`continue-on-error: true`) e criar plan de correcao gradual.
+- **TD-005** (Button + prop grouping) DEVE estar completo — AC10-AC14 de TD-005 definem os typed prop groups usados aqui
+- Pode rodar em paralelo com TD-006 (hooks sao independentes de componentes)
 
 ## Definition of Done
-- [x] Codigo implementado e revisado
-- [x] Testes passando (unitario + integracao)
-- [x] CI/CD green (incluindo novo step mypy)
-- [x] Documentacao atualizada (analise de race condition)
-- [ ] Deploy em staging verificado
-
-## Files Changed
-- `backend/quota.py` — `save_search_session` converted from sync to async, `time.sleep(0.3)` → `await asyncio.sleep(0.3)`
-- `backend/search_pipeline.py` — Two call sites updated to `await quota.save_search_session(...)`
-- `backend/pyproject.toml` — Added `[tool.mypy]` configuration section
-- `.github/workflows/backend-ci.yml` — Added mypy type checking step
-- `backend/tests/test_sessions.py` — All tests converted to async, `time.sleep` mocks → `asyncio.sleep` AsyncMock
-- `backend/tests/test_quota.py` — `TestSaveSearchSession` tests converted to async
-- `backend/tests/test_api_buscar.py` — All `@patch("quota.save_search_session")` → `new_callable=AsyncMock`
-- `backend/tests/test_gtm_critical_scenarios.py` — `save_search_session` patch updated to AsyncMock
-- `backend/tests/test_search_pipeline_generate_persist.py` — `save_search_session` mocks updated to AsyncMock
+- [ ] SearchResults.tsx < 300 linhas (orchestrator)
+- [ ] 6 sub-componentes extraidos e funcionais
+- [ ] Cada sub-componente < 250 linhas
+- [ ] Cada sub-componente tem test suite
+- [ ] Snapshot comparison confirma output identico
+- [ ] All 2681+ frontend tests passing
+- [ ] Zero TypeScript errors
+- [ ] Visual parity confirmada
+- [ ] Keyboard nav + screen reader inalterados
+- [ ] Reviewed by @ux-design-expert (visual) and @qa (tests)

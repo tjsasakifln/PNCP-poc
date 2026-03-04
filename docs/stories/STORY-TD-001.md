@@ -1,139 +1,104 @@
-# STORY-TD-001: Verificacao de Producao e Migration 027
+# STORY-TD-001: FK Standardization + search_results_store Hardening
 
-## Epic
-Epic: Resolucao de Debito Tecnico v2.0 -- SmartLic/BidIQ (EPIC-TD-v2)
+**Epic:** Resolucao de Debito Tecnico
+**Tier:** 0
+**Area:** Database
+**Estimativa:** 10.5h (8h codigo + 2.5h testes)
+**Prioridade:** P0
+**Debt IDs:** C-01, H-02, H-03, M-03, L-06
 
-## Sprint
-Sprint 0: Verificacao e Quick Wins
+## Objetivo
 
-## Prioridade
-P0
+Corrigir o unico debito CRITICO do sistema: 6 tabelas com FK apontando para `auth.users` em vez de `profiles`. Isso cria risco de integridade em disaster recovery (se auth.users for restaurado de backup diferente, FKs quebram). Simultaneamente, endurecer `search_results_store` com retention automatica e indice composto para queries de limpeza.
 
-## Estimativa
-8h
+**Tabelas afetadas pelo C-01:**
+1. `search_results_store` (user_id -> auth.users)
+2. `mfa_recovery_codes` (user_id -> auth.users)
+3. `mfa_recovery_attempts` (user_id -> auth.users)
+4. `organizations` (owner_id -> auth.users)
+5. `org_members` (user_id -> auth.users)
+6. `partner_referrals` (referred_user_id -> auth.users)
 
-## Descricao
+## Acceptance Criteria
 
-Esta story e o prerequisito absoluto de toda a resolucao de debito tecnico. Abrange tres atividades criticas:
+### Migration 1: FK Standardization (C-01 + H-02 + M-03)
+- [ ] AC1: Criar migration que re-aponta todas 6 FKs de `auth.users(id)` para `public.profiles(id)`
+- [ ] AC2: Usar `NOT VALID` + separado `VALIDATE CONSTRAINT` para zero-downtime (nao bloqueia tabela)
+- [ ] AC3: `search_results_store` FK inclui `ON DELETE CASCADE` (resolve H-02)
+- [ ] AC4: `partner_referrals` FK inclui `ON DELETE SET NULL` (resolve M-03)
+- [ ] AC5: Executar orphan detection query ANTES da migration: `SELECT id FROM tabela WHERE user_id NOT IN (SELECT id FROM profiles)` para cada tabela
+- [ ] AC6: Migration testada em ambiente local com dados reais (dump parcial)
 
-1. **Verificacao do estado real de producao** -- Executar queries V1-V5 no Supabase SQL Editor para entender se o banco foi modificado manualmente fora de migrations (coluna `status` em `user_subscriptions`, default de `plan_type` em `profiles`, trigger de sync).
+### Migration 2: search_results_store Hardening (H-03 + L-06)
+- [ ] AC7: Criar composite index `(user_id, expires_at)` em search_results_store (L-06)
+- [ ] AC8: Criar pg_cron job para cleanup diario: `DELETE FROM search_results_store WHERE expires_at < NOW() - INTERVAL '7 days'` (H-03)
+- [ ] AC9: pg_cron job agendado para 4am UTC (horario de menor uso)
+- [ ] AC10: Adicionar CHECK constraint para `octet_length(result_data::text) < 2097152` (2MB max por row)
+- [ ] AC11: Verificar que pg_cron extension esta habilitada no Supabase Cloud
 
-2. **Correcao dos 4 code paths com `plan_type = 'free'` invalido** -- O CHECK constraint da migration 020 aceita apenas `free_trial`, `consultor_agil`, `maquina`, `sala_guerra`, `master`. Porem, 4 locais no codigo usam `'free'` que viola este constraint:
-   - `quota.py` linha 791: `_ensure_profile_exists()` (DB-06, CRITICAL)
-   - `quota.py` linha 522: fallback `get("plan_type", "free")` (DB-16, LOW)
-   - Migration 001: column default `'free'::text` (DB-02, CRITICAL)
-   - `admin.py` linha 246: `CreateUserRequest` default (DB-15, MEDIUM)
+### Validacao
+- [ ] AC12: Zero rows com FK apontando para auth.users apos migration
+- [ ] AC13: `\d+ search_results_store` mostra FK para profiles com ON DELETE CASCADE
+- [ ] AC14: pg_cron job visivel em `cron.job` table
+- [ ] AC15: Todos 5774+ backend tests passam sem regressao
 
-3. **Migration 027** -- Corrigir column default de `profiles.plan_type`, recriar `handle_new_user()` com `plan_type = 'free_trial'`, e fechar vulnerabilidades RLS em `pipeline_items` e `search_results_cache`:
-   - `pipeline_items`: RLS `FOR ALL USING(true)` permite cross-user access (DB-03, HIGH/SAFETY)
-   - `search_results_cache`: mesmo pattern (DB-04, HIGH/SAFETY)
+## Technical Notes
 
-**Impacto de negocio:** Sem esta correcao, novos usuarios podem nao conseguir se cadastrar corretamente, e dados de clientes podem ser acessados por outros usuarios autenticados. Risco estimado: R$ 150.000+.
-
-## Itens de Debito Relacionados
-- DB-02 (CRITICAL): `handle_new_user()` trigger + column default `'free'` viola CHECK
-- DB-06 (CRITICAL): `_ensure_profile_exists()` usa `plan_type: "free"` violando CHECK
-- DB-03 (HIGH): `pipeline_items` RLS overly permissive -- cross-user access
-- DB-04 (HIGH): `search_results_cache` RLS overly permissive -- cross-user access
-- DB-15 (MEDIUM): admin.py `CreateUserRequest` default "free"
-- DB-16 (LOW): quota.py fallback "free" (mitigado por mapping)
-
-## Criterios de Aceite
-
-### Verificacao de Producao (Dia 1 manha)
-- [ ] Query V1 executada: coluna `status` em `user_subscriptions` verificada
-- [ ] Query V2 executada: default de `profiles.plan_type` verificado
-- [ ] Query V3 executada: distribuicao de `plan_type` verificada
-- [ ] Query V4 executada: criacoes recentes validadas
-- [ ] Query V5 executada: trigger de sync verificado
-- [ ] Resultado documentado em comentario na story
-
-### Backend Code Fixes (Dia 1 tarde)
-- [x] `quota.py` linha ~790: `_ensure_profile_exists()` usa `plan_type = 'free_trial'` (nao `'free'`) ✓
-- [x] `quota.py` linha ~522: fallback `get("plan_type", "free_trial")` (nao `'free'`) ✓
-- [x] `admin.py` linha ~246: `CreateUserRequest` default `'free_trial'` (nao `'free'`) ✓
-- [x] `admin.py` linhas 348/357: comparacoes atualizadas de `"free"` para `"free_trial"` ✓
-- [ ] Backend deployed com fixes antes da migration
-- [x] `grep -r "plan_type.*free['\"]" backend/` retorna zero matches de `"free"` sem `_trial` ✓
-
-### Migration 027 (Dia 2 manha)
-- [x] Column default de `profiles.plan_type` alterado para `'free_trial'::text` ✓
-- [x] `handle_new_user()` recriado com `plan_type = 'free_trial'` ✓
-- [x] RLS de `pipeline_items`: policy scoped a `service_role` + policy `user_id = auth.uid()` para authenticated ✓
-- [x] RLS de `search_results_cache`: policy scoped a `service_role` + policy `user_id = auth.uid()` para authenticated ✓
-- [ ] Migration aplicada com sucesso via `npx supabase db push`
-
-### Validacao Pos-Deploy (Dia 2 tarde)
-- [ ] Query V6 executada: RLS policies verificadas por role
-- [ ] Query V7 executada: column default retorna `'free_trial'::text`
-- [ ] Query V8 executada: ultimo usuario criado tem `plan_type = 'free_trial'`
-
-## Testes Requeridos
-
-| ID | Teste | Tipo | Prioridade |
-|----|-------|------|-----------|
-| SEC-T01 | `pipeline_items` NAO permite SELECT cross-user via PostgREST com authenticated key | Integracao SQL | P0 |
-| SEC-T02 | `search_results_cache` NAO permite SELECT cross-user | Integracao SQL | P0 |
-| SEC-T03 | INSERT em `pipeline_items` com `user_id` de outro usuario FALHA com RLS error | Integracao SQL | P0 |
-| REG-T01 | Novo usuario signup: profile com `plan_type = 'free_trial'` | E2E | P0 |
-| REG-T02 | `_ensure_profile_exists()` cria profile com `plan_type = 'free_trial'` | Unitario | P0 |
-| REG-T04 | Stripe webhooks processam apos correcao de RLS | Integracao | P0 |
-
-## Dependencias
-- **Blocks:** STORY-TD-004 (seguranca DB restante depende de resultado das queries V1-V5)
-- **Blocks:** STORY-TD-016 (DB improvements dependem de estado pos-migration 027)
-- **Blocked by:** Nenhuma -- esta e a primeira story
-
-## Riscos
-- **CR-01:** Migration 027 pode falhar se banco foi modificado manualmente fora de migrations
-- **CR-03:** Correcao de RLS pode bloquear funcionalidade se backend nao usa service_role key
-- **CR-05:** Correcao parcial de plan_type cria inconsistencia pior -- todos os 4 code paths devem ser corrigidos atomicamente
-
-## Rollback Plan
-
+**Zero-downtime FK migration pattern:**
 ```sql
--- ROLLBACK migration 027 (executar na ordem inversa)
+-- Step 1: Drop old FK
+ALTER TABLE search_results_store DROP CONSTRAINT IF EXISTS search_results_store_user_id_fkey;
 
--- 1. Restaurar RLS de search_results_cache (REINTRODUZ DB-04)
-DROP POLICY IF EXISTS "Service role full access on search_results_cache"
-  ON search_results_cache;
-CREATE POLICY "Service role full access on search_results_cache"
-  ON search_results_cache FOR ALL
-  USING (true) WITH CHECK (true);
+-- Step 2: Add new FK with NOT VALID (instant, no table scan)
+ALTER TABLE search_results_store
+  ADD CONSTRAINT search_results_store_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+  NOT VALID;
 
--- 2. Restaurar RLS de pipeline_items (REINTRODUZ DB-03)
-DROP POLICY IF EXISTS "Service role full access on pipeline_items"
-  ON public.pipeline_items;
-CREATE POLICY "Service role full access on pipeline_items"
-  ON public.pipeline_items FOR ALL
-  USING (true) WITH CHECK (true);
-
--- ATENCAO: NAO reverter column default de plan_type.
--- Manter 'free_trial' pois 'free' viola o CHECK constraint.
-
--- ATENCAO: NAO reverter handle_new_user() para versao 024.
--- Reintroduziria DB-02.
+-- Step 3: Validate separately (concurrent-safe, reads only)
+ALTER TABLE search_results_store VALIDATE CONSTRAINT search_results_store_user_id_fkey;
 ```
 
-**ALERTA:** Rollback de RLS reintroduz vulnerabilidade cross-user. Usar como ultimo recurso.
+**Orphan detection (run BEFORE migration):**
+```sql
+-- If any rows returned, must fix manually before migration
+SELECT 'search_results_store' AS tbl, count(*) FROM search_results_store WHERE user_id NOT IN (SELECT id FROM profiles)
+UNION ALL
+SELECT 'mfa_recovery_codes', count(*) FROM mfa_recovery_codes WHERE user_id NOT IN (SELECT id FROM profiles)
+UNION ALL
+SELECT 'mfa_recovery_attempts', count(*) FROM mfa_recovery_attempts WHERE user_id NOT IN (SELECT id FROM profiles)
+UNION ALL
+SELECT 'organizations', count(*) FROM organizations WHERE owner_id NOT IN (SELECT id FROM profiles)
+UNION ALL
+SELECT 'org_members', count(*) FROM org_members WHERE user_id NOT IN (SELECT id FROM profiles)
+UNION ALL
+SELECT 'partner_referrals', count(*) FROM partner_referrals WHERE referred_user_id NOT IN (SELECT id FROM profiles);
+```
+
+**pg_cron setup:**
+```sql
+-- Supabase has pg_cron enabled by default
+SELECT cron.schedule(
+  'cleanup-expired-search-results',
+  '0 4 * * *',  -- 4am UTC daily
+  $$DELETE FROM public.search_results_store WHERE expires_at < NOW() - INTERVAL '7 days'$$
+);
+```
+
+**Deploy timing:** Preferir 4am UTC (menor uso). Se orphans encontrados, resolver manualmente antes.
+
+## Dependencies
+
+- Nenhuma — esta e a primeira story do epic
+- Requer acesso ao Supabase Cloud (migration push)
+- pg_cron extension deve estar habilitada
 
 ## Definition of Done
-- [x] Codigo implementado e revisado
-- [x] Testes passando (unitario + integracao) — 15 novos tests, 67/67 passando, zero regressoes
-- [ ] CI/CD green — pendente verificação
-- [ ] Documentacao atualizada (resultado das queries V1-V5 documentado) — pendente execução em prod
-- [ ] Deploy em producao verificado (queries V6-V8) — pendente deploy + verificação
-- [x] Zero matches de `plan_type = "free"` (sem `_trial`) no backend ✓
-
-## File List (Arquivos Modificados)
-
-| Arquivo | Tipo | Descricao |
-|---------|------|-----------|
-| `backend/quota.py` | Modificado | Linhas 522, 790: `"free"` → `"free_trial"` |
-| `backend/admin.py` | Modificado | Linha 246: default `"free"` → `"free_trial"`, linhas 348/357: comparacoes atualizadas |
-| `supabase/migrations/027_fix_plan_type_default_and_rls.sql` | Novo | Column default, handle_new_user() trigger, RLS hardening |
-| `backend/tests/test_td001_plan_type_fixes.py` | Novo | 7 testes: REG-T02, DB-16 fallback, DB-15 admin default |
-| `backend/tests/test_td001_rls_security.py` | Novo | 8 testes: SEC-T01, SEC-T02, SEC-T03, idempotency |
-| `backend/tests/test_secure_id_validation.py` | Modificado | Linha 471: test updated para `"free_trial"` |
-| `backend/tests/snapshots/openapi_schema.json` | Modificado | Snapshot atualizado com novo default |
-| `backend/tests/snapshots/openapi_schema.diff.json` | Modificado | Diff snapshot atualizado |
+- [ ] Migration criada em `supabase/migrations/`
+- [ ] Orphan detection query executada (zero orphans confirmado)
+- [ ] Migration aplicada no Supabase Cloud via `supabase db push`
+- [ ] pg_cron job confirmado rodando
+- [ ] Composite index confirmado via `\d+ search_results_store`
+- [ ] All 5774+ backend tests passing
+- [ ] No regressions in frontend tests
+- [ ] Reviewed by @data-engineer

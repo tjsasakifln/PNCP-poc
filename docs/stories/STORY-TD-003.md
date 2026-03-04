@@ -1,78 +1,80 @@
-# STORY-TD-003: Split Requirements + Cleanup
+# STORY-TD-003: RLS Policy Standardization (8 tabelas auth.role())
 
-## Epic
-Epic: Resolucao de Debito Tecnico v2.0 -- SmartLic/BidIQ (EPIC-TD-v2)
+**Epic:** Resolucao de Debito Tecnico
+**Tier:** 1
+**Area:** Database
+**Estimativa:** 2h (1.5h codigo + 0.5h testes)
+**Prioridade:** P1
+**Debt IDs:** H-04, H-05, H-06, M-09, DA-01, DA-02
 
-## Sprint
-Sprint 0: Verificacao e Quick Wins
+## Objetivo
 
-## Prioridade
-P0
+Padronizar RLS policies em 8 tabelas que usam `auth.role() = 'service_role'` no USING clause. O padrao correto no Supabase e usar `TO service_role` na policy declaration (mais performante, sem function call por row). Isso elimina um anti-pattern que afeta performance em queries com muitas rows e reduz risco de bypass se `auth.role()` retornar valor inesperado.
 
-## Estimativa
-3h
+**Tabelas afetadas:**
+1. `alert_preferences` (H-04)
+2. `reconciliation_log` (H-05)
+3. `organizations` (H-06)
+4. `org_members` (H-06)
+5. `classification_feedback` (M-09)
+6. `partners` (DA-01)
+7. `partner_referrals` (DA-01)
+8. `search_results_store` (DA-02)
 
-## Descricao
+## Acceptance Criteria
 
-Esta story resolve problemas de higiene do repositorio que afetam a experiencia de desenvolvimento e a clareza do codebase.
+- [ ] AC1: Criar migration que para cada uma das 8 tabelas: DROP a policy existente que usa `auth.role()` e CREATE nova policy com `TO service_role`
+- [ ] AC2: Cada tabela tem policy cobrindo ALL operations (SELECT, INSERT, UPDATE, DELETE) para service_role
+- [ ] AC3: Tabelas que tambem tem user-facing policies (ex: classification_feedback com auth.uid()) mantem essas intactas
+- [ ] AC4: Query de verificacao confirma zero policies com `auth.role()` no schema public:
+  ```sql
+  SELECT schemaname, tablename, policyname, qual
+  FROM pg_policies
+  WHERE schemaname = 'public' AND qual LIKE '%auth.role()%';
+  ```
+  Resultado: 0 rows.
+- [ ] AC5: Backend smoke test confirma que operacoes service_role continuam funcionando (health check, cache write, etc.)
+- [ ] AC6: Todos 5774+ backend tests passam sem regressao
 
-1. **Screenshots .png em git status (SYS-19, LOW, 1h)** -- 18 arquivos `.png` untracked no root do repositorio poluem o git status. Devem ser adicionados ao `.gitignore` para manter o working tree limpo.
+## Technical Notes
 
-2. **Deprecated migration file (SYS-23/DB-12, LOW, 0.5h)** -- `006b_DEPRECATED_...DUPLICATE.sql` no diretorio de migrations confunde compreensao do schema. Mover para `supabase/archive/` com README explicando a razao.
+**Pattern de migracao (repetir para cada tabela):**
+```sql
+-- Drop old policy using auth.role()
+DROP POLICY IF EXISTS "service_role_access" ON alert_preferences;
 
-3. **Dead code: `format_resumo_html` (SYS-22, LOW, 1h)** -- Funcao de ~70 linhas em `backend/llm.py` linhas 232-300 nunca e chamada. Frontend renderiza resumo a partir de JSON, nao HTML. Remover dead code.
+-- Create new policy using TO clause (correct pattern)
+CREATE POLICY "service_role_all" ON alert_preferences
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+```
 
-4. **`datetime.now()` sem timezone (SYS-18, MEDIUM, 0.5h)** -- `backend/excel.py` linha 227 e `backend/llm.py` linha 97 usam `datetime.now()` sem timezone. Em ambientes nao-UTC, timestamps ficam incorretos. Substituir por `datetime.now(timezone.utc)`.
+**Importante:** Algumas tabelas podem ter MULTIPLAS policies (service_role + authenticated user). Somente substituir a policy de service_role. Nunca remover policies de `auth.uid()`.
 
-## Itens de Debito Relacionados
-- SYS-19 (LOW): Screenshot .png files em git status (18 untracked)
-- SYS-23 (LOW): Deprecated migration file no diretorio
-- DB-12 (LOW): Mesmo que SYS-23 (cross-reference)
-- SYS-22 (LOW): `format_resumo_html` funcao nao usada (~70 linhas dead code)
-- SYS-18 (MEDIUM): `datetime.now()` sem timezone em excel.py e llm.py
+**Verificacao pos-migration:**
+```sql
+-- Should return 0 rows
+SELECT tablename, policyname FROM pg_policies
+WHERE schemaname = 'public' AND qual LIKE '%auth.role()%';
 
-## Criterios de Aceite
+-- Should return 8+ rows (one per table)
+SELECT tablename, policyname FROM pg_policies
+WHERE schemaname = 'public' AND roles @> ARRAY['service_role']::name[];
+```
 
-### Gitignore
-- [x] `.gitignore` inclui pattern para `*.png` no root (ou patterns especificos para screenshots)
-- [x] `.gitignore` inclui `.playwright-mcp/` se nao incluido
-- [x] `git status` nao mostra .png files untracked
+## Dependencies
 
-### Migration Cleanup
-- [x] `006b_DEPRECATED_...DUPLICATE.sql` movido para `supabase/archive/`
-- [x] `supabase/archive/README.md` criado (ou atualizado) explicando o conteudo
-- [x] Nenhuma migration ativa referencia o arquivo movido
-
-### Dead Code
-- [x] `format_resumo_html` removida de `backend/llm.py`
-- [x] Nenhuma referencia a `format_resumo_html` em nenhum arquivo do projeto
-- [x] Testes existentes continuam passando
-
-### Timezone Fix
-- [x] `backend/excel.py` usa `datetime.now(timezone.utc)` ou `datetime.now(tz=timezone.utc)`
-- [x] `backend/llm.py` usa `datetime.now(timezone.utc)` ou `datetime.now(tz=timezone.utc)`
-- [x] Import de `timezone` adicionado onde necessario
-
-## Testes Requeridos
-
-- Testes existentes de `excel.py` e `llm.py` devem continuar passando
-- `grep -r "format_resumo_html" backend/` retorna zero matches
-- `grep -r "datetime.now()" backend/` retorna zero matches sem timezone
-
-## Dependencias
-- **Blocks:** Nenhuma
-- **Blocked by:** Nenhuma (paralelo com TD-001 e TD-002)
-
-## Riscos
-- Risco muito baixo. Todas as mudancas sao cleanup sem impacto funcional.
-- Unica atencao: `datetime.now(timezone.utc)` pode alterar comportamento se algum codigo assumia timezone local. Verificar testes.
-
-## Rollback Plan
-- Nao aplicavel -- mudancas sao triviais e reversiveis via git revert.
+- TD-001 (FK standardization) deve ser aplicada primeiro — para evitar conflitos de migration ordering
+- Pode rodar em paralelo com TD-004 (backend) e TD-005 (frontend)
 
 ## Definition of Done
-- [x] Codigo implementado e revisado
-- [x] Testes passando (unitario + integracao)
-- [ ] CI/CD green — pendente verificação
-- [x] `git status` limpo (sem .png untracked)
-- [ ] Deploy em staging verificado — pendente deploy
+- [ ] Migration criada em `supabase/migrations/`
+- [ ] Migration aplicada no Supabase Cloud via `supabase db push`
+- [ ] Zero policies com `auth.role()` no schema public
+- [ ] 8 tabelas com policies `TO service_role`
+- [ ] User-facing policies inalteradas
+- [ ] All backend tests passing
+- [ ] No regressions
+- [ ] Reviewed by @data-engineer

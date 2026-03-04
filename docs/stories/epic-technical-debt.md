@@ -1,239 +1,124 @@
-# Epic: Resolucao de Debito Tecnico v2.0
+# EPIC: Resolucao de Debito Tecnico — SmartLic v0.5
 
-## SmartLic/BidIQ -- Remediacao Brownfield
-
-**Epic ID:** EPIC-TD-v2
-**Criado:** 2026-02-15
-**Atualizado:** 2026-02-15
-**Substitui:** EPIC-TD v1.0 (2026-02-11, commit `808cd05`, stories STORY-200 a STORY-203)
-**Owner:** @pm
-**Fonte Tecnica:** [`docs/prd/technical-debt-assessment.md`](../prd/technical-debt-assessment.md) (FINAL v2.0, 87 itens)
-**Fonte Executiva:** [`docs/reports/TECHNICAL-DEBT-REPORT.md`](../reports/TECHNICAL-DEBT-REPORT.md) (v2.0)
-**Commit Baseline:** `b80e64a` (branch `main`)
-**Aprovado Por:** @architect (Helix), @data-engineer (Datum), @ux-design-expert (Pixel), @qa (Quinn)
+**Data de criacao:** 2026-03-04
+**Owner:** @pm (Manager)
+**Assessment base:** `docs/prd/technical-debt-assessment.md` v3.0 FINAL
+**Commit base:** `4da1d98` (main)
 
 ---
 
 ## Objetivo
 
-Resolver sistematicamente os 87 itens de debito tecnico identificados durante a auditoria brownfield v2.0 do SmartLic/BidIQ, priorizando seguranca de dados, integridade funcional, confianca do usuario e sustentabilidade do codigo. A resolucao esta organizada em 4 sprints ao longo de 8-10 semanas, com investimento estimado de R$ 54.000 (base) a R$ 70.200 (com margem 1.3x).
+Resolver os 69 debitos tecnicos identificados no assessment v3.0, priorizados por risco ao negocio e complexidade. O trabalho esta dividido em 4 tiers, sendo que este epic cobre Tier 0 (quick wins) e Tier 1 (debitos estruturais) — os que impactam diretamente estabilidade, manutencao e velocidade de desenvolvimento.
 
----
+**Por que agora:** O SmartLic esta em fase pre-revenue com trials beta. Debitos criticos (FK apontando para auth.users, mega-componentes bloqueando iteracao frontend, rotas legadas duplicadas) aumentam risco de regressao a cada feature nova e dificultam onboarding de desenvolvedores.
 
 ## Escopo
 
-### Numeros Consolidados
+### Incluido (Tier 0 + Tier 1)
 
-| Metrica | Valor |
-|---------|-------|
-| Total de debitos | **87** |
-| Criticos (CRITICAL) | **3** |
-| Altos (HIGH) | **14** |
-| Medios (MEDIUM) | **36** |
-| Baixos (LOW) | **34** |
-| Esforco total estimado | **~360h** |
-| Custo base (R$150/h) | **R$ 54.000** |
-| Custo com margem 1.3x | **R$ 70.200** |
-| Prazo estimado | **8-10 semanas (4 sprints)** |
+**Tier 0 — Quick Wins (2 stories, ~20h):**
+- FK standardization em 6 tabelas (C-01, H-02, M-03)
+- search_results_store hardening: retention pg_cron + composite index (H-03, L-06)
+- RLS policies explicitas para health_checks/incidents (C-02)
+- Trigger functions duplicadas consolidadas (H-01)
+- Acessibilidade sidebar: aria-labels + aria-hidden (FE-12, FE-13)
+- Branding cleanup: BidIQ -> SmartLic (TD-P03, TD-P04)
+- SVGs inline -> lucide-react (FE-07)
+- APP_NAME consolidacao (FE-24)
 
-### Distribuicao por Area
+**Tier 1 — Estruturais (6 stories, ~140-190h):**
+- RLS policy standardization: 8 tabelas auth.role() -> TO service_role (H-04/05/06, M-09, DA-01/02)
+- Legacy routes removal (TD-A01)
+- Design system foundation: Button via Shadcn/ui (FE-27) + prop grouping (FE-10)
+- Hook test coverage + useSearch decomposition (FE-41, FE-03)
+- SearchResults decomposition (FE-01)
+- SWR adoption + pipeline refactor foundation (FE-08, TD-A02)
 
-| Area | Debitos | Horas | Custo |
-|------|---------|-------|-------|
-| Sistema/Backend (infraestrutura, APIs, processamento) | 24 | 143h | R$ 21.450 |
-| Banco de Dados (seguranca, integridade, performance) | 17 | 23h | R$ 3.450 |
-| Frontend/UX (componentes, acessibilidade, consistencia) | 46 | 194h | R$ 29.100 |
-| **Total** | **87** | **360h** | **R$ 54.000** |
-
-### Distribuicao por Urgencia
-
-| Prioridade | Itens | Horas | Custo |
-|------------|-------|-------|-------|
-| P0 -- Imediato | 8 (+verificacao) | 11,5h | R$ 1.725 |
-| P1 -- Proximo sprint | 10 | 35,5h | R$ 5.325 |
-| P2 -- 4-6 semanas | 18 | 153h | R$ 22.950 |
-| P3 -- Backlog | 51 | 157h | R$ 23.550 |
-
----
-
-## Orcamento e ROI
-
-**Fonte:** [Relatorio Executivo v2.0](../reports/TECHNICAL-DEBT-REPORT.md)
-
-| Sprint | Investimento | Riscos Eliminados | ROI |
-|--------|-------------|-------------------|-----|
-| Sprint 0 (1 semana) | R$ 2.250 | R$ 150.000+ (seguranca + cadastro) | **67:1** |
-| Sprint 1 (2 semanas) | R$ 3.600 | R$ 80.000+ (confianca + compliance) | **22:1** |
-| Sprint 2 (3 semanas) | R$ 10.800 | R$ 60.000+ (velocidade + qualidade) | **6:1** |
-| Sprint 3 (2 semanas) | R$ 8.400 | R$ 40.000+ (cobertura de testes) | **5:1** |
-| **Total Sprints 0-3** | **R$ 25.050** | **R$ 330.000+** | **13:1** |
-| Backlog (ongoing) | R$ 23.550 | Polimento e otimizacoes | -- |
-
-**Custo potencial de NAO resolver:** R$ 350.000 - R$ 650.000
-
-**Para cada R$ 1 investido, evitamos entre R$ 6 e R$ 12 em riscos.**
-
----
+### Excluido (Tier 2 + 3 — epics futuros)
+- Design system primitives alem de Button (Input, Card, Badge)
+- conta/page.tsx decomposition
+- Dual PNCP client elimination
+- Feature flags admin UI
+- i18n, Storybook, visual regression testing
+- CSP hardening, CDN, load testing
 
 ## Criterios de Sucesso
 
-1. **Todos os 3 itens CRITICAL resolvidos** -- verificado por testes automatizados e revisao de codigo
-2. **Todos os 14 itens HIGH resolvidos** -- verificado por testes automatizados e revisao de codigo
-3. **Zero vulnerabilidades RLS** -- testes de seguranca SEC-T01 a SEC-T08 passando
-4. **Cadastro de novos usuarios funcional** -- signup cria `plan_type = 'free_trial'` sem erros
-5. **Pagina de precos clara e confiavel** -- sem "9.6x", valores consistentes entre paginas
-6. **Frontend test coverage >= 60%** -- enforced por Jest threshold (pos-Sprint 3)
-7. **Backend test coverage >= 70%** -- enforced por pytest-cov threshold (mantido)
-8. **CI pipeline green** -- backend (pytest + ruff + mypy) e frontend (jest) passando
-9. **Nenhum arquivo > 500 linhas no backend critico** -- search_pipeline.py decomposto
-10. **Prop drilling eliminado na busca** -- SearchForm/SearchResults com 0 props via Context
-11. **22 testes de quarentena reativados** -- diretorio `quarantine/` vazio
-12. **34 pontos positivos preservados** -- strengths listados na Secao 9 do assessment verificados intactos
+### Tier 0 — Definition of Done
+- [ ] Zero FK references to auth.users (all 6 tabelas -> profiles)
+- [ ] search_results_store pg_cron cleanup running daily (4am UTC, 7d retention)
+- [ ] All 32 tables have explicit RLS policies (no zero-policy tables)
+- [ ] Zero duplicated trigger functions
+- [ ] Axe accessibility audit passes for sidebar navigation
+- [ ] No "BidIQ" string in production User-Agent or pyproject.toml
 
----
+### Tier 1 — Definition of Done
+- [ ] Zero legacy route mounts (only /v1/ prefixed)
+- [ ] SearchResults.tsx < 300 linhas
+- [ ] useSearch.ts < 300 linhas (orchestrator only)
+- [ ] SWR integrated for all GET endpoints
+- [ ] Shared Button component used across all pages
+- [ ] All auth.role() RLS policies migrated to TO service_role
+- [ ] Hook isolation tests for top 5 hooks (useSearch, useSearchFilters, usePipeline, useFetchWithBackoff, useTrialStatus)
+- [ ] All 5774+ backend tests pass, 2681+ frontend tests pass (zero regressions)
 
 ## Timeline
 
+| Fase | Stories | Estimativa | Sprint |
+|------|---------|------------|--------|
+| **Tier 0** | TD-001, TD-002 | ~20h | Sprint 1 (semana 1-2) |
+| **Tier 1a** (DB + Backend) | TD-003, TD-004 | ~14h | Sprint 2 (semana 3-4) |
+| **Tier 1b** (Frontend foundation) | TD-005, TD-006 | ~28-40h | Sprint 2-3 (semana 3-6) |
+| **Tier 1c** (Frontend decomposition) | TD-007, TD-008 | ~48-78h | Sprint 3-4 (semana 5-8) |
+
+**Total estimado:** 6-8 semanas para Tier 0 + Tier 1 completos.
+
+**Sequencia obrigatoria frontend (validada por @qa):**
 ```
-Semana 1        Semana 2-3         Semana 4-6          Semana 7-8+
-Sprint 0        Sprint 1           Sprint 2            Sprint 3
-~15h            ~24h               ~72h                ~56h
-P0 Criticos     P1 Seguranca       P2 Refatoracao      P2-P3 Testes
-                + Confianca        + Consolidacao       + Polimento
+TD-005 (Button + prop grouping) -> TD-007 (SearchResults decomp)
+TD-006 (hook tests + useSearch decomp) -> TD-008 (SWR adoption)
 ```
 
----
+DB e Backend stories (TD-001 a TD-004) podem progredir em paralelo ao frontend.
+
+## Budget
+
+| Area | Horas (codigo) | Horas (testes) | Total |
+|------|----------------|----------------|-------|
+| Database | 12.5h | 3h | 15.5h |
+| Backend | 5-9h | 3h | 8-12h |
+| Frontend | 79-110h | 35h | 114-145h |
+| **Total** | **96-132h** | **41h** | **137-172h** |
+
+**Custo estimado:** ~R$27,400 - R$34,400 (considerando R$200/h dev senior)
 
 ## Stories
 
-| Story ID | Titulo | Sprint | Prioridade | Esforco | Dependencias |
-|----------|--------|--------|------------|---------|--------------|
-| **Sprint 0: Verificacao e Quick Wins (1 semana, ~15h)** | | | | | |
-| STORY-TD-001 | Verificacao de producao e migration 027 | Sprint 0 | P0 | 8h | Nenhuma |
-| STORY-TD-002 | Fix precos divergentes e UX trust | Sprint 0 | P0 | 4h | Nenhuma |
-| STORY-TD-003 | Split requirements + cleanup | Sprint 0 | P0 | 3h | Nenhuma |
-| **Sprint 1: Seguranca e Correcoes (2 semanas, ~24h)** | | | | | |
-| STORY-TD-004 | Seguranca restante e documentacao DB | Sprint 1 | P1 | 4h | TD-001 |
-| STORY-TD-005 | Dialog primitive e acessibilidade | Sprint 1 | P1 | 4h | Nenhuma |
-| STORY-TD-006 | Mensagens de erro e UX de navegacao | Sprint 1 | P1 | 8h | Nenhuma |
-| STORY-TD-007 | Async fixes e CI quality gates | Sprint 1 | P1 | 4h | Nenhuma |
-| STORY-TD-008 | PNCP client consolidation (inicio) | Sprint 1 | P1 | 5h | Nenhuma |
-| **Sprint 2: Consolidacao e Refatoracao (3 semanas, ~72h)** | | | | | |
-| STORY-TD-009 | PNCP client consolidation (conclusao) | Sprint 2 | P1 | 11h | TD-008 |
-| STORY-TD-010 | Decomposicao de search_pipeline.py | Sprint 2 | P2 | 16h | Nenhuma |
-| STORY-TD-011 | Unquarantine testes + E2E safety net | Sprint 2 | P2 | 16h | Nenhuma |
-| STORY-TD-012 | Search state refactor: Context + useReducer | Sprint 2 | P2 | 32h | TD-011 (parcial) |
-| **Sprint 3: Qualidade e Cobertura (2 semanas, ~56h)** | | | | | |
-| STORY-TD-013 | Testes unitarios para nova arquitetura de busca | Sprint 3 | P2 | 16h | TD-012 |
-| STORY-TD-014 | Dynamic imports + consolidacao de planos + icones | Sprint 3 | P2 | 16h | Nenhuma |
-| STORY-TD-015 | Testes de pipeline, onboarding e middleware | Sprint 3 | P2-P3 | 24h | Nenhuma |
-| **Sprint 2-3: Items P2 de DB e Backend** | | | | | |
-| STORY-TD-016 | DB improvements: FK, analytics, triggers | Sprint 2 | P2 | 16h | TD-001 |
-| STORY-TD-017 | Backend scalability: Redis, storage, routes | Sprint 2-3 | P2 | 24h | Nenhuma |
-| STORY-TD-018 | Consolidacao plan data + search button sticky | Sprint 2 | P2 | 8h | Nenhuma |
-| **Backlog** | | | | | |
-| STORY-TD-019 | Backlog -- Polimento e Otimizacao | Sprint 3+ | P3 | ~157h | TD-001 a TD-018 (parciais) |
-
-**Total das stories TD-001 a TD-018:** ~206h (Sprint 0-3)
-**Total do backlog TD-019:** ~157h (ongoing)
-**Total geral:** ~363h (alinhado com assessment ~360h)
+| ID | Titulo | Tier | Area | Horas | Status |
+|----|--------|------|------|-------|--------|
+| **STORY-TD-001** | FK Standardization + search_results_store Hardening | 0 | Database | 10.5h | To Do |
+| **STORY-TD-002** | RLS + Trigger Cleanup + Accessibility + Branding | 0 | DB/FE/BE | 7.5h | To Do |
+| **STORY-TD-003** | RLS Policy Standardization (8 tabelas auth.role()) | 1 | Database | 2h | To Do |
+| **STORY-TD-004** | Remove Legacy Routes | 1 | Backend | 4-8h | To Do |
+| **STORY-TD-005** | Frontend Design System Foundation (Button + Prop Grouping) | 1 | Frontend | 10-14h | To Do |
+| **STORY-TD-006** | Hook Test Coverage + useSearch Decomposition | 1 | Frontend | 26-34h | To Do |
+| **STORY-TD-007** | SearchResults Decomposition | 1 | Frontend | 14-18h | To Do |
+| **STORY-TD-008** | SWR Adoption + Pipeline Refactor Foundation | 1 | Frontend/BE | 44-60h | To Do |
 
 ---
 
-## Grafo de Dependencias
+## Riscos
 
-```
-[PREREQUISITO: Queries V1-V5 de verificacao em producao]
-        |
-        v
-TD-001 (Sprint 0: DB P0) -------> TD-004 (Sprint 1: DB P1)
-  |                                   |
-  +-----> TD-016 (Sprint 2: DB P2)    +-----> TD-019 (backlog DB)
-  |
-  +-----> TD-003 (Sprint 0: cleanup, paralelo)
-  |
-  +-----> TD-002 (Sprint 0: UX trust, paralelo)
-
-TD-005 (Sprint 1: A11Y) ---------> TD-019 (backlog: UX-NEW-03 usa Dialog)
-
-TD-008 (Sprint 1: SYS-02 inicio) -> TD-009 (Sprint 2: SYS-02 conclusao)
-
-TD-011 (Sprint 2: unquarantine) --> TD-012 (Sprint 2: search refactor)
-                                        |
-                                        +----> TD-013 (Sprint 3: testes novos)
-
-TD-012 (search refactor) ----------> TD-013 (testes unitarios)
-                                        |
-                                        +----> TD-015 (testes adicionais, parcial)
-
-TD-010 (pipeline decomposition) --- independente
-TD-014 (dynamic imports) ---------- independente
-TD-006 (mensagens erro) ----------- independente
-TD-007 (async + CI) --------------- independente
-TD-017 (scalability) -------------- independente
-TD-018 (plan data + sticky) ------- independente
-```
+| Risco | Prob. | Impacto | Mitigacao |
+|-------|-------|---------|-----------|
+| FE-03 + FE-08 compound breakage (SSE integration) | HIGH | CRITICAL | Sequenciar: TD-006 -> TD-008. Nunca em paralelo. |
+| C-01 FK re-pointing com usuarios beta ativos | MEDIUM | HIGH | NOT VALID + VALIDATE (zero downtime). Orphan query antes. Deploy 4am UTC. |
+| FE-01 SearchResults decomp quebra 268 testes | HIGH | HIGH | Snapshot antes. Suite completa apos cada sub-componente. |
+| TD-A01 legacy routes quebra consumidores | LOW | MEDIUM | Railway access logs antes. Deprecation counter metric. |
+| FE-27 Shadcn/ui modifica tailwind.config | MEDIUM | MEDIUM | Build + visual check em todas 33 paginas apos setup. |
 
 ---
 
-## Riscos Cruzados (do Assessment v2.0)
-
-| # | Risco | Probabilidade | Impacto | Mitigacao |
-|---|-------|---------------|---------|-----------|
-| CR-01 | Migration 027 falha em producao | Media | CRITICAL | Queries V1-V5 antes. Script de rollback. Staging se disponivel. |
-| CR-02 | Refactor prop drilling quebra testes e E2E | Alta | HIGH | E2E como safety net. Unquarantine ANTES do refactor. |
-| CR-03 | Correcao de RLS bloqueia funcionalidade | Baixa | HIGH | Auditar uso de service_role key antes. |
-| CR-04 | Remocao sync client quebra fallback single-UF | Media | HIGH | Verificar PNCPLegacyAdapter.fetch() antes de remover. |
-| CR-05 | Atualizacao parcial de plan_type cria inconsistencia | Media | CRITICAL | 4 code paths corrigidos atomicamente no Sprint 0. |
-| CR-09 | time.sleep -> asyncio.sleep expoe race condition | Baixa | MEDIUM | Verificar save_search_session. |
-| CR-10 | search_pipeline.py dificulta correcoes backend | Alta | MEDIUM | Decomposicao no Sprint 2. |
-
----
-
-## Pontos Positivos a Preservar
-
-Durante a resolucao de debitos, os **34 pontos positivos** listados na Secao 9 do assessment DEVEM ser preservados. PRs que degradem estes itens requerem justificativa explicita. Os mais criticos:
-
-**Backend:** Retry com exponential backoff + jitter, fetch paralelo de UFs com Semaphore, circuit breaker, filtragem fail-fast, LLM Arbiter pattern, fallback multi-camada de subscription, mascaramento PII, idempotencia Stripe, correlation ID, structured JSON logging.
-
-**Database:** Funcoes atomicas de quota com FOR UPDATE, 100% RLS coverage, 26 migrations documentadas, partial indexes, GIN trigram index, pg_cron retention, audit logging privacy-first.
-
-**Frontend:** Design system CSS custom properties, dark/light mode FOUC-free, skip navigation WCAG 2.4.1, prefers-reduced-motion, SSE progress real-time, keyboard shortcuts, LGPD compliance, resiliencia UX (CacheBanner, DegradationBanner).
-
----
-
-## Mudancas vs Epic v1.0 (2026-02-11)
-
-| Aspecto | v1.0 (Feb 11) | v2.0 (Feb 15) |
-|---------|---------------|---------------|
-| Commit baseline | `808cd05` | `b80e64a` |
-| Total de debitos | 90 | 87 (resolucoes + novos + deduplicacoes) |
-| Esforco estimado | ~320-456h | ~360h (mais preciso) |
-| Custo estimado | R$ 45.000 | R$ 54.000 |
-| Risco de nao resolver | R$ 100-250K | R$ 350-650K (refinado) |
-| Stories | STORY-200 a STORY-203 (4 stories amplas) | STORY-TD-001 a STORY-TD-019 (19 stories granulares) |
-| Sprints | 4 sprints genericos | Sprint 0 (P0) + Sprint 1-3 com items especificos |
-| CRITICALs | 13 | 3 (muitos resolvidos desde v1.0) |
-| HIGHs | 19 | 14 |
-
-**Stories STORY-200 a STORY-203 sao consideradas obsoletas** e substituidas pelas STORY-TD-001 a STORY-TD-019.
-
----
-
-## Documentos Relacionados
-
-- [`docs/prd/technical-debt-assessment.md`](../prd/technical-debt-assessment.md) -- Assessment tecnico completo v2.0 (87 itens)
-- [`docs/reports/TECHNICAL-DEBT-REPORT.md`](../reports/TECHNICAL-DEBT-REPORT.md) -- Relatorio executivo v2.0 (custos, ROI, timeline)
-- [`docs/architecture/system-architecture.md`](../architecture/system-architecture.md) -- Arquitetura do sistema
-- [`supabase/docs/SCHEMA.md`](../../supabase/docs/SCHEMA.md) -- Documentacao do schema
-- [`supabase/docs/DB-AUDIT.md`](../../supabase/docs/DB-AUDIT.md) -- Auditoria de banco de dados
-- [`docs/frontend/frontend-spec.md`](../frontend/frontend-spec.md) -- Especificacao frontend
-- [`docs/reviews/db-specialist-review.md`](../reviews/db-specialist-review.md) -- Review @data-engineer
-- [`docs/reviews/ux-specialist-review.md`](../reviews/ux-specialist-review.md) -- Review @ux-design-expert
-- [`docs/reviews/qa-review.md`](../reviews/qa-review.md) -- Review @qa
-
----
-
-*Epic criado por @pm em 2026-02-15 baseado no assessment tecnico FINAL v2.0.*
-*Aprovado por @architect (Helix), @data-engineer (Datum), @ux-design-expert (Pixel), @qa (Quinn).*
-*Commit de referencia: `b80e64a` (branch `main`).*
+*Epic criado em 2026-03-04 pelo @pm (Manager).*
+*Baseado no Technical Debt Assessment v3.0 FINAL, aprovado por @architect + @qa.*

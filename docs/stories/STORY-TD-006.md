@@ -1,102 +1,103 @@
-# STORY-TD-006: Mensagens de Erro e UX de Navegacao
+# STORY-TD-006: Hook Test Coverage + useSearch Decomposition
 
-## Epic
-Epic: Resolucao de Debito Tecnico v2.0 -- SmartLic/BidIQ (EPIC-TD-v2)
+**Epic:** Resolucao de Debito Tecnico
+**Tier:** 1
+**Area:** Frontend
+**Estimativa:** 26-34h (18-24h codigo + 8-10h testes)
+**Prioridade:** P1
+**Debt IDs:** FE-41, FE-03
 
-## Sprint
-Sprint 1: Seguranca e Correcoes
+## Objetivo
 
-## Prioridade
-P1
+Resolver dois debitos relacionados em sequencia: (1) criar testes isolados para os 5 hooks mais criticos do sistema (atualmente 19 hooks, 0 testes isolados), e (2) decompor o mega-hook `useSearch.ts` (1,510 linhas) em 5 hooks especializados. Os testes criados na parte 1 servem como safety net para a decomposicao na parte 2.
 
-## Estimativa
-8h
+**Sequencia obrigatoria (validada por @qa):** FE-41 (hook tests) -> FE-03 (useSearch decomp). Nunca em paralelo.
 
-## Descricao
+## Acceptance Criteria
 
-Esta story melhora a experiencia do usuario em dois pontos de alta friccao: mensagens de erro em ingles tecnico fora da pagina de login, e perda de resultados de busca ao navegar sem aviso.
+### Parte 1: Hook Isolation Tests (FE-41) — 12-16h
+- [ ] AC1: Criar test suite isolado para `useSearch` — cobertura dos cenarios: busca sucesso, erro, retry, SSE progress, export, abort
+- [ ] AC2: Criar test suite isolado para `useSearchFilters` — cobertura: load sectors, filter by UF, filter by value range, persist filters
+- [ ] AC3: Criar test suite isolado para `usePipeline` — cobertura: add item, move item, delete item, drag-and-drop reorder
+- [ ] AC4: Criar test suite isolado para `useFetchWithBackoff` — cobertura: success, retry with backoff, max retries, abort on unmount
+- [ ] AC5: Criar test suite isolado para `useTrialStatus` — cobertura: active trial, expired trial, no trial, loading state
+- [ ] AC6: Cada test suite usa `@testing-library/react` `renderHook()` (nao renderiza componentes completos)
+- [ ] AC7: Mocks para fetch/Supabase/SSE isolados por hook (nao compartilhados)
+- [ ] AC8: Minimo 80% branch coverage nos 5 hooks testados
+- [ ] AC9: Todos testes rodam em <30s total
 
-1. **Dicionario centralizado de mensagens de erro (IC-06, MEDIUM, 4h)** -- Atualmente, a pagina de login traduz erros para portugues amigavel ("E-mail ou senha incorretos"), mas a pagina de busca mostra "502 Bad Gateway" raw. A inconsistencia e jarring e transmite falta de profissionalismo. Criar `lib/error-messages.ts` com mapeamento de codigos HTTP e mensagens de erro comuns para portugues amigavel. Usar em todos os catch blocks do frontend.
+### Parte 2: useSearch Decomposition (FE-03) — 14-18h
+- [ ] AC10: Extrair `useSearchExecution` — logica de submit, abort, timeout, search_id management
+- [ ] AC11: Extrair `useSearchSSE` — SSE connection, progress tracking, event parsing, reconnection
+- [ ] AC12: Extrair `useSearchRetry` — auto-retry logic, countdown, max attempts, transient error detection
+- [ ] AC13: Extrair `useSearchExport` — Excel download, Google Sheets export, report generation
+- [ ] AC14: Extrair `useSearchPersistence` — search history, saved searches, session management
+- [ ] AC15: `useSearch` original se torna orchestrator (<300 linhas) que compoe os 5 sub-hooks
+- [ ] AC16: Interface publica de `useSearch` permanece IDENTICA (nenhum consumidor precisa mudar)
+- [ ] AC17: SSE integration continua funcionando end-to-end (busca com progresso real)
+- [ ] AC18: Auto-retry continua funcionando (simular 503, verificar countdown)
 
-2. **Confirmacao de saida com resultados ativos (MF-01, MEDIUM, 4h)** -- Uma busca leva 15-60 segundos. Perder o resultado ao navegar acidentalmente (clicar em link, usar o botao voltar) sem aviso e frustrante. Implementar `beforeunload` event e/ou Next.js route change listener para perguntar ao usuario se quer mesmo sair quando houver resultados de busca ativos na pagina.
+### Validacao
+- [ ] AC19: Todos 2681+ frontend tests passam (zero regressions)
+- [ ] AC20: useSearch.ts < 300 linhas (orchestrator only)
+- [ ] AC21: Cada sub-hook < 350 linhas
+- [ ] AC22: TypeScript strict mode passa (`npx tsc --noEmit`)
+- [ ] AC23: `npm run lint` passa
+- [ ] AC24: E2E busca funciona em producao (SSE + resultados + export)
 
-## Itens de Debito Relacionados
-- IC-06 (MEDIUM): Traducao de mensagens de erro apenas na pagina de login
-- MF-01 (MEDIUM): Sem confirmacao ao sair de `/buscar` com resultados
+## Technical Notes
 
-## Criterios de Aceite
+**Hook test setup pattern:**
+```typescript
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useSearch } from '@/hooks/useSearch';
 
-### Dicionario de Erros
-- [x] Arquivo `lib/error-messages.ts` criado com mapeamento de erros
-- [x] Mapeamento inclui: 400, 401, 403, 404, 408, 429, 500, 502, 503, 504
-- [x] Mensagens em portugues amigavel (ex: "Servico temporariamente indisponivel" para 503)
-- [x] Funcao utilitaria `getErrorMessage(error)` que aceita Error, AxiosError, ou string
-- [x] Pagina `/buscar` usa mensagens traduzidas (nao mostra raw HTTP errors)
-- [x] Pagina `/pipeline` usa mensagens traduzidas
-- [x] Nenhum catch block no frontend mostra erro raw ao usuario
-- [x] Mensagem generica para erros desconhecidos: "Ocorreu um erro inesperado. Tente novamente."
+// Mock fetch globally
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
 
-### Confirmacao de Navegacao
-- [x] Ao navegar fora de `/buscar` COM resultados ativos, usuario ve dialogo de confirmacao
-- [x] Ao navegar fora de `/buscar` SEM resultados, navegacao ocorre normalmente (sem dialogo)
-- [x] `beforeunload` event previne fechamento acidental da aba com resultados
-- [x] Route change listener previne navegacao interna com resultados
-- [x] Dialogo usa linguagem clara: "Voce tem resultados de busca que serao perdidos. Deseja sair?"
-- [x] Opcoes: "Sair" e "Continuar na pagina"
-- [x] Se usuario salvar os resultados (download Excel), confirmacao nao aparece mais
+// Mock EventSource for SSE
+class MockEventSource {
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: (() => void) | null = null;
+  close = jest.fn();
+  // ...simulate events
+}
 
-## Testes Requeridos
+describe('useSearch', () => {
+  it('should execute search and return results', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ resultados: [] }) });
+    const { result } = renderHook(() => useSearch());
+    await act(async () => { result.current.buscar({ termo: 'teste' }); });
+    await waitFor(() => expect(result.current.results).toBeDefined());
+  });
+});
+```
 
-| ID | Teste | Tipo | Prioridade | Status |
-|----|-------|------|-----------|--------|
-| REG-T14 | Navegacao com resultados ativos mostra confirmacao | Unitario | P2 | PASS |
-| -- | Erro 502 na busca mostra mensagem em portugues | Unitario | P1 | PASS |
-| -- | Erro 429 na busca mostra "Muitas requisicoes" | Unitario | P1 | PASS |
-| -- | Navegacao sem resultados nao mostra confirmacao | Unitario | P2 | PASS |
+**Decomposition strategy for useSearch:**
+1. Identificar state clusters (search state, SSE state, retry state, export state, persistence state)
+2. Extrair cada cluster em hook proprio com interface minima
+3. Orchestrator usa composicao: `const sse = useSearchSSE(searchId);`
+4. Shared state via refs ou callback pattern (evitar context para performance)
+5. Manter backward compat: `useSearch()` retorna exatamente os mesmos campos
 
-## Dependencias
-- **Blocks:** Nenhuma
-- **Blocked by:** Nenhuma (independente)
+**Risco critico:** SSE integration envolve timing complexo entre `useSearchExecution` e `useSearchSSE`. O `search_id` deve ser passado sincronamente do execution para o SSE hook. Usar `useRef` para evitar re-renders desnecessarios.
 
-## Riscos
-- `beforeunload` event tem limitacoes de customizacao em browsers modernos (texto fixo do browser).
-- Route change listener do Next.js pode variar entre versoes. Testar com App Router.
-- Mensagens de erro precisam cobrir edge cases (timeout, CORS, network offline).
+**Pitfall @qa identified:** `useSearch` imports from `error-messages.ts` — all mocks MUST include `isTransientError` and `getMessageFromErrorCode`.
 
-## Rollback Plan
-- Desabilitar confirmacao de navegacao se causar problemas (ex: popup indesejado em cenarios legitimos).
-- Manter dicionario de erros mesmo se confirmacao for revertida.
+## Dependencies
+
+- Nenhuma dependencia de TD-001 a TD-005
+- BLOQUEIA: TD-008 (SWR adoption) depende da decomposicao estar estavel
+- Pode rodar em paralelo com TD-003, TD-004, TD-005
 
 ## Definition of Done
-- [x] Codigo implementado e revisado
-- [x] Testes passando (unitario + E2E)
-- [ ] CI/CD green
-- [ ] Documentacao atualizada
-- [ ] Deploy em staging verificado
-- [ ] Verificacao manual: erro 500 mostra mensagem amigavel em portugues
-- [ ] Verificacao manual: sair de `/buscar` com resultados mostra confirmacao
-
-## Implementacao (2026-02-16)
-
-### Arquivos Criados
-- `frontend/hooks/useNavigationGuard.ts` — Hook de guarda de navegacao (beforeunload + click intercept + popstate)
-- `frontend/__tests__/hooks/useNavigationGuard.test.ts` — 12 testes unitarios
-
-### Arquivos Modificados
-- `frontend/lib/error-messages.ts` — Adicionado HTTP 400, alias `getErrorMessage`, constante `DEFAULT_ERROR_MESSAGE`
-- `frontend/hooks/usePipeline.ts` — Wrap error com `getUserFriendlyError()`
-- `frontend/app/pipeline/page.tsx` — Toast traduzido em drag-drop errors
-- `frontend/app/buscar/page.tsx` — Integrado `useNavigationGuard`, download guard suppression
-- `frontend/app/signup/page.tsx` — `getUserFriendlyError()` em catch
-- `frontend/app/conta/page.tsx` — `getUserFriendlyError()` em 3 catch blocks (senha, delete, export)
-- `frontend/app/mensagens/page.tsx` — `getUserFriendlyError()` em catch
-- `frontend/app/planos/page.tsx` — `getUserFriendlyError()` em checkout
-- `frontend/app/components/AddToPipelineButton.tsx` — `getUserFriendlyError()` em error/upgrade display
-- `frontend/__tests__/lib/error-messages.test.ts` — +7 testes TD-006 (alias, 400, DEFAULT_ERROR_MESSAGE)
-- `frontend/__tests__/pipeline/AddToPipelineButton.test.tsx` — Atualizado para esperar mensagem traduzida
-- `frontend/__tests__/pages/SignupPage.test.tsx` — Atualizado para esperar mensagem traduzida
-
-### Resultados de Testes
-- **73 testes TD-006**: 73 passed (error-messages: 57, navigation guard: 12, alias/400: 4)
-- **Suite completa**: 1507 passed, 14 failed (todos pre-existentes: download, buscar integration, BuscarHeader)
-- **TypeScript**: clean (`npx tsc --noEmit` sem erros)
+- [ ] 5 hook test suites criados e passando
+- [ ] 80%+ branch coverage nos hooks testados
+- [ ] useSearch.ts < 300 linhas (orchestrator)
+- [ ] 5 sub-hooks extraidos e funcionais
+- [ ] Interface publica de useSearch inalterada
+- [ ] SSE + retry + export funcionando E2E
+- [ ] All 2681+ frontend tests passing
+- [ ] Zero TypeScript errors
+- [ ] Reviewed by @qa (test quality) and @architect (decomposition design)

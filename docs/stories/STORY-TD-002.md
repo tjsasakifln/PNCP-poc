@@ -1,78 +1,95 @@
-# STORY-TD-002: Fix Precos Divergentes e UX Trust
+# STORY-TD-002: RLS + Trigger Cleanup + Accessibility + Branding
 
-## Epic
-Epic: Resolucao de Debito Tecnico v2.0 -- SmartLic/BidIQ (EPIC-TD-v2)
+**Epic:** Resolucao de Debito Tecnico
+**Tier:** 0
+**Area:** Database / Frontend / Backend
+**Estimativa:** 7.5h (5.5h codigo + 2h testes)
+**Prioridade:** P0
+**Debt IDs:** C-02, H-01, FE-12, FE-13, FE-07, FE-24, TD-P03, TD-P04
 
-## Sprint
-Sprint 0: Verificacao e Quick Wins
+## Objetivo
 
-## Prioridade
-P0
+Story combinada de quick wins que nao requerem refatoracao profunda. Resolve: (1) tabelas sem RLS policies explicitas, (2) trigger functions duplicadas, (3) acessibilidade critica no sidebar, (4) branding residual "BidIQ", e (5) consolidacao de constantes.
 
-## Estimativa
-4h
+## Acceptance Criteria
 
-## Descricao
+### Database: RLS Policies (C-02) — 1h
+- [ ] AC1: Adicionar RLS policies explicitas para `health_checks` (SELECT/INSERT/UPDATE/DELETE para service_role)
+- [ ] AC2: Adicionar RLS policies explicitas para `incidents` (SELECT/INSERT/UPDATE/DELETE para service_role)
+- [ ] AC3: Verificar que nenhuma tabela no schema public tem RLS habilitado sem policies (`SELECT tablename FROM pg_tables WHERE schemaname='public'` cross-ref com `pg_policies`)
 
-Esta story corrige problemas de confianca do usuario que afetam diretamente a conversao na pagina de precos e a experiencia de recuperacao de erros.
+### Database: Trigger Consolidation (H-01) — 2h
+- [ ] AC4: Identificar as 3 trigger functions `updated_at` duplicadas (nomes e tabelas)
+- [ ] AC5: Consolidar em uma unica function `set_updated_at()` reutilizada por todos os triggers
+- [ ] AC6: Migration DROP das functions duplicadas + CREATE OR REPLACE da consolidada
+- [ ] AC7: Verificar que todos triggers `updated_at` funcionam apos consolidacao (UPDATE em cada tabela e checar timestamp)
 
-1. **Pricing "9.6x" confuso (UX-03, HIGH)** -- A pagina `/planos` exibe um multiplicador "9.6x" em 5 ocorrencias (`planos/page.tsx` linhas 546, 555, 702, 738). A linha 738 diz "12 meses pelo preco de 9.6", que confunde usuarios. A matematica correta e 12 * 0.8 = 9.6, mas exibir como multiplicador nao faz sentido. Substituir por copy claro: "2 meses gratis no plano anual" + valor economizado em R$.
+### Frontend: Accessibility (FE-12 + FE-13) — 2h
+- [ ] AC8: Adicionar `aria-label` em todos os botoes icon-only do Sidebar (minimo: toggle, navigation items sem texto visivel)
+- [ ] AC9: Adicionar `aria-hidden="true"` em todos SVGs decorativos do Sidebar
+- [ ] AC10: Axe DevTools audit do Sidebar retorna zero violations de acessibilidade
+- [ ] AC11: Testes unitarios verificam presenca de aria-labels nos botoes icon-only
 
-2. **Error boundary botao invisivel (FE-08, HIGH)** -- `app/error.tsx` linha 67 usa `bg-[var(--brand-green)]` que NAO esta definida em `globals.css`. O botao de "Tentar novamente" renderiza SEM background visivel. A pagina de erro e o pior lugar para um CTA quebrado -- o usuario fica preso sem forma de recuperacao. Quick win: substituir por `bg-[var(--brand-navy)]` (definido e consistente).
+### Frontend: SVG Cleanup (FE-07) — 1.5h
+- [ ] AC12: Substituir SVGs inline no Sidebar (~75 linhas) por icones do `lucide-react`
+- [ ] AC13: Manter visual identico (tamanho, cor, posicionamento)
+- [ ] AC14: Verificar que `lucide-react` ja esta no `package.json` (ou adicionar se necessario)
 
-3. **Verificacao STORY-251 (SYS-03, LOW)** -- Verificar se STORY-251 resolveu completamente o fallback generico do LLM Arbiter. Se sim, remover nota obsoleta em `config.py` linhas 261-263.
+### Frontend: APP_NAME Consolidation (FE-24) — 0.5h
+- [ ] AC15: Criar constante `APP_NAME = "SmartLic"` em `lib/constants.ts` (ou arquivo similar existente)
+- [ ] AC16: Substituir todas 5+ redeclaracoes de APP_NAME nos arquivos por import da constante
+- [ ] AC17: Grep confirma zero declaracoes locais de `APP_NAME` fora de `lib/constants`
 
-**Impacto de negocio:** Informacoes financeiras confusas ou divergentes sao o principal motivo de abandono em paginas de precos de SaaS. O botao invisivel de erro e critico: e a unica forma do usuario se recuperar quando algo da errado.
+### Backend: Branding Cleanup (TD-P03 + TD-P04) — 0.5h
+- [ ] AC18: Alterar User-Agent header de "BidIQ" para "SmartLic" em todos HTTP clients (`pncp_client.py`, `portal_compras_client.py`, `compras_gov_client.py`)
+- [ ] AC19: Atualizar `pyproject.toml` name de "bidiq-uniformes-backend" para "smartlic-backend"
+- [ ] AC20: Grep confirma zero ocorrencias de "BidIQ" em User-Agent strings no backend
 
-## Itens de Debito Relacionados
-- UX-03 (HIGH): Pricing "9.6x" multiplier confuso + texto "pelo preco de 9.6"
-- FE-08 (HIGH): Error boundary `--brand-green` nao definida -- botao invisivel
-- SYS-03 (LOW): Verificar resolucao por STORY-251; remover nota obsoleta se resolvido
+## Technical Notes
 
-## Criterios de Aceite
+**RLS policy pattern para service_role-only tables:**
+```sql
+ALTER TABLE health_checks ENABLE ROW LEVEL SECURITY;
 
-### Pricing Fix
-- [x] `/planos` nao exibe "9.6" em nenhum texto visivel ao usuario
-- [x] Desconto anual comunicado como "2 meses gratis" ou equivalente claro
-- [x] Valor economizado mostrado em R$ (ex: "Economize R$ XX por ano")
-- [x] 5 ocorrencias em `planos/page.tsx` (linhas ~546, 555, 702, 738 + contexto) corrigidas
-- [x] Valores de precos identicos entre `/planos` e qualquer outra pagina que exiba precos
+CREATE POLICY "service_role_all" ON health_checks
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+```
 
-### Error Boundary Fix
-- [x] `app/error.tsx` usa CSS variable definida em `globals.css` (ex: `--brand-navy`)
-- [x] Botao "Tentar novamente" visivel em light mode
-- [x] Botao "Tentar novamente" visivel em dark mode
-- [x] Contraste do botao atende WCAG AA (4.5:1 minimo) — `--brand-navy` #0a1e3f vs white = 16.1:1
+**Trigger consolidation pattern:**
+```sql
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-### SYS-03 Verificacao
-- [x] `_build_conservative_prompt(setor_id="alimentos")` retorna prompt com "Alimentos", nao "Vestuario"
-- [x] Se confirmado resolvido: nota obsoleta removida de `config.py` linhas 261-263
-- [ ] ~~Se NAO resolvido: documentar gap e criar sub-task~~ (N/A — resolvido)
+-- Then for each table:
+DROP TRIGGER IF EXISTS set_updated_at ON table_name;
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON table_name
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+```
 
-## Testes Requeridos
+**lucide-react icons:** Verificar mapeamento 1:1 com SVGs atuais. Icones comuns: `Menu`, `X`, `ChevronLeft`, `ChevronRight`, `Home`, `Search`, `Settings`, `User`, `BarChart3`, `Kanban`, `History`, `MessageSquare`, `HelpCircle`.
 
-| ID | Teste | Tipo | Prioridade |
-|----|-------|------|-----------|
-| REG-T08 | Error boundary botao visivel em light E dark mode | E2E + Visual | P0 |
-| REG-T09 | Pricing NAO mostra "9.6" em texto visivel | E2E text assertion | P1 |
-| REG-T12 | LLM arbiter usa descricao do setor, nao generico | Unitario | P1 |
+## Dependencies
 
-## Dependencias
-- **Blocks:** Nenhuma
-- **Blocked by:** Nenhuma (paralelo com TD-001 e TD-003)
-
-## Riscos
-- **CR-08:** Error boundary e unica recuperacao -- botao invisivel bloqueia usuario. Fix P0 urgente.
-- Risco baixo: copy change na pagina de precos pode necessitar revisao de marketing/produto.
-
-## Rollback Plan
-- Error boundary: reverter CSS variable se nova cor causar problema de contraste
-- Pricing: manter valores numericos corretos mesmo se copy mudar novamente
+- Nenhuma — independente de TD-001
+- Pode ser executada em paralelo com TD-001
 
 ## Definition of Done
-- [x] Codigo implementado e revisado
-- [x] Testes passando (unitario + E2E visual) — 26/26 arbiter tests, TS clean
-- [ ] CI/CD green
-- [ ] Documentacao atualizada
-- [ ] Deploy em staging verificado
-- [ ] Verificacao visual em light + dark mode
+- [ ] Migration(s) criada(s) em `supabase/migrations/`
+- [ ] Migration(s) aplicada(s) no Supabase Cloud
+- [ ] Zero tabelas com RLS habilitado sem policies
+- [ ] Uma unica function `set_updated_at()` no schema
+- [ ] Axe audit do Sidebar passa sem violations
+- [ ] Zero "BidIQ" em User-Agent strings
+- [ ] All 5774+ backend tests passing
+- [ ] All 2681+ frontend tests passing
+- [ ] No regressions
+- [ ] Reviewed by @data-engineer (DB parts) and @ux-design-expert (FE parts)
