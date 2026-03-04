@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import type { BuscaResult } from "../../types";
 import type { SearchProgressEvent, RefreshAvailableInfo, SourceStatus, PartialProgress, FilterSummary } from "../../../hooks/useSearchSSE";
@@ -30,6 +30,88 @@ import { TrialUpsellCTA } from "../../../components/billing/TrialUpsellCTA";
 import { TrialPaywall } from "../../../components/billing/TrialPaywall";
 import { Pagination, useInitPagination } from "../../../components/ui/Pagination";
 // GTM-UX-001: PartialTimeoutBanner replaced by DataQualityBanner
+
+// UX-404: Inline tour invite banner (AC2-AC5)
+export function TourInviteBanner({
+  isCompleted,
+  onStartTour,
+}: {
+  isCompleted?: () => boolean;
+  onStartTour?: () => void;
+}) {
+  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // AC2: Show banner only when tour not yet completed
+  useEffect(() => {
+    if (!isCompleted || isCompleted() || dismissed) return;
+    setVisible(true);
+  }, [isCompleted, dismissed]);
+
+  // AC3: Auto-dismiss after 10s
+  useEffect(() => {
+    if (!visible) return;
+    timerRef.current = setTimeout(() => {
+      setVisible(false);
+      setDismissed(true);
+    }, 10_000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [visible]);
+
+  // AC3: Dismiss on scroll
+  useEffect(() => {
+    if (!visible) return;
+    const handler = () => {
+      setVisible(false);
+      setDismissed(true);
+    };
+    window.addEventListener("scroll", handler, { once: true, passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, [visible]);
+
+  const handleStart = useCallback(() => {
+    setVisible(false);
+    setDismissed(true);
+    onStartTour?.();
+  }, [onStartTour]);
+
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    setDismissed(true);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50 text-sm text-blue-800 dark:text-blue-200 animate-fade-in-up"
+      data-testid="tour-invite-banner"
+      role="status"
+    >
+      <span>Primeira vez vendo resultados? Clique aqui para um tour rápido.</span>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          onClick={handleStart}
+          className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-button hover:bg-blue-700 transition-colors"
+          data-testid="tour-invite-start"
+        >
+          Iniciar tour
+        </button>
+        <button
+          onClick={handleClose}
+          className="p-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+          aria-label="Fechar"
+          data-testid="tour-invite-close"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export interface SearchResultsProps {
   // Loading state
@@ -168,6 +250,10 @@ export interface SearchResultsProps {
   pendingReviewCount?: number;
   /** STORY-354 AC6: Pending review reclassification update from SSE */
   pendingReviewUpdate?: { reclassifiedCount: number; acceptedCount: number; rejectedCount: number } | null;
+
+  // UX-404: Tour invite banner
+  isResultsTourCompleted?: () => boolean;
+  onStartResultsTour?: () => void;
 }
 
 export default function SearchResults({
@@ -208,6 +294,8 @@ export default function SearchResults({
   skeletonTimeoutReached,
   // STORY-354
   pendingReviewCount = 0, pendingReviewUpdate,
+  // UX-404
+  isResultsTourCompleted, onStartResultsTour,
 }: SearchResultsProps) {
   // STORY-333: Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -402,7 +490,7 @@ export default function SearchResults({
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    A busca está demorando mais que o esperado
+                    A análise está demorando mais que o esperado
                   </p>
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                     O servidor pode estar processando um volume alto de dados.
@@ -421,7 +509,7 @@ export default function SearchResults({
                       className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:underline"
                       data-testid="skeleton-timeout-historico"
                     >
-                      Ver buscas anteriores
+                      Ver análises anteriores
                     </Link>
                   </div>
                 </div>
@@ -449,7 +537,7 @@ export default function SearchResults({
                   </span>
                 </div>
                 <span className="text-xs text-blue-600 dark:text-blue-400">
-                  {filterSummary ? "Filtragem concluída" : "Busca em andamento"}
+                  {filterSummary ? "Filtragem concluída" : "Análise em andamento"}
                 </span>
               </div>
             </div>
@@ -745,6 +833,12 @@ export default function SearchResults({
             </div>
           </div>
 
+          {/* UX-404 AC2-AC5: Inline tour invite banner */}
+          <TourInviteBanner
+            isCompleted={isResultsTourCompleted}
+            onStartTour={onStartResultsTour}
+          />
+
           {/* STORY-333 AC9-AC13: Sticky Action Bar */}
           <div
             className="sticky top-0 z-30 bg-[var(--canvas)] border-b border-[var(--border)] -mx-1 px-1 py-3"
@@ -940,7 +1034,7 @@ export default function SearchResults({
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-ink mb-2">
-                    Termos utilizados na busca:
+                    Termos utilizados na análise:
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {(result.metadata?.termos_utilizados || result.termos_utilizados || []).map(term => (
@@ -1359,7 +1453,7 @@ export default function SearchResults({
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
               </svg>
-              Criar alerta a partir desta busca
+              Criar alerta a partir desta análise
             </a>
           )}
 
@@ -1393,7 +1487,7 @@ export default function SearchResults({
             {/* AC21: Partial failure — simple message without technical source names */}
             {result.is_partial && !result.cached && result.sources_used && result.sources_used.length > 0 && (
               <p className="text-amber-600 dark:text-amber-400">
-                Busca concluída | Fonte temporariamente indisponível (dados podem estar incompletos)
+                Análise concluída | Fonte temporariamente indisponível (dados podem estar incompletos)
               </p>
             )}
             {/* AC22: Source badges — hidden by default, toggle for power users */}

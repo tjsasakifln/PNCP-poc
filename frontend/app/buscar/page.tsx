@@ -438,24 +438,8 @@ function HomePageContent() {
     }
   }, [search.quotaError, fetchTrialValue]);
 
-  // STORY-313 AC7: Auto-start results tour after first search with >= 1 result
-  const hasTriggeredResultsTourRef = useRef(false);
-  useEffect(() => {
-    if (
-      search.result &&
-      search.result.resumo?.total_oportunidades >= 1 &&
-      !hasTriggeredResultsTourRef.current &&
-      !isResultsTourCompleted()
-    ) {
-      hasTriggeredResultsTourRef.current = true;
-      const timer = setTimeout(() => {
-        startResultsTour();
-        trackEvent('onboarding_tour_started', { tour: 'results' });
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search.result]);
+  // UX-404 AC1: Removed auto-start of results tour (was STORY-313 AC7).
+  // Tour is now triggered via inline banner in SearchResults.
 
   // GTM-UX-004 AC7: Load last search results from cache
   const handleLoadLastSearch = useCallback(() => {
@@ -837,6 +821,12 @@ function HomePageContent() {
                 // STORY-354: Pending review
                 pendingReviewCount={search.result?.pending_review_count ?? 0}
                 pendingReviewUpdate={search.pendingReviewUpdate}
+                // UX-404: Tour invite banner props
+                isResultsTourCompleted={isResultsTourCompleted}
+                onStartResultsTour={() => {
+                  startResultsTour();
+                  trackEvent('onboarding_tour_started', { tour: 'results' });
+                }}
               />
             </SearchErrorBoundary>
           </div>
