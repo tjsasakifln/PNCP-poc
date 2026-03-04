@@ -87,6 +87,7 @@ const customJestConfig = {
     '/__tests__/e2e/', // E2E tests run via Playwright, not Jest
     '/e2e-tests/', // Playwright E2E tests directory
     '/__tests__/quarantine/', // Quarantined tests (STORY-218) — run separately via test:quarantine
+    '/__tests__/utils/',      // Shared test utilities (not test files) — STORY-368
   ],
 
   // Transform node_modules that use ES modules (uuid, etc.)

@@ -7,37 +7,12 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSearchProgress } from '../../hooks/useSearchProgress';
 import type { SearchProgressEvent } from '../../hooks/useSearchProgress';
 
-describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
-  let mockEventSource: any;
-  let eventListeners: Record<string, Function>;
+// Use shared MockEventSource (installed globally via jest.setup.js, STORY-368)
+import { MockEventSource } from '../utils/mock-event-source';
 
+describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    eventListeners = {};
-
-    // Mock EventSource based on jest.setup.js pattern
-    mockEventSource = {
-      url: '',
-      readyState: 0,
-      onopen: null,
-      onmessage: null,
-      onerror: null,
-      close: jest.fn(function(this: any) {
-        this.readyState = 2;
-      }),
-      addEventListener: jest.fn((event: string, handler: Function) => {
-        eventListeners[event] = handler;
-      }),
-      removeEventListener: jest.fn(),
-    };
-
-    // Override global EventSource
-    (global as any).EventSource = jest.fn((url: string) => {
-      mockEventSource.url = url;
-      mockEventSource.readyState = 1; // OPEN
-      // Don't auto-trigger onerror like jest.setup.js does (we want manual control)
-      return mockEventSource;
-    });
   });
 
   afterEach(() => {
@@ -53,9 +28,11 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         })
       );
 
+      const es = MockEventSource.instances[0];
+
       // Simulate SSE connection open
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       expect(result.current.isConnected).toBe(true);
@@ -77,9 +54,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(degradedEvent),
-        });
+        es.simulateMessage(degradedEvent);
       });
 
       // Verify degraded state
@@ -100,8 +75,10 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         })
       );
 
+      const es = MockEventSource.instances[0];
+
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       // Send normal complete event
@@ -113,9 +90,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(completeEvent),
-        });
+        es.simulateMessage(completeEvent);
       });
 
       await waitFor(() => {
@@ -134,8 +109,10 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         })
       );
 
+      const es = MockEventSource.instances[0];
+
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       // Send fetching event
@@ -147,9 +124,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(fetchingEvent),
-        });
+        es.simulateMessage(fetchingEvent);
       });
 
       expect(result.current.isDegraded).toBe(false);
@@ -166,8 +141,10 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         })
       );
 
+      const es = MockEventSource.instances[0];
+
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       const degradedEvent: SearchProgressEvent = {
@@ -185,9 +162,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(degradedEvent),
-        });
+        es.simulateMessage(degradedEvent);
       });
 
       await waitFor(() => {
@@ -205,8 +180,10 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         })
       );
 
+      const es = MockEventSource.instances[0];
+
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       const normalEvent: SearchProgressEvent = {
@@ -217,9 +194,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(normalEvent),
-        });
+        es.simulateMessage(normalEvent);
       });
 
       expect(result.current.degradedDetail).toBeNull();
@@ -235,8 +210,10 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         { initialProps: { searchId: 'search-1' } }
       );
 
+      const es = MockEventSource.instances[0];
+
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       // First search ends degraded
@@ -248,9 +225,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(degradedEvent),
-        });
+        es.simulateMessage(degradedEvent);
       });
 
       await waitFor(() => {
@@ -277,8 +252,10 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         })
       );
 
+      const es = MockEventSource.instances[0];
+
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       expect(result.current.isConnected).toBe(true);
@@ -291,13 +268,11 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(degradedEvent),
-        });
+        es.simulateMessage(degradedEvent);
       });
 
       await waitFor(() => {
-        expect(mockEventSource.close).toHaveBeenCalled();
+        expect(es.close).toHaveBeenCalled();
         expect(result.current.isConnected).toBe(false);
       });
     });
@@ -310,8 +285,10 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         })
       );
 
+      const es = MockEventSource.instances[0];
+
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       const degradedEvent: SearchProgressEvent = {
@@ -322,9 +299,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(degradedEvent),
-        });
+        es.simulateMessage(degradedEvent);
       });
 
       await waitFor(() => {
@@ -348,8 +323,10 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
         })
       );
 
+      const es = MockEventSource.instances[0];
+
       act(() => {
-        mockEventSource.onopen?.();
+        es.simulateOpen();
       });
 
       const degradedEvent: SearchProgressEvent = {
@@ -360,9 +337,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
       };
 
       act(() => {
-        mockEventSource.onmessage?.({
-          data: JSON.stringify(degradedEvent),
-        });
+        es.simulateMessage(degradedEvent);
       });
 
       await waitFor(() => {

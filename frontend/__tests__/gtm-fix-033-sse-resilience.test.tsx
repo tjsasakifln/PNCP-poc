@@ -52,6 +52,7 @@ jest.mock('../lib/utils/correlationId', () => ({
   logCorrelatedRequest: jest.fn(),
 }));
 
+import { MockEventSource } from './utils/mock-event-source';
 import { useSearchProgress } from '../hooks/useSearchProgress';
 import { useUfProgress } from '../app/buscar/hooks/useUfProgress';
 
@@ -59,33 +60,8 @@ import { useUfProgress } from '../app/buscar/hooks/useUfProgress';
 
 describe('GTM-FIX-033: SSE Resilience', () => {
 
-  // Helper: Create a mock EventSource that errors on demand
-  let mockEventSources: any[] = [];
-
   beforeEach(() => {
-    mockEventSources = [];
     jest.useFakeTimers();
-
-    // @ts-ignore
-    global.EventSource = jest.fn().mockImplementation((url: string) => {
-      const es: any = {
-        url,
-        readyState: 0, // CONNECTING
-        close: jest.fn(() => { es.readyState = 2; }),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        onopen: null,
-        onmessage: null,
-        onerror: null,
-      };
-      mockEventSources.push(es);
-      // Simulate successful open after a tick
-      setTimeout(() => {
-        es.readyState = 1; // OPEN
-        es.onopen?.();
-      }, 10);
-      return es;
-    });
   });
 
   afterEach(() => {
@@ -108,29 +84,29 @@ describe('GTM-FIX-033: SSE Resilience', () => {
       expect(result.current.sseDisconnected).toBe(false);
 
       // First EventSource created
-      expect(mockEventSources).toHaveLength(1);
+      expect(MockEventSource.instances).toHaveLength(1);
 
       // STORY-365 AC7: Exhaust all 3 reconnect attempts (1s, 2s, 4s backoff)
       // Error #1 → reconnect after 1s
-      act(() => { mockEventSources[0].onerror?.(); });
+      act(() => { MockEventSource.instances[0].onerror?.(); });
       expect(result.current.sseDisconnected).toBe(false);
       act(() => { jest.advanceTimersByTime(1100); });
-      expect(mockEventSources.length).toBeGreaterThanOrEqual(2);
+      expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(2);
 
       // Error #2 → reconnect after 2s
-      act(() => { mockEventSources[mockEventSources.length - 1].onerror?.(); });
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
       expect(result.current.sseDisconnected).toBe(false);
       act(() => { jest.advanceTimersByTime(2100); });
-      expect(mockEventSources.length).toBeGreaterThanOrEqual(3);
+      expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(3);
 
       // Error #3 → reconnect after 4s
-      act(() => { mockEventSources[mockEventSources.length - 1].onerror?.(); });
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
       expect(result.current.sseDisconnected).toBe(false);
       act(() => { jest.advanceTimersByTime(4100); });
-      expect(mockEventSources.length).toBeGreaterThanOrEqual(4);
+      expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(4);
 
       // Error #4 → all retries exhausted → sseDisconnected=true
-      act(() => { mockEventSources[mockEventSources.length - 1].onerror?.(); });
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
       expect(result.current.sseDisconnected).toBe(true);
     });
 
@@ -147,13 +123,13 @@ describe('GTM-FIX-033: SSE Resilience', () => {
       );
 
       // STORY-365: Exhaust all reconnect attempts to force disconnect
-      act(() => { mockEventSources[0].onerror?.(); });
+      act(() => { MockEventSource.instances[0].onerror?.(); });
       act(() => { jest.advanceTimersByTime(1100); });
-      act(() => { mockEventSources[mockEventSources.length - 1].onerror?.(); });
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
       act(() => { jest.advanceTimersByTime(2100); });
-      act(() => { mockEventSources[mockEventSources.length - 1].onerror?.(); });
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
       act(() => { jest.advanceTimersByTime(4100); });
-      act(() => { mockEventSources[mockEventSources.length - 1].onerror?.(); });
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
 
       expect(result.current.sseDisconnected).toBe(true);
 
@@ -181,7 +157,7 @@ describe('GTM-FIX-033: SSE Resilience', () => {
 
       // First SSE error
       act(() => {
-        mockEventSources[0].onerror?.();
+        MockEventSource.instances[0].onerror?.();
       });
 
       // Not yet disconnected — retrying
@@ -195,7 +171,7 @@ describe('GTM-FIX-033: SSE Resilience', () => {
 
       // Retry SSE also fails
       act(() => {
-        const retryEs = mockEventSources[mockEventSources.length - 1];
+        const retryEs = MockEventSource.instances[MockEventSource.instances.length - 1];
         retryEs.onerror?.();
       });
 

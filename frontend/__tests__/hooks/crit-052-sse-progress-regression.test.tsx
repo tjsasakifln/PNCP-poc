@@ -12,53 +12,14 @@
 import { renderHook, act } from '@testing-library/react';
 import { useSearchSSE } from '../../hooks/useSearchSSE';
 
-// ---- EventSource mock factory ----
-
-interface MockEventSource {
-  url: string;
-  readyState: number;
-  close: jest.Mock;
-  addEventListener: jest.Mock;
-  removeEventListener: jest.Mock;
-  onopen: (() => void) | null;
-  onmessage: ((e: { data: string; lastEventId?: string }) => void) | null;
-  onerror: (() => void) | null;
-}
-
-function makeMockES(url: string): MockEventSource {
-  return {
-    url,
-    readyState: 1,
-    close: jest.fn(function (this: MockEventSource) {
-      this.readyState = 2;
-    }),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    onopen: null,
-    onmessage: null,
-    onerror: null,
-  };
-}
-
-// ---- Helper: send SSE message ----
-
-function sendMessage(es: MockEventSource, data: Record<string, unknown>) {
-  es.onmessage?.({ data: JSON.stringify(data) });
-}
+// Use shared MockEventSource (installed globally via jest.setup.js, STORY-368)
+import { MockEventSource } from '../utils/mock-event-source';
 
 // ---- Test suite ----
 
 describe('CRIT-052: SSE Progress Bar Regression', () => {
-  let mockInstances: MockEventSource[];
-
   beforeEach(() => {
     jest.useFakeTimers();
-    mockInstances = [];
-    (global as any).EventSource = jest.fn().mockImplementation((url: string) => {
-      const instance = makeMockES(url);
-      mockInstances.push(instance);
-      return instance;
-    });
   });
 
   afterEach(() => {
@@ -79,23 +40,23 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Send progress at 30%
-      act(() => sendMessage(es, { stage: 'fetching', progress: 30, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 30, message: 'Buscando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(30);
 
       // Send progress at 60%
-      act(() => sendMessage(es, { stage: 'fetching', progress: 60, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 60, message: 'Buscando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(60);
 
       // Send progress at 40% (lower!) — should be clamped to 60%
-      act(() => sendMessage(es, { stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(60);
 
       // Send progress at 80% — should pass through
-      act(() => sendMessage(es, { stage: 'filtering', progress: 80, message: 'Filtrando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'filtering', progress: 80, message: 'Filtrando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(80);
     });
 
@@ -107,26 +68,26 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Get progress to 55%
-      act(() => sendMessage(es, { stage: 'fetching', progress: 55, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 55, message: 'Buscando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(55);
 
       // Simulate SSE error and reconnection
-      act(() => es.onerror?.());
+      act(() => es.simulateError());
 
       // First retry is immediate (0ms delay)
       act(() => jest.advanceTimersByTime(0));
 
       // New EventSource created
-      expect(mockInstances.length).toBeGreaterThanOrEqual(2);
-      const retryEs = mockInstances[mockInstances.length - 1];
-      act(() => retryEs.onopen?.());
+      expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(2);
+      const retryEs = MockEventSource.instances[MockEventSource.instances.length - 1];
+      act(() => retryEs.simulateOpen());
 
       // Backend sends progress at 10% on reconnection (replaying from start)
-      act(() => sendMessage(retryEs, { stage: 'connecting', progress: 10, message: 'Conectando...', detail: {} }));
+      act(() => retryEs.simulateMessage({ stage: 'connecting', progress: 10, message: 'Conectando...', detail: {} }));
 
       // Should still show 55% (high-water mark), not 10%
       expect(result.current.currentEvent?.progress).toBe(55);
@@ -142,22 +103,22 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         { initialProps: { searchId: 'hwm-003a' } }
       );
 
-      const es1 = mockInstances[0];
-      act(() => es1.onopen?.());
+      const es1 = MockEventSource.instances[0];
+      act(() => es1.simulateOpen());
 
       // Get progress to 80%
-      act(() => sendMessage(es1, { stage: 'filtering', progress: 80, message: 'Filtrando...', detail: {} }));
+      act(() => es1.simulateMessage({ stage: 'filtering', progress: 80, message: 'Filtrando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(80);
 
       // Start new search
       rerender({ searchId: 'hwm-003b' });
 
       // New EventSource for new search
-      const es2 = mockInstances[mockInstances.length - 1];
-      act(() => es2.onopen?.());
+      const es2 = MockEventSource.instances[MockEventSource.instances.length - 1];
+      act(() => es2.simulateOpen());
 
       // New search sends progress at 10% — should NOT be clamped to 80%
-      act(() => sendMessage(es2, { stage: 'connecting', progress: 10, message: 'Conectando...', detail: {} }));
+      act(() => es2.simulateMessage({ stage: 'connecting', progress: 10, message: 'Conectando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(10);
     });
 
@@ -169,8 +130,8 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       const progressValues: number[] = [];
       const events = [
@@ -185,7 +146,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       ];
 
       for (const event of events) {
-        act(() => sendMessage(es, event));
+        act(() => es.simulateMessage(event));
         if (result.current.currentEvent) {
           progressValues.push(result.current.currentEvent.progress);
         }
@@ -214,14 +175,14 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Initially not reconnecting
       expect(result.current.isReconnecting).toBe(false);
 
       // Trigger SSE error
-      act(() => es.onerror?.());
+      act(() => es.simulateError());
 
       // After error, should be reconnecting (first retry is immediate at 0ms)
       expect(result.current.isReconnecting).toBe(true);
@@ -230,8 +191,8 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => jest.advanceTimersByTime(0));
 
       // New EventSource connects successfully
-      const retryEs = mockInstances[mockInstances.length - 1];
-      act(() => retryEs.onopen?.());
+      const retryEs = MockEventSource.instances[MockEventSource.instances.length - 1];
+      act(() => retryEs.simulateOpen());
 
       // After successful reconnection, isReconnecting should be false
       expect(result.current.isReconnecting).toBe(false);
@@ -245,15 +206,15 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Get progress to 55%
-      act(() => sendMessage(es, { stage: 'fetching', progress: 55, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 55, message: 'Buscando...', detail: {} }));
       const progressBefore = result.current.currentEvent?.progress;
 
       // Trigger reconnection
-      act(() => es.onerror?.());
+      act(() => es.simulateError());
 
       // Progress should still be at 55% (currentEvent preserved)
       expect(result.current.currentEvent?.progress).toBe(progressBefore);
@@ -273,16 +234,16 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => sendMessage(es, { stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(40);
       expect(result.current.currentEvent?.stage).toBe('fetching');
 
       // Send source_complete with progress=-1
-      act(() => sendMessage(es, {
+      act(() => es.simulateMessage({
         stage: 'source_complete',
         progress: -1,
         message: 'PNCP: success',
@@ -305,14 +266,14 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => sendMessage(es, { stage: 'fetching', progress: 50, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 50, message: 'Buscando...', detail: {} }));
 
       // Send source_error with progress=-1
-      act(() => sendMessage(es, {
+      act(() => es.simulateMessage({
         stage: 'source_error',
         progress: -1,
         message: 'PCP: failed',
@@ -332,14 +293,14 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => sendMessage(es, { stage: 'filtering', progress: 70, message: 'Filtrando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'filtering', progress: 70, message: 'Filtrando...', detail: {} }));
 
       // Send filter_summary with progress=-1 (note: backend sends progress=70, but let's test -1 case)
-      act(() => sendMessage(es, {
+      act(() => es.simulateMessage({
         stage: 'filter_summary',
         progress: -1,
         message: '15 relevantes de 42 analisadas',
@@ -363,14 +324,14 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => sendMessage(es, { stage: 'llm', progress: 90, message: 'IA...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'llm', progress: 90, message: 'IA...', detail: {} }));
 
       // Send pending_review with progress=-1
-      act(() => sendMessage(es, {
+      act(() => es.simulateMessage({
         stage: 'pending_review',
         progress: -1,
         message: 'Reclassificação concluída',
@@ -394,14 +355,14 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => sendMessage(es, { stage: 'fetching', progress: 20, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 20, message: 'Buscando...', detail: {} }));
 
       // Send uf_status with progress=-1
-      act(() => sendMessage(es, {
+      act(() => es.simulateMessage({
         stage: 'uf_status',
         progress: -1,
         message: 'UF SP: success',
@@ -423,14 +384,14 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => sendMessage(es, { stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
 
       // Send error event (progress=-1 but should still be set as currentEvent)
-      act(() => sendMessage(es, {
+      act(() => es.simulateMessage({
         stage: 'error',
         progress: -1,
         message: 'Erro na busca',
@@ -455,25 +416,25 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Get progress to 70%
-      act(() => sendMessage(es, { stage: 'filtering', progress: 70, message: 'Filtrando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'filtering', progress: 70, message: 'Filtrando...', detail: {} }));
 
       // SSE disconnects
-      act(() => es.onerror?.());
+      act(() => es.simulateError());
       expect(result.current.isReconnecting).toBe(true);
 
       // Advance time for retry
       act(() => jest.advanceTimersByTime(0));
 
       // Reconnect succeeds
-      const retryEs = mockInstances[mockInstances.length - 1];
-      act(() => retryEs.onopen?.());
+      const retryEs = MockEventSource.instances[MockEventSource.instances.length - 1];
+      act(() => retryEs.simulateOpen());
 
       // Backend replays complete event
-      act(() => sendMessage(retryEs, {
+      act(() => retryEs.simulateMessage({
         stage: 'complete',
         progress: 100,
         message: 'Busca concluida!',
@@ -494,20 +455,20 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
-      act(() => sendMessage(es, { stage: 'fetching', progress: 50, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 50, message: 'Buscando...', detail: {} }));
 
       // Disconnect and reconnect
-      act(() => es.onerror?.());
+      act(() => es.simulateError());
       act(() => jest.advanceTimersByTime(0));
 
-      const retryEs = mockInstances[mockInstances.length - 1];
-      act(() => retryEs.onopen?.());
+      const retryEs = MockEventSource.instances[MockEventSource.instances.length - 1];
+      act(() => retryEs.simulateOpen());
 
       // Backend sends search_complete (async mode terminal event)
-      act(() => sendMessage(retryEs, {
+      act(() => retryEs.simulateMessage({
         stage: 'search_complete',
         progress: 100,
         message: 'Busca concluída — 42 resultados',
@@ -532,8 +493,8 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Simulate rapid events that might arrive out of order
       const events = [
@@ -552,7 +513,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
 
       let lastProgress = -1;
       for (const event of events) {
-        act(() => sendMessage(es, event));
+        act(() => es.simulateMessage(event));
         const currentProgress = result.current.currentEvent?.progress ?? 0;
         expect(currentProgress).toBeGreaterThanOrEqual(lastProgress);
         lastProgress = currentProgress;
@@ -567,15 +528,15 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
         })
       );
 
-      const es = mockInstances[0];
-      act(() => es.onopen?.());
+      const es = MockEventSource.instances[0];
+      act(() => es.simulateOpen());
 
       // Normal progress
-      act(() => sendMessage(es, { stage: 'fetching', progress: 40, message: 'msg', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'msg', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(40);
 
       // Metadata event (progress=-1) — should not change currentEvent
-      act(() => sendMessage(es, {
+      act(() => es.simulateMessage({
         stage: 'source_complete',
         progress: -1,
         message: 'PNCP done',
@@ -584,7 +545,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       expect(result.current.currentEvent?.progress).toBe(40);
 
       // Another metadata event — still no change
-      act(() => sendMessage(es, {
+      act(() => es.simulateMessage({
         stage: 'source_error',
         progress: -1,
         message: 'PCP failed',
@@ -593,7 +554,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       expect(result.current.currentEvent?.progress).toBe(40);
 
       // Normal progress continues
-      act(() => sendMessage(es, { stage: 'filtering', progress: 70, message: 'msg', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'filtering', progress: 70, message: 'msg', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(70);
     });
   });

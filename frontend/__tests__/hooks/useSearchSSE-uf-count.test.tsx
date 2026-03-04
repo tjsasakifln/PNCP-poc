@@ -10,53 +10,14 @@
 import { renderHook, act } from '@testing-library/react';
 import { useSearchSSE } from '../../hooks/useSearchSSE';
 
-// ---- EventSource mock ----
-
-interface MockEventSource {
-  url: string;
-  readyState: number;
-  close: jest.Mock;
-  addEventListener: jest.Mock;
-  removeEventListener: jest.Mock;
-  onopen: (() => void) | null;
-  onmessage: ((e: { data: string; lastEventId?: string }) => void) | null;
-  onerror: (() => void) | null;
-}
-
-function makeMockES(url: string): MockEventSource {
-  return {
-    url,
-    readyState: 1,
-    close: jest.fn(function (this: MockEventSource) {
-      this.readyState = 2;
-    }),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    onopen: null,
-    onmessage: null,
-    onerror: null,
-  };
-}
-
-// ---- Helpers ----
-
-function emitSSE(es: MockEventSource, event: Record<string, unknown>) {
-  es.onmessage?.({ data: JSON.stringify(event), lastEventId: '' });
-}
+// Use shared MockEventSource (installed globally via jest.setup.js, STORY-368)
+import { MockEventSource } from '../utils/mock-event-source';
 
 // ---- Test suite ----
 
 describe('STORY-326: useSearchSSE uf_status count field', () => {
-  let mockInstances: MockEventSource[];
-
   beforeEach(() => {
     jest.useFakeTimers();
-    mockInstances = [];
-    (global as any).EventSource = jest.fn().mockImplementation((url: string) => {
-      const instance = makeMockES(url);
-      mockInstances.push(instance);
-      return instance;
-    });
   });
 
   afterEach(() => {
@@ -79,12 +40,12 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
 
     // Connect
     act(() => {
-      mockInstances[0]?.onopen?.();
+      MockEventSource.instances[0]?.simulateOpen();
     });
 
     // Emit uf_status event with count field (as backend sends it)
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status',
         progress: 30,
         message: 'SP: success',
@@ -111,10 +72,10 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
       }),
     );
 
-    act(() => { mockInstances[0]?.onopen?.(); });
+    act(() => { MockEventSource.instances[0]?.simulateOpen(); });
 
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status',
         progress: 30,
         message: 'ES: success',
@@ -137,11 +98,11 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
       }),
     );
 
-    act(() => { mockInstances[0]?.onopen?.(); });
+    act(() => { MockEventSource.instances[0]?.simulateOpen(); });
 
     // Emit event with items_found (old wrong field) but no count
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status',
         progress: 30,
         message: 'RJ: success',
@@ -168,11 +129,11 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
       }),
     );
 
-    act(() => { mockInstances[0]?.onopen?.(); });
+    act(() => { MockEventSource.instances[0]?.simulateOpen(); });
 
     // SP: success with 42
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status', progress: 20, message: 'SP: success',
         detail: { uf: 'SP', uf_status: 'success', count: 42 },
       });
@@ -180,7 +141,7 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
 
     // RJ: success with 108
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status', progress: 35, message: 'RJ: success',
         detail: { uf: 'RJ', uf_status: 'success', count: 108 },
       });
@@ -188,7 +149,7 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
 
     // MG: recovered with 25
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status', progress: 45, message: 'MG: recovered',
         detail: { uf: 'MG', uf_status: 'recovered', count: 25 },
       });
@@ -196,7 +157,7 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
 
     // ES: failed (should NOT contribute to total)
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status', progress: 50, message: 'ES: failed',
         detail: { uf: 'ES', uf_status: 'failed', reason: 'timeout' },
       });
@@ -215,17 +176,17 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
       }),
     );
 
-    act(() => { mockInstances[0]?.onopen?.(); });
+    act(() => { MockEventSource.instances[0]?.simulateOpen(); });
 
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status', progress: 30, message: 'SP: success',
         detail: { uf: 'SP', uf_status: 'success', count: 0 },
       });
     });
 
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status', progress: 50, message: 'RJ: success',
         detail: { uf: 'RJ', uf_status: 'success', count: 0 },
       });
@@ -250,10 +211,10 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
       }),
     );
 
-    act(() => { mockInstances[0]?.onopen?.(); });
+    act(() => { MockEventSource.instances[0]?.simulateOpen(); });
 
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status', progress: 30, message: 'SP: success',
         detail: { uf: 'SP', uf_status: 'success', count: 150 },
       });
@@ -273,10 +234,10 @@ describe('STORY-326: useSearchSSE uf_status count field', () => {
       }),
     );
 
-    act(() => { mockInstances[0]?.onopen?.(); });
+    act(() => { MockEventSource.instances[0]?.simulateOpen(); });
 
     act(() => {
-      emitSSE(mockInstances[0], {
+      MockEventSource.instances[0].simulateMessage({
         stage: 'uf_status', progress: 20, message: 'MG: retrying',
         detail: { uf: 'MG', uf_status: 'retrying', attempt: 2 },
       });

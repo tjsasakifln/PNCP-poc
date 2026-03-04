@@ -19,50 +19,14 @@
 import { renderHook, act } from '@testing-library/react';
 import { useSearchSSE } from '../../hooks/useSearchSSE';
 
-// ---- EventSource mock factory ----
-
-/** A single mock EventSource instance. */
-interface MockEventSource {
-  url: string;
-  readyState: number;
-  close: jest.Mock;
-  addEventListener: jest.Mock;
-  removeEventListener: jest.Mock;
-  onopen: (() => void) | null;
-  onmessage: ((e: { data: string }) => void) | null;
-  onerror: (() => void) | null;
-}
-
-function makeMockES(url: string): MockEventSource {
-  return {
-    url,
-    readyState: 1, // OPEN
-    close: jest.fn(function (this: MockEventSource) {
-      this.readyState = 2; // CLOSED
-    }),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    onopen: null,
-    onmessage: null,
-    onerror: null,
-  };
-}
+// Use shared MockEventSource (installed globally via jest.setup.js, STORY-368)
+import { MockEventSource } from '../utils/mock-event-source';
 
 // ---- Test suite ----
 
 describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () => {
-  let mockInstances: MockEventSource[];
-
   beforeEach(() => {
     jest.useFakeTimers();
-    mockInstances = [];
-
-    // Each call to `new EventSource(url)` returns a new mock and records it.
-    (global as any).EventSource = jest.fn().mockImplementation((url: string) => {
-      const instance = makeMockES(url);
-      mockInstances.push(instance);
-      return instance;
-    });
   });
 
   afterEach(() => {
@@ -84,25 +48,25 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
     );
 
     // Initial EventSource created (attempt 0).
-    expect(mockInstances).toHaveLength(1);
+    expect(MockEventSource.instances).toHaveLength(1);
 
     // Trigger error on initial ES → should schedule retry 1 (delay=3000ms).
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
 
     // Not yet retried (waiting for 3000ms timeout).
-    expect(mockInstances).toHaveLength(1);
+    expect(MockEventSource.instances).toHaveLength(1);
 
     // Advance 3000ms → retry 1 EventSource created.
     act(() => {
       jest.advanceTimersByTime(3000);
     });
-    expect(mockInstances).toHaveLength(2);
+    expect(MockEventSource.instances).toHaveLength(2);
 
     // Trigger error on retry 1 → retryAttemptRef=1, not yet exhausted (1 < 3).
     // The outer es.onerror is the only mechanism for further retries, but since
-    // cleanup() was called, we can no longer fire on mockInstances[0].
+    // cleanup() was called, we can no longer fire on MockEventSource.instances[0].
     // Firing retryEs.onerror at this point: counter=1, 1 < 3 → no new connection.
     // To simulate attempts 2 and 3, we manually fire the outer es.onerror
     // multiple more times (EventSource onerror can fire multiple times in real
@@ -110,24 +74,24 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
 
     // Re-fire onerror on initial ES (counter now 1 < 3) → schedules retry 2 at 6000ms.
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
     act(() => {
       jest.advanceTimersByTime(6000);
     });
-    expect(mockInstances).toHaveLength(3);
+    expect(MockEventSource.instances).toHaveLength(3);
 
     // Re-fire onerror on initial ES (counter now 2 < 3) → schedules retry 3 at 12000ms.
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
     act(() => {
       jest.advanceTimersByTime(12000);
     });
-    expect(mockInstances).toHaveLength(4);
+    expect(MockEventSource.instances).toHaveLength(4);
 
     // Total: 1 initial + 3 retries = 4 EventSource instances created.
-    expect(mockInstances).toHaveLength(4);
+    expect(MockEventSource.instances).toHaveLength(4);
   });
 
   // ---------------------------------------------------------------------------
@@ -147,52 +111,52 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
       })
     );
 
-    expect(mockInstances).toHaveLength(1);
+    expect(MockEventSource.instances).toHaveLength(1);
 
     // Error → retry 1 scheduled at 0ms (immediate — GTM-FIX-043 AC2).
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
 
     // Advance 0ms → retry 1 fires immediately.
     act(() => {
       jest.advanceTimersByTime(0);
     });
-    expect(mockInstances).toHaveLength(2);
+    expect(MockEventSource.instances).toHaveLength(2);
 
     // Trigger re-fire on outer es (counter=1) → retry 2 at 3000ms.
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
 
     // Advance 2999ms → no retry yet.
     act(() => {
       jest.advanceTimersByTime(2999);
     });
-    expect(mockInstances).toHaveLength(2);
+    expect(MockEventSource.instances).toHaveLength(2);
 
     // Advance 1ms more → 3000ms total → retry 2 fires.
     act(() => {
       jest.advanceTimersByTime(1);
     });
-    expect(mockInstances).toHaveLength(3);
+    expect(MockEventSource.instances).toHaveLength(3);
 
     // Trigger re-fire on outer es (counter=2) → retry 3 at 6000ms.
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
 
     // Advance 5999ms → no retry yet.
     act(() => {
       jest.advanceTimersByTime(5999);
     });
-    expect(mockInstances).toHaveLength(3);
+    expect(MockEventSource.instances).toHaveLength(3);
 
     // Advance 1ms more → 6000ms total → retry 3 fires.
     act(() => {
       jest.advanceTimersByTime(1);
     });
-    expect(mockInstances).toHaveLength(4);
+    expect(MockEventSource.instances).toHaveLength(4);
   });
 
   // ---------------------------------------------------------------------------
@@ -214,7 +178,7 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
     // Exhaust all 3 retries by firing outer onerror 4 times.
     // Fire 1: counter=0 → counter=1, retry 1 scheduled.
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
     act(() => {
       jest.advanceTimersByTime(3000);
@@ -223,7 +187,7 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
 
     // Fire 2: counter=1 → counter=2, retry 2 scheduled.
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
     act(() => {
       jest.advanceTimersByTime(6000);
@@ -232,7 +196,7 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
 
     // Fire 3: counter=2 → counter=3, retry 3 scheduled.
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
     act(() => {
       jest.advanceTimersByTime(12000);
@@ -241,7 +205,7 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
 
     // Fire 4: counter=3 >= 3 → else branch → sseDisconnected=true.
     act(() => {
-      mockInstances[0].onerror?.();
+      MockEventSource.instances[0].onerror?.();
     });
 
     expect(result.current.sseDisconnected).toBe(true);
@@ -262,26 +226,26 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
 
     // Drive all 3 retries (creating 4 instances total).
     // Fire 1 + wait 3s.
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(3000); });
     // Fire 2 + wait 6s.
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(6000); });
     // Fire 3 + wait 12s.
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(12000); });
 
     // 4 instances so far: 1 initial + 3 retries.
-    expect(mockInstances).toHaveLength(4);
+    expect(MockEventSource.instances).toHaveLength(4);
 
     // Fire 4 on outer es → exhausts.
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
 
     // Advance time significantly — no new connections should be created.
     act(() => { jest.advanceTimersByTime(60000); });
 
     // Still 4 instances.
-    expect(mockInstances).toHaveLength(4);
+    expect(MockEventSource.instances).toHaveLength(4);
   });
 
   // ---------------------------------------------------------------------------
@@ -299,18 +263,18 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
     );
 
     // Exhaust retries on first search (fire outer es.onerror 4 times).
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(3000); });
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(6000); });
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(12000); });
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
 
     expect(result.current.sseDisconnected).toBe(true);
     expect(result.current.sseAvailable).toBe(false);
 
-    const instancesAfterFirstSearch = mockInstances.length;
+    const instancesAfterFirstSearch = MockEventSource.instances.length;
 
     // Start new search — rerender with new searchId.
     act(() => {
@@ -322,16 +286,16 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
     expect(result.current.sseAvailable).toBe(true);
 
     // A new EventSource should have been created for the new search.
-    expect(mockInstances.length).toBeGreaterThan(instancesAfterFirstSearch);
+    expect(MockEventSource.instances.length).toBeGreaterThan(instancesAfterFirstSearch);
 
-    const newEsIndex = mockInstances.length - 1;
+    const newEsIndex = MockEventSource.instances.length - 1;
 
     // URL should reference the new searchId.
-    expect(mockInstances[newEsIndex].url).toContain('search-005b');
+    expect(MockEventSource.instances[newEsIndex].url).toContain('search-005b');
 
     // Error on new search → should retry again (not immediately exhaust).
     act(() => {
-      mockInstances[newEsIndex].onerror?.();
+      MockEventSource.instances[newEsIndex].onerror?.();
     });
 
     // After one error, still not disconnected (retries available).
@@ -339,7 +303,7 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
 
     // Retry fires after 3000ms.
     act(() => { jest.advanceTimersByTime(3000); });
-    expect(mockInstances.length).toBeGreaterThan(instancesAfterFirstSearch + 1);
+    expect(MockEventSource.instances.length).toBeGreaterThan(instancesAfterFirstSearch + 1);
   });
 
   // ---------------------------------------------------------------------------
@@ -360,20 +324,20 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
     expect(onError).not.toHaveBeenCalled();
 
     // Drive through 3 retries without exhaustion.
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(3000); });
     expect(onError).not.toHaveBeenCalled();
 
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(6000); });
     expect(onError).not.toHaveBeenCalled();
 
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(12000); });
     expect(onError).not.toHaveBeenCalled();
 
     // 4th fire exhausts → onError must be called exactly once.
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
 
     expect(onError).toHaveBeenCalledTimes(1);
   });
@@ -390,13 +354,13 @@ describe('GTM-STAB-006 AC5: useSearchSSE exponential backoff reconnection', () =
     );
 
     // Exhaust retries.
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(3000); });
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(6000); });
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
     act(() => { jest.advanceTimersByTime(12000); });
-    act(() => { mockInstances[0].onerror?.(); });
+    act(() => { MockEventSource.instances[0].onerror?.(); });
 
     expect(result.current.sseDisconnected).toBe(true);
 

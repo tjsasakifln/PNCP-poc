@@ -93,6 +93,9 @@ jest.mock("../app/buscar/components/DeepAnalysisModal", () => {
   Mock.displayName = "DeepAnalysisModal";
   return Mock;
 });
+jest.mock("../app/components/AddToPipelineButton", () => ({
+  AddToPipelineButton: () => null,
+}));
 
 import { LicitacoesPreview } from "../app/components/LicitacoesPreview";
 
@@ -162,39 +165,20 @@ describe("GTM-FIX-042 — Urgency badge labels", () => {
 // The hook uses dynamic Sentry import; EventSource is polyfilled in jest.setup.js.
 // We simulate the initial onerror by triggering EventSource.onerror immediately.
 
-class MockEventSource {
-  static instances: MockEventSource[] = [];
-  url: string;
-  onerror: ((e: Event) => void) | null = null;
-  onopen: ((e: Event) => void) | null = null;
-  onmessage: ((e: MessageEvent) => void) | null = null;
-  readonly readyState = 0;
-
-  constructor(url: string) {
-    this.url = url;
-    MockEventSource.instances.push(this);
-  }
-
-  close() {}
-  addEventListener() {}
-}
+// Use shared MockEventSource from __tests__/utils (installed globally via jest.setup.js)
+import { MockEventSource } from './utils/mock-event-source';
 
 describe("GTM-FIX-043 — SSE retry delay and initial error logging", () => {
-  let originalEventSource: typeof EventSource;
   let infoSpy: jest.SpyInstance;
   let warnSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    MockEventSource.instances = [];
-    originalEventSource = global.EventSource;
-    global.EventSource = MockEventSource as unknown as typeof EventSource;
     infoSpy = jest.spyOn(console, "info").mockImplementation(() => {});
     warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     jest.useFakeTimers();
   });
 
   afterEach(() => {
-    global.EventSource = originalEventSource;
     infoSpy.mockRestore();
     warnSpy.mockRestore();
     jest.useRealTimers();

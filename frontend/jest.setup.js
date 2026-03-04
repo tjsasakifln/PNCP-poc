@@ -50,24 +50,15 @@ if (!globalThis.crypto.randomUUID) {
 }
 
 // Mock EventSource for jsdom (used by SSE progress tracking)
-if (typeof globalThis.EventSource === 'undefined') {
-  globalThis.EventSource = class MockEventSource {
-    constructor(url) {
-      this.url = url;
-      this.readyState = 0;
-      this.onopen = null;
-      this.onmessage = null;
-      this.onerror = null;
-      // Simulate connection error after a tick (triggers fallback to simulated progress)
-      setTimeout(() => {
-        if (this.onerror) this.onerror(new Event('error'));
-      }, 0);
-    }
-    close() { this.readyState = 2; }
-    addEventListener() {}
-    removeEventListener() {}
-  };
-}
+// Shared MockEventSource from __tests__/utils/mock-event-source.ts (STORY-368)
+// NO auto-trigger onerror — tests control lifecycle explicitly via simulateOpen/simulateError.
+const { MockEventSource } = require('./__tests__/utils/mock-event-source');
+globalThis.EventSource = MockEventSource;
+
+// Reset MockEventSource.instances between tests to prevent state leakage
+beforeEach(() => {
+  MockEventSource.reset();
+});
 
 // Import jest-dom matchers (when @testing-library/jest-dom is installed)
 // These provide custom matchers like .toBeInTheDocument(), .toHaveClass(), etc.
