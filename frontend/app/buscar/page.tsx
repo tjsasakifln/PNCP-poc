@@ -95,10 +95,10 @@ function OnboardingEmptyState({ onAdjustFilters }: { onAdjustFilters: () => void
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
       <h3 className="text-lg font-semibold text-[var(--ink)] mb-2">
-        Sua busca foi concluída
+        Sua análise foi concluída
       </h3>
       <p className="text-sm text-[var(--ink-secondary)] mb-4 max-w-md mx-auto">
-        Não encontramos oportunidades compatíveis no período selecionado. Isso acontece em buscas mais específicas — e pode mudar nos próximos dias.
+        Não encontramos oportunidades compatíveis no período selecionado. Isso acontece em análises mais específicas — e pode mudar nos próximos dias.
       </p>
       <div className="space-y-2 text-sm text-[var(--ink-secondary)] mb-4">
         <p>Para ampliar resultados, tente:</p>
@@ -112,7 +112,7 @@ function OnboardingEmptyState({ onAdjustFilters }: { onAdjustFilters: () => void
         onClick={onAdjustFilters}
         className="px-4 py-2 rounded-lg bg-[var(--brand-blue)] text-white text-sm font-medium hover:bg-[var(--brand-blue-hover)] transition-colors"
       >
-        Refinar busca
+        Refinar análise
       </button>
     </div>
   );
@@ -462,7 +462,7 @@ function HomePageContent() {
     const cached = getLastSearch();
     if (cached?.result) {
       search.setResult(cached.result as BuscaResult);
-      toast.success("Resultados da última busca restaurados.");
+      toast.success("Resultados da última análise restaurados.");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -479,7 +479,7 @@ function HomePageContent() {
   const buscarWithCollapse = useCallback(() => {
     // CRIT-008 AC10: Queue search if backend is offline
     if (backendStatus.status === "offline") {
-      toast.info("Servidor indisponível no momento. A busca será iniciada quando o servidor estiver disponível.");
+      toast.info("Servidor indisponível no momento. A análise será iniciada quando o servidor estiver disponível.");
       queuedSearchRef.current = () => {
         setCustomizeOpen(false);
         // UX-346 AC1/AC5: Mark user as having searched + dismiss first-use tip
@@ -508,25 +508,13 @@ function HomePageContent() {
     if ((backendStatus.status === "online" || backendStatus.status === "recovering") && queuedSearchRef.current) {
       const queuedFn = queuedSearchRef.current;
       queuedSearchRef.current = null;
-      toast.success("Servidor disponível. Executando busca...");
+      toast.success("Servidor disponível. Executando análise...");
       queuedFn();
     }
   }, [backendStatus.status]);
 
-  // TD-006 AC9-15: Navigation guard — warn before leaving with active results
-  const [hasDownloaded, setHasDownloaded] = useState(false);
-  // Reset download flag when a new search starts
-  useEffect(() => {
-    if (search.loading) setHasDownloaded(false);
-  }, [search.loading]);
-  const originalHandleDownload = search.handleDownload;
-  const handleDownloadWithGuard = async () => {
-    await originalHandleDownload();
-    // After successful download, suppress navigation guard (AC15)
-    if (!search.downloadError) {
-      setHasDownloaded(true);
-    }
-  };
+  // UX-407: Navigation guard — only active during search + 30s grace period
+  useNavigationGuard({ isLoading: search.loading });
 
   // STORY-325: PDF Diagnostico Report
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -577,10 +565,6 @@ function HomePageContent() {
     search.setError(null);
   }, [search]);
 
-  useNavigationGuard({
-    hasResults: !!search.result && (search.result.total_filtrado ?? 0) > 0,
-    hasDownloaded,
-  });
 
   // STORY-257B AC5: Elapsed seconds tracker for partial results prompt
   const [searchElapsed, setSearchElapsed] = useState(0);
@@ -718,7 +702,7 @@ function HomePageContent() {
 
             {/* Page Title */}
             <div className="mb-8 animate-fade-in-up">
-              <h1 className="text-2xl sm:text-3xl font-bold font-display text-ink">Busca de Licitações</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold font-display text-ink">Análise de Licitações</h1>
               <p className="text-ink-secondary mt-1 text-sm sm:text-base">
                 Encontre oportunidades de contratação pública de acordo com o momento do seu negócio.
               </p>
@@ -799,7 +783,7 @@ function HomePageContent() {
                 onOrdenacaoChange={filters.setOrdenacao}
                 downloadLoading={search.downloadLoading}
                 downloadError={search.downloadError}
-                onDownload={handleDownloadWithGuard}
+                onDownload={search.handleDownload}
                 onSearch={search.buscar}
                 onRegenerateExcel={search.handleRegenerateExcel}
                 planInfo={planInfo}
@@ -863,12 +847,12 @@ function HomePageContent() {
       <Dialog
         isOpen={search.showSaveDialog}
         onClose={() => { search.setShowSaveDialog(false); search.setSaveSearchName(""); }}
-        title="Salvar Busca"
+        title="Salvar Análise"
         className="max-w-md"
         id="save-search"
       >
         <div className="mb-4">
-          <label htmlFor="save-search-name" className="block text-sm font-medium text-ink-secondary mb-2">Nome da busca:</label>
+          <label htmlFor="save-search-name" className="block text-sm font-medium text-ink-secondary mb-2">Nome da análise:</label>
           <input
             id="save-search-name"
             type="text"
@@ -909,9 +893,9 @@ function HomePageContent() {
       >
         <div className="space-y-3">
           {([
-            ["Executar busca", { key: 'k', ctrlKey: true, action: () => {}, description: '' }],
+            ["Executar análise", { key: 'k', ctrlKey: true, action: () => {}, description: '' }],
             ["Selecionar todos os estados", { key: 'a', ctrlKey: true, action: () => {}, description: '' }],
-            ["Executar busca (alternativo)", { key: 'Enter', ctrlKey: true, action: () => {}, description: '' }],
+            ["Executar análise (alternativo)", { key: 'Enter', ctrlKey: true, action: () => {}, description: '' }],
           ] as [string, KeyboardShortcut][]).map(([label, shortcut]) => (
             <div key={label} className="flex items-center justify-between py-2 border-b border-strong">
               <span className="text-ink">{label}</span>
