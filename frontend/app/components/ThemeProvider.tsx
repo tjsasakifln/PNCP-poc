@@ -53,8 +53,8 @@ function applyTheme(themeId: ThemeId) {
 
   if (config.isDark) {
     root.style.setProperty("--ink-secondary", "#a8b4c0");
-    root.style.setProperty("--ink-muted", "#6b7a8a");
-    root.style.setProperty("--ink-faint", "#3a4555");
+    root.style.setProperty("--ink-muted", "#8b9bb0");
+    root.style.setProperty("--ink-faint", "#5a6a7a");
     root.style.setProperty("--brand-blue-subtle", "rgba(17, 109, 255, 0.12)");
     root.style.setProperty("--surface-0", config.canvas);
     root.style.setProperty("--surface-1", "#1a1d22");

@@ -1,0 +1,190 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UX-410: LicitacaoCard dark mode snapshot should render LicitacaoCard wrapped in dark ThemeProvider 1`] = `
+<article
+  aria-labelledby="licitacao-title-snapshot-dark-001"
+  class="
+        backdrop-blur-lg bg-white/60 dark:bg-gray-900/50
+        border border-white/20 dark:border-white/10
+        rounded-card shadow-glass
+        transition-all duration-200
+        
+        
+      "
+>
+  <div
+    class="flex flex-wrap items-center justify-between gap-2 p-4 pb-3 border-b border-white/15 dark:border-white/10"
+  >
+    <div
+      class="flex flex-wrap items-center gap-2"
+    >
+      <span
+        aria-label="Status: Aberta"
+        class="
+        inline-flex items-center gap-1 px-2 py-0.5
+        bg-success-subtle text-success
+        border border-success/30
+        rounded-full font-medium text-xs
+        
+      "
+        role="status"
+      >
+        <svg
+          aria-hidden="true"
+          aria-label="Ícone"
+          class="w-2 h-2"
+          fill="currentColor"
+          role="img"
+          viewBox="0 0 8 8"
+        >
+          <circle
+            cx="4"
+            cy="4"
+            r="3"
+          />
+        </svg>
+        <span>
+          Aberta
+        </span>
+      </span>
+      <span
+        class="inline-flex items-center px-2 py-0.5 rounded bg-surface-2 text-ink-secondary text-xs font-medium"
+      >
+        Pregão Eletrônico
+      </span>
+    </div>
+  </div>
+  <div
+    class="p-4 space-y-3"
+  >
+    <h3
+      class="font-medium text-ink leading-snug text-base line-clamp-3"
+      id="licitacao-title-snapshot-dark-001"
+    >
+      Contratação de serviços de TI para manutenção
+    </h3>
+    <p
+      class="text-xs text-ink-muted font-mono"
+    >
+      snapshot-dark-001
+    </p>
+    <p
+      class="text-sm text-ink-secondary truncate"
+    >
+      Ministério da Economia
+    </p>
+    <div
+      class="flex items-center gap-1 text-sm text-ink-muted"
+    >
+      <svg
+        aria-hidden="true"
+        aria-label="Ícone"
+        class="w-4 h-4"
+        fill="none"
+        role="img"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span>
+        DF
+         - Brasília
+      </span>
+    </div>
+    <div
+      class="space-y-2 p-3 border border-white/15 dark:border-white/10 rounded-lg bg-white/30 dark:bg-white/5 backdrop-blur-sm"
+    />
+    <div
+      class="pt-2"
+    >
+      <span
+        class="text-2xl font-bold font-data tabular-nums text-brand-navy"
+        data-testid="valor-display"
+      >
+        R$ 250.000
+      </span>
+    </div>
+  </div>
+  <div
+    class="flex items-center justify-between gap-2 p-4 pt-3 border-t border-white/15 dark:border-white/10 bg-white/20 dark:bg-white/5"
+  >
+    <a
+      class="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button   hover:bg-brand-blue-hover transition-colors"
+      href="https://pncp.gov.br/app/editais/test"
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <svg
+        aria-hidden="true"
+        aria-label="Ícone"
+        class="w-4 h-4"
+        fill="none"
+        role="img"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      Ver Edital
+      <svg
+        aria-hidden="true"
+        aria-label="Ícone"
+        class="w-3.5 h-3.5"
+        fill="none"
+        role="img"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </a>
+    <div
+      class="flex items-center gap-1"
+    >
+      <button
+        aria-label="Compartilhar esta licitação"
+        class="p-2 rounded-button text-ink-muted hover:text-brand-blue hover:bg-brand-blue-subtle transition-colors"
+        title="Compartilhar"
+      >
+        <svg
+          aria-hidden="true"
+          aria-label="Ícone"
+          class="w-5 h-5"
+          fill="none"
+          role="img"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+</article>
+`;

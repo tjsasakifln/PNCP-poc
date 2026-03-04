@@ -14,8 +14,8 @@ O tema light já é o padrão (`useState<ThemeId>("light")` em `ThemeProvider.ts
 - Flash de tema: `useState("light")` inicializa no servidor, mas `useEffect` pode trocar para valor do localStorage causando flash.
 
 ## Critérios de Aceitação
-- [ ] AC1: Manter "light" como tema padrão para novos usuários (confirmar).
-- [ ] AC2: Adicionar script inline no `<head>` (antes do React) que lê localStorage e aplica classe `dark` imediatamente, evitando flash de tema:
+- [x] AC1: Manter "light" como tema padrão para novos usuários (confirmar).
+- [x] AC2: Adicionar script inline no `<head>` (antes do React) que lê localStorage e aplica classe `dark` imediatamente, evitando flash de tema:
   ```html
   <script>
     (function() {
@@ -26,18 +26,18 @@ O tema light já é o padrão (`useState<ThemeId>("light")` em `ThemeProvider.ts
     })();
   </script>
   ```
-- [ ] AC3: Auditar TODOS os pares de cor do dark mode e garantir WCAG AA (4.5:1 texto normal, 3:1 texto grande/UI):
+- [x] AC3: Auditar TODOS os pares de cor do dark mode e garantir WCAG AA (4.5:1 texto normal, 3:1 texto grande/UI):
   - `--ink` / `--canvas`: mínimo 4.5:1
   - `--ink-secondary` / `--canvas`: mínimo 4.5:1
   - `--ink-muted` / `--canvas`: mínimo 4.5:1
   - `--ink-muted` / `--surface-1`: mínimo 4.5:1
   - `--ink-faint` / `--canvas`: mínimo 3:1 (uso apenas em texto grande/decorativo)
   - `--success`, `--error`, `--warning` / respectivos `--*-subtle`: mínimo 4.5:1
-- [ ] AC4: Ajustar `--ink-muted` dark de `#6b7a8a` para `#8b9bb0` (contraste 5.3:1 contra `#121212`).
-- [ ] AC5: Ajustar `--ink-faint` dark de `#3a4555` para `#5a6a7a` (contraste 3.4:1, uso apenas decorativo).
-- [ ] AC6: Nunca usar `#000000` puro como background em dark mode (manter `#121212` ou similar).
-- [ ] AC7: Nunca usar `#ffffff` puro como texto em dark mode (manter `#e0e0e0` ou similar).
-- [ ] AC8: Adicionar teste automatizado que valida razão de contraste para todos os pares de cor do ThemeProvider.
+- [x] AC4: Ajustar `--ink-muted` dark de `#6b7a8a` para `#8b9bb0` (contraste 5.3:1 contra `#121212`).
+- [x] AC5: Ajustar `--ink-faint` dark de `#3a4555` para `#5a6a7a` (contraste 3.4:1, uso apenas decorativo).
+- [x] AC6: Nunca usar `#000000` puro como background em dark mode (manter `#121212` ou similar).
+- [x] AC7: Nunca usar `#ffffff` puro como texto em dark mode (manter `#e0e0e0` ou similar).
+- [x] AC8: Adicionar teste automatizado que valida razão de contraste para todos os pares de cor do ThemeProvider.
 
 ## Arquivos Impactados
 - `frontend/app/components/ThemeProvider.tsx` — Ajustar tokens de cor do dark mode.
@@ -45,11 +45,11 @@ O tema light já é o padrão (`useState<ThemeId>("light")` em `ThemeProvider.ts
 - `frontend/tailwind.config.js` — Verificar se tokens custom são usados consistentemente.
 
 ## Testes Necessários
-- [ ] Teste automatizado de contraste WCAG para todos os pares de cor (light + dark).
-- [ ] Teste que tema padrão é "light" quando nada no localStorage.
-- [ ] Teste que script anti-flash aplica classe `dark` antes do primeiro paint.
-- [ ] Teste visual (snapshot) do LicitacaoCard em dark mode.
-- [ ] Teste que `ink-muted` tem contraste >= 4.5:1 no dark mode.
+- [x] Teste automatizado de contraste WCAG para todos os pares de cor (light + dark).
+- [x] Teste que tema padrão é "light" quando nada no localStorage.
+- [x] Teste que script anti-flash aplica classe `dark` antes do primeiro paint.
+- [x] Teste visual (snapshot) do LicitacaoCard em dark mode.
+- [x] Teste que `ink-muted` tem contraste >= 4.5:1 no dark mode.
 
 ## Notas Técnicas
 - Ferramenta de cálculo de contraste: `(L1 + 0.05) / (L2 + 0.05)` onde L1 e L2 são luminâncias relativas.
