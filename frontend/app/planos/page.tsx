@@ -608,7 +608,7 @@ export default function PlanosPage() {
               disabled={checkoutLoading}
               className="w-full py-4 rounded-button text-lg font-bold transition-all bg-amber-600 text-white hover:bg-amber-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {checkoutLoading ? "Processando..." : "Falar com vendas"}
+              {checkoutLoading ? "Processando..." : "Começar com Consultoria"}
             </button>
             <p className="mt-3 text-center text-xs text-[var(--ink-muted)]">
               Ideal para consultorias com 3-5 colaboradores

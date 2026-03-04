@@ -936,9 +936,9 @@ describe("PlanosPage — Consultoria plan card (AC21/AC22)", () => {
     expect(screen.getByText(/Logo da consultoria nos relatórios/i)).toBeInTheDocument();
   });
 
-  it("renders Falar com vendas CTA button", () => {
+  it("renders Começar com Consultoria CTA button", () => {
     render(<PlanosPage />);
-    expect(screen.getByRole("button", { name: /Falar com vendas/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Começar com Consultoria/i })).toBeInTheDocument();
   });
 
   // ── UTM badge ─────────────────────────────────────────────────────────────
@@ -1008,14 +1008,14 @@ describe("PlanosPage — Consultoria plan card (AC21/AC22)", () => {
 
   // ── CTA for anonymous user ─────────────────────────────────────────────────
 
-  it("redirects to /login when anonymous user clicks Falar com vendas", () => {
+  it("redirects to /login when anonymous user clicks Começar com Consultoria", () => {
     Object.defineProperty(window, "location", {
       writable: true,
       value: { ...originalLocation, href: "" },
     });
 
     render(<PlanosPage />);
-    fireEvent.click(screen.getByRole("button", { name: /Falar com vendas/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Começar com Consultoria/i }));
 
     expect(window.location.href).toBe("/login");
   });

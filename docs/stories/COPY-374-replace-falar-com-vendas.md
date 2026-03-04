@@ -15,8 +15,8 @@ O CTA "Falar com vendas" para o plano Consultoria cria fricção desnecessária.
 
 ## Critérios de Aceitação
 
-- [ ] AC1: `planos/page.tsx:611` — "Falar com vendas" → "Começar com Consultoria"
-- [ ] AC2: Testes atualizados (`team-management.test.tsx` linhas 939, 941, 1011, 1018)
+- [x] AC1: `planos/page.tsx:611` — "Falar com vendas" → "Começar com Consultoria"
+- [x] AC2: Testes atualizados (`team-management.test.tsx` linhas 939, 941, 1011, 1018)
 
 ## Copy Recomendada
 
