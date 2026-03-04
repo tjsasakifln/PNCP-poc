@@ -10,4 +10,3 @@ Host: https://smartlic.tech
 
 # Sitemaps
 Sitemap: https://smartlic.tech/sitemap.xml
-Sitemap: https://smartlic.tech/sitemap-blog.xml
