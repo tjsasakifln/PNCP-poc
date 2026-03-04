@@ -31,7 +31,7 @@ describe("ZeroResultsSuggestions", () => {
     expect(screen.getByTestId("zero-results-suggestions")).toBeInTheDocument();
     expect(screen.getByTestId("source-total-message")).toBeInTheDocument();
     expect(screen.getByText("47")).toBeInTheDocument();
-    expect(screen.getByText(/licitacoes encontradas/)).toBeInTheDocument();
+    expect(screen.getByText(/licitações encontradas/)).toBeInTheDocument();
     expect(screen.getByText(/Informatica/)).toBeInTheDocument();
   });
 
@@ -173,7 +173,7 @@ describe("FilterStatsBreakdown", () => {
 
     render(<FilterStatsBreakdown stats={stats} />);
 
-    expect(screen.getByText(/30 licitacoes removidas/)).toBeInTheDocument();
+    expect(screen.getByText(/30 licitações removidas/)).toBeInTheDocument();
   });
 });
 
@@ -192,7 +192,7 @@ describe("FilterRelaxedBanner", () => {
 
     expect(screen.getByTestId("filter-relaxed-banner")).toBeInTheDocument();
     expect(screen.getByText("Resultados com filtro ampliado")).toBeInTheDocument();
-    expect(screen.getByText(/menor correspondencia de palavras-chave/)).toBeInTheDocument();
+    expect(screen.getByText(/menor correspondência de palavras-chave/)).toBeInTheDocument();
     expect(screen.getByText(/5 resultados encontrados/)).toBeInTheDocument();
   });
 
@@ -221,7 +221,7 @@ describe("FilterRelaxedBanner", () => {
       />
     );
 
-    expect(screen.getByText(/criterios de filtragem foram ampliados/)).toBeInTheDocument();
+    expect(screen.getByText(/critérios de filtragem foram ampliados/)).toBeInTheDocument();
   });
 
   it("shows value range message for value_range_expanded", () => {
@@ -245,7 +245,7 @@ describe("UfFailureDetail", () => {
     render(<UfFailureDetail uf="SP" reason="timeout" source="PNCP" />);
 
     expect(screen.getByTestId("uf-failure-SP")).toBeInTheDocument();
-    expect(screen.getByText(/PNCP nao respondeu para SP/)).toBeInTheDocument();
+    expect(screen.getByText(/PNCP não respondeu para SP/)).toBeInTheDocument();
     expect(screen.getByText(/tempo esgotado/)).toBeInTheDocument();
   });
 
@@ -260,7 +260,7 @@ describe("UfFailureDetail", () => {
     render(<UfFailureDetail uf="MG" reason="offline" source="ComprasGov" />);
 
     expect(screen.getByTestId("uf-failure-MG")).toBeInTheDocument();
-    expect(screen.getByText(/Fonte ComprasGov indisponivel para MG/)).toBeInTheDocument();
+    expect(screen.getByText(/Fonte ComprasGov indisponível para MG/)).toBeInTheDocument();
   });
 
   it("shows generic error message", () => {

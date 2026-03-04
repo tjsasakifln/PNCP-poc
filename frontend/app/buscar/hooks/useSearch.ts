@@ -925,7 +925,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         // Async mode — skip result processing, SSE will handle it
         return;
       }
-      if (!data) throw new Error("Nao foi possivel obter os resultados. Tente novamente.");
+      if (!data) throw new Error("Não foi possível obter os resultados. Tente novamente.");
 
       // SAB-001 AC2: Diagnostic log — POST returned with data
       console.info(`[SAB-001] POST /buscar returned: ${data.licitacoes?.length ?? 0} results, total_raw=${data.total_raw}, total_filtrado=${data.total_filtrado}`);
@@ -1029,7 +1029,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         // AC9: Keep cached data visible, show toast instead of error
         setResult(previousResult);
         setError(null);
-        toast.info("Nao foi possivel atualizar os dados. Mostrando resultados anteriores.");
+        toast.info("Não foi possível atualizar os dados. Mostrando resultados anteriores.");
       } else {
         // STAB-006 AC3: On timeout, check localStorage for partial results
         const isTimeoutError = searchError.httpStatus === 524 || searchError.httpStatus === 504 ||
@@ -1208,9 +1208,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       const response = await fetch(downloadEndpoint, { headers: downloadHeaders });
 
       if (!response.ok) {
-        if (response.status === 401) { window.location.href = "/login"; throw new Error('Faca login para continuar'); }
-        if (response.status === 404) throw new Error('Arquivo expirado. Faca uma nova busca para gerar o Excel.');
-        throw new Error('Nao foi possivel baixar o arquivo. Tente novamente.');
+        if (response.status === 401) { window.location.href = "/login"; throw new Error('Faça login para continuar'); }
+        if (response.status === 404) throw new Error('Arquivo expirado. Faça uma nova busca para gerar o Excel.');
+        throw new Error('Não foi possível baixar o arquivo. Tente novamente.');
       }
 
       const blob = await response.blob();
@@ -1241,7 +1241,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         source: result.download_url ? 'object_storage' : 'filesystem'
       });
     } catch (e) {
-      setDownloadError(getUserFriendlyError(e instanceof Error ? e : 'Nao foi possivel baixar o arquivo.'));
+      setDownloadError(getUserFriendlyError(e instanceof Error ? e : 'Não foi possível baixar o arquivo.'));
     } finally {
       setDownloadLoading(false);
     }
@@ -1398,7 +1398,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       const response = await fetch(`/api/buscar-results/${encodeURIComponent(sid)}`, { headers });
       if (!response.ok) {
         console.warn(`[A-04] Failed to fetch live results: ${response.status}`);
-        toast.info("Nao foi possivel carregar os dados atualizados. Tente uma nova busca.");
+        toast.info("Não foi possível carregar os dados atualizados. Tente uma nova busca.");
         return;
       }
 

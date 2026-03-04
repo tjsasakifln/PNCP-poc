@@ -58,7 +58,7 @@ export function ZeroResultsSuggestions({
         {hasSourceData ? (
           <p className="text-sm text-[var(--ink-secondary)] mb-4 max-w-lg mx-auto" data-testid="source-total-message">
             <span className="font-semibold text-[var(--ink)]">{totalFromSources}</span>{" "}
-            {totalFromSources === 1 ? "licitacao encontrada" : "licitacoes encontradas"}{" "}
+            {totalFromSources === 1 ? "licitação encontrada" : "licitações encontradas"}{" "}
             nas fontes oficiais, mas nenhuma corresponde ao setor{" "}
             <span className="font-medium">{sectorName}</span>.
           </p>
@@ -81,7 +81,7 @@ export function ZeroResultsSuggestions({
         {nearbyResultsCount != null && nearbyResultsCount > 0 && onViewNearbyResults && (
           <div className="mb-6 p-4 bg-[var(--brand-blue-subtle)] border border-[var(--border-accent)] rounded-card max-w-md mx-auto">
             <p className="text-sm text-[var(--ink)] mb-3">
-              Encontramos <span className="font-bold text-[var(--brand-blue)]">{nearbyResultsCount}</span> oportunidades em estados proximos.
+              Encontramos <span className="font-bold text-[var(--brand-blue)]">{nearbyResultsCount}</span> oportunidades em estados próximos.
             </p>
             <button
               onClick={onViewNearbyResults}

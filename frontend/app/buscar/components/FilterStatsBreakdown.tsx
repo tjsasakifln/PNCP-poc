@@ -78,7 +78,7 @@ export function FilterStatsBreakdown({ stats }: FilterStatsBreakdownProps) {
       </h4>
 
       <p className="text-xs text-[var(--ink-secondary)] mb-4">
-        {totalFound} {totalFound === 1 ? "licitacao removida" : "licitacoes removidas"} pelos filtros:
+        {totalFound} {totalFound === 1 ? "licitação removida" : "licitações removidas"} pelos filtros:
       </p>
 
       <div className="space-y-3">

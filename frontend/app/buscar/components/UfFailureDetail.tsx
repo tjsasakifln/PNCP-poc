@@ -60,7 +60,7 @@ function getFailureConfig(uf: string, reason: string, source: string): FailureCo
   switch (reason) {
     case "timeout":
       return {
-        message: `${source} nao respondeu para ${uf} (tempo esgotado)`,
+        message: `${source} não respondeu para ${uf} (tempo esgotado)`,
         icon: (
           <svg className={iconSize} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -78,7 +78,7 @@ function getFailureConfig(uf: string, reason: string, source: string): FailureCo
       };
     case "offline":
       return {
-        message: `Fonte ${source} indisponivel para ${uf}`,
+        message: `Fonte ${source} indisponível para ${uf}`,
         icon: (
           <svg className={iconSize} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m-2.829-2.829a5 5 0 000-7.07m-4.243 9.9a9 9 0 01-4.95-4.95M3 3l18 18" />

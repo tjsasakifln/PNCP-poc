@@ -332,7 +332,7 @@ export function getHumanizedError(
   // Timeout / 524
   if (httpStatus === 524 || httpStatus === 504 || msg.includes("timeout") || msg.includes("demorou")) {
     return {
-      message: "A busca demorou mais que o esperado. Tente reduzir o numero de estados.",
+      message: "A busca demorou mais que o esperado. Tente reduzir o número de estados.",
       actionLabel: "Tentar novamente",
       secondaryActionLabel: "Reduzir escopo",
       tone: "yellow",
@@ -353,7 +353,7 @@ export function getHumanizedError(
   // Backend down (502/503)
   if (httpStatus === 502 || httpStatus === 503) {
     return {
-      message: "Nossos servidores estao se atualizando.",
+      message: "Nossos servidores estão se atualizando.",
       actionLabel: "Tentar novamente",
       tone: "blue",
       suggestReduceScope: false,
@@ -363,7 +363,7 @@ export function getHumanizedError(
   // Rate limit
   if (httpStatus === 429) {
     return {
-      message: "Muitas consultas simultaneas. Aguarde alguns segundos.",
+      message: "Muitas consultas simultâneas. Aguarde alguns segundos.",
       actionLabel: "Tentar novamente",
       tone: "yellow",
       suggestReduceScope: false,
@@ -378,7 +378,7 @@ export function getHumanizedError(
     msg.includes("network error")
   ) {
     return {
-      message: "Erro de conexao. Verifique sua internet e tente novamente.",
+      message: "Erro de conexão. Verifique sua internet e tente novamente.",
       actionLabel: "Tentar novamente",
       tone: "yellow",
       suggestReduceScope: false,

@@ -313,7 +313,7 @@ describe("useSearch failure scenarios (AC17)", () => {
     const filters = makeFilters();
     const { result } = renderHook(() => useSearch(filters as any));
 
-    expect(result.current.getRetryCooldown("Erro de conexao", undefined)).toBe(
+    expect(result.current.getRetryCooldown("Erro de conexão", undefined)).toBe(
       10
     );
   });

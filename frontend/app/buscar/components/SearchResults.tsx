@@ -960,7 +960,7 @@ export default function SearchResults({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                         <span className="font-medium">
-                          {result.metadata.termos_ignorados.length} termo{result.metadata.termos_ignorados.length > 1 ? 's' : ''} nao utilizado{result.metadata.termos_ignorados.length > 1 ? 's' : ''}
+                          {result.metadata.termos_ignorados.length} termo{result.metadata.termos_ignorados.length > 1 ? 's' : ''} não utilizado{result.metadata.termos_ignorados.length > 1 ? 's' : ''}
                         </span>
                       </summary>
                       <div className="mt-2 pl-6 space-y-1">
@@ -990,7 +990,7 @@ export default function SearchResults({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>
-                Nenhum resultado atendeu todos os criterios de relevancia. Os filtros foram flexibilizados para exibir resultados parciais.
+                Nenhum resultado atendeu todos os critérios de relevância. Os filtros foram flexibilizados para exibir resultados parciais.
               </span>
             </div>
           )}
@@ -999,7 +999,7 @@ export default function SearchResults({
           {result.hidden_by_min_match != null && result.hidden_by_min_match > 0 && (
             <div className="px-4 py-3 bg-surface-2 border border-border rounded-card text-sm text-ink-secondary flex items-center justify-between">
               <span>
-                {result.hidden_by_min_match} resultado{result.hidden_by_min_match > 1 ? "s" : ""} com correspondencia parcial {result.hidden_by_min_match > 1 ? "foram ocultados" : "foi ocultado"}.
+                {result.hidden_by_min_match} resultado{result.hidden_by_min_match > 1 ? "s" : ""} com correspondência parcial {result.hidden_by_min_match > 1 ? "foram ocultados" : "foi ocultado"}.
               </span>
               <button
                 onClick={() => {
@@ -1032,7 +1032,7 @@ export default function SearchResults({
             {trialPhase === "limited_access" && (
               <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700/40 rounded-lg flex items-center justify-between">
                 <span className="text-sm text-blue-800 dark:text-blue-200">
-                  Ver analise completa com SmartLic Pro
+                  Ver análise completa com SmartLic Pro
                 </span>
                 <Link
                   href="/planos"

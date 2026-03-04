@@ -53,7 +53,7 @@ const PIPELINE_TOUR_STEPS: TourStep[] = [
   {
     id: 'pipeline-alerts',
     title: 'Alertas e prazos',
-    text: '<span class="tour-step-counter">Passo 3 de 3</span><p>Fique atento aos prazos — cards com borda vermelha estao proximos do encerramento.</p>',
+    text: '<span class="tour-step-counter">Passo 3 de 3</span><p>Fique atento aos prazos — cards com borda vermelha estão próximos do encerramento.</p>',
     attachTo: { element: '[data-tour="kanban-columns"]', on: 'bottom' },
   },
 ];

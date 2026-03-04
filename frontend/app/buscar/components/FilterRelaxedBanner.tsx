@@ -57,7 +57,7 @@ export function FilterRelaxedBanner({
         </p>
         {originalCount === 0 && relaxedCount > 0 && (
           <p className="text-xs text-blue-500 dark:text-blue-500 mt-1">
-            {relaxedCount} {relaxedCount === 1 ? "resultado encontrado" : "resultados encontrados"} com criterios ampliados.
+            {relaxedCount} {relaxedCount === 1 ? "resultado encontrado" : "resultados encontrados"} com critérios ampliados.
           </p>
         )}
       </div>
@@ -91,12 +91,12 @@ export function FilterRelaxedBanner({
 function getRelaxationMessage(level?: string): string {
   switch (level) {
     case "keywords_relaxed":
-      return "Incluimos licitacoes com menor correspondencia de palavras-chave para ampliar seus resultados.";
+      return "Incluímos licitações com menor correspondência de palavras-chave para ampliar seus resultados.";
     case "value_range_expanded":
       return "A faixa de valor foi ampliada para incluir mais oportunidades.";
     case "min_match_lowered":
-      return "O limite minimo de correspondencia foi reduzido para mostrar mais resultados.";
+      return "O limite mínimo de correspondência foi reduzido para mostrar mais resultados.";
     default:
-      return "Os criterios de filtragem foram ampliados para incluir mais oportunidades relevantes.";
+      return "Os critérios de filtragem foram ampliados para incluir mais oportunidades relevantes.";
   }
 }

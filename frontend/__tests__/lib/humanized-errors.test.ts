@@ -48,13 +48,13 @@ describe("getHumanizedError (STAB-006 AC2)", () => {
   test("429 rate limit returns yellow tone", () => {
     const result = getHumanizedError(429, "Too Many Requests");
     expect(result.tone).toBe("yellow");
-    expect(result.message).toContain("simultaneas");
+    expect(result.message).toContain("simultâneas");
   });
 
   test("network error returns yellow tone", () => {
     const result = getHumanizedError(null, "Failed to fetch");
     expect(result.tone).toBe("yellow");
-    expect(result.message).toContain("conexao");
+    expect(result.message).toContain("conexão");
   });
 
   test("unknown error returns blue tone with generic message", () => {
