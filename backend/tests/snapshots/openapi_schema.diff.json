@@ -3398,10 +3398,17 @@
               "title": "Urgencia"
             },
             "valor": {
-              "description": "Estimated total value in BRL",
-              "minimum": 0.0,
-              "title": "Valor",
-              "type": "number"
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Estimated total value in BRL. Null when source does not provide value data (e.g., PCP v2).",
+              "title": "Valor"
             },
             "viability_factors": {
               "anyOf": [
@@ -3452,8 +3459,7 @@
             "pncp_id",
             "objeto",
             "orgao",
-            "uf",
-            "valor"
+            "uf"
           ],
           "title": "LicitacaoItem",
           "type": "object"

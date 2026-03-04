@@ -1054,7 +1054,7 @@ class TestFiltrarPorValor:
         assert len(result) == 1
 
     def test_handles_zero_and_none_values(self):
-        """Should handle zero and missing values."""
+        """Should handle zero and missing values — UX-401: None/0/missing pass through."""
         bids = [
             {"valorTotalEstimado": 0},
             {"valorTotalEstimado": None},
@@ -1062,7 +1062,8 @@ class TestFiltrarPorValor:
             {"valorTotalEstimado": 100000},
         ]
         result = filtrar_por_valor(bids, valor_min=50000)
-        assert len(result) == 1
+        # UX-401: bids with no value data (0, None, missing) pass through value filters
+        assert len(result) == 4
 
 
 class TestFiltrarPorEsfera:
@@ -1318,31 +1319,34 @@ class TestFiltrarPorValorEdgeCases:
         assert len(result) == 1
 
     def test_value_list_type_returns_zero(self):
-        """Non-numeric type (list) should be treated as 0."""
+        """Non-numeric type (list) should be treated as 0 — UX-401: passes through."""
         bids = [
             {"valorTotalEstimado": [100000]},  # Invalid type
             {"valorTotalEstimado": 100000},
         ]
         result = filtrar_por_valor(bids, valor_min=50000)
-        assert len(result) == 1
+        # UX-401: invalid types resolve to 0/None and pass through
+        assert len(result) == 2
 
     def test_value_dict_type_returns_zero(self):
-        """Non-numeric type (dict) should be treated as 0."""
+        """Non-numeric type (dict) should be treated as 0 — UX-401: passes through."""
         bids = [
             {"valorTotalEstimado": {"amount": 100000}},  # Invalid type
             {"valorTotalEstimado": 100000},
         ]
         result = filtrar_por_valor(bids, valor_min=50000)
-        assert len(result) == 1
+        # UX-401: invalid types resolve to 0/None and pass through
+        assert len(result) == 2
 
     def test_value_empty_string(self):
-        """Empty string value should be treated as 0."""
+        """Empty string value should be treated as 0 — UX-401: passes through."""
         bids = [
             {"valorTotalEstimado": ""},
             {"valorTotalEstimado": 100000},
         ]
         result = filtrar_por_valor(bids, valor_min=50000)
-        assert len(result) == 1
+        # UX-401: empty string resolves to 0/None and passes through
+        assert len(result) == 2
 
 
 class TestFiltrarPorEsferaEdgeCases:

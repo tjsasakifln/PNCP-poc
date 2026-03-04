@@ -193,10 +193,10 @@ class TestAC19LLMFallback:
             setor="vestuario",
         )
 
-        # All rejected due to LLM failure (fallback = REJECT)
-        assert len(aprovadas) == 0
+        # STORY-354: LLM failure fallback changed from REJECT to PENDING_REVIEW
+        # PENDING_REVIEW bids are now merged into results
+        assert len(aprovadas) == 3
         assert stats["llm_zero_match_calls"] == 3
-        assert stats["llm_zero_match_rejeitadas"] == 3
 
 
 # ==============================================================================

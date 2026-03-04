@@ -301,7 +301,7 @@ describe("AC11: Deadline color coding", () => {
     render(
       <LicitacoesPreview licitacoes={[bid]} previewCount={5} excelAvailable={true} />
     );
-    // R$ 1.500.000 format
-    expect(screen.getByText(/R\$\s*1\.500\.000/)).toBeInTheDocument();
+    // UX-401 AC7: Now uses formatCurrencyBR with abbreviation for >= 1M
+    expect(screen.getByText(/R\$\s*1,5\s*mi/)).toBeInTheDocument();
   });
 });

@@ -79,8 +79,8 @@ describe('PipelineCard', () => {
     it('renders formatted currency value', () => {
       render(<PipelineCard item={mockItem} />);
 
-      // Brazilian currency format
-      expect(screen.getByText(/R\$\s*150\.000,00/)).toBeInTheDocument();
+      // UX-401 AC7: Now uses formatCurrencyBR (no decimals for values under 1M)
+      expect(screen.getByText(/R\$\s*150\.000/)).toBeInTheDocument();
     });
 
     it('does not render UF badge when UF is null', () => {
