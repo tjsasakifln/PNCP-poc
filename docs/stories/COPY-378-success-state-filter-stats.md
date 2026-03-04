@@ -15,11 +15,11 @@ Quando o SmartLic retorna 47 resultados de 1.200 analisados, o usuário vê "47 
 
 ## Critérios de Aceitação
 
-- [ ] AC1: Quando resultados retornam, exibir linha de contexto acima dos cards: "Analisamos {total_analyzed} oportunidades e selecionamos {total_results} compatíveis com seu perfil."
-- [ ] AC2: `total_analyzed` vem do campo `filter_stats.total_before_filter` (já disponível no backend response)
-- [ ] AC3: Se `total_analyzed` não estiver disponível, não exibir a linha (graceful degradation)
-- [ ] AC4: Estilo discreto (texto cinza, font-size sm) — informativo, não chamativo
-- [ ] AC5: Testes para os 3 cenários: com stats, sem stats, zero resultados
+- [x] AC1: Quando resultados retornam, exibir linha de contexto acima dos cards: "Analisamos {total_analyzed} oportunidades e selecionamos {total_results} compatíveis com seu perfil."
+- [x] AC2: `total_analyzed` vem do campo `filter_stats.total_before_filter` (já disponível no backend response)
+- [x] AC3: Se `total_analyzed` não estiver disponível, não exibir a linha (graceful degradation)
+- [x] AC4: Estilo discreto (texto cinza, font-size sm) — informativo, não chamativo
+- [x] AC5: Testes para os 3 cenários: com stats, sem stats, zero resultados
 
 ## Copy Recomendada
 

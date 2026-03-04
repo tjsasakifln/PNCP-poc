@@ -721,9 +721,9 @@ export default function SearchResults({
                   </div>
                 )}
               </div>
-              {rawCount > 0 && (
-                <p className="text-sm text-ink-secondary mt-0.5" data-testid="results-subtitle">
-                  Analisamos {rawCount.toLocaleString("pt-BR")} editais em {ufsSelecionadas.size} {ufsSelecionadas.size === 1 ? 'estado' : 'estados'} e selecionamos {result.resumo.total_oportunidades} com maior aderência ao seu perfil
+              {filterSummary && filterSummary.totalRaw > 0 && (
+                <p className="text-sm text-ink-secondary mt-0.5" data-testid="filter-context-line">
+                  Analisamos {filterSummary.totalRaw.toLocaleString("pt-BR")} oportunidades e selecionamos {result.resumo.total_oportunidades} {result.resumo.total_oportunidades === 1 ? 'compatível' : 'compatíveis'} com seu perfil
                   {/* C-02 AC9: Confidence distribution counts */}
                   {(() => {
                     const counts = { high: 0, medium: 0, low: 0 };
