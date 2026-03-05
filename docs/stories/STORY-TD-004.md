@@ -16,22 +16,22 @@ Remover a duplicacao de rotas montadas 2x no `main.py`: uma vez no root (`/`) e 
 ## Acceptance Criteria
 
 ### Pre-requisito: Analise de Uso
-- [ ] AC1: Verificar Railway access logs dos ultimos 30 dias para chamadas em rotas SEM prefixo `/v1/` (ex: `GET /health`, `POST /buscar` vs `POST /v1/buscar`)
-- [ ] AC2: Documentar quais rotas legacy tem trafego real (se alguma, criar redirect temporario)
-- [ ] AC3: Verificar frontend `app/api/` proxy routes — garantir que todas apontam para `/v1/` endpoints
+- [x] AC1: Verificar Railway access logs dos ultimos 30 dias para chamadas em rotas SEM prefixo `/v1/` (ex: `GET /health`, `POST /buscar` vs `POST /v1/buscar`)
+- [x] AC2: Documentar quais rotas legacy tem trafego real (se alguma, criar redirect temporario)
+- [x] AC3: Verificar frontend `app/api/` proxy routes — garantir que todas apontam para `/v1/` endpoints
 
 ### Implementacao
-- [ ] AC4: Adicionar deprecation counter metric (`smartlic_legacy_route_calls_total`) ANTES de remover — deploy, aguardar 48h, verificar contagem
-- [ ] AC5: Remover todos `include_router()` calls sem prefixo `/v1/` do `main.py`
-- [ ] AC6: Manter APENAS os `include_router()` calls com `prefix="/v1/"` (ou equivalente)
-- [ ] AC7: Endpoint `/health` (sem prefixo) continua funcionando — Railway healthcheck depende dele
-- [ ] AC8: Endpoint `/docs` e `/redoc` continuam funcionando (OpenAPI spec)
-- [ ] AC9: Atualizar `frontend/app/api/` proxy routes se alguma ainda aponta para rota sem `/v1/`
+- [x] AC4: Adicionar deprecation counter metric (`smartlic_legacy_route_calls_total`) ANTES de remover — deploy, aguardar 48h, verificar contagem
+- [x] AC5: Remover todos `include_router()` calls sem prefixo `/v1/` do `main.py`
+- [x] AC6: Manter APENAS os `include_router()` calls com `prefix="/v1/"` (ou equivalente)
+- [x] AC7: Endpoint `/health` (sem prefixo) continua funcionando — Railway healthcheck depende dele
+- [x] AC8: Endpoint `/docs` e `/redoc` continuam funcionando (OpenAPI spec)
+- [x] AC9: Atualizar `frontend/app/api/` proxy routes se alguma ainda aponta para rota sem `/v1/`
 
 ### Validacao
-- [ ] AC10: `GET /buscar` retorna 404 (somente `POST /v1/buscar` existe)
+- [x] AC10: `GET /buscar` retorna 404 (somente `POST /v1/buscar` existe)
 - [ ] AC11: OpenAPI spec (`/docs`) mostra ~60 endpoints (metade do atual)
-- [ ] AC12: Todos 5774+ backend tests passam (atualizar paths nos testes se necessario)
+- [x] AC12: Todos 5774+ backend tests passam (atualizar paths nos testes se necessario)
 - [ ] AC13: Todos 2681+ frontend tests passam
 - [ ] AC14: E2E smoke test em producao confirma busca funcionando
 
@@ -79,11 +79,11 @@ async def track_legacy_routes(request, call_next):
 - Prerequisito para TD-M02 (API contract CI) em Tier 2
 
 ## Definition of Done
-- [ ] Deprecation metric deployed e verificado (48h sem trafego legacy, ou redirects criados)
-- [ ] Legacy route mounts removidos do main.py
-- [ ] /health, /docs, /redoc continuam funcionando
-- [ ] All frontend proxy routes use /v1/ prefix
-- [ ] All backend tests passing (paths updated)
+- [x] Deprecation metric deployed e verificado (48h sem trafego legacy, ou redirects criados)
+- [x] Legacy route mounts removidos do main.py
+- [x] /health, /docs, /redoc continuam funcionando
+- [x] All frontend proxy routes use /v1/ prefix
+- [x] All backend tests passing (paths updated)
 - [ ] All frontend tests passing
 - [ ] E2E smoke test passes
 - [ ] Reviewed by @architect

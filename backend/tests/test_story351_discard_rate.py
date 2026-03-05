@@ -185,10 +185,11 @@ class TestDiscardRateEndpoint:
         resp = self.client.get("/v1/metrics/discard-rate")
         assert resp.status_code == 200  # Not 401/403
 
-    def test_backward_compat_no_prefix(self):
-        """Endpoint also works without /v1 prefix."""
+    def test_legacy_no_prefix_not_api(self):
+        """TD-004: Legacy /metrics/discard-rate is caught by Prometheus mount, not the API."""
         resp = self.client.get("/metrics/discard-rate")
-        assert resp.status_code == 200
+        # Prometheus mount catches all /metrics/* — returns 200 but NOT our API JSON
+        assert "overall_rate" not in resp.text
 
 
 # ============================================================================

@@ -2,7 +2,7 @@
 STORY-252 Track 5 (AC25): Tests for /setores endpoint
 
 Verifies that the sectors endpoint returns valid data for frontend consumption.
-Both legacy (/setores) and versioned (/v1/setores) endpoints are tested.
+TD-004: Only versioned (/v1/setores) endpoint is tested. Legacy /setores removed.
 """
 
 from fastapi.testclient import TestClient
@@ -12,8 +12,8 @@ client = TestClient(app)
 
 
 def test_setores_endpoint_returns_200():
-    """Test that GET /setores returns 200 OK (legacy endpoint)."""
-    response = client.get("/setores")
+    """Test that GET /v1/setores returns 200 OK."""
+    response = client.get("/v1/setores")
     assert response.status_code == 200
 
 
@@ -23,17 +23,15 @@ def test_setores_v1_endpoint_returns_200():
     assert response.status_code == 200
 
 
-def test_setores_both_endpoints_return_same_data():
-    """Test that both /setores and /v1/setores return identical data."""
+def test_setores_legacy_endpoint_removed():
+    """TD-004: Legacy /setores (without /v1/) returns 404 after route cleanup."""
     legacy_response = client.get("/setores")
-    versioned_response = client.get("/v1/setores")
-
-    assert legacy_response.json() == versioned_response.json()
+    assert legacy_response.status_code in (404, 405)
 
 
 def test_setores_response_structure():
     """Test that response contains 'setores' key with list of sectors."""
-    response = client.get("/setores")
+    response = client.get("/v1/setores")
     data = response.json()
 
     assert "setores" in data
@@ -42,7 +40,7 @@ def test_setores_response_structure():
 
 def test_setores_minimum_count():
     """Test that at least 5 sectors are returned."""
-    response = client.get("/setores")
+    response = client.get("/v1/setores")
     data = response.json()
 
     assert len(data["setores"]) >= 5
@@ -50,7 +48,7 @@ def test_setores_minimum_count():
 
 def test_setores_schema_validation():
     """Test that each sector has required fields: id, name, description."""
-    response = client.get("/setores")
+    response = client.get("/v1/setores")
     data = response.json()
 
     for sector in data["setores"]:
@@ -66,7 +64,7 @@ def test_setores_schema_validation():
 
 def test_setores_non_empty_fields():
     """Test that all sector fields have non-empty values."""
-    response = client.get("/setores")
+    response = client.get("/v1/setores")
     data = response.json()
 
     for sector in data["setores"]:

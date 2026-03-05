@@ -147,7 +147,7 @@ class TestAC15PostReturns202:
 
                 client = TestClient(app, raise_server_exceptions=False)
                 start = time.time()
-                response = client.post("/buscar", json=VALID_SEARCH_BODY)
+                response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
                 elapsed = time.time() - start
 
             assert response.status_code == 202
@@ -182,7 +182,7 @@ class TestAC15PostReturns202:
                  patch("routes.search._run_async_search", new_callable=AsyncMock):
 
                 client = TestClient(app, raise_server_exceptions=False)
-                response = client.post("/buscar", json=VALID_SEARCH_BODY)
+                response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
             assert response.status_code == 202
             data = response.json()
@@ -376,7 +376,7 @@ class TestAC14ConcurrentSearchLimiting:
                  patch("routes.search.remove_tracker", new_callable=AsyncMock):
 
                 client = TestClient(app, raise_server_exceptions=False)
-                response = client.post("/buscar", json=VALID_SEARCH_BODY)
+                response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
             assert response.status_code == 429
         finally:
@@ -501,7 +501,7 @@ class TestAC2ARQDispatchWithFallback:
                  patch("job_queue.enqueue_job", new_callable=AsyncMock, return_value=mock_job) as mock_enqueue:
 
                 client = TestClient(app, raise_server_exceptions=False)
-                response = client.post("/buscar", json=VALID_SEARCH_BODY)
+                response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
             assert response.status_code == 202
             mock_enqueue.assert_called_once()
@@ -533,7 +533,7 @@ class TestAC2ARQDispatchWithFallback:
                  patch("routes.search._run_async_search", new_callable=AsyncMock) as mock_run:
 
                 client = TestClient(app, raise_server_exceptions=False)
-                response = client.post("/buscar", json=VALID_SEARCH_BODY)
+                response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
             assert response.status_code == 202
             # Fallback to asyncio.create_task was used
@@ -576,7 +576,7 @@ class TestAC5NeverExceedsTimeout:
                 client = TestClient(app, raise_server_exceptions=False)
                 start = time.time()
                 body = {**VALID_SEARCH_BODY, "ufs": ["SP", "RJ", "MG", "RS", "PR", "BA", "SC", "GO", "PE", "CE"]}
-                response = client.post("/buscar", json=body)
+                response = client.post("/v1/buscar", json=body)
                 elapsed = time.time() - start
 
             assert response.status_code == 202

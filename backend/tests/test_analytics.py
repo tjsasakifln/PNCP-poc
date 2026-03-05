@@ -53,7 +53,7 @@ class TestAnalyticsSummary:
 
         mock_supabase.table.side_effect = lambda t: sessions_chain if t == "search_sessions" else profile_chain
 
-        res = client.get("/analytics/summary", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/summary", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 200
         data = res.json()
         assert data["total_searches"] == 0
@@ -77,7 +77,7 @@ class TestAnalyticsSummary:
         rpc_chain.execute.return_value = rpc_result
         mock_supabase.rpc.return_value = rpc_chain
 
-        res = client.get("/analytics/summary", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/summary", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 200
         data = res.json()
         assert data["total_searches"] == 3
@@ -96,21 +96,21 @@ class TestAnalyticsSummaryRPCDegradation:
         """When get_analytics_summary RPC raises, endpoint returns 503."""
         mock_supabase.rpc.side_effect = Exception("RPC get_analytics_summary not found (404)")
 
-        res = client.get("/analytics/summary", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/summary", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 503, f"Expected 503, got {res.status_code}"
 
     def test_searches_over_time_returns_503_when_db_fails(self, client, mock_supabase):
         """When DB query fails, searches-over-time returns 503."""
         mock_supabase.table.side_effect = Exception("DB connection lost")
 
-        res = client.get("/analytics/searches-over-time?period=week", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/searches-over-time?period=week", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 503, f"Expected 503, got {res.status_code}"
 
     def test_top_dimensions_returns_503_when_db_fails(self, client, mock_supabase):
         """When DB query fails, top-dimensions returns 503."""
         mock_supabase.table.side_effect = Exception("DB connection lost")
 
-        res = client.get("/analytics/top-dimensions", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/top-dimensions", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 503, f"Expected 503, got {res.status_code}"
 
 
@@ -127,14 +127,14 @@ class TestSearchesOverTime:
 
         mock_supabase.table.return_value = chain
 
-        res = client.get("/analytics/searches-over-time?period=week", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/searches-over-time?period=week", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 200
         data = res.json()
         assert data["period"] == "week"
         assert data["data"] == []
 
     def test_invalid_period(self, client, mock_supabase):
-        res = client.get("/analytics/searches-over-time?period=invalid", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/searches-over-time?period=invalid", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 422
 
 
@@ -153,7 +153,7 @@ class TestTopDimensions:
 
         mock_supabase.table.return_value = chain
 
-        res = client.get("/analytics/top-dimensions?limit=3", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/top-dimensions?limit=3", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 200
         data = res.json()
 
@@ -175,7 +175,7 @@ class TestTopDimensions:
 
         mock_supabase.table.return_value = chain
 
-        res = client.get("/analytics/top-dimensions", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/analytics/top-dimensions", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 200
         data = res.json()
         assert data["top_ufs"] == []
@@ -189,5 +189,5 @@ class TestSessionsErrorHandling:
         """When DB query fails, /sessions returns 503 instead of swallowing error."""
         mock_supabase.table.side_effect = Exception("DB connection lost")
 
-        res = client.get("/sessions", headers={"Authorization": "Bearer fake"})
+        res = client.get("/v1/sessions", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 503, f"Expected 503, got {res.status_code}"

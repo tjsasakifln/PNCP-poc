@@ -222,6 +222,13 @@ SSE_FALLBACK_SIMULATED_TOTAL = _create_counter(
     "Times frontend fell back to simulated progress after SSE failure",
 )
 
+# TD-004 AC4: Legacy route deprecation tracking
+LEGACY_ROUTE_CALLS = _create_counter(
+    "smartlic_legacy_route_calls_total",
+    "Calls to legacy (non-/v1/) routes that now return 404",
+    labelnames=["method", "path"],
+)
+
 # CRIT-026 AC3: Worker timeout tracking
 WORKER_TIMEOUT = _create_counter(
     "smartlic_worker_timeout_total",

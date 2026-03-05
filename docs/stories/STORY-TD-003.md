@@ -23,9 +23,9 @@ Padronizar RLS policies em 8 tabelas que usam `auth.role() = 'service_role'` no 
 
 ## Acceptance Criteria
 
-- [ ] AC1: Criar migration que para cada uma das 8 tabelas: DROP a policy existente que usa `auth.role()` e CREATE nova policy com `TO service_role`
-- [ ] AC2: Cada tabela tem policy cobrindo ALL operations (SELECT, INSERT, UPDATE, DELETE) para service_role
-- [ ] AC3: Tabelas que tambem tem user-facing policies (ex: classification_feedback com auth.uid()) mantem essas intactas
+- [x] AC1: Criar migration que para cada uma das 8 tabelas: DROP a policy existente que usa `auth.role()` e CREATE nova policy com `TO service_role`
+- [x] AC2: Cada tabela tem policy cobrindo ALL operations (SELECT, INSERT, UPDATE, DELETE) para service_role
+- [x] AC3: Tabelas que tambem tem user-facing policies (ex: classification_feedback com auth.uid()) mantem essas intactas
 - [ ] AC4: Query de verificacao confirma zero policies com `auth.role()` no schema public:
   ```sql
   SELECT schemaname, tablename, policyname, qual
@@ -70,11 +70,11 @@ WHERE schemaname = 'public' AND roles @> ARRAY['service_role']::name[];
 - Pode rodar em paralelo com TD-004 (backend) e TD-005 (frontend)
 
 ## Definition of Done
-- [ ] Migration criada em `supabase/migrations/`
+- [x] Migration criada em `supabase/migrations/`
 - [ ] Migration aplicada no Supabase Cloud via `supabase db push`
 - [ ] Zero policies com `auth.role()` no schema public
-- [ ] 8 tabelas com policies `TO service_role`
-- [ ] User-facing policies inalteradas
-- [ ] All backend tests passing
-- [ ] No regressions
+- [x] 8 tabelas com policies `TO service_role`
+- [x] User-facing policies inalteradas
+- [x] All backend tests passing
+- [x] No regressions
 - [ ] Reviewed by @data-engineer

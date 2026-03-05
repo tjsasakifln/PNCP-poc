@@ -235,7 +235,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
         with patch("quota.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             response = client.post(
-                "/pipeline",
+                "/v1/pipeline",
                 json={
                     "pncp_id": "12345678000100-1-000001/2026",
                     "objeto": "Test procurement",
@@ -256,7 +256,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
         with patch("quota.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             response = client.patch(
-                "/pipeline/some-item-id",
+                "/v1/pipeline/some-item-id",
                 json={"stage": "analise"},
             )
 
@@ -270,7 +270,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
 
         with patch("quota.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
-            response = client.delete("/pipeline/some-item-id")
+            response = client.delete("/v1/pipeline/some-item-id")
 
         assert response.status_code == 403
         data = response.json()
@@ -317,7 +317,7 @@ class TestExpiredTrialReadOnlyEndpoints:
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False), \
              patch("routes.pipeline.get_supabase") as mock_supa:
             mock_supa.return_value.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = mock_result
-            response = client.get("/pipeline")
+            response = client.get("/v1/pipeline")
 
         assert response.status_code == 200
 
@@ -332,7 +332,7 @@ class TestExpiredTrialReadOnlyEndpoints:
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False), \
              patch("routes.pipeline.get_supabase") as mock_supa:
             mock_supa.return_value.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_result
-            response = client.get("/pipeline/alerts")
+            response = client.get("/v1/pipeline/alerts")
 
         assert response.status_code == 200
 
@@ -355,7 +355,7 @@ class TestExpiredTrialReadOnlyEndpoints:
         try:
             with patch("quota.check_quota", return_value=expired_quota), \
                  patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
-                response = client.get("/sessions")
+                response = client.get("/v1/sessions")
 
             assert response.status_code == 200
         finally:
@@ -414,7 +414,7 @@ class TestPaidPlanBypass:
              patch("routes.pipeline.get_supabase") as mock_supa:
             mock_supa.return_value.table.return_value.insert.return_value.execute.return_value = mock_result
             response = client.post(
-                "/pipeline",
+                "/v1/pipeline",
                 json={
                     "pncp_id": "12345678000100-1-000001/2026",
                     "objeto": "Test procurement",

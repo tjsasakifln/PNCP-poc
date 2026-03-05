@@ -74,7 +74,7 @@ class TestMeEndpoint:
             # Override get_db to return the same mock
             app.dependency_overrides[get_db] = lambda: mock_sb
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -124,7 +124,7 @@ class TestMeEndpoint:
                 }
             ]
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -171,7 +171,7 @@ class TestMeEndpoint:
             mock_user_data.user.email = "test@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -210,7 +210,7 @@ class TestBuscarEndpointQuotaValidation:
             )
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -251,7 +251,7 @@ class TestBuscarEndpointQuotaValidation:
             )
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -308,7 +308,7 @@ class TestBuscarEndpointQuotaValidation:
             mock_increment_quota.return_value = 24
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -387,7 +387,7 @@ class TestBuscarEndpointExcelGating:
             }
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -441,7 +441,7 @@ class TestBuscarEndpointExcelGating:
             mock_increment_quota.return_value = 24
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -502,7 +502,7 @@ class TestBuscarEndpointFallbackBehavior:
             mock_increment_quota.side_effect = Exception("Database error")
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",

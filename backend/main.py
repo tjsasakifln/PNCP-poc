@@ -744,38 +744,38 @@ app.include_router(blog_stats_router, prefix="/v1")  # MKT-002: Blog stats for p
 app.include_router(metrics_api_router, prefix="/v1")  # STORY-351: Discard rate
 
 # ============================================================================
-# SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
+# TD-004: Legacy routes REMOVED — only /v1/ prefix remains.
+# Exceptions: /health, /health/ready, /docs, /redoc, /metrics, webhooks
 # ============================================================================
-# For gradual migration, also mount at original paths (will be deprecated)
-app.include_router(admin_router)
-app.include_router(subscriptions_router)
-app.include_router(features_router)
-app.include_router(messages_router)
-app.include_router(analytics_router)
-app.include_router(oauth_router)
-app.include_router(export_sheets_router)
+# Stripe webhook stays at root (Stripe callback URL already configured)
 app.include_router(stripe_webhook_router)
-app.include_router(search_router)
-app.include_router(user_router)
-app.include_router(billing_router)
-app.include_router(sessions_router)
-app.include_router(plans_router)
-app.include_router(emails_router)  # STORY-225
-app.include_router(pipeline_router)  # STORY-250: Pipeline
-app.include_router(onboarding_router)  # GTM-004: First analysis
-app.include_router(auth_email_router)  # GTM-FIX-009: Email confirmation recovery
-app.include_router(cache_health_router)  # UX-303: Cache health
-app.include_router(feedback_router)  # GTM-RESILIENCE-D05: User feedback loop
-app.include_router(auth_check_router)  # STORY-258: Email/phone check
-app.include_router(bid_analysis_router)  # STORY-259: Deep bid analysis
-app.include_router(alerts_router)  # STORY-301: Email Alert System
-app.include_router(trial_emails_router)  # STORY-310: Trial email sequence
-app.include_router(mfa_router)  # STORY-317: MFA TOTP + recovery codes
-app.include_router(org_router)  # STORY-322: Organizations
-app.include_router(partners_router)  # STORY-323: Revenue Share
-app.include_router(sectors_public_router)  # STORY-324: SEO Landing Pages
-app.include_router(reports_router)  # STORY-325: PDF Diagnostico
-app.include_router(metrics_api_router)  # STORY-351: Discard rate
+
+# TD-004 AC4: Deprecation metric — tracks calls to removed legacy paths
+_ALLOWED_ROOT_PATHS = frozenset({
+    "/", "/health", "/health/ready", "/sources/health",
+    "/docs", "/redoc", "/openapi.json", "/metrics",
+    "/debug/pncp-test", "/v1/setores",
+})
+
+@app.middleware("http")
+async def track_legacy_routes(request: Request, call_next):
+    """TD-004 AC4: Track calls to removed legacy (non-/v1/) routes."""
+    path = request.url.path
+    if (
+        not path.startswith("/v1/")
+        and not path.startswith("/metrics")
+        and not path.startswith("/webhooks/")
+        and path not in _ALLOWED_ROOT_PATHS
+    ):
+        try:
+            from metrics import LEGACY_ROUTE_CALLS
+            # Truncate path to first 2 segments to limit cardinality
+            segments = path.strip("/").split("/")[:2]
+            truncated = "/" + "/".join(segments)
+            LEGACY_ROUTE_CALLS.labels(method=request.method, path=truncated).inc()
+        except Exception:
+            pass
+    return await call_next(request)
 
 # ============================================================================
 # GTM-PROXY-001 AC9-AC11: Global exception handlers for error sanitization
@@ -902,7 +902,7 @@ async def root():
             "current": "v1",
             "supported": ["v1"],
             "deprecated": [],
-            "note": "All endpoints available at /v1/<endpoint> and /<endpoint> (legacy)",
+            "note": "All endpoints at /v1/<endpoint>. Legacy root paths removed (TD-004).",
         },
         "status": "operational",
     }
@@ -1198,13 +1198,9 @@ async def sources_health():
     }
 
 
-@app.get("/setores", response_model=SetoresResponse)
 @app.get("/v1/setores", response_model=SetoresResponse)
 async def listar_setores():
-    """Return available procurement sectors for frontend dropdown.
-
-    STORY-252 Track 5 (AC24): Mounted at both /setores (legacy) and /v1/setores (versioned).
-    """
+    """Return available procurement sectors for frontend dropdown."""
     return {"setores": list_sectors()}
 
 

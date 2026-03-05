@@ -67,7 +67,7 @@ class TestMeEndpointFeatureFlagEnabled:
             mock_user_data.user.email = "test@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -113,7 +113,7 @@ class TestMeEndpointFeatureFlagEnabled:
             mock_user_data.user.email = "trial@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -152,7 +152,7 @@ class TestMeEndpointFeatureFlagEnabled:
             mock_user_data.user.email = "expired@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -188,7 +188,7 @@ class TestMeEndpointFeatureFlagEnabled:
             mock_user_data.user.email = "paid@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -214,7 +214,7 @@ class TestMeEndpointFeatureFlagDisabled:
             mock_user_data.user.email = "legacy@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -257,7 +257,7 @@ class TestMeEndpointDifferentPlanTiers:
             mock_user_data.user.email = "free@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -296,7 +296,7 @@ class TestMeEndpointDifferentPlanTiers:
             mock_user_data.user.email = "consultor@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -333,7 +333,7 @@ class TestMeEndpointDifferentPlanTiers:
             mock_user_data.user.email = "maquina@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -374,7 +374,7 @@ class TestMeEndpointQuotaInfo:
             mock_user_data.user.email = "quota@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -411,7 +411,7 @@ class TestMeEndpointQuotaInfo:
             mock_user_data.user.email = "reset@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -456,7 +456,7 @@ class TestMeEndpointErrorHandling:
             mock_user_data.user.email = "error@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -492,7 +492,7 @@ class TestMeEndpointErrorHandling:
             # Simulate email fetch failure
             mock_sb.auth.admin.get_user_by_id.side_effect = Exception("Auth API error")
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -527,7 +527,7 @@ class TestMeEndpointErrorHandling:
             # Simulate null user data
             mock_sb.auth.admin.get_user_by_id.return_value = None
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -553,7 +553,7 @@ class TestMeEndpointAdminStatus:
             mock_user_data.user.email = "admin@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -589,7 +589,7 @@ class TestMeEndpointAdminStatus:
             mock_user_data.user.email = "user@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            response = client.get("/me")
+            response = client.get("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -605,7 +605,7 @@ class TestMeEndpointAuthentication:
     def test_requires_authentication(self):
         """Should require authentication (401 Unauthorized)."""
         # No auth override - should fail
-        response = client.get("/me")
+        response = client.get("/v1/me")
 
         # Should be 401 or 403 depending on auth implementation
         assert response.status_code in [401, 403]

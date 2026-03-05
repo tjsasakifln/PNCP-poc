@@ -434,19 +434,19 @@ class TestSetoresEndpoint:
 
     def test_listar_setores_status_code(self, client):
         """Setores endpoint should return 200 OK."""
-        response = client.get("/setores")
+        response = client.get("/v1/setores")
         assert response.status_code == 200
 
     def test_listar_setores_response_structure(self, client):
         """Setores endpoint should return list of sectors."""
-        response = client.get("/setores")
+        response = client.get("/v1/setores")
         data = response.json()
         assert "setores" in data
         assert isinstance(data["setores"], list)
 
     def test_listar_setores_contains_uniformes(self, client):
         """Setores endpoint should include uniformes sector."""
-        response = client.get("/setores")
+        response = client.get("/v1/setores")
         data = response.json()
         setores = data["setores"]
 
@@ -571,7 +571,7 @@ class TestBuscarValidationExtended:
             "data_final": "2025-01-31",
             "setor_id": "invalid-sector-999",
         }
-        response = client.post("/buscar", json=request)
+        response = client.post("/v1/buscar", json=request)
         # SearchPipeline.stage_prepare raises HTTPException(400) for unknown sector_id
         assert response.status_code == 400
         assert "detail" in response.json()
@@ -583,7 +583,7 @@ class TestBuscarValidationExtended:
             "data_inicial": "2025-01-31",
             "data_final": "2025-01-01",  # Before start
         }
-        response = client.post("/buscar", json=request)
+        response = client.post("/v1/buscar", json=request)
         assert response.status_code == 422
 
 

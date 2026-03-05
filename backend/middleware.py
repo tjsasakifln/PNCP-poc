@@ -174,9 +174,12 @@ class DeprecationMiddleware(BaseHTTPMiddleware):
     _exempt_paths: set[str] = {
         "/",
         "/health",
+        "/health/ready",
+        "/sources/health",
         "/docs",
         "/redoc",
         "/openapi.json",
+        "/debug/pncp-test",
     }
 
     async def dispatch(self, request: Request, call_next) -> Response:

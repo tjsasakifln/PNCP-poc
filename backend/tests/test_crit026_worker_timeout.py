@@ -83,7 +83,7 @@ class TestSSEGeneratorAbruptLogging:
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-abrupt-crash")
+                response = await client.get("/v1/buscar-progress/test-abrupt-crash")
 
         assert response.status_code == 200
         # Check that the abrupt finish was logged
@@ -112,7 +112,7 @@ class TestSSEGeneratorAbruptLogging:
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-normal-finish")
+                response = await client.get("/v1/buscar-progress/test-normal-finish")
 
         assert response.status_code == 200
         # Check that the normal finish was logged at DEBUG
@@ -134,7 +134,7 @@ class TestSSEGeneratorAbruptLogging:
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-no-tracker")
+                response = await client.get("/v1/buscar-progress/test-no-tracker")
 
         assert response.status_code == 200
         # Should contain the error event about search not found

@@ -148,7 +148,7 @@ class TestAsyncEnabledReturns202:
              patch("routes.search.create_state_machine", new_callable=AsyncMock, return_value=_make_mock_state_machine()), \
              patch("routes.search._run_async_search", new_callable=AsyncMock):
 
-            response = client.post("/buscar", json=VALID_SEARCH_BODY)
+            response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
         assert response.status_code == 202
         data = response.json()
@@ -180,8 +180,8 @@ class TestAsyncEnabledReturns202:
              patch("routes.search.create_state_machine", new_callable=AsyncMock, return_value=_make_mock_state_machine()), \
              patch("routes.search._run_async_search", new_callable=AsyncMock):
 
-            resp_few = client.post("/buscar", json=body_few_ufs)
-            resp_many = client.post("/buscar", json=body_many_ufs)
+            resp_few = client.post("/v1/buscar", json=body_few_ufs)
+            resp_many = client.post("/v1/buscar", json=body_many_ufs)
 
         assert resp_few.status_code == 202
         assert resp_many.status_code == 202
@@ -209,7 +209,7 @@ class TestAsyncDisabledReturns200:
             mock_pipe = MockPipeline.return_value
             mock_pipe.run = AsyncMock(return_value=_make_sync_response())
 
-            response = client.post("/buscar", json=VALID_SEARCH_BODY)
+            response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
         assert response.status_code == 200
 
@@ -235,7 +235,7 @@ class TestXSyncHeaderForcesSyncMode:
             mock_pipe.run = AsyncMock(return_value=_make_sync_response())
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json=VALID_SEARCH_BODY,
                 headers={"X-Sync": "true"},
             )
@@ -257,7 +257,7 @@ class TestXSyncHeaderForcesSyncMode:
             mock_pipe = MockPipeline.return_value
             mock_pipe.run = AsyncMock(return_value=_make_sync_response())
 
-            response = client.post("/buscar?sync=true", json=VALID_SEARCH_BODY)
+            response = client.post("/v1/buscar?sync=true", json=VALID_SEARCH_BODY)
 
         assert response.status_code == 200
 
@@ -270,7 +270,7 @@ class TestXSyncHeaderForcesSyncMode:
              patch("routes.search._run_async_search", new_callable=AsyncMock):
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json=VALID_SEARCH_BODY,
                 headers={"X-Sync": "false"},
             )
@@ -311,7 +311,7 @@ class TestQuotaFailureFallsBackToSync:
             mock_pipe = MockPipeline.return_value
             mock_pipe.run = AsyncMock(return_value=_make_sync_response())
 
-            response = client.post("/buscar", json=VALID_SEARCH_BODY)
+            response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
         # Quota check exception → sync fallback, must be 200 not 202
         assert response.status_code == 200
@@ -599,7 +599,7 @@ class TestQuotaConsumedBeforeDispatch:
              patch("routes.search.create_state_machine", new_callable=AsyncMock, return_value=_make_mock_state_machine()), \
              patch("routes.search._run_async_search", new_callable=AsyncMock):
 
-            response = client.post("/buscar", json=VALID_SEARCH_BODY)
+            response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
         assert response.status_code == 202
         # Both quota check and atomic increment should be called before task dispatched
@@ -621,7 +621,7 @@ class TestQuotaConsumedBeforeDispatch:
              patch("routes.search.remove_tracker", new_callable=AsyncMock), \
              patch("routes.search._run_async_search", new_callable=AsyncMock) as mock_run:
 
-            response = client.post("/buscar", json=VALID_SEARCH_BODY)
+            response = client.post("/v1/buscar", json=VALID_SEARCH_BODY)
 
         assert response.status_code == 403
         mock_run.assert_not_called()

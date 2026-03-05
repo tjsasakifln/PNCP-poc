@@ -68,7 +68,7 @@ class TestWaitForTrackerHeartbeat:
              patch("asyncio.sleep", new_callable=AsyncMock):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-hb-wait")
+                response = await client.get("/v1/buscar-progress/test-hb-wait")
 
         assert response.status_code == 200
         lines = response.text.split("\n")
@@ -95,7 +95,7 @@ class TestWaitForTrackerHeartbeat:
              patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-immediate")
+                response = await client.get("/v1/buscar-progress/test-immediate")
 
         assert response.status_code == 200
         assert ": waiting" not in response.text
@@ -110,7 +110,7 @@ class TestWaitForTrackerHeartbeat:
              patch("metrics.SSE_CONNECTION_ERRORS"):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/nonexistent")
+                response = await client.get("/v1/buscar-progress/nonexistent")
 
         assert response.status_code == 200
         # Parse the SSE data event
@@ -131,7 +131,7 @@ class TestWaitForTrackerHeartbeat:
              patch("asyncio.sleep", new_callable=AsyncMock):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/db-reconnect")
+                response = await client.get("/v1/buscar-progress/db-reconnect")
 
         assert response.status_code == 200
         data_lines = [line for line in response.text.split("\n") if line.startswith("data: ")]
@@ -176,7 +176,7 @@ class TestMainLoopHeartbeat:
              patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-hb-15s")
+                response = await client.get("/v1/buscar-progress/test-hb-15s")
 
         assert response.status_code == 200
         assert ": heartbeat" in response.text
@@ -222,7 +222,7 @@ class TestMainLoopHeartbeat:
              patch("routes.search._SSE_POLL_INTERVAL", 0.01):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-hb-streams")
+                response = await client.get("/v1/buscar-progress/test-hb-streams")
 
         assert response.status_code == 200
         assert ": heartbeat" in response.text
@@ -272,7 +272,7 @@ class TestHeartbeatTelemetry:
              caplog.at_level(logging.DEBUG, logger="routes.search"):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                await client.get("/buscar-progress/test-log")
+                await client.get("/v1/buscar-progress/test-log")
 
         heartbeat_logs = [
             r for r in caplog.records
@@ -309,7 +309,7 @@ class TestHeartbeatTelemetry:
              caplog.at_level(logging.DEBUG, logger="routes.search"):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                await client.get("/buscar-progress/test-log-main")
+                await client.get("/v1/buscar-progress/test-log-main")
 
         heartbeat_logs = [
             r for r in caplog.records

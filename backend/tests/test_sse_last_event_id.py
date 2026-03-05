@@ -138,7 +138,7 @@ class TestEventsHaveIdField:
              patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-id-field")
+                response = await client.get("/v1/buscar-progress/test-id-field")
 
         assert response.status_code == 200
 
@@ -290,7 +290,7 @@ class TestReplayAfterLastEventId:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/replay-test",
+                    "/v1/buscar-progress/replay-test",
                     headers={"Last-Event-ID": "2"},
                 )
 
@@ -324,7 +324,7 @@ class TestReplayAfterLastEventId:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/replay-qp?last_event_id=1",
+                    "/v1/buscar-progress/replay-qp?last_event_id=1",
                 )
 
         assert response.status_code == 200
@@ -354,7 +354,7 @@ class TestReplayAfterLastEventId:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/replay-invalid",
+                    "/v1/buscar-progress/replay-invalid",
                     headers={"Last-Event-ID": "not-a-number"},
                 )
 
@@ -393,7 +393,7 @@ class TestCompletedSearchImmediateTerminal:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/complete-test",
+                    "/v1/buscar-progress/complete-test",
                     headers={"Last-Event-ID": "1"},
                 )
 
@@ -429,7 +429,7 @@ class TestCompletedSearchImmediateTerminal:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/all-seen-test",
+                    "/v1/buscar-progress/all-seen-test",
                     headers={"Last-Event-ID": "2"},
                 )
 
@@ -462,7 +462,7 @@ class TestCompletedSearchImmediateTerminal:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/degraded-test",
+                    "/v1/buscar-progress/degraded-test",
                     headers={"Last-Event-ID": "1"},
                 )
 
@@ -769,7 +769,7 @@ class TestReconnectDuringActiveSearch:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/reconnect-mid",
+                    "/v1/buscar-progress/reconnect-mid",
                     headers={"Last-Event-ID": "2"},
                 )
 
@@ -808,7 +808,7 @@ class TestReconnectDuringActiveSearch:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/no-dup",
+                    "/v1/buscar-progress/no-dup",
                     headers={"Last-Event-ID": "2"},
                 )
 
@@ -849,7 +849,7 @@ class TestReconnectAfterComplete:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/post-complete",
+                    "/v1/buscar-progress/post-complete",
                     headers={"Last-Event-ID": "3"},
                 )
 
@@ -880,7 +880,7 @@ class TestReconnectAfterComplete:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/post-error",
+                    "/v1/buscar-progress/post-error",
                     headers={"Last-Event-ID": "1"},
                 )
 
@@ -908,7 +908,7 @@ class TestReconnectAfterComplete:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get(
-                    "/buscar-progress/post-search-complete",
+                    "/v1/buscar-progress/post-search-complete",
                     headers={"Last-Event-ID": "1"},
                 )
 
@@ -946,7 +946,7 @@ class TestNormalStreamingNoReplay:
              patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/normal-stream")
+                response = await client.get("/v1/buscar-progress/normal-stream")
 
         assert response.status_code == 200
         events = _parse_sse_events(response.text)
@@ -972,7 +972,7 @@ class TestNormalStreamingNoReplay:
              patch("routes.search.get_replay_events", new_callable=AsyncMock) as mock_replay:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/no-replay")
+                response = await client.get("/v1/buscar-progress/no-replay")
 
         assert response.status_code == 200
         # get_replay_events should NOT have been called (no Last-Event-ID)

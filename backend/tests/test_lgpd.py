@@ -59,7 +59,7 @@ class TestDeleteAccountEndpoint:
             # Mock auth user deletion
             mock_sb.auth.admin.delete_user = Mock()
 
-            response = client.delete("/me")
+            response = client.delete("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -111,7 +111,7 @@ class TestDeleteAccountEndpoint:
             # Mock auth user deletion
             mock_sb.auth.admin.delete_user = Mock()
 
-            response = client.delete("/me")
+            response = client.delete("/v1/me")
 
             assert response.status_code == 200
             data = response.json()
@@ -156,7 +156,7 @@ class TestDeleteAccountEndpoint:
             # Mock auth user deletion
             mock_sb.auth.admin.delete_user = Mock()
 
-            response = client.delete("/me")
+            response = client.delete("/v1/me")
 
             # Should still succeed
             assert response.status_code == 200
@@ -193,7 +193,7 @@ class TestDeleteAccountEndpoint:
 
             mock_sb.delete.return_value = mock_sb
 
-            response = client.delete("/me")
+            response = client.delete("/v1/me")
 
             assert response.status_code == 500
             data = response.json()
@@ -231,7 +231,7 @@ class TestDeleteAccountEndpoint:
                 Exception("Profile deletion failed")  # profiles
             ]
 
-            response = client.delete("/me")
+            response = client.delete("/v1/me")
 
             assert response.status_code == 500
             data = response.json()
@@ -263,7 +263,7 @@ class TestDeleteAccountEndpoint:
             # Auth user deletion fails
             mock_sb.auth.admin.delete_user.side_effect = Exception("Auth API error")
 
-            response = client.delete("/me")
+            response = client.delete("/v1/me")
 
             assert response.status_code == 500
             data = response.json()
@@ -276,7 +276,7 @@ class TestDeleteAccountEndpoint:
     def test_unauthorized_deletion_without_auth(self):
         """Should return 401/403 when no authentication provided."""
         # No auth override
-        response = client.delete("/me")
+        response = client.delete("/v1/me")
 
         # Should be unauthorized
         assert response.status_code in [401, 403]
@@ -300,7 +300,7 @@ class TestDeleteAccountEndpoint:
             mock_sb.execute.return_value = Mock(data=[])
             mock_sb.auth.admin.delete_user = Mock()
 
-            response = client.delete("/me")
+            response = client.delete("/v1/me")
 
             assert response.status_code == 200
 
@@ -392,7 +392,7 @@ class TestExportUserDataEndpoint:
                 Mock(data=quota_data)             # monthly_quota
             ]
 
-            response = client.get("/me/export")
+            response = client.get("/v1/me/export")
 
             assert response.status_code == 200
 
@@ -432,7 +432,7 @@ class TestExportUserDataEndpoint:
             mock_sb.order.return_value = mock_sb
             mock_sb.execute.return_value = Mock(data=[])
 
-            response = client.get("/me/export")
+            response = client.get("/v1/me/export")
 
             assert response.status_code == 200
 
@@ -466,7 +466,7 @@ class TestExportUserDataEndpoint:
             mock_sb.order.return_value = mock_sb
             mock_sb.execute.return_value = Mock(data=[])
 
-            response = client.get("/me/export")
+            response = client.get("/v1/me/export")
 
             assert response.status_code == 200
 
@@ -506,7 +506,7 @@ class TestExportUserDataEndpoint:
                 Mock(data=[])                               # monthly_quota
             ]
 
-            response = client.get("/me/export")
+            response = client.get("/v1/me/export")
 
             assert response.status_code == 200
 
@@ -537,7 +537,7 @@ class TestExportUserDataEndpoint:
             mock_sb.order.return_value = mock_sb
             mock_sb.execute.return_value = Mock(data=[])
 
-            response = client.get("/me/export")
+            response = client.get("/v1/me/export")
 
             assert response.status_code == 200
 
@@ -575,7 +575,7 @@ class TestExportUserDataEndpoint:
             mock_sb.order.return_value = mock_sb
             mock_sb.execute.return_value = Mock(data=[])
 
-            response = client.get("/me/export")
+            response = client.get("/v1/me/export")
 
             assert response.status_code == 200
             assert response.headers["Content-Type"] == "application/json"
@@ -586,7 +586,7 @@ class TestExportUserDataEndpoint:
     def test_unauthorized_export_without_auth(self):
         """Should return 401/403 when no authentication provided."""
         # No auth override
-        response = client.get("/me/export")
+        response = client.get("/v1/me/export")
 
         # Should be unauthorized
         assert response.status_code in [401, 403]
@@ -608,7 +608,7 @@ class TestExportUserDataEndpoint:
             mock_sb.order.return_value = mock_sb
             mock_sb.execute.return_value = Mock(data=[])
 
-            response = client.get("/me/export")
+            response = client.get("/v1/me/export")
 
             assert response.status_code == 200
 
@@ -639,7 +639,7 @@ class TestExportUserDataEndpoint:
             mock_sb.order.return_value = mock_sb
             mock_sb.execute.return_value = Mock(data=[])
 
-            response = client.get("/me/export")
+            response = client.get("/v1/me/export")
 
             assert response.status_code == 200
 

@@ -332,7 +332,7 @@ class TestCrossWorkerE2E:
                  patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    response = await client.get("/buscar-progress/cross-worker-1")
+                    response = await client.get("/v1/buscar-progress/cross-worker-1")
         finally:
             app.dependency_overrides.pop(require_auth, None)
 
@@ -400,7 +400,7 @@ class TestCrossWorkerE2E:
                  patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    response = await client.get("/buscar-progress/incremental-1")
+                    response = await client.get("/v1/buscar-progress/incremental-1")
         finally:
             app.dependency_overrides.pop(require_auth, None)
 
@@ -468,7 +468,7 @@ class TestCrossWorkerE2E:
                  patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    response = await client.get("/buscar-progress/detail-test")
+                    response = await client.get("/v1/buscar-progress/detail-test")
         finally:
             app.dependency_overrides.pop(require_auth, None)
 
@@ -501,7 +501,7 @@ class TestCrossWorkerE2E:
                  patch("routes.search.release_sse_connection", new_callable=AsyncMock):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    response = await client.get("/buscar-progress/fallback-sse")
+                    response = await client.get("/v1/buscar-progress/fallback-sse")
         finally:
             app.dependency_overrides.pop(require_auth, None)
 
@@ -554,7 +554,7 @@ class TestCrossWorkerE2E:
                  patch("routes.search._SSE_POLL_INTERVAL", 0.01):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    response = await client.get("/buscar-progress/heartbeat-mix")
+                    response = await client.get("/v1/buscar-progress/heartbeat-mix")
         finally:
             app.dependency_overrides.pop(require_auth, None)
 
