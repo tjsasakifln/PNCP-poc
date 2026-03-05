@@ -7,7 +7,7 @@ import type { Esfera } from "../../components/EsferaFilter";
 import type { Municipio } from "../../components/MunicipioFilter";
 import type { OrdenacaoOption } from "../../components/OrdenacaoSelect";
 import type { SavedSearch } from "../../../lib/savedSearches";
-import type { SearchProgressEvent, PartialProgress, RefreshAvailableInfo, UfStatus, BatchProgress, SourceStatus, FilterSummary, PendingReviewUpdate } from "../../../hooks/useSearchSSE";
+import type { SearchProgressEvent, PartialProgress, RefreshAvailableInfo, UfStatus, BatchProgress, SourceStatus, FilterSummary, PendingReviewUpdate, ZeroMatchProgress } from "../../../hooks/useSearchSSE";
 import { useAuth } from "../../components/AuthProvider";
 import { useSearchSSE } from "../../../hooks/useSearchSSE";
 import { useSearchPolling } from "../../../hooks/useSearchPolling";
@@ -111,6 +111,7 @@ export interface UseSearchReturn {
   sourceStatuses: Map<string, SourceStatus>;
   filterSummary: FilterSummary | null;
   pendingReviewUpdate: PendingReviewUpdate | null;
+  zeroMatchProgress: ZeroMatchProgress | null;
   liveFetchInProgress: boolean;
   handleRefreshResults: () => Promise<void>;
   downloadLoading: boolean;
@@ -243,7 +244,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     isReconnecting,
     isDegraded, degradedDetail, partialProgress, refreshAvailable,
     ufStatuses, ufTotalFound, ufAllComplete, batchProgress,
-    sourceStatuses, filterSummary, pendingReviewUpdate,
+    sourceStatuses, filterSummary, pendingReviewUpdate, zeroMatchProgress,
   } = useSearchSSE({
     searchId: execution.asyncSearchActive ? execution.asyncSearchIdRef.current : (execution.liveFetchInProgress ? execution.liveFetchSearchIdRef.current : execution.searchId),
     enabled: (execution.loading && !!execution.searchId) || execution.liveFetchInProgress || hasProcessingJobs || execution.asyncSearchActive,
@@ -357,6 +358,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     sourceStatuses,
     filterSummary,
     pendingReviewUpdate,
+    zeroMatchProgress,
     liveFetchInProgress: execution.liveFetchInProgress,
     handleRefreshResults: execution.handleRefreshResults,
     downloadLoading: exportHook.downloadLoading,

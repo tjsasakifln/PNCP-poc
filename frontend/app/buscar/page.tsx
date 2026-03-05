@@ -757,6 +757,7 @@ function HomePageContent() {
                   filterSummary: search.filterSummary,
                   pendingReviewCount: search.result?.pending_review_count ?? 0,
                   pendingReviewUpdate: search.pendingReviewUpdate,
+                  zeroMatchProgress: search.zeroMatchProgress,
 
                   // Group 2: SearchLoadingState
                   loading: search.loading,

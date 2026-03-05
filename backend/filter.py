@@ -3069,6 +3069,20 @@ def aplicar_todos_filtros(
             zero_match_pool = to_classify
 
         if zero_match_pool:
+            # CRIT-059 AC1/AC11: When async zero-match is enabled, collect candidates
+            # and return them in stats instead of calling LLM inline.
+            from config import ASYNC_ZERO_MATCH_ENABLED
+            if ASYNC_ZERO_MATCH_ENABLED:
+                stats["zero_match_candidates"] = zero_match_pool
+                stats["zero_match_candidates_count"] = len(zero_match_pool)
+                logger.info(
+                    f"[CRIT-059] Async zero-match: collected {len(zero_match_pool)} candidates "
+                    f"for background job (inline LLM skipped)"
+                )
+                # Skip all inline LLM — candidates will be classified by ARQ job
+                zero_match_pool = []
+
+        if zero_match_pool:
             from llm_arbiter import classify_contract_primary_match as _classify_zm
             from llm_arbiter import _classify_zero_match_batch as _classify_batch
             from sectors import get_sector as _get_sector_zm

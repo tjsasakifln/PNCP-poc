@@ -1850,6 +1850,301 @@ async def reclassify_pending_bids_job(ctx: dict, search_id: str, sector_name: st
     }
 
 
+# ============================================================================
+# CRIT-059: Async zero-match classification job
+# ============================================================================
+_ZERO_MATCH_KEY_PREFIX = "smartlic:zero_match:"
+
+
+async def store_zero_match_results(search_id: str, results: list[dict]) -> bool:
+    """Store classified zero-match results in Redis for frontend fetch (AC2)."""
+    from redis_pool import get_redis_pool
+    redis = await get_redis_pool()
+    if redis is None:
+        logger.warning(f"CRIT-059: Cannot store zero-match results — Redis unavailable (search_id={search_id})")
+        return False
+
+    key = f"{_ZERO_MATCH_KEY_PREFIX}{search_id}"
+    try:
+        payload = json.dumps({"results": results, "stored_at": time.time()})
+        await redis.setex(key, 3600, payload)  # TTL 1h
+        logger.info(f"CRIT-059: Stored {len(results)} zero-match results for search_id={search_id}")
+        return True
+    except Exception as e:
+        logger.error(f"CRIT-059: Failed to store zero-match results: {e}")
+        return False
+
+
+async def get_zero_match_results(search_id: str) -> list[dict] | None:
+    """Fetch classified zero-match results from Redis (AC4)."""
+    from redis_pool import get_redis_pool
+    redis = await get_redis_pool()
+    if redis is None:
+        return None
+
+    key = f"{_ZERO_MATCH_KEY_PREFIX}{search_id}"
+    try:
+        raw = await redis.get(key)
+        if not raw:
+            return None
+        data = json.loads(raw)
+        return data.get("results", [])
+    except Exception as e:
+        logger.warning(f"CRIT-059: Failed to load zero-match results: {e}")
+        return None
+
+
+async def classify_zero_match_job(
+    ctx: dict,
+    search_id: str,
+    candidates: list[dict],
+    setor: str,
+    sector_name: str,
+    custom_terms: list[str] | None = None,
+    enqueued_at: float = 0,
+    **kwargs,
+) -> dict:
+    """ARQ job: Classify zero-match candidates via LLM in background (AC2).
+
+    Applies CRIT-058 cap and CRIT-057 budget internally.
+    Saves results to Redis and emits SSE events.
+    """
+    from config import (
+        MAX_ZERO_MATCH_ITEMS, ZERO_MATCH_JOB_TIMEOUT_S,
+        LLM_ZERO_MATCH_BATCH_ENABLED, LLM_ZERO_MATCH_BATCH_SIZE,
+        FILTER_ZERO_MATCH_BUDGET_S, LLM_FALLBACK_PENDING_ENABLED,
+    )
+    from metrics import ZERO_MATCH_JOB_DURATION, ZERO_MATCH_JOB_STATUS, ZERO_MATCH_JOB_QUEUE_TIME
+    from progress import get_tracker
+
+    job_start = time.time()
+
+    # AC8: Queue time metric
+    if enqueued_at > 0:
+        ZERO_MATCH_JOB_QUEUE_TIME.observe(job_start - enqueued_at)
+
+    total_candidates = len(candidates)
+    will_classify = min(total_candidates, MAX_ZERO_MATCH_ITEMS)
+
+    logger.info(
+        f"CRIT-059: classify_zero_match_job start "
+        f"(search_id={search_id}, candidates={total_candidates}, will_classify={will_classify})"
+    )
+
+    # AC3: SSE zero_match_started
+    tracker = await get_tracker(search_id)
+    if tracker:
+        await tracker.emit(
+            "zero_match_started", -1,
+            f"Analisando {will_classify} oportunidades adicionais com IA...",
+            candidates=total_candidates,
+            will_classify=will_classify,
+        )
+
+    # Classify using LLM
+    from llm_arbiter import _classify_zero_match_batch as _classify_batch
+    from llm_arbiter import classify_contract_primary_match as _classify_zm
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    approved: list[dict] = []
+    rejected_count = 0
+    pending_count = 0
+    classified = 0
+    budget_start = time.time()
+
+    pool_to_classify = candidates[:will_classify]
+
+    try:
+        if LLM_ZERO_MATCH_BATCH_ENABLED:
+            # Batch mode
+            batch_items = []
+            for lic in pool_to_classify:
+                obj = lic.get("objetoCompra", "")
+                val = lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0
+                if isinstance(val, str):
+                    try:
+                        val = float(val.replace(".", "").replace(",", "."))
+                    except ValueError:
+                        val = 0.0
+                else:
+                    val = float(val) if val else 0.0
+                batch_items.append({"objeto": obj, "valor": val})
+
+            batches = [
+                batch_items[i:i + LLM_ZERO_MATCH_BATCH_SIZE]
+                for i in range(0, len(batch_items), LLM_ZERO_MATCH_BATCH_SIZE)
+            ]
+            lic_batches = [
+                pool_to_classify[i:i + LLM_ZERO_MATCH_BATCH_SIZE]
+                for i in range(0, len(pool_to_classify), LLM_ZERO_MATCH_BATCH_SIZE)
+            ]
+
+            for batch_idx, (batch, lic_batch) in enumerate(zip(batches, lic_batches)):
+                # Budget check
+                elapsed = time.time() - budget_start
+                if elapsed > FILTER_ZERO_MATCH_BUDGET_S:
+                    # Mark remaining as pending
+                    for remaining_lic in pool_to_classify[classified:]:
+                        remaining_lic["_relevance_source"] = "pending_review"
+                        remaining_lic["_pending_review"] = True
+                        remaining_lic["_pending_review_reason"] = "zero_match_budget_exceeded"
+                        pending_count += 1
+                    logger.info(f"CRIT-059: Budget exceeded at batch {batch_idx}, {pending_count} deferred")
+                    break
+
+                # Timeout check
+                job_elapsed = time.time() - job_start
+                if job_elapsed > ZERO_MATCH_JOB_TIMEOUT_S:
+                    for remaining_lic in pool_to_classify[classified:]:
+                        remaining_lic["_relevance_source"] = "pending_review"
+                        remaining_lic["_pending_review"] = True
+                        remaining_lic["_pending_review_reason"] = "zero_match_job_timeout"
+                        pending_count += 1
+                    logger.warning(f"CRIT-059: Job timeout at batch {batch_idx}")
+                    break
+
+                try:
+                    batch_results = _classify_batch(
+                        items=batch,
+                        setor_name=sector_name,
+                        setor_id=setor,
+                        search_id=search_id,
+                    )
+                    for lic_item, result in zip(lic_batch, batch_results):
+                        is_relevant = result.get("is_primary", False) if isinstance(result, dict) else result
+                        if is_relevant:
+                            lic_item["_relevance_source"] = "llm_zero_match"
+                            lic_item["_term_density"] = 0.0
+                            lic_item["_matched_terms"] = []
+                            if isinstance(result, dict):
+                                lic_item["_confidence_score"] = min(result.get("confidence", 60), 70)
+                                lic_item["_llm_evidence"] = result.get("evidence", [])
+                            else:
+                                lic_item["_confidence_score"] = 60
+                                lic_item["_llm_evidence"] = []
+                            approved.append(lic_item)
+                        else:
+                            _is_pending = isinstance(result, dict) and result.get("pending_review", False)
+                            if _is_pending and LLM_FALLBACK_PENDING_ENABLED:
+                                lic_item["_relevance_source"] = "pending_review"
+                                lic_item["_pending_review"] = True
+                                pending_count += 1
+                            else:
+                                rejected_count += 1
+                        classified += 1
+                except Exception as batch_err:
+                    logger.warning(f"CRIT-059: Batch {batch_idx} failed: {batch_err}")
+                    for lic_item in lic_batch:
+                        if LLM_FALLBACK_PENDING_ENABLED:
+                            lic_item["_relevance_source"] = "pending_review"
+                            lic_item["_pending_review"] = True
+                            pending_count += 1
+                        else:
+                            rejected_count += 1
+                        classified += 1
+
+                # AC3: SSE zero_match_progress
+                if tracker:
+                    await tracker.emit(
+                        "zero_match_progress", -1,
+                        f"Classificação IA: {classified}/{will_classify}",
+                        classified=classified,
+                        total=will_classify,
+                        approved=len(approved),
+                    )
+        else:
+            # Individual mode (fallback)
+            def _classify_one(lic_item: dict) -> tuple[dict, dict]:
+                obj = lic_item.get("objetoCompra", "")
+                val = float(lic_item.get("valorTotalEstimado") or lic_item.get("valorEstimado") or 0)
+                result = _classify_zm(
+                    objeto=obj, valor=val,
+                    setor_name=sector_name,
+                    prompt_level="zero_match",
+                    setor_id=setor,
+                    search_id=search_id,
+                )
+                return lic_item, result
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = {executor.submit(_classify_one, lic): lic for lic in pool_to_classify}
+                for future in as_completed(futures):
+                    try:
+                        lic_item, result = future.result()
+                        is_relevant = result.get("is_primary", False) if isinstance(result, dict) else result
+                        if is_relevant:
+                            lic_item["_relevance_source"] = "llm_zero_match"
+                            lic_item["_term_density"] = 0.0
+                            lic_item["_matched_terms"] = []
+                            lic_item["_confidence_score"] = min(
+                                result.get("confidence", 60) if isinstance(result, dict) else 60, 70
+                            )
+                            lic_item["_llm_evidence"] = result.get("evidence", []) if isinstance(result, dict) else []
+                            approved.append(lic_item)
+                        else:
+                            rejected_count += 1
+                        classified += 1
+                    except Exception:
+                        rejected_count += 1
+                        classified += 1
+
+    except Exception as e:
+        logger.error(f"CRIT-059: classify_zero_match_job failed: {e}", exc_info=True)
+        ZERO_MATCH_JOB_STATUS.labels(status="failed").inc()
+        # AC7: Save partial results
+        if approved:
+            await store_zero_match_results(search_id, approved)
+        if tracker:
+            await tracker.emit(
+                "zero_match_error", -1,
+                "Classificação IA falhou parcialmente",
+                approved=len(approved),
+                error=str(e)[:200],
+            )
+        duration = time.time() - job_start
+        ZERO_MATCH_JOB_DURATION.observe(duration)
+        return {
+            "status": "failed",
+            "approved": len(approved),
+            "rejected": rejected_count,
+            "pending": pending_count,
+            "error": str(e),
+        }
+
+    # Save results to Redis
+    await store_zero_match_results(search_id, approved)
+
+    duration = time.time() - job_start
+    ZERO_MATCH_JOB_DURATION.observe(duration)
+    ZERO_MATCH_JOB_STATUS.labels(status="completed").inc()
+
+    logger.info(
+        f"CRIT-059: classify_zero_match_job complete "
+        f"(search_id={search_id}, classified={classified}, "
+        f"approved={len(approved)}, rejected={rejected_count}, "
+        f"pending={pending_count}, duration={duration:.1f}s)"
+    )
+
+    # AC3: SSE zero_match_ready
+    if tracker:
+        await tracker.emit(
+            "zero_match_ready", -1,
+            f"Classificação concluída: {len(approved)} oportunidades encontradas",
+            total_classified=classified,
+            approved=len(approved),
+            rejected=rejected_count,
+        )
+
+    return {
+        "status": "completed",
+        "total_classified": classified,
+        "approved": len(approved),
+        "rejected": rejected_count,
+        "pending": pending_count,
+        "duration_s": round(duration, 1),
+    }
+
+
 class WorkerSettings:
     """ARQ worker configuration.
 
@@ -1860,7 +2155,7 @@ class WorkerSettings:
         cd backend && arq job_queue.WorkerSettings
     """
 
-    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job, daily_digest_job, email_alerts_job, reclassify_pending_bids_job]
+    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job, daily_digest_job, email_alerts_job, reclassify_pending_bids_job, classify_zero_match_job]
     cron_jobs = _worker_cron_jobs  # CRIT-032 AC2: periodic cache refresh
     on_startup = _worker_on_startup  # CRIT-038: Inject socket_timeout into Redis pool
     redis_settings = _worker_redis_settings

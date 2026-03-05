@@ -9,6 +9,7 @@ import { SourcesUnavailable } from "./SourcesUnavailable";
 import { DataQualityBanner } from "./DataQualityBanner";
 import { QuotaCounter } from "../../components/QuotaCounter";
 import { ZeroResultsSuggestions } from "./ZeroResultsSuggestions";
+import { ZeroMatchBadge } from "./ZeroMatchBadge";
 import type {
   SearchResultsProps,
   SearchResultsData,
@@ -80,7 +81,7 @@ export default function SearchResults(props: SearchResultsProps) {
     hasLastSearch = 0, onLoadLastSearch, liveFetchInProgress, refreshAvailable, onRefreshResults,
     onRetryForceFresh, sourceStatuses, partialProgress, filterSummary,
     isTrialExpired, trialPhase, paywallApplied, totalBeforePaywall,
-    pendingReviewCount = 0, pendingReviewUpdate, onTrackEvent,
+    pendingReviewCount = 0, pendingReviewUpdate, zeroMatchProgress, onTrackEvent,
     isResultsTourCompleted, onStartResultsTour, isProfileComplete = true,
     downloadLoading, downloadError, onDownload, planInfo, session, termosArray,
     onShowUpgradeModal, searchId, setorId, onRegenerateExcel, excelFailCount = 0,
@@ -187,6 +188,7 @@ export default function SearchResults(props: SearchResultsProps) {
             </div>
           )}
 
+          <ZeroMatchBadge progress={zeroMatchProgress ?? null} />
           <ResultsHeader result={result} rawCount={rawCount} isProfileComplete={isProfileComplete} filterSummary={filterSummary} />
           <TourInviteBanner isCompleted={isResultsTourCompleted} onStartTour={onStartResultsTour} />
           <ResultsToolbar result={result} ordenacao={ordenacao} onOrdenacaoChange={onOrdenacaoChange} loading={loading} onDownload={onDownload} downloadLoading={downloadLoading} onRegenerateExcel={onRegenerateExcel} excelFailCount={excelFailCount} excelTimedOut={excelTimedOut} planInfo={planInfo} session={session} isTrialExpired={isTrialExpired} paywallApplied={paywallApplied} totalBeforePaywall={totalBeforePaywall} sectorName={sectorName} ufsSelecionadas={ufsSelecionadas} onGeneratePdf={onGeneratePdf} pdfLoading={pdfLoading} onSearch={onSearch} />

@@ -91,6 +91,10 @@ class SearchContext:
     zero_match_deferred: int = 0
     # GTM-STAB-005 AC3: Human-readable filter summary when results=0
     filter_summary: Optional[str] = None
+    # CRIT-059: Async zero-match tracking
+    zero_match_candidates: list = field(default_factory=list)  # candidates for background job
+    zero_match_job_id: Optional[str] = None  # ARQ job ID
+    zero_match_candidates_count: int = 0  # total candidates count
 
     # === Stage 5: EnrichResults (modifies licitacoes_filtradas in-place) ===
 

@@ -1165,6 +1165,16 @@ class BuscaResponse(BaseModel):
         default=None,
         description="GTM-STAB-005 AC4: 0=normal, 1=no floor, 2=no density, 3=top by value"
     )
+    # CRIT-059: Async zero-match background job
+    zero_match_job_id: Optional[str] = Field(
+        default=None,
+        description="CRIT-059 AC6: Job ID for background zero-match classification (None when sync or disabled)"
+    )
+    zero_match_candidates_count: int = Field(
+        default=0,
+        ge=0,
+        description="CRIT-059 AC6: Number of zero-match candidates pending background classification"
+    )
     # STORY-320 AC3: Soft paywall indicators
     paywall_applied: bool = Field(
         default=False,

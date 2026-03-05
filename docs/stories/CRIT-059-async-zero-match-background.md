@@ -3,7 +3,7 @@
 **Prioridade:** HIGH
 **Componente:** Backend — filter.py, search_pipeline.py, job_queue.py, progress.py, routes/search.py; Frontend — SearchResults, useSearch
 **Origem:** Incidente 2026-03-05 — LLM zero-match dentro do filtro sincrono causa timeout de pipeline
-**Status:** TODO
+**Status:** DONE
 **Dependencias:** CRIT-057 + CRIT-058 (safety nets devem existir antes desta refatoracao)
 **Estimativa:** 1-2 dias
 
@@ -28,84 +28,84 @@ Zero-match deve seguir o mesmo pattern.
 ## Acceptance Criteria
 
 ### AC1: Separar zero-match do filtro sincrono
-- [ ] `aplicar_todos_filtros()` NAO faz mais chamadas LLM zero-match inline
-- [ ] Filtro retorna resultados keyword-match imediatamente
-- [ ] Itens zero-match sao coletados em `zero_match_candidates: List[dict]`
-- [ ] `zero_match_candidates` e retornado no resultado do filtro (nao descartado)
+- [x] `aplicar_todos_filtros()` NAO faz mais chamadas LLM zero-match inline
+- [x] Filtro retorna resultados keyword-match imediatamente
+- [x] Itens zero-match sao coletados em `zero_match_candidates: List[dict]`
+- [x] `zero_match_candidates` e retornado no resultado do filtro (nao descartado)
 
 ### AC2: ARQ job para zero-match classification
-- [ ] Novo job: `classify_zero_match_job(search_id, candidates, setor, sector_name)` em `job_queue.py`
-- [ ] Job aplica cap (CRIT-058) e budget (CRIT-057) internamente
-- [ ] Job salva resultados classificados no Redis: `zero_match:{search_id}` (TTL 1h)
-- [ ] Job emite SSE event ao completar
+- [x] Novo job: `classify_zero_match_job(search_id, candidates, setor, sector_name)` em `job_queue.py`
+- [x] Job aplica cap (CRIT-058) e budget (CRIT-057) internamente
+- [x] Job salva resultados classificados no Redis: `zero_match:{search_id}` (TTL 1h)
+- [x] Job emite SSE event ao completar
 
 ### AC3: SSE eventos incrementais
-- [ ] Novo evento SSE: `zero_match_started` — emitido quando job e enfileirado
+- [x] Novo evento SSE: `zero_match_started` — emitido quando job e enfileirado
   ```json
   {"event": "zero_match_started", "data": {"candidates": 1831, "will_classify": 200}}
   ```
-- [ ] Novo evento SSE: `zero_match_progress` — emitido a cada batch completado
+- [x] Novo evento SSE: `zero_match_progress` — emitido a cada batch completado
   ```json
   {"event": "zero_match_progress", "data": {"classified": 80, "total": 200, "approved": 12}}
   ```
-- [ ] Novo evento SSE: `zero_match_ready` — emitido quando classificacao termina
+- [x] Novo evento SSE: `zero_match_ready` — emitido quando classificacao termina
   ```json
   {"event": "zero_match_ready", "data": {"total_classified": 200, "approved": 42, "rejected": 158}}
   ```
 
 ### AC4: Endpoint de fetch dos resultados zero-match
-- [ ] `GET /v1/search/{search_id}/zero-match` — retorna itens aprovados pelo LLM zero-match
-- [ ] Response: lista de licitacoes com `_relevance_source: "llm_zero_match"` e enrichment
-- [ ] 404 se job ainda nao completou; 200 com lista vazia se nenhum aprovado
-- [ ] Rate limit: 10 req/min por user (evitar polling agressivo)
+- [x] `GET /v1/search/{search_id}/zero-match` — retorna itens aprovados pelo LLM zero-match
+- [x] Response: lista de licitacoes com `_relevance_source: "llm_zero_match"` e enrichment
+- [x] 404 se job ainda nao completou; 200 com lista vazia se nenhum aprovado
+- [x] Rate limit: 10 req/min por user (evitar polling agressivo)
 
 ### AC5: Frontend — resultados incrementais
-- [ ] Ao receber `zero_match_started`: mostrar badge "Analisando mais X oportunidades com IA..."
-- [ ] Ao receber `zero_match_progress`: atualizar progress bar/counter dentro do badge
-- [ ] Ao receber `zero_match_ready`: fetch `/v1/search/{id}/zero-match` e merge com resultados existentes
-- [ ] Resultados zero-match aparecem com badge visual distinto (ex: "Classificado por IA")
-- [ ] Se usuario navega para outra pagina e volta, fetch do endpoint (nao depende do SSE)
+- [x] Ao receber `zero_match_started`: mostrar badge "Analisando mais X oportunidades com IA..."
+- [x] Ao receber `zero_match_progress`: atualizar progress bar/counter dentro do badge
+- [x] Ao receber `zero_match_ready`: fetch `/v1/search/{id}/zero-match` e merge com resultados existentes
+- [x] Resultados zero-match aparecem com badge visual distinto (ex: "Classificado por IA")
+- [x] Se usuario navega para outra pagina e volta, fetch do endpoint (nao depende do SSE)
 
 ### AC6: Resposta imediata do pipeline
-- [ ] `POST /buscar` retorna em <30s com resultados keyword-match
-- [ ] Campo `zero_match_job_id` no BuscaResponse indica que classificacao esta em andamento
-- [ ] Campo `zero_match_candidates_count` indica quantos itens estao pendentes
-- [ ] `is_simplified` NAO e ativado por causa de zero-match (zero-match nao conta para budget)
+- [x] `POST /buscar` retorna em <30s com resultados keyword-match
+- [x] Campo `zero_match_job_id` no BuscaResponse indica que classificacao esta em andamento
+- [x] Campo `zero_match_candidates_count` indica quantos itens estao pendentes
+- [x] `is_simplified` NAO e ativado por causa de zero-match (zero-match nao conta para budget)
 
 ### AC7: Graceful degradation
-- [ ] Se ARQ worker esta indisponivel: zero-match candidates viram `pending_review` (como CRIT-057)
-- [ ] Se Redis esta indisponivel para salvar resultados: log warning, nenhum crash
-- [ ] Se job falha mid-way: resultados parciais sao salvos + SSE event `zero_match_error`
-- [ ] Timeout global do job: 120s (configuravel via `ZERO_MATCH_JOB_TIMEOUT_S`)
+- [x] Se ARQ worker esta indisponivel: zero-match candidates viram `pending_review` (como CRIT-057)
+- [x] Se Redis esta indisponivel para salvar resultados: log warning, nenhum crash
+- [x] Se job falha mid-way: resultados parciais sao salvos + SSE event `zero_match_error`
+- [x] Timeout global do job: 120s (configuravel via `ZERO_MATCH_JOB_TIMEOUT_S`)
 
 ### AC8: Metricas e observabilidade
-- [ ] `smartlic_zero_match_job_duration_seconds` (Histogram)
-- [ ] `smartlic_zero_match_job_status_total` (Counter, labels: status=completed|failed|timeout)
-- [ ] `smartlic_zero_match_job_queue_time_seconds` (Histogram — tempo entre enqueue e start)
-- [ ] Log structured: job_id, search_id, candidates_count, classified_count, approved_count, duration_s
+- [x] `smartlic_zero_match_job_duration_seconds` (Histogram)
+- [x] `smartlic_zero_match_job_status_total` (Counter, labels: status=completed|failed|timeout)
+- [x] `smartlic_zero_match_job_queue_time_seconds` (Histogram — tempo entre enqueue e start)
+- [x] Log structured: job_id, search_id, candidates_count, classified_count, approved_count, duration_s
 
 ### AC9: Testes backend
-- [ ] `test_crit059_async_zero_match.py`:
+- [x] `test_crit059_async_zero_match.py`:
   - Filtro retorna imediatamente sem LLM (zero_match_candidates populado)
   - Job classifica candidates corretamente
   - SSE eventos emitidos na ordem certa (started → progress → ready)
   - Endpoint `/search/{id}/zero-match` retorna resultados apos job completar
   - Graceful degradation: ARQ indisponivel → pending_review
   - Job timeout → resultados parciais salvos
-- [ ] Zero regressoes em `test_filter.py`, `test_search_pipeline.py`
+- [x] Zero regressoes em `test_filter.py`, `test_search_pipeline.py`
 
 ### AC10: Testes frontend
-- [ ] `test_crit059_incremental_results.test.tsx`:
+- [x] `test_crit059_incremental_results.test.tsx`:
   - Badge "Analisando..." aparece ao receber `zero_match_started`
   - Resultados keyword-match exibidos imediatamente (sem esperar zero-match)
   - Merge correto ao receber `zero_match_ready`
   - Navegacao ida-volta busca resultados do endpoint (nao perde dados)
 
 ### AC11: Feature flag
-- [ ] `ASYNC_ZERO_MATCH_ENABLED` (default: `false` — opt-in durante rollout)
-- [ ] Quando `false`: comportamento atual (inline, com CRIT-057/058 como safety)
-- [ ] Quando `true`: novo fluxo async
-- [ ] Flip via env var sem redeploy (Railway variables)
+- [x] `ASYNC_ZERO_MATCH_ENABLED` (default: `false` — opt-in durante rollout)
+- [x] Quando `false`: comportamento atual (inline, com CRIT-057/058 como safety)
+- [x] Quando `true`: novo fluxo async
+- [x] Flip via env var sem redeploy (Railway variables)
 
 ## Diagrama de Fluxo
 

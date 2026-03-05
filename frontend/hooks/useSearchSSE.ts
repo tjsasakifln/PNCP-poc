@@ -158,6 +158,15 @@ export interface PendingReviewUpdate {
   rejectedCount: number;
 }
 
+/** CRIT-059 AC5: Zero-match background classification progress */
+export interface ZeroMatchProgress {
+  candidates: number;
+  willClassify: number;
+  classified: number;
+  approved: number;
+  status: 'started' | 'classifying' | 'ready' | 'error';
+}
+
 /** STORY-295 AC10: Per-source status for progressive results */
 export type SourceStatusType = 'pending' | 'fetching' | 'success' | 'partial' | 'error' | 'timeout';
 
@@ -206,6 +215,8 @@ interface UseSearchSSEReturn {
   filterSummary: FilterSummary | null;
   /** STORY-354 AC6: Pending review reclassification update */
   pendingReviewUpdate: PendingReviewUpdate | null;
+  /** CRIT-059 AC5: Zero-match background classification progress */
+  zeroMatchProgress: ZeroMatchProgress | null;
 }
 
 export function useSearchSSE({
@@ -238,6 +249,8 @@ export function useSearchSSE({
   const [filterSummary, setFilterSummary] = useState<FilterSummary | null>(null);
   // STORY-354 AC6: Pending review reclassification update
   const [pendingReviewUpdate, setPendingReviewUpdate] = useState<PendingReviewUpdate | null>(null);
+  // CRIT-059 AC5: Zero-match classification progress
+  const [zeroMatchProgress, setZeroMatchProgress] = useState<ZeroMatchProgress | null>(null);
 
   // CRIT-052 AC1: High-water mark — progress must never decrease
   const progressHighWaterRef = useRef(0);
@@ -350,7 +363,11 @@ export function useSearchSSE({
         event.stage === 'source_complete' ||
         event.stage === 'source_error' ||
         event.stage === 'filter_summary' ||
-        event.stage === 'pending_review'
+        event.stage === 'pending_review' ||
+        event.stage === 'zero_match_started' ||
+        event.stage === 'zero_match_progress' ||
+        event.stage === 'zero_match_ready' ||
+        event.stage === 'zero_match_error'
       );
 
       if (!isMetadataEvent) {
@@ -399,6 +416,41 @@ export function useSearchSSE({
           acceptedCount: (detail.accepted_count as number) || 0,
           rejectedCount: (detail.rejected_count as number) || 0,
         });
+      }
+
+      // CRIT-059 AC5: Handle zero-match classification progress events
+      if (event.stage === 'zero_match_started') {
+        const detail = event.detail as Record<string, unknown>;
+        setZeroMatchProgress({
+          candidates: (detail.candidates as number) || 0,
+          willClassify: (detail.will_classify as number) || 0,
+          classified: 0,
+          approved: 0,
+          status: 'started',
+        });
+      } else if (event.stage === 'zero_match_progress') {
+        const detail = event.detail as Record<string, unknown>;
+        setZeroMatchProgress(prev => prev ? {
+          ...prev,
+          classified: (detail.classified as number) || 0,
+          approved: (detail.approved as number) || 0,
+          status: 'classifying',
+        } : prev);
+      } else if (event.stage === 'zero_match_ready') {
+        const detail = event.detail as Record<string, unknown>;
+        setZeroMatchProgress(prev => prev ? {
+          ...prev,
+          classified: (detail.total_classified as number) || prev.classified,
+          approved: (detail.approved as number) || 0,
+          status: 'ready',
+        } : prev);
+        // Trigger SSE handler to fetch results
+        onEventRef.current?.(event);
+      } else if (event.stage === 'zero_match_error') {
+        setZeroMatchProgress(prev => prev ? {
+          ...prev,
+          status: 'error',
+        } : prev);
       }
 
       // STORY-367 AC3: Mark terminal events to prevent reconnect
@@ -669,6 +721,6 @@ export function useSearchSSE({
     isReconnecting,
     isDegraded, degradedDetail, partialProgress, refreshAvailable,
     ufStatuses, ufTotalFound, ufAllComplete, batchProgress,
-    sourceStatuses, filterSummary, pendingReviewUpdate,
+    sourceStatuses, filterSummary, pendingReviewUpdate, zeroMatchProgress,
   };
 }

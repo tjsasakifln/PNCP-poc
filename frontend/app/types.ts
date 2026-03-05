@@ -185,6 +185,10 @@ export interface BuscaResult {
   pending_review_count?: number;
   /** CRIT-053 AC1: Sources degraded (canary fail, health issues) — not counted as succeeded */
   sources_degraded?: string[];
+  /** CRIT-059 AC6: Job ID for background zero-match classification */
+  zero_match_job_id?: string | null;
+  /** CRIT-059 AC6: Number of zero-match candidates pending background classification */
+  zero_match_candidates_count?: number;
 }
 
 /** STORY-259: Per-bid analysis from batch LLM call */

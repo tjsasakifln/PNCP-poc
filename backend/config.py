@@ -378,6 +378,13 @@ FILTER_ZERO_MATCH_BUDGET_S: float = float(os.getenv("FILTER_ZERO_MATCH_BUDGET_S"
 MAX_ZERO_MATCH_ITEMS: int = int(os.getenv("MAX_ZERO_MATCH_ITEMS", "200"))
 ZERO_MATCH_VALUE_RATIO: float = float(os.getenv("ZERO_MATCH_VALUE_RATIO", "0.7"))
 
+# CRIT-059: Async zero-match — move LLM zero-match classification to ARQ background job
+ASYNC_ZERO_MATCH_ENABLED: bool = str_to_bool(
+    os.getenv("ASYNC_ZERO_MATCH_ENABLED", "false")
+)
+# CRIT-059 AC7: Global timeout for the background zero-match job
+ZERO_MATCH_JOB_TIMEOUT_S: int = int(os.getenv("ZERO_MATCH_JOB_TIMEOUT_S", "120"))
+
 LLM_FALLBACK_PENDING_ENABLED: bool = str_to_bool(
     os.getenv("LLM_FALLBACK_PENDING_ENABLED", "true")
 )
@@ -488,6 +495,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "ZERO_RESULTS_RELAXATION_ENABLED": ("ZERO_RESULTS_RELAXATION_ENABLED", "true"),
     "LLM_ZERO_MATCH_ENABLED": ("LLM_ZERO_MATCH_ENABLED", "true"),
     "LLM_ZERO_MATCH_BATCH_ENABLED": ("LLM_ZERO_MATCH_BATCH_ENABLED", "true"),
+    "ASYNC_ZERO_MATCH_ENABLED": ("ASYNC_ZERO_MATCH_ENABLED", "false"),
     "CO_OCCURRENCE_RULES_ENABLED": ("CO_OCCURRENCE_RULES_ENABLED", "true"),
     "FILTER_DEBUG_MODE": ("FILTER_DEBUG_MODE", "false"),
     "ITEM_INSPECTION_ENABLED": ("ITEM_INSPECTION_ENABLED", "true"),

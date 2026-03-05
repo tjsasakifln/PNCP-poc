@@ -30,6 +30,14 @@ export interface SearchResultsData {
     acceptedCount: number;
     rejectedCount: number;
   } | null;
+  /** CRIT-059 AC5: Zero-match background classification progress */
+  zeroMatchProgress?: {
+    candidates: number;
+    willClassify: number;
+    classified: number;
+    approved: number;
+    status: 'started' | 'classifying' | 'ready' | 'error';
+  } | null;
 }
 
 // ---------------------------------------------------------------------------

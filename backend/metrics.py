@@ -603,6 +603,25 @@ ZERO_MATCH_POOL_SIZE = _create_histogram(
     buckets=[10, 25, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000],
 )
 
+# CRIT-059: Async zero-match job metrics
+ZERO_MATCH_JOB_DURATION = _create_histogram(
+    "smartlic_zero_match_job_duration_seconds",
+    "CRIT-059 AC8: Duration of async zero-match classification job",
+    buckets=[1, 2, 5, 10, 15, 20, 30, 45, 60, 90, 120],
+)
+
+ZERO_MATCH_JOB_STATUS = _create_counter(
+    "smartlic_zero_match_job_status_total",
+    "CRIT-059 AC8: Async zero-match job outcomes",
+    labelnames=["status"],  # completed, failed, timeout
+)
+
+ZERO_MATCH_JOB_QUEUE_TIME = _create_histogram(
+    "smartlic_zero_match_job_queue_time_seconds",
+    "CRIT-059 AC8: Time between enqueue and job start",
+    buckets=[0.1, 0.5, 1, 2, 5, 10, 30, 60],
+)
+
 FILTER_PASSTHROUGH_TOTAL = _create_counter(
     "smartlic_filter_passthrough_total",
     "Filter pass-through decisions for non-standard records",

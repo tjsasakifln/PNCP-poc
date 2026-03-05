@@ -1916,6 +1916,43 @@ class SearchPipeline:
                 filter_stats=stats,
             )
 
+        # CRIT-059: Dispatch async zero-match job if candidates were collected
+        _zm_candidates = ctx.filter_stats.get("zero_match_candidates", [])
+        if _zm_candidates:
+            ctx.zero_match_candidates = _zm_candidates
+            ctx.zero_match_candidates_count = len(_zm_candidates)
+            try:
+                from job_queue import is_queue_available, enqueue_job
+                if await is_queue_available():
+                    _sector_name = ctx.sector.name if ctx.sector else (ctx.request.setor_id or "")
+                    _sector_id = ctx.request.setor_id or ""
+                    _search_id = getattr(ctx.request, "search_id", None) or ""
+                    job = await enqueue_job(
+                        "classify_zero_match_job",
+                        search_id=_search_id,
+                        candidates=_zm_candidates,
+                        setor=_sector_id,
+                        sector_name=_sector_name,
+                        custom_terms=ctx.custom_terms or None,
+                        enqueued_at=sync_time_module.time(),
+                        _job_id=f"zm:{_search_id}",
+                    )
+                    if job:
+                        ctx.zero_match_job_id = getattr(job, "job_id", None) or f"zm:{_search_id}"
+                        logger.info(
+                            f"[CRIT-059] Enqueued zero-match job for {len(_zm_candidates)} candidates "
+                            f"(search_id={_search_id}, job_id={ctx.zero_match_job_id})"
+                        )
+                    else:
+                        logger.warning("[CRIT-059] enqueue_job returned None — marking as pending_review")
+                        ctx.zero_match_job_id = None
+                else:
+                    logger.warning("[CRIT-059] ARQ unavailable — zero-match candidates become pending_review")
+                    ctx.zero_match_job_id = None
+            except Exception as _zm_err:
+                logger.warning(f"[CRIT-059] Failed to dispatch zero-match job: {_zm_err}")
+                ctx.zero_match_job_id = None
+
     # ------------------------------------------------------------------
     # Stage 5: EnrichResults
     # ------------------------------------------------------------------
@@ -2373,6 +2410,9 @@ class SearchPipeline:
             relaxation_level=ctx.relaxation_level,
             # STORY-354 AC2: Pending review count
             pending_review_count=ctx.filter_stats.get("pending_review_count", 0),
+            # CRIT-059 AC6: Async zero-match job info
+            zero_match_job_id=ctx.zero_match_job_id,
+            zero_match_candidates_count=ctx.zero_match_candidates_count,
         )
 
         logger.info(

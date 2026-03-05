@@ -1002,6 +1002,33 @@ async def get_search_results_v1(
 
 
 # ---------------------------------------------------------------------------
+# CRIT-059 AC4: Fetch zero-match classification results
+# ---------------------------------------------------------------------------
+
+@router.get("/search/{search_id}/zero-match")
+async def get_zero_match_results_endpoint(
+    search_id: str,
+    user: dict = Depends(require_auth),
+    _rl=Depends(require_rate_limit(10, 60)),  # 10 req/min per user
+):
+    """Return items approved by background zero-match LLM classification.
+
+    - 200: Results ready (may be empty list if none approved)
+    - 404: Job not yet completed or results expired
+    """
+    from job_queue import get_zero_match_results
+
+    results = await get_zero_match_results(search_id)
+    if results is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Resultados de classificação ainda não disponíveis.",
+        )
+
+    return {"search_id": search_id, "results": results, "count": len(results)}
+
+
+# ---------------------------------------------------------------------------
 # STORY-364 AC7-AC8: Regenerate Excel from stored results
 # ---------------------------------------------------------------------------
 

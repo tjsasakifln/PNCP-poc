@@ -136,6 +136,36 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
           excel_status: 'ready' as BuscaResult['excel_status'],
         } : prev);
       }
+    } else if (event.stage === 'zero_match_ready') {
+      // CRIT-059 AC5: Zero-match classification completed — fetch and merge results
+      const sid = asyncSearchIdRef.current || searchId;
+      if (sid) {
+        try {
+          const headers: Record<string, string> = {};
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+          const response = await fetch(`/api/search-zero-match/${encodeURIComponent(sid)}`, { headers });
+          if (response.ok) {
+            const data = await response.json() as { results: BuscaResult['licitacoes']; count: number };
+            if (data.results?.length > 0) {
+              setResult(prev => {
+                if (!prev) return prev;
+                // Merge zero-match results with existing results
+                const existingIds = new Set(prev.licitacoes.map(l => l.pncp_id));
+                const newResults = data.results.filter((l: any) => !existingIds.has(l.pncp_id));
+                return {
+                  ...prev,
+                  licitacoes: [...prev.licitacoes, ...newResults],
+                  total_filtrado: prev.total_filtrado + newResults.length,
+                  zero_match_candidates_count: 0,
+                  zero_match_job_id: null,
+                };
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('[CRIT-059] Error fetching zero-match results:', e);
+        }
+      }
     } else if (event.stage === 'uf_complete' || event.stage === 'partial_results') {
       // STAB-006 AC4: Save partial results to localStorage on each SSE update
       const sid = asyncSearchIdRef.current || searchId;
