@@ -179,6 +179,8 @@ export interface BuscaResult {
   total_before_paywall?: number | null;
   /** STORY-354 AC2: Number of bids awaiting AI reclassification */
   pending_review_count?: number;
+  /** CRIT-053 AC1: Sources degraded (canary fail, health issues) — not counted as succeeded */
+  sources_degraded?: string[];
 }
 
 /** STORY-259: Per-bid analysis from batch LLM call */

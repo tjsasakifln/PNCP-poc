@@ -1301,6 +1301,21 @@
               "description": "Per-source fetch metrics when multi-source is active",
               "title": "Source Stats"
             },
+            "sources_degraded": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "CRIT-053: Source codes that are degraded (e.g., canary timeout). Not counted as succeeded.",
+              "title": "Sources Degraded"
+            },
             "sources_used": {
               "anyOf": [
                 {

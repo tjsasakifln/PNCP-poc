@@ -43,6 +43,9 @@ export interface DataQualityBannerProps {
   cacheFallback?: boolean;
   cacheDateRange?: string | null;
 
+  // CRIT-053: Degraded sources
+  sourcesDegraded?: string[];
+
   // Actions
   onRefresh: () => void;
   onRetry: () => void;
@@ -74,12 +77,13 @@ function deriveSeverity(props: DataQualityBannerProps): BannerSeverity {
     return "error";
   }
 
-  // Priority 2 — warning (amber): partial failures, stale cache, truncation, or date-range cache fallback
+  // Priority 2 — warning (amber): partial failures, stale cache, truncation, degraded sources, or date-range cache fallback
   if (
     props.failedUfs.length > 0 ||
     (props.isCached && props.cacheStatus === "stale") ||
     props.isTruncated ||
-    props.cacheFallback
+    props.cacheFallback ||
+    (props.sourcesDegraded && props.sourcesDegraded.length > 0)
   ) {
     return "warning";
   }
@@ -94,6 +98,7 @@ function hasAnythingToReport(props: DataQualityBannerProps): boolean {
   if (props.isCached) return true;
   if (props.isTruncated) return true;
   if (props.cacheFallback) return true;
+  if (props.sourcesDegraded && props.sourcesDegraded.length > 0) return true;
   if (props.sourcesAvailable < props.sourcesTotal) return true;
   if (
     props.responseState === "degraded" ||
@@ -237,8 +242,18 @@ export function DataQualityBanner(props: DataQualityBannerProps) {
     );
   }
 
+  // CRIT-053 AC4: Degraded sources
+  if (props.sourcesDegraded && props.sourcesDegraded.length > 0) {
+    const hasPncp = props.sourcesDegraded.includes("PNCP");
+    if (hasPncp) {
+      segments.push("A fonte principal (PNCP) esta com lentidao. Resultados podem estar incompletos.");
+    } else {
+      segments.push(`Fontes degradadas: ${props.sourcesDegraded.join(", ")}`);
+    }
+  }
+
   // Sources: only if not all available
-  if (sourcesAvailable < sourcesTotal) {
+  if (sourcesAvailable < sourcesTotal && (!props.sourcesDegraded || props.sourcesDegraded.length === 0)) {
     segments.push(`${sourcesAvailable}/${sourcesTotal} fontes`);
   }
 

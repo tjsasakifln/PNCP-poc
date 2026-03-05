@@ -41,7 +41,7 @@ from authorization import get_admin_ids, get_master_quota_info
 from log_sanitizer import mask_user_id
 from search_cache import save_to_cache as _supabase_save_cache, get_from_cache as _supabase_get_cache, get_from_cache_cascade
 from fastapi import HTTPException
-from metrics import SEARCH_DURATION, FETCH_DURATION, CACHE_HITS, CACHE_MISSES, ACTIVE_SEARCHES, SEARCHES, FILTER_DECISIONS, SEARCH_RESPONSE_STATE, FILTER_INPUT_TOTAL, FILTER_OUTPUT_TOTAL, FILTER_DISCARD_RATE, BIDS_PROCESSED_TOTAL
+from metrics import SEARCH_DURATION, FETCH_DURATION, CACHE_HITS, CACHE_MISSES, ACTIVE_SEARCHES, SEARCHES, FILTER_DECISIONS, SEARCH_RESPONSE_STATE, FILTER_INPUT_TOTAL, FILTER_OUTPUT_TOTAL, FILTER_DISCARD_RATE, BIDS_PROCESSED_TOTAL, SOURCE_DEGRADATION_TOTAL, PARTIAL_RESULTS_SERVED_TOTAL
 from viability import assess_batch as viability_assess_batch
 from telemetry import get_tracer, optional_span
 
@@ -954,9 +954,32 @@ class SearchPipeline:
                     "duration_ms": sr.duration_ms,
                     "error": sr.error,
                     "status": sr.status,
+                    "skipped_reason": sr.skipped_reason,
                 }
                 for sr in consolidation_result.source_results
             ]
+
+            # CRIT-053 AC1/AC3: Detect degraded sources — canary failed + 0 records
+            canary_info = getattr(ctx, "_pncp_canary_result", None)
+            if canary_info and not canary_info.get("ok", True):
+                for sr in consolidation_result.source_results:
+                    if sr.source_code == "PNCP" and sr.record_count == 0 and sr.status == "success":
+                        sr.status = "degraded"
+                        sr.skipped_reason = "health_canary_timeout"
+                        ctx.sources_degraded.append("PNCP")
+                        # Update source_stats_data to reflect degraded status
+                        for stat in ctx.source_stats_data:
+                            if stat["source_code"] == "PNCP":
+                                stat["status"] = "degraded"
+                                stat["skipped_reason"] = "health_canary_timeout"
+                        # CRIT-053 AC7: Metrics
+                        SOURCE_DEGRADATION_TOTAL.labels(
+                            source="PNCP", reason="health_canary_timeout"
+                        ).inc()
+                        logger.warning(
+                            "CRIT-053: PNCP marked as degraded (canary failed, 0 records returned, "
+                            "cron_status=%s)", canary_info.get("cron_status", "unknown")
+                        )
 
             # STORY-305 AC3: Record CB success/failure per source after consolidation
             # Each source result counts as exactly 1 CB event (retry exhaustion = 1 failure, not N)
@@ -966,12 +989,20 @@ class SearchPipeline:
                 if _src_cb:
                     if sr.status == "success":
                         asyncio.ensure_future(_src_cb.record_success())
-                    elif sr.status in ("error", "timeout"):
+                    elif sr.status in ("error", "timeout", "degraded"):
                         asyncio.ensure_future(_src_cb.record_failure())
 
             # STORY-252 T8: Map consolidation degradation state to pipeline context
             ctx.is_partial = consolidation_result.is_partial
             ctx.degradation_reason = consolidation_result.degradation_reason
+
+            # CRIT-053 AC2: If primary source (PNCP) is degraded, force is_partial=true
+            if ctx.sources_degraded and not ctx.is_partial:
+                ctx.is_partial = True
+                ctx.degradation_reason = (
+                    f"PNCP health canary timeout (cron status: "
+                    f"{canary_info.get('cron_status', 'unknown') if canary_info else 'unknown'})"
+                )
             # GTM-STAB-003 AC3: Propagate UF tracking from consolidation
             if consolidation_result.ufs_completed:
                 ctx.succeeded_ufs = consolidation_result.ufs_completed
@@ -985,6 +1016,12 @@ class SearchPipeline:
                 )
                 for sr in consolidation_result.source_results
             ]
+
+            # CRIT-053 AC1: Ensure degraded sources show "degraded" in data_sources too
+            if ctx.sources_degraded:
+                for ds in ctx.data_sources:
+                    if ds.source in ctx.sources_degraded:
+                        ds.status = "degraded"
 
             # GTM-FIX-004: Collect per-source truncation flags from adapters
             truncation_details = {}
@@ -2227,6 +2264,7 @@ class SearchPipeline:
             is_partial=ctx.is_partial,
             data_sources=ctx.data_sources,
             degradation_reason=ctx.degradation_reason,
+            sources_degraded=ctx.sources_degraded if ctx.sources_degraded else None,
             failed_ufs=ctx.failed_ufs,
             succeeded_ufs=ctx.succeeded_ufs,
             total_ufs_requested=len(ctx.request.ufs),
@@ -2406,6 +2444,9 @@ class SearchPipeline:
         elapsed_ms = int((sync_time_module.time() - ctx.start_time) * 1000)
         # CRIT-005 AC3: Increment response state counter
         SEARCH_RESPONSE_STATE.labels(state=ctx.response_state).inc()
+        # CRIT-053 AC7: Track partial results served
+        if ctx.is_partial:
+            PARTIAL_RESULTS_SERVED_TOTAL.inc()
 
         # Determine which sources were attempted, succeeded, and failed
         sources_attempted = []
@@ -2422,6 +2463,9 @@ class SearchPipeline:
                         "source": src_code,
                         "reason": stat["error"][:100]  # Truncate long error messages
                     })
+                elif stat.get("status") == "degraded":
+                    # CRIT-053 AC1: Degraded sources NOT counted as succeeded
+                    pass
                 else:
                     sources_succeeded.append(src_code)
         else:
@@ -2446,6 +2490,7 @@ class SearchPipeline:
             "comprasgov_circuit_breaker": "degraded" if get_circuit_breaker("comprasgov").is_degraded else "healthy",
             "pncp_canary_status": canary_info.get("cron_status", "unknown"),
             "pncp_canary_latency_ms": canary_info.get("latency_ms"),
+            "sources_degraded": ctx.sources_degraded or [],
             "total_results": len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,
             "total_filtered": len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0,
             "ufs_requested": len(ctx.request.ufs),

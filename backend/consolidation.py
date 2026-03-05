@@ -32,7 +32,9 @@ class SourceResult:
     record_count: int
     duration_ms: int
     error: Optional[str] = None
-    status: str = "success"  # "success" | "error" | "timeout" | "skipped" | "disabled"
+    status: str = "success"  # "success" | "error" | "timeout" | "skipped" | "disabled" | "degraded"
+    # CRIT-053 AC3: Reason why source was skipped/degraded (e.g. "health_canary_timeout")
+    skipped_reason: Optional[str] = None
 
 
 @dataclass

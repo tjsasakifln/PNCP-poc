@@ -1010,6 +1010,11 @@ class BuscaResponse(BaseModel):
         default=None,
         description="Human-readable explanation of partial results (e.g., 'PNCP indisponível, resultados de fontes alternativas')"
     )
+    # CRIT-053 AC1/AC4: Sources that were degraded (canary fail, 0 results due to health issues)
+    sources_degraded: Optional[List[str]] = Field(
+        default=None,
+        description="CRIT-053: Source codes that are degraded (e.g., canary timeout). Not counted as succeeded."
+    )
     # STORY-257A AC5: Partial results transparency
     failed_ufs: Optional[List[str]] = Field(
         default=None,

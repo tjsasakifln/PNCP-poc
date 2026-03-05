@@ -71,6 +71,8 @@ class SearchContext:
     # GTM-RESILIENCE-A01: Semantic response state
     response_state: str = "live"  # "live" | "cached" | "degraded" | "empty_failure"
     degradation_guidance: Optional[str] = None
+    # CRIT-053: Sources that returned 0 results due to degradation (canary fail, etc.)
+    sources_degraded: list = field(default_factory=list)  # List[str] e.g. ["PNCP"]
     # GTM-RESILIENCE-A04: Progressive delivery
     live_fetch_in_progress: bool = False
 

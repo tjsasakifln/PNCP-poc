@@ -650,6 +650,18 @@ INCIDENTS_TOTAL = _create_counter(
     labelnames=["source", "severity"],
 )
 
+# CRIT-053 AC7: Source degradation and partial results metrics
+SOURCE_DEGRADATION_TOTAL = _create_counter(
+    "smartlic_source_degradation_total",
+    "CRIT-053: Times a source was marked as degraded",
+    labelnames=["source", "reason"],
+)
+
+PARTIAL_RESULTS_SERVED_TOTAL = _create_counter(
+    "smartlic_partial_results_served_total",
+    "CRIT-053: Times partial results were served to users",
+)
+
 
 # ============================================================================
 # ASGI app factory for /metrics endpoint
