@@ -1,443 +1,345 @@
-# Technical Debt Assessment - DRAFT
+# Technical Debt Assessment - DRAFT v2.0
 
 **Projeto:** SmartLic v0.5
-**Data:** 2026-02-25
-**Autor:** @architect (Archon) - Phase 4 Brownfield Discovery
-**Fontes:** system-architecture.md (Phase 1), SCHEMA.md + DB-AUDIT.md (Phase 2), frontend-spec.md (Phase 3)
-**Objetivo:** Viabilizar funcionalidades core em producao, aceitando dividas tecnicas controladas
+**Data:** 2026-03-04
+**Autor:** @architect (Atlas) — Consolidacao Fase 4 (Brownfield Discovery v2)
+**Status:** DRAFT — Pendente revisao dos especialistas
+**Fontes:** system-architecture.md v4.0 (Fase 1), SCHEMA.md + DB-AUDIT.md (Fase 2), frontend-spec.md (Fase 3)
+**Delta desde v1 (2026-02-25):** +30 stories shipped, +1208 files changed, 190K insertions
 
 ---
 
-## Executive Summary
+## Para Revisao dos Especialistas
 
-This assessment consolidates findings from 4 documents produced during Phases 1-3 of the brownfield discovery audit: system architecture (69 backend modules, 29 pages), database schema and audit (42 migrations, 18 tables, 28 DB-specific debts), and frontend specification (100+ components, 28 frontend-specific debts). The total inventory comprises **92 technical debt items** spanning backend, database, and frontend.
-
-The critical finding is that SmartLic's core functionalities are largely operational in production, but **3 database columns are missing from migrations** (added via Supabase Dashboard instead), and **1 code reference to a non-existent table** creates a runtime bug. These 4 items are the only true blockers -- if the Supabase project were recreated from migrations alone (disaster recovery scenario), Stripe billing, trial analytics, and trial stats would break. Additionally, the `handle_new_user()` trigger has regressed through 6 rewrites, potentially causing new user profiles to miss fields like `company` and `sector`.
-
-The recommended action is immediate: fix the 4 blocking items (1 code fix + 1 consolidated migration for 3 missing columns), then address the 15 stability items within the next 2 sprints. The remaining 73 items are registered as accepted debts, organized by area and severity for future prioritization.
+Este documento consolida TODOS os debitos tecnicos identificados nas Fases 1-3 do Brownfield Discovery v2. Cada secao precisa de validacao do especialista responsavel antes de se tornar FINAL.
 
 ---
 
-## Core Functionalities (must work reliably)
+## 1. Debitos de Sistema (@architect)
 
-| # | Funcionalidade | Status | Blocking Issues |
-|---|----------------|--------|-----------------|
-| 1 | Busca multi-fonte (PNCP + PCP v2 + ComprasGov) | Operational | None blocking. TD-C02 (dual HTTP client) is maintenance burden, not a blocker. |
-| 2 | Classificacao IA (LLM arbiter + zero-match) | Operational | None blocking. LLM fallback = REJECT (zero noise philosophy). |
-| 3 | Pipeline de oportunidades (Kanban) | Operational | T1-04 (trial_stats references non-existent table) affects trial value display. |
-| 4 | Billing (Stripe + trial) | Partially broken on fresh DB | T1-01, T1-02, T1-03 (missing migration columns). |
-| 5 | Auth + Onboarding | Operational | T2-04 (handle_new_user trigger regression) may cause missing profile fields. |
-| 6 | Relatorios (Excel + resumo IA) | Operational | None blocking. |
-| 7 | Dashboard + Analytics | Partially broken on fresh DB | T1-02 (profiles.trial_expires_at missing migration). |
+Fonte: `docs/architecture/system-architecture.md` v4.0 — 17 debitos identificados em 5 categorias
 
----
+### 1.1 Arquitetura (6 debitos)
 
-## Tier 1: BLOCKING (Acoes Imediatas)
+| ID | Debito | Severidade | Impacto | Esforco Est. |
+|----|--------|-----------|---------|-------------|
+| TD-A01 | **Rotas montadas 2x** (versioned `/v1/` + legacy root) — 61 `include_router` calls, dobra a tabela de rotas para 120+ endpoints. Sunset 2026-06-01 sem plano de migracao. Frontend ja usa versioned endpoints. | HIGH | Performance + manutencao | 4-8h |
+| TD-A02 | **search_pipeline.py god module** — 800+ linhas com helpers inline, cache logic, quota email, item conversion. Cada "stage" tem 50-100+ linhas com try/catch aninhado. | HIGH | Manutencao + testabilidade | 16-24h |
+| TD-A03 | **Progress tracker in-memory nao escala horizontalmente** — `_active_trackers` usa asyncio.Queue local. Redis Streams existe mas e fallback. Duas instancias Railway teriam estado dividido. | HIGH | Escalabilidade (blocker para scale-out) | 8-16h |
+| TD-A04 | **10 background tasks no lifespan** sem task manager — Cada task tem seu proprio pattern cancel/await. Sem abstracao `TaskRegistry`. | MEDIUM | Manutencao | 8h |
+| TD-A05 | **Dual HTTP client PNCP** (sync requests + async httpx) — 1500+ linhas de logica duplicada de retry, circuit breaker, error handling. Sync client usado apenas como fallback via `asyncio.to_thread()`. | MEDIUM | Manutencao | 12-16h |
+| TD-A06 | **Lead prospecting modules desconectados** — 5 modulos (lead_prospecting, lead_scorer, lead_deduplicator, contact_searcher, cli_acha_leads) aparentemente dead code. | LOW | Limpeza | 2h |
 
-Items that **prevent core features from functioning**. Must be fixed before any other work.
+### 1.2 Inconsistencias de Padrao (5 debitos)
 
-| ID | Debito | Area | Impacto no Core | Esforco | Acao Requerida |
-|----|--------|------|-----------------|---------|----------------|
-| T1-01 | `profiles.subscription_status` -- column used in 5+ backend modules but has no migration (DB-AUDIT-003) | Database | Stripe webhook processing silently fails on fresh DB setup. `/me` endpoint returns incomplete data. Billing core (4) broken. | 1 migration | `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'trial';` |
-| T1-02 | `profiles.trial_expires_at` -- column used in analytics and user routes but has no migration (DB-AUDIT-004) | Database | Analytics endpoint fails on fresh DB. Trial status display broken. Dashboard/Analytics core (7) broken. | 1 migration | `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS trial_expires_at TIMESTAMPTZ;` |
-| T1-03 | `user_subscriptions.subscription_status` -- column used in Stripe webhook handler but has no migration (DB-AUDIT-005) | Database | Stripe webhook processing fails on checkout and payment failure events. Billing core (4) broken. | 1 migration | `ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active';` |
-| T1-04 | `services/trial_stats.py` references non-existent `user_pipeline` table instead of `pipeline_items` (DB-AUDIT-028) | Backend Code | Runtime error when trial stats endpoint is called. Pipeline core (3) trial value display broken. | 1-line code fix | Change `sb.table("user_pipeline")` to `sb.table("pipeline_items")` in `backend/services/trial_stats.py` line 78. |
+| ID | Debito | Severidade | Esforco |
+|----|--------|-----------|---------|
+| TD-P01 | **Nomenclatura de migrations inconsistente** — Mix de `001_*.sql` (sequencial) + `20260220120000_*` (timestamped). 73 migrations totais. | MEDIUM | 4h |
+| TD-P02 | **Feature flags somente em env vars** — 25+ flags com cache 60s. Sem UI para toggle runtime. Requer restart ou endpoint admin reload. | MEDIUM | 8-12h |
+| TD-P03 | **User-Agent hardcoded "BidIQ"** em pncp_client.py — misleading para API providers. | LOW | 0.5h |
+| TD-P04 | **pyproject.toml referencia "bidiq-uniformes-backend"** — branding antigo. | LOW | 0.5h |
+| TD-P05 | **Arquivos de teste na raiz do backend** — test_pncp_homologados_discovery.py etc. fora de `tests/`. | LOW | 1h |
 
-**Total effort:** 1 SQL migration (T1-01 through T1-03 combined) + 1 Python code fix (T1-04).
-**Estimated time:** 1-2 hours including testing.
-**Risk:** Low -- all changes are additive (no data modification, no column drops).
+### 1.3 Abstracoes Faltantes (4 debitos)
 
----
+| ID | Debito | Severidade | Esforco |
+|----|--------|-----------|---------|
+| TD-M01 | **Sem lifecycle manager para background tasks** — 10 tasks com create/cancel/await manual. | MEDIUM | 8h |
+| TD-M02 | **Sem validacao de contrato API no CI** — openapi-typescript gera types mas sem CI step de drift detection. | MEDIUM | 4-8h |
+| TD-M03 | **Sem pre-commit hooks** — Sem `.pre-commit-config.yaml`. Devs podem commitar codigo failing lint/type checks. | LOW | 2h |
+| TD-M04 | **Sem lint enforcement no CI backend** — ruff e mypy configurados mas nao no CI. | LOW | 2h |
 
-## Tier 2: STABILITY (Estabilidade em Producao)
+### 1.4 Escalabilidade (5 debitos)
 
-Items that cause **intermittent failures, degraded experience, or security gaps** in production. Fix within next 2 sprints.
+| ID | Debito | Severidade | Impacto |
+|----|--------|-----------|---------|
+| TD-S01 | **Railway 1GB com 2 workers** — Cada worker mantem caches in-memory proprios. OOM kills historicos (WEB_CONCURRENCY reduzido de 4 para 2). | HIGH | Estabilidade producao |
+| TD-S02 | **PNCP page size reduzido para 50** — API limit change requer 10x mais API calls. Health canary (tamanhoPagina=10) nao detecta este limite. | HIGH | Cobertura de dados |
+| TD-S03 | **Auth token cache in-memory nao compartilhado** entre Gunicorn workers — Desperdicio de memoria. | MEDIUM | Eficiencia |
+| TD-S04 | **Sem CDN para assets estaticos** — Frontend servido direto do Railway sem edge caching. | MEDIUM | Performance usuario |
+| TD-S05 | **`time.sleep(0.3)` sincrono em quota.py** — Bloqueia event loop async. Deveria usar `asyncio.sleep()`. | MEDIUM | Estabilidade |
 
-| ID | Debito | Area | Risco | Esforco | Acao Requerida |
-|----|--------|------|-------|---------|----------------|
-| T2-01 | 3 tables still reference `auth.users(id)` instead of `profiles(id)`: `pipeline_items`, `classification_feedback`, `trial_email_log` (DB-AUDIT-001) | Database | Inconsistent cascade behavior. If profile deleted without auth.users deletion, orphaned rows may appear. | 1 migration | Repoint FKs to `profiles(id) ON DELETE CASCADE`. |
-| T2-02 | `classification_feedback.user_id` FK has no ON DELETE clause, defaulting to RESTRICT (DB-AUDIT-002) | Database | User deletion blocked by orphaned feedback rows. Unlike all other user-owned tables. | Part of T2-01 | Add `ON DELETE CASCADE` when switching to `profiles(id)`. |
-| T2-03 | `search_results_cache.results` JSONB blob growing unbounded -- 50-500 KB per entry, up to 5 MB per user (DB-AUDIT-023, DB-AUDIT-014) | Database | Database size inflation. Slow queries when results included in SELECT. Most likely performance bottleneck at scale. | pg_cron + constraint | Add `CHECK (octet_length(results::text) < 1048576)` + pg_cron cleanup for cold entries > 7 days. |
-| T2-04 | `handle_new_user()` trigger regressed -- final version (mig 20260224000000) dropped `company`, `sector`, `whatsapp_consent`, `context_data` fields (DB-AUDIT-006) | Database | New user profiles missing business fields from signup metadata. Onboarding data not persisted at signup. Auth/Onboarding core (5) degraded. | 1 migration | Rewrite trigger with all profile fields. Test signup flow after. |
-| T2-05 | `search_state_transitions` INSERT policy not scoped to service_role -- any authenticated user can insert fake transition records (DB-AUDIT-007) | Database | Audit log data integrity compromised. Users can inject arbitrary state transitions. | 1 migration | `DROP POLICY + CREATE POLICY ... FOR INSERT TO service_role WITH CHECK (true)`. |
-| T2-06 | `classification_feedback` admin policy uses `auth.role()` function instead of `TO service_role` (DB-AUDIT-009) | Database | Per-row function evaluation overhead. Not a correctness issue but violates modern Supabase convention. | 1 migration | Rewrite with `TO service_role`. |
-| T2-07 | `profiles` table missing service_role UPDATE/DELETE policies (DB-AUDIT-010) | Database | Defense-in-depth gap. Backend updates profiles via service_role key which currently bypasses RLS. | 1 migration | Add `FOR ALL TO service_role USING (true) WITH CHECK (true)`. |
-| T2-08 | `conversations` and `messages` tables missing service_role policies (DB-AUDIT-011) | Database | Same defense-in-depth gap. Backend accesses messaging tables via service_role. | 1 migration | Add service_role ALL policies to both tables. |
-| T2-09 | `search_sessions` missing composite index `(user_id, status, created_at)` (DB-AUDIT-013) | Database | Slower queries for stale session cleanup, analytics, and SIGTERM shutdown. Degrades as sessions grow. | 1 migration | `CREATE INDEX idx_search_sessions_user_status_created ON search_sessions (user_id, status, created_at DESC);` |
-| T2-10 | No GIN indexes on `search_sessions.sectors` and `search_sessions.ufs` arrays (DB-AUDIT-024, DB-AUDIT-022) | Database | Analytics queries on "searches per sector/UF" require full table scans. Degrades linearly with session count. | 1 migration | `CREATE INDEX ... USING GIN(sectors); CREATE INDEX ... USING GIN(ufs);` |
-| T2-11 | BottomNav drawer overlay lacks focus trap (D-008 from frontend-spec) | Frontend | WCAG 2.4.3 a11y violation. Mobile users can Tab out of the drawer into hidden content. | Small code change | Add focus trap to `BottomNav.tsx` drawer overlay. |
-| T2-12 | `trial_email_log` has RLS enabled but no policies (DB-AUDIT-008) | Database | Confusing for developers. Service_role bypasses RLS so functional, but should have explicit policy. | 1 migration | Add explicit service_role policy. |
-| T2-13 | Dockerfile uses Python 3.11-slim but pyproject.toml targets Python 3.12 (TD-C01) | Backend | Runtime version mismatch. Subtle compatibility issues with type hints and stdlib features between 3.11 and 3.12. | Low effort | Align Dockerfile to `python:3.12-slim` or update pyproject.toml to target 3.11. |
-| T2-14 | Hardcoded User-Agent still says "BidIQ" instead of "SmartLic" (TD-H05) | Backend | Misleading for API providers (PNCP, PCP). Could cause issues if providers use User-Agent for analytics or blocking. | Low effort | Update User-Agent strings in `pncp_client.py`. |
-| T2-15 | `synchronous sleep` in `quota.py` -- `time.sleep(0.3)` blocks the async event loop (TD-M06) | Backend | Blocks Gunicorn uvicorn worker event loop for 300ms on every quota save retry. Under load, this degrades request throughput. | 1-line code fix | Replace `time.sleep(0.3)` with `await asyncio.sleep(0.3)`. |
+### 1.5 Seguranca (4 debitos)
 
-**Total effort:** 1 consolidated SQL migration (T2-01 through T2-12) + 4 small code fixes (T2-11, T2-13, T2-14, T2-15).
-**Estimated time:** 1-2 days including testing.
-**Risk:** Low to medium (T2-04 requires signup flow testing).
+| ID | Debito | Severidade | Impacto |
+|----|--------|-----------|---------|
+| TD-SEC01 | **`unsafe-inline` e `unsafe-eval` no CSP** — Requerido por Next.js + Stripe.js mas enfraquece CSP. Avaliar nonce-based approach. | MEDIUM | Seguranca |
+| TD-SEC02 | **Service role key para todas as ops backend** — Bypass RLS intencional para server-to-server mas qualquer vuln backend expoe todos os dados. | LOW | Seguranca |
+| TD-SEC03 | **Sem timeout em webhook handler** — Operacoes DB longas no Stripe webhook handler podem bloquear indefinidamente. | LOW | Resiliencia |
+| TD-SEC04 | **Temp files Excel no frontend proxy** — Escritos em tmpdir() como fallback, nao limpos em crash. Potencial disk exhaustion. | LOW | Operacional |
 
 ---
 
-## Tier 3: ACCEPTED DEBTS (Registrados, Nao Bloqueantes)
+## 2. Debitos de Database (@data-engineer)
 
-### 3.1 Sistema (from system-architecture.md)
+Fonte: `supabase/docs/DB-AUDIT.md` — 23 debitos em 4 severidades
 
-| ID | Debito | Severidade | Categoria |
-|----|--------|------------|-----------|
-| T3-S01 | Dual HTTP client implementations (sync `requests` + async `httpx`) in `pncp_client.py` -- ~1500 lines of duplicated logic (TD-C02) | Critical | Code duplication |
-| T3-S02 | Routes mounted twice (versioned `/v1/` + legacy root) -- doubles route table to ~100+ endpoints (TD-C03) | High | Architecture |
-| T3-S03 | In-memory progress tracker (`_active_trackers`) not horizontally scalable -- main blocker for scaling beyond 1 web instance (TD-H01) | High | Scalability |
-| T3-S04 | In-memory auth token cache (`_token_cache`) not shared across instances (TD-H02) | High | Scalability |
-| T3-S05 | `search_pipeline.py` is god module -- 7 stages with inline helpers create tightly coupled module (TD-H03) | High | Architecture |
-| T3-S06 | No backend linting enforcement in CI -- ruff and mypy configured but not run (TD-H04) | High | CI/CD |
-| T3-S07 | 3 test files in `backend/` root outside `tests/` directory (TD-H07) | High | Code organization |
-| T3-S08 | Excel base64 fallback writes to filesystem -- not scalable, not cleaned on crash (TD-H08) | High | Scalability |
-| T3-S09 | 100+ root-level markdown files clutter repository (TD-H09) | High | Code organization |
-| T3-S10 | Feature flags in env vars only -- no UI for runtime toggling, requires restart (TD-M01) | Medium | Operations |
-| T3-S11 | No pre-commit hooks -- developers can commit non-conforming code (TD-M02) | Medium | DX |
-| T3-S12 | Frontend test quarantine growing -- quarantined tests are effectively dead (TD-M03) | Medium | Testing |
-| T3-S13 | `dotenv` loaded before `setup_logging` -- env vars read at import time may use stale values (TD-M04) | Medium | Startup |
-| T3-S14 | No database connection pooling in Supabase client (TD-M05) | Medium | Performance |
-| T3-S15 | Lead prospecting modules (5 files) not integrated -- potentially dead code (TD-M07) | Medium | Dead code |
-| T3-S16 | Both `requests` and `httpx` as production dependencies -- should consolidate (TD-M08) | Medium | Dependencies |
-| T3-S17 | No request timeout for Stripe webhook handler (TD-M09) | Medium | Reliability |
-| T3-S18 | OpenAPI schema drift detection only via snapshots -- no CI contract testing (TD-M10) | Medium | API contracts |
-| T3-S19 | Screenshot/image files in git root -- 18+ untracked PNGs (TD-L01) | Low | Code organization |
-| T3-S20 | Deprecated `asyncio.get_event_loop().time()` pattern (TD-L02) | Low | Code quality |
-| T3-S21 | `format_resumo_html` function unused -- dead code in `llm.py` (TD-L03) | Low | Dead code |
-| T3-S22 | `dangerouslySetInnerHTML` for theme script without security comment (TD-L04) | Low | Documentation |
-| T3-S23 | Temporary file `routes/search.py.tmp` committed to repository (TD-L05) | Low | Code organization |
-| T3-S24 | `pyproject.toml` still references "bidiq-uniformes-backend" branding (TD-L06) | Low | Naming |
-| T3-S25 | `unsafe-inline` and `unsafe-eval` in CSP -- weakens Content Security Policy (TD-S01) | Medium | Security |
-| T3-S26 | Service role key used for all backend operations -- any backend vulnerability exposes all data (TD-S02) | Low | Security |
-| T3-S27 | Google verification code in public HTML (TD-S03) | Low | Security |
-| T3-S28 | Railway 1GB memory limit with 2 workers -- duplicated in-memory caches risk OOM (TD-P01) | High | Performance |
-| T3-S29 | No CDN for static assets (TD-P02) | Medium | Performance |
-| T3-S30 | PNCP page size reduced to 50 requiring 10x more API calls (TD-P03) | Medium | Performance |
+> :warning: **PENDENTE: Revisao do @data-engineer (Fase 5)**
 
-### 3.2 Database (from DB-AUDIT.md)
+### 2.1 Criticos (2)
 
-| ID | Debito | Severidade | Categoria |
-|----|--------|------------|-----------|
-| T3-D01 | Dual migration numbering schemes (sequential + timestamp) (DB-AUDIT-016) | Medium | Convention |
-| T3-D02 | Backend migrations directory duplicates Supabase migrations (DB-AUDIT-017) | Medium | Convention |
-| T3-D03 | No rollback scripts for any migration (DB-AUDIT-018) | Low | Disaster recovery |
-| T3-D04 | Superseded migration 027b still present in directory (DB-AUDIT-019) | Low | Cleanup |
-| T3-D05 | Inconsistent trigger naming conventions -- 3 different patterns (DB-AUDIT-020) | Low | Convention |
-| T3-D06 | Duplicate `updated_at` functions -- `update_updated_at()` and `update_pipeline_updated_at()` have identical logic (DB-AUDIT-021) | Low | Code duplication |
-| T3-D07 | `search_sessions` uses PostgreSQL arrays that break 1NF (DB-AUDIT-022) | Medium | Normalization |
-| T3-D08 | Redundant standalone index on `search_results_cache.params_hash` -- justified by queries on hash alone (DB-AUDIT-015) | Low | Index optimization |
-| T3-D09 | `plans` table has no index on `is_active` -- negligible at 6-8 rows (DB-AUDIT-012) | Low | Index optimization |
-| T3-D10 | `get_conversations_with_unread_count` has correlated subquery per row (DB-AUDIT-025) | Medium | Performance |
-| T3-D11 | `search_state_transitions.search_id` has no FK -- intentional for fire-and-forget design (DB-AUDIT-026) | Low | Data integrity |
-| T3-D12 | No CHECK constraint on `search_state_transitions.to_state` values (DB-AUDIT-027) | Low | Data integrity |
+| ID | Debito | Tabelas Afetadas | Impacto |
+|----|--------|------------------|---------|
+| C-01 | **FK para auth.users em vez de profiles** em 6 tabelas novas — Inconsistente com padronizacao (migrations 018, 20260225120000). ON DELETE CASCADE para auth.users bypassa cascades de profile. | search_results_store, mfa_recovery_codes, mfa_recovery_attempts, organizations (owner_id), organization_members, partner_referrals | Integridade de dados, orfaos em disaster recovery |
+| C-02 | **health_checks e incidents com RLS habilitado mas ZERO policies** — Somente service_role funciona. Se backend usar anon/authenticated client, operacoes falham silenciosamente. | health_checks, incidents | Seguranca fragil |
 
-### 3.3 Frontend/UX (from frontend-spec.md)
+### 2.2 Altos (6)
 
-| ID | Debito | Severidade | Categoria |
-|----|--------|------------|-----------|
-| T3-F01 | `EmptyState` component duplicated in 2 directories with different APIs (D-001) | Critical | Component duplication |
-| T3-F02 | `LoadingProgress` component duplicated in 2 directories (D-002) | Critical | Component duplication |
-| T3-F03 | `SearchForm` has 40+ props -- extreme prop drilling, no context (D-003) | Critical | Architecture |
-| T3-F04 | All protected pages fully client-rendered -- no RSC data fetching (D-004) | Critical | Performance |
-| T3-F05 | SVG icons duplicated as literal JSX in `Sidebar.tsx` and `BottomNav.tsx` -- ~200 lines (D-005) | High | Code duplication |
-| T3-F06 | Mixed icon systems -- `lucide-react` for landing, inline SVGs for app (D-006) | High | Inconsistency |
-| T3-F07 | `global-error.tsx` uses inline styles instead of design system tokens (D-007) | High | Design system |
-| T3-F08 | `ALL_UFS` array defined independently in 4+ files (D-009) | High | Code duplication |
-| T3-F09 | Components split across 4 directories with no clear separation principle (D-010) | High | Architecture |
-| T3-F10 | `ThemeProvider` duplicates CSS variables already in `globals.css` -- dual source of truth (D-011) | High | Design system |
-| T3-F11 | No state management library -- complex state via hooks + prop drilling + localStorage (D-012) | High | Architecture |
-| T3-F12 | `AddToPipelineButton` uses `catch (err: any)` -- suppresses TypeScript safety (D-013) | Medium | Type safety |
-| T3-F13 | Portuguese strings hardcoded throughout -- no i18n framework (D-014) | Medium | Localization |
-| T3-F14 | `FeedbackButtons` has custom toast instead of using `sonner` (D-015) | Medium | Inconsistency |
-| T3-F15 | 404 page missing Portuguese accents (D-016) | Medium | Quality |
-| T3-F16 | Shepherd.js uses Tailwind `@apply` with hardcoded classes instead of design tokens (D-017) | Medium | Design system |
-| T3-F17 | Only search page has per-page error boundary -- others use root (D-018) | Medium | Error handling |
-| T3-F18 | Coverage thresholds (50-55%) below documented target (60%) (D-019) | Medium | Testing |
-| T3-F19 | No `dynamic()` imports for heavy libraries (Recharts, @dnd-kit, Shepherd.js) (D-020) | Medium | Bundle size |
-| T3-F20 | Most `useEffect` fetch calls lack AbortController (D-021) | Medium | Memory safety |
-| T3-F21 | Inconsistent date display -- mixed `date-fns` and `toLocaleDateString` (D-022) | Medium | Inconsistency |
-| T3-F22 | Legacy `bidiq-theme` to `smartlic-theme` migration code still present (D-023) | Low | Dead code |
-| T3-F23 | `not-found.tsx` missing viewport configuration (D-024) | Low | SSR |
-| T3-F24 | Unused `@types/js-yaml` in devDependencies (D-025) | Low | Dependencies |
-| T3-F25 | Mixed Tailwind defaults and CSS variable usage in some components (D-026) | Low | Design system |
-| T3-F26 | Blog hero uses inline font-family style override (D-027) | Low | Design system |
-| T3-F27 | `@types/uuid` in dependencies instead of devDependencies (D-028) | Low | Packaging |
-| T3-F28 | Inline SVG icons inconsistently labeled for accessibility (a11y gap) | Medium | Accessibility |
-| T3-F29 | Date picker calendar may lack screen reader announcements (a11y gap) | Medium | Accessibility |
-| T3-F30 | Dropdown menus lack `role="menu"` (a11y gap) | Medium | Accessibility |
-| T3-F31 | Toast notifications may not be announced to screen readers (a11y gap) | Medium | Accessibility |
+| ID | Debito | Tabelas | Impacto |
+|----|--------|---------|---------|
+| H-01 | **3 funcoes trigger updated_at duplicadas** — Copias identicas de `update_updated_at()` | pipeline_items, alert_preferences, alerts | Manutencao |
+| H-02 | **search_results_store FK nao padronizado** — user_id ref auth.users sem ON DELETE CASCADE | search_results_store | Integridade dados |
+| H-03 | **Sem retention para search_results_store** — Coluna `expires_at` existe mas sem pg_cron cleanup. Rows expiradas acumulam indefinidamente. | search_results_store | Storage crescente |
+| H-04 | **alert_preferences service_role policy usa auth.role()** em vez de `TO service_role` | alert_preferences | Inconsistencia seguranca |
+| H-05 | **reconciliation_log service_role policy usa auth.role()** em vez de padrao `TO service_role` | reconciliation_log | Inconsistencia seguranca |
+| H-06 | **organizations e org_members service_role policies usam auth.role()** | organizations, organization_members | Inconsistencia seguranca |
+
+### 2.3 Medios (9)
+
+| ID | Debito | Esforco |
+|----|--------|---------|
+| M-01 | Sem `updated_at` em 11 tabelas (monthly_quota, search_state_transitions, stripe_webhook_events, classification_feedback, trial_email_log, alert_sent_items, alert_runs, reconciliation_log, health_checks, incidents, mfa_recovery_codes, mfa_recovery_attempts, partner_referrals) | 4h |
+| M-02 | Sem indice standalone em `search_state_transitions(created_at)` para retention cleanup | 0.5h |
+| M-03 | `partner_referrals` FK sem ON DELETE explicito — defaults to RESTRICT em ambas FKs | 1h |
+| M-04 | Sem retention para `mfa_recovery_attempts` — brute force tracking acumula forever | 1h |
+| M-05 | Sem retention para `alert_runs` — historico de execucao acumula indefinidamente | 1h |
+| M-06 | Sem retention para `alert_sent_items` — dedup tracking cresce ilimitadamente | 1h |
+| M-07 | `handle_new_user()` trigger modificado 7x em migrations — alto risco de regressao | 2h |
+| M-08 | Nomenclatura inconsistente de CHECK constraints — 4 padroes diferentes | 2h (padronizar future) |
+| M-09 | `classification_feedback` admin policy usa `auth.role()` em vez de `TO service_role` | 0.5h |
+
+### 2.4 Baixos (6)
+
+| ID | Debito |
+|----|--------|
+| L-01 | Indice redundante em alert_preferences.user_id (coberto por UNIQUE constraint) |
+| L-02 | Indice redundante em alert_sent_items.alert_id (prefixo de indice UNIQUE composto) |
+| L-03 | Sem COMMENT em tabelas novas (organizations, org_members, health_checks, incidents) |
+| L-04 | plan_type CHECK constraint reconstruido 6x — considerar reference table |
+| L-05 | Stripe Price IDs hardcoded em migrations SQL — nao funciona para staging/dev |
+| L-06 | Sem indice composto (user_id, expires_at) em search_results_store |
+
+**Pontos Positivos Database:**
+- 100% RLS coverage (32/32 tabelas)
+- N+1 patterns ja fixados com RPC functions
+- JSONB governance com 2MB limits em cache
+- PII hashing para LGPD compliance em audit_events
+- Strong index coverage em tabelas de alto trafego
 
 ---
 
-## Dependency Map
+## 3. Debitos de Frontend/UX (@ux-design-expert)
 
-### Tier 1 Execution Order
+Fonte: `docs/frontend/frontend-spec.md` — 38 debitos em 7 categorias
+
+> :warning: **PENDENTE: Revisao do @ux-design-expert (Fase 6)**
+
+### 3.1 Arquitetura de Componentes (7)
+
+| ID | Debito | Severidade | Impacto |
+|----|--------|-----------|---------|
+| FE-01 | **Mega-componente SearchResults.tsx** (1,581 linhas, 50+ props) — Impossivel manter, testar, revisar | HIGH | Manutencao critica |
+| FE-02 | **Mega-componente conta/page.tsx** (1,420 linhas) — Perfil, senha, plano, MFA, cancelamento tudo junto | HIGH | Violacao SRP |
+| FE-03 | **Mega-hook useSearch.ts** (1,510 linhas) — Execucao, SSE, retry, error, save, download, Excel, partial, polling | HIGH | Manutencao critica |
+| FE-04 | **buscar/page.tsx** (1,019 linhas) — Tours, trials, auto-search, keyboard shortcuts, queuing | MEDIUM | Complexidade |
+| FE-05 | **3 diretorios de componentes** sem convencao (`app/components/`, `components/`, `buscar/components/`). Nomes duplicados: EmptyState, LoadingProgress existem em multiplos | MEDIUM | Confusao dev |
+| FE-06 | **Sem componente Button compartilhado** — ~15 variantes de estilo inline | MEDIUM | Inconsistencia visual |
+| FE-07 | **SVGs inline no Sidebar** (75 linhas) em vez de lucide-react | LOW | Inconsistencia |
+
+### 3.2 State Management (4)
+
+| ID | Debito | Severidade | Impacto |
+|----|--------|-----------|---------|
+| FE-08 | **Sem data fetching library** — useState + useEffect + fetch manual everywhere. Sem dedup, cache, revalidacao automatica. ~500 linhas de boilerplate eliminavel. | HIGH | Produtividade, confiabilidade |
+| FE-09 | **13+ localStorage keys** sem abstracao — Chamadas diretas em 20+ arquivos. Sem migration strategy, sem quota awareness. | MEDIUM | Fragilidade |
+| FE-10 | **Prop drilling em SearchResults** — 50+ props de buscar/page.tsx. Sinal claro para context ou composicao. | HIGH | Acoplamento extremo |
+| FE-11 | **Ref-based circular dependency workaround** — `clearResultRef` para quebrar dependencia useSearchFilters ↔ useSearch | MEDIUM | Code smell |
+
+### 3.3 Acessibilidade (6)
+
+| ID | Debito | WCAG | Severidade |
+|----|--------|------|-----------|
+| FE-12 | Missing aria-labels em botoes icon-only do sidebar | 1.1.1 | HIGH |
+| FE-13 | SVG icons sem `aria-hidden="true"` (75+ no Sidebar) | 1.1.1 | MEDIUM |
+| FE-14 | Viability scores usam cor sem alternativa textual | 1.4.1 | MEDIUM |
+| FE-15 | Inputs com placeholder em vez de label (onboarding CNAE) | 1.3.1 | MEDIUM |
+| FE-16 | Sem hierarquia de headings auditada — paginas comecam em h3 | 1.3.1 | LOW |
+| FE-17 | Sem ARIA live regions para progresso de busca dinamico | 4.1.3 | MEDIUM |
+
+### 3.4 Performance (4)
+
+| ID | Debito | Severidade | Impacto |
+|----|--------|-----------|---------|
+| FE-18 | **Blog/SEO pages sao CSR** — Todas paginas programaticas usam `"use client"` apesar de conteudo estatico. Derrota proposito de SEO. | HIGH | SEO, Core Web Vitals |
+| FE-19 | **Sem dynamic imports** para Recharts (~50KB), Shepherd.js (~25KB), @dnd-kit (~15KB) | MEDIUM | Bundle size |
+| FE-20 | **useIsMobile() hydration mismatch risk** — JS check roda apos hydration | LOW | Layout shift |
+| FE-21 | **Sem Lighthouse CI** — @lhci/cli configurado mas nao gated no CI | MEDIUM | Performance regressions |
+
+### 3.5 Qualidade de Codigo (5)
+
+| ID | Debito | Severidade |
+|----|--------|-----------|
+| FE-22 | **Hardcoded Portuguese strings** em 44 paginas — sem i18n | HIGH |
+| FE-23 | **eslint-disable react-hooks/exhaustive-deps** em 3+ locais | MEDIUM |
+| FE-24 | **APP_NAME redeclarado** em 5+ arquivos | LOW |
+| FE-25 | **Import patterns mistos** para constantes (inline vs centralizado) | LOW |
+| FE-26 | **Sem TypeScript paths** — imports relativos 3+ niveis `../../../hooks/` | LOW |
+
+### 3.6 Design System Ausente (6)
+
+| ID | Gap | Impacto |
+|----|-----|---------|
+| FE-27 | Sem Button component compartilhado | 15+ variantes inline |
+| FE-28 | Sem Input component compartilhado | Cada form estilo proprio |
+| FE-29 | Sem Card component compartilhado | Padroes variam |
+| FE-30 | Sem Badge component compartilhado | Multiplas implementacoes |
+| FE-31 | Sem Storybook / documentacao visual | Descoberta de componentes |
+| FE-32 | **Design tokens parcialmente adotados** — Mix de var(--brand-blue), text-brand-blue, hex raw | Inconsistencia |
+
+### 3.7 UX Inconsistencies (6)
+
+| ID | Debito | Severidade |
+|----|--------|-----------|
+| FE-33 | Search page header/footer proprio vs NavigationShell das demais | MEDIUM |
+| FE-34 | 2 padroes empty state (componente vs JSX inline) | LOW |
+| FE-35 | Toast (sonner) vs inline banners sem criterio | LOW |
+| FE-36 | Loading spinner size/style varia (h-8, h-6, w-5) | LOW |
+| FE-37 | Date formatting: date-fns vs Intl.DateTimeFormat vs toLocaleDateString | LOW |
+| FE-38 | Currency formatting: utility existe mas alguns formatam inline | LOW |
+
+**Pontos Positivos Frontend:**
+- WCAG contrast ratios documentados e verificados
+- Error recovery patterns abrangentes (auto-retry, SSE fallback, search queuing)
+- Dark mode com anti-flash script
+- 2,681 testes unitarios + 22 E2E passando com 0 falhas
+- Educational loading carousel (UX-411) para tempo percebido
+- Security headers no middleware
+- 44px touch targets enforced globalmente
+
+---
+
+## 4. Matriz de Priorizacao Preliminar
+
+### Tier 0 — Quick Wins de Seguranca/Estabilidade (imediato, <1 sprint)
+
+| # | ID | Debito | Area | Esforco | Justificativa |
+|---|-----|--------|------|---------|--------------|
+| 1 | C-01 | FK auth.users → profiles (6 tabelas) | DB | 4h | Integridade dados |
+| 2 | C-02 | RLS sem policies (2 tabelas) | DB | 2h | Seguranca |
+| 3 | TD-S05 | time.sleep() bloqueando event loop | Backend | 1h | Estabilidade |
+| 4 | H-03 | Retention search_results_store | DB | 2h | Storage |
+| 5 | H-01 | Consolidar trigger functions duplicadas | DB | 2h | Limpeza |
+| 6 | H-04/05/06 | Padronizar service_role policies (4 tabelas) | DB | 2h | Seguranca |
+| 7 | FE-12 | aria-labels em botoes icon-only | Frontend | 2h | Acessibilidade |
+| 8 | TD-P03/04 | Branding BidIQ → SmartLic | Backend | 1h | Profissionalismo |
+| **Total Tier 0** | | | | **~16h** | |
+
+### Tier 1 — Debitos Estruturais (proximo sprint)
+
+| # | ID | Debito | Area | Esforco |
+|---|-----|--------|------|---------|
+| 9 | TD-A01 | Remover legacy routes (manter so /v1/) | Backend | 4-8h |
+| 10 | FE-01 | Decompor SearchResults.tsx | Frontend | 12-16h |
+| 11 | FE-03 | Decompor useSearch.ts | Frontend | 12-16h |
+| 12 | FE-08 | Adotar data fetching library (SWR/TanStack) | Frontend | 16-24h |
+| 13 | FE-10 | Eliminar prop drilling SearchResults (context) | Frontend | 8h |
+| 14 | FE-18 | Converter SEO pages para SSG/ISR | Frontend | 8-12h |
+| 15 | FE-02 | Decompor conta/page.tsx | Frontend | 8-12h |
+| 16 | TD-A02 | Refatorar search_pipeline.py | Backend | 16-24h |
+| 17 | TD-A03 | Migrar progress tracker para Redis Streams | Backend | 8-16h |
+| 18 | TD-S01 | Otimizar memoria Railway (shared caches) | Backend | 4-8h |
+| **Total Tier 1** | | | | **~97-146h** |
+
+### Tier 2 — Melhorias de Qualidade (2-3 sprints)
+
+| # | ID | Debito | Area | Esforco |
+|---|-----|--------|------|---------|
+| 19 | FE-27-32 | Design system primitives (Button, Input, Card, Badge) | Frontend | 16-24h |
+| 20 | FE-22 | Iniciar i18n abstraction | Frontend | 24-40h |
+| 21 | TD-A05 | Eliminar dual HTTP client PNCP | Backend | 12-16h |
+| 22 | TD-P02 | Feature flags admin UI | Backend | 8-12h |
+| 23 | M-01 | updated_at em 11 tabelas | DB | 4h |
+| 24 | M-04/05/06 | Retention pg_cron (3 tabelas) | DB | 3h |
+| 25 | FE-13/14/15/17 | Acessibilidade restante (4 itens) | Frontend | 8h |
+| 26 | FE-19 | Dynamic imports heavy deps | Frontend | 4h |
+| 27 | TD-M02 | API contract CI validation | Backend | 4-8h |
+| 28 | FE-33 | Unificar navigation pattern | Frontend | 4h |
+| **Total Tier 2** | | | | **~87-125h** |
+
+### Tier 3 — Backlog (baixa prioridade)
+
+IDs: TD-A04, TD-A06, TD-P01, TD-P05, TD-M01, TD-M03, TD-M04, TD-S02, TD-S03, TD-S04, TD-SEC01-04, M-02, M-03, M-07, M-08, M-09, L-01 a L-06, FE-04, FE-05, FE-06, FE-07, FE-09, FE-11, FE-16, FE-20, FE-21, FE-23-26, FE-34-38
+
+**Total Tier 3:** ~65-85h
+
+---
+
+## 5. Perguntas para Especialistas
+
+### Para @data-engineer (Fase 5):
+
+1. **C-01:** A migracao das 6 FKs pode ser feita em uma unica migration ou precisa ser faseada? Impacto em dados existentes? Downtime esperado?
+2. **C-02:** health_checks e incidents sao acessados SOMENTE via service_role hoje? Existe plano para status page client-side?
+3. **H-03:** Qual o volume esperado de search_results_store? Retention de 24h ou 7 dias? Row count atual?
+4. **M-07:** O trigger handle_new_user() deve ser migrado para application layer (backend Python) para reduzir risco de regressao?
+5. **L-04:** Vale migrar CHECK constraint para reference table (plan_types) dado que estamos pre-revenue com mudancas frequentes?
+6. **M-04/05/06:** Qual retention adequada para mfa_recovery_attempts (30d?), alert_runs (90d?), alert_sent_items (90d?)?
+7. **Performance:** search_results_store.results nao tem CHECK de tamanho como search_results_cache (2MB). Deve ter?
+
+### Para @ux-design-expert (Fase 6):
+
+1. **FE-01/02/03:** Estrategia de decomposicao preferida? Context API vs prop reduction vs sub-routes vs composition?
+2. **FE-08:** SWR vs TanStack Query — dado que temos SSE patterns customizados, qual se integra melhor?
+3. **FE-18:** Converter SEO pages para Server Components — quais dependencias bloqueiam SSR? Quais precisam de `"use client"` boundary?
+4. **FE-22:** Para o momento (pre-revenue, mercado 100% BR), vale iniciar i18n ou esperar validacao de mercado internacional?
+5. **FE-27-32:** Design system — Shadcn/ui vs Radix vs build from scratch com Tailwind primitives? Considerando que ja temos tokens CSS.
+6. **FE-33:** Unificar search page dentro do NavigationShell ou manter layout separado? Quais UX tradeoffs?
+7. **FE-10:** Para eliminar prop drilling no SearchResults — Context vs Zustand slice vs composition pattern?
+
+---
+
+## 6. Resumo Quantitativo
+
+| Metrica | Valor |
+|---------|-------|
+| **Total de debitos identificados** | **63** |
+| Criticos (C) | 2 |
+| Altos (H/HIGH) | 16 |
+| Medios (M/MEDIUM) | 23 |
+| Baixos (L/LOW) | 22 |
+| | |
+| **Por area** | |
+| Backend/Infra | 24 debitos (~100-140h) |
+| Database | 23 debitos (~25-35h) |
+| Frontend/UX | 38 debitos (~155-205h) |
+| | |
+| **Esforco total estimado** | **~280-380 horas** |
+| Tier 0 (imediato) | ~16h |
+| Tier 1 (proximo sprint) | ~97-146h |
+| Tier 2 (2-3 sprints) | ~87-125h |
+| Tier 3 (backlog) | ~65-85h |
+
+---
+
+## 7. Dependencias entre Debitos
 
 ```
-T1-01, T1-02, T1-03 ──────────────> Single consolidated migration
-                                     (can be combined into one file)
-T1-04 ─────────────────────────────> Independent code fix
-                                     (can run in parallel with migration)
-```
+C-01 (FK padronizacao) ─── bloqueia ──→ H-02 (search_results_store FK)
+                                    └──→ M-03 (partner_referrals FK)
 
-All 4 Tier 1 items are **independent** and can be executed in parallel:
-- T1-01 through T1-03 combine into one migration
-- T1-04 is a Python code fix
+TD-A01 (remover legacy routes) ─── habilita ──→ TD-M02 (API contract validation)
 
-### Tier 1 to Tier 2 Dependencies
+FE-01 (SearchResults decomp) ──── requer ────→ FE-10 (eliminar prop drilling)
+                              └── requer ────→ FE-06 (Button component)
+                              └── requer ────→ FE-27-30 (design primitives)
 
-```
-T1-01 (subscription_status) ───> T2-07 (profiles service_role policies)
-                                  Reason: service_role needs to update the new column
+FE-03 (useSearch decomp) ──── requer ────→ FE-08 (data fetching library)
 
-T1-03 (user_subscriptions.subscription_status) ───> No dependency
+FE-18 (SSG/ISR) ──── independente (pode iniciar paralelo)
 
-T2-01 (FK standardization) ───> T2-02 (ON DELETE CASCADE)
-                                  Reason: T2-02 is part of T2-01
-
-T2-04 (handle_new_user trigger) ───> Independent
-                                  Reason: Affects signup flow, can be tested separately
-
-T2-05 through T2-12 ───> Independent of each other
-                                  Reason: Each is a separate RLS policy or index
-```
-
-### Parallelizable Tier 2 Items
-
-| Group | Items | Can Parallelize |
-|-------|-------|-----------------|
-| DB Security Policies | T2-05, T2-06, T2-07, T2-08, T2-12 | Yes -- all are independent policy changes |
-| DB Indexes | T2-09, T2-10 | Yes -- independent CREATE INDEX statements |
-| DB Schema | T2-01/T2-02, T2-03, T2-04 | T2-01/T2-02 independent of T2-03 and T2-04 |
-| Backend Code | T2-13, T2-14, T2-15 | Yes -- independent code changes |
-| Frontend Code | T2-11 | Independent |
-
-**Recommended consolidation:** All Tier 2 database items (T2-01 through T2-12) can be combined into a single migration for atomic deployment.
-
----
-
-## Perguntas para Especialistas
-
-### @data-engineer
-
-1. **Missing columns (T1-01 through T1-03):** Can you confirm via `SELECT column_name FROM information_schema.columns WHERE table_name = 'profiles'` that `subscription_status` and `trial_expires_at` already exist in the production database (added via Dashboard)? If so, the migration only needs `ADD COLUMN IF NOT EXISTS` for idempotency.
-
-2. **JSONB results blob (T2-03):** What is the current `avg(octet_length(results::text))` and `max(octet_length(results::text))` in `search_results_cache`? This determines whether the 1 MB constraint will cause immediate issues or is safe to add.
-
-3. **`handle_new_user()` trigger (T2-04):** What is the current version of this function in production? The migrations show 6 rewrites -- we need to know which version is live before deploying the fix.
-
-4. **Array columns (T3-D07):** Are there any current analytics queries that filter by `sectors @> ARRAY['X']` pattern? If so, the GIN indexes (T2-10) should be prioritized.
-
-5. **State transitions cleanup (T3-D11):** How many rows exist in `search_state_transitions` currently? Is there any pg_cron job cleaning old records, or is it growing unbounded?
-
-### @ux-design-expert
-
-1. **Focus trap (T2-11):** Is the BottomNav drawer used frequently enough on mobile to prioritize the a11y fix? What is the mobile traffic percentage?
-
-2. **Component duplication (T3-F01, T3-F02):** Which version of `EmptyState` and `LoadingProgress` should be the canonical one -- the `app/components/` version or the `components/` version? Are there API differences that need reconciliation?
-
-3. **SearchForm props (T3-F03):** What is the recommended state management approach? React Context for search state, or a lightweight library like Zustand? The 40+ props are the primary DX pain point.
-
-4. **Icon system (T3-F05, T3-F06):** Should we standardize on Lucide React for all icons (eliminating inline SVGs), or create a custom icon component library?
-
-5. **Protected pages RSC (T3-F04):** Is there a plan to migrate any protected pages to server component data fetching in the near term? This is the biggest performance improvement opportunity.
-
----
-
-## Proposed Migration SQL
-
-All Tier 1 + Tier 2 database fixes can be addressed in a single consolidated migration. Reference the full SQL from DB-AUDIT.md Section 11 "Consolidated Migration Proposal":
-
-```sql
--- Migration: 20260225100000_technical_debt_assessment_fixes.sql
--- Fixes: T1-01, T1-02, T1-03, T2-01, T2-02, T2-04, T2-05, T2-06, T2-07, T2-08, T2-09, T2-10, T2-12
--- Author: @architect (Phase 4 Brownfield Discovery)
-
-BEGIN;
-
--- ================================================================
--- TIER 1: BLOCKING FIXES
--- ================================================================
-
--- T1-01: Add subscription_status to profiles (used in 5+ modules)
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'trial';
-
-CREATE INDEX IF NOT EXISTS idx_profiles_subscription_status
-    ON profiles (subscription_status)
-    WHERE subscription_status != 'trial';
-
-COMMENT ON COLUMN profiles.subscription_status IS
-    'Subscription lifecycle state. Set by Stripe webhooks. Fix for DB-AUDIT-003.';
-
--- T1-02: Add trial_expires_at to profiles (used in analytics, user routes)
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS trial_expires_at TIMESTAMPTZ;
-
-COMMENT ON COLUMN profiles.trial_expires_at IS
-    'When the trial period expires. Set during signup. Fix for DB-AUDIT-004.';
-
--- T1-03: Add subscription_status to user_subscriptions (used in Stripe webhooks)
-ALTER TABLE public.user_subscriptions
-    ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active';
-
-COMMENT ON COLUMN user_subscriptions.subscription_status IS
-    'Subscription lifecycle state from Stripe. Fix for DB-AUDIT-005.';
-
--- ================================================================
--- TIER 2: STABILITY FIXES
--- ================================================================
-
--- T2-01 + T2-02: Standardize FKs to profiles(id) ON DELETE CASCADE
--- pipeline_items
-DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'pipeline_items_user_id_fkey' AND table_name = 'pipeline_items')
-    THEN ALTER TABLE pipeline_items DROP CONSTRAINT pipeline_items_user_id_fkey;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'pipeline_items_user_id_profiles_fkey' AND table_name = 'pipeline_items')
-    THEN ALTER TABLE pipeline_items ADD CONSTRAINT pipeline_items_user_id_profiles_fkey
-        FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
-    END IF;
-END $$;
-
--- classification_feedback (also adds ON DELETE CASCADE -- T2-02)
-DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'classification_feedback_user_id_fkey' AND table_name = 'classification_feedback')
-    THEN ALTER TABLE classification_feedback DROP CONSTRAINT classification_feedback_user_id_fkey;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'classification_feedback_user_id_profiles_fkey' AND table_name = 'classification_feedback')
-    THEN ALTER TABLE classification_feedback ADD CONSTRAINT classification_feedback_user_id_profiles_fkey
-        FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
-    END IF;
-END $$;
-
--- trial_email_log
-DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'trial_email_log_user_id_fkey' AND table_name = 'trial_email_log')
-    THEN ALTER TABLE trial_email_log DROP CONSTRAINT trial_email_log_user_id_fkey;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'trial_email_log_user_id_profiles_fkey' AND table_name = 'trial_email_log')
-    THEN ALTER TABLE trial_email_log ADD CONSTRAINT trial_email_log_user_id_profiles_fkey
-        FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
-    END IF;
-END $$;
-
--- T2-04: Restore handle_new_user() trigger with all profile fields
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
-DECLARE
-  _phone text;
-BEGIN
-  -- Normalize phone: strip non-digits, remove country code 55, remove leading 0
-  _phone := regexp_replace(COALESCE(NEW.raw_user_meta_data->>'phone_whatsapp', ''), '[^0-9]', '', 'g');
-  IF length(_phone) > 11 AND left(_phone, 2) = '55' THEN _phone := substring(_phone from 3); END IF;
-  IF left(_phone, 1) = '0' THEN _phone := substring(_phone from 2); END IF;
-  IF length(_phone) NOT IN (10, 11) THEN _phone := NULL; END IF;
-
-  INSERT INTO public.profiles (
-    id, email, full_name, company, sector,
-    phone_whatsapp, whatsapp_consent, plan_type,
-    avatar_url, context_data
-  )
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'company', ''),
-    COALESCE(NEW.raw_user_meta_data->>'sector', ''),
-    _phone,
-    COALESCE((NEW.raw_user_meta_data->>'whatsapp_consent')::boolean, FALSE),
-    'free_trial',
-    NEW.raw_user_meta_data->>'avatar_url',
-    '{}'::jsonb
-  )
-  ON CONFLICT (id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- T2-05: Scope state transitions INSERT to service_role only
-DROP POLICY IF EXISTS "Service role can insert transitions" ON search_state_transitions;
-CREATE POLICY "Service role can insert transitions" ON search_state_transitions
-    FOR INSERT TO service_role WITH CHECK (true);
-
--- T2-06: Fix classification_feedback admin policy
-DROP POLICY IF EXISTS feedback_admin_all ON classification_feedback;
-CREATE POLICY feedback_admin_all ON classification_feedback
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
-
--- T2-07: Add profiles service_role ALL policy
-DROP POLICY IF EXISTS "profiles_service_all" ON public.profiles;
-CREATE POLICY "profiles_service_all" ON public.profiles
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
-
--- T2-08: Add messaging service_role policies
-DROP POLICY IF EXISTS "conversations_service_all" ON conversations;
-CREATE POLICY "conversations_service_all" ON conversations
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "messages_service_all" ON messages;
-CREATE POLICY "messages_service_all" ON messages
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
-
--- T2-09: Add composite index for session queries
-CREATE INDEX IF NOT EXISTS idx_search_sessions_user_status_created
-    ON search_sessions (user_id, status, created_at DESC);
-
--- T2-10: Add GIN indexes for array analytics queries
-CREATE INDEX IF NOT EXISTS idx_search_sessions_sectors
-    ON search_sessions USING GIN(sectors);
-CREATE INDEX IF NOT EXISTS idx_search_sessions_ufs
-    ON search_sessions USING GIN(ufs);
-
--- T2-12: Add explicit service_role policy on trial_email_log
-DROP POLICY IF EXISTS "Service role full access on trial_email_log" ON trial_email_log;
-CREATE POLICY "Service role full access on trial_email_log"
-    ON trial_email_log FOR ALL TO service_role USING (true) WITH CHECK (true);
-
-COMMIT;
-```
-
-**Backend code fix for T1-04** (separate from migration):
-```python
-# File: backend/services/trial_stats.py, line 78
-# Change: sb.table("user_pipeline") -> sb.table("pipeline_items")
-```
-
-**Backend code fix for T2-15** (separate from migration):
-```python
-# File: backend/quota.py
-# Change: time.sleep(0.3) -> await asyncio.sleep(0.3)
+TD-A02 (pipeline refactor) ──── requer ────→ TD-A03 (progress tracker Redis)
 ```
 
 ---
 
-## Summary Statistics
-
-| Tier | Count | Effort | Timeline |
-|------|-------|--------|----------|
-| Tier 1: Blocking | 4 | 1-2 hours | Immediate |
-| Tier 2: Stability | 15 | 1-2 days | Next 2 sprints |
-| Tier 3: Accepted (System) | 30 | Variable | Backlog |
-| Tier 3: Accepted (Database) | 12 | Variable | Backlog |
-| Tier 3: Accepted (Frontend) | 31 | Variable | Backlog |
-| **Total** | **92** | | |
-
-**Testing required after Tier 1 + 2 deployment:**
-1. Run full backend test suite (`pytest`)
-2. Run full frontend test suite (`npm test`)
-3. Verify Stripe webhook flow (subscribe, cancel, payment failure)
-4. Test new user signup flow (verify profile fields populated)
-5. Test trial stats endpoint (verify pipeline_items query works)
-6. Test search flow end-to-end (verify session creation with new indexes)
-
----
-
-*Generated by @architect (Archon) during Phase 4 of SmartLic Brownfield Discovery.*
-*Cross-references: system-architecture.md (Phase 1), SCHEMA.md + DB-AUDIT.md (Phase 2), frontend-spec.md (Phase 3).*
+*DRAFT v2.0 gerado em 2026-03-04 pelo @architect (Atlas). Pendente validacao das Fases 5, 6 e 7.*

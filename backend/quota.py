@@ -135,6 +135,16 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
         "max_summary_tokens": 10000,
         "priority": PlanPriority.NORMAL.value,
     },
+    # MAYDAY-A2: Founding Member — same capabilities as smartlic_pro, 50% off price
+    "founding_member": {
+        "max_history_days": 1825,  # 5 years
+        "allow_excel": True,
+        "allow_pipeline": True,
+        "max_requests_per_month": 1000,
+        "max_requests_per_min": 60,
+        "max_summary_tokens": 10000,
+        "priority": PlanPriority.NORMAL.value,
+    },
     # STORY-322: Plano Consultoria — multi-user org plan
     "consultoria": {
         "max_history_days": 1825,  # 5 years
@@ -173,6 +183,7 @@ PLAN_NAMES: dict[str, str] = {
     "maquina": "Máquina (legacy)",
     "sala_guerra": "Sala de Guerra (legacy)",
     "smartlic_pro": "SmartLic Pro",
+    "founding_member": "SmartLic Founding Member",
     "consultoria": "SmartLic Consultoria",
     "free": "Free",
     "master": "Master",
@@ -184,6 +195,7 @@ PLAN_PRICES: dict[str, str] = {
     "maquina": "R$ 597/mês",
     "sala_guerra": "R$ 1.497/mês",
     "smartlic_pro": "R$ 397/mês",
+    "founding_member": "R$ 197/mês",
     "consultoria": "R$ 997/mês",
 }
 

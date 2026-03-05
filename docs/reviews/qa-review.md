@@ -1,281 +1,288 @@
-# QA Review - Technical Debt Assessment
+# QA Review --- Technical Debt Assessment
 
-**Reviewer:** @qa
-**Date:** 2026-02-25
-**Phase:** 7 (Brownfield Discovery QA Gate)
-**Inputs:** `docs/prd/technical-debt-DRAFT.md`, `docs/reviews/db-specialist-review.md`, `docs/reviews/ux-specialist-review.md`, `docs/architecture/system-architecture.md`, `supabase/docs/DB-AUDIT.md`, `docs/frontend/frontend-spec.md`
-
----
-
-## Gate Status: APPROVED
-
-The assessment is complete enough to proceed to final consolidation and story creation. The DRAFT correctly identifies the 4 true blockers, both specialist reviews are thorough and well-evidenced, and the combined coverage addresses all core flows required for enterprise monetization. Specific conditions and gaps are documented below and must be incorporated into the final assessment.
+**Reviewer:** @qa (Guardian)
+**Date:** 2026-03-04
+**Documents Reviewed:** DRAFT v2.0, db-specialist-review.md v2.0, ux-specialist-review.md v2.0, system-architecture.md v4.0, DB-AUDIT.md
+**Supersedes:** qa-review.md v1 (2026-02-25) -- complete rewrite against DRAFT v2.0 and updated specialist reviews
+**Validation Method:** Cross-referenced all specialist reviews against each other and the live codebase via automated grep/glob. Verified 6 specific claims independently.
 
 ---
 
-## 1. Specialist Adjustments Validated
+## Gate Status: APPROVED WITH CONDITIONS
 
-### DB Specialist (@data-engineer) Adjustments
-
-| Adjustment | QA Verdict | Reasoning |
-|------------|-----------|-----------|
-| **T2-04 escalation** ("Consider Tier 1.5") | **AGREE -- Escalate to Tier 1** | Verified: migration `20260224000000` inserts only `id, email, full_name, phone_whatsapp`. Every new user signup since that migration silently drops `company`, `sector`, `whatsapp_consent`, `context_data`. Additionally lacks `ON CONFLICT (id) DO NOTHING` -- edge-case re-signup crashes auth entirely. This is not "stability" -- it is a functional regression on every new registration. Recommend Tier 1. |
-| **T2-06 demotion** to Tier 3 | **AGREE** | Confirmed: `auth.role() = 'service_role'` pattern is functionally correct. Per-row evaluation overhead negligible for classification_feedback (low row count). Convention-only fix. |
-| **T2-10 demotion** to Tier 3 | **AGREE** | Verified via code: `routes/analytics.py` fetches all sessions by `user_id` and aggregates in Python. No `@>` array containment queries exist at DB level. GIN indexes provide zero current benefit. |
-| **T2-12 demotion** to Tier 3 | **AGREE** | Confirmed: `trial_email_log` is accessed only via service_role which bypasses RLS. Adding explicit policy is documentation, not functionality. |
-| **T2-15 removal** (already fixed) | **AGREE** | Independently verified: `backend/quota.py` lines 1101, 1191, 1259 all use `await asyncio.sleep(0.3)`. The `time.sleep` debt no longer exists. Must be removed from DRAFT. |
-| **MISSED-01** (`profiles.subscription_end_date`) | **AGREE -- Add to Tier 1** | Verified: `backend/routes/subscriptions.py` line 241 writes `subscription_end_date`. No migration creates it. Confirmed zero results in `supabase/migrations/`. Same pattern as T1-01. |
-| **MISSED-02** (`profiles.email_unsubscribed` + `email_unsubscribed_at`) | **AGREE -- Add to Tier 1** | Verified: `backend/search_pipeline.py` line 79 SELECTs it, `backend/routes/emails.py` lines 147-148 UPDATEs both columns. No migration creates either. Confirmed zero results in `supabase/migrations/`. LGPD compliance column -- critical for enterprise. |
-| **MISSED-03** (test masks T1-04 bug) | **AGREE** | Verified: `backend/tests/test_trial_usage_stats.py` lines 70, 79, 151, 188 all mock `user_pipeline`. Test fix must accompany T1-04 code fix. |
-| **MISSED-04** (trigger lacks ON CONFLICT) | **AGREE -- Bundled with T2-04** | Covered by the proposed T2-04 fix which includes `ON CONFLICT (id) DO NOTHING`. |
-| **CHECK constraints** for `subscription_status` columns | **AGREE** | DB-AUDIT.md proposed CHECK constraints that were omitted from DRAFT migration. Should be added for data integrity. Low risk -- values are already constrained in application code. |
-| **Separate migration files** vs one consolidated | **AGREE** | Smaller blast radius is worth the extra files. Particularly: trigger rewrite (T2-04) must be deployed after missing columns exist. JSONB constraint (T2-03) needs production data verification first. |
-
-### UX Specialist (@ux-design-expert) Adjustments
-
-| Adjustment | QA Verdict | Reasoning |
-|------------|-----------|-----------|
-| **T3-F15 escalation** to Tier 2 (404 accents) | **AGREE** | Verified: `frontend/app/not-found.tsx` line 19 reads "Pagina nao encontrada" -- missing accents on `a`, `~`, and other Portuguese characters. 5-minute fix. For a Brazilian B2G enterprise product, this is mandatory polish. |
-| **T3-F07 escalation** to Tier 2 (global-error.tsx) | **AGREE** | Verified: `frontend/app/global-error.tsx` uses hardcoded `backgroundColor: "#f9fafb"`, `fontFamily: "system-ui"`, no dark mode support. Visually disconnected from rest of product. Rare trigger but high perception impact. |
-| **T3-F17 escalation** to Tier 2 (error boundaries for 4 pages) | **AGREE** | Verified: only `buscar/error.tsx`, `dashboard/error.tsx`, `admin/error.tsx` exist. Missing: `/pipeline`, `/historico`, `/mensagens`, `/conta`. These pages fall through to root `error.tsx` which exposes raw `error.message` in monospace. |
-| **NEW-1** (filter error.message through getUserFriendlyError) | **AGREE -- Add to Tier 2** | Verified: all 4 error boundary files render `{error.message}` directly. The `getUserFriendlyError()` function exists in `frontend/lib/error-messages.ts` and is already used in 27 files across the codebase -- but NOT in error boundaries. This is the single most impactful UX fix for enterprise perception. |
-| **T3-F14 stays Tier 3** (custom toast in FeedbackButtons) | **AGREE** | Low perception impact. The custom toast works. |
-| **T3-F21 stays Tier 3** (inconsistent dates) | **AGREE** | Users unlikely to notice formatting differences. |
+The assessment is comprehensive and ready for planning, subject to 4 conditions documented in the Parecer Final section. The specialist reviews are high-quality, evidence-based, and largely non-contradictory. The remaining issues are corrections and missing test coverage considerations that can be addressed during planning rather than requiring another review cycle.
 
 ---
 
-## 2. Gaps Identified
+## Assessment Completeness
 
-### GAP-01: No Monitoring/Alerting for Migration Drift (Cross-Area)
+**Overall: STRONG.** The three-phase approach (architect consolidation, DB specialist review, UX specialist review) covered the codebase thoroughly. The DRAFT identified 63 debts, adjusted to 66 after specialist additions (3 DB: DA-01/02/03, 4 FE: FE-39/40/41/42) minus 1 removal (FE-18).
 
-**Missing from assessment:** There is no mechanism to detect when a column exists in production code but not in migrations. The 5 missing columns (T1-01, T1-02, T1-03, MISSED-01, MISSED-02) were all added via Supabase Dashboard. The `schema_contract.py` module validates schema at startup but was not assessed for completeness. Without a CI check or startup validation that compares code-referenced columns against migration-derived schema, this class of bug will recur every time someone adds a column via Dashboard.
+**Coverage by area:**
 
-**Recommendation:** Add as Tier 3 item -- create a CI step that runs `schema_contract.py` validation against a fresh-from-migrations database schema (can be done as a Docker compose step in CI).
+| Area | Codebase Size | Debts Identified | Coverage Assessment |
+|------|---------------|------------------|---------------------|
+| Backend (73 modules, 31 route modules) | 73+ files | 24 | Good -- core modules well-analyzed |
+| Database (66 migrations, 32 tables) | 98 entities | 26 (23 original + 3 added by DB specialist) | Excellent -- migration-level verification |
+| Frontend (33 pages, 80+ components) | 113+ files | 41 (38 - 1 removed + 4 added by UX specialist) | Good -- component-level verification |
+| CI/CD (17 workflows) | 17 workflows | 4 (TD-M02/M03/M04, FE-21) | Adequate |
+| Infrastructure | 3 Railway services | 5 (TD-S01-S05) | Adequate |
 
-### GAP-02: Stripe Webhook Idempotency Under Concurrent Delivery (Cross-Area)
-
-**Missing from assessment:** While the DRAFT mentions `stripe_webhook_events` for event dedup, neither specialist assessed whether the webhook handler correctly handles concurrent delivery of the same event. Stripe can send the same webhook event multiple times within seconds. The `stripe_webhook_events` table has a UNIQUE constraint on `event_id`, but the code path in `webhooks/stripe.py` needs verification that it catches the unique violation gracefully rather than returning a 500 error (which causes Stripe to retry, creating a retry storm).
-
-**Recommendation:** Add as Tier 3 item -- verify webhook idempotency under concurrent delivery. Not blocking for monetization (Stripe retries gracefully) but important for enterprise reliability.
-
-### GAP-03: No Load Testing Results Referenced
-
-**Missing from assessment:** The system architecture documents `locustfile.py` exists but no load testing results were referenced in any assessment document. For enterprise monetization, the core search flow should be validated under expected load (e.g., 10 concurrent searches). The Railway 120s hard timeout combined with multi-UF searches is the most likely production failure mode under load.
-
-**Recommendation:** Add as Tier 3 item -- run locust test against staging before enterprise launch. Not blocking for initial monetization but needed before scaling.
-
-### GAP-04: Email Delivery Verification
-
-**Missing from assessment:** The email service (`email_service.py`) sends transactional emails via Resend for welcome, quota warnings, and trial reminders. The MISSED-02 finding (`email_unsubscribed` column missing from migrations) means the email opt-out flow has no migration backing. Beyond that, no specialist assessed whether Resend is properly configured with SPF/DKIM for the `smartlic.tech` domain. Enterprise customers receiving emails from an unverified domain may have them land in spam.
-
-**Recommendation:** Verify Resend domain configuration as part of pre-launch checklist. Not a code issue but an operational gap.
-
-### GAP-05: Frontend LocalStorage Plan Cache Staleness (Cross-Area)
-
-**Missing from assessment:** The CLAUDE.md mentions "Frontend localStorage plan cache (1hr TTL) prevents UI downgrades." The `usePlan` hook caches plan info in localStorage with a 1-hour TTL. If a Stripe webhook updates the backend plan but the frontend has a cached stale plan, the user sees their old plan for up to 1 hour. For enterprise billing, this could mean a user who just subscribed still sees "free_trial" in the UI. Neither specialist assessed this cache invalidation gap.
-
-**Recommendation:** Add as Tier 3 item -- reduce localStorage plan cache TTL to 5 minutes, or add cache-busting after checkout redirect. Low severity (user can refresh) but surprising for enterprise.
+**What was NOT assessed (see Gaps section):**
+- E2E test coverage gaps
+- Observability/monitoring completeness
+- Dependency vulnerability scanning
+- Backend test isolation debt
 
 ---
 
-## 3. Cross-Area Risk Matrix
+## Gaps Identificados
 
-| Risk | Areas Affected | Impact on Core | Mitigation |
-|------|---------------|----------------|------------|
-| **Missing DB columns + Backend code using them** (T1-01/02/03 + MISSED-01/02) | Database + Backend | On fresh DB: Stripe webhooks fail silently, `/me` returns incomplete data, analytics endpoint crashes, subscription cancel loses `end_date`, email unsubscribe writes to void. **In production today: functional** (columns exist via Dashboard). Risk is disaster recovery only. | Single migration with `ADD COLUMN IF NOT EXISTS` for all 5 columns. Zero risk -- idempotent. |
-| **Trigger regression + Onboarding flow** (T2-04 + Frontend onboarding) | Database + Backend + Frontend | New users sign up, trigger creates profile with NULL `company`, `sector`, `context_data`. Onboarding page (`/onboarding/page.tsx` line 491) reads `context_data` -- gets NULL. User completes onboarding, data is written via API (not trigger). **Net effect:** Onboarding data collected POST-signup works; signup metadata is silently discarded. Users who filled company/sector on signup form see them missing on their profile. | T2-04 fix (trigger rewrite). Must test: email signup with metadata, Google OAuth signup, onboarding completion. |
-| **Trigger regression + Trigger lacks ON CONFLICT + Edge-case re-signup** (T2-04 + MISSED-04) | Database + Auth | If user's auth.users row is recreated (e.g., after account deletion/recreation), the trigger's INSERT without ON CONFLICT throws a unique violation. This **blocks the user from signing up entirely** -- the Supabase auth INSERT fails. | T2-04 fix includes `ON CONFLICT (id) DO NOTHING`. |
-| **RLS gaps + Enterprise customer data** (T2-05 + T2-07 + T2-08) | Database + Security | T2-05: Any authenticated user can inject fake state transition records (audit log pollution). T2-07/T2-08: service_role bypasses RLS so no current data exposure. **Real risk is low** -- service_role bypass means these are defense-in-depth. No actual data leakage path exists today. | Apply RLS policy fixes in Tier 2 migration. |
-| **Raw error.message exposure + Error boundary gaps** (NEW-1 + T3-F17) | Frontend + UX | When any unhandled React error occurs on `/pipeline`, `/historico`, `/mensagens`, or `/conta`, user sees raw JavaScript error (e.g., `TypeError: Cannot read properties...`). On pages WITH error boundaries, the raw message is still shown in a monospace block. **Enterprise perception risk** -- decision-maker loses confidence. | Add error boundaries for 4 pages + filter error.message through `getUserFriendlyError()` in all existing boundaries. |
-| **Trial stats runtime error + Frontend trial display** (T1-04) | Backend + Frontend | `services/trial_stats.py` line 78 queries non-existent `user_pipeline` table. Backend returns error. Frontend pipeline page's trial value metric shows error or empty. **Affects every trial user** trying to see their pipeline value. | 1-line code fix: `user_pipeline` -> `pipeline_items`. Also fix test file. |
-| **FK to auth.users + User deletion** (T2-01/02) | Database | If admin deletes a user profile without deleting auth.users (or vice versa), `pipeline_items`, `classification_feedback`, and `trial_email_log` can have orphaned rows because FK points to wrong table. **Low probability** (current code always deletes via auth which cascades). | Repoint FKs to `profiles(id) ON DELETE CASCADE`. Check for orphaned data before applying. |
+### GAP-01: TD-S05 is Already Fixed -- MUST REMOVE from DRAFT
 
----
+The DRAFT lists `time.sleep(0.3)` in quota.py as a MEDIUM debt (Tier 0, item #3, estimated 1h). The DB specialist review (line 298) notes "Already verified as fixed in v1 review -- `asyncio.sleep(0.3)` used everywhere."
 
-## 4. Enterprise Readiness per Flow
+**Independent verification:** Grep confirms quota.py uses `await asyncio.sleep(0.3)` in all 3 occurrences (lines 1467, 1557, 1624). Zero instances of `time.sleep` exist in the file.
 
-| Flow | Ready After T1+T2 Fixes? | Remaining Risks | Test Coverage |
-|------|--------------------------|-----------------|---------------|
-| **Search (end-to-end)** | YES | In-memory `_active_trackers` limits to 1 web instance (T3-S03). Railway 120s timeout for large multi-UF searches. Both are accepted Tier 3 items. | 169 backend test files + 60 E2E tests + SSE progress tests. Search pipeline well-covered. |
-| **Billing/Subscription** | YES | After T1-01, T1-03, MISSED-01: all Stripe webhook paths write to correct columns. `subscription_end_date` persisted on cancel. LocalStorage plan cache can show stale plan for up to 1hr (GAP-05, Tier 3). | Stripe webhook tests exist. Need manual verification of checkout -> webhook -> profile update flow post-migration. |
-| **Auth + Onboarding** | YES | After T2-04: trigger populates all fields + ON CONFLICT guard. Signup metadata propagated. Google OAuth flow needs manual testing. | Auth tests exist. Must manually test: email signup with company/sector, Google OAuth, re-signup edge case. |
-| **Pipeline (Kanban)** | YES | After T1-04: trial stats query fixed. Pipeline CRUD and drag-and-drop functional. Missing per-page error boundary (T3-F17, escalated to Tier 2). | Pipeline unit tests + DnD tests exist. Trial stats test needs update (MISSED-03). |
-| **Reporting (Excel + AI summary)** | YES | No blocking or stability issues identified. ARQ background jobs handle LLM + Excel generation. Fallback summary works. | Excel generation tests exist. LLM mock tests exist. |
-| **Dashboard/Analytics** | YES | After T1-02: `trial_expires_at` column exists for analytics queries. Dashboard has its own error boundary (good). Fully CSR with loading waterfall (accepted Tier 3). | Analytics endpoint tests exist. |
+**Action:** Remove TD-S05 from Tier 0. This frees 1h from the estimate.
 
-**Assessment:** All 6 core flows will be enterprise-ready after Tier 1 + Tier 2 fixes are applied. No flow has a remaining blocker after the proposed fixes.
+### GAP-02: UX Specialist Minor Inaccuracy on /features Page
 
----
+The UX specialist states (FE-18 justification): "Only `/planos` and `/features` are CSR, which is acceptable since they require client interactivity."
 
-## 5. Test Requirements for Tier 1
+**Independent verification:** `/features/page.tsx` does NOT have `"use client"` -- it is already a Server Component. Only `/planos/page.tsx` and `/planos/obrigado/page.tsx` are CSR. This does not affect the FE-18 removal decision (which is correct), but should be noted for accuracy in the final document.
 
-| ID | Item | Test Required | Acceptance Criteria | Regression Risks |
-|----|------|--------------|---------------------|------------------|
-| T1-01 | `profiles.subscription_status` migration | 1. Run migration on test DB. 2. Verify column exists with DEFAULT 'trial'. 3. Run `pytest tests/test_api_me.py` -- verify `/me` returns `subscription_status`. 4. Run `pytest tests/test_stripe_webhooks.py` -- verify webhook writes `subscription_status`. | Column exists after migration. All existing backend tests pass. `/me` endpoint returns `subscription_status` field. | Migration is `ADD COLUMN IF NOT EXISTS` -- zero regression risk on existing production. New CHECK constraint could reject unexpected values if code writes unlisted status. |
-| T1-02 | `profiles.trial_expires_at` migration | 1. Run migration on test DB. 2. Verify column exists as TIMESTAMPTZ. 3. Run `pytest tests/ -k "analytics"` -- verify analytics endpoint reads `trial_expires_at`. | Column exists after migration. Analytics tests pass. | Zero regression risk (additive only). |
-| T1-03 | `user_subscriptions.subscription_status` migration | 1. Run migration on test DB. 2. Verify column exists with DEFAULT 'active'. 3. Run `pytest tests/test_stripe_webhooks.py` -- verify checkout creates subscription with `subscription_status`. | Column exists. Stripe webhook test passes for checkout + payment failure. | Zero regression risk (additive only). |
-| T1-04 | Fix `user_pipeline` -> `pipeline_items` | 1. Change `backend/services/trial_stats.py` line 78: `user_pipeline` -> `pipeline_items`. 2. Update `backend/tests/test_trial_usage_stats.py` lines 70, 79, 151, 188: change mock from `user_pipeline` to `pipeline_items`. 3. Run `pytest tests/test_trial_usage_stats.py -v`. 4. Run full backend suite. | All trial stats tests pass with correct table name. No test mocks `user_pipeline` anymore. | Low -- isolated to trial stats module. Ensure test mocks match production table name. |
-| MISSED-01 | `profiles.subscription_end_date` migration | 1. Run migration. 2. Verify column exists as TIMESTAMPTZ. 3. Run `pytest tests/ -k "subscriptions"` -- verify cancel flow writes `subscription_end_date`. | Column exists. Subscription cancel test passes. | Zero regression risk (additive only). |
-| MISSED-02 | `profiles.email_unsubscribed` + `email_unsubscribed_at` migration | 1. Run migration. 2. Verify `email_unsubscribed` exists as BOOLEAN DEFAULT FALSE. 3. Verify `email_unsubscribed_at` exists as TIMESTAMPTZ. 4. Run `pytest tests/test_email_triggers.py`. | Columns exist. Email tests pass. Pipeline SELECT of `email_unsubscribed` returns FALSE (not NULL) for existing users. | Existing profiles will have NULL for `email_unsubscribed` unless DEFAULT is applied. Must verify: does `ADD COLUMN ... DEFAULT FALSE` backfill existing rows? In PostgreSQL 11+, yes -- ADD COLUMN with DEFAULT does NOT rewrite the table but applies default on read. Safe. |
+### GAP-03: No E2E Test Debt Tracked
+
+The codebase has 290 backend test files, 268 frontend test files, and 20 E2E spec files covering 33 pages. Critical user flows including MFA setup, organization management, alert creation, and partner referrals have no E2E coverage. This gap is not tracked as a debt in any document.
+
+### GAP-04: No Observability/Monitoring Debt Tracked
+
+The assessment does not evaluate completeness of Prometheus metrics, OpenTelemetry spans, or Sentry coverage against the 60+ endpoints. For example: are all 7 pipeline stages instrumented? Are circuit breaker state changes consistently tracked across all 3 data sources? Is the ARQ worker adequately instrumented? These become important as the product moves from beta to revenue.
+
+### GAP-05: No Dependency Vulnerability Audit
+
+Neither the DRAFT nor specialist reviews mention dependency security scanning. The `requirements.txt` pins most versions, but there is no `pip-audit` or `npm audit` in any of the 17 CI workflows. This is a security debt that should be tracked alongside TD-SEC01-04.
+
+### GAP-06: Backend Test Isolation Debt Not Tracked
+
+MEMORY.md documents extensive test pollution patterns: `sys.modules` MagicMock injection without cleanup, `importlib.reload` leaving modules in altered state, SimpleNamespace requirements for Pydantic compatibility, global singleton leaks (supabase_cb). The UX specialist identified FE-41 (no hook isolation tests) as a frontend testing debt, but the backend equivalent (fragile test fixtures, mock pattern inconsistencies documented across 6+ MEMORY entries) was not captured.
 
 ---
 
-## 6. Test Requirements for Tier 2
+## Riscos Cruzados
 
-| ID | Item | Test Required | Acceptance Criteria | Regression Risks |
-|----|------|--------------|---------------------|------------------|
-| T2-01/02 | FK standardization + ON DELETE CASCADE | 1. **Pre-check:** Query for orphaned `user_id` values in `pipeline_items`, `classification_feedback`, `trial_email_log` that have no matching `profiles.id`. 2. Apply migration. 3. Verify new FK constraints exist. 4. Test: delete a test user profile -> verify cascading deletion of pipeline_items, feedback, email_log. | Zero orphaned rows (or clean them before applying). FK constraints point to `profiles(id)`. CASCADE works on delete. | If orphaned data exists, FK creation fails. Must run orphan check before migration. Two-phase approach (`NOT VALID` then `VALIDATE`) recommended by DB specialist for large tables. |
-| T2-03 | JSONB size constraint + pg_cron cleanup | 1. **Pre-check:** Run `SELECT max(octet_length(results::text)) FROM search_results_cache` on production. 2. If max < 1MB: add CHECK constraint. If max >= 1MB: clean or raise limit first. 3. Set up pg_cron cleanup job. 4. Verify: insert a 1.1MB JSONB blob -> fails. Insert a 500KB blob -> succeeds. | CHECK constraint active. pg_cron job scheduled. No existing data violates constraint. | CHECK constraint will reject inserts if search returns very large result sets. Must verify max current size before applying. This is data-dependent -- cannot be tested without production data. |
-| T2-04 | `handle_new_user()` trigger rewrite | 1. Apply migration. 2. **Test email signup:** create user with `company`, `sector`, `whatsapp_consent` in metadata -> verify all fields propagated to `profiles`. 3. **Test Google OAuth signup:** create user via OAuth -> verify `full_name` and `avatar_url` propagated. 4. **Test ON CONFLICT:** attempt to create profile with existing `id` -> verify no error (DO NOTHING). 5. **Test phone normalization:** provide `+5511999998888` -> verify stored as `11999998888`. | All metadata fields present in profiles after signup. ON CONFLICT does not raise error. Phone normalization works correctly. | This replaces the production trigger. If the new trigger has a bug, ALL new signups fail. Must test thoroughly. Consider: deploy to staging first, test 3 signup methods (email, Google, magic link), then deploy to production. |
-| T2-05 | State transitions INSERT policy scoping | 1. Apply migration. 2. Verify: authenticated user (not service_role) attempting INSERT into `search_state_transitions` -> rejected (RLS violation). 3. Verify: service_role INSERT still works. | Non-service-role INSERT rejected. Service_role INSERT succeeds. | If backend code somewhere uses anon/authenticated role (not service_role) to insert transitions, those inserts will break. Verify all insert paths use service_role. |
-| T2-07 | Profiles service_role ALL policy | 1. Apply migration. 2. Verify policy exists. 3. Run backend tests that update/delete profiles. | Policy active. Existing tests pass. | Zero risk -- additive policy. service_role already bypasses RLS. |
-| T2-08 | Conversations/messages service_role policies | 1. Apply migration. 2. Verify policies exist. 3. Run `pytest tests/ -k "messages"`. | Policies active. Message tests pass. | Zero risk -- additive. |
-| T2-09 | Composite index on search_sessions | 1. Apply migration. 2. Verify index exists via `\d search_sessions`. 3. Run `EXPLAIN ANALYZE` on analytics query pattern. | Index exists. Query plans show index usage for `(user_id, status, created_at)` filters. | Index creation can briefly impact write performance. Deploy during low traffic. |
-| T2-11 | BottomNav drawer focus trap | 1. Open mobile drawer. 2. Tab through all focusable elements -> verify focus cycles within drawer. 3. Press Escape -> verify drawer closes. 4. Verify: focus returns to trigger button after close. | Focus trapped within drawer. Escape closes drawer. Focus returns to trigger. | Ensure focus trap does not interfere with touch/swipe interactions on mobile. Test on actual mobile device or emulator. |
-| T3-F15 (escalated) | 404 page Portuguese accents | 1. Navigate to `/nonexistent-page`. 2. Verify text reads "Pagina nao encontrada" with proper accents. | All Portuguese characters properly accented. | Zero regression risk -- string replacement only. |
-| T3-F07 (escalated) | global-error.tsx brand alignment | 1. Trigger root layout error (can be simulated by temporarily throwing in root layout). 2. Verify: page uses brand colors, supports dark mode via media query, button matches brand-blue. | Visual match with rest of product in both light and dark mode. | Must ensure inline styles work without Tailwind/CSS imports (root layout has failed). |
-| T3-F17 (escalated) | Error boundaries for 4 pages | 1. Add error boundaries to `/pipeline`, `/historico`, `/mensagens`, `/conta`. 2. For each: trigger an error (e.g., mock API failure). 3. Verify: user sees contextual Portuguese error message, NOT raw `error.message`. | Each page has its own error boundary. No raw error.message visible to users. | Copy existing pattern from `buscar/error.tsx`. Low risk. |
-| NEW-1 (escalated) | Filter error.message through getUserFriendlyError | 1. In each of the 4 existing error boundary files, import and apply `getUserFriendlyError()`. 2. Trigger errors in each page. 3. Verify: displayed message is user-friendly Portuguese, NOT raw JavaScript error. | All error boundaries show friendly messages. `getUserFriendlyError` function covers common error types. | Must verify `getUserFriendlyError()` handles all error categories gracefully. Function already used in 27 files -- low risk of missing cases. |
+| # | Risco | Areas Afetadas | Probabilidade | Impacto | Mitigacao |
+|---|-------|----------------|---------------|---------|-----------|
+| R-01 | FE-01 (SearchResults decomp) breaks existing 268 frontend tests | Frontend tests, E2E | HIGH | HIGH | Run full test suite after each sub-component extraction. Create snapshot tests for rendered output before decomposition starts. |
+| R-02 | FE-03 (useSearch decomp) + FE-08 (SWR adoption) compound breakage of SSE integration | Frontend, Backend SSE | HIGH | CRITICAL | The SSE dual-connection pattern is the most fragile integration point. Decomposing useSearch while simultaneously adopting SWR creates compounding risk. Resolve FE-03 FIRST, stabilize with tests, THEN adopt SWR. Never in parallel. |
+| R-03 | C-01 (FK re-pointing to profiles) with live beta users | Database, Backend | MEDIUM | HIGH | The NOT VALID + VALIDATE pattern mitigates lock contention, but the pre-migration orphan detection query is essential. Run during low-traffic window (1am BRT / 4am UTC). |
+| R-04 | TD-A01 (remove legacy routes) breaks unknown API consumers | Backend, external consumers | LOW | MEDIUM | The DRAFT states frontend already uses versioned endpoints. Verify via Railway access logs for non-/v1/ API calls before removal. Add deprecation metric counter first. |
+| R-05 | FE-27 (Button via Shadcn/ui) requires Tailwind config changes | Frontend build, all pages | MEDIUM | MEDIUM | Shadcn initialization modifies `tailwind.config.js` and `globals.css`. Test full build + visual regression on all 33 pages after setup. |
+| R-06 | Migration 3 (RLS policy standardization, 8 tables) typo in one of 8 statements | Database, Backend | LOW | HIGH | Both `auth.role()` and `TO service_role` work today. Mitigate with staging test before production apply. |
+| R-07 | TD-A02 (search_pipeline refactor) + TD-A03 (progress tracker to Redis) change core business logic simultaneously | Backend, Frontend SSE, E2E | MEDIUM | CRITICAL | These are the two highest-risk refactors. Consider decoupling -- pipeline refactoring (code organization) does not inherently require changing the progress tracking mechanism. See dependency validation below. |
+| R-08 | H-03 pg_cron DELETE during peak hours causes lock contention | Database, search availability | LOW | MEDIUM | DB specialist recommends 4am UTC = 1am BRT. Outside peak Brazilian business hours. Acceptable. |
 
 ---
 
-## 7. Regression Risks
+## Contradicoes Entre Especialistas
 
-### High Regression Risk
+### No Major Contradictions Found
 
-| Change | What Could Break | Mitigation |
-|--------|-----------------|------------|
-| **T2-04 trigger rewrite** | If new trigger has syntax error or incorrect field mapping, ALL new user signups fail silently (profile not created) or loudly (auth INSERT fails). | Deploy to staging first. Test 3 signup methods. Keep rollback SQL ready: `CREATE OR REPLACE FUNCTION` with the current production version. |
-| **T2-01/02 FK repointing** | If orphaned data exists in `pipeline_items`, `classification_feedback`, or `trial_email_log`, the new FK constraint creation fails and the entire migration transaction rolls back. | Run orphan data check BEFORE migration. Use `NOT VALID` + `VALIDATE` two-phase approach for safety. |
-| **T2-03 JSONB CHECK constraint** | If any existing `search_results_cache` row exceeds the CHECK limit, the constraint cannot be added. Future large searches that produce >1MB results will fail to cache. | Query production for max JSONB size before applying. Consider 2MB limit instead of 1MB. Add application-level truncation before INSERT. |
+The DB and UX specialist reviews are cleanly separated by domain with no overlapping or conflicting claims. Three severity adjustments and one removal were made:
 
-### Medium Regression Risk
+### C-02 Downgrade: CRITICAL to HIGH -- APPROPRIATE
 
-| Change | What Could Break | Mitigation |
-|--------|-----------------|------------|
-| **T2-05 INSERT policy scoping** | If any backend code path inserts state transitions using a non-service-role connection, those inserts will fail with RLS violation. | Grep codebase for all `search_state_transitions` INSERT paths. Verify all use `get_supabase()` (which returns service_role client). |
-| **NEW-1 error.message filtering** | If `getUserFriendlyError()` returns an empty string or generic message for a specific error type, the user gets less information than before (though friendlier). | Review `getUserFriendlyError()` mapping for completeness. Add a development-mode toggle to show raw error alongside friendly message. |
-| **CHECK constraints on subscription_status** | If code ever writes a status value not in the CHECK list, the DB write fails silently (Supabase may swallow the error) or raises an error. | Review all code paths that SET `subscription_status` to ensure values match CHECK list. Currently: `trial`, `active`, `canceling`, `past_due`, `expired` for profiles; `active`, `trialing`, `past_due`, `canceled`, `expired` for user_subscriptions. |
+- **DB-AUDIT.md (original):** CRITICAL -- "RLS enabled but ZERO policies"
+- **DB Specialist Review:** Downgraded to HIGH
+- **Assessment:** The downgrade is appropriate. Three concrete justifications provided: (1) both tables are backend-only append logs with no PII, (2) service_role bypass is the intended and only access pattern, (3) no client-side status page planned. The defense-in-depth recommendation (add explicit service_role policies) is the right action. This is a hardening item, not a security vulnerability.
 
-### Low Regression Risk
+### H-04/05/06 Downgrade: HIGH to MEDIUM -- APPROPRIATE
 
-| Change | What Could Break | Mitigation |
-|--------|-----------------|------------|
-| T1-01/02/03 + MISSED-01/02 (column additions) | Nothing -- `ADD COLUMN IF NOT EXISTS` is idempotent and additive. | Standard migration testing. |
-| T1-04 (table name fix) | Nothing if test is also updated -- but if test still mocks `user_pipeline`, it passes falsely. | Update test file simultaneously. Run with `-v` to verify correct table name in mock. |
-| T2-07/08/09/12 (policies and indexes) | Nothing -- all additive. DROP POLICY IF EXISTS + CREATE POLICY is idempotent. | Standard migration testing. |
-| T3-F15 (404 accents) | Nothing -- 2 string replacements. | Visual inspection. |
+- **DB-AUDIT.md (original):** HIGH
+- **DB Specialist Review:** Downgraded to MEDIUM -- "functionally equivalent, consistency debt not security debt"
+- **Assessment:** Appropriate. The `auth.role()` pattern works correctly in Supabase PostgreSQL 17. The theoretical risk (Supabase JWT structure change) is low probability. Classifying as MEDIUM consistency debt is accurate.
 
----
+### FE-22 Downgrade: HIGH to LOW -- APPROPRIATE
 
-## 8. Consolidated Tier Summary (Post-Review)
+- **DRAFT:** HIGH -- "Hardcoded Portuguese strings in 44 pages, sem i18n"
+- **UX Specialist:** Downgraded to LOW -- "product is 100% BR, pre-revenue, no international plans"
+- **Assessment:** Appropriate and well-justified. Domain-specific terms (licitacao, edital, pregao, CNPJ) have no direct translations. 24-40h effort for zero revenue impact is premature optimization. Note: if product ever targets Portuguese-speaking African markets (Angola, Mozambique), procurement terminology differs. Future consideration, not current debt.
 
-### Final Tier 1 (BLOCKING) -- 7 items
+### FE-18 Removal -- CORRECT AND VERIFIED
 
-| ID | Item | Area | Source |
-|----|------|------|--------|
-| T1-01 | `profiles.subscription_status` missing migration | DB | Original DRAFT |
-| T1-02 | `profiles.trial_expires_at` missing migration | DB | Original DRAFT |
-| T1-03 | `user_subscriptions.subscription_status` missing migration | DB | Original DRAFT |
-| T1-04 | `trial_stats.py` references `user_pipeline` instead of `pipeline_items` + test fix | Backend | Original DRAFT |
-| T1-05 (was MISSED-01) | `profiles.subscription_end_date` missing migration | DB | DB specialist review |
-| T1-06 (was MISSED-02) | `profiles.email_unsubscribed` + `email_unsubscribed_at` missing migration | DB | DB specialist review |
-| T1-07 (was T2-04) | `handle_new_user()` trigger regression -- drops 6 fields + no ON CONFLICT | DB | Escalated from Tier 2 |
-
-### Final Tier 2 (STABILITY) -- 14 items
-
-| ID | Item | Area | Source |
-|----|------|------|--------|
-| T2-01 | FK standardization to `profiles(id)` ON DELETE CASCADE (3 tables) | DB | Original DRAFT |
-| T2-02 | `classification_feedback` FK ON DELETE CASCADE (bundled with T2-01) | DB | Original DRAFT |
-| T2-03 | JSONB `results` blob size governance + pg_cron cleanup | DB | Original DRAFT |
-| T2-05 | `search_state_transitions` INSERT policy scoping | DB | Original DRAFT |
-| T2-07 | `profiles` service_role ALL policy | DB | Original DRAFT |
-| T2-08 | `conversations`/`messages` service_role policies | DB | Original DRAFT |
-| T2-09 | `search_sessions` composite index | DB | Original DRAFT |
-| T2-11 | BottomNav drawer focus trap | Frontend | Original DRAFT |
-| T2-13 | Dockerfile Python 3.11 vs pyproject.toml 3.12 mismatch | Backend | Original DRAFT |
-| T2-14 | Hardcoded "BidIQ" User-Agent | Backend | Original DRAFT |
-| T2-16 (was T3-F15) | 404 page missing Portuguese accents | Frontend | Escalated by UX specialist |
-| T2-17 (was T3-F07) | `global-error.tsx` inline styles not matching brand | Frontend | Escalated by UX specialist |
-| T2-18 (was T3-F17) | Missing error boundaries for pipeline, historico, mensagens, conta | Frontend | Escalated by UX specialist |
-| T2-19 (was NEW-1) | Filter `error.message` through `getUserFriendlyError()` in all error boundaries | Frontend | Identified by UX specialist |
-
-### Removed from Tier 2
-
-| ID | Item | Reason |
-|----|------|--------|
-| T2-04 | `handle_new_user()` trigger | **Escalated to Tier 1** (T1-07) -- affects every new signup |
-| T2-06 | `classification_feedback` admin policy convention | **Demoted to Tier 3** -- functional, convention only |
-| T2-10 | GIN indexes on sectors/ufs arrays | **Demoted to Tier 3** -- no current DB-level array queries |
-| T2-12 | `trial_email_log` explicit service_role policy | **Demoted to Tier 3** -- zero functional impact |
-| T2-15 | `time.sleep(0.3)` in quota.py | **Removed** -- already fixed in codebase |
+- **DRAFT:** Listed as HIGH, Tier 1, 8-12h
+- **UX Specialist:** REMOVED -- "all blog/SEO pages are already Server Components"
+- **Verification:** Grep confirms no `"use client"` in `/blog/*`, `/licitacoes/*`, `/como-*`. The DRAFT Section 7 dependency graph lists FE-18 as independent with no dependents, so its removal does not break the graph. Tier 1 total should be reduced by 8-12h.
 
 ---
 
-## 9. Execution Order Recommendation
+## Dependencias Validadas
 
-### Phase 1: Immediate (Day 1 morning) -- ~2 hours
+### DRAFT Dependency Graph (Section 7) -- Post-Specialist Status
 
-1. **Migration A:** All missing columns (T1-01 + T1-02 + T1-03 + T1-05 + T1-06)
-   - Single migration: `ADD COLUMN IF NOT EXISTS` for 5 columns with CHECK constraints
-   - Zero risk, idempotent
-2. **Code fix B:** T1-04 + MISSED-03 (parallel with Migration A)
-   - Fix `trial_stats.py` + `test_trial_usage_stats.py`
-3. **Validation:** Full `pytest` run
+```
+C-01 (FK standardization) --- bloqueia --> H-02 (search_results_store FK)
+                                       --> M-03 (partner_referrals FK)
+STATUS: VALID. DB specialist confirms H-02 and M-03 are subsumed by C-01.
+        DB specialist ADDS: DA-02 (search_results_store policy) can batch.
 
-### Phase 2: Critical trigger fix (Day 1 afternoon) -- ~2 hours
+TD-A01 (remover legacy routes) --- habilita --> TD-M02 (API contract validation)
+STATUS: VALID. Cannot validate contract drift while legacy routes exist.
 
-4. **Migration C:** T1-07 (`handle_new_user()` trigger rewrite)
-   - Depends on Phase 1 (new columns must exist before trigger references them)
-   - Requires manual signup testing (email, OAuth, re-signup edge case)
+FE-01 (SearchResults decomp) --- requer --> FE-10 (eliminar prop drilling)
+                              --- requer --> FE-06 (Button component)
+                              --- requer --> FE-27-30 (design primitives)
+STATUS: PARTIALLY VALID.
+  - FE-10 prerequisite: CORRECT (confirmed by UX specialist).
+  - FE-06 and FE-27: DUPLICATE IDs for same debt. UX specialist clarifies
+    FE-27 should precede FE-01 (new components use shared Button from day one).
+  - FE-28-30: NOT required before FE-01. Nice-to-have, not blocking.
 
-### Phase 3: Stability database (Day 2) -- ~4 hours
+FE-03 (useSearch decomp) --- requer --> FE-08 (data fetching library)
+STATUS: *** INVERTED *** This is the most significant dependency error.
+  The UX specialist explicitly recommends FE-03 BEFORE FE-08:
+  decompose useSearch first, then adopt SWR into the decomposed hooks.
+  Correct order: FE-03 -> FE-08 (not FE-08 -> FE-03).
 
-5. **Migration D:** T2-01/02 (FK standardization) -- after orphan data check
-6. **Migration E:** T2-05 + T2-07 + T2-08 (RLS policies)
-7. **Migration F:** T2-09 (composite index)
-8. **Migration G:** T2-03 (JSONB governance) -- after production data size check
+FE-18 (SSG/ISR) --- independente
+STATUS: REMOVED (FE-18 no longer exists). No impact on graph.
 
-### Phase 4: Stability code (Day 2-3) -- ~6 hours
+TD-A02 (pipeline refactor) --- requer --> TD-A03 (progress tracker Redis)
+STATUS: QUESTIONABLE. Pipeline refactoring (extracting stages into modules)
+  does not inherently require changing the progress tracking implementation.
+  These CAN be decoupled. TD-A02 should depend on TD-A03 only if the
+  refactoring also restructures progress tracking. Recommend treating as
+  independent to reduce compounding risk (see R-07).
+```
 
-9. T2-13 (Dockerfile Python version alignment)
-10. T2-14 (User-Agent string fix)
-11. T2-16 (404 accents -- 5 minutes)
-12. T2-17 (global-error.tsx brand alignment -- 30 minutes)
-13. T2-18 (error boundaries for 4 pages -- 2 hours)
-14. T2-19 (getUserFriendlyError in all error boundaries -- 1 hour)
-15. T2-11 (BottomNav focus trap -- 1.5 hours)
+### Hidden Dependencies Discovered
 
-**Total estimated effort:** ~14 hours (~2 working days) for all Tier 1 + Tier 2 items including testing.
-
----
-
-## 10. Final Verdict
-
-### APPROVED
-
-**Rationale:** The technical debt assessment is comprehensive and actionable. The three assessment documents (DRAFT, DB specialist review, UX specialist review) together cover all 6 core flows required for enterprise monetization. The specialist reviews caught real issues (5 additional missing columns, 1 already-fixed item, correct tier adjustments) and provided actionable guidance.
-
-**Conditions for proceeding to final assessment + story creation:**
-
-1. **Incorporate all specialist adjustments validated above** into the final assessment document
-2. **Expand Tier 1** to 7 items (adding MISSED-01, MISSED-02, escalating T2-04)
-3. **Remove T2-15** (already fixed)
-4. **Add the 5 gaps identified** (GAP-01 through GAP-05) as Tier 3 items in the backlog
-5. **Add the 4 UX escalations** (T3-F15, T3-F07, T3-F17, NEW-1) to Tier 2
-6. **Include CHECK constraints** for `subscription_status` columns as recommended by DB specialist
-7. **Include test requirements** from Section 5 and 6 of this review as acceptance criteria in the stories
-8. **Include regression risks** from Section 7 as warnings in relevant stories
-
-**What is NOT blocking approval:**
-- GAP-01 through GAP-05 are operational concerns, not assessment gaps. They are correctly Tier 3.
-- Load testing (GAP-03) is important but does not block story creation.
-- Stripe concurrent webhook handling (GAP-02) is edge-case behavior that does not block monetization.
-
-**Bottom line:** The assessment identifies the right problems at the right severity levels. The combined Tier 1 + Tier 2 fixes (7 + 14 = 21 items) are achievable in 2 working days and will make SmartLic enterprise-ready for monetization across all 6 core flows. Proceed to final assessment consolidation and story creation.
+| Dependency | Source | Impact |
+|------------|--------|--------|
+| FE-27 (Button) must precede FE-01 (SearchResults decomp) | UX specialist line 332 | Decomposed sub-components should use shared Button from day one |
+| L-06 (composite index) must precede H-03 (retention job) | DB specialist dependency graph | DELETE performance requires (user_id, expires_at) index |
+| M-02 (created_at index) must precede M-04/05/06 retention jobs | DB specialist dependency graph | Cleanup queries need efficient index path |
+| FE-41 (hook isolation tests) should precede FE-03 (useSearch decomp) | Logical dependency | Cannot safely decompose 1,510-line hook without tests as safety net |
+| GAP-05 (dependency audit) should precede new dependency additions | Logical dependency | FE-08 (SWR adoption) adds a dependency -- should audit existing deps first |
 
 ---
 
-*Reviewed by @qa during Phase 7 of SmartLic Brownfield Discovery.*
-*Methodology: Independent verification of all specialist claims against source code, cross-area risk analysis, enterprise readiness assessment per core flow.*
+## Ajustes de Estimativa
+
+### Items Requiring Adjustment
+
+| ID | DRAFT Estimate | Specialist Estimate | QA Assessment | Rationale |
+|----|---------------|---------------------|---------------|-----------|
+| TD-S05 | 1h | N/A (already fixed) | **0h -- REMOVE** | Verified: quota.py already uses asyncio.sleep in all 3 locations. |
+| C-01 | 4h | 6h (DB specialist) | **6-8h** | DB specialist's 6h includes writing + staging + verification + deploy. Add 2h buffer for orphan detection across 6 tables and ON DELETE decisions. |
+| FE-18 | 8-12h | 0h (removed by UX) | **0h -- REMOVE** | Verified: all blog/SEO pages are Server Components. |
+| FE-01 | 12-16h (DRAFT) | 14-18h (UX) | **14-18h** | UX specialist's estimate realistic for 1,581 lines and ~55 props. |
+| FE-03 | 12-16h (DRAFT) | 14-18h (UX) | **14-18h** | 1,510-line hook with SSE, retry, export, and persistence logic. |
+| FE-08 | 16-24h (DRAFT) | 16-20h (UX) | **20-28h** | Both estimates optimistic. SWR migration touches 15+ hooks/components with raw fetch. Add 4-8h for SSE integration testing. |
+| M-01 | 4h (DRAFT) | 1.5h (DB specialist) | **1.5h** | DB specialist correctly identified append-only tables do not need updated_at. 11 tables reduced to 3. |
+| M-07 | 2h (DRAFT) | 3h (DB specialist) | **3h** | Integration test + CI guard + canonical comment. Breakdown is detailed and realistic. |
+| TD-A02 | 16-24h (DRAFT) | N/A | **24-32h** | DRAFT underestimates. 800-line god module with inline helpers. The 290 backend test files likely have significant coupling to current pipeline structure. Need test coverage before AND after. |
+| FE-41 | 8-12h (UX added) | N/A | **12-16h** | Writing isolated tests for 1,510-line hook requires mock infrastructure for SSE, fetch, localStorage, timers. Prerequisite for FE-03. |
+
+### Revised Tier Totals
+
+| Tier | DRAFT Estimate | After All Adjustments |
+|------|---------------|-----------------------|
+| Tier 0 | ~16h | **~14h** (remove TD-S05 1h, adjust C-01 to 6h) |
+| Tier 1 | ~97-146h | **~105-155h** (remove FE-18 8-12h, increase FE-01/03/08, add FE-41 as prerequisite) |
+| Tier 2 | ~87-125h | **~85-120h** (minor adjustments, M-01 reduced) |
+| Tier 3 | ~65-85h | **~65-85h** (unchanged) |
+| **Subtotal (code changes)** | **~265-372h** | **~269-374h** |
+| **Testing effort (NEW)** | Not estimated | **~59.5h** (see Testes Requeridos section) |
+| **Grand Total** | **~265-372h** | **~328-434h** |
+
+---
+
+## Testes Requeridos Pos-Resolucao
+
+### Tier 0 (Quick Wins) -- ~6h testing effort
+
+| Debt Resolved | Required Tests | Type | Est. |
+|---------------|---------------|------|------|
+| C-01 (FK re-pointing, 6 tables) | Orphan detection query pre-migration; verify CASCADE on user deletion for all 6 tables; verify ON DELETE SET NULL for partner_referrals.referred_user_id | DB integration | 2h |
+| C-02 (RLS policies for health_checks, incidents) | Verify service_role can read/write; verify authenticated role denied | DB integration | 0.5h |
+| H-03 (search_results_store retention) | Insert expired rows, run cleanup, verify deletion; verify non-expired preserved; EXPLAIN ANALYZE on DELETE query | DB integration | 1h |
+| H-01 (trigger consolidation) | Verify updated_at fires on UPDATE for pipeline_items, alert_preferences, alerts after switching to shared function | DB integration | 0.5h |
+| H-04/05/06 + DA-01/02 (policy standardization, 8 tables) | Verify service_role access on all 8 tables after policy replacement; verify authenticated denied where expected | DB integration | 1h |
+| FE-12 + FE-13 (aria-labels, aria-hidden) | Axe accessibility audit on sidebar; verify all icon-only buttons have aria-label | Frontend unit + a11y | 0.5h |
+| TD-P03/04 (branding fix) | Verify User-Agent in PNCP requests; grep for "BidIQ" to confirm removal | Backend unit | 0.5h |
+
+### Tier 1 (Structural) -- ~35h testing effort
+
+| Debt Resolved | Required Tests | Type | Est. |
+|---------------|---------------|------|------|
+| TD-A01 (remove legacy routes) | Verify all /v1/ endpoints return 200; verify non-/v1/ returns 404 or redirect; monitor production logs for 404 spike post-deploy | Backend integration + E2E + monitoring | 4h |
+| FE-01 (SearchResults decomp) | Snapshot tests per sub-component; verify prop types; all existing SearchResults tests pass against new structure; visual regression on results page | Frontend unit + E2E | 4h |
+| FE-03 (useSearch decomp) | Isolated hook tests for each decomposed hook; SSE integration end-to-end; retry logic; export functionality | Frontend unit + integration | 6h |
+| FE-08 (SWR adoption) | Cache behavior; revalidation; error handling; SSE hooks alongside SWR; all migrated endpoints return correct data | Frontend integration | 4h |
+| FE-10 (prop drilling elimination) | Grouped prop objects pass type checks; no runtime undefined errors; component rendering with partial props | Frontend unit | 2h |
+| TD-A02 (pipeline refactor) | Full 290-file backend suite must pass; search flow E2E; SSE progress events; cache behavior; response time benchmarks (no regression) | Backend full suite + E2E + perf | 8h |
+| TD-A03 (Redis Streams progress) | SSE events delivered via Redis Streams; fallback to in-memory when Redis down; multi-instance progress sharing; heartbeat timing | Backend integration + E2E | 4h |
+| TD-S01 (memory optimization) | Memory profiling before/after; no OOM under concurrent searches; shared caches work across workers | Backend performance | 3h |
+
+### Tier 2 (Quality) -- ~18.5h testing effort
+
+| Debt Resolved | Required Tests | Type | Est. |
+|---------------|---------------|------|------|
+| FE-27-32 (design system primitives) | Visual regression on all pages using new components; dark mode; responsive behavior | Frontend visual + unit | 6h |
+| TD-A05 (eliminate dual PNCP client) | PNCP fetching with async-only client; fallback behavior; circuit breaker; retry logic | Backend integration | 3h |
+| TD-P02 (feature flags UI) | Flag toggle works; cache invalidation; no restart required; admin-only access | Backend integration + E2E | 2h |
+| M-04/05/06 + DA-03 (retention jobs, 4+ tables) | Each job deletes correct age range; no premature deletion; staggered scheduling works | DB integration | 1.5h |
+| FE-13/14/15/17 (accessibility) | Axe audit on affected pages; ARIA live regions announce progress; form labels present | Frontend a11y | 2h |
+| FE-19 (dynamic imports) | Lazy-loaded components render correctly; loading states work; bundle size reduction verified | Frontend perf | 1h |
+| TD-M02 (API contract CI) | CI fails when backend schema drifts from frontend types; passes when in sync | CI pipeline | 1h |
+| FE-33 (navigation unification) | Visual regression on search page with new nav; all navigation links work; responsive behavior | Frontend unit + visual | 2h |
+
+---
+
+## Testing Debts (novos)
+
+The following testing gaps should be tracked as new debts:
+
+| ID | Debt | Severity | Area | Est. Effort | Rationale |
+|----|------|----------|------|-------------|-----------|
+| TD-T01 | **No E2E coverage for MFA, organizations, alerts, partners** | MEDIUM | E2E | 12-16h | 20 E2E spec files cover core flows only. 4 major feature areas have zero E2E coverage. |
+| TD-T02 | **Backend test pollution patterns** (sys.modules MagicMock, singleton leak, importlib.reload) | MEDIUM | Backend tests | 8-12h | Documented in MEMORY.md as recurring flaky test source. Conftest fixtures partially mitigate but patterns not enforced. Root cause of historical test count discrepancies. |
+| TD-T03 | **No hook isolation tests for 19 custom hooks** (= FE-41, already identified by UX specialist) | MEDIUM | Frontend tests | 12-16h | useSearch (1,510 lines) has zero isolated tests. Prerequisite for safe FE-03 decomposition. |
+| TD-T04 | **No visual regression testing infrastructure** | LOW | Frontend tests | 8h | No Chromatic, Percy, or Playwright screenshot comparison. Design system adoption (FE-27-32) without visual regression creates blind spots. |
+| TD-T05 | **No dependency security scanning in CI** | MEDIUM | CI | 2h | No `pip-audit`, `npm audit`, or Snyk in any of 17 workflows. |
+| TD-T06 | **No load/stress testing baseline** | LOW | Backend | 4h | Locust workflow exists (`load-test.yml`) but is manual-only. No automated baseline or regression detection. |
+
+---
+
+## Parecer Final
+
+### APPROVED FOR PLANNING -- Subject to 4 Conditions
+
+**Condition 1: Remove TD-S05 from Tier 0.**
+It is already fixed. Verified: `asyncio.sleep` in all 3 occurrences in quota.py. Including a resolved debt wastes sprint capacity on investigation.
+
+**Condition 2: Correct the FE-03 / FE-08 dependency direction in DRAFT Section 7.**
+The DRAFT states FE-03 requires FE-08. The UX specialist correctly states the inverse: decompose useSearch (FE-03) first, then adopt SWR (FE-08) into the decomposed hooks. The dependency graph must be updated before planning to avoid executing these in the wrong order. Correct chain: FE-41 (hook tests) -> FE-03 (decompose) -> FE-08 (adopt SWR).
+
+**Condition 3: Add FE-41 (hook isolation tests) as explicit prerequisite for FE-03.**
+Decomposing a 1,510-line hook without test coverage is high-risk. The UX specialist identified this debt (8-12h) but did not mark it as a blocker for FE-03. It must be sequenced: FE-41 -> FE-03 -> FE-08.
+
+**Condition 4: Acknowledge testing effort in sprint planning.**
+Tier 0/1/2 resolutions require approximately 59.5h of testing effort (6h + 35h + 18.5h) that is not included in the DRAFT's estimates. The total effort including testing is approximately 328-434h, not 265-372h. Sprint planning that ignores this will systematically underestimate velocity.
+
+### Overall Quality Assessment
+
+The Brownfield Discovery v2 process produced a thorough, well-structured assessment. The three-phase specialist review model (architect consolidation, DB specialist, UX specialist) provides strong separation of concerns with appropriate cross-references. Both specialist reviews are evidence-based: DB specialist verified every claim against actual migration SQL files; UX specialist validated line counts and prop counts against the live codebase.
+
+The prioritization into 4 tiers is sound. Tier 0 items are genuinely quick wins with security/stability impact. Tier 1 items correctly target the highest-impact structural debts. All four specialist severity adjustments (C-02, H-04/05/06, FE-22, FE-18) are well-justified and improve accuracy.
+
+The primary risk for planning is the compounding effect of Tier 1 frontend refactors: FE-01 + FE-03 + FE-08 + FE-10 represent 60-80h of interconnected changes to the core search experience. These must be sequenced carefully with mandatory test stabilization gates between each item, not parallelized.
+
+**Recommendation:** Proceed to FINAL v3.0 consolidation by the architect, incorporating the 4 conditions above and the 6 new testing debts (TD-T01 through TD-T06).
+
+---
+
+*Review completed 2026-03-04 by @qa (Guardian).*
+*Methodology: Cross-referencing all specialist reviews against each other and the live codebase via automated search. Independently verified: TD-S05 fix status (3 grep hits confirm asyncio.sleep), FE-18 removal validity (0 "use client" in blog/SEO pages), /features CSR claim (Server Component confirmed), dependency graph consistency (FE-03/FE-08 inversion identified), test file counts (290 backend, 268 frontend, 20 E2E).*

@@ -12,7 +12,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_search_results_store_user_expires
 -- ══════════════════════════════════════════════════════════════════
 ALTER TABLE public.search_results_store
   ADD CONSTRAINT chk_result_data_size
-  CHECK (octet_length(result_data::text) < 2097152);
+  CHECK (octet_length(results::text) < 2097152);
 
 -- ══════════════════════════════════════════════════════════════════
 -- AC8-AC9/H-03: pg_cron daily cleanup at 4am UTC

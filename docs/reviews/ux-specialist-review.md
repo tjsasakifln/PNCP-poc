@@ -1,280 +1,332 @@
 # UX Specialist Review
 
-**Reviewer:** @ux-design-expert
-**Date:** 2026-02-25
-**Input:** `docs/prd/technical-debt-DRAFT.md` (Phase 4), `docs/frontend/frontend-spec.md` (Phase 3)
-**Scope:** Enterprise monetization readiness -- what UX issues would make an enterprise customer not trust the product enough to pay?
+**Reviewer:** @ux-design-expert (Pixel)
+**Date:** 2026-03-04
+**Documents Reviewed:** technical-debt-DRAFT.md v2.0, frontend-spec.md (Phase 3)
+**Supersedes:** ux-specialist-review.md v1 (2026-02-25)
 
 ---
 
-## Executive Assessment
+## Review Summary
 
-SmartLic's frontend is surprisingly well-built for a POC at this stage. The design system (CSS custom properties, semantic tokens, dark/light themes, WCAG contrast ratios) is more mature than typical pre-revenue B2G products. The core search flow has production-hardened resilience patterns (SSE progress, graceful fallbacks, humanized error messages, cache banners). The billing flow is structurally complete (Stripe integration, plan cards, payment failed banner).
+The DRAFT v2.0 accurately captures the vast majority of frontend/UX debts. Line counts and prop counts were validated against the codebase and are correct (SearchResults.tsx = 1,581 lines, ~55 top-level props; conta/page.tsx = 1,420 lines; useSearch.ts = 1,510 lines; buscar/page.tsx = 1,019 lines). The Sidebar SVG inline claim is confirmed (75 lines of SVG definitions in an `icons` object, no `aria-hidden` on any of them, though the nav and collapse button do have `aria-label`).
 
-**The enterprise readiness gap is narrow but specific.** The 4 Tier 1 database items are the only true functional blockers. From a UX perspective, the primary risks to enterprise perception are: (1) raw `error.message` exposure in error boundaries, (2) missing Portuguese accents on the 404 page, (3) the `global-error.tsx` using inline styles outside the design system, and (4) inconsistent component duplication suggesting an unfinished product to developers who inspect the code. None of these are showstoppers for a paying enterprise user in normal operation -- they only surface during error states or edge cases.
+**Key correction:** FE-18 (Blog/SEO pages are CSR) is **no longer accurate**. All blog pages (`/blog/*`, `/blog/programmatic/*`, `/blog/panorama/*`, `/blog/licitacoes/*`) and content pages (`/como-*`, `/licitacoes/*`) are already Server Components -- none have `"use client"`. The only CSR concern remaining is pages like `/planos` and `/features` which could benefit from SSG but are not SEO-critical programmatic pages. This significantly reduces the FE-18 severity.
 
-**Bottom line:** Fix the 4 Tier 1 items, address the 5 UX-critical items below, and the product is enterprise-presentable for monetization.
-
----
-
-## Tier Validation
-
-### Frontend Items in Tier 1/2
-
-| ID | Debito | Validated? | Severity Correct? | Enterprise Impact |
-|----|--------|-----------|-------------------|-------------------|
-| T1-04 | `trial_stats.py` references non-existent `user_pipeline` table | Yes | Correct (Tier 1) | Trial value display on pipeline page will error. Enterprise users evaluating during trial see a broken metric -- damages first impression. |
-| T2-11 | BottomNav drawer lacks focus trap (D-008) | Yes | Correct (Tier 2) | Mobile a11y violation. Enterprise procurement officers increasingly use tablets/phones. WCAG compliance is a checkbox item for government-adjacent B2G buyers. However, the drawer is a secondary navigation element (the "More" menu), not a primary flow blocker. Tier 2 is appropriate. |
-
-**Validation summary:** Both items are correctly tiered. No frontend items in Tier 1 need re-rating. T2-11 is the only frontend item in Tier 2 and it belongs there.
-
-### Items to ESCALATE (Tier 3 to Tier 2)
-
-| ID | Debito | Current Tier | Recommended | Reason |
-|----|--------|-------------|-------------|--------|
-| T3-F15 | 404 page missing Portuguese accents ("Pagina nao encontrada") | Tier 3 (Medium) | **Tier 2** | Enterprise users who mistype a URL see broken Portuguese. This is the kind of surface-level quality issue that signals "unfinished product" to a decision-maker. The fix is literally 2 strings. |
-| T3-F07 | `global-error.tsx` uses inline styles instead of design system | Tier 3 (High) | **Tier 2** | When the root layout crashes (rare but possible), the error page renders with hardcoded `#f9fafb` background and `system-ui` font -- visually disconnected from the rest of the app. An enterprise user hitting this sees a different product. The fix is ~20 minutes to use design system tokens. |
-| T3-F17 | Only search page has per-page error boundary | Tier 3 (Medium) | **Tier 2** | Pipeline (`/pipeline`) and Account (`/conta`) pages use the root `error.tsx` which displays raw `error.message` in a monospace font block. Enterprise users should never see `TypeError: Cannot read properties of undefined`. Currently, buscar, dashboard, and admin have custom error boundaries -- pipeline, historico, mensagens, and conta do not. Adding error boundaries for the 4 remaining protected pages takes ~2 hours and eliminates all raw error exposure. |
-| T3-F14 | `FeedbackButtons` uses custom toast instead of `sonner` | Tier 3 (Medium) | Stays Tier 3 | Not impactful enough for enterprise perception. The custom toast works; it just looks slightly different. |
-| T3-F21 | Inconsistent date display (mixed `date-fns` and `toLocaleDateString`) | Tier 3 (Medium) | Stays Tier 3 | Users unlikely to notice date formatting inconsistencies. Not an enterprise perception issue. |
-
-**Rationale for escalations:** The 3 escalated items all share the same characteristic -- they are visible to enterprise users during normal or near-normal operation, they signal "unfinished" quality, and they each take under 2 hours to fix.
+The design system gap (FE-27-32) is the most impactful cluster from a UX perspective. Inconsistent buttons, inputs, and cards create a "patchwork" visual impression that undermines trust -- particularly for B2G enterprise buyers who equate visual consistency with system reliability.
 
 ---
 
-## Enterprise UX Blockers
+## Debitos Validados
 
-These are the specific UX issues that would make an enterprise customer not trust the product enough to pay, ordered by severity:
+### 3.1 Arquitetura de Componentes
 
-### Blocker 1: Raw Error Messages Exposed to Users (CRITICAL)
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Prioridade | Impacto UX |
+|----|--------|---------------|---------------|-------|------------|------------|
+| FE-01 | Mega-componente SearchResults.tsx (1,581 linhas, ~55 props) | HIGH | **HIGH** | 14-18h | Tier 1 | **High** -- any bug fix in search results requires understanding 1,500+ lines |
+| FE-02 | Mega-componente conta/page.tsx (1,420 linhas) | HIGH | **MEDIUM** | 8-12h | Tier 1 | **Medium** -- account page is low-traffic, but MFA/password changes need isolation for security audit |
+| FE-03 | Mega-hook useSearch.ts (1,510 linhas) | HIGH | **HIGH** | 14-18h | Tier 1 | **High** -- core search logic; any regression here breaks the primary user flow |
+| FE-04 | buscar/page.tsx (1,019 linhas) | MEDIUM | **MEDIUM** | 6-8h | Tier 2 | **Medium** -- page orchestration is complex but functionally stable |
+| FE-05 | 3 diretorios de componentes sem convencao | MEDIUM | **MEDIUM** | 4-6h | Tier 2 | **Low** -- invisible to users but slows dev velocity |
+| FE-06 | Sem Button component compartilhado | MEDIUM | **HIGH** | 6-8h | Tier 1 | **High** -- visual inconsistency directly visible to users |
+| FE-07 | SVGs inline no Sidebar (75 linhas) | LOW | **LOW** | 2h | Tier 3 | **Low** -- functional, just uses Heroicons SVGs instead of lucide-react |
 
-**Location:** `app/error.tsx`, `app/buscar/error.tsx`, `app/dashboard/error.tsx`, `app/admin/error.tsx`
+### 3.2 State Management
 
-All 4 error boundary files render `error.message` directly in a monospace font block:
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Prioridade | Impacto UX |
+|----|--------|---------------|---------------|-------|------------|------------|
+| FE-08 | Sem data fetching library | HIGH | **HIGH** | 16-20h | Tier 1 | **High** -- no dedup, no cache, no revalidation = stale data shown to users |
+| FE-09 | 13+ localStorage keys sem abstracao | MEDIUM | **LOW** | 4-6h | Tier 3 | **Low** -- invisible to users unless storage quota exceeded |
+| FE-10 | Prop drilling SearchResults (55 props) | HIGH | **HIGH** | 6-8h | Tier 1 | **High** -- coupled to FE-01 decomposition; must resolve together |
+| FE-11 | Ref-based circular dependency workaround | MEDIUM | **LOW** | 2-3h | Tier 3 | **Low** -- code smell but functionally works |
 
-```tsx
-{error.message && (
-  <div className="mb-6 p-4 bg-surface-2 rounded-md text-left">
-    <p className="text-sm text-ink-secondary font-mono break-words">
-      {error.message}
-    </p>
-  </div>
-)}
+### 3.3 Acessibilidade
+
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Prioridade | Impacto UX |
+|----|--------|---------------|---------------|-------|------------|------------|
+| FE-12 | Missing aria-labels em botoes icon-only | HIGH | **HIGH** | 1.5h | Tier 0 | **Critical** -- screen readers cannot navigate sidebar |
+| FE-13 | SVG icons sem aria-hidden (Sidebar) | MEDIUM | **MEDIUM** | 0.5h | Tier 0 | **Medium** -- screen readers announce meaningless SVG paths |
+| FE-14 | Viability scores usam cor sem alternativa textual | MEDIUM | **MEDIUM** | 2h | Tier 1 | **Medium** -- WCAG 1.4.1 violation |
+| FE-15 | Inputs com placeholder em vez de label | MEDIUM | **MEDIUM** | 2h | Tier 1 | **Medium** -- WCAG 1.3.1; affects form comprehension |
+| FE-16 | Sem hierarquia de headings auditada | LOW | **LOW** | 2h | Tier 3 | **Low** -- SEO impact minimal for authenticated pages |
+| FE-17 | Sem ARIA live regions para progresso de busca | MEDIUM | **MEDIUM** | 2h | Tier 2 | **Medium** -- search progress invisible to screen readers |
+
+### 3.4 Performance
+
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Prioridade | Impacto UX |
+|----|--------|---------------|---------------|-------|------------|------------|
+| FE-18 | Blog/SEO pages sao CSR | HIGH | **REMOVED** | 0h | N/A | **N/A** -- Verified: all blog/SEO pages are already Server Components (no `"use client"` found in `/blog/*`, `/licitacoes/*`, `/como-*`). Only `/planos` and `/features` are CSR, which is acceptable since they require client interactivity (Stripe, animations). |
+| FE-19 | Sem dynamic imports para Recharts, Shepherd, dnd-kit | MEDIUM | **MEDIUM** | 3-4h | Tier 2 | **Medium** -- affects initial load time on slow connections |
+| FE-20 | useIsMobile() hydration mismatch risk | LOW | **LOW** | 1h | Tier 3 | **Low** -- edge case, rarely visible |
+| FE-21 | Sem Lighthouse CI gated | MEDIUM | **MEDIUM** | 3h | Tier 2 | **Medium** -- performance regressions ship undetected |
+
+### 3.5 Qualidade de Codigo
+
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Prioridade | Impacto UX |
+|----|--------|---------------|---------------|-------|------------|------------|
+| FE-22 | Hardcoded Portuguese strings (44 paginas) | HIGH | **LOW** | 24-40h | Tier 3 | **Low** -- product is 100% BR, pre-revenue, no international plans. i18n is premature optimization. |
+| FE-23 | eslint-disable react-hooks/exhaustive-deps | MEDIUM | **LOW** | 1h | Tier 3 | **Low** -- known exceptions, unlikely to cause bugs |
+| FE-24 | APP_NAME redeclarado em 5+ arquivos | LOW | **LOW** | 0.5h | Tier 3 | **Low** -- trivial |
+| FE-25 | Import patterns mistos para constantes | LOW | **LOW** | 1h | Tier 3 | **Low** -- dev convenience only |
+| FE-26 | Sem TypeScript paths | LOW | **LOW** | 1h | Tier 3 | **Low** -- dev convenience only |
+
+### 3.6 Design System Ausente
+
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Prioridade | Impacto UX |
+|----|--------|---------------|---------------|-------|------------|------------|
+| FE-27 | Sem Button component compartilhado | (from FE-06) | **HIGH** | 4-6h | Tier 1 | **High** -- most visible inconsistency |
+| FE-28 | Sem Input component compartilhado | - | **MEDIUM** | 3-4h | Tier 2 | **Medium** -- forms feel different across pages |
+| FE-29 | Sem Card component compartilhado | - | **MEDIUM** | 2-3h | Tier 2 | **Medium** -- visual rhythm varies |
+| FE-30 | Sem Badge component compartilhado | - | **MEDIUM** | 2-3h | Tier 2 | **Low** -- many badge variants are intentionally different |
+| FE-31 | Sem Storybook / documentacao visual | - | **LOW** | 8-12h | Tier 3 | **Low** -- useful for team scaling, not user-facing |
+| FE-32 | Design tokens parcialmente adotados | - | **MEDIUM** | 3-4h | Tier 2 | **Medium** -- mix of `var()`, Tailwind tokens, and raw hex undermines consistency |
+
+### 3.7 UX Inconsistencies
+
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Prioridade | Impacto UX |
+|----|--------|---------------|---------------|-------|------------|------------|
+| FE-33 | Search page header vs NavigationShell | MEDIUM | **MEDIUM** | 4-6h | Tier 2 | **Medium** -- user sees two different navigation paradigms |
+| FE-34 | 2 padroes empty state | LOW | **LOW** | 1h | Tier 3 | **Low** |
+| FE-35 | Toast vs inline banners sem criterio | LOW | **LOW** | 2h | Tier 3 | **Low** -- sonner toasts are more consistent than DRAFT implies |
+| FE-36 | Loading spinner size/style varia | LOW | **LOW** | 1h | Tier 3 | **Low** |
+| FE-37 | Date formatting inconsistente | LOW | **LOW** | 2h | Tier 3 | **Low** -- all show correct dates, just different APIs |
+| FE-38 | Currency formatting inconsistente | LOW | **LOW** | 1h | Tier 3 | **Low** -- formatCurrencyBR covers most cases |
+
+---
+
+## Debitos Adicionados
+
+| ID | Debito | Severidade | Horas | Impacto UX |
+|----|--------|-----------|-------|------------|
+| FE-39 | **Dashboard charts no mobile** -- Recharts Bar/Line/Pie have no mobile-specific layout (overflow, truncated labels, touch targets). Mentioned in frontend-spec.md responsive gaps but not in DRAFT. | MEDIUM | 4-6h | **Medium** -- dashboard is second most-visited page after search |
+| FE-40 | **Missing `next/dynamic` usage** -- Only `TotpVerificationScreen` and `BlogListClient` use dynamic imports across the entire app. Shepherd.js tour initialization on every search page load is unnecessary for returning users. | MEDIUM | 2h | **Medium** -- unnecessary JS parse time |
+| FE-41 | **No hook isolation tests** -- 19 custom hooks tested only indirectly through component tests. `useSearch` (1,510 lines) has zero isolated unit tests. Regression risk during decomposition. | MEDIUM | 8-12h | **Medium** -- indirect: decomposition of FE-03 without hook tests is high-risk |
+| FE-42 | **Alert creation form not mobile-optimized** -- Mentioned in frontend-spec responsive gaps (Section 7.6) but absent from DRAFT. Feature-gated behind SHIP flag, but will need fixing before ungating. | LOW | 3h | **Low** -- currently behind feature flag |
+
+---
+
+## Respostas ao Architect
+
+### 1. FE-01/02/03: Decomposition Strategy
+
+**Recommended: Composition pattern + targeted Context for cross-cutting concerns.**
+
+- **SearchResults.tsx (FE-01)**: Split into `ResultsToolbar` (sorting, export, counts), `ResultsList` (pagination + card iteration), `ResultCard` (single bid display), `ResultsLoadingState` (SSE progress, skeleton), `ResultsErrorState` (error display + retry). The ~55 props naturally group into 5-6 concerns. Each sub-component receives only its relevant props (5-10 each).
+
+- **useSearch.ts (FE-03)**: Decompose into `useSearchExecution` (POST + response), `useSearchSSEIntegration` (SSE event routing), `useSearchRetry` (retry logic + countdown), `useSearchExport` (Excel + PDF + Google Sheets), `useSearchPersistence` (save/restore/partial cache). The orchestrating hook composes these and exposes a unified API.
+
+- **conta/page.tsx (FE-02)**: Convert to tab-based sub-routes: `/conta/perfil`, `/conta/seguranca`, `/conta/plano`, `/conta/notificacoes`. Each tab is a separate file. Use Next.js nested layouts (`conta/layout.tsx`) for shared header/navigation.
+
+**Why not Context API for everything:** Context causes re-renders on any value change. For SearchResults, the data changes frequently (progress events, partial results). Composition with prop grouping is more performant. Use Context only for truly cross-cutting data (plan info, auth session, theme) that changes rarely.
+
+**Why not Zustand:** Adds a dependency for a problem solvable with composition. Zustand is justified only if state needs to be shared across unrelated component trees (not the case here -- all consumers are within the search page tree).
+
+### 2. FE-08: SWR vs TanStack Query
+
+**Recommended: SWR.**
+
+Rationale:
+- SWR is lighter (~4KB vs ~13KB for TanStack Query) -- matters for a product already loading Framer Motion, Recharts, etc.
+- SWR's stale-while-revalidate model matches the existing backend cache pattern (the backend already implements SWR semantics)
+- SSE is orthogonal to data fetching -- the SSE hooks (`useSearchSSE`) manage real-time events, not data fetching. SWR would replace the `useState + useEffect + fetch` boilerplate in `usePlan`, `useAnalytics`, `usePipeline`, `useSearchFilters`, etc. -- none of which use SSE.
+- The core search `POST /buscar` is a mutation, not a query. SWR's `useSWRMutation` handles this cleanly.
+- TanStack Query's advanced features (infinite queries, structural sharing, query cancellation) are not needed here.
+- The team is small (1-2 devs). SWR's simpler API has lower learning curve.
+
+**Migration path:** Start with read-only endpoints (`/v1/me`, `/v1/plans`, `/v1/analytics/*`, `/v1/pipeline`). These are pure GET requests with obvious cache keys. Then migrate `usePlan`, `useQuota`, `useAnalytics` hooks. Leave `useSearch` for last since it involves POST + SSE orchestration.
+
+### 3. FE-18: SSG Conversion
+
+**This question is now moot.** Verification confirmed all blog and SEO pages (`/blog/*`, `/licitacoes/*`, `/como-*`) are already Server Components. No `"use client"` directive found in any of these files. They use `Metadata` exports for SEO, `notFound()` for 404 handling, and import client sub-components where needed.
+
+The only remaining SSG opportunity is enabling `generateStaticParams` for programmatic pages that currently use dynamic rendering. This is a performance optimization (build-time generation vs request-time), not a CSR-to-SSR migration. Estimated effort: 2-3h. Priority: Tier 3 (low impact since pages already render server-side).
+
+### 4. FE-22: i18n Now vs Later
+
+**Recommended: Later. Do not invest in i18n now.**
+
+Justification:
+- Product is pre-revenue, 100% Brazilian market, no international expansion plans
+- 24-40h of effort for zero revenue impact
+- The Portuguese strings are domain-specific (licitacao, edital, pregao, CNPJ) -- even with i18n, these terms have no direct English/Spanish equivalents
+- If international expansion becomes viable, the i18n extraction can be done mechanically with tools like `react-i18next` + automated string extraction
+- **Better investment:** Spend those 24-40h on design system primitives (FE-27-32) which have direct UX impact
+
+**Downgrade severity from HIGH to LOW.**
+
+### 5. FE-27-32: Design System Approach
+
+**Recommended: Shadcn/ui.**
+
+Rationale:
+- **Shadcn/ui** copies components into your codebase (no dependency lock-in). This matches the project's pattern of owning all code.
+- Shadcn uses Radix primitives underneath for accessibility (aria, keyboard navigation, focus management) -- gets WCAG compliance for free.
+- Shadcn components use Tailwind CSS -- the project already uses Tailwind 3. CSS variable theming is already in place.
+- The project already has design tokens (`--brand-blue`, `--ink`, `--canvas`, etc.) -- Shadcn components can be styled to use these existing tokens.
+- Unlike building from scratch, Shadcn provides tested accessibility patterns (Button, Dialog, Select, Tooltip, etc.) out of the box.
+
+**Implementation order:**
+1. `Button` (highest impact, used everywhere) -- 4-6h
+2. `Input` + `Label` (form consistency) -- 3-4h
+3. `Badge` (status, plan, viability, LLM indicators) -- 2-3h
+4. `Card` (result cards, dashboard cards, pipeline cards) -- 2-3h
+5. `Select` (replace custom selects) -- 2h
+6. `Dialog` (replace custom Dialog component) -- 2h
+
+**Why not Radix directly:** Radix is unstyled -- would require building all styling from scratch. Shadcn provides the Radix accessibility + Tailwind styling integration pre-built.
+
+**Why not build from scratch:** The project already has 15+ button variants implemented inline. Building a design system from scratch would replicate this inconsistency problem. Shadcn provides a proven starting point.
+
+### 6. FE-33: Unify Search Page Navigation
+
+**Recommended: Keep separate layout, but align visually.**
+
+The search page (`/buscar`) intentionally uses a full-width layout without the sidebar. This is correct UX for a data-intensive search interface:
+- Search results need maximum horizontal space (result cards, filter panels, progress grids)
+- The sidebar steals 240-280px that is better used for data display
+- Users spend 80%+ of their session on the search page -- it deserves an optimized layout
+
+**However**, the current implementation creates visual discontinuity:
+- The search page has its own header with logo, theme toggle, and user menu
+- Other pages use the sidebar with the same controls
+- Users navigating between search and dashboard experience a jarring layout shift
+
+**Solution:** Keep the full-width layout but add a thin top navigation bar that mirrors the sidebar's visual language (same colors, same user menu, same logo). Remove the custom header. This preserves horizontal space while maintaining visual continuity. The sidebar items (Dashboard, Pipeline, Historico, Conta) appear as horizontal links in the top bar.
+
+Estimated effort: 4-6h. Impact: Medium -- reduces cognitive load during navigation transitions.
+
+### 7. FE-10: Prop Drilling Solution
+
+**Recommended: Composition pattern (not Context, not Zustand).**
+
+The 55 props in SearchResults naturally cluster into 6 groups:
+
+1. **Loading state** (8 props): `loading`, `loadingStep`, `estimatedTime`, `stateCount`, `statesProcessed`, `onCancel`, `sseEvent`, `useRealProgress`
+2. **Error state** (4 props): `error`, `quotaError`, `retryCountdown`, `onRetryNow`
+3. **Results data** (6 props): `result`, `rawCount`, `ordenacao`, `onOrdenacaoChange`, `filterSummary`, `sourceStatuses`
+4. **Export actions** (6 props): `downloadLoading`, `downloadError`, `onDownload`, `onRegenerateExcel`, `onGeneratePdf`, `pdfLoading`
+5. **Plan/auth** (5 props): `planInfo`, `session`, `onShowUpgradeModal`, `isTrialExpired`, `trialPhase`
+6. **SSE/progress** (10 props): `ufStatuses`, `ufTotalFound`, `partialProgress`, `refreshAvailable`, etc.
+
+**Step 1:** Group props into typed objects (`LoadingState`, `ErrorState`, `ResultsData`, `ExportActions`, `PlanContext`, `ProgressState`). This reduces SearchResults from 55 props to 6-8 grouped props.
+
+**Step 2:** Pass grouped objects to sub-components after decomposition (FE-01). Each sub-component receives only its relevant group.
+
+**Step 3:** For truly cross-cutting data (plan info, auth session), use the existing `usePlan()` and `useAuth()` hooks inside sub-components rather than threading through props.
+
+This approach eliminates prop drilling without introducing new state management dependencies.
+
+---
+
+## Recomendacoes de Design
+
+### 1. SearchResults Decomposition (FE-01 + FE-10)
+
+The search results area should be split into a **compositional tree**:
+
+```
+SearchResultsArea/
+  ResultsToolbar       -- sorting, count, export buttons
+  ResultsLoadingState  -- SSE progress, educational carousel, skeleton
+  ResultsErrorState    -- structured error, retry mechanism
+  ResultsList          -- pagination wrapper
+    ResultCard         -- single bid card (viability, feedback, actions)
+  ResultsEmptyState    -- zero results with suggestions
+  ResultsBanners       -- cache, degradation, truncation banners
 ```
 
-This means when a React error boundary catches an exception, the raw JavaScript error message (e.g., `TypeError: Cannot read properties of undefined (reading 'map')`) is displayed to users. The `getUserFriendlyError()` function in `lib/error-messages.ts` exists and handles this well -- but error boundaries do NOT use it. They display the raw `error.message` directly.
+Each component has 5-10 props maximum. The parent `SearchResultsArea` receives grouped prop objects and distributes to children.
 
-**Enterprise impact:** A procurement director seeing `TypeError: Cannot read properties of undefined` will immediately lose confidence in the platform's reliability. This is the single most damaging UX issue for enterprise perception.
+### 2. Button Component (FE-27)
 
-**Fix:** Wrap `error.message` through `getUserFriendlyError()` before display, or conditionally hide the raw message in production (show only in development). Estimated effort: 1 hour across all 4 files.
+Implement a `Button` component with these variants (observed from codebase audit):
 
-### Blocker 2: 404 Page Missing Portuguese Accents
+- **Primary**: Blue background (`--brand-blue`), white text. Used for CTAs.
+- **Secondary**: Transparent with border. Used for secondary actions.
+- **Ghost**: No background, no border. Used for toolbar actions.
+- **Destructive**: Red background. Used for delete/cancel.
+- **Sizes**: `sm` (32px height), `md` (40px), `lg` (48px).
+- **States**: Loading (spinner replaces text), disabled (opacity 50%).
+- **Icon-only**: Square button with `aria-label` required.
 
-**Location:** `app/not-found.tsx`
+### 3. Account Page Sub-routes (FE-02)
 
-The 404 page displays "Pagina nao encontrada" instead of "Pagina nao encontrada" and "A pagina que voce procura nao existe ou foi movida." -- missing proper accented characters. The architect's DRAFT correctly flags this as D-016 / T3-F15.
+Convert to tabbed navigation with sub-routes:
 
-**Enterprise impact:** Low frequency (users rarely hit 404) but high signal. Missing accents in Portuguese is equivalent to a spelling error on an English-language enterprise product. It says "nobody proofread this."
+```
+/conta              -> redirect to /conta/perfil
+/conta/perfil       -> Profile editing (CNAE, UFs, porte, atestados)
+/conta/seguranca    -> Password change, MFA setup
+/conta/plano        -> Plan info, billing, cancellation
+/conta/notificacoes -> Alert preferences (future)
+```
 
-**Fix:** Replace 2 strings with properly accented versions. Estimated effort: 5 minutes.
-
-### Blocker 3: `global-error.tsx` Visually Disconnected from Product
-
-**Location:** `app/global-error.tsx`
-
-Uses inline styles (`backgroundColor: "#f9fafb"`, `fontFamily: "system-ui"`, `color: "#111827"`) instead of the design system. When triggered, it renders a white card with green button on light gray background -- no dark mode support, no brand fonts, no design tokens.
-
-**Enterprise impact:** This page only appears when the root layout crashes (very rare). But when it does, it looks like a completely different product. The `error.tsx` (non-global) already uses the design system correctly -- the global error page should match.
-
-**Note:** `global-error.tsx` cannot use Tailwind or CSS imports since the root layout has failed. However, it CAN use inline styles that match the design system values (e.g., `backgroundColor: "#ffffff"` for light, with a `<style>` tag for dark mode media query). Estimated effort: 30 minutes.
-
-### Non-Blockers Confirmed
-
-The following items were evaluated for enterprise impact and are confirmed as non-blocking for monetization:
-
-- **T3-F01/F02 (Component duplication):** Internal code quality issue. Users never see duplicate EmptyState or LoadingProgress components -- they see one or the other. No enterprise perception impact.
-- **T3-F03 (SearchForm 40+ props):** Developer experience issue only. The search form works correctly from a user perspective.
-- **T3-F04 (No RSC for protected pages):** Performance impact but not a perception issue. Pages load in 1-3 seconds which is acceptable for B2G enterprise users.
-- **T3-F11 (No state management library):** Internal architecture concern. Does not affect user experience.
-- **T3-F13 (No i18n):** SmartLic targets Brazilian market only. Portuguese-only is correct for monetization.
+Use `conta/layout.tsx` for shared tab navigation. Each tab is <400 lines.
 
 ---
 
-## Quick Wins for Professional Appearance
+## Ordem de Resolucao Recomendada
 
-These are low-effort changes that significantly improve enterprise perception, ranked by impact-per-hour:
+From a UX perspective, ordered by user-visible impact per hour invested:
 
-| Priority | Item | Effort | Impact | Details |
-|----------|------|--------|--------|---------|
-| 1 | Fix 404 accents (T3-F15) | 5 min | High | Two string replacements in `not-found.tsx`. Eliminates the most visible "unpolished" signal. |
-| 2 | Filter `error.message` through `getUserFriendlyError()` in all error boundaries | 1 hr | Critical | Apply to `error.tsx`, `buscar/error.tsx`, `dashboard/error.tsx`, `admin/error.tsx`. The function already exists -- just import and use it. |
-| 3 | Add error boundaries for pipeline, historico, mensagens, conta | 2 hr | High | Copy the pattern from `buscar/error.tsx` or `dashboard/error.tsx`. Each page gets a contextual error message instead of raw error. |
-| 4 | Improve `global-error.tsx` to match brand | 30 min | Medium | Use inline styles that match the design system values. Add dark mode media query. Use brand color for the button. |
-| 5 | Remove legacy `bidiq-theme` migration code (T3-F22) | 15 min | Low | Dead code in `ThemeProvider.tsx` and `layout.tsx`. Subtle signal of product maturity when code is inspected. |
+### Phase 1: Quick Wins (1 sprint, ~12h)
 
----
+| # | ID | Horas | Justificativa |
+|---|-----|-------|--------------|
+| 1 | FE-12 + FE-13 | 2h | Accessibility compliance -- legal risk if reported |
+| 2 | FE-27 (Button) | 4-6h | Most visible inconsistency; foundation for all future work |
+| 3 | FE-07 | 2h | Replace inline SVGs with lucide-react + add aria-hidden |
+| 4 | FE-24 | 0.5h | APP_NAME consolidation (trivial) |
+| 5 | FE-14 | 2h | Viability scores need text alternatives |
 
-## Effort Estimates
+### Phase 2: Structural (2 sprints, ~50-60h)
 
-### UX-Critical Items (Required for Enterprise Monetization)
+| # | ID | Horas | Justificativa |
+|---|-----|-------|--------------|
+| 6 | FE-10 | 6-8h | Group props into typed objects (prerequisite for FE-01) |
+| 7 | FE-01 | 14-18h | Decompose SearchResults -- unblocks maintainability |
+| 8 | FE-03 | 14-18h | Decompose useSearch -- unblocks FE-08 |
+| 9 | FE-08 | 16-20h | Adopt SWR -- eliminates boilerplate, improves data freshness |
 
-| ID | Item | Hours | Impact on Perception |
-|----|------|-------|---------------------|
-| NEW-1 | Filter `error.message` through `getUserFriendlyError()` in 4 error boundary files | 1.0 | Critical -- eliminates raw technical errors visible to users |
-| T3-F15 | Fix 404 Portuguese accents | 0.1 | High -- eliminates visible spelling/accent errors |
-| T3-F07 | Improve `global-error.tsx` brand alignment | 0.5 | Medium -- ensures error states match the product |
-| T3-F17 | Add error boundaries for pipeline, historico, mensagens, conta | 2.0 | High -- ensures no raw errors on any page |
-| T2-11 | Focus trap in BottomNav drawer | 1.5 | Medium -- WCAG compliance for mobile users |
-| **Total** | | **5.1** | |
+### Phase 3: Polish (2-3 sprints, ~30-40h)
 
-### UX Nice-to-Haves (Post-Monetization Sprint)
+| # | ID | Horas | Justificativa |
+|---|-----|-------|--------------|
+| 10 | FE-02 | 8-12h | Account page sub-routes |
+| 11 | FE-28-30 | 7-10h | Input, Card, Badge primitives |
+| 12 | FE-33 | 4-6h | Unify search page navigation |
+| 13 | FE-19 | 3-4h | Dynamic imports for heavy deps |
+| 14 | FE-17 | 2h | ARIA live regions for search progress |
+| 15 | FE-15 | 2h | Form labels on onboarding |
+| 16 | FE-32 | 3-4h | Consolidate design token usage |
 
-| ID | Item | Hours | Impact on Perception |
-|----|------|-------|---------------------|
-| T3-F01 | Deduplicate EmptyState component | 2.0 | Low (internal quality) |
-| T3-F02 | Deduplicate LoadingProgress component | 1.5 | Low (internal quality) |
-| T3-F14 | Replace custom toast with sonner in FeedbackButtons | 1.0 | Low (consistency) |
-| T3-F05/F06 | Create shared icon component library | 4.0 | Low (DX improvement) |
-| T3-F22 | Remove legacy bidiq-theme code | 0.25 | Low (cleanup) |
-| T3-F08 | Centralize ALL_UFS constant | 1.0 | Low (internal quality) |
+### Phase 4: Backlog (as capacity allows)
 
----
-
-## Recommended Priority Order
-
-For maximum enterprise perception improvement with minimal effort:
-
-1. **Fix 404 accents** (5 min) -- Immediate quality signal improvement
-2. **Filter error.message in all error boundaries** (1 hr) -- Eliminates the most damaging UX issue
-3. **Add error boundaries for 4 remaining protected pages** (2 hr) -- Complete error handling coverage
-4. **Improve global-error.tsx brand alignment** (30 min) -- Error states match the product
-5. **Fix BottomNav focus trap** (1.5 hr) -- WCAG compliance for mobile
-6. **(Tier 1 database fixes)** -- These are backend but have frontend UX impact on billing/trial display
-7. **Remove legacy bidiq-theme code** (15 min) -- Clean code signal
-
-Items 1-4 should be done in a single sprint (half-day of work). Item 5 can be done in parallel. The total investment is approximately 5 hours of frontend work to achieve enterprise-grade UX quality.
+FE-04, FE-05, FE-09, FE-11, FE-16, FE-20, FE-21, FE-22, FE-23, FE-25, FE-26, FE-31, FE-34-38, FE-39-42
 
 ---
 
-## Answers to Architect
+## Quick Wins
 
-### Question 1: Focus trap (T2-11) -- Is the BottomNav drawer used frequently enough on mobile to prioritize the a11y fix? What is the mobile traffic percentage?
+Items that take less than 2h but have measurable UX impact:
 
-The BottomNav drawer is the "More" menu that contains secondary navigation items (Dashboard, Account, Help). It is triggered by the fifth navigation tab on mobile. While I do not have exact mobile traffic percentages from Mixpanel, B2G enterprise users in Brazil increasingly use tablets and phones for initial review of procurement opportunities (especially decision-makers reviewing during travel or meetings).
-
-**Recommendation:** The focus trap fix is correctly prioritized at Tier 2. It should be fixed within the next 2 sprints but is not a monetization blocker. The drawer is a secondary navigation element -- primary flows (search, pipeline, billing) do not depend on it. The fix involves adding a focus trap library (like `focus-trap-react`, ~3KB gzip) or a manual `keydown` handler to cycle focus within the drawer.
-
-### Question 2: Component duplication (T3-F01, T3-F02) -- Which version should be canonical?
-
-**EmptyState:**
-- `components/EmptyState.tsx` (top-level): Generic empty state with icon, title, description, optional steps, CTA link. API: `{ icon, title, description, steps?, ctaLabel, ctaHref }`. Used on pipeline, historico, and other pages for "no data yet" scenarios.
-- `app/components/EmptyState.tsx` (buscar-specific): Search-specific empty state with filter stats breakdown, rejection reasons, LLM zero-match info, and "adjust search" button. API: `{ onAdjustSearch?, rawCount?, stateCount?, filterStats?, sectorName? }`. Used only on the search page.
-
-**Recommendation:** Keep BOTH but rename them. The buscar-specific one should be `SearchEmptyState` (it is fundamentally different). The generic one in `components/EmptyState.tsx` should be the canonical `EmptyState`. The confusion is naming, not duplication -- they serve different purposes.
-
-**LoadingProgress:**
-- `components/LoadingProgress.tsx`: Basic loading indicator (simple spinner + text).
-- `app/components/LoadingProgress.tsx`: Similar basic loading indicator.
-
-**Recommendation:** The `components/LoadingProgress.tsx` version should be canonical. Delete `app/components/LoadingProgress.tsx` and update imports. The `EnhancedLoadingProgress` component (search-specific, SSE-aware, 5-stage) remains separate -- it is a different component entirely.
-
-### Question 3: SearchForm props (T3-F03) -- Recommended state management approach?
-
-**Recommendation:** React Context, not Zustand/Jotai. Here is why:
-
-The 40+ props on SearchForm fall into 3 categories:
-1. **Search state** (UFs, dates, sector, terms, filters) -- ~15 props
-2. **UI state** (loading, error, progress, expanded sections) -- ~10 props
-3. **Callbacks** (onSearch, onCancel, onFilterChange, etc.) -- ~15 props
-
-A `SearchContext` with `useReducer` would encapsulate categories 1 and 2. Callbacks in category 3 would be stable references via `useCallback` in the context provider. This eliminates prop drilling without adding a dependency.
-
-Zustand/Jotai would be overkill -- the search state is page-scoped (only exists on `/buscar`), not app-global. React Context is the right tool for page-scoped shared state.
-
-**Effort:** ~8-12 hours to extract SearchContext, update SearchForm, SearchResults, and the buscar page. This is a Phase 2 improvement, not needed for monetization.
-
-### Question 4: Icon system (T3-F05, T3-F06) -- Standardize on Lucide or custom?
-
-**Recommendation:** Standardize on Lucide React for all icons.
-
-Rationale:
-- Lucide is already a dependency (used on landing page).
-- It provides all the icons currently used as inline SVGs (search, clipboard, clock, chat, user, etc.).
-- Tree-shaking means only imported icons are bundled (~200 bytes per icon).
-- Eliminates ~200 lines of duplicated SVG definitions in Sidebar and BottomNav.
-- Provides consistent sizing, stroke width, and accessibility attributes.
-
-**Do NOT create a custom icon component library** -- that is unnecessary abstraction for 15-20 icons. Simply replace inline SVGs with `import { Search, ClipboardList, Clock, ... } from 'lucide-react'` and pass `size` and `strokeWidth` props.
-
-**Effort:** ~4 hours. This is a Phase 2 improvement.
-
-### Question 5: Protected pages RSC (T3-F04) -- Near-term migration plan?
-
-**Recommendation:** No. Do not migrate to RSC for protected pages in the near term.
-
-Rationale:
-1. **Auth complexity:** Protected pages require Supabase session tokens. RSC data fetching would need server-side token handling, which adds complexity to the auth flow.
-2. **SSE dependency:** The search page relies heavily on client-side SSE for real-time progress. RSC does not help here.
-3. **Risk:** Migrating 8+ protected pages to RSC hybrid is a significant refactor with risk of regressions.
-4. **Marginal benefit:** Current CSR pages load in 1-3 seconds. Enterprise B2G users are accustomed to government portal performance. The improvement would be noticeable but not decisive for monetization.
-
-**When to revisit:** After monetization is validated and user base grows beyond 50 concurrent users, RSC migration for the dashboard and historico pages (which are read-heavy and benefit most from server rendering) would be a good investment.
+| ID | Debito | Horas | Impact |
+|----|--------|-------|--------|
+| FE-12 + FE-13 | Add `aria-label` to icon-only buttons + `aria-hidden="true"` to sidebar SVGs | 1.5h | Screen reader users can navigate the app |
+| FE-24 | Consolidate APP_NAME to single import from `lib/constants` | 0.5h | Prevents branding inconsistency if name changes |
+| FE-07 | Replace sidebar `icons` object with lucide-react components | 1.5h | Consistency with rest of codebase + automatic aria-hidden |
+| FE-23 | Audit and document the 3 eslint-disable locations | 0.5h | Confirms intentionality, prevents future copy-paste |
 
 ---
 
-## Enterprise UX Readiness Score
+## Adjusted Totals
 
-| Flow | Score | Key Issues | Monetization Ready? |
-|------|-------|-----------|-------------------|
-| **Search** | 4/5 | Excellent loading states (5-stage SSE progress), resilient error handling, humanized messages. Only gap: root `error.tsx` shows raw error.message if error boundary catches unexpected exception. | Yes (after error.message filtering) |
-| **Pipeline** | 3.5/5 | Kanban works well. Mobile tab view is thoughtful. T1-04 breaks trial value display. No per-page error boundary. | Yes (after T1-04 fix + error boundary) |
-| **Billing** | 4/5 | PlanCard is polished. PaymentFailedBanner is well-designed (persistent, non-dismissable, with action button). Stripe portal integration works. Only concern: T1-01/T1-03 database columns missing from migrations (disaster recovery scenario, not day-to-day). | Yes (after T1-01/T1-03 migration) |
-| **Dashboard** | 3.5/5 | Has its own error boundary (good). Uses Recharts for visualization. Profile completion prompt adds value. Gap: fully CSR with loading waterfall. | Yes |
-| **Onboarding** | 4/5 | Clean 3-step wizard. Region selector is intuitive. Auto-triggers first search. T2-04 (handle_new_user trigger) may cause missing profile fields -- but this is a backend issue, not a UX issue. | Yes |
-| **Error States** | 3/5 | `error.tsx` and page-specific error boundaries exist for search, dashboard, admin. But 4 protected pages lack them. Raw error.message exposed. `global-error.tsx` is off-brand. | Needs work (5 hours) |
-| **404 Page** | 2.5/5 | Design is clean (uses design system tokens correctly). But missing Portuguese accents is unacceptable for a Portuguese-language enterprise product. | Needs 5-minute fix |
-| **Loading States** | 4.5/5 | EnhancedLoadingProgress is best-in-class for this type of product. 5-stage progress, SSE real-time, overtime messaging, degraded state handling, cancel button. AuthLoadingScreen and skeletons are adequate. | Yes |
-| **Mobile** | 3.5/5 | Responsive design is solid. Pipeline has mobile tab view. BottomNav works. Gap: focus trap missing on drawer overlay (a11y). | Yes (T2-11 is non-blocking for launch) |
+| Metrica | DRAFT v2.0 | Adjusted |
+|---------|-----------|----------|
+| Total frontend debts | 38 | 37 (FE-18 removed) + 4 added = **41** |
+| FE-18 (Blog CSR) | 8-12h | **0h** (already fixed) |
+| FE-22 (i18n) severity | HIGH | **LOW** (pre-revenue, BR only) |
+| FE-02 severity | HIGH | **MEDIUM** (low-traffic page) |
+| Total frontend effort | ~155-205h | **~135-175h** (FE-18 removed, some estimates adjusted) |
 
-**Overall Enterprise UX Readiness: 3.7/5**
-
-To reach 4.2/5 (enterprise-presentable): fix the 5 UX-critical items listed above (~5 hours of work).
-
----
-
-## Summary of Frontend Actions for Enterprise Monetization
-
-### Must-Do (Before First Enterprise Customer)
-
-| # | Action | Effort | Owner |
-|---|--------|--------|-------|
-| 1 | Fix 404 Portuguese accents | 5 min | Frontend dev |
-| 2 | Filter `error.message` through `getUserFriendlyError()` in all 4 error boundary files | 1 hr | Frontend dev |
-| 3 | Add error boundaries for `/pipeline`, `/historico`, `/mensagens`, `/conta` | 2 hr | Frontend dev |
-| 4 | Improve `global-error.tsx` inline styles to match brand | 30 min | Frontend dev |
-| 5 | Fix BottomNav drawer focus trap (T2-11) | 1.5 hr | Frontend dev |
-
-### Should-Do (Within 2 Sprints Post-Launch)
-
-| # | Action | Effort | Owner |
-|---|--------|--------|-------|
-| 6 | Deduplicate/rename EmptyState components | 2 hr | Frontend dev |
-| 7 | Deduplicate LoadingProgress components | 1.5 hr | Frontend dev |
-| 8 | Create shared icon library (Lucide migration) | 4 hr | Frontend dev |
-| 9 | Centralize ALL_UFS constant | 1 hr | Frontend dev |
-| 10 | Remove legacy bidiq-theme migration code | 15 min | Frontend dev |
-
-### Defer (Backlog)
-
-| # | Action | Effort | Trigger |
-|---|--------|--------|---------|
-| 11 | Extract SearchContext from SearchForm 40+ props | 8-12 hr | When search page needs significant feature additions |
-| 12 | Add `dynamic()` imports for Recharts, @dnd-kit, Shepherd.js | 3 hr | When bundle size becomes a measured bottleneck |
-| 13 | Migrate protected pages to RSC | 40+ hr | When user base exceeds 50 concurrent users |
-| 14 | Implement state management library (Zustand) | 20+ hr | When cross-page state sharing is needed |
-| 15 | i18n framework | 40+ hr | When multi-language is a business requirement |
-
----
-
-*Generated by @ux-design-expert as part of SmartLic Brownfield Discovery Phase 6.*
-*Cross-references: technical-debt-DRAFT.md (Phase 4), frontend-spec.md (Phase 3).*
+**Note to @architect:** The dependency graph in Section 7 of the DRAFT is correct. FE-01 does require FE-10 first, and FE-03 should precede FE-08 adoption. I would add one dependency: FE-27 (Button) should precede FE-01 (SearchResults decomp) since the decomposed sub-components should use the shared Button from day one.

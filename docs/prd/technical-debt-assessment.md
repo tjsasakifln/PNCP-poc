@@ -1,410 +1,330 @@
-# Technical Debt Assessment - FINAL
+# Technical Debt Assessment — FINAL v3.0
 
 **Projeto:** SmartLic v0.5
-**Data:** 2026-02-25
-**Objetivo:** Viabilizar producao monetizada enterprise-grade
-**QA Gate:** APPROVED
-**Revisores:** @architect, @data-engineer, @ux-design-expert, @qa
+**Data:** 2026-03-04
+**Autor:** @architect (Atlas) — Fase 8 Brownfield Discovery v2
+**Status:** FINAL — Aprovado pelo QA com 4 condicoes (todas incorporadas)
+**Revisores:** @data-engineer (Fase 5), @ux-design-expert (Fase 6), @qa (Fase 7)
+**Commit base:** `4da1d98` (main)
+**Supersedes:** v2.0 FINAL (2026-02-25)
 
 ---
 
 ## Executive Summary
 
-Este assessment consolida a analise de 4 documentos produzidos nas Fases 1-3 do brownfield discovery (system-architecture, schema, DB-audit, frontend-spec), validados por 3 especialistas (DB, UX, QA) nas Fases 5-7. O inventario total compreende **92 debitos tecnicos** em 3 areas (sistema, database, frontend). Apos validacao cruzada, o QA gate aprovou o assessment com ajustes: **7 itens Tier 1** (bloqueantes), **14 itens Tier 2** (estabilidade), e **71 itens Tier 3** (aceitos).
+| Metrica | Valor |
+|---------|-------|
+| **Total de debitos** | **69** (24 backend, 26 database, 41 frontend, 6 testing — deduplicated, net of removals) |
+| Criticos | 1 (C-01) |
+| Altos | 12 |
+| Medios | 28 |
+| Baixos | 28 |
+| **Esforco total (codigo)** | **~269-374h** |
+| **Esforco total (testes)** | **~59.5h** |
+| **Grand total** | **~328-434h** |
 
-A descoberta critica e que o core do SmartLic funciona em producao hoje, mas **5 colunas do banco existem apenas via Dashboard** (sem migration), o **trigger de signup descarta 6 campos do perfil**, e **error boundaries expoem erros tecnicos raw** ao usuario. Em cenario de disaster recovery (recriacao do DB a partir de migrations), billing, analytics, trial stats, e email opt-out quebram. A cada novo signup, `company`, `sector`, `whatsapp_consent` sao silenciosamente descartados.
+### Destaques
 
-**Acao recomendada:** Executar os 7 itens Tier 1 (2-3 horas) + 14 itens Tier 2 (10-12 horas) em 2 dias de trabalho. Isso coloca o SmartLic em posicao enterprise-ready para monetizacao em todos os 6 core flows.
+- **1 debito critico:** FK para auth.users em 6 tabelas (risco de integridade em disaster recovery)
+- **Top 3 frontend:** SearchResults.tsx (1,581 linhas), useSearch.ts (1,510 linhas), conta/page.tsx (1,420 linhas) — mega-componentes que bloqueiam manutencao
+- **Correcao importante:** FE-18 (Blog CSR) **removido** — verificado que paginas SEO ja sao Server Components
+- **Correcao importante:** TD-S05 (time.sleep) **removido** — ja corrigido (asyncio.sleep em quota.py)
+- **i18n adiado:** Downgraded para LOW (pre-revenue, mercado 100% BR)
+- **Design system:** Shadcn/ui recomendado pelo @ux-design-expert como base
 
 ---
 
-## Core Functionalities Assessment
+## 1. Inventario Completo de Debitos
 
-| Flow | Enterprise Ready Apos Fixes? | Riscos Restantes |
-|------|------------------------------|------------------|
-| **Busca multi-fonte** | SIM | In-memory `_active_trackers` limita a 1 instancia web (T3). Railway 120s timeout para buscas multi-UF grandes (T3). |
-| **Billing/Subscription** | SIM | Apos T1-01, T1-03, T1-05: todos os webhooks Stripe gravam nas colunas corretas. localStorage plan cache pode mostrar plano stale por ate 1h (GAP-05, T3). |
-| **Auth + Onboarding** | SIM | Apos T1-07: trigger popula todos os campos + ON CONFLICT guard. Google OAuth precisa teste manual. |
-| **Pipeline (Kanban)** | SIM | Apos T1-04: trial stats query corrigida. Error boundary adicionada (T2-18). |
-| **Relatorios (Excel + IA)** | SIM | Sem issues bloqueantes ou de estabilidade. ARQ background jobs funcionais. |
-| **Dashboard/Analytics** | SIM | Apos T1-02: `trial_expires_at` existe para queries de analytics. |
+### 1.1 Sistema (validado por @architect) — 23 debitos
 
-**Veredicto:** Todos os 6 core flows estarao enterprise-ready apos os fixes Tier 1 + Tier 2.
+| ID | Debito | Severidade | Horas | Tier |
+|----|--------|-----------|-------|------|
+| TD-A01 | Rotas montadas 2x (/v1/ + legacy root) — 61 include_router, 120+ endpoints | HIGH | 4-8h | 1 |
+| TD-A02 | search_pipeline.py god module — 800+ linhas | HIGH | 24-32h | 1 |
+| TD-A03 | Progress tracker in-memory nao escala — blocker para horizontal scaling | HIGH | 8-16h | 1 |
+| TD-A04 | 10 background tasks no lifespan sem task manager | MEDIUM | 8h | 3 |
+| TD-A05 | Dual HTTP client PNCP (sync + async) — logica duplicada | MEDIUM | 12-16h | 2 |
+| TD-A06 | Lead prospecting modules desconectados — possivel dead code | LOW | 2h | 3 |
+| TD-P01 | Migration naming inconsistente (sequencial + timestamped) | MEDIUM | 4h | 3 |
+| TD-P02 | Feature flags somente em env vars — sem UI toggle | MEDIUM | 8-12h | 2 |
+| TD-P03 | User-Agent hardcoded "BidIQ" | LOW | 0.5h | 0 |
+| TD-P04 | pyproject.toml referencia "bidiq-uniformes-backend" | LOW | 0.5h | 0 |
+| TD-P05 | Arquivos de teste na raiz do backend | LOW | 1h | 3 |
+| TD-M01 | Sem lifecycle manager para background tasks | MEDIUM | 8h | 3 |
+| TD-M02 | Sem validacao de contrato API no CI | MEDIUM | 4-8h | 2 |
+| TD-M03 | Sem pre-commit hooks | LOW | 2h | 3 |
+| TD-M04 | Sem lint enforcement no CI backend | LOW | 2h | 3 |
+| TD-S01 | Railway 1GB com 2 workers — OOM historico | HIGH | 4-8h | 1 |
+| TD-S02 | PNCP page size 50 — requer 10x mais API calls | HIGH | N/A (API limit) | 3 |
+| TD-S03 | Auth token cache nao compartilhado entre workers | MEDIUM | 4h | 3 |
+| TD-S04 | Sem CDN para assets estaticos | MEDIUM | 4-8h | 3 |
+| TD-SEC01 | unsafe-inline/eval no CSP | MEDIUM | 8h | 3 |
+| TD-SEC02 | Service role key para todas ops backend | LOW | N/A | 3 |
+| TD-SEC03 | Sem timeout em webhook handler | LOW | 2h | 3 |
+| TD-SEC04 | Temp files Excel no frontend proxy | LOW | 2h | 3 |
+
+> **Removido:** TD-S05 (time.sleep sincrono) — ja corrigido, verificado por @qa (asyncio.sleep em quota.py linhas 1467, 1557, 1624)
+
+### 1.2 Database (validado por @data-engineer) — 26 debitos
+
+| ID | Debito | Severidade | Horas | Tier |
+|----|--------|-----------|-------|------|
+| **C-01** | **FK para auth.users em vez de profiles (6 tabelas)** — search_results_store, mfa_recovery_codes, mfa_recovery_attempts, organizations, org_members, partner_referrals | **CRITICAL** | 6-8h | 0 |
+| C-02 | health_checks + incidents: RLS sem policies (service_role only) | HIGH | 2h | 0 |
+| H-01 | 3 trigger functions updated_at duplicadas | HIGH | 2h | 0 |
+| H-02 | search_results_store FK sem CASCADE (subsumed by C-01) | HIGH | — | 0 |
+| H-03 | Sem retention para search_results_store (expires_at decorativo) | HIGH | 2h | 0 |
+| H-04 | alert_preferences service_role usa auth.role() | MEDIUM | 0.5h | 1 |
+| H-05 | reconciliation_log service_role usa auth.role() | MEDIUM | 0.5h | 1 |
+| H-06 | organizations + org_members service_role usa auth.role() | MEDIUM | 0.5h | 1 |
+| DA-01 | partners + partner_referrals service_role usa auth.role() (**novo**) | MEDIUM | 0.5h | 1 |
+| DA-02 | search_results_store service_role usa auth.role() (**novo**) | MEDIUM | — | 1 |
+| DA-03 | health_checks + incidents sem retention pg_cron (**novo**) | MEDIUM | 1h | 2 |
+| M-01 | Sem updated_at em 3 tabelas (monthly_quota, mfa_recovery_codes, partner_referrals) | MEDIUM | 1.5h | 2 |
+| M-02 | Sem indice standalone search_state_transitions(created_at) | MEDIUM | 0.5h | 2 |
+| M-03 | partner_referrals FK sem ON DELETE (subsumed by C-01) | MEDIUM | — | 0 |
+| M-04 | Sem retention mfa_recovery_attempts (30d) | MEDIUM | 1h | 2 |
+| M-05 | Sem retention alert_runs (90d) | MEDIUM | 1h | 2 |
+| M-06 | Sem retention alert_sent_items (180d) | MEDIUM | 1h | 2 |
+| M-07 | handle_new_user() trigger modificado 7x — regression risk | MEDIUM | 3h | 2 |
+| M-08 | CHECK constraint naming inconsistente | LOW | 1h | 3 |
+| M-09 | classification_feedback admin policy usa auth.role() | MEDIUM | 0.5h | 1 |
+| L-01 | Indice redundante alert_preferences.user_id | LOW | 0.5h | 3 |
+| L-02 | Indice redundante alert_sent_items.alert_id | LOW | 0.5h | 3 |
+| L-03 | Sem COMMENT em tabelas novas | LOW | 1h | 3 |
+| L-04 | plan_type CHECK reconstruido 6x | LOW | 2h | 3 |
+| L-05 | Stripe Price IDs hardcoded em migrations | LOW | 2h | 3 |
+| L-06 | Sem indice composto (user_id, expires_at) search_results_store | LOW | 0.5h | 0 |
+
+> **Nota @data-engineer:** auth.role() pattern afeta 8 tabelas no total (nao 5 como no DRAFT). M-01 reduzido de 11 para 3 tabelas (somente as que recebem UPDATE). H-02 e M-03 subsumidos por C-01.
+
+### 1.3 Frontend/UX (validado por @ux-design-expert) — 41 debitos
+
+| ID | Debito | Severidade | Horas | Tier | UX Impact |
+|----|--------|-----------|-------|------|-----------|
+| FE-01 | SearchResults.tsx mega-componente (1,581 linhas, ~55 props) | HIGH | 14-18h | 1 | High |
+| FE-02 | conta/page.tsx mega-componente (1,420 linhas) | MEDIUM | 8-12h | 2 | Medium |
+| FE-03 | useSearch.ts mega-hook (1,510 linhas) | HIGH | 14-18h | 1 | High |
+| FE-04 | buscar/page.tsx (1,019 linhas) | MEDIUM | 6-8h | 2 | Medium |
+| FE-05 | 3 diretorios componentes sem convencao | MEDIUM | 4-6h | 2 | Low |
+| FE-06 | Sem Button component (= FE-27) | HIGH | 6-8h | 1 | High |
+| FE-07 | SVGs inline Sidebar (75 linhas) | LOW | 2h | 0 | Low |
+| FE-08 | Sem data fetching library (SWR recomendado) | HIGH | 20-28h | 1 | High |
+| FE-09 | 13+ localStorage keys sem abstracao | LOW | 4-6h | 3 | Low |
+| FE-10 | Prop drilling SearchResults (55 props) | HIGH | 6-8h | 1 | High |
+| FE-11 | Ref-based circular dependency workaround | LOW | 2-3h | 3 | Low |
+| FE-12 | Missing aria-labels botoes icon-only sidebar | HIGH | 1.5h | 0 | Critical |
+| FE-13 | SVG icons sem aria-hidden (Sidebar) | MEDIUM | 0.5h | 0 | Medium |
+| FE-14 | Viability scores cor sem texto alternativo | MEDIUM | 2h | 1 | Medium |
+| FE-15 | Inputs com placeholder em vez de label | MEDIUM | 2h | 1 | Medium |
+| FE-16 | Sem hierarquia headings auditada | LOW | 2h | 3 | Low |
+| FE-17 | Sem ARIA live regions para progresso busca | MEDIUM | 2h | 2 | Medium |
+| FE-19 | Sem dynamic imports (Recharts, Shepherd, dnd-kit) | MEDIUM | 3-4h | 2 | Medium |
+| FE-20 | useIsMobile() hydration mismatch | LOW | 1h | 3 | Low |
+| FE-21 | Sem Lighthouse CI gated | MEDIUM | 3h | 2 | Medium |
+| FE-22 | Hardcoded Portuguese (44 paginas) | LOW | 24-40h | 3 | Low |
+| FE-23 | eslint-disable exhaustive-deps (3+ locais) | LOW | 1h | 3 | Low |
+| FE-24 | APP_NAME redeclarado 5+ arquivos | LOW | 0.5h | 0 | Low |
+| FE-25 | Import patterns mistos | LOW | 1h | 3 | Low |
+| FE-26 | Sem TypeScript paths | LOW | 1h | 3 | Low |
+| FE-27 | Sem Button compartilhado (Shadcn/ui) | HIGH | 4-6h | 1 | High |
+| FE-28 | Sem Input compartilhado | MEDIUM | 3-4h | 2 | Medium |
+| FE-29 | Sem Card compartilhado | MEDIUM | 2-3h | 2 | Medium |
+| FE-30 | Sem Badge compartilhado | MEDIUM | 2-3h | 2 | Low |
+| FE-31 | Sem Storybook | LOW | 8-12h | 3 | Low |
+| FE-32 | Design tokens parcialmente adotados | MEDIUM | 3-4h | 2 | Medium |
+| FE-33 | Search page navigation vs NavigationShell | MEDIUM | 4-6h | 2 | Medium |
+| FE-34 | 2 padroes empty state | LOW | 1h | 3 | Low |
+| FE-35 | Toast vs inline banners sem criterio | LOW | 2h | 3 | Low |
+| FE-36 | Loading spinner size/style varia | LOW | 1h | 3 | Low |
+| FE-37 | Date formatting inconsistente | LOW | 2h | 3 | Low |
+| FE-38 | Currency formatting inconsistente | LOW | 1h | 3 | Low |
+| FE-39 | Dashboard charts sem mobile layout (**novo**) | MEDIUM | 4-6h | 2 | Medium |
+| FE-40 | Missing dynamic imports alem de TotpVerification (**novo**) | MEDIUM | 2h | 2 | Medium |
+| FE-41 | Sem hook isolation tests — 19 hooks, 0 testes isolados (**novo**) | MEDIUM | 12-16h | 1 | Medium |
+| FE-42 | Alert creation form sem mobile optimization (**novo**) | LOW | 3h | 3 | Low |
+
+> **Removido:** FE-18 (Blog/SEO pages CSR) — Verificado por @ux + @qa: todas as paginas blog/SEO ja sao Server Components.
+
+### 1.4 Testing (novos, identificados por @qa) — 6 debitos
+
+| ID | Debito | Severidade | Horas | Tier |
+|----|--------|-----------|-------|------|
+| TD-T01 | Sem E2E para MFA, organizations, alerts, partners | MEDIUM | 12-16h | 2 |
+| TD-T02 | Backend test pollution patterns (sys.modules, singleton leak) | MEDIUM | 8-12h | 2 |
+| TD-T03 | Sem hook isolation tests (= FE-41) | MEDIUM | — | — |
+| TD-T04 | Sem visual regression testing (Chromatic/Percy) | LOW | 8h | 3 |
+| TD-T05 | Sem dependency security scanning no CI | MEDIUM | 2h | 2 |
+| TD-T06 | Sem load testing baseline automatizado | LOW | 4h | 3 |
 
 ---
 
-## Tier 1: BLOCKING (Acoes Imediatas)
+## 2. Plano de Resolucao por Tier
 
-**Total: 7 itens | Esforco: ~3 horas (incluindo testes)**
+### Tier 0 — Quick Wins (~14h codigo + 6h testes = 20h)
 
-| ID | Debito | Area | Impacto | Esforco | Validado por | Teste Requerido |
-|----|--------|------|---------|---------|-------------|-----------------|
-| T1-01 | `profiles.subscription_status` sem migration — usado em 5+ modulos (webhooks/stripe.py, routes/billing.py, routes/user.py, schemas.py) | DB | Stripe webhooks falham em DB fresh. `/me` retorna dados incompletos. | 0.25h | @data-engineer | Migration em test DB + `pytest tests/test_stripe_webhooks.py` + verificar `/me` retorna campo |
-| T1-02 | `profiles.trial_expires_at` sem migration — usado em analytics, quota, user routes | DB | Analytics endpoint falha em DB fresh. Trial status display quebrado. | 0.25h | @data-engineer | Migration + `pytest -k "analytics"` |
-| T1-03 | `user_subscriptions.subscription_status` sem migration — usado em Stripe checkout/payment failure | DB | Webhook de checkout falha em DB fresh. | 0.25h | @data-engineer | Migration + `pytest tests/test_stripe_webhooks.py` |
-| T1-04 | `services/trial_stats.py` referencia tabela `user_pipeline` inexistente (correto: `pipeline_items`) + teste mascara o bug | Backend | Runtime error no endpoint trial stats. Afeta todo trial user no pipeline. | 0.5h | @qa | Fix `trial_stats.py:78` + `test_trial_usage_stats.py:70,79,151,188` + `pytest tests/test_trial_usage_stats.py -v` |
-| T1-05 | `profiles.subscription_end_date` sem migration — usado em `routes/subscriptions.py:241` no fluxo de cancelamento | DB | Cancel subscription perde `end_date` em DB fresh. | 0.25h | @data-engineer | Migration + `pytest -k "subscriptions"` |
-| T1-06 | `profiles.email_unsubscribed` + `email_unsubscribed_at` sem migration — usado em `search_pipeline.py:79`, `routes/emails.py:147-148`. Coluna LGPD compliance. | DB | Email unsubscribe escreve em coluna inexistente em DB fresh. | 0.25h | @data-engineer | Migration + `pytest tests/test_email_triggers.py` |
-| T1-07 | `handle_new_user()` trigger regredido — migration `20260224000000` insere apenas 4 campos (id, email, full_name, phone_whatsapp), descartando company, sector, whatsapp_consent, plan_type, avatar_url, context_data. Sem ON CONFLICT. | DB | Todo novo signup perde 6 campos do perfil. Re-signup edge case bloqueia registro (unique violation). | 1.0h | @data-engineer + @qa | Trigger rewrite + teste signup email com metadata + Google OAuth + re-signup + phone normalization |
+**Timeline:** 1 sprint (1-2 semanas)
 
-### Migration SQL — Tier 1
+| # | IDs | Descricao | Area | Horas |
+|---|-----|-----------|------|-------|
+| 1 | C-01 + H-02 + M-03 | Migration 1: FK standardization (6 tabelas → profiles, NOT VALID + VALIDATE) | DB | 6-8h |
+| 2 | H-03 + L-06 | Migration 2: search_results_store retention (pg_cron 4am UTC, 7d retention, 2MB CHECK, composite index) | DB | 2.5h |
+| 3 | C-02 | Add explicit service_role policies to health_checks + incidents | DB | 1h |
+| 4 | H-01 | Consolidar 3 trigger functions duplicadas | DB | 1h |
+| 5 | FE-12 + FE-13 | aria-labels em botoes icon-only + aria-hidden em SVGs sidebar | Frontend | 2h |
+| 6 | TD-P03 + TD-P04 | Branding BidIQ → SmartLic (User-Agent + pyproject.toml) | Backend | 1h |
+| 7 | FE-07 | Replace inline SVGs com lucide-react | Frontend | 1.5h |
+| 8 | FE-24 | APP_NAME consolidar em lib/constants | Frontend | 0.5h |
 
-```sql
--- Migration: 20260225100000_add_missing_profile_columns.sql
--- Fixes: T1-01, T1-02, T1-03, T1-05, T1-06
--- Safe: All ADD COLUMN IF NOT EXISTS (idempotent, no-op on production)
+### Tier 1 — Debitos Estruturais (~105-155h codigo + 35h testes = 140-190h)
 
-BEGIN;
+**Timeline:** 2-3 sprints
 
--- T1-01: profiles.subscription_status
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'trial';
-ALTER TABLE public.profiles
-    ADD CONSTRAINT chk_profiles_subscription_status
-    CHECK (subscription_status IN ('trial', 'active', 'canceling', 'past_due', 'expired'));
-CREATE INDEX IF NOT EXISTS idx_profiles_subscription_status
-    ON profiles (subscription_status)
-    WHERE subscription_status != 'trial';
-
--- T1-02: profiles.trial_expires_at
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS trial_expires_at TIMESTAMPTZ;
-
--- T1-05: profiles.subscription_end_date
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMPTZ;
-
--- T1-06: profiles.email_unsubscribed + email_unsubscribed_at (LGPD)
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS email_unsubscribed BOOLEAN DEFAULT FALSE;
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS email_unsubscribed_at TIMESTAMPTZ;
-
--- T1-03: user_subscriptions.subscription_status
-ALTER TABLE public.user_subscriptions
-    ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active';
-ALTER TABLE public.user_subscriptions
-    ADD CONSTRAINT chk_user_subs_subscription_status
-    CHECK (subscription_status IN ('active', 'trialing', 'past_due', 'canceled', 'expired'));
-
-COMMIT;
+**Sequencia obrigatoria frontend (validada por @qa):**
+```
+FE-27 (Button) → FE-10 (prop grouping) → FE-41 (hook tests) → FE-01 (SearchResults decomp)
+FE-41 (hook tests) → FE-03 (useSearch decomp) → FE-08 (SWR adoption)
 ```
 
-```sql
--- Migration: 20260225110000_fix_handle_new_user_trigger.sql
--- Fix: T1-07
--- DEPENDS ON: 20260225100000 (new columns must exist before trigger references them)
+| # | ID | Descricao | Horas |
+|---|-----|-----------|-------|
+| 1 | H-04/05/06 + M-09 + DA-01/02 | Migration 3: RLS policy standardization (8 tabelas auth.role() → TO service_role) | 2h |
+| 2 | TD-A01 | Remover legacy routes (manter /v1/ only) — verificar Railway logs antes | 4-8h |
+| 3 | FE-27 (= FE-06) | Button component via Shadcn/ui (prerequisito FE-01) | 4-6h |
+| 4 | FE-10 | Prop grouping em SearchResults (55 → 6-8 typed objects) | 6-8h |
+| 5 | FE-14 + FE-15 | Viability text alternatives + form labels | 4h |
+| 6 | FE-41 | Hook isolation tests para useSearch + hooks criticos (prerequisito FE-03) | 12-16h |
+| 7 | FE-01 | Decomposicao SearchResults.tsx (ResultCard, ResultsList, ResultsToolbar, etc.) | 14-18h |
+| 8 | FE-03 | Decomposicao useSearch.ts (useSearchExecution, useSearchSSE, useSearchRetry, useSearchExport, useSearchPersistence) | 14-18h |
+| 9 | FE-08 | Adotar SWR — migrar endpoints GET primeiro (/me, /plans, /analytics, /pipeline), depois mutations | 20-28h |
+| 10 | TD-A02 | Refatorar search_pipeline.py (800+ linhas → stages modulares) | 24-32h |
+| 11 | TD-A03 | Migrar progress tracker para Redis Streams (primary, in-memory fallback) | 8-16h |
+| 12 | TD-S01 | Otimizar memoria Railway (shared caches cross-worker via Redis) | 4-8h |
 
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
-DECLARE
-  _phone text;
-BEGIN
-  _phone := regexp_replace(COALESCE(NEW.raw_user_meta_data->>'phone_whatsapp', ''), '[^0-9]', '', 'g');
-  IF length(_phone) > 11 AND left(_phone, 2) = '55' THEN _phone := substring(_phone from 3); END IF;
-  IF left(_phone, 1) = '0' THEN _phone := substring(_phone from 2); END IF;
-  IF length(_phone) NOT IN (10, 11) THEN _phone := NULL; END IF;
+### Tier 2 — Melhorias de Qualidade (~85-120h codigo + 18.5h testes = 103-139h)
 
-  INSERT INTO public.profiles (
-    id, email, full_name, company, sector,
-    phone_whatsapp, whatsapp_consent, plan_type,
-    avatar_url, context_data
-  )
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'company', ''),
-    COALESCE(NEW.raw_user_meta_data->>'sector', ''),
-    _phone,
-    COALESCE((NEW.raw_user_meta_data->>'whatsapp_consent')::boolean, FALSE),
-    'free_trial',
-    NEW.raw_user_meta_data->>'avatar_url',
-    '{}'::jsonb
-  )
-  ON CONFLICT (id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+**Timeline:** 2-4 sprints
+
+| # | ID | Descricao | Horas |
+|---|-----|-----------|-------|
+| 1 | FE-28/29/30 | Design system primitives (Input, Card, Badge) | 7-10h |
+| 2 | FE-02 | Decomposicao conta/page.tsx (sub-routes: /perfil, /seguranca, /plano) | 8-12h |
+| 3 | FE-32 + FE-33 | Design token consolidation + navigation unification | 7-10h |
+| 4 | TD-A05 | Eliminar dual HTTP client PNCP | 12-16h |
+| 5 | TD-P02 | Feature flags admin UI | 8-12h |
+| 6 | FE-19 + FE-40 | Dynamic imports (Recharts, Shepherd, dnd-kit, etc.) | 5-6h |
+| 7 | FE-04 | Decomposicao buscar/page.tsx | 6-8h |
+| 8 | FE-05 | Convencao de diretorios componentes | 4-6h |
+| 9 | DA-03 + M-04/05/06 | Migration 4: Retention pg_cron (health_checks 30d, mfa 30d, alert_runs 90d, alert_sent 180d) | 3h |
+| 10 | M-01 + M-02 | Migration 5: updated_at (3 tabelas) + index created_at | 2h |
+| 11 | M-07 | Integration test handle_new_user() + CI guard | 3h |
+| 12 | TD-M02 | API contract CI validation | 4-8h |
+| 13 | FE-17 + FE-21 | ARIA live regions + Lighthouse CI | 5h |
+| 14 | TD-T01 | E2E coverage: MFA, organizations, alerts, partners | 12-16h |
+| 15 | TD-T02 | Backend test pollution cleanup | 8-12h |
+| 16 | TD-T05 | Dependency security scanning (pip-audit + npm audit) | 2h |
+| 17 | FE-39 | Dashboard charts mobile layout | 4-6h |
+
+### Tier 3 — Backlog (~65-85h)
+
+IDs: TD-A04, TD-A06, TD-P01, TD-P05, TD-M01, TD-M03, TD-M04, TD-S02, TD-S03, TD-S04, TD-SEC01-04, M-08, L-01 a L-05, FE-09, FE-11, FE-16, FE-20, FE-22, FE-23, FE-25, FE-26, FE-31, FE-34-38, FE-42, TD-T04, TD-T06
+
+---
+
+## 3. Grafo de Dependencias (Corrigido)
+
+```
+DATABASE:
+  C-01 (FK padronizacao) ──→ H-02, M-03 (subsumidos)
+  L-06 (composite index) ──→ H-03 (retention job)
+  M-02 (created_at index) ──→ M-04/05/06 (retention jobs)
+
+BACKEND:
+  TD-A01 (remover legacy routes) ──→ TD-M02 (API contract CI)
+  TD-A02 (pipeline refactor) ╎╎ TD-A03 (progress tracker) — INDEPENDENTES (decoupled per @qa)
+
+FRONTEND (sequencia obrigatoria):
+  FE-27 (Button) ──→ FE-01 (SearchResults decomp)
+  FE-10 (prop grouping) ──→ FE-01 (SearchResults decomp)
+  FE-41 (hook tests) ──→ FE-03 (useSearch decomp) ──→ FE-08 (SWR adoption)
+
+CROSS-AREA:
+  Nenhuma dependencia — DB, Backend, e Frontend podem progredir em paralelo
 ```
 
-**Backend code fix T1-04:**
-```python
-# backend/services/trial_stats.py line 78
-# ANTES: sb.table("user_pipeline")
-# DEPOIS: sb.table("pipeline_items")
-
-# backend/tests/test_trial_usage_stats.py lines 70, 79, 151, 188
-# ANTES: mock "user_pipeline"
-# DEPOIS: mock "pipeline_items"
-```
+> **Correcao @qa:** DRAFT original tinha FE-03 requerendo FE-08. Ordem correta e INVERSA: decompor useSearch primeiro, depois adotar SWR nos hooks decompostos. Tambem: TD-A02 e TD-A03 sao independentes (pipeline refactor nao requer mudar progress tracking).
 
 ---
 
-## Tier 2: STABILITY (Estabilidade Enterprise)
+## 4. Riscos e Mitigacoes
 
-**Total: 14 itens | Esforco: ~12 horas (incluindo testes)**
-
-| ID | Debito | Area | Risco | Esforco | Validado por | Teste Requerido |
-|----|--------|------|-------|---------|-------------|-----------------|
-| T2-01 | 3 tabelas com FK para `auth.users` em vez de `profiles`: pipeline_items, classification_feedback, trial_email_log | DB | Cascade inconsistente. Orphaned rows se profile deletado independentemente. | 1.0h | @data-engineer | Pre-check orphans + migration + teste delete cascade |
-| T2-02 | `classification_feedback.user_id` FK sem ON DELETE (default RESTRICT) | DB | Delecao de usuario bloqueada por feedback orfao. | (bundled T2-01) | @data-engineer | Teste delete usuario com feedback existente |
-| T2-03 | `search_results_cache.results` JSONB blob sem limite — 50-500KB por entry, ate 5MB por usuario | DB | Inflacao de storage. Queries lentas quando results incluido em SELECT. | 2.0h | @data-engineer | Query production max size ANTES + CHECK constraint + pg_cron cleanup |
-| T2-05 | `search_state_transitions` INSERT policy nao scoped para service_role — qualquer usuario autenticado pode inserir | DB | Audit log injection. Usuarios podem inserir transicoes falsas. | 0.25h | @qa | Migration + teste INSERT como authenticated (deve falhar) + INSERT como service_role (deve funcionar) |
-| T2-07 | `profiles` sem service_role UPDATE/DELETE policy | DB | Gap defense-in-depth. Backend usa service_role que bypassa RLS. | 0.25h | @qa | Migration + verificar policy existe |
-| T2-08 | `conversations` e `messages` sem service_role policies | DB | Mesmo gap defense-in-depth. | 0.25h | @qa | Migration + `pytest -k "messages"` |
-| T2-09 | `search_sessions` sem indice composto `(user_id, status, created_at)` | DB | Queries lentas para cleanup de sessoes stale, analytics, SIGTERM shutdown. | 0.25h | @data-engineer | Migration + EXPLAIN ANALYZE em query pattern |
-| T2-11 | BottomNav drawer overlay sem focus trap | Frontend | WCAG 2.4.3 a11y violation. Mobile users podem Tab fora do drawer. | 1.5h | @ux-design-expert | Abrir drawer mobile + Tab cycle + Escape close + focus return |
-| T2-13 | Dockerfile usa Python 3.11-slim mas pyproject.toml targeta 3.12 | Backend | Version mismatch. Incompatibilidades sutis com type hints e stdlib. | 0.5h | @qa | Alinhar Dockerfile para `python:3.12-slim` + rebuild + full test suite |
-| T2-14 | User-Agent hardcoded "BidIQ" em vez de "SmartLic" | Backend | Misleading para provedores de API (PNCP, PCP). | 0.25h | @qa | Update strings em `pncp_client.py` + grep por "BidIQ" |
-| T2-16 | 404 page com "Pagina nao encontrada" sem acentos | Frontend | Signal de produto inacabado para decision-maker enterprise. | 0.1h | @ux-design-expert | Visual inspection em `/pagina-inexistente` |
-| T2-17 | `global-error.tsx` usa inline styles fora do design system (hardcoded `#f9fafb`, `system-ui`) | Frontend | Quando root layout crasheia, error page parece produto diferente. | 0.5h | @ux-design-expert | Trigger root error + verificar brand match em light/dark |
-| T2-18 | Error boundaries faltando para `/pipeline`, `/historico`, `/mensagens`, `/conta` — fall through para root `error.tsx` que expoe raw `error.message` | Frontend | Enterprise user ve `TypeError: Cannot read properties of undefined` em monospace. | 2.0h | @ux-design-expert + @qa | Adicionar error boundaries + trigger error em cada pagina + verificar mensagem amigavel |
-| T2-19 | `error.message` nao filtrado por `getUserFriendlyError()` em nenhum dos 4 error boundary files existentes | Frontend | **Issue UX mais danoso para percepcao enterprise.** Raw JS errors visiveis ao usuario. Funcao existe e e usada em 27 files — mas NAO nos error boundaries. | 1.0h | @ux-design-expert + @qa | Import + apply `getUserFriendlyError()` nos 4 error boundaries + trigger errors |
-
-### Migration SQL — Tier 2
-
-```sql
--- Migration: 20260225120000_standardize_fks_to_profiles.sql
--- Fixes: T2-01, T2-02
-
-BEGIN;
-
--- pipeline_items
-DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'pipeline_items_user_id_fkey' AND table_name = 'pipeline_items')
-    THEN ALTER TABLE pipeline_items DROP CONSTRAINT pipeline_items_user_id_fkey;
-    END IF;
-END $$;
-ALTER TABLE pipeline_items ADD CONSTRAINT pipeline_items_user_id_profiles_fkey
-    FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE NOT VALID;
-ALTER TABLE pipeline_items VALIDATE CONSTRAINT pipeline_items_user_id_profiles_fkey;
-
--- classification_feedback (also adds ON DELETE CASCADE)
-DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'classification_feedback_user_id_fkey' AND table_name = 'classification_feedback')
-    THEN ALTER TABLE classification_feedback DROP CONSTRAINT classification_feedback_user_id_fkey;
-    END IF;
-END $$;
-ALTER TABLE classification_feedback ADD CONSTRAINT classification_feedback_user_id_profiles_fkey
-    FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE NOT VALID;
-ALTER TABLE classification_feedback VALIDATE CONSTRAINT classification_feedback_user_id_profiles_fkey;
-
--- trial_email_log
-DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'trial_email_log_user_id_fkey' AND table_name = 'trial_email_log')
-    THEN ALTER TABLE trial_email_log DROP CONSTRAINT trial_email_log_user_id_fkey;
-    END IF;
-END $$;
-ALTER TABLE trial_email_log ADD CONSTRAINT trial_email_log_user_id_profiles_fkey
-    FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE NOT VALID;
-ALTER TABLE trial_email_log VALIDATE CONSTRAINT trial_email_log_user_id_profiles_fkey;
-
-COMMIT;
-```
-
-```sql
--- Migration: 20260225130000_rls_policy_hardening.sql
--- Fixes: T2-05, T2-07, T2-08
-
-BEGIN;
-
--- T2-05: Scope state transitions INSERT to service_role
-DROP POLICY IF EXISTS "Service role can insert transitions" ON search_state_transitions;
-CREATE POLICY "Service role can insert transitions" ON search_state_transitions
-    FOR INSERT TO service_role WITH CHECK (true);
-
--- T2-07: profiles service_role ALL policy
-DROP POLICY IF EXISTS "profiles_service_all" ON public.profiles;
-CREATE POLICY "profiles_service_all" ON public.profiles
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
-
--- T2-08: conversations + messages service_role policies
-DROP POLICY IF EXISTS "conversations_service_all" ON conversations;
-CREATE POLICY "conversations_service_all" ON conversations
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "messages_service_all" ON messages;
-CREATE POLICY "messages_service_all" ON messages
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
-
-COMMIT;
-```
-
-```sql
--- Migration: 20260225140000_add_session_composite_index.sql
--- Fix: T2-09
-
-CREATE INDEX IF NOT EXISTS idx_search_sessions_user_status_created
-    ON search_sessions (user_id, status, created_at DESC);
-```
-
-### Frontend Fixes — Tier 2
-
-| ID | Arquivo | Mudanca |
-|----|---------|---------|
-| T2-16 | `frontend/app/not-found.tsx` | Corrigir acentos portugueses nas strings |
-| T2-17 | `frontend/app/global-error.tsx` | Substituir inline styles hardcoded por valores do design system + `<style>` tag para dark mode media query |
-| T2-18 | Criar `frontend/app/pipeline/error.tsx`, `historico/error.tsx`, `mensagens/error.tsx`, `conta/error.tsx` | Copiar pattern de `buscar/error.tsx` com mensagem contextual em portugues |
-| T2-19 | `frontend/app/error.tsx`, `buscar/error.tsx`, `dashboard/error.tsx`, `admin/error.tsx` | Importar e aplicar `getUserFriendlyError()` de `lib/error-messages.ts` no render de `error.message` |
-| T2-11 | `frontend/app/components/BottomNav.tsx` | Adicionar focus trap ao drawer overlay |
-| T2-13 | `backend/Dockerfile` ou `backend/pyproject.toml` | Alinhar versao Python (3.12-slim ou target 3.11) |
-| T2-14 | `backend/pncp_client.py` | Substituir User-Agent "BidIQ" por "SmartLic" |
+| Risco | Areas | Prob. | Impacto | Mitigacao |
+|-------|-------|-------|---------|-----------|
+| FE-03 + FE-08 compound breakage da integracao SSE | Frontend + Backend | HIGH | CRITICAL | Sequenciar: FE-41 → FE-03 → estabilizar → FE-08. Nunca em paralelo. |
+| TD-A02 + TD-A03 mudancas simultaneas no core | Backend + SSE | MEDIUM | CRITICAL | Tratar como independentes. Pipeline refactor nao exige mudar progress tracking. |
+| C-01 FK re-pointing com usuarios beta ativos | Database | MEDIUM | HIGH | NOT VALID + VALIDATE (zero downtime). Orphan detection query antes. Deploy 4am UTC. |
+| FE-01 SearchResults decomp quebra 268 testes frontend | Frontend | HIGH | HIGH | Snapshot tests antes da decomposicao. Rodar suite completa apos cada sub-componente extraido. |
+| TD-A01 remover legacy routes quebra consumidores desconhecidos | Backend | LOW | MEDIUM | Verificar Railway access logs para chamadas non-/v1/. Deprecation metric counter antes. |
+| FE-27 Shadcn/ui modifica tailwind.config | Frontend build | MEDIUM | MEDIUM | Testar build + visual regression em todas 33 paginas apos setup. |
 
 ---
 
-## Cross-Area Risk Matrix
+## 5. Criterios de Sucesso
 
-| Risco | Areas | Impacto no Core | Mitigacao |
-|-------|-------|-----------------|-----------|
-| **Colunas DB missing + Backend code usando** (T1-01/02/03/05/06) | DB + Backend | Em DB fresh: Stripe webhooks falham, `/me` incompleto, analytics crasheia, cancel perde end_date, email unsubscribe escreve no void. **Em producao hoje: funcional.** | Migration unica com `ADD COLUMN IF NOT EXISTS`. Zero risco. |
-| **Trigger regression + Onboarding** (T1-07) | DB + Backend + Frontend | Novos usuarios perdem `company`, `sector`, `context_data` no signup. Dados preenchidos no form sao descartados silenciosamente. | T1-07 trigger rewrite. Testar: email signup, Google OAuth, re-signup. |
-| **Trigger sem ON CONFLICT + Re-signup** (T1-07) | DB + Auth | Re-signup levanta unique violation. **Bloqueia signup completamente.** | T1-07 inclui `ON CONFLICT (id) DO NOTHING`. |
-| **RLS gaps + Dados enterprise** (T2-05/07/08) | DB + Security | T2-05: authenticated pode injetar state transitions. T2-07/08: defense-in-depth. **Risco real baixo.** | RLS policy fixes. |
-| **Raw error.message + Error boundary gaps** (T2-18/19) | Frontend + UX | Erro React nao-tratado mostra raw JS error ao usuario. **Risk de percepcao enterprise.** | Error boundaries + `getUserFriendlyError()`. |
-| **Trial stats runtime error** (T1-04) | Backend + Frontend | Query tabela inexistente. **Afeta todo trial user.** | 1-line code fix. |
-| **FK para auth.users + User deletion** (T2-01/02) | DB | Orphaned rows possiveis. **Probabilidade baixa.** | Repoint FKs + CASCADE. |
+### Tier 0 (definicao de "done")
+- [ ] Zero FK references to auth.users (all 6 → profiles)
+- [ ] search_results_store pg_cron cleanup running daily
+- [ ] All 32 tables have explicit RLS policies (no zero-policy tables)
+- [ ] Zero duplicated trigger functions
+- [ ] Axe accessibility audit passes for sidebar navigation
+- [ ] No "BidIQ" string in production User-Agent
 
----
+### Tier 1 (definicao de "done")
+- [ ] Zero legacy route mounts (only /v1/)
+- [ ] SearchResults.tsx < 300 linhas
+- [ ] useSearch.ts < 300 linhas (orchestrator)
+- [ ] SWR integrated for all GET endpoints
+- [ ] Shared Button component used across all pages
+- [ ] All auth.role() policies → TO service_role
+- [ ] Hook isolation tests for top 5 hooks
+- [ ] All 5774+ backend tests pass, 2681+ frontend tests pass
 
-## Identified Gaps (Awareness — Tier 3)
-
-| Gap | Descricao | Recomendacao |
-|-----|-----------|--------------|
-| **GAP-01** | Sem mecanismo para detectar migration drift (colunas adicionadas via Dashboard escapam tracking). | CI step que valida schema contra migrations. |
-| **GAP-02** | Stripe webhook idempotency sob delivery concorrente — verificar tratamento de unique violation. | Verificar handler. Nao bloqueia monetizacao. |
-| **GAP-03** | Sem resultados de load testing. Railway 120s timeout e o failure mode mais provavel sob carga. | Rodar locust test contra staging. |
-| **GAP-04** | Email delivery — verificar SPF/DKIM para `smartlic.tech` no Resend. | Verificacao operacional. |
-| **GAP-05** | Frontend localStorage plan cache (1hr TTL) — UI pode mostrar plano stale apos Stripe webhook. | Reduzir TTL para 5min ou cache-bust apos checkout. |
-
----
-
-## Tier 3: ACCEPTED DEBTS (Resumo por Categoria)
-
-| Categoria | Count | Mais Severo | Exemplos |
-|-----------|-------|-------------|----------|
-| **Architecture** | 8 | Critical | Dual HTTP client (sync+async), dual route mounting, god module search_pipeline.py |
-| **Scalability** | 5 | High | In-memory progress tracker, auth cache, Railway 1GB memory, Excel filesystem fallback |
-| **Code Organization** | 5 | High | Test files fora de tests/, 100+ markdowns na raiz, `.py.tmp` commitado |
-| **CI/CD** | 3 | High | No backend linting in CI, no pre-commit hooks, OpenAPI contract testing |
-| **Component Duplication** | 6 | Critical | EmptyState x2, LoadingProgress x2, UFS x4, inline SVGs x200 lines |
-| **Design System** | 5 | High | ThemeProvider dual source, mixed icon systems, Shepherd hardcoded classes |
-| **Frontend Architecture** | 4 | Critical | SearchForm 40+ props, no state management, no RSC for protected pages |
-| **Performance** | 4 | Medium | No CDN, PNCP 50 page limit, no dynamic imports, JSONB correlated subquery |
-| **Database Convention** | 8 | Medium | Dual migration numbering, no rollback scripts, trigger naming, array columns |
-| **Security** | 3 | Medium | CSP unsafe-inline, service role scope, Google verification token |
-| **Testing** | 3 | Medium | Coverage below target, test quarantine growing, snapshot-only API contract |
-| **Accessibility** | 4 | Medium | Inline SVGs unlabeled, date picker screen reader, dropdown roles, toast announcements |
-| **Other** | 6 | Low | Dead code, deprecated patterns, legacy branding, i18n prep |
-| **TOTAL** | **71** | | |
+### Tier 2 (definicao de "done")
+- [ ] Design system primitives (Button, Input, Card, Badge) documented
+- [ ] conta/page.tsx decomposed into sub-routes
+- [ ] Single PNCP client (async only)
+- [ ] Retention jobs running for 4+ tables
+- [ ] E2E coverage for MFA, organizations, alerts
+- [ ] Dependency security scanning in CI
 
 ---
 
-## Execution Plan
+## 6. Esforco por Area e Tier
 
-### Phase A: Tier 1 Fixes (Dia 1 manha — ~3 horas)
-
-| Step | Item | Acao | Dependencia |
-|------|------|------|-------------|
-| 1 | T1-01/02/03/05/06 | Migration A: `20260225100000_add_missing_profile_columns.sql` | Nenhuma |
-| 2 | T1-04 + teste | Code fix: `trial_stats.py` + `test_trial_usage_stats.py` | Nenhuma (paralelo com Step 1) |
-| 3 | Validacao | `pytest` full suite | Steps 1+2 |
-| 4 | T1-07 | Migration B: `20260225110000_fix_handle_new_user_trigger.sql` | Step 1 (colunas devem existir antes) |
-| 5 | Validacao T1-07 | Teste signup: email com metadata, Google OAuth, re-signup, phone normalization | Step 4 |
-
-### Phase B: Tier 2 Fixes (Dia 1 tarde + Dia 2 — ~12 horas)
-
-| Step | Item | Acao | Dependencia |
-|------|------|------|-------------|
-| 6 | T2-01/02 | Migration C: FK standardization (pre-check orphans!) | Phase A |
-| 7 | T2-05/07/08 | Migration D: RLS policy hardening | Nenhuma |
-| 8 | T2-09 | Migration E: Composite index | Nenhuma |
-| 9 | T2-03 | Migration F: JSONB governance (verificar max size em prod ANTES) | Nenhuma |
-| 10 | T2-13 | Alinhar Python version (Dockerfile/pyproject) | Nenhuma |
-| 11 | T2-14 | Update User-Agent "BidIQ" -> "SmartLic" | Nenhuma |
-| 12 | T2-16 | Fix 404 acentos (5 min) | Nenhuma |
-| 13 | T2-19 | `getUserFriendlyError()` em 4 error boundaries | Nenhuma |
-| 14 | T2-18 | Criar error boundaries para 4 paginas | Nenhuma |
-| 15 | T2-17 | `global-error.tsx` brand alignment | Nenhuma |
-| 16 | T2-11 | BottomNav focus trap | Nenhuma |
-
-### Phase C: Verificacao Final
-
-| Check | Como |
-|-------|------|
-| Backend tests | `pytest` — 100% pass, 0 failures |
-| Frontend tests | `npm test` — 100% pass, 0 failures |
-| Stripe webhook flow | Subscribe, cancel, payment failure (manual ou staging) |
-| Signup flow | Email signup com metadata, Google OAuth, re-signup edge case |
-| Trial stats | Verificar pipeline trial value display funcional |
-| Error states | Trigger errors em cada pagina protegida — verificar mensagens amigaveis |
-| 404 page | Navegar para URL inexistente — verificar acentos corretos |
+| Area | Tier 0 | Tier 1 | Tier 2 | Tier 3 | Total |
+|------|--------|--------|--------|--------|-------|
+| **Database** | 10.5h | 2h | 9h | 7.5h | **29h** |
+| **Backend** | 1h | 36-56h | 24-36h | 22-30h | **83-123h** |
+| **Frontend** | 4h | 75-106h | 50-72h | 35-55h | **164-237h** |
+| **Testing** | 6h | 35h | 18.5h | 12h | **71.5h** |
+| **Total por Tier** | **21.5h** | **148-199h** | **101.5-135.5h** | **76.5-104.5h** | **347-460h** |
 
 ---
 
-## Regression Risks
+## Anexos
 
-### Alto Risco
-
-| Mudanca | O Que Pode Quebrar | Mitigacao |
-|---------|--------------------|-----------|
-| **T1-07 trigger rewrite** | Se trigger tem syntax error, TODOS os signups falham. | Deploy em staging primeiro. Testar 3 metodos de signup. Manter rollback SQL pronto. |
-| **T2-01/02 FK repointing** | Se orphaned data existe, FK creation falha e transaction faz rollback. | Run orphan check ANTES. Usar `NOT VALID` + `VALIDATE` two-phase. |
-| **T2-03 JSONB CHECK** | Se entries excedem CHECK limit, constraint nao pode ser adicionada. | Query production max JSONB size antes. Considerar 2MB em vez de 1MB. |
-
-### Medio Risco
-
-| Mudanca | O Que Pode Quebrar | Mitigacao |
-|---------|--------------------|-----------|
-| **T2-05 INSERT scoping** | Code paths que inserem state transitions sem service_role falham com RLS violation. | Grep por todos INSERT paths de `search_state_transitions`. |
-| **CHECK constraints** | Codigo que escreve status fora da CHECK list falha. | Revisar todos code paths que SET `subscription_status`. |
-
-### Baixo Risco
-
-| Mudanca | Mitigacao |
-|---------|-----------|
-| T1-01/02/03/05/06 (column additions) | `ADD COLUMN IF NOT EXISTS` — idempotente. |
-| T1-04 (table name fix) | Atualizar teste simultaneamente. |
-| T2-07/08/09 (policies e indexes) | Todos aditivos e idempotentes. |
-| T2-16/17/18/19 (frontend fixes) | String replacements e novos arquivos. |
+- `docs/architecture/system-architecture.md` — Arquitetura completa (Fase 1)
+- `supabase/docs/SCHEMA.md` — Schema de 32 tabelas (Fase 2)
+- `supabase/docs/DB-AUDIT.md` — Audit de database (Fase 2)
+- `docs/frontend/frontend-spec.md` — Especificacao frontend (Fase 3)
+- `docs/prd/technical-debt-DRAFT.md` — DRAFT consolidado (Fase 4)
+- `docs/reviews/db-specialist-review.md` — Revisao @data-engineer (Fase 5)
+- `docs/reviews/ux-specialist-review.md` — Revisao @ux-design-expert (Fase 6)
+- `docs/reviews/qa-review.md` — QA review (Fase 7)
 
 ---
 
-## Metrics of Success
-
-| Metrica | Valor Esperado Apos Fixes |
-|---------|--------------------------|
-| Backend test suite | 5131+ passing, 0 failures |
-| Frontend test suite | 2681+ passing, 0 failures |
-| Stripe webhook: checkout | Profile `subscription_status` = `active` |
-| Stripe webhook: cancel | Profile `subscription_end_date` preenchido |
-| New signup (email) | Profile contem company, sector, whatsapp_consent |
-| New signup (Google OAuth) | Profile contem full_name, avatar_url |
-| Trial stats endpoint | Retorna dados de `pipeline_items` sem erro |
-| Error boundaries | Nenhuma pagina protegida mostra raw `error.message` |
-| 404 page | Texto com acentos corretos em portugues |
-| UX Enterprise Score | 4.0+/5 (de 3.7/5 atual) |
-
----
-
-## Total Investment
-
-| Categoria | Horas |
-|-----------|-------|
-| Tier 1: Blocking (7 items) | 3h |
-| Tier 2: Stability — DB (8 items) | 4h |
-| Tier 2: Stability — Backend (2 items) | 0.75h |
-| Tier 2: Stability — Frontend (4 items) | 5.1h |
-| Teste e verificacao | 2h |
-| **TOTAL** | **~15h (~2 dias de trabalho)** |
-
-**ROI:** 15 horas de investimento -> sistema enterprise-ready para monetizacao confiavel em todos os 6 core flows.
-
----
-
-*Gerado por @architect durante Fase 8 do SmartLic Brownfield Discovery.*
-*Validado por: @data-engineer (Fase 5), @ux-design-expert (Fase 6), @qa (Fase 7 — APPROVED).*
-*Cross-references: system-architecture.md, SCHEMA.md, DB-AUDIT.md, frontend-spec.md, db-specialist-review.md, ux-specialist-review.md, qa-review.md.*
+*Assessment FINAL v3.0 gerado em 2026-03-04 pelo @architect (Atlas).*
+*Aprovado pelo @qa (Guardian) com todas as 4 condicoes incorporadas.*
+*Pronto para: Fase 9 (Relatorio Executivo) e Fase 10 (Planning).*

@@ -54,16 +54,8 @@ CREATE POLICY "service_role_all" ON organization_members
 
 -- ══════════════════════════════════════════════════════════════════
 -- 5. classification_feedback (M-09)
--- Note: user-facing policies (feedback_insert_own, feedback_select_own,
--- feedback_update_own, feedback_delete_own) are NOT touched.
+-- SKIPPED: Table does not exist yet. Will be added when feedback feature ships.
 -- ══════════════════════════════════════════════════════════════════
-DROP POLICY IF EXISTS "feedback_admin_all" ON classification_feedback;
-
-CREATE POLICY "service_role_all" ON classification_feedback
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
 
 -- ══════════════════════════════════════════════════════════════════
 -- 6. partners (DA-01)

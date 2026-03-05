@@ -54,6 +54,47 @@ if not STRIPE_WEBHOOK_SECRET:
     logger.error("STRIPE_WEBHOOK_SECRET not configured - webhook signature validation will fail")
 
 
+def _resolve_user_id(sb, session_data: dict) -> str | None:
+    """Resolve Supabase user_id from checkout session.
+
+    Checks client_reference_id first (programmatic checkout).
+    Falls back to customer_details.email lookup (Payment Links).
+
+    MAYDAY-A2: Payment Links don't set client_reference_id,
+    so we match by email in auth.users via profiles table.
+    """
+    user_id = session_data.get("client_reference_id")
+    if user_id:
+        return user_id
+
+    # Fallback: look up user by email from checkout session
+    customer_details = session_data.get("customer_details") or {}
+    email = customer_details.get("email")
+    if not email:
+        # Also try customer_email (older Stripe API versions)
+        email = session_data.get("customer_email")
+    if not email:
+        return None
+
+    try:
+        result = (
+            sb.table("profiles")
+            .select("id")
+            .eq("email", email)
+            .limit(1)
+            .execute()
+        )
+        if result.data:
+            logger.info(f"Resolved user_id from email {email}: {result.data[0]['id']}")
+            return result.data[0]["id"]
+
+        logger.warning(f"No profile found for email {email} — user must sign up first")
+        return None
+    except Exception as e:
+        logger.error(f"Failed to resolve user_id from email {email}: {e}")
+        return None
+
+
 @router.post("/webhooks/stripe")
 async def stripe_webhook(request: Request):
     """
@@ -224,7 +265,7 @@ async def _handle_checkout_session_completed(sb, event: stripe.Event):
         event: Stripe event with checkout.session data
     """
     session_data = event.data.object
-    user_id = session_data.get("client_reference_id")
+    user_id = _resolve_user_id(sb, session_data)
     metadata = session_data.get("metadata") or {}
     plan_id = metadata.get("plan_id")
     billing_period = metadata.get("billing_period", "monthly")
@@ -235,7 +276,7 @@ async def _handle_checkout_session_completed(sb, event: stripe.Event):
     if not user_id or not plan_id:
         logger.warning(
             f"Checkout session missing user_id or plan_id: "
-            f"client_reference_id={user_id}, metadata={metadata}"
+            f"user_id={user_id}, metadata={metadata}"
         )
         return
 
@@ -335,7 +376,7 @@ async def _handle_async_payment_succeeded(sb, event: stripe.Event):
         event: Stripe event with checkout.session data
     """
     session_data = event.data.object
-    user_id = session_data.get("client_reference_id")
+    user_id = _resolve_user_id(sb, session_data)
     metadata = session_data.get("metadata") or {}
     plan_id = metadata.get("plan_id")
     billing_period = metadata.get("billing_period", "monthly")
@@ -345,7 +386,7 @@ async def _handle_async_payment_succeeded(sb, event: stripe.Event):
     if not user_id or not plan_id:
         logger.warning(
             f"Async payment succeeded missing user_id or plan_id: "
-            f"client_reference_id={user_id}, metadata={metadata}"
+            f"user_id={user_id}, metadata={metadata}"
         )
         return
 
@@ -429,7 +470,7 @@ async def _handle_async_payment_failed(sb, event: stripe.Event):
         event: Stripe event with checkout.session data
     """
     session_data = event.data.object
-    user_id = session_data.get("client_reference_id")
+    user_id = _resolve_user_id(sb, session_data)
     metadata = session_data.get("metadata") or {}
     plan_id = metadata.get("plan_id")
     stripe_subscription_id = session_data.get("subscription")
