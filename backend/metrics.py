@@ -726,6 +726,12 @@ CACHE_COMPOSITION_COVERAGE = _create_histogram(
     buckets=[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
 )
 
+# CRIT-055 AC5: Warmup coverage ratio (UFs cached / total UFs)
+WARMUP_COVERAGE_RATIO = _create_gauge(
+    "smartlic_warmup_coverage_ratio",
+    "CRIT-055: Warmup UF coverage ratio (cached UFs / total UFs)",
+)
+
 
 # ============================================================================
 # ASGI app factory for /metrics endpoint

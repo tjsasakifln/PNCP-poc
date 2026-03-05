@@ -279,36 +279,84 @@ async def warmup_top_params() -> dict:
         return {"status": "error", "error": str(e), "warmed": 0}
 
 
+async def _get_prioritized_ufs(all_ufs: list[str]) -> list[str]:
+    """CRIT-055 AC2: Return UFs ordered by search history popularity.
+
+    Queries recent search sessions for UF frequency, puts popular UFs first,
+    then appends remaining UFs from the default priority order.
+    Falls back to DEFAULT_UF_PRIORITY if no history available.
+    """
+    from search_cache import get_popular_ufs_from_sessions
+    from config import DEFAULT_UF_PRIORITY
+
+    try:
+        popular = await get_popular_ufs_from_sessions(days=7)
+    except Exception:
+        popular = []
+
+    if not popular:
+        # No history — use default priority order, ensuring all_ufs coverage
+        ordered = [uf for uf in DEFAULT_UF_PRIORITY if uf in set(all_ufs)]
+        remaining = [uf for uf in all_ufs if uf not in set(ordered)]
+        return ordered + remaining
+
+    # Popular UFs first, then remaining from all_ufs
+    all_set = set(all_ufs)
+    ordered = [uf for uf in popular if uf in all_set]
+    remaining = [uf for uf in all_ufs if uf not in set(ordered)]
+    return ordered + remaining
+
+
 async def warmup_specific_combinations(ufs: list[str], sectors: list[str]) -> dict:
-    """P1.2: Pre-warm cache for specific sector+UF combinations.
+    """CRIT-055 AC1/AC2/AC4: Pre-warm cache for sector+UF combinations.
 
-    Iterates over each sector x UF pair and dispatches a background
-    revalidation using the system user ID so results land in the global
-    (cross-user) cache tier.  Trial users whose first search matches one
-    of these combos will receive a sub-5-second response from cache.
-
-    Args:
-        ufs: List of UF codes to warm (e.g. ["SP", "RJ", "MG"]).
-        sectors: List of sector IDs to warm (e.g. ["software", "saude"]).
+    Iterates over each sector x UF pair with:
+    - History-based UF priority (AC2)
+    - Batch grouping of 5 UFs with delay between groups (AC1)
+    - Rate limiting: respects WARMUP_RATE_LIMIT_RPS (AC4)
+    - PNCP degraded pause: pauses warmup when canary reports degraded (AC4)
 
     Returns:
-        dict with keys: dispatched, skipped, failed, total.
+        dict with keys: dispatched, skipped, failed, paused, total, ufs_covered.
     """
     from search_cache import trigger_background_revalidation
-    from config import WARMUP_BATCH_DELAY_SECONDS
+    from config import (
+        WARMUP_BATCH_DELAY_SECONDS, WARMUP_RATE_LIMIT_RPS,
+        WARMUP_PNCP_DEGRADED_PAUSE_S, WARMUP_UF_BATCH_SIZE,
+    )
+
+    # AC2: Prioritize UFs by search history
+    prioritized_ufs = await _get_prioritized_ufs(ufs)
 
     dispatched = 0
     skipped = 0
     failed = 0
-    total = len(sectors) * len(ufs)
+    paused = 0
+    total = len(sectors) * len(prioritized_ufs)
+    ufs_covered: set[str] = set()
+
+    # Rate limit interval (seconds between requests)
+    rate_interval = 1.0 / WARMUP_RATE_LIMIT_RPS if WARMUP_RATE_LIMIT_RPS > 0 else 0.5
 
     logger.info(
-        f"P1.2 warmup: starting {total} combinations "
-        f"({len(sectors)} sectors x {len(ufs)} UFs)"
+        "CRIT-055 warmup: starting %d combinations "
+        "(%d sectors x %d UFs, rate=%.1f rps, batch=%d)",
+        total, len(sectors), len(prioritized_ufs),
+        WARMUP_RATE_LIMIT_RPS, WARMUP_UF_BATCH_SIZE,
     )
 
     for sector_id in sectors:
-        for uf in ufs:
+        for i, uf in enumerate(prioritized_ufs):
+            # AC4: Check PNCP canary — pause if degraded
+            pncp_status = get_pncp_cron_status()
+            if pncp_status.get("status") in ("degraded", "down"):
+                logger.warning(
+                    "CRIT-055 warmup: PNCP %s — pausing %.0fs",
+                    pncp_status["status"], WARMUP_PNCP_DEGRADED_PAUSE_S,
+                )
+                paused += 1
+                await asyncio.sleep(WARMUP_PNCP_DEGRADED_PAUSE_S)
+
             try:
                 params = {
                     "setor_id": sector_id,
@@ -332,35 +380,48 @@ async def warmup_specific_combinations(ufs: list[str], sectors: list[str]) -> di
 
                 if dispatched_ok:
                     dispatched += 1
-                    logger.debug(f"P1.2 warmup: dispatched sector={sector_id} uf={uf}")
+                    ufs_covered.add(uf)
                 else:
                     skipped += 1
-                    logger.debug(
-                        f"P1.2 warmup: skipped sector={sector_id} uf={uf} "
-                        f"(dedup / cooldown active)"
-                    )
 
-                await asyncio.sleep(WARMUP_BATCH_DELAY_SECONDS)
+                # AC4: Rate limiting between individual requests
+                await asyncio.sleep(rate_interval)
 
             except Exception as e:
                 failed += 1
-                logger.warning(
-                    f"P1.2 warmup: failed sector={sector_id} uf={uf}: {e}"
-                )
+                logger.warning("CRIT-055 warmup: failed sector=%s uf=%s: %s", sector_id, uf, e)
 
+            # AC1: Extra delay between UF batches
+            if (i + 1) % WARMUP_UF_BATCH_SIZE == 0 and i + 1 < len(prioritized_ufs):
+                await asyncio.sleep(WARMUP_BATCH_DELAY_SECONDS)
+
+    # AC5: Coverage metric
+    try:
+        from metrics import WARMUP_COVERAGE_RATIO
+        coverage = len(ufs_covered) / len(prioritized_ufs) if prioritized_ufs else 0
+        WARMUP_COVERAGE_RATIO.set(coverage)
+    except Exception:
+        pass
+
+    # AC5: Summary log
     logger.info(
-        f"P1.2 warmup: completed — dispatched={dispatched}, "
-        f"skipped={skipped}, failed={failed}, total={total}"
+        "CRIT-055 warmup complete: %d/%d dispatched, %d failed, "
+        "coverage: %d/%d UFs, paused %d times",
+        dispatched, total, failed,
+        len(ufs_covered), len(prioritized_ufs), paused,
     )
-    return {"dispatched": dispatched, "skipped": skipped, "failed": failed, "total": total}
+    return {
+        "dispatched": dispatched, "skipped": skipped, "failed": failed,
+        "paused": paused, "total": total,
+        "ufs_covered": len(ufs_covered), "ufs_total": len(prioritized_ufs),
+    }
 
 
 async def start_warmup_task() -> asyncio.Task:
-    """P1.2: Start the startup cache warm-up background task.
+    """CRIT-055: Start the startup + periodic cache warm-up background task.
 
-    Waits WARMUP_STARTUP_DELAY_SECONDS (default 120s) after app boot so
-    the process stabilises before issuing warm-up requests.  Fire-and-forget
-    — never blocks the lifespan startup sequence.
+    Startup warmup waits WARMUP_STARTUP_DELAY_SECONDS, then warms all 27 UFs x 5 sectors.
+    Periodic warmup re-warms top 10 combinations every WARMUP_PERIODIC_INTERVAL_HOURS.
 
     Returns:
         asyncio.Task that can be cancelled during shutdown.
@@ -368,38 +429,48 @@ async def start_warmup_task() -> asyncio.Task:
     from config import WARMUP_ENABLED, WARMUP_UFS, WARMUP_SECTORS, WARMUP_STARTUP_DELAY_SECONDS
 
     if not WARMUP_ENABLED:
-        logger.info("P1.2 warmup: disabled via WARMUP_ENABLED=false — skipping")
-        # Return a no-op task so the caller can still .cancel() safely
+        logger.info("CRIT-055 warmup: disabled via WARMUP_ENABLED=false — skipping")
         task = asyncio.create_task(asyncio.sleep(0), name="warmup_noop")
         return task
 
     task = asyncio.create_task(
-        _warmup_startup_task(WARMUP_UFS, WARMUP_SECTORS, WARMUP_STARTUP_DELAY_SECONDS),
+        _warmup_startup_and_periodic(WARMUP_UFS, WARMUP_SECTORS, WARMUP_STARTUP_DELAY_SECONDS),
         name="cache_warmup",
     )
     logger.info(
-        f"P1.2 warmup: task started — "
-        f"delay={WARMUP_STARTUP_DELAY_SECONDS}s, "
-        f"sectors={WARMUP_SECTORS}, ufs={WARMUP_UFS}"
+        "CRIT-055 warmup: task started — delay=%ds, sectors=%s, ufs=%d total",
+        WARMUP_STARTUP_DELAY_SECONDS, WARMUP_SECTORS, len(WARMUP_UFS),
     )
     return task
 
 
-async def _warmup_startup_task(
+async def _warmup_startup_and_periodic(
     ufs: list[str],
     sectors: list[str],
     delay_seconds: int,
 ) -> None:
-    """P1.2: Internal coroutine — wait, then warm up the cache."""
+    """CRIT-055: Startup warmup + periodic re-warm loop."""
+    from config import WARMUP_PERIODIC_INTERVAL_HOURS
+
     try:
-        logger.info(f"P1.2 warmup: waiting {delay_seconds}s before starting warm-up")
+        # Phase 1: Startup warmup (after delay)
+        logger.info("CRIT-055 warmup: waiting %ds before startup warm-up", delay_seconds)
         await asyncio.sleep(delay_seconds)
         result = await warmup_specific_combinations(ufs, sectors)
-        logger.info(f"P1.2 warmup: startup warm-up finished: {result}")
+        logger.info("CRIT-055 warmup: startup warm-up finished: %s", result)
+
+        # Phase 2: AC3 — Periodic re-warm every N hours
+        interval_seconds = WARMUP_PERIODIC_INTERVAL_HOURS * 3600
+        while True:
+            await asyncio.sleep(interval_seconds)
+            logger.info("CRIT-055 warmup: periodic re-warm starting")
+            periodic_result = await warmup_top_params()
+            logger.info("CRIT-055 warmup: periodic re-warm finished: %s", periodic_result)
+
     except asyncio.CancelledError:
-        logger.info("P1.2 warmup: startup warm-up task cancelled (shutdown before completion)")
+        logger.info("CRIT-055 warmup: task cancelled (shutdown)")
     except Exception as e:
-        logger.error(f"P1.2 warmup: startup warm-up task failed: {e}", exc_info=True)
+        logger.error("CRIT-055 warmup: task failed: %s", e, exc_info=True)
 
 
 async def _session_cleanup_loop() -> None:

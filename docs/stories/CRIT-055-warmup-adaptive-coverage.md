@@ -19,32 +19,32 @@ O usuario buscou com 7 UFs (SP,ES,MG,RJ,PR,RS,SC) e depois 27 UFs. O warmup nao 
 ## Acceptance Criteria
 
 ### AC1: Warmup cobre todas as 27 UFs
-- [ ] `start_warmup_task` itera sobre TODAS as UFs brasileiras (27), nao subset hardcoded
-- [ ] Batching: grupos de 5 UFs com delay de `WARMUP_BATCH_DELAY_SECONDS` entre grupos
-- [ ] Total: 5 setores x 27 UFs = 135 combinacoes (com delay ~5min total)
+- [x] `start_warmup_task` itera sobre TODAS as UFs brasileiras (27), nao subset hardcoded
+- [x] Batching: grupos de 5 UFs com delay de `WARMUP_BATCH_DELAY_SECONDS` entre grupos
+- [x] Total: 5 setores x 27 UFs = 135 combinacoes (com delay ~5min total)
 
 ### AC2: Prioridade de UFs baseada em historico
-- [ ] Query `search_sessions` para UFs mais buscadas nos ultimos 7 dias
-- [ ] Warm UFs populares primeiro, depois o resto
-- [ ] Se nao ha historico, usar ordem default: SP, RJ, MG, BA, PR, RS, SC, PE, CE, GO, DF, ...
+- [x] Query `search_sessions` para UFs mais buscadas nos ultimos 7 dias
+- [x] Warm UFs populares primeiro, depois o resto
+- [x] Se nao ha historico, usar ordem default: SP, RJ, MG, BA, PR, RS, SC, PE, CE, GO, DF, ...
 
 ### AC3: Warmup periodico (nao so startup)
-- [ ] Cron job a cada 3h re-aquece top 10 combinacoes mais buscadas
-- [ ] Usa `warmup_top_params()` que ja existe — garantir que funciona com cache composable
+- [x] Cron job a cada 3h re-aquece top 10 combinacoes mais buscadas
+- [x] Usa `warmup_top_params()` que ja existe — garantir que funciona com cache composable
 
 ### AC4: Warmup nao sobrecarrega PNCP
-- [ ] Rate limiting: max 2 requests/segundo ao PNCP durante warmup
-- [ ] Se PNCP cron canary reporta degraded, pausar warmup por 5 minutos
-- [ ] Total de requests warmup: ~135 * 4 modalidades = ~540 requests (com rate limit ~5min)
+- [x] Rate limiting: max 2 requests/segundo ao PNCP durante warmup
+- [x] Se PNCP cron canary reporta degraded, pausar warmup por 5 minutos
+- [x] Total de requests warmup: ~135 * 4 modalidades = ~540 requests (com rate limit ~5min)
 
 ### AC5: Observabilidade
-- [ ] Log summary ao final: `"Warmup complete: 135/135 dispatched, 0 failed, coverage: 27/27 UFs"`
-- [ ] Metrica: `smartlic_warmup_coverage_ratio` gauge (UFs cacheadas / total UFs)
+- [x] Log summary ao final: `"Warmup complete: 135/135 dispatched, 0 failed, coverage: 27/27 UFs"`
+- [x] Metrica: `smartlic_warmup_coverage_ratio` gauge (UFs cacheadas / total UFs)
 
 ### AC6: Testes
-- [ ] Test: warmup itera 27 UFs x 5 setores
-- [ ] Test: UFs priorizadas por historico
-- [ ] Test: PNCP degraded → warmup pausa
+- [x] Test: warmup itera 27 UFs x 5 setores
+- [x] Test: UFs priorizadas por historico
+- [x] Test: PNCP degraded → warmup pausa
 
 ## Arquivos Afetados
 

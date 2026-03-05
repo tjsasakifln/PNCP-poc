@@ -2366,3 +2366,48 @@ async def get_top_popular_params(limit: int = 10) -> list[dict]:
             break
 
     return results
+
+
+async def get_popular_ufs_from_sessions(days: int = 7) -> list[str]:
+    """CRIT-055 AC2: Get UFs ordered by popularity from recent search sessions.
+
+    Queries search_sessions for the last N days, counts UF occurrences,
+    and returns UFs sorted by frequency (most popular first).
+
+    Returns empty list if no history or on error (caller should use default order).
+    """
+    from supabase_client import get_supabase, sb_execute
+    from datetime import datetime, timezone, timedelta
+
+    try:
+        sb = get_supabase()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+        response = await sb_execute(
+            sb.table("search_sessions")
+            .select("ufs")
+            .gte("created_at", cutoff)
+            .in_("status", ["completed", "completed_partial"])
+            .limit(500)
+        )
+
+        if not response.data:
+            return []
+
+        # Count UF occurrences across all sessions
+        uf_counts: dict[str, int] = {}
+        for row in response.data:
+            ufs = row.get("ufs") or []
+            for uf in ufs:
+                if isinstance(uf, str) and len(uf) == 2:
+                    uf_counts[uf] = uf_counts.get(uf, 0) + 1
+
+        # Sort by count descending
+        sorted_ufs = sorted(uf_counts.keys(), key=lambda u: -uf_counts[u])
+        return sorted_ufs
+
+    except Exception as e:
+        logging.getLogger(__name__).warning(
+            "CRIT-055: Failed to get popular UFs from sessions: %s", e
+        )
+        return []

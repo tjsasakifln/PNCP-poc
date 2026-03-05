@@ -571,9 +571,23 @@ EARLY_RETURN_TIME_S: float = float(os.getenv("EARLY_RETURN_TIME_S", "80.0"))  # 
 # Enable startup warm-up for top sector+UF combinations (default: true)
 WARMUP_ENABLED: bool = str_to_bool(os.getenv("WARMUP_ENABLED", "true"))
 
-# Comma-separated list of UFs to pre-warm on startup (default: top 5 states by bid volume)
+# CRIT-055: All 27 Brazilian UFs (used as default warmup coverage)
+ALL_BRAZILIAN_UFS: list[str] = [
+    "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA",
+    "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN",
+    "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+]
+
+# CRIT-055 AC1: Default UF order when no history (popular states first)
+DEFAULT_UF_PRIORITY: list[str] = [
+    "SP", "RJ", "MG", "BA", "PR", "RS", "SC", "PE", "CE", "GO",
+    "DF", "PA", "MA", "AM", "ES", "PB", "RN", "MT", "MS", "AL",
+    "PI", "SE", "RO", "TO", "AC", "AP", "RR",
+]
+
+# Comma-separated list of UFs to pre-warm on startup (default: all 27 UFs)
 WARMUP_UFS: list[str] = [
-    uf.strip() for uf in os.getenv("WARMUP_UFS", "SP,RJ,MG,BA,PR").split(",") if uf.strip()
+    uf.strip() for uf in os.getenv("WARMUP_UFS", ",".join(ALL_BRAZILIAN_UFS)).split(",") if uf.strip()
 ]
 
 # Comma-separated list of sector IDs to pre-warm on startup (default: top 5 sectors)
@@ -588,6 +602,18 @@ WARMUP_STARTUP_DELAY_SECONDS: int = int(os.getenv("WARMUP_STARTUP_DELAY_SECONDS"
 
 # Seconds to sleep between consecutive warm-up dispatches (rate-limiting, default: 2s)
 WARMUP_BATCH_DELAY_SECONDS: float = float(os.getenv("WARMUP_BATCH_DELAY_SECONDS", "2"))
+
+# CRIT-055 AC3: Periodic warmup interval (hours) — re-warms top combinations
+WARMUP_PERIODIC_INTERVAL_HOURS: int = int(os.getenv("WARMUP_PERIODIC_INTERVAL_HOURS", "3"))
+
+# CRIT-055 AC4: Max requests/second to PNCP during warmup
+WARMUP_RATE_LIMIT_RPS: float = float(os.getenv("WARMUP_RATE_LIMIT_RPS", "2.0"))
+
+# CRIT-055 AC4: Pause duration (seconds) when PNCP canary reports degraded
+WARMUP_PNCP_DEGRADED_PAUSE_S: float = float(os.getenv("WARMUP_PNCP_DEGRADED_PAUSE_S", "300.0"))
+
+# CRIT-055 AC1: UFs per batch in startup warmup
+WARMUP_UF_BATCH_SIZE: int = int(os.getenv("WARMUP_UF_BATCH_SIZE", "5"))
 
 # ============================================
 # GTM-STAB-007: Cache Warming
