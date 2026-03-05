@@ -1,17 +1,16 @@
 """
-Status inference layer for PNCP procurement bids.
+Status inference layer for procurement bids (PNCP + PCP v2).
 
-PROBLEMA: A API PNCP não retorna um campo de status consistente para filtrar
-licitações abertas/em julgamento/encerradas. O campo `situacaoCompraNome`
-existe mas tem valores variados e não padronizados.
+PROBLEMA: APIs de licitação não retornam status consistente. PNCP usa
+`situacaoCompraNome` com valores variados; PCP v2 usa `statusProcessoPublico`
+com nomenclatura completamente diferente.
 
-SOLUÇÃO: Inferir o status real da licitação analisando múltiplos campos:
-- Datas (abertura, encerramento, homologação)
-- Valores (homologado vs estimado)
-- Situação textual (quando disponível)
+SOLUÇÃO: Inferir o status real analisando múltiplos campos (datas, valores,
+situação textual), com mapeamento específico por fonte de dados.
 
-Isso permite filtrar licitações por status mesmo quando a API não fornece
-essa informação de forma estruturada.
+CRIT-054: Added PCP v2 status mapping. PCP v2 "Encerrado" means "session ended"
+(= em_julgamento), NOT "process finalized" (= encerrada). Without this mapping,
+91% of PCP v2 records were incorrectly rejected by the status filter.
 """
 
 import logging
@@ -20,62 +19,128 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# CRIT-054 AC1: PCP v2 status mapping
+# PCP v2 `statusProcessoPublico.descricao` values mapped to internal status.
+# These are mapped via `to_legacy_format()` into `situacaoCompraNome`.
+#
+# Key difference from PNCP: PCP "Encerrado"/"Sessão Encerrada" means the
+# bidding session ended (proposals closed), NOT the process is finalized.
+# In PNCP, "Encerrada" means fully finalized (homologated/cancelled).
+PCP_V2_STATUS_MAP = {
+    # recebendo_proposta: actively accepting bids
+    "aberto": "recebendo_proposta",
+    "sessão pública iniciada": "recebendo_proposta",
+    "sessao publica iniciada": "recebendo_proposta",
+    "recebendo propostas": "recebendo_proposta",
+    "em disputa": "recebendo_proposta",
+    "em lances": "recebendo_proposta",
+    "período de propostas": "recebendo_proposta",
+    "periodo de propostas": "recebendo_proposta",
+    # em_julgamento: session closed, under analysis
+    "encerrado": "em_julgamento",
+    "sessão encerrada": "em_julgamento",
+    "sessao encerrada": "em_julgamento",
+    "em análise": "em_julgamento",
+    "em analise": "em_julgamento",
+    "em julgamento": "em_julgamento",
+    "classificação": "em_julgamento",
+    "classificacao": "em_julgamento",
+    "habilitação": "em_julgamento",
+    "habilitacao": "em_julgamento",
+    "negociação": "em_julgamento",
+    "negociacao": "em_julgamento",
+    # encerrada: process fully finalized
+    "homologado": "encerrada",
+    "adjudicado": "encerrada",
+    "anulado": "encerrada",
+    "revogado": "encerrada",
+    "fracassado": "encerrada",
+    "deserto": "encerrada",
+    "cancelado": "encerrada",
+    "suspenso": "encerrada",
+}
+
+
+def _inferir_status_pcp_v2(licitacao: dict) -> str:
+    """CRIT-054 AC1/AC2/AC3: Infer status for PCP v2 records.
+
+    PCP v2 uses different status nomenclature from PNCP. Key difference:
+    PCP "Encerrado" = session ended (em_julgamento), NOT process finalized.
+
+    Priority:
+    1. Mapped status from PCP_V2_STATUS_MAP
+    2. Date-based heuristics (dataEncerramentoProposta)
+    3. Unknown → "desconhecido" (pass-through, not rejected)
+    """
+    situacao_nome = (
+        licitacao.get("situacaoCompraNome", "")
+        or licitacao.get("situacao", "")
+        or ""
+    ).strip().lower()
+
+    # AC1: Try direct mapping
+    mapped = PCP_V2_STATUS_MAP.get(situacao_nome)
+    if mapped:
+        logger.debug(f"PCP v2 status mapped: '{situacao_nome}' → {mapped}")
+        return mapped
+
+    # AC3: Date-based heuristics
+    data_encerramento_str = licitacao.get("dataEncerramentoProposta")
+    if data_encerramento_str:
+        try:
+            data_enc = datetime.fromisoformat(
+                data_encerramento_str.replace("Z", "+00:00")
+            )
+            agora = datetime.now(data_enc.tzinfo)
+            if agora < data_enc:
+                logger.debug(
+                    f"PCP v2 status inferred from date: recebendo_proposta "
+                    f"(deadline {data_enc.date()} is future)"
+                )
+                return "recebendo_proposta"
+            else:
+                logger.debug(
+                    f"PCP v2 status inferred from date: em_julgamento "
+                    f"(deadline {data_enc.date()} has passed)"
+                )
+                return "em_julgamento"
+        except (ValueError, AttributeError):
+            pass
+
+    # AC2: Unknown status — pass-through (fail-open for PCP v2)
+    # AC6: Metric for unmapped status
+    try:
+        from metrics import PCP_STATUS_UNMAPPED_TOTAL
+        PCP_STATUS_UNMAPPED_TOTAL.inc()
+    except Exception:
+        pass
+    logger.warning(
+        f"PCP v2 status unmapped: '{situacao_nome}' — treating as unknown (pass-through)"
+    )
+    return "desconhecido"
+
 
 def inferir_status_licitacao(licitacao: dict) -> str:
     """
     Infere o status real de uma licitação baseado em múltiplos campos.
 
-    Lógica de inferência (em ordem de prioridade):
-
-    1. ENCERRADA (processo finalizado):
-       - Tem valor homologado (valorTotalHomologado não-null)
-       - OU situação indica finalização ("homologada", "adjudicada",
-         "anulada", "revogada", "fracassada", "deserta", "suspensa")
-
-    2. EM_JULGAMENTO (propostas fechadas, aguardando resultado):
-       - Data de encerramento no passado
-       - E ainda não homologada (valorTotalHomologado == null)
-       - OU situação indica julgamento ("julgamento", "análise", "classificação")
-
-    3. RECEBENDO_PROPOSTA (ainda aberta):
-       - Data de encerramento no futuro
-       - OU situação indica abertura ("divulgada", "publicada", "aberta",
-         "recebendo", "vigente")
-
-    4. TODOS (fallback quando não há informação suficiente):
-       - Quando não é possível determinar o status com certeza
+    CRIT-054: Dispatches to source-specific inference when `_source` field
+    is present. PCP v2 records use different status nomenclature from PNCP.
 
     Args:
-        licitacao: Dicionário com dados da licitação da API PNCP
+        licitacao: Dicionário com dados da licitação (PNCP ou PCP v2)
 
     Returns:
-        Status inferido: "encerrada", "em_julgamento", "recebendo_proposta", ou "todos"
-
-    Examples:
-        >>> # Licitação aberta (prazo futuro)
-        >>> bid = {
-        ...     "dataEncerramentoProposta": "2026-12-31T10:00:00",
-        ...     "valorTotalHomologado": None
-        ... }
-        >>> inferir_status_licitacao(bid)
-        'recebendo_proposta'
-
-        >>> # Licitação em julgamento (prazo passado, sem homologação)
-        >>> bid = {
-        ...     "dataEncerramentoProposta": "2025-01-01T10:00:00",
-        ...     "valorTotalHomologado": None
-        ... }
-        >>> inferir_status_licitacao(bid)
-        'em_julgamento'
-
-        >>> # Licitação encerrada (homologada)
-        >>> bid = {
-        ...     "dataEncerramentoProposta": "2025-01-01T10:00:00",
-        ...     "valorTotalHomologado": 100000.0
-        ... }
-        >>> inferir_status_licitacao(bid)
-        'encerrada'
+        Status inferido: "encerrada", "em_julgamento", "recebendo_proposta",
+        "desconhecido" (PCP v2 only), ou "todos"
     """
+    # CRIT-054: Dispatch to PCP v2-specific inference
+    source = licitacao.get("_source", "")
+    if source == "PORTAL_COMPRAS":
+        return _inferir_status_pcp_v2(licitacao)
+
+    # === Original PNCP inference below ===
+
     # 1. Extrair campos relevantes
     situacao_nome = (
         licitacao.get("situacaoCompraNome", "")

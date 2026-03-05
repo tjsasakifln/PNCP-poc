@@ -577,6 +577,18 @@ BIDS_PROCESSED_TOTAL = _create_counter(
     labelnames=["source"],
 )
 
+# CRIT-054 AC6: PCP v2 status mapping observability
+PCP_STATUS_UNMAPPED_TOTAL = _create_counter(
+    "smartlic_pcp_status_unmapped_total",
+    "PCP v2 records with unmapped status (treated as desconhecido)",
+)
+
+FILTER_PASSTHROUGH_TOTAL = _create_counter(
+    "smartlic_filter_passthrough_total",
+    "Filter pass-through decisions for non-standard records",
+    labelnames=["reason"],
+)
+
 # STORY-350 AC3: Per-source bids fetched (enables future coverage measurement)
 SOURCES_BIDS_FETCHED = _create_counter(
     "smartlic_sources_bids_fetched_total",

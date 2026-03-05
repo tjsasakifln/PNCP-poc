@@ -2262,6 +2262,7 @@ def aplicar_todos_filtros(
     modo_busca: str = "publicacao",  # STORY-240 AC4: "publicacao" or "abertas"
     custom_terms: Optional[List[str]] = None,  # STORY-267: user's free search terms
     on_progress: Optional[Callable[[int, int, str], None]] = None,  # STORY-329 AC1: (processed, total, phase)
+    pncp_degraded: bool = False,  # CRIT-054 AC4: relax status filter for PCP v2 when PNCP is down
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Aplica todos os filtros em sequência otimizada (fail-fast).
@@ -2382,6 +2383,18 @@ def aplicar_todos_filtros(
                 # Direct comparison with inferred status
                 if status_inferido == status_lower:
                     resultado_status.append(lic)
+                # CRIT-054 AC2/AC4: Pass through PCP v2 records with unknown status
+                # When status is "desconhecido" (PCP v2 unmapped), don't reject —
+                # these are likely valid records whose status PCP reports differently.
+                # Also pass through "todos" from PCP v2 (fallback inference).
+                elif status_inferido in ("desconhecido", "todos") and lic.get("_source") == "PORTAL_COMPRAS":
+                    lic["_status_unconfirmed"] = True
+                    resultado_status.append(lic)
+                    try:
+                        from metrics import FILTER_PASSTHROUGH_TOTAL
+                        FILTER_PASSTHROUGH_TOTAL.labels(reason="unknown_status").inc()
+                    except Exception:
+                        pass
                 else:
                     stats["rejeitadas_status"] += 1
                     # STORY-248 AC9: Record status mismatch

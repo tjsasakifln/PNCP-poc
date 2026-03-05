@@ -1639,6 +1639,7 @@ class SearchPipeline:
             modo_busca=request.modo_busca or "publicacao",
             custom_terms=ctx.custom_terms or None,  # STORY-267: pass custom terms for quality parity
             on_progress=_on_filter_progress,
+            pncp_degraded="PNCP" in (ctx.sources_degraded or []),  # CRIT-054 AC4
         )
         # Let pending progress events flush before continuing
         await asyncio.sleep(0)
@@ -1675,6 +1676,7 @@ class SearchPipeline:
                 setor=ctx.request.setor_id,  # CRIT-019 AC2: pass sector in relaxed retry too
                 modo_busca=request.modo_busca or "publicacao",
                 custom_terms=ctx.custom_terms or None,  # STORY-267: pass custom terms in relaxed retry too
+                pncp_degraded="PNCP" in (ctx.sources_degraded or []),  # CRIT-054 AC4
             )
             ctx.hidden_by_min_match = 0
 
@@ -1804,6 +1806,7 @@ class SearchPipeline:
                 setor=ctx.request.setor_id,
                 modo_busca=request.modo_busca or "publicacao",
                 custom_terms=None,  # no keyword matching
+                pncp_degraded="PNCP" in (ctx.sources_degraded or []),  # CRIT-054 AC4
             )
             if _l2_filtered:
                 ctx.licitacoes_filtradas = _l2_filtered

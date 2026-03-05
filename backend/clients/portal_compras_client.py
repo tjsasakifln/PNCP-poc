@@ -534,6 +534,15 @@ class PortalComprasAdapter(SourceAdapter):
                 modalidade = str(tipo_lic) if tipo_lic else ""
 
             # Status from statusProcessoPublico
+            # CRIT-054 AC1: PCP v2 status values (statusProcessoPublico.descricao):
+            #   "Aberto", "Sessão Pública Iniciada", "Recebendo Propostas",
+            #   "Em disputa", "Em lances", "Período de propostas",
+            #   "Encerrado", "Sessão Encerrada", "Em análise", "Em julgamento",
+            #   "Classificação", "Habilitação", "Negociação",
+            #   "Homologado", "Adjudicado", "Anulado", "Revogado",
+            #   "Fracassado", "Deserto", "Cancelado", "Suspenso"
+            # NOTE: "Encerrado" means session ended (= em_julgamento), NOT finalized.
+            # Full mapping in status_inference.py:PCP_V2_STATUS_MAP
             status_obj = raw_record.get("statusProcessoPublico") or raw_record.get("status") or {}
             if isinstance(status_obj, dict):
                 situacao = status_obj.get("descricao") or ""
