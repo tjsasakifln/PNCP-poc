@@ -5,9 +5,37 @@ Runs as background asyncio tasks during FastAPI lifespan.
 
 import asyncio
 import logging
+import threading
+import time as _time_mod
 from datetime import datetime, timezone, timedelta, date
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# CRIT-052: Thread-safe global PNCP cron canary status
+# ============================================================================
+
+_pncp_cron_status_lock = threading.Lock()
+_pncp_cron_status: dict = {"status": "unknown", "latency_ms": None, "updated_at": None}
+
+
+def get_pncp_cron_status() -> dict:
+    """Return last known PNCP status from cron canary (CRIT-052 AC3).
+
+    Returns dict with keys: status ('healthy'|'degraded'|'down'|'unknown'),
+    latency_ms (int|None), updated_at (float timestamp|None).
+    """
+    with _pncp_cron_status_lock:
+        return dict(_pncp_cron_status)
+
+
+def _update_pncp_cron_status(status: str, latency_ms: int | None) -> None:
+    """Update global PNCP cron status (CRIT-052 AC3)."""
+    with _pncp_cron_status_lock:
+        _pncp_cron_status["status"] = status
+        _pncp_cron_status["latency_ms"] = latency_ms
+        _pncp_cron_status["updated_at"] = _time_mod.time()
 
 
 def _is_cb_or_connection_error(e: Exception) -> bool:
@@ -513,6 +541,25 @@ async def run_health_canary() -> dict:
             if isinstance(s, dict) and s.get("latency_ms") is not None
         ]
         avg_latency = int(sum(latencies) / len(latencies)) if latencies else None
+
+        # CRIT-052 AC3: Extract PNCP source status and update global
+        pncp_source = sources.get("pncp", {})
+        if isinstance(pncp_source, dict):
+            pncp_status_str = pncp_source.get("status", "unknown")
+            pncp_latency = pncp_source.get("latency_ms")
+            # Map to CRIT-052 status: healthy (<2s), degraded (2-10s), down (no response)
+            if pncp_status_str == "healthy" and pncp_latency is not None:
+                if pncp_latency < 2000:
+                    _update_pncp_cron_status("healthy", pncp_latency)
+                else:
+                    _update_pncp_cron_status("degraded", pncp_latency)
+            elif pncp_status_str in ("degraded", "unhealthy"):
+                _update_pncp_cron_status(
+                    "degraded" if pncp_status_str == "degraded" else "down",
+                    pncp_latency,
+                )
+            else:
+                _update_pncp_cron_status("unknown", pncp_latency)
 
         # Save to DB (AC6)
         await save_health_check(overall, sources, components, avg_latency)

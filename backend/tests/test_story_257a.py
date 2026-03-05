@@ -161,11 +161,12 @@ async def test_t4_health_canary_400_does_not_trip_breaker():
     mock_response.text = "Bad Request"
 
     async with AsyncPNCPClient(max_concurrent=10) as client:
-        with patch.object(client._client, 'get', return_value=mock_response):
+        with patch.object(client._client, 'get', return_value=mock_response), \
+             patch("cron_jobs.get_pncp_cron_status", return_value={"status": "healthy", "latency_ms": 100, "updated_at": 1000}):
             result = await client.health_canary()
 
-            # Health canary should return True (proceed with search)
-            assert result is True, "Health canary should return True on 400"
+            # Health canary should return dict with ok=True (proceed with search)
+            assert result["ok"] is True, "Health canary should return ok=True on 400"
 
             # Circuit breaker should NOT be degraded
             assert not breaker.is_degraded, "Circuit breaker should remain healthy after 400"
@@ -186,11 +187,12 @@ async def test_t5_health_canary_503_trips_breaker():
     mock_response.text = "Service Unavailable"
 
     async with AsyncPNCPClient(max_concurrent=10) as client:
-        with patch.object(client._client, 'get', return_value=mock_response):
+        with patch.object(client._client, 'get', return_value=mock_response), \
+             patch("cron_jobs.get_pncp_cron_status", return_value={"status": "healthy", "latency_ms": 100, "updated_at": 1000}):
             result = await client.health_canary()
 
-            # Health canary should return False (skip search)
-            assert result is False, "Health canary should return False on 503"
+            # Health canary should return dict with ok=False (skip search)
+            assert result["ok"] is False, "Health canary should return ok=False on 503"
 
             # Circuit breaker should have recorded a failure
             assert breaker.consecutive_failures > 0, "Circuit breaker should record failure on 503"
@@ -411,7 +413,7 @@ async def test_t11_per_uf_status_callback_invoked():
             mock_fetch.return_value = mock_response
 
             # Patch health_canary to succeed
-            with patch.object(client, 'health_canary', new_callable=AsyncMock, return_value=True):
+            with patch.object(client, 'health_canary', new_callable=AsyncMock, return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"}):
                 await client.buscar_todas_ufs_paralelo(
                     ufs=["SP", "RJ"],
                     data_inicial="2026-01-01",
@@ -463,7 +465,7 @@ async def test_t12_auto_retry_failed_ufs():
 
     async with AsyncPNCPClient(max_concurrent=10) as client:
         with patch.object(client, '_fetch_page_async', side_effect=mock_fetch_page):
-            with patch.object(client, 'health_canary', new_callable=AsyncMock, return_value=True):
+            with patch.object(client, 'health_canary', new_callable=AsyncMock, return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"}):
                 # Use a very short timeout so MG fails on first attempt
                 # We need to patch PER_UF_TIMEOUT inside the method
                 result = await client.buscar_todas_ufs_paralelo(

@@ -159,6 +159,7 @@ class ParallelFetchResult:
     succeeded_ufs: List[str]
     failed_ufs: List[str]
     truncated_ufs: List[str] = field(default_factory=list)  # GTM-FIX-004: UFs that hit max_pages limit
+    canary_result: Optional[Dict[str, Any]] = field(default=None)  # CRIT-052 AC4: canary telemetry
 
 
 class PNCPCircuitBreaker:
@@ -1416,23 +1417,38 @@ class AsyncPNCPClient:
             await self._client.aclose()
         logger.debug(f"Async session closed. Total requests made: {self._request_count}")
 
-    async def health_canary(self) -> bool:
-        """Run a lightweight probe to verify PNCP API is responsive (STORY-252 AC10).
+    async def health_canary(self) -> dict:
+        """Run a lightweight probe to verify PNCP API is responsive (STORY-252 AC10, CRIT-052).
 
         Sends a single request for UF=SP, modality 6 (Pregao Eletronico),
-        page 1 only, with a tight 5-second timeout.
+        page 1 only, with adaptive timeout based on cron canary status.
 
-        If the canary fails, the module-level circuit breaker is set to degraded
-        and a warning is logged (AC11).
+        CRIT-052: Returns rich result instead of bare bool.
+        - If cron status=degraded (but responding), uses extended timeout (15s)
+        - If cron status=healthy, uses standard timeout (10s)
 
         Returns:
-            ``True`` if PNCP responded successfully, ``False`` otherwise.
+            dict with keys: ok (bool), latency_ms (float|None), cron_status (str)
         """
-        CANARY_TIMEOUT = 5.0  # seconds
+        from config import PNCP_CANARY_TIMEOUT_S, PNCP_CANARY_TIMEOUT_EXTENDED_S
+        from cron_jobs import get_pncp_cron_status
+
+        cron_status = get_pncp_cron_status()
+        cron_pncp_status = cron_status["status"]
+        cron_latency = cron_status["latency_ms"]
+
+        # CRIT-052 AC1: Adaptive timeout based on cron canary
+        if cron_pncp_status == "degraded":
+            canary_timeout = PNCP_CANARY_TIMEOUT_EXTENDED_S
+        else:
+            canary_timeout = PNCP_CANARY_TIMEOUT_S
+
+        result = {"ok": False, "latency_ms": None, "cron_status": cron_pncp_status}
 
         if self._client is None:
             raise RuntimeError("Client not initialized. Use async context manager.")
 
+        start_time = time.monotonic()
         try:
             params = {
                 "dataInicial": date.today().strftime("%Y%m%d"),
@@ -1446,35 +1462,48 @@ class AsyncPNCPClient:
 
             response = await asyncio.wait_for(
                 self._client.get(url, params=params),
-                timeout=CANARY_TIMEOUT,
+                timeout=canary_timeout,
             )
 
-            if response.status_code in (200, 204):
-                logger.info("PNCP health canary: OK")
-                await _circuit_breaker.record_success()
-                return True
+            elapsed_ms = (time.monotonic() - start_time) * 1000
+            result["latency_ms"] = round(elapsed_ms, 1)
 
-            # NEW: Distinguish 4xx from 5xx
+            if response.status_code in (200, 204):
+                logger.info(
+                    "PNCP health canary: OK (%.0fms, timeout=%.0fs, cron=%s)",
+                    elapsed_ms, canary_timeout, cron_pncp_status,
+                )
+                await _circuit_breaker.record_success()
+                result["ok"] = True
+                return result
+
+            # Distinguish 4xx from 5xx
             if 400 <= response.status_code < 500:
-                # Client error — NOT a server issue, don't trip breaker
                 logger.warning(
                     f"PNCP health canary: client error {response.status_code} "
                     f"body={response.text[:200]} — NOT tripping circuit breaker"
                 )
-                return True  # Proceed with normal search
+                result["ok"] = True
+                return result
 
             logger.warning(
                 f"PNCP health canary: server error {response.status_code}"
             )
         except (asyncio.TimeoutError, httpx.TimeoutException):
+            elapsed_ms = (time.monotonic() - start_time) * 1000
+            result["latency_ms"] = round(elapsed_ms, 1)
+            # CRIT-052 AC4: Honest log with cron context
             logger.warning(
-                "WARNING: PNCP health check failed (timeout) "
-                "— skipping PNCP for this search, using alternative sources"
+                "PNCP health canary: timeout after %.1fs "
+                "(cron status: %s, cron_latency: %sms, canary_timeout: %.0fs)",
+                elapsed_ms / 1000, cron_pncp_status, cron_latency, canary_timeout,
             )
         except (httpx.HTTPError, Exception) as exc:
+            elapsed_ms = (time.monotonic() - start_time) * 1000
+            result["latency_ms"] = round(elapsed_ms, 1)
             logger.warning(
-                f"WARNING: PNCP health check failed ({type(exc).__name__}: {exc}) "
-                "— skipping PNCP for this search, using alternative sources"
+                "PNCP health canary: %s: %s (cron status: %s)",
+                type(exc).__name__, exc, cron_pncp_status,
             )
 
         # Canary failed — trip circuit breaker
@@ -1482,7 +1511,7 @@ class AsyncPNCPClient:
         logger.warning(
             "PNCP circuit breaker failure recorded due to health canary failure"
         )
-        return False
+        return result
 
     async def fetch_bid_items(
         self,
@@ -2142,20 +2171,27 @@ class AsyncPNCPClient:
             # GTM-FIX-029 AC2: 120s in degraded mode (was 45s)
             PER_UF_TIMEOUT = PNCP_TIMEOUT_PER_UF_DEGRADED
         else:
-            # STORY-252 AC10: Health canary — lightweight probe before full search
-            canary_ok = await self.health_canary()
-            if not canary_ok:
+            # STORY-252 AC10 + CRIT-052 AC2: Health canary — probe before full search
+            canary_result = await self.health_canary()
+            # Store canary result for search_complete telemetry (CRIT-052 AC4)
+            self._last_canary_result = canary_result
+
+            if not canary_result["ok"]:
+                # CRIT-052 AC2: Canary failure does NOT block — try normal fetch
+                # with extended per-UF timeout (30s) instead of returning empty
                 logger.warning(
-                    "PNCP health canary failed — returning empty results"
+                    "PNCP skipped by canary (timeout after %.1fms, cron status: %s, "
+                    "cron_latency: %sms) — trying normal fetch with extended timeout",
+                    canary_result.get("latency_ms") or 0,
+                    canary_result.get("cron_status", "unknown"),
+                    canary_result.get("cron_latency_ms"),
                 )
-                return ParallelFetchResult(items=[], succeeded_ufs=[], failed_ufs=list(ufs))
+                PER_UF_TIMEOUT = PNCP_TIMEOUT_PER_UF  # Normal timeout still applied
+            else:
+                PER_UF_TIMEOUT = PNCP_TIMEOUT_PER_UF
 
             # Normal mode
             ufs_ordered = ufs
-            # GTM-FIX-029 AC1/AC3: PER_UF_TIMEOUT raised from 30s to 90s
-            # With tamanhoPagina=50, each modality needs ~10x more pages than before.
-            # Calculation: 4 mods × ~15s/mod (with retry) = ~60s + 30s margin = 90s
-            PER_UF_TIMEOUT = PNCP_TIMEOUT_PER_UF
 
         # Helper to safely call async/sync callbacks
         async def _safe_callback(cb, *args, **kwargs):
@@ -2325,6 +2361,7 @@ class AsyncPNCPClient:
             succeeded_ufs=succeeded_ufs,
             failed_ufs=failed_ufs,
             truncated_ufs=truncated_ufs,
+            canary_result=getattr(self, "_last_canary_result", None),
         )
 
 

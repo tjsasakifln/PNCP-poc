@@ -138,14 +138,14 @@ class TestHealthCanary:
 
     @pytest.mark.asyncio
     async def test_health_canary_failure_skips_pncp(self):
-        """When health canary fails, buscar_todas_ufs_paralelo returns empty."""
+        """When health canary fails, search proceeds with normal timeout (no longer returns empty)."""
         from pncp_client import AsyncPNCPClient, _circuit_breaker
 
         _circuit_breaker.reset()
 
         async with AsyncPNCPClient(max_concurrent=10) as client:
-            # Make the canary fail
-            with patch.object(client, "health_canary", return_value=False):
+            # Make the canary report failure
+            with patch.object(client, "health_canary", return_value={"ok": False, "latency_ms": None, "cron_status": "unknown"}):
                 # Manually set circuit breaker to degraded (canary does this)
                 _circuit_breaker.degraded_until = time.time() + 300
                 _circuit_breaker.consecutive_failures = 8
@@ -156,6 +156,7 @@ class TestHealthCanary:
                     data_final="2026-01-15",
                 )
 
+            # Search still proceeds (returns a ParallelFetchResult, possibly with results)
             assert isinstance(results, ParallelFetchResult)
 
         _circuit_breaker.reset()

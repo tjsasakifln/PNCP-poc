@@ -173,7 +173,7 @@ class TestBuscarTodasUfsTruncation:
                     return [_make_item("SP-1")], True  # Truncated
                 return [_make_item(f"{uf}-1")], False
 
-            with patch.object(client, "health_canary", return_value=True), \
+            with patch.object(client, "health_canary", return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"}), \
                  patch.object(client, "_fetch_uf_all_pages", side_effect=mock_fetch_uf):
                 result = await client.buscar_todas_ufs_paralelo(
                     ufs=["SP", "RJ"],
@@ -195,7 +195,7 @@ class TestBuscarTodasUfsTruncation:
                                      status=None, max_pages=500):
                 return [_make_item(f"{uf}-1")], False
 
-            with patch.object(client, "health_canary", return_value=True), \
+            with patch.object(client, "health_canary", return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"}), \
                  patch.object(client, "_fetch_uf_all_pages", side_effect=mock_fetch_uf):
                 result = await client.buscar_todas_ufs_paralelo(
                     ufs=["SP", "RJ"],
@@ -216,7 +216,7 @@ class TestBuscarTodasUfsTruncation:
                     return [_make_item(f"{uf}-1")], True
                 return [_make_item(f"{uf}-1")], False
 
-            with patch.object(client, "health_canary", return_value=True), \
+            with patch.object(client, "health_canary", return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"}), \
                  patch.object(client, "_fetch_uf_all_pages", side_effect=mock_fetch_uf):
                 result = await client.buscar_todas_ufs_paralelo(
                     ufs=["SP", "RJ", "MG"],

@@ -357,7 +357,7 @@ class TestAC2Integration:
             mock_cb.record_success = AsyncMock()
 
             # Mock health canary to return True
-            client.health_canary = AsyncMock(return_value=True)
+            client.health_canary = AsyncMock(return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"})
 
             await client.buscar_todas_ufs_paralelo(
                 ufs=["SP"],

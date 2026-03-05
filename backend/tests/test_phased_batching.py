@@ -114,7 +114,7 @@ class TestPhasedExecution:
         ), patch.object(
             AsyncPNCPClient, "health_canary",
             new_callable=AsyncMock,
-            return_value=True,
+            return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"},
         ), patch("pncp_client.PNCP_BATCH_SIZE", 2), \
              patch("pncp_client.PNCP_BATCH_DELAY_S", 0.01):
 
@@ -144,7 +144,7 @@ class TestPhasedExecution:
         ), patch.object(
             AsyncPNCPClient, "health_canary",
             new_callable=AsyncMock,
-            return_value=True,
+            return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"},
         ), patch("pncp_client.PNCP_BATCH_SIZE", 5), \
              patch("pncp_client.PNCP_BATCH_DELAY_S", 5.0):
 
@@ -175,7 +175,7 @@ class TestPhasedExecution:
         ), patch.object(
             AsyncPNCPClient, "health_canary",
             new_callable=AsyncMock,
-            return_value=True,
+            return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"},
         ), patch("pncp_client.PNCP_BATCH_SIZE", 2), \
              patch("pncp_client.PNCP_BATCH_DELAY_S", 0.01):
 

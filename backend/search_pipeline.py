@@ -1322,6 +1322,9 @@ class SearchPipeline:
                     if isinstance(fetch_result, ParallelFetchResult):
                         ctx.succeeded_ufs = fetch_result.succeeded_ufs
                         ctx.failed_ufs = fetch_result.failed_ufs
+                        # CRIT-052 AC4: Propagate canary telemetry to context
+                        if fetch_result.canary_result:
+                            ctx._pncp_canary_result = fetch_result.canary_result
                         # GTM-FIX-004: Propagate truncation metadata
                         if fetch_result.truncated_ufs:
                             ctx.is_truncated = True
@@ -2429,6 +2432,8 @@ class SearchPipeline:
             else:
                 sources_failed_with_reason = [{"source": "PNCP", "reason": "unknown"}]
 
+        # CRIT-052 AC4: Include canary telemetry in search_complete
+        canary_info = getattr(ctx, "_pncp_canary_result", None) or {}
         logger.info(json.dumps({
             "event": "search_complete",
             "search_id": ctx.request.search_id or "no_id",
@@ -2439,6 +2444,8 @@ class SearchPipeline:
             "pncp_circuit_breaker": "degraded" if get_circuit_breaker("pncp").is_degraded else "healthy",
             "pcp_circuit_breaker": "degraded" if get_circuit_breaker("pcp").is_degraded else "healthy",
             "comprasgov_circuit_breaker": "degraded" if get_circuit_breaker("comprasgov").is_degraded else "healthy",
+            "pncp_canary_status": canary_info.get("cron_status", "unknown"),
+            "pncp_canary_latency_ms": canary_info.get("latency_ms"),
             "total_results": len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,
             "total_filtered": len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0,
             "ufs_requested": len(ctx.request.ufs),

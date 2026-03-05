@@ -938,6 +938,10 @@ HEALTH_CANARY_ENABLED: bool = str_to_bool(os.getenv("HEALTH_CANARY_ENABLED", "tr
 HEALTH_CANARY_INTERVAL_SECONDS: int = int(os.getenv("HEALTH_CANARY_INTERVAL_SECONDS", "300"))  # 5 minutes
 HEALTH_CHECKS_RETENTION_DAYS: int = int(os.getenv("HEALTH_CHECKS_RETENTION_DAYS", "30"))
 
+# CRIT-052: Per-search PNCP canary adaptive timeout
+PNCP_CANARY_TIMEOUT_S: float = float(os.getenv("PNCP_CANARY_TIMEOUT_S", "10"))
+PNCP_CANARY_TIMEOUT_EXTENDED_S: float = float(os.getenv("PNCP_CANARY_TIMEOUT_EXTENDED_S", "15"))
+
 # ============================================================================
 # SHIP-002: Feature gates for incomplete features (organizations, messages, alerts, partners)
 # All False by default — these features have no frontend and generate Sentry noise.
