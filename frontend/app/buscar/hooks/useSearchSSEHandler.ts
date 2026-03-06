@@ -166,10 +166,35 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
           console.warn('[CRIT-059] Error fetching zero-match results:', e);
         }
       }
+    } else if (event.stage === 'partial_data' && !event.detail?.truncated) {
+      // CRIT-071: Progressive partial data — accumulate real bid data from SSE
+      const newBids = event.detail?.licitacoes as BuscaResult['licitacoes'] | undefined;
+      if (newBids?.length) {
+        setResult(prev => {
+          const existing = prev?.licitacoes || [];
+          const existingIds = new Set(existing.map(l => l.pncp_id));
+          const unique = newBids.filter((l: any) => l.pncp_id && !existingIds.has(l.pncp_id));
+          if (unique.length === 0) return prev;
+          const merged = [...existing, ...unique];
+          return {
+            ...(prev || {} as BuscaResult),
+            licitacoes: merged,
+            total_filtrado: merged.length,
+            is_partial: !event.detail?.is_final,
+          };
+        });
+        // Save partial with real data to localStorage
+        const sid = asyncSearchIdRef.current || searchId;
+        if (sid) {
+          const ufsCompleted = event.detail?.ufs_completed ?? [];
+          const totalUfs = event.detail?.uf_total ?? ufsSelecionadasSize;
+          savePartialSearch(sid, { licitacoes: newBids } as any, ufsCompleted, totalUfs);
+        }
+      }
     } else if (event.stage === 'uf_complete' || event.stage === 'partial_results') {
       // STAB-006 AC4: Save partial results to localStorage on each SSE update
       const sid = asyncSearchIdRef.current || searchId;
-      if (sid) {
+      if (sid && result?.licitacoes?.length) {
         const ufsCompleted = event.detail.ufs_completed ?? [];
         const totalUfs = event.detail.uf_total ?? ufsSelecionadasSize;
         savePartialSearch(sid, result, ufsCompleted, totalUfs);

@@ -3,7 +3,7 @@
 **Prioridade:** P1 — Melhoria estrutural
 **Componente:** Backend (progress.py, search_pipeline.py) + Frontend (useSearchSSEHandler.ts, useSearchExecution.ts)
 **Origem:** Investigacao CRIT-070 — `recoverPartialSearch()` retorna null porque SSE so transporta contadores, nao dados reais
-**Status:** TODO
+**Status:** DONE
 **Dependencias:** CRIT-070
 **Estimativa:** 1-2 dias
 
@@ -39,50 +39,50 @@ Google, Algolia e plataformas de busca modernas entregam resultados **incrementa
 ## Acceptance Criteria
 
 ### AC1: Backend — Emitir evento SSE `partial_data`
-- [ ] No `search_pipeline.py`, apos cada batch de UFs filtrado, emitir evento SSE:
+- [x] No `search_pipeline.py`, apos cada batch de UFs filtrado, emitir evento SSE:
   ```
   event: partial_data
   data: { "licitacoes": [...], "batch_index": N, "ufs_completed": ["SP","RJ"], "is_final": false }
   ```
-- [ ] Emitir a cada 5 UFs completas (ou quando batch completo se PNCP_BATCH_SIZE < 5)
-- [ ] Licitacoes ja devem estar filtradas (pos-keyword, pos-LLM se disponivel)
+- [x] Emitir a cada 5 UFs completas (ou quando batch completo se PNCP_BATCH_SIZE < 5)
+- [x] Licitacoes ja devem estar filtradas (pos-keyword, pos-LLM se disponivel)
 
 ### AC2: Backend — Limite de payload SSE
-- [ ] Se batch tem >500 licitacoes, enviar apenas metadados:
+- [x] Se batch tem >500 licitacoes, enviar apenas metadados:
   ```
   event: partial_data
   data: { "count": 847, "batch_index": 2, "ufs_completed": ["MG","ES","RJ","SP","PR"], "is_final": false, "truncated": true }
   ```
-- [ ] Dados completos ficam no cache L1 para `GET /v1/search/{id}/results?partial=true`
+- [x] Dados completos ficam no cache L1 para `GET /v1/search/{id}/results?partial=true`
 
 ### AC3: Backend — Acumular parciais no ProgressTracker
-- [ ] Novo campo `partial_licitacoes: list[dict]` no `ProgressTracker` (progress.py)
-- [ ] Callback `on_uf_complete` em `pncp_client.py` alimenta o tracker com resultados filtrados
-- [ ] Tracker acumula append-only, nunca substitui
+- [x] Novo campo `partial_licitacoes: list[dict]` no `ProgressTracker` (progress.py)
+- [x] Callback `on_uf_complete` em `pncp_client.py` alimenta o tracker com resultados filtrados
+- [x] Tracker acumula append-only, nunca substitui
 
 ### AC4: Frontend — Processar `partial_data` no SSE handler
-- [ ] `useSearchSSEHandler.ts`: novo case para `partial_data`
-- [ ] Acumular licitacoes em estado local (ref ou state) — append-only, sem duplicatas (dedup por `id`)
-- [ ] Atualizar `result` progressivamente: `setResult(prev => ({ ...prev, licitacoes: [...accumulated] }))`
+- [x] `useSearchSSEHandler.ts`: novo case para `partial_data`
+- [x] Acumular licitacoes em estado local (ref ou state) — append-only, sem duplicatas (dedup por `id`)
+- [x] Atualizar `result` progressivamente: `setResult(prev => ({ ...prev, licitacoes: [...accumulated] }))`
 
 ### AC5: Frontend — Salvar partial com dados reais
-- [ ] `savePartialSearch()` usar dados acumulados do SSE, nao `result` (que pode ser null no inicio)
-- [ ] Garantir que partial salvo no localStorage tem licitacoes reais
+- [x] `savePartialSearch()` usar dados acumulados do SSE, nao `result` (que pode ser null no inicio)
+- [x] Garantir que partial salvo no localStorage tem licitacoes reais
 
 ### AC6: Frontend — Banner de resultados parciais
-- [ ] Quando mostrando partial data: banner "Mostrando X de ~Y resultados. Alguns estados ainda nao completaram."
-- [ ] Banner some quando POST retorna resultado completo
+- [x] Quando mostrando partial data: banner "Mostrando X de ~Y resultados. Alguns estados ainda nao completaram."
+- [x] Banner some quando POST retorna resultado completo
 
 ### AC7: Feature flag
-- [ ] `PARTIAL_DATA_SSE_ENABLED` (backend config.py, default `True`)
-- [ ] Se desabilitado, comportamento atual (apenas contadores) preservado
+- [x] `PARTIAL_DATA_SSE_ENABLED` (backend config.py, default `True`)
+- [x] Se desabilitado, comportamento atual (apenas contadores) preservado
 
 ### AC8: Testes
-- [ ] Backend: emissao de `partial_data` com licitacoes reais a cada batch
-- [ ] Backend: truncamento quando >500 itens
-- [ ] Frontend: acumulacao progressiva sem duplicatas
-- [ ] Frontend: abort com partial_data acumulado → mostra resultados
-- [ ] Frontend: savePartialSearch tem dados reais (nao null)
+- [x] Backend: emissao de `partial_data` com licitacoes reais a cada batch
+- [x] Backend: truncamento quando >500 itens
+- [x] Frontend: acumulacao progressiva sem duplicatas
+- [x] Frontend: abort com partial_data acumulado → mostra resultados
+- [x] Frontend: savePartialSearch tem dados reais (nao null)
 
 ## File List
 

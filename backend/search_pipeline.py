@@ -811,6 +811,18 @@ class SearchPipeline:
         enriquecer_com_status_inferido(ctx.licitacoes_raw)
         logger.debug(f"Status inference complete for {len(ctx.licitacoes_raw)} bids")
 
+        # CRIT-071: Emit partial_data SSE event with raw results before filtering
+        if ctx.tracker and ctx.licitacoes_raw:
+            from config import get_feature_flag as _gff_071
+            if _gff_071("PARTIAL_DATA_SSE_ENABLED"):
+                await ctx.tracker.emit_partial_data(
+                    licitacoes=ctx.licitacoes_raw,
+                    batch_index=1,
+                    ufs_completed=list(ctx.succeeded_ufs or ctx.request.ufs),
+                    is_final=False,
+                )
+                ctx.tracker.add_partial_licitacoes(ctx.licitacoes_raw)
+
         # CRIT-051 AC3: Merge cached results with fresh results (hybrid fetch)
         _composed_cached = getattr(ctx, "_composed_cached_results", None)
         if _composed_cached:
@@ -1985,6 +1997,17 @@ class SearchPipeline:
                 rejected_llm=stats.get("rejeitadas_llm", 0) if stats else 0,
                 filter_stats=stats,
             )
+
+            # CRIT-071: Emit partial_data with filtered results
+            if ctx.licitacoes_filtradas:
+                from config import get_feature_flag as _gff_071b
+                if _gff_071b("PARTIAL_DATA_SSE_ENABLED"):
+                    await ctx.tracker.emit_partial_data(
+                        licitacoes=ctx.licitacoes_filtradas,
+                        batch_index=2,
+                        ufs_completed=list(ctx.succeeded_ufs or ctx.request.ufs),
+                        is_final=True,
+                    )
 
         # CRIT-059: Dispatch async zero-match job if candidates were collected
         _zm_candidates = ctx.filter_stats.get("zero_match_candidates", [])

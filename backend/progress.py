@@ -94,6 +94,8 @@ class ProgressTracker:
         # STORY-297: Monotonic event counter + local history for replay
         self._event_counter = 0
         self._event_history: list[tuple[int, dict]] = []
+        # CRIT-071: Accumulated partial licitacoes for progressive SSE
+        self.partial_licitacoes: list[dict] = []
 
     async def emit(self, stage: str, progress: int, message: str, **detail: Any) -> None:
         """Push a progress event to the queue and/or Redis pub/sub channel."""
@@ -200,6 +202,45 @@ class ProgressTracker:
             uf_total=self.uf_count,
             items_found=items_count,
         )
+
+    def add_partial_licitacoes(self, licitacoes: list[dict]) -> None:
+        """CRIT-071: Append-only accumulation of partial bid data."""
+        self.partial_licitacoes.extend(licitacoes)
+
+    async def emit_partial_data(
+        self,
+        licitacoes: list[dict],
+        batch_index: int,
+        ufs_completed: list[str],
+        is_final: bool = False,
+    ) -> None:
+        """CRIT-071: Emit partial_data SSE event with actual bid data.
+
+        If the payload exceeds 500 items, sends a truncated event with count
+        and metadata only to avoid oversized SSE frames.
+        """
+        _MAX_INLINE = 500
+        detail: dict[str, Any] = {
+            "batch_index": batch_index,
+            "ufs_completed": ufs_completed,
+            "is_final": is_final,
+            "total_items": len(licitacoes),
+        }
+
+        if len(licitacoes) > _MAX_INLINE:
+            detail["truncated"] = True
+            detail["licitacoes"] = []
+        else:
+            detail["truncated"] = False
+            detail["licitacoes"] = licitacoes
+
+        event = ProgressEvent(
+            stage="partial_data",
+            progress=-1,
+            message=f"Dados parciais: {len(licitacoes)} licitações (batch {batch_index})",
+            detail=detail,
+        )
+        await self._emit_event(event)
 
     async def emit_uf_status(self, uf: str, status: str, **detail: Any) -> None:
         """Emit per-UF status event for real-time tracking grid.

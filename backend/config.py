@@ -389,6 +389,12 @@ LLM_FALLBACK_PENDING_ENABLED: bool = str_to_bool(
     os.getenv("LLM_FALLBACK_PENDING_ENABLED", "true")
 )
 
+# CRIT-071: Partial data progressive SSE — emit bid data in SSE events
+# When enabled, emits partial_data events with actual licitacao data after fetch and filter stages
+PARTIAL_DATA_SSE_ENABLED: bool = str_to_bool(
+    os.getenv("PARTIAL_DATA_SSE_ENABLED", "true")
+)
+
 # STORY-354 AC7: Pending review bids expire after 24h
 PENDING_REVIEW_TTL_SECONDS: int = int(os.getenv("PENDING_REVIEW_TTL_SECONDS", "86400"))
 
@@ -524,6 +530,8 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "PCP_V2_ENABLED": ("PCP_ENABLED", "true"),
     # STORY-354 AC8: LLM fallback to PENDING_REVIEW instead of REJECT
     "LLM_FALLBACK_PENDING_ENABLED": ("LLM_FALLBACK_PENDING_ENABLED", "true"),
+    # CRIT-071: Partial data progressive SSE
+    "PARTIAL_DATA_SSE_ENABLED": ("PARTIAL_DATA_SSE_ENABLED", "true"),
 }
 
 # ============================================

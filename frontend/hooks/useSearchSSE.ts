@@ -93,6 +93,11 @@ export interface SearchProgressEvent {
     error_code?: string;
     /** STORY-329 AC4: Long-running filter indicator (>30s filtering) */
     is_long_running?: boolean;
+    /** CRIT-071: Partial data SSE event fields */
+    licitacoes?: Array<Record<string, unknown>>;
+    batch_index?: number;
+    is_final?: boolean;
+    truncated?: boolean;
     /** STORY-259: Per-bid intelligence analysis from batch LLM job */
     bid_analysis?: Array<{
       bid_id: string;
