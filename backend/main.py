@@ -208,6 +208,20 @@ def _before_send(event, hint):
         if pagina_match and int(pagina_match.group(1)) > 1:
             return None
 
+    # PNCP operational noise: timeouts and connection errors are expected
+    # when the government API is slow/unstable — not actionable bugs.
+    for ev in exc_values:
+        ev_value = ev.get("value", "")
+        if any(marker in ev_value for marker in (
+            "ReadTimeoutError", "ConnectTimeoutError", "Max retries exceeded",
+            "pncp.gov.br", "timed out", "PNCPAPIError",
+        )):
+            return None
+    if exc_info and exc_info[1] is not None:
+        exc_type_name = type(exc_info[1]).__name__
+        if exc_type_name in ("PNCPAPIError", "TimeoutError", "ReadTimeout"):
+            return None
+
     event = scrub_pii(event, hint)
     if event is None:
         return None
