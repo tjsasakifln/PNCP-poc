@@ -1071,7 +1071,7 @@ class PNCPClient:
             except self.config.retryable_exceptions as e:
                 if attempt < self.config.max_retries:
                     delay = calculate_delay(attempt, self.config)
-                    logger.warning(
+                    logger.info(
                         f"Exception {type(e).__name__}: {e}. "
                         f"Attempt {attempt + 1}/{self.config.max_retries + 1}. "
                         f"Retrying in {delay:.1f}s"
@@ -1082,7 +1082,7 @@ class PNCPClient:
                         f"Failed after {self.config.max_retries + 1} attempts. "
                         f"Last exception: {type(e).__name__}: {e}"
                     )
-                    logger.error(error_msg)
+                    logger.warning(error_msg)
                     raise PNCPAPIError(error_msg) from e
 
         # Should never reach here, but just in case
@@ -2013,14 +2013,14 @@ class AsyncPNCPClient:
             except asyncio.TimeoutError:
                 await _circuit_breaker.record_failure()
                 if attempt == 0:
-                    logger.warning(
+                    logger.info(
                         f"UF={uf} modalidade={modalidade} timed out after "
                         f"{per_modality_timeout}s — retrying in {retry_backoff}s "
                         f"(attempt 1/1)"
                     )
                     await asyncio.sleep(retry_backoff)
                 else:
-                    logger.warning(
+                    logger.info(
                         f"UF={uf} modalidade={modalidade} timed out after retry "
                         f"— skipping this modality"
                     )
@@ -2223,7 +2223,7 @@ class AsyncPNCPClient:
                 )
             except asyncio.TimeoutError:
                 await _circuit_breaker.record_failure()
-                logger.warning(f"UF={uf} timed out after {PER_UF_TIMEOUT}s — skipping")
+                logger.info(f"UF={uf} timed out after {PER_UF_TIMEOUT}s — skipping")
                 # AC6: Emit "failed" status
                 await _safe_callback(on_uf_status, uf, "failed", reason="timeout")
                 items, was_truncated = [], False
@@ -2265,7 +2265,7 @@ class AsyncPNCPClient:
 
             for uf, result in zip(batch, batch_results):
                 if isinstance(result, Exception):
-                    logger.error(f"Error fetching UF={uf}: {result}")
+                    logger.warning(f"Error fetching UF={uf}: {result}")
                     errors += 1
                     failed_ufs.append(uf)
                 elif isinstance(result, tuple):

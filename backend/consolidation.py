@@ -512,7 +512,7 @@ class ConsolidationService:
             )
 
         if is_partial:
-            logger.warning(
+            logger.info(
                 f"[CONSOLIDATION] Degraded mode — {degradation_reason}"
             )
 
@@ -687,7 +687,7 @@ class ConsolidationService:
                     "error": f"Timeout after {effective_timeout}s (salvaged {salvaged} records)",
                 }
             else:
-                logger.warning(
+                logger.info(
                     f"[CONSOLIDATION] {code}: timeout after {duration}ms — no records"
                 )
                 return {
