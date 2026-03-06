@@ -3,7 +3,7 @@
 **Prioridade:** P0 — Hotfix
 **Componente:** Frontend — useSearchExecution.ts
 **Origem:** Incidente 2026-03-06 — Busca com 8520 resultados (search_id `195c884f`) completou no backend em 224s (HTTP 200), mas frontend abortou em 115s e voltou para tela inicial sem feedback
-**Status:** TODO
+**Status:** DONE
 **Dependencias:** Nenhuma (fix isolado)
 **Estimativa:** 30min
 
@@ -46,30 +46,30 @@ Backend processou com sucesso. O problema e exclusivamente no frontend.
 ## Acceptance Criteria
 
 ### AC1: Alinhar client timeout com proxy timeout
-- [ ] Mudar `clientTimeoutId` de `115_000` → `185_000` ms em `useSearchExecution.ts:313-315`
-- [ ] Client timeout deve ser >= proxy timeout (180s) para evitar abort antes do proxy responder
-- [ ] Comentario: `// CRIT-070: Client timeout >= proxy (180s). Chain: Railway(300s) > Gunicorn(180s) > Proxy(180s) >= Client(185s)`
+- [x] Mudar `clientTimeoutId` de `115_000` → `185_000` ms em `useSearchExecution.ts:313-315`
+- [x] Client timeout deve ser >= proxy timeout (180s) para evitar abort antes do proxy responder
+- [x] Comentario: `// CRIT-070: Client timeout >= proxy (180s). Chain: Railway(300s) > Gunicorn(180s) > Proxy(180s) >= Client(185s)`
 
 ### AC2: Abort sem partial deve mostrar erro, nunca retornar silenciosamente
-- [ ] Em `useSearchExecution.ts` catch block para `AbortError` (linha 569-577): quando `recoverPartialSearch()` retorna null, setar `SearchError` com:
-  - `message`: "A analise demorou mais que o esperado. Tente com menos estados ou um periodo menor."
+- [x] Em `useSearchExecution.ts` catch block para `AbortError` (linha 569-577): quando `recoverPartialSearch()` retorna null, setar `SearchError` com:
+  - `message`: "A análise demorou mais que o esperado. Tente com menos estados."
   - `httpStatus`: 524
   - `errorCode`: "CLIENT_TIMEOUT"
-- [ ] Chamar `startAutoRetry(searchError, setError)` para permitir retry automatico
-- [ ] Nunca fazer `return` silencioso sem setar erro ou resultado
+- [x] Chamar `startAutoRetry(searchError, setError)` para permitir retry automatico
+- [x] Nunca fazer `return` silencioso sem setar erro ou resultado
 
 ### AC3: Alinhar finalizing timer
-- [ ] Mudar `finalizingTimer` de `100_000` → `160_000` ms (coerente com novo client timeout de 185s)
-- [ ] Usuario ve "Finalizando..." nos ultimos ~25s antes do timeout
+- [x] Mudar `finalizingTimer` de `100_000` → `160_000` ms (coerente com novo client timeout de 185s)
+- [x] Usuario ve "Finalizando..." nos ultimos ~25s antes do timeout
 
 ### AC4: Log de rastreabilidade
-- [ ] Adicionar `console.warn('[CRIT-070] Client timeout triggered', { searchId: newSearchId, elapsed: Date.now() - searchStartTime })` no abort handler
+- [x] Adicionar `console.warn('[CRIT-070] Client timeout triggered', { searchId: newSearchId, elapsed: Date.now() - searchStartTime })` no abort handler
 
 ### AC5: Testes
-- [ ] Teste: abort sem partial → mostra SearchError com httpStatus 524
-- [ ] Teste: abort com partial → mostra partial results (comportamento existente preservado)
-- [ ] Teste: timeout value e 185_000 (nao 115_000)
-- [ ] Teste: startAutoRetry e chamado no caso de abort sem partial
+- [x] Teste: abort sem partial → mostra SearchError com httpStatus 524
+- [x] Teste: abort com partial → mostra partial results (comportamento existente preservado)
+- [x] Teste: timeout value e 185_000 (nao 115_000)
+- [x] Teste: startAutoRetry e chamado no caso de abort sem partial
 
 ## File List
 

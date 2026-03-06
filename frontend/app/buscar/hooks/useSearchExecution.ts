@@ -310,15 +310,17 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
+    // CRIT-070: Client timeout >= proxy (180s). Chain: Railway(300s) > Gunicorn(180s) > Proxy(180s) >= Client(185s)
     const clientTimeoutId = setTimeout(() => {
       abortController.abort();
-    }, 115_000);
+    }, 185_000);
 
     searchStartTimeRef.current = Date.now();
     if (finalizingTimerRef.current) clearTimeout(finalizingTimerRef.current);
+    // CRIT-070 AC3: Finalizing shows ~25s before client timeout (185s - 25s = 160s)
     finalizingTimerRef.current = setTimeout(() => {
       setIsFinalizing(true);
-    }, 100_000);
+    }, 160_000);
 
     const searchStartTime = Date.now();
     const totalStates = filters.ufsSelecionadas.size;
@@ -567,12 +569,28 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
 
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
+        // CRIT-070 AC4: Log for traceability
+        console.warn('[CRIT-070] Client timeout triggered', { searchId: newSearchId, elapsed: Date.now() - searchStartTime });
         const partial = recoverPartialSearch(newSearchId);
         if (partial && partial.partialResult) {
           setResult(partial.partialResult as BuscaResult);
           setShowingPartialResults(true);
           setLoading(false);
           toast.info("Mostrando resultados parciais salvos");
+        } else {
+          // CRIT-070 AC2: Abort without partial must show error, never return silently
+          const abortError: SearchError = {
+            message: "A análise demorou mais que o esperado. Tente com menos estados.",
+            rawMessage: "Client timeout triggered after 185s",
+            errorCode: "CLIENT_TIMEOUT",
+            searchId: newSearchId,
+            correlationId: null,
+            requestId: null,
+            httpStatus: 524,
+            timestamp: new Date().toISOString(),
+          };
+          setError(abortError);
+          startAutoRetry(abortError, setError);
         }
         return;
       }
