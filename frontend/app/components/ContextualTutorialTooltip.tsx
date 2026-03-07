@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { safeSetItem } from '../../lib/storage';
 
 interface ContextualTooltipProps {
   /**
@@ -200,7 +201,7 @@ export function useContextualTutorial() {
     if (onboardingStep < 3) {
       const nextStep = onboardingStep + 1;
       setOnboardingStep(nextStep);
-      localStorage.setItem('onboarding_step', nextStep.toString());
+      safeSetItem('onboarding_step', nextStep.toString());
     }
   }, [onboardingStep]);
 
@@ -210,7 +211,7 @@ export function useContextualTutorial() {
   const resetOnboarding = useCallback(() => {
     setOnboardingStep(0);
     setActiveTooltip(null);
-    localStorage.setItem('onboarding_step', '0');
+    safeSetItem('onboarding_step', '0');
   }, []);
 
   return {

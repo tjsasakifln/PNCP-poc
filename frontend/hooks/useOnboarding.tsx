@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Shepherd from 'shepherd.js';
 import 'shepherd.js/dist/css/shepherd.css';
+import { safeSetItem } from '../lib/storage';
 
 // Type definitions for Shepherd.js (using any temporarily until @types available)
 // TODO: Add @types/shepherd.js if available or create custom types
@@ -64,12 +65,12 @@ export function useOnboarding(options: OnboardingOptions = {}) {
     // Migrate legacy keys
     const legacyCompleted = localStorage.getItem('bidiq_onboarding_completed');
     if (legacyCompleted) {
-      localStorage.setItem(ONBOARDING_STORAGE_KEY, legacyCompleted);
+      safeSetItem(ONBOARDING_STORAGE_KEY, legacyCompleted);
       localStorage.removeItem('bidiq_onboarding_completed');
     }
     const legacyDismissed = localStorage.getItem('bidiq_onboarding_dismissed');
     if (legacyDismissed) {
-      localStorage.setItem(ONBOARDING_DISMISSED_KEY, legacyDismissed);
+      safeSetItem(ONBOARDING_DISMISSED_KEY, legacyDismissed);
       localStorage.removeItem('bidiq_onboarding_dismissed');
     }
     const completed = localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
@@ -196,14 +197,14 @@ export function useOnboarding(options: OnboardingOptions = {}) {
 
     // Event listeners
     tour.on('complete', () => {
-      localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+      safeSetItem(ONBOARDING_STORAGE_KEY, 'true');
       setHasCompleted(true);
       setIsActive(false);
       onComplete?.();
     });
 
     tour.on('cancel', () => {
-      localStorage.setItem(ONBOARDING_DISMISSED_KEY, 'true');
+      safeSetItem(ONBOARDING_DISMISSED_KEY, 'true');
       setHasDismissed(true);
       setIsActive(false);
       onDismiss?.();

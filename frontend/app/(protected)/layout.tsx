@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { safeSetItem } from "../../lib/storage";
 
 /**
  * Shared layout for all authenticated (protected) pages.
@@ -53,9 +54,9 @@ export default function ProtectedLayout({
       .then((res) => {
         if (res.completed) {
           // Cache the context and mark as completed
-          localStorage.setItem("smartlic-onboarding-completed", "true");
+          safeSetItem("smartlic-onboarding-completed", "true");
           if (res.context_data && Object.keys(res.context_data).length > 0) {
-            localStorage.setItem("smartlic-profile-context", JSON.stringify(res.context_data));
+            safeSetItem("smartlic-profile-context", JSON.stringify(res.context_data));
           }
         } else {
           // First time user — redirect to onboarding

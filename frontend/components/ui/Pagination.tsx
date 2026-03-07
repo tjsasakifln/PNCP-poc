@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
+import { safeSetItem } from "../../lib/storage";
 
 const PAGE_SIZE_KEY = "smartlic_page_size";
 const PAGE_SIZES = [10, 20, 50] as const;
@@ -32,7 +33,7 @@ function getStoredPageSize(): PageSize {
 
 function storePageSize(size: PageSize) {
   if (typeof window !== "undefined") {
-    localStorage.setItem(PAGE_SIZE_KEY, String(size));
+    safeSetItem(PAGE_SIZE_KEY, String(size));
   }
 }
 

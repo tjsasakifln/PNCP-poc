@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { safeSetItem } from "../lib/storage";
 
 const DISMISSED_KEY = "profile_congratulations_dismissed";
 
@@ -17,7 +18,7 @@ function isDismissed(): boolean {
 function setDismissed(): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(DISMISSED_KEY, "true");
+    safeSetItem(DISMISSED_KEY, "true");
   } catch {
     // localStorage unavailable — silently fail
   }

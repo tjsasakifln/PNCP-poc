@@ -13,6 +13,7 @@ import { usePlan } from "../../hooks/usePlan";
 import { toast } from "sonner";
 import TestimonialSection, { TESTIMONIALS } from "../../components/TestimonialSection";
 import { Button } from "../../components/ui/button";
+import { safeSetItem } from "../../lib/storage";
 
 interface UserProfile {
   plan_id?: string;
@@ -143,7 +144,7 @@ export default function PlanosPage() {
     // STORY-323 AC17: Detect partner from URL or cookie/localStorage
     const partnerSlug = params.get("partner") || localStorage.getItem("smartlic_partner");
     if (partnerSlug) {
-      localStorage.setItem("smartlic_partner", partnerSlug);
+      safeSetItem("smartlic_partner", partnerSlug);
       document.cookie = `smartlic_partner=${partnerSlug};path=/;max-age=${7 * 24 * 60 * 60}`;
       setPartnerName(partnerSlug.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()));
     }

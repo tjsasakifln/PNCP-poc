@@ -48,6 +48,7 @@ import { toast } from "sonner";
 import { checkHasLastSearch, getLastSearch } from "../../lib/lastSearchCache";
 import type { BuscaResult } from "../types";
 import { APP_NAME } from "../../lib/config";
+import { safeSetItem } from "../../lib/storage";
 
 // ============================================================================
 // GTM-004: Onboarding Auto-Search Banners (AC11-13)
@@ -319,7 +320,7 @@ function HomePageContent() {
     if (current !== null) return current === 'true';
     if (legacy !== null) {
       const wasOpen = legacy === 'open';
-      localStorage.setItem('smartlic:buscar:filters-expanded', String(wasOpen));
+      safeSetItem('smartlic:buscar:filters-expanded', String(wasOpen));
       localStorage.removeItem('smartlic-customize-open');
       return wasOpen;
     }
@@ -327,7 +328,7 @@ function HomePageContent() {
   });
 
   useEffect(() => {
-    localStorage.setItem('smartlic:buscar:filters-expanded', String(customizeOpen));
+    safeSetItem('smartlic:buscar:filters-expanded', String(customizeOpen));
   }, [customizeOpen]);
 
   // UX-346 AC5: First-use tip (shown until first search or dismiss)
@@ -339,7 +340,7 @@ function HomePageContent() {
 
   const dismissFirstUseTip = useCallback(() => {
     setShowFirstUseTip(false);
-    localStorage.setItem('smartlic-first-tip-dismissed', 'true');
+    safeSetItem('smartlic-first-tip-dismissed', 'true');
   }, []);
 
   // STORY-313: Interactive guided tours (search + results)
@@ -475,7 +476,7 @@ function HomePageContent() {
       queuedSearchRef.current = () => {
         setCustomizeOpen(false);
         // UX-346 AC1/AC5: Mark user as having searched + dismiss first-use tip
-        localStorage.setItem('smartlic-has-searched', 'true');
+        safeSetItem('smartlic-has-searched', 'true');
         setShowFirstUseTip(false);
         originalBuscar();
         setTimeout(() => {
@@ -486,7 +487,7 @@ function HomePageContent() {
     }
     setCustomizeOpen(false);
     // UX-346 AC1/AC5: Mark user as having searched + dismiss first-use tip
-    localStorage.setItem('smartlic-has-searched', 'true');
+    safeSetItem('smartlic-has-searched', 'true');
     setShowFirstUseTip(false);
     originalBuscar();
     // Smooth-scroll to progress area after a tick (let state update + render)

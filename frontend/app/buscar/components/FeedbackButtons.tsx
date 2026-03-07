@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { safeSetItem } from "../../../lib/storage";
 
 /**
  * GTM-RESILIENCE-D05 AC4: Feedback buttons for search result cards.
@@ -63,7 +64,7 @@ function getSavedFeedback(searchId: string, bidId: string): FeedbackState | null
 function saveFeedback(searchId: string, bidId: string, state: FeedbackState): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(getFeedbackKey(searchId, bidId), JSON.stringify(state));
+    safeSetItem(getFeedbackKey(searchId, bidId), JSON.stringify(state));
   } catch {
     // localStorage full or unavailable — silently fail
   }

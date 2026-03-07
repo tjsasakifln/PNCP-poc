@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../app/components/AuthProvider";
 import { usePlan } from "../hooks/usePlan";
+import { safeSetItem } from "../lib/storage";
 import {
   Search,
   LayoutDashboard,
@@ -54,7 +55,7 @@ export function Sidebar() {
   const toggleCollapsed = () => {
     const next = !collapsed;
     setCollapsed(next);
-    localStorage.setItem(STORAGE_KEY, String(next));
+    safeSetItem(STORAGE_KEY, String(next));
   };
 
   const isActive = (href: string) => {

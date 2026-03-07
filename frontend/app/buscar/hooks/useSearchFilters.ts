@@ -12,6 +12,7 @@ import { UFS } from "../../../lib/constants/uf-names";
 import { STOPWORDS_PT, stripAccents, isStopword } from "../../../lib/constants/stopwords";
 import { useAuth } from "../../components/AuthProvider";
 import { getBrtDate, addDays } from "../utils/dates";
+import { safeSetItem } from "../../../lib/storage";
 
 /** Default search window in days — used for date calculation and user-facing copy */
 export const DEFAULT_SEARCH_DAYS = 10;
@@ -272,10 +273,10 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
 
   // Persist collapsible states
   useEffect(() => {
-    localStorage.setItem('smartlic-location-filters', locationFiltersOpen ? 'open' : 'closed');
+    safeSetItem('smartlic-location-filters', locationFiltersOpen ? 'open' : 'closed');
   }, [locationFiltersOpen]);
   useEffect(() => {
-    localStorage.setItem('smartlic-advanced-filters', advancedFiltersOpen ? 'open' : 'closed');
+    safeSetItem('smartlic-advanced-filters', advancedFiltersOpen ? 'open' : 'closed');
   }, [advancedFiltersOpen]);
 
   // STORY-246 AC3: Pre-select sector from user profile (only if no URL params override)
@@ -379,7 +380,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
         data: sectors,
         timestamp: Date.now(),
       };
-      localStorage.setItem(SECTOR_CACHE_KEY, JSON.stringify(cache));
+      safeSetItem(SECTOR_CACHE_KEY, JSON.stringify(cache));
     } catch {
       // Ignore cache errors (e.g., quota exceeded)
     }

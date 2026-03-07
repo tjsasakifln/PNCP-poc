@@ -3,6 +3,7 @@
 import useSWR from "swr";
 import { useAuth } from "../app/components/AuthProvider";
 import { FetchError } from "../lib/fetcher";
+import { safeSetItem } from "../lib/storage";
 
 /**
  * TD-008 AC3: SWR-based /api/me hook.
@@ -34,7 +35,7 @@ function getCachedProfile(): CachedProfile | null {
 function setCachedProfile(data: Record<string, unknown>): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(
+    safeSetItem(
       CACHE_KEY,
       JSON.stringify({ data, timestamp: Date.now() })
     );

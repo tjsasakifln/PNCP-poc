@@ -9,6 +9,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { safeSetItem } from './storage';
 
 const STORAGE_KEY = 'descomplicita_saved_searches';
 const MAX_SAVED_SEARCHES = 10;
@@ -84,7 +85,7 @@ export function saveSearch(
   const updatedSearches = [newSearch, ...existingSearches];
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSearches));
+    safeSetItem(STORAGE_KEY, JSON.stringify(updatedSearches));
     return newSearch;
   } catch (e) {
     if (e instanceof Error && e.name === 'QuotaExceededError') {
@@ -119,7 +120,7 @@ export function updateSavedSearch(
   searches[index] = updated;
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(searches));
+    safeSetItem(STORAGE_KEY, JSON.stringify(searches));
     return updated;
   } catch (error) {
     console.error('Failed to update saved search:', error);
@@ -142,7 +143,7 @@ export function deleteSavedSearch(id: string): boolean {
   }
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    safeSetItem(STORAGE_KEY, JSON.stringify(filtered));
     return true;
   } catch (error) {
     console.error('Failed to delete saved search:', error);

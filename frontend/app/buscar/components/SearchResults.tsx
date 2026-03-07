@@ -28,6 +28,7 @@ import { deriveSearchPhase } from "../types/searchPhase";
 import { TrialUpsellCTA } from "../../../components/billing/TrialUpsellCTA";
 import { EmptyState } from "../../components/EmptyState";
 import { EmptyResults } from "./EmptyResults";
+import { safeSetItem } from "../../../lib/storage";
 
 // TD-007: Decomposed sub-components
 import { ResultsHeader } from "./search-results/ResultsHeader";
@@ -110,7 +111,7 @@ export default function SearchResults(props: SearchResultsProps) {
   useEffect(() => { if (result?.excel_status === 'processing' && !result?.download_url && !result?.download_id) { setExcelTimedOut(false); const t = setTimeout(() => setExcelTimedOut(true), 60_000); return () => clearTimeout(t); } setExcelTimedOut(false); }, [result?.excel_status, result?.download_url, result?.download_id]);
   useEffect(() => { if (prevDownloadLoading && !downloadLoading && !downloadError) setDownloadCompleted(true); setPrevDownloadLoading(downloadLoading); }, [downloadLoading, downloadError, prevDownloadLoading]);
   useEffect(() => { const d = localStorage.getItem('profile_banner_dismissed'); if (d && (Date.now() - parseInt(d)) / 86400000 < 3) setBannerDismissed(true); }, []);
-  const handleDismissBanner = () => { localStorage.setItem('profile_banner_dismissed', String(Date.now())); setBannerDismissed(true); };
+  const handleDismissBanner = () => { safeSetItem('profile_banner_dismissed', String(Date.now())); setBannerDismissed(true); };
 
   // --- Derived ---
   const succeededUfCount = ufStatuses ? Array.from(ufStatuses.values()).filter(s => s.status === 'success' || s.status === 'recovered').length : 0;

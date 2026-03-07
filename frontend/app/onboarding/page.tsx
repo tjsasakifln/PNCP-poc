@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import { UF_NAMES, UFS } from "../../lib/constants/uf-names";
 import { toast } from "sonner";
+import { safeSetItem } from "../../lib/storage";
 
 // ============================================================================
 // Constants
@@ -548,8 +549,8 @@ export default function OnboardingPage() {
       if (!profileRes.ok) throw new Error("Erro ao salvar perfil");
 
       // Cache locally
-      localStorage.setItem("smartlic-profile-context", JSON.stringify(profilePayload));
-      localStorage.setItem("smartlic-onboarding-completed", "true");
+      safeSetItem("smartlic-profile-context", JSON.stringify(profilePayload));
+      safeSetItem("smartlic-onboarding-completed", "true");
 
       // 2. Start first analysis
       const analysisRes = await fetch("/api/first-analysis", {

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 import { APP_NAME } from "../../lib/config";
 import { Button } from "../../components/ui/button";
+import { safeSetItem } from "../../lib/storage";
 
 // STORY-258: Email type result
 type EmailCheckResult = {
@@ -277,7 +278,7 @@ export default function SignupPage() {
     const partnerSlug = params.get("partner");
     if (partnerSlug) {
       // Persist partner slug for checkout flow
-      localStorage.setItem("smartlic_partner", partnerSlug);
+      safeSetItem("smartlic_partner", partnerSlug);
       document.cookie = `smartlic_partner=${partnerSlug};path=/;max-age=${7 * 24 * 60 * 60}`;
       // Fetch partner name for badge display
       setPartnerInfo({ name: partnerSlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), slug: partnerSlug });

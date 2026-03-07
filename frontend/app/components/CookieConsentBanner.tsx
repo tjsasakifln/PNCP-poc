@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { safeSetItem } from "../../lib/storage";
 
 export interface CookieConsent {
   analytics: boolean;
@@ -16,7 +17,7 @@ export function getCookieConsent(): CookieConsent | null {
     // Migrate legacy key
     const legacy = localStorage.getItem("bidiq_cookie_consent");
     if (legacy) {
-      localStorage.setItem(CONSENT_KEY, legacy);
+      safeSetItem(CONSENT_KEY, legacy);
       localStorage.removeItem("bidiq_cookie_consent");
     }
     const raw = localStorage.getItem(CONSENT_KEY);
@@ -36,7 +37,7 @@ export function setCookieConsent(analytics: boolean): CookieConsent {
     analytics,
     timestamp: new Date().toISOString(),
   };
-  localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
+  safeSetItem(CONSENT_KEY, JSON.stringify(consent));
   window.dispatchEvent(new CustomEvent("cookie-consent-changed", { detail: consent }));
   return consent;
 }

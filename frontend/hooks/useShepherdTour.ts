@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import Shepherd from 'shepherd.js';
 import 'shepherd.js/dist/css/shepherd.css';
 import '../styles/shepherd-theme.css';
+import { safeSetItem } from '../lib/storage';
 
 export interface TourStep {
   id: string;
@@ -37,7 +38,7 @@ export function useShepherdTour({ tourId, steps, onComplete, onSkip }: UseShephe
   }, [storageKey]);
 
   const markCompleted = useCallback(() => {
-    localStorage.setItem(storageKey, 'true');
+    safeSetItem(storageKey, 'true');
   }, [storageKey]);
 
   const resetCompletion = useCallback(() => {

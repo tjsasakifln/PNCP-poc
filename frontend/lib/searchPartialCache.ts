@@ -10,6 +10,8 @@
  * - Recovered on SSE disconnect or timeout
  */
 
+import { safeSetItem } from "./storage";
+
 const PARTIAL_PREFIX = "search_partial_";
 const PARTIAL_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -50,7 +52,7 @@ export function savePartialSearch(
       updatedAt: Date.now(),
       createdAt: existing?.createdAt ?? Date.now(),
     };
-    localStorage.setItem(key, JSON.stringify(data));
+    safeSetItem(key, JSON.stringify(data));
   } catch {
     // localStorage full or unavailable — silently ignore
   }

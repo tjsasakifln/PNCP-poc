@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { safeSetItem } from "../../lib/storage";
 
 export type ThemeId = "light" | "system" | "dark";
 
@@ -100,7 +101,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Migrate legacy key
     const legacy = localStorage.getItem("bidiq-theme");
     if (legacy) {
-      localStorage.setItem("smartlic-theme", legacy);
+      safeSetItem("smartlic-theme", legacy);
       localStorage.removeItem("bidiq-theme");
     }
     const stored = localStorage.getItem("smartlic-theme") as ThemeId | null;
@@ -122,7 +123,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = useCallback((t: ThemeId) => {
     setThemeState(t);
     applyTheme(t);
-    localStorage.setItem("smartlic-theme", t);
+    safeSetItem("smartlic-theme", t);
   }, []);
 
   const config = THEMES.find(t => t.id === theme) || THEMES[0];

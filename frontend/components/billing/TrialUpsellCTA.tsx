@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { safeSetItem } from "../../lib/storage";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -106,7 +107,7 @@ function isDismissed(variant: UpsellVariant): boolean {
 function setDismissed(variant: UpsellVariant): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(DISMISS_PREFIX + variant, String(Date.now()));
+    safeSetItem(DISMISS_PREFIX + variant, String(Date.now()));
   } catch {
     // ignore
   }
