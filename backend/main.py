@@ -557,92 +557,46 @@ async def lifespan(app_instance: FastAPI):
     yield
 
     # === SHUTDOWN ===
+    # HARDEN-022: Graceful shutdown with task drain
+    logger.info("HARDEN-022: Graceful shutdown initiated")
+
     # CRIT-002 AC15: Mark in-flight sessions as timed_out on shutdown
     await _mark_inflight_sessions_timed_out()
 
-    # UX-303: Cancel cache cleanup
-    cleanup_task.cancel()
-    try:
-        await cleanup_task
-    except Exception:
-        pass
+    # HARDEN-022 AC2+AC3: Cancel and drain active background search tasks
+    from routes.search import _active_background_tasks
+    if _active_background_tasks:
+        bg_count = len(_active_background_tasks)
+        logger.info("HARDEN-022: Cancelling %d active background tasks", bg_count)
+        for sid, task in _active_background_tasks.items():
+            if not task.done():
+                task.cancel()
+        # AC3: Gather with 10s timeout — don't block shutdown indefinitely
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*_active_background_tasks.values(), return_exceptions=True),
+                timeout=10.0,
+            )
+            logger.info("HARDEN-022: All %d background tasks drained", bg_count)
+        except asyncio.TimeoutError:
+            logger.warning("HARDEN-022: Background task drain timed out after 10s")
+        _active_background_tasks.clear()
+    else:
+        logger.info("HARDEN-022: No active background tasks to drain")
 
-    # CRIT-011: Cancel session cleanup
-    session_cleanup_task.cancel()
-    try:
-        await session_cleanup_task
-    except Exception:
-        pass
-
-    # GTM-ARCH-002: Cancel cache refresh
-    cache_refresh_task.cancel()
-    try:
-        await cache_refresh_task
-    except Exception:
-        pass
-
-    # STORY-314: Cancel Stripe reconciliation task
-    reconciliation_task.cancel()
-    try:
-        await reconciliation_task
-    except (Exception, asyncio.CancelledError):
-        pass
-
-    # STORY-316: Cancel health canary
-    health_canary_task.cancel()
-    try:
-        await health_canary_task
-    except (Exception, asyncio.CancelledError):
-        pass
-
-    # STORY-323: Cancel revenue share report task
-    revenue_share_task.cancel()
-    try:
-        await revenue_share_task
-    except (Exception, asyncio.CancelledError):
-        pass
-
-    # STORY-324: Cancel sector stats refresh
-    sector_stats_task.cancel()
-    try:
-        await sector_stats_task
-    except (Exception, asyncio.CancelledError):
-        pass
-
-    # STORY-353: Cancel support SLA task
-    support_sla_task.cancel()
-    try:
-        await support_sla_task
-    except (Exception, asyncio.CancelledError):
-        pass
-
-    # STORY-358: Cancel daily volume task
-    daily_volume_task.cancel()
-    try:
-        await daily_volume_task
-    except (Exception, asyncio.CancelledError):
-        pass
-
-    # STORY-362: Cancel expired results cleanup
-    results_cleanup_task.cancel()
-    try:
-        await results_cleanup_task
-    except (Exception, asyncio.CancelledError):
-        pass
-
-    # HARDEN-004 AC3: Cancel periodic tracker cleanup
-    tracker_cleanup_task.cancel()
-    try:
-        await tracker_cleanup_task
-    except (Exception, asyncio.CancelledError):
-        pass
-
-    # P1.2: Cancel startup warm-up (may still be in delay or mid-dispatch)
-    warmup_task.cancel()
-    try:
-        await warmup_task
-    except (Exception, asyncio.CancelledError):
-        pass
+    # HARDEN-022 AC5: Cancel ALL cron/periodic tasks in batch
+    _cron_tasks = [
+        cleanup_task, session_cleanup_task, cache_refresh_task,
+        trial_sequence_task, reconciliation_task, health_canary_task,
+        revenue_share_task, sector_stats_task, support_sla_task,
+        daily_volume_task, results_cleanup_task, tracker_cleanup_task,
+        warmup_task,
+    ]
+    for t in _cron_tasks:
+        t.cancel()
+    # Gather all cancellations — suppress CancelledError
+    await asyncio.gather(*_cron_tasks, return_exceptions=True)
+    logger.info("HARDEN-022: %d cron tasks cancelled", len(_cron_tasks))
 
     # GTM-RESILIENCE-F01: Close ARQ pool
     from job_queue import close_arq_pool
@@ -655,8 +609,10 @@ async def lifespan(app_instance: FastAPI):
     _thread_pool.shutdown(wait=False)
     logger.info("STORY-290-patch: thread pool executor shut down")
 
-    # STORY-217: Close Redis pool
+    # HARDEN-022 AC4: Close all Redis pools (main + SSE + sync)
     await shutdown_redis()
+
+    logger.info("HARDEN-022: Graceful shutdown complete")
 
 
 # CRIT-023: Initialize TracerProvider + httpx instrumentation before app creation.

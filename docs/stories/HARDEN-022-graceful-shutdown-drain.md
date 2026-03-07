@@ -11,12 +11,12 @@ Quando Railway trigga shutdown, tasks fire-and-forget, Redis connections e Threa
 
 ## Critérios de Aceitação
 
-- [ ] AC1: Lifespan handler com `@asynccontextmanager`
-- [ ] AC2: Shutdown cancela `_active_background_tasks`
-- [ ] AC3: Shutdown aguarda pending tasks (gather com timeout 10s)
-- [ ] AC4: Shutdown fecha Redis pool explicitamente
-- [ ] AC5: Shutdown cancela cron tasks
-- [ ] AC6: Teste valida cleanup sequence
+- [x] AC1: Lifespan handler com `@asynccontextmanager`
+- [x] AC2: Shutdown cancela `_active_background_tasks`
+- [x] AC3: Shutdown aguarda pending tasks (gather com timeout 10s)
+- [x] AC4: Shutdown fecha Redis pool explicitamente
+- [x] AC5: Shutdown cancela cron tasks
+- [x] AC6: Teste valida cleanup sequence
 
 ## Arquivos Afetados
 

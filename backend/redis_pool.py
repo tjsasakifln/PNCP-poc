@@ -370,13 +370,42 @@ async def startup_redis() -> None:
 
 
 async def shutdown_redis() -> None:
-    """Close Redis pool during FastAPI lifespan shutdown."""
-    global _redis_pool, _pool_initialized
+    """Close all Redis pools during FastAPI lifespan shutdown.
+
+    HARDEN-022 AC4: Closes main pool, SSE pool, and sync pool explicitly.
+    """
+    global _redis_pool, _pool_initialized, _sse_redis_pool, _sse_pool_initialized
+    global _sync_redis, _sync_redis_initialized
+
+    # Close SSE pool first (depends on main pool as fallback)
+    if _sse_redis_pool and _sse_redis_pool is not _redis_pool:
+        try:
+            await _sse_redis_pool.aclose()
+            logger.info("SSE Redis pool closed")
+        except Exception as e:
+            logger.warning("SSE Redis pool close error: %s", e)
+    _sse_redis_pool = None
+    _sse_pool_initialized = False
+
+    # Close main async pool
     if _redis_pool:
-        await _redis_pool.aclose()
-        logger.info("Redis pool closed")
+        try:
+            await _redis_pool.aclose()
+            logger.info("Redis pool closed")
+        except Exception as e:
+            logger.warning("Redis pool close error: %s", e)
     _redis_pool = None
     _pool_initialized = False
+
+    # Close sync pool (used by LLM arbiter in ThreadPoolExecutor)
+    if _sync_redis:
+        try:
+            _sync_redis.close()
+            logger.info("Sync Redis client closed")
+        except Exception as e:
+            logger.warning("Sync Redis close error: %s", e)
+    _sync_redis = None
+    _sync_redis_initialized = False
 
 
 # ============================================================================
