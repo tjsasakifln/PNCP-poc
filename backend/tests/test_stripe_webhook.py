@@ -1491,3 +1491,262 @@ class TestDeletedSubscriptionEdgeCases:
         await stripe_webhook(mock_request)
 
         mock_redis.delete.assert_called_with("features:user_del_789")
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# HARDEN-021 AC3: Concurrent Webhook Idempotency Tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestConcurrentWebhookIdempotency:
+    """HARDEN-021 AC3: Simulate concurrent webhooks with the same event_id.
+
+    Verifies that the INSERT ON CONFLICT DO NOTHING pattern ensures
+    only one webhook wins and processes the event, while the other
+    gets 'already_processed'.
+    """
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_concurrent_same_event_only_one_processes(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        make_stripe_event
+    ):
+        """Two concurrent webhooks with same event_id: one succeeds, one skips."""
+        from datetime import datetime, timezone
+
+        event = make_stripe_event(event_id="evt_concurrent_001")
+        mock_construct.return_value = event
+
+        def make_sb_mock(is_first_caller: bool):
+            """Build a Supabase mock for either the first or second caller."""
+            sb = MagicMock()
+            # Shared counter across all table("stripe_webhook_events") calls
+            webhook_exec_calls = {"n": 0}
+
+            def table_side_effect(name):
+                chain = MagicMock()
+                chain.select.return_value = chain
+                chain.insert.return_value = chain
+                chain.update.return_value = chain
+                chain.upsert.return_value = chain
+                chain.delete.return_value = chain
+                chain.eq.return_value = chain
+                chain.limit.return_value = chain
+                chain.single.return_value = chain
+                chain.order.return_value = chain
+
+                if name == "stripe_webhook_events":
+                    if is_first_caller:
+                        chain.execute.return_value = Mock(data=[{"id": "evt_concurrent_001"}])
+                    else:
+                        upsert_exec = Mock(data=[])
+                        select_exec = Mock(data=[{
+                            "id": "evt_concurrent_001",
+                            "status": "completed",
+                            "received_at": datetime.now(timezone.utc).isoformat(),
+                        }])
+                        def multi_execute():
+                            webhook_exec_calls["n"] += 1
+                            return upsert_exec if webhook_exec_calls["n"] == 1 else select_exec
+                        chain.execute = Mock(side_effect=multi_execute)
+                elif name == "user_subscriptions":
+                    chain.execute.return_value = Mock(data=[{
+                        "id": "sub-uuid", "user_id": "user_123", "plan_id": "plan_pro",
+                    }])
+                else:
+                    chain.execute.return_value = Mock(data=[])
+                return chain
+
+            sb.table = Mock(side_effect=table_side_effect)
+            return sb
+
+        # Use side_effect to return different sb mocks per call
+        sb_first = make_sb_mock(is_first_caller=True)
+        sb_second = make_sb_mock(is_first_caller=False)
+        mock_get_sb.side_effect = [sb_first, sb_second]
+
+        from webhooks.stripe import stripe_webhook
+
+        result1 = await stripe_webhook(mock_request)
+        result2 = await stripe_webhook(mock_request)
+
+        assert result1["status"] == "success", "First webhook must succeed"
+        assert result2["status"] == "already_processed", "Second webhook must be skipped"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_concurrent_different_events_both_process(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        make_stripe_event
+    ):
+        """Two concurrent webhooks with different event_ids: both succeed."""
+        events = [
+            make_stripe_event(event_id="evt_diff_001"),
+            make_stripe_event(event_id="evt_diff_002"),
+        ]
+
+        results = []
+
+        for event in events:
+            mock_construct.return_value = event
+            sb = MagicMock()
+
+            def table_side_effect(name, _evt=event):
+                chain = MagicMock()
+                chain.select.return_value = chain
+                chain.insert.return_value = chain
+                chain.update.return_value = chain
+                chain.upsert.return_value = chain
+                chain.delete.return_value = chain
+                chain.eq.return_value = chain
+                chain.limit.return_value = chain
+                chain.single.return_value = chain
+                chain.order.return_value = chain
+
+                if name == "stripe_webhook_events":
+                    chain.execute.return_value = Mock(data=[{"id": _evt.id}])
+                elif name == "user_subscriptions":
+                    chain.execute.return_value = Mock(data=[{
+                        "id": "sub-uuid",
+                        "user_id": "user_123",
+                        "plan_id": "plan_pro",
+                    }])
+                else:
+                    chain.execute.return_value = Mock(data=[])
+                return chain
+
+            sb.table = Mock(side_effect=table_side_effect)
+            mock_get_sb.return_value = sb
+
+            from webhooks.stripe import stripe_webhook
+            result = await stripe_webhook(mock_request)
+            results.append(result)
+
+        assert all(r["status"] == "success" for r in results)
+        assert len(results) == 2
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_concurrent_stuck_event_reprocessed(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        make_stripe_event
+    ):
+        """A stuck-in-processing event (>5min) gets reprocessed by a retry."""
+        from datetime import datetime, timezone, timedelta
+
+        event = make_stripe_event(event_id="evt_stuck_001")
+        mock_construct.return_value = event
+
+        sb = MagicMock()
+        call_sequence = {"n": 0}
+
+        def table_side_effect(name):
+            chain = MagicMock()
+            chain.select.return_value = chain
+            chain.insert.return_value = chain
+            chain.update.return_value = chain
+            chain.upsert.return_value = chain
+            chain.delete.return_value = chain
+            chain.eq.return_value = chain
+            chain.limit.return_value = chain
+            chain.single.return_value = chain
+            chain.order.return_value = chain
+
+            if name == "stripe_webhook_events":
+                call_sequence["n"] += 1
+                if call_sequence["n"] == 1:
+                    # Upsert returns empty (event exists)
+                    chain.execute.return_value = Mock(data=[])
+                elif call_sequence["n"] == 2:
+                    # Stuck check: processing for >5 minutes
+                    old_time = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+                    chain.execute.return_value = Mock(data=[{
+                        "id": "evt_stuck_001",
+                        "status": "processing",
+                        "received_at": old_time,
+                    }])
+                else:
+                    # Update status + final update after processing
+                    chain.execute.return_value = Mock(data=[{"id": "evt_stuck_001"}])
+            elif name == "user_subscriptions":
+                chain.execute.return_value = Mock(data=[{
+                    "id": "sub-uuid",
+                    "user_id": "user_123",
+                    "plan_id": "plan_pro",
+                }])
+            else:
+                chain.execute.return_value = Mock(data=[])
+            return chain
+
+        sb.table = Mock(side_effect=table_side_effect)
+        mock_get_sb.return_value = sb
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        # Stuck event gets reprocessed (not skipped)
+        assert result["status"] == "success"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_concurrent_recently_processing_event_skipped(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        make_stripe_event
+    ):
+        """An event still processing (<5min) is correctly skipped."""
+        from datetime import datetime, timezone, timedelta
+
+        event = make_stripe_event(event_id="evt_recent_001")
+        mock_construct.return_value = event
+
+        sb = MagicMock()
+        call_sequence = {"n": 0}
+
+        def table_side_effect(name):
+            chain = MagicMock()
+            chain.select.return_value = chain
+            chain.insert.return_value = chain
+            chain.update.return_value = chain
+            chain.upsert.return_value = chain
+            chain.delete.return_value = chain
+            chain.eq.return_value = chain
+            chain.limit.return_value = chain
+            chain.single.return_value = chain
+            chain.order.return_value = chain
+
+            if name == "stripe_webhook_events":
+                call_sequence["n"] += 1
+                if call_sequence["n"] == 1:
+                    # Upsert returns empty (event exists)
+                    chain.execute.return_value = Mock(data=[])
+                else:
+                    # Recent processing (<5min) — should be skipped
+                    recent_time = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+                    chain.execute.return_value = Mock(data=[{
+                        "id": "evt_recent_001",
+                        "status": "processing",
+                        "received_at": recent_time,
+                    }])
+            else:
+                chain.execute.return_value = Mock(data=[])
+            return chain
+
+        sb.table = Mock(side_effect=table_side_effect)
+        mock_get_sb.return_value = sb
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "already_processed"

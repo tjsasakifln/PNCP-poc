@@ -11,10 +11,10 @@ Webhook faz check+insert em duas operações separadas para idempotency. Dois we
 
 ## Critérios de Aceitação
 
-- [ ] AC1: Substituir SELECT+INSERT por INSERT ON CONFLICT DO NOTHING
-- [ ] AC2: Se insert retorna empty (conflict), skip processing
-- [ ] AC3: Teste com webhooks concorrentes simulados
-- [ ] AC4: Zero regressions
+- [x] AC1: Substituir SELECT+INSERT por INSERT ON CONFLICT DO NOTHING
+- [x] AC2: Se insert retorna empty (conflict), skip processing
+- [x] AC3: Teste com webhooks concorrentes simulados
+- [x] AC4: Zero regressions
 
 ## Arquivos Afetados
 
