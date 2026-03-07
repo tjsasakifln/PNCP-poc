@@ -787,3 +787,228 @@ class TestEmitDegraded:
                 if c[0][0].endswith(":stream")
             ]
             assert len(stream_expire_calls) == 1
+
+
+class TestHarden019DbFallback:
+    """HARDEN-019: Last-Event-ID fallback to DB state when Redis expired."""
+
+    @pytest.mark.asyncio
+    async def test_ac1_is_search_terminal_falls_back_to_db_when_redis_empty(self, mock_redis):
+        """AC1: is_search_terminal() falls back to DB when Redis replay is empty."""
+        from progress import is_search_terminal
+
+        # No local tracker, no Redis data → should query DB
+        mock_db_state = {
+            "to_state": "completed",
+            "details": {"reason": "all sources done"},
+        }
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state) as mock_get:
+            result = await is_search_terminal("expired-search-001")
+
+            mock_get.assert_called_once_with("expired-search-001")
+            assert result is not None
+            assert result["stage"] == "complete"
+            assert result["progress"] == 100
+            assert result["detail"]["source"] == "db_fallback"
+            assert result["detail"]["db_state"] == "completed"
+
+    @pytest.mark.asyncio
+    async def test_ac2_db_completed_maps_to_sse_complete(self, mock_redis):
+        """AC2: DB state 'completed' maps to SSE stage 'complete'."""
+        from progress import is_search_terminal
+
+        mock_db_state = {"to_state": "completed", "details": {}}
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("db-completed-search")
+
+            assert result["stage"] == "complete"
+            assert result["progress"] == 100
+            assert "concluida" in result["message"].lower()
+
+    @pytest.mark.asyncio
+    async def test_ac2_db_failed_maps_to_sse_error(self, mock_redis):
+        """AC2: DB state 'failed' maps to SSE stage 'error'."""
+        from progress import is_search_terminal
+
+        mock_db_state = {
+            "to_state": "failed",
+            "details": {"error_message": "Pipeline timeout exceeded"},
+        }
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("db-failed-search")
+
+            assert result["stage"] == "error"
+            assert result["progress"] == -1
+            assert "Pipeline timeout exceeded" in result["message"]
+
+    @pytest.mark.asyncio
+    async def test_ac2_db_timed_out_maps_to_sse_error(self, mock_redis):
+        """AC2: DB state 'timed_out' maps to SSE stage 'error'."""
+        from progress import is_search_terminal
+
+        mock_db_state = {
+            "to_state": "timed_out",
+            "details": {"reason": "Pipeline timeout exceeded"},
+        }
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("db-timeout-search")
+
+            assert result["stage"] == "error"
+            assert result["progress"] == -1
+            assert result["detail"]["db_state"] == "timed_out"
+
+    @pytest.mark.asyncio
+    async def test_ac2_db_rate_limited_maps_to_sse_error(self, mock_redis):
+        """AC2: DB state 'rate_limited' maps to SSE stage 'error'."""
+        from progress import is_search_terminal
+
+        mock_db_state = {"to_state": "rate_limited", "details": {"retry_after": 60}}
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("db-ratelimit-search")
+
+            assert result["stage"] == "error"
+            assert result["progress"] == -1
+            assert result["detail"]["db_state"] == "rate_limited"
+
+    @pytest.mark.asyncio
+    async def test_ac3_synthetic_event_contains_db_data(self, mock_redis):
+        """AC3: Client receives synthetic terminal event with DB details."""
+        from progress import is_search_terminal
+
+        mock_db_state = {
+            "to_state": "completed",
+            "details": {"total_results": 42, "sector": "construcao"},
+        }
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("db-data-search")
+
+            assert result["detail"]["source"] == "db_fallback"
+            assert result["detail"]["total_results"] == 42
+            assert result["detail"]["sector"] == "construcao"
+            assert result["detail"]["db_state"] == "completed"
+
+    @pytest.mark.asyncio
+    async def test_ac4_redis_expired_db_complete_scenario(self):
+        """AC4: Full scenario — Redis expired, DB shows completed."""
+        from progress import is_search_terminal
+
+        # Redis available but replay list empty (expired)
+        mock_redis_client = AsyncMock()
+        mock_redis_client.lrange = AsyncMock(return_value=[])
+
+        mock_db_state = {
+            "to_state": "completed",
+            "details": {"reason": "all sources done"},
+        }
+
+        with patch("progress.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_client), \
+             patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("redis-expired-search")
+
+            # Redis was checked (lrange called)
+            mock_redis_client.lrange.assert_called_once()
+            # DB fallback was used
+            assert result is not None
+            assert result["stage"] == "complete"
+            assert result["detail"]["source"] == "db_fallback"
+
+    @pytest.mark.asyncio
+    async def test_ac4_redis_expired_db_failed_scenario(self):
+        """AC4: Full scenario — Redis expired, DB shows failed."""
+        from progress import is_search_terminal
+
+        mock_redis_client = AsyncMock()
+        mock_redis_client.lrange = AsyncMock(return_value=[])
+
+        mock_db_state = {
+            "to_state": "failed",
+            "details": {"error_message": "PNCP API down"},
+        }
+
+        with patch("progress.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_client), \
+             patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("redis-expired-failed")
+
+            assert result["stage"] == "error"
+            assert "PNCP API down" in result["message"]
+
+    @pytest.mark.asyncio
+    async def test_db_non_terminal_state_returns_none(self, mock_redis):
+        """DB state 'fetching' (non-terminal) should return None."""
+        from progress import is_search_terminal
+
+        mock_db_state = {"to_state": "fetching", "details": {}}
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("still-processing")
+
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_db_returns_none_when_no_state(self, mock_redis):
+        """DB returns None (search_id not found) → is_search_terminal returns None."""
+        from progress import is_search_terminal
+
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=None):
+            result = await is_search_terminal("unknown-search")
+
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_db_fallback_exception_returns_none(self, mock_redis):
+        """DB query failure should not crash — returns None gracefully."""
+        from progress import is_search_terminal
+
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, side_effect=Exception("DB down")):
+            result = await is_search_terminal("db-error-search")
+
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_ac5_local_tracker_still_takes_priority(self, mock_redis):
+        """AC5: Local tracker with terminal event should NOT trigger DB fallback."""
+        from progress import is_search_terminal
+
+        # Create a tracker with a terminal event in history
+        tracker = ProgressTracker("local-terminal", uf_count=1, use_redis=False)
+        await tracker.emit_complete()
+        _active_trackers["local-terminal"] = tracker
+
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock) as mock_db:
+            result = await is_search_terminal("local-terminal")
+
+            # Should use local tracker, NOT call DB
+            mock_db.assert_not_called()
+            assert result is not None
+            assert result["stage"] == "complete"
+
+    @pytest.mark.asyncio
+    async def test_ac5_redis_data_still_takes_priority(self):
+        """AC5: Redis replay with terminal event should NOT trigger DB fallback."""
+        from progress import is_search_terminal
+
+        terminal_event = json.dumps({
+            "id": 5,
+            "data": {"stage": "complete", "progress": 100, "message": "Done", "detail": {}},
+        })
+        mock_redis_client = AsyncMock()
+        mock_redis_client.lrange = AsyncMock(return_value=[terminal_event])
+
+        with patch("progress.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_client), \
+             patch("search_state_manager.get_current_state", new_callable=AsyncMock) as mock_db:
+            result = await is_search_terminal("redis-terminal")
+
+            mock_db.assert_not_called()
+            assert result is not None
+            assert result["stage"] == "complete"
+
+    @pytest.mark.asyncio
+    async def test_failed_with_empty_details_uses_fallback_message(self, mock_redis):
+        """Error event with empty details uses fallback message."""
+        from progress import is_search_terminal
+
+        mock_db_state = {"to_state": "failed", "details": {}}
+        with patch("search_state_manager.get_current_state", new_callable=AsyncMock, return_value=mock_db_state):
+            result = await is_search_terminal("empty-details")
+
+            assert result["stage"] == "error"
+            assert "failed" in result["message"].lower()

@@ -11,11 +11,11 @@ Client reconecta SSE com last_event_id, mas stream Redis já expirou (_STREAM_EX
 
 ## Critérios de Aceitação
 
-- [ ] AC1: `is_search_terminal()` faz fallback a DB state machine quando Redis vazio
-- [ ] AC2: DB states "completed"/"failed"/"degraded" mapeados para SSE terminal events
-- [ ] AC3: Client recebe terminal event sintético com dados do DB
-- [ ] AC4: Teste com cenário de Redis expirado + DB complete
-- [ ] AC5: Zero regressions nos testes de replay (STORY-297)
+- [x] AC1: `is_search_terminal()` faz fallback a DB state machine quando Redis vazio
+- [x] AC2: DB states "completed"/"failed"/"degraded" mapeados para SSE terminal events
+- [x] AC3: Client recebe terminal event sintético com dados do DB
+- [x] AC4: Teste com cenário de Redis expirado + DB complete
+- [x] AC5: Zero regressions nos testes de replay (STORY-297)
 
 ## Arquivos Afetados
 

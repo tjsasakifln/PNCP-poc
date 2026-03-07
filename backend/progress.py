@@ -631,10 +631,14 @@ async def get_replay_events(search_id: str, after_id: int) -> list[tuple[int, di
 
 
 async def is_search_terminal(search_id: str) -> Optional[dict]:
-    """STORY-297 AC4: Check if search has reached a terminal state.
+    """STORY-297 AC4 + HARDEN-019: Check if search has reached a terminal state.
 
     Returns the terminal event data if found, None otherwise.
-    Checks local tracker history first, then Redis list.
+    Checks local tracker history first, then Redis list, then DB state machine.
+
+    HARDEN-019: When Redis stream has expired (_STREAM_EXPIRE_TTL=300s) and client
+    reconnects with Last-Event-ID, replay returns empty. Without DB fallback the
+    client never receives a terminal event and the progress bar stays stuck at 90%.
     """
     # Check local tracker
     tracker = _active_trackers.get(search_id)
@@ -646,21 +650,80 @@ async def is_search_terminal(search_id: str) -> Optional[dict]:
 
     # Check Redis list (last entry)
     redis = await get_redis_pool()
-    if redis is None:
-        return None
+    if redis is not None:
+        replay_key = f"{_REPLAY_KEY_PREFIX}{search_id}"
+        try:
+            last_entries = await redis.lrange(replay_key, -1, -1)
+            if last_entries:
+                parsed = json.loads(last_entries[0])
+                data = parsed["data"]
+                if data.get("stage") in _TERMINAL_STAGES:
+                    return data
+        except Exception as e:
+            logger.warning(f"STORY-297: Failed to check terminal state: {e}")
 
-    replay_key = f"{_REPLAY_KEY_PREFIX}{search_id}"
+    # HARDEN-019 AC1-AC3: Fallback to DB state machine when Redis is empty/expired
+    return await _fallback_db_terminal(search_id)
+
+
+# HARDEN-019 AC2: DB terminal states mapped to SSE terminal stages
+_DB_STATE_TO_SSE_STAGE = {
+    "completed": "complete",
+    "failed": "error",
+    "timed_out": "error",
+    "rate_limited": "error",
+}
+
+
+async def _fallback_db_terminal(search_id: str) -> Optional[dict]:
+    """HARDEN-019 AC1-AC3: Synthesize a terminal SSE event from DB state.
+
+    Called when both local tracker and Redis replay list are empty (e.g. Redis
+    stream expired after _STREAM_EXPIRE_TTL=300s). Queries search_state_transitions
+    for the latest state and, if terminal, returns a synthetic SSE event so the
+    client receives a proper terminal event instead of staying stuck.
+    """
     try:
-        last_entries = await redis.lrange(replay_key, -1, -1)
-        if last_entries:
-            parsed = json.loads(last_entries[0])
-            data = parsed["data"]
-            if data.get("stage") in _TERMINAL_STAGES:
-                return data
-    except Exception as e:
-        logger.warning(f"STORY-297: Failed to check terminal state: {e}")
+        from search_state_manager import get_current_state
 
-    return None
+        db_state = await get_current_state(search_id)
+        if not db_state:
+            return None
+
+        to_state = db_state.get("to_state", "")
+        sse_stage = _DB_STATE_TO_SSE_STAGE.get(to_state)
+        if not sse_stage:
+            return None
+
+        # AC3: Build synthetic terminal event with DB data
+        details = db_state.get("details") or {}
+        if sse_stage == "complete":
+            message = "Busca concluida!"
+            progress = 100
+        else:
+            error_msg = details.get("error_message") or details.get("reason", "")
+            message = error_msg or f"Busca finalizada com status: {to_state}"
+            progress = -1
+
+        synthetic_event: dict = {
+            "stage": sse_stage,
+            "progress": progress,
+            "message": message,
+            "detail": {
+                "source": "db_fallback",
+                "db_state": to_state,
+                **details,
+            },
+        }
+        logger.info(
+            f"HARDEN-019: Synthesized terminal event from DB for {search_id} "
+            f"(db_state={to_state}, sse_stage={sse_stage})"
+        )
+        return synthetic_event
+
+    except Exception as e:
+        logger.warning(f"HARDEN-019: DB fallback failed for {search_id}: {e}")
+        return None
 
 
 async def create_tracker(search_id: str, uf_count: int) -> ProgressTracker:
