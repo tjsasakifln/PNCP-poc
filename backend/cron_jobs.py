@@ -1753,3 +1753,72 @@ async def _results_cleanup_loop() -> None:
             else:
                 logger.error("STORY-362 results cleanup loop error: %s", e, exc_info=True)
             await asyncio.sleep(300)
+
+
+# ============================================================================
+# HARDEN-028: Stripe webhook events purge (> 90 days)
+# ============================================================================
+
+STRIPE_EVENTS_RETENTION_DAYS = 90
+STRIPE_PURGE_INTERVAL_SECONDS = 24 * 60 * 60  # daily
+
+
+async def start_stripe_events_purge_task() -> asyncio.Task:
+    """HARDEN-028 AC2: Start daily Stripe webhook events purge."""
+    task = asyncio.create_task(_stripe_events_purge_loop(), name="stripe_events_purge")
+    logger.info("HARDEN-028: Stripe events purge task started (interval: 24h, retention: %dd)", STRIPE_EVENTS_RETENTION_DAYS)
+    return task
+
+
+async def purge_old_stripe_events() -> dict:
+    """HARDEN-028 AC1: Delete stripe_webhook_events older than 90 days.
+
+    Returns dict with count of deleted rows.
+    """
+    try:
+        from supabase_client import get_supabase, sb_execute
+
+        sb = get_supabase()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=STRIPE_EVENTS_RETENTION_DAYS)).isoformat()
+
+        result = await sb_execute(
+            sb.table("stripe_webhook_events")
+            .delete()
+            .lt("processed_at", cutoff)
+        )
+
+        deleted = len(result.data) if result and result.data else 0
+        # AC3: Log count of deleted events
+        logger.info(
+            "HARDEN-028: Purged %d Stripe webhook events older than %d days (cutoff=%s)",
+            deleted, STRIPE_EVENTS_RETENTION_DAYS, cutoff,
+        )
+        return {"deleted": deleted, "cutoff": cutoff}
+
+    except Exception as e:
+        if _is_cb_or_connection_error(e):
+            logger.warning("HARDEN-028: Stripe events purge skipped (Supabase unavailable): %s", e)
+        else:
+            logger.error("HARDEN-028: Stripe events purge error: %s", e, exc_info=True)
+        return {"deleted": 0, "error": str(e)}
+
+
+async def _stripe_events_purge_loop() -> None:
+    """HARDEN-028 AC2: Purge loop — runs immediately, then every 24h."""
+    while True:
+        try:
+            result = await purge_old_stripe_events()
+            logger.info(
+                "HARDEN-028 purge cycle: %s at %s",
+                result, datetime.now(timezone.utc).isoformat(),
+            )
+            await asyncio.sleep(STRIPE_PURGE_INTERVAL_SECONDS)
+        except asyncio.CancelledError:
+            logger.info("HARDEN-028: Stripe events purge task cancelled")
+            break
+        except Exception as e:
+            if _is_cb_or_connection_error(e):
+                logger.warning("HARDEN-028 purge loop skipped: %s", e)
+            else:
+                logger.error("HARDEN-028 purge loop error: %s", e, exc_info=True)
+            await asyncio.sleep(300)

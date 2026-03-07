@@ -11,12 +11,13 @@ Cada webhook event é salvo em `stripe_webhook_events` para idempotency/audit, m
 
 ## Critérios de Aceitação
 
-- [ ] AC1: Cron job (ou Supabase scheduled function) deleta eventos > 90 dias
-- [ ] AC2: Roda diariamente
-- [ ] AC3: Log count de eventos deletados
-- [ ] AC4: Teste unitário
+- [x] AC1: Cron job (ou Supabase scheduled function) deleta eventos > 90 dias
+- [x] AC2: Roda diariamente
+- [x] AC3: Log count de eventos deletados
+- [x] AC4: Teste unitário
 
 ## Arquivos Afetados
 
-- `backend/cron_jobs.py` — novo cleanup job
-- Ou: `supabase/migrations/` — pg_cron schedule
+- `backend/cron_jobs.py` — `purge_old_stripe_events()` + `start_stripe_events_purge_task()`
+- `backend/main.py` — registra task no lifespan
+- `backend/tests/test_harden028_stripe_events_purge.py` — 6 testes
