@@ -229,3 +229,216 @@ async def test_health_check_all():
     assert "SOURCE_A" in results
     assert "SOURCE_B" in results
     assert results["SOURCE_A"]["status"] == "available"
+
+
+# ============================================================================
+# HARDEN-006: Dedup merge-enrichment tests
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_dedup_merge_enrichment_pncp_incomplete_pcp_complete():
+    """AC5: PNCP winner has empty valor_estimado, PCP loser fills it via merge."""
+    # PNCP record: priority 1, but incomplete (no value, no modalidade)
+    record_pncp = UnifiedProcurement(
+        source_id="pncp-1",
+        source_name="PNCP",
+        objeto="Aquisicao de uniformes",
+        valor_estimado=0.0,
+        orgao="Prefeitura Municipal",
+        cnpj_orgao="111",
+        uf="SP",
+        municipio="Sao Paulo",
+        numero_edital="001",
+        ano="2026",
+        modalidade="",
+    )
+    # PCP record: priority 2, but complete
+    record_pcp = UnifiedProcurement(
+        source_id="pcp-1",
+        source_name="PCP",
+        objeto="Aquisicao de uniformes escolares detalhada",
+        valor_estimado=250000.0,
+        orgao="Prefeitura Municipal de Sao Paulo",
+        cnpj_orgao="111",
+        uf="SP",
+        municipio="Sao Paulo",
+        numero_edital="001",
+        ano="2026",
+        modalidade="Pregao Eletronico",
+    )
+
+    adapters = {
+        "PNCP": FakeAdapter("PNCP", 1, [record_pncp]),
+        "PCP": FakeAdapter("PCP", 2, [record_pcp]),
+    }
+
+    svc = ConsolidationService(adapters=adapters)
+    result = await svc.fetch_all("2026-01-01", "2026-01-31")
+
+    assert result.total_before_dedup == 2
+    assert result.total_after_dedup == 1
+    assert result.duplicates_removed == 1
+
+    legacy = result.records[0]
+    # Winner is PNCP (priority 1)
+    assert legacy["_source"] == "PNCP"
+    # AC1: valor_estimado merged from PCP
+    assert legacy["valorTotalEstimado"] == 250000.0
+    # AC1: modalidade merged from PCP
+    assert legacy["modalidadeNome"] == "Pregao Eletronico"
+    # AC3: Audit trail — source tracking fields
+    assert legacy.get("_valor_estimado_source") == "PCP"
+    assert legacy.get("_modalidade_source") == "PCP"
+    # objeto was NOT empty on winner, so NOT merged
+    assert "_objeto_source" not in legacy
+
+
+@pytest.mark.asyncio
+async def test_dedup_merge_enrichment_both_complete_no_merge():
+    """AC6: Both records complete → no merge needed, winner kept as-is."""
+    record_pncp = UnifiedProcurement(
+        source_id="pncp-2",
+        source_name="PNCP",
+        objeto="Servicos de limpeza",
+        valor_estimado=100000.0,
+        orgao="Governo do Estado",
+        cnpj_orgao="222",
+        uf="RJ",
+        municipio="Rio de Janeiro",
+        numero_edital="002",
+        ano="2026",
+        modalidade="Concorrencia",
+    )
+    record_pcp = UnifiedProcurement(
+        source_id="pcp-2",
+        source_name="PCP",
+        objeto="Servicos de limpeza predial",
+        valor_estimado=95000.0,
+        orgao="Governo Estadual RJ",
+        cnpj_orgao="222",
+        uf="RJ",
+        municipio="Rio de Janeiro",
+        numero_edital="002",
+        ano="2026",
+        modalidade="Pregao Eletronico",
+    )
+
+    adapters = {
+        "PNCP": FakeAdapter("PNCP", 1, [record_pncp]),
+        "PCP": FakeAdapter("PCP", 2, [record_pcp]),
+    }
+
+    svc = ConsolidationService(adapters=adapters)
+    result = await svc.fetch_all("2026-01-01", "2026-01-31")
+
+    assert result.total_after_dedup == 1
+
+    legacy = result.records[0]
+    # Winner is PNCP (priority 1) — all fields kept from PNCP, no merge
+    assert legacy["_source"] == "PNCP"
+    assert legacy["valorTotalEstimado"] == 100000.0
+    assert legacy["modalidadeNome"] == "Concorrencia"
+    assert legacy["objetoCompra"] == "Servicos de limpeza"
+    assert legacy["nomeOrgao"] == "Governo do Estado"
+    # No merge audit trail
+    assert "_valor_estimado_source" not in legacy
+    assert "_modalidade_source" not in legacy
+    assert "_objeto_source" not in legacy
+    assert "_orgao_source" not in legacy
+
+
+@pytest.mark.asyncio
+async def test_dedup_merge_enrichment_orgao_filled():
+    """AC2: orgao field also eligible for merge-enrichment."""
+    record_a = UnifiedProcurement(
+        source_id="a-3",
+        source_name="SOURCE_A",
+        objeto="Material de escritorio",
+        valor_estimado=50000.0,
+        orgao="Orgao Desconhecido",  # non-empty, won't be merged
+        cnpj_orgao="333",
+        uf="MG",
+        numero_edital="003",
+        ano="2026",
+        modalidade="",  # empty — will be merged
+    )
+    record_b = UnifiedProcurement(
+        source_id="b-3",
+        source_name="SOURCE_B",
+        objeto="Material de escritorio completo",
+        valor_estimado=55000.0,
+        orgao="Secretaria de Educacao de MG",
+        cnpj_orgao="333",
+        uf="MG",
+        numero_edital="003",
+        ano="2026",
+        modalidade="Pregao Eletronico",
+    )
+
+    adapters = {
+        "SOURCE_A": FakeAdapter("SOURCE_A", 1, [record_a]),
+        "SOURCE_B": FakeAdapter("SOURCE_B", 2, [record_b]),
+    }
+
+    svc = ConsolidationService(adapters=adapters)
+    result = await svc.fetch_all("2026-01-01", "2026-01-31")
+
+    legacy = result.records[0]
+    assert legacy["_source"] == "SOURCE_A"
+    # modalidade merged from SOURCE_B
+    assert legacy["modalidadeNome"] == "Pregao Eletronico"
+    assert legacy.get("_modalidade_source") == "SOURCE_B"
+    # orgao NOT merged (winner had non-empty value)
+    assert legacy["nomeOrgao"] == "Orgao Desconhecido"
+    assert "_orgao_source" not in legacy
+
+
+@pytest.mark.asyncio
+async def test_dedup_merge_enrichment_metric():
+    """AC4: Metric smartlic_dedup_fields_merged_total incremented per merged field."""
+    from unittest.mock import patch, MagicMock
+
+    mock_counter = MagicMock()
+    mock_label = MagicMock()
+    mock_counter.labels.return_value = mock_label
+
+    record_pncp = UnifiedProcurement(
+        source_id="pncp-m",
+        source_name="PNCP",
+        objeto="Teste metrica",
+        valor_estimado=0.0,  # empty → will merge
+        orgao="Teste",
+        cnpj_orgao="444",
+        uf="SP",
+        numero_edital="004",
+        ano="2026",
+        modalidade="",  # empty → will merge
+    )
+    record_pcp = UnifiedProcurement(
+        source_id="pcp-m",
+        source_name="PCP",
+        objeto="Teste metrica descricao",
+        valor_estimado=100000.0,
+        orgao="Teste Orgao",
+        cnpj_orgao="444",
+        uf="SP",
+        numero_edital="004",
+        ano="2026",
+        modalidade="Pregao",
+    )
+
+    adapters = {
+        "PNCP": FakeAdapter("PNCP", 1, [record_pncp]),
+        "PCP": FakeAdapter("PCP", 2, [record_pcp]),
+    }
+
+    with patch("consolidation.DEDUP_FIELDS_MERGED", mock_counter):
+        svc = ConsolidationService(adapters=adapters)
+        await svc.fetch_all("2026-01-01", "2026-01-31")
+
+    # Should have been called for valor_estimado and modalidade
+    calls = [c[1]["field"] for c in mock_counter.labels.call_args_list]
+    assert "valor_estimado" in calls
+    assert "modalidade" in calls
+    assert mock_label.inc.call_count == 2

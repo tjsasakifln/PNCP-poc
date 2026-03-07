@@ -193,6 +193,10 @@ class UnifiedProcurement:
     raw_data: Optional[Dict[str, Any]] = field(default=None, repr=False)
     """Original raw data from source (for debugging)."""
 
+    # HARDEN-006 AC3: Track which source filled merged fields during dedup
+    merged_from: Dict[str, str] = field(default_factory=dict)
+    """Map of field_name -> source_name for fields filled via merge-enrichment."""
+
     def __post_init__(self):
         """Validate and normalize fields after initialization."""
         # Ensure source_id is string
@@ -299,6 +303,8 @@ class UnifiedProcurement:
             # Source tracking (new fields)
             "_source": self.source_name,
             "_dedup_key": self.dedup_key,
+            # HARDEN-006 AC3: Merge-enrichment audit trail
+            **{f"_{k}_source": v for k, v in self.merged_from.items()},
         }
 
 

@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, List, Optional, Set
 from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralized error emission
 from clients.base import SourceAdapter, SourceStatus, UnifiedProcurement, SourceError
 from source_config.sources import source_health_registry
-from metrics import FETCH_DURATION, API_ERRORS, SOURCES_BIDS_FETCHED
+from metrics import FETCH_DURATION, API_ERRORS, SOURCES_BIDS_FETCHED, DEDUP_FIELDS_MERGED
 from telemetry import get_tracer, optional_span
 from bulkhead import SourceBulkhead, get_bulkhead
 
@@ -744,13 +744,18 @@ class ConsolidationService:
                 "error": str(e),
             }
 
+    # HARDEN-006: Fields eligible for merge-enrichment from lower-priority duplicate
+    _MERGE_FIELDS = ("valor_estimado", "modalidade", "orgao", "objeto")
+
     def _deduplicate(
         self, records: List[UnifiedProcurement]
     ) -> List[UnifiedProcurement]:
         """
-        Deduplicate records by dedup_key, keeping the highest-priority source.
+        Deduplicate records by dedup_key with merge-enrichment.
 
         Priority is determined by SourceMetadata.priority (lower = higher priority).
+        The winner record is enriched with non-empty fields from the loser when
+        the winner's field is empty/zero (HARDEN-006).
         """
         if not records:
             return []
@@ -763,7 +768,7 @@ class ConsolidationService:
             if adapter_meta is not None:
                 source_priority[adapter_code] = adapter_meta.priority
 
-        # Group by dedup_key, keep best priority
+        # Group by dedup_key, keep best priority + merge enrichment
         seen: Dict[str, UnifiedProcurement] = {}
         for record in records:
             key = record.dedup_key
@@ -793,13 +798,54 @@ class ConsolidationService:
                             f"(diff={diff_pct:.1%})"
                         )
 
-                # Keep the one from higher priority source (lower number)
+                # Determine winner (higher priority = lower number) and loser
                 existing_priority = source_priority.get(existing.source_name, 999)
                 new_priority = source_priority.get(record.source_name, 999)
                 if new_priority < existing_priority:
+                    winner, loser = record, existing
                     seen[key] = record
+                else:
+                    winner, loser = existing, record
+
+                # HARDEN-006 AC1/AC2: Merge empty fields from loser into winner
+                self._merge_enrich(winner, loser, key)
 
         return list(seen.values())
+
+    def _merge_enrich(
+        self,
+        winner: UnifiedProcurement,
+        loser: UnifiedProcurement,
+        dedup_key: str,
+    ) -> None:
+        """Enrich winner with non-empty fields from loser (HARDEN-006 AC1/AC2/AC3)."""
+        for field_name in self._MERGE_FIELDS:
+            winner_val = getattr(winner, field_name, None)
+            loser_val = getattr(loser, field_name, None)
+
+            # Check if winner field is empty/zero
+            winner_empty = (
+                winner_val is None
+                or winner_val == ""
+                or (isinstance(winner_val, (int, float)) and winner_val == 0)
+            )
+            # Check if loser field has data
+            loser_has = (
+                loser_val is not None
+                and loser_val != ""
+                and not (isinstance(loser_val, (int, float)) and loser_val == 0)
+            )
+
+            if winner_empty and loser_has:
+                setattr(winner, field_name, loser_val)
+                # AC3: Track which source filled the field
+                winner.merged_from[field_name] = loser.source_name
+                # AC4: Metric
+                DEDUP_FIELDS_MERGED.labels(field=field_name).inc()
+                logger.debug(
+                    f"[DEDUP-MERGE] key={dedup_key} field={field_name} "
+                    f"filled from {loser.source_name} (winner={winner.source_name})"
+                )
 
     async def health_check_all(self) -> Dict[str, Dict[str, Any]]:
         """

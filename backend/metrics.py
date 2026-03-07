@@ -228,6 +228,13 @@ PERSIST_FAILURES = _create_counter(
     labelnames=["store"],
 )
 
+# HARDEN-006 AC4: Dedup merge-enrichment field counter
+DEDUP_FIELDS_MERGED = _create_counter(
+    "smartlic_dedup_fields_merged_total",
+    "HARDEN-006: Fields merged from lower-priority duplicate into winner",
+    labelnames=["field"],
+)
+
 # CRIT-012 AC8: SSE connection errors
 SSE_CONNECTION_ERRORS = _create_counter(
     "smartlic_sse_connection_errors_total",

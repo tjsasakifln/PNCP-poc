@@ -17,13 +17,13 @@ Dedup em `consolidation.py:747-802` mantém registro de maior prioridade (PNCP=1
 
 ## Critérios de Aceitação
 
-- [ ] AC1: Dedup faz merge de campos vazios do registro vencedor com campos do perdedor
-- [ ] AC2: Campos candidatos a merge: `valor_estimado`, `modalidade`, `orgao_nome`, `objeto`
-- [ ] AC3: Campo `_{field}_source` rastreável (auditoria de qual fonte preencheu)
-- [ ] AC4: Metric `smartlic_dedup_fields_merged_total` com label `field`
-- [ ] AC5: Teste unitário com cenário PNCP-incompleto + PCP-completo
-- [ ] AC6: Teste unitário com cenário ambos completos (sem merge necessário)
-- [ ] AC7: Zero regressions
+- [x] AC1: Dedup faz merge de campos vazios do registro vencedor com campos do perdedor
+- [x] AC2: Campos candidatos a merge: `valor_estimado`, `modalidade`, `orgao_nome`, `objeto`
+- [x] AC3: Campo `_{field}_source` rastreável (auditoria de qual fonte preencheu)
+- [x] AC4: Metric `smartlic_dedup_fields_merged_total` com label `field`
+- [x] AC5: Teste unitário com cenário PNCP-incompleto + PCP-completo
+- [x] AC6: Teste unitário com cenário ambos completos (sem merge necessário)
+- [x] AC7: Zero regressions
 
 ## Arquivos Afetados
 

@@ -242,7 +242,6 @@ class UnifiedProcurement(BaseModel):
         repr=False,
         description="Original raw data from source (for debugging)"
     )
-
     @field_validator("uf")
     @classmethod
     def validate_uf(cls, v: str) -> str:
