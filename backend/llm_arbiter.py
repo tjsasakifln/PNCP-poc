@@ -19,12 +19,13 @@ import json
 import logging
 import os
 import time as _time_module
+from collections import OrderedDict
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
 from openai import OpenAI
-from metrics import LLM_CALLS, LLM_DURATION, EVIDENCE_PREFIX_STRIPPED
+from metrics import LLM_CALLS, LLM_DURATION, EVIDENCE_PREFIX_STRIPPED, ARBITER_CACHE_SIZE
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -70,8 +71,19 @@ _USD_TO_BRL = 5.0  # approximate
 # In-memory L1 cache for LLM decisions (key = MD5 hash of input)
 # D-02 AC8: Cache value is now dict (structured) or bool (legacy), keyed with prompt version
 # STORY-294 AC3: L2 cache in Redis hash with 1h TTL for cross-worker sharing
-_arbiter_cache: dict[str, Any] = {}
+# HARDEN-009: LRU eviction with size limit to prevent unbounded memory growth
+_ARBITER_CACHE_MAX = 5000
+_arbiter_cache: OrderedDict[str, Any] = OrderedDict()
 _ARBITER_REDIS_PREFIX = "smartlic:arbiter:"
+
+
+def _arbiter_cache_set(key: str, value: Any) -> None:
+    """HARDEN-009: Set cache entry with LRU eviction."""
+    _arbiter_cache[key] = value
+    _arbiter_cache.move_to_end(key)
+    while len(_arbiter_cache) > _ARBITER_CACHE_MAX:
+        _arbiter_cache.popitem(last=False)
+    ARBITER_CACHE_SIZE.set(len(_arbiter_cache))
 
 
 # ============================================================================
@@ -92,7 +104,7 @@ def _arbiter_cache_get_redis(cache_key: str) -> Optional[Any]:
         if data:
             result = json.loads(data)
             # Promote to L1 for fast subsequent access
-            _arbiter_cache[cache_key] = result
+            _arbiter_cache_set(cache_key, result)
             logger.debug(f"STORY-294: Arbiter cache L2 HIT: {cache_key[:16]}...")
             return result
     except Exception as e:
@@ -694,6 +706,7 @@ Os termos buscados descrevem o OBJETO PRINCIPAL deste contrato (não itens secun
 
     # STORY-294: L1 (in-memory) → L2 (Redis) cache lookup
     if cache_key in _arbiter_cache:
+        _arbiter_cache.move_to_end(cache_key)
         logger.debug(
             f"LLM arbiter cache L1 HIT: mode={mode} "
             f"context={context[:50]}... valor={valor}"
@@ -780,7 +793,7 @@ Os termos buscados descrevem o OBJETO PRINCIPAL deste contrato (não itens secun
         LLM_CALLS.labels(model=LLM_MODEL, decision=_decision, zone=prompt_level).inc()
 
         # Cache the result (L1 + L2)
-        _arbiter_cache[cache_key] = result
+        _arbiter_cache_set(cache_key, result)
         _arbiter_cache_set_redis(cache_key, result)
 
         logger.info(
@@ -1162,6 +1175,7 @@ Responda APENAS: SIM ou NAO"""
 
     # STORY-294: L1 (in-memory) → L2 (Redis) cache lookup
     if cache_key in _arbiter_cache:
+        _arbiter_cache.move_to_end(cache_key)
         cached = _arbiter_cache[cache_key]
         if isinstance(cached, dict):
             return cached.get("is_primary", False)
@@ -1198,7 +1212,7 @@ Responda APENAS: SIM ou NAO"""
         LLM_DURATION.labels(model=LLM_MODEL, decision=_decision).observe(_llm_elapsed)
         LLM_CALLS.labels(model=LLM_MODEL, decision=_decision, zone="recovery").inc()
 
-        _arbiter_cache[cache_key] = should_recover
+        _arbiter_cache_set(cache_key, should_recover)
         _arbiter_cache_set_redis(cache_key, should_recover)
 
         logger.debug(
@@ -1228,7 +1242,8 @@ def get_cache_stats() -> dict[str, int]:
 def clear_cache() -> None:
     """Clear the LLM arbiter cache (for testing/debugging)."""
     global _arbiter_cache
-    _arbiter_cache = {}
+    _arbiter_cache = OrderedDict()
+    ARBITER_CACHE_SIZE.set(0)
     _search_token_stats.clear()
     _parse_stats.clear()
     logger.info("LLM arbiter cache cleared")

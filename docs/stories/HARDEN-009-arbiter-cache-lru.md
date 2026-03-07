@@ -11,11 +11,11 @@
 
 ## Critérios de Aceitação
 
-- [ ] AC1: `_arbiter_cache` convertido para `OrderedDict` com max 5000 entries
-- [ ] AC2: LRU eviction (popitem oldest quando excede max)
-- [ ] AC3: Metric `smartlic_arbiter_cache_size` gauge
-- [ ] AC4: Teste unitário valida eviction
-- [ ] AC5: Zero regressions
+- [x] AC1: `_arbiter_cache` convertido para `OrderedDict` com max 5000 entries
+- [x] AC2: LRU eviction (popitem oldest quando excede max)
+- [x] AC3: Metric `smartlic_arbiter_cache_size` gauge
+- [x] AC4: Teste unitário valida eviction
+- [x] AC5: Zero regressions
 
 ## Solução
 

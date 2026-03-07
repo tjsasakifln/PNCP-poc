@@ -22,6 +22,9 @@ import pytest
 
 from llm_arbiter import (
     LLMClassification,
+    _ARBITER_CACHE_MAX,
+    _arbiter_cache,
+    _arbiter_cache_set,
     _build_conservative_prompt,
     _parse_structured_response,
     _strip_evidence_prefix,
@@ -843,3 +846,110 @@ class TestEvidencePrefixStripping:
         )
         assert len(result.evidencias) == 1
         assert result.evidencias[0] == "Registro de preços para aquisição"
+
+
+# ============================================================================
+# HARDEN-009: LRU eviction tests
+# ============================================================================
+
+
+class TestArbiterCacheLRU:
+    """HARDEN-009: Arbiter cache LRU with size limit."""
+
+    def test_cache_max_is_5000(self):
+        """AC1: Max entries is 5000."""
+        assert _ARBITER_CACHE_MAX == 5000
+
+    def test_cache_is_ordered_dict(self):
+        """AC1: Cache is OrderedDict."""
+        from collections import OrderedDict
+        assert isinstance(_arbiter_cache, OrderedDict)
+
+    def test_lru_eviction_oldest_removed(self):
+        """AC2: Oldest entry evicted when cache exceeds max."""
+        import llm_arbiter
+        original_max = llm_arbiter._ARBITER_CACHE_MAX
+        try:
+            llm_arbiter._ARBITER_CACHE_MAX = 3
+            clear_cache()
+
+            _arbiter_cache_set("k1", "v1")
+            _arbiter_cache_set("k2", "v2")
+            _arbiter_cache_set("k3", "v3")
+            cache = llm_arbiter._arbiter_cache
+            assert len(cache) == 3
+            assert "k1" in cache
+
+            # Adding 4th should evict k1 (oldest)
+            _arbiter_cache_set("k4", "v4")
+            cache = llm_arbiter._arbiter_cache
+            assert len(cache) == 3
+            assert "k1" not in cache
+            assert "k2" in cache
+            assert "k4" in cache
+        finally:
+            llm_arbiter._ARBITER_CACHE_MAX = original_max
+            clear_cache()
+
+    def test_lru_access_promotes_entry(self):
+        """AC2: Accessing an entry promotes it (not evicted next)."""
+        import llm_arbiter
+        original_max = llm_arbiter._ARBITER_CACHE_MAX
+        try:
+            llm_arbiter._ARBITER_CACHE_MAX = 3
+            clear_cache()
+
+            _arbiter_cache_set("k1", "v1")
+            _arbiter_cache_set("k2", "v2")
+            _arbiter_cache_set("k3", "v3")
+
+            # Access k1 — promotes it to most-recent
+            llm_arbiter._arbiter_cache.move_to_end("k1")
+
+            # Adding k4 should evict k2 (now oldest), not k1
+            _arbiter_cache_set("k4", "v4")
+            cache = llm_arbiter._arbiter_cache
+            assert "k1" in cache
+            assert "k2" not in cache
+        finally:
+            llm_arbiter._ARBITER_CACHE_MAX = original_max
+            clear_cache()
+
+    def test_update_existing_key_no_eviction(self):
+        """AC2: Updating existing key doesn't increase size."""
+        import llm_arbiter
+        original_max = llm_arbiter._ARBITER_CACHE_MAX
+        try:
+            llm_arbiter._ARBITER_CACHE_MAX = 3
+            clear_cache()
+
+            _arbiter_cache_set("k1", "v1")
+            _arbiter_cache_set("k2", "v2")
+            _arbiter_cache_set("k3", "v3")
+
+            # Update k1 — should not evict anything
+            _arbiter_cache_set("k1", "v1_updated")
+            cache = llm_arbiter._arbiter_cache
+            assert len(cache) == 3
+            assert cache["k1"] == "v1_updated"
+        finally:
+            llm_arbiter._ARBITER_CACHE_MAX = original_max
+            clear_cache()
+
+    def test_cache_stats_reflect_size(self):
+        """AC3: get_cache_stats returns current size."""
+        clear_cache()
+        _arbiter_cache_set("a", 1)
+        _arbiter_cache_set("b", 2)
+        stats = get_cache_stats()
+        assert stats["cache_size"] == 2
+        assert stats["total_entries"] == 2
+
+    def test_clear_cache_resets(self):
+        """Clear cache resets to empty OrderedDict."""
+        import llm_arbiter
+        from collections import OrderedDict
+        _arbiter_cache_set("x", 1)
+        clear_cache()
+        assert len(llm_arbiter._arbiter_cache) == 0
+        assert isinstance(llm_arbiter._arbiter_cache, OrderedDict)

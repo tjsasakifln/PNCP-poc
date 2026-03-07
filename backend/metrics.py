@@ -268,6 +268,12 @@ EVIDENCE_PREFIX_STRIPPED = _create_counter(
     "Evidence prefix stripped before substring validation",
 )
 
+# HARDEN-009: Arbiter cache LRU size gauge
+ARBITER_CACHE_SIZE = _create_gauge(
+    "smartlic_arbiter_cache_size",
+    "Current number of entries in the LLM arbiter in-memory cache",
+)
+
 # CRIT-032: Periodic cache refresh metrics
 # STORY-266: Trial email delivery tracking
 TRIAL_EMAILS_SENT = _create_counter(
