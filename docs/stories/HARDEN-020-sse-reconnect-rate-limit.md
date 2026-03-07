@@ -11,10 +11,10 @@ GET `/buscar-progress/{search_id}` não tem rate limit explícito. Já tem `acqu
 
 ## Critérios de Aceitação
 
-- [ ] AC1: Max 10 reconnections por user em 60s
-- [ ] AC2: 429 com Retry-After se limite excedido
-- [ ] AC3: Reutilizar infra de rate_limiter.py existente
-- [ ] AC4: Teste unitário
+- [x] AC1: Max 10 reconnections por user em 60s
+- [x] AC2: 429 com Retry-After se limite excedido
+- [x] AC3: Reutilizar infra de rate_limiter.py existente
+- [x] AC4: Teste unitário
 
 ## Arquivos Afetados
 

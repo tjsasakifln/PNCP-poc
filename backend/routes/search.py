@@ -49,6 +49,9 @@ from rate_limiter import (
     acquire_sse_connection,
     release_sse_connection,
     SEARCH_RATE_LIMIT_PER_MINUTE,
+    SSE_RECONNECT_RATE_LIMIT,
+    SSE_RECONNECT_WINDOW_SECONDS,
+    _flexible_limiter,
 )
 from progress import create_tracker, get_tracker, remove_tracker, get_replay_events, is_search_terminal
 from redis_pool import get_redis_pool, get_sse_redis_pool
@@ -447,8 +450,30 @@ async def buscar_progress_stream(
     except Exception as e:
         logger.debug(f"SSE metrics unavailable: {e}")
 
-    # GTM-GO-002 AC6: Enforce SSE connection limit per user
+    # HARDEN-020 AC1+AC2: Rate limit SSE reconnections (10/60s per user)
     user_id = user.get("id", "unknown")
+    allowed, retry_after = await _flexible_limiter.check_rate_limit(
+        f"sse_reconnect:user:{user_id}",
+        SSE_RECONNECT_RATE_LIMIT,
+        SSE_RECONNECT_WINDOW_SECONDS,
+    )
+    if not allowed:
+        logger.warning(
+            "HARDEN-020: SSE reconnect rate limit exceeded user_id=%s retry_after=%ds",
+            user_id,
+            retry_after,
+        )
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "detail": f"Limite de reconexões SSE excedido. Tente novamente em {retry_after} segundos.",
+                "retry_after_seconds": retry_after,
+                "correlation_id": str(_uuid.uuid4()),
+            },
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    # GTM-GO-002 AC6: Enforce SSE connection limit per user
     if not await acquire_sse_connection(user_id):
         raise HTTPException(
             status_code=429,
