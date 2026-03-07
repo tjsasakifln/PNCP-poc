@@ -11,9 +11,9 @@ Gunicorn sem `--max-requests` permite acúmulo lento de memória em workers long
 
 ## Critérios de Aceitação
 
-- [ ] AC1: `--max-requests 1000` adicionado ao Gunicorn config
-- [ ] AC2: `--max-requests-jitter 50` para evitar restart simultâneo
-- [ ] AC3: Deploy bem-sucedido no Railway
+- [x] AC1: `--max-requests 1000` adicionado ao Gunicorn config
+- [x] AC2: `--max-requests-jitter 50` para evitar restart simultâneo
+- [x] AC3: Deploy bem-sucedido no Railway
 
 ## Solução
 
