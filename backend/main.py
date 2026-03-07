@@ -380,6 +380,50 @@ async def _mark_inflight_sessions_timed_out() -> None:
         logger.error(f"CRIT-002 AC15: Failed to mark in-flight sessions: {e}")
 
 
+_SATURATION_INTERVAL = 30  # seconds
+
+
+async def _periodic_saturation_metrics() -> None:
+    """HARDEN-024 AC6: Report pool/queue saturation metrics every 30s."""
+    from metrics import (
+        REDIS_POOL_CONNECTIONS_USED, REDIS_POOL_CONNECTIONS_MAX,
+        HTTPX_POOL_CONNECTIONS_USED, TRACKER_ACTIVE_COUNT,
+        BACKGROUND_RESULTS_COUNT,
+    )
+    from redis_pool import get_pool_stats
+    from progress import get_active_tracker_count
+    from routes.search import get_background_results_count
+    from config import (
+        PNCP_BULKHEAD_CONCURRENCY, PCP_BULKHEAD_CONCURRENCY,
+        COMPRASGOV_BULKHEAD_CONCURRENCY,
+    )
+
+    while True:
+        try:
+            await asyncio.sleep(_SATURATION_INTERVAL)
+
+            # AC1/AC2: Redis pool
+            stats = get_pool_stats()
+            REDIS_POOL_CONNECTIONS_USED.set(stats["used"])
+            REDIS_POOL_CONNECTIONS_MAX.set(stats["max"])
+
+            # AC3: httpx pool max connections per source (configured limits)
+            HTTPX_POOL_CONNECTIONS_USED.labels(source="pncp").set(PNCP_BULKHEAD_CONCURRENCY + 2)
+            HTTPX_POOL_CONNECTIONS_USED.labels(source="pcp").set(PCP_BULKHEAD_CONCURRENCY + 2)
+            HTTPX_POOL_CONNECTIONS_USED.labels(source="comprasgov").set(COMPRASGOV_BULKHEAD_CONCURRENCY + 2)
+
+            # AC4: Active trackers
+            TRACKER_ACTIVE_COUNT.set(get_active_tracker_count())
+
+            # AC5: Background results in memory
+            BACKGROUND_RESULTS_COUNT.set(get_background_results_count())
+
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.warning("HARDEN-024: Saturation metrics error: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app_instance: FastAPI):
     """Application lifespan context manager.
@@ -463,6 +507,9 @@ async def lifespan(app_instance: FastAPI):
     # HARDEN-004 AC2: Start periodic tracker cleanup (every 120s)
     from progress import _periodic_tracker_cleanup
     tracker_cleanup_task = asyncio.create_task(_periodic_tracker_cleanup())
+
+    # HARDEN-024 AC6: Start periodic saturation metrics reporter (every 30s)
+    saturation_metrics_task = asyncio.create_task(_periodic_saturation_metrics())
 
     # P1.2: Start startup cache warm-up (top sector+UF combinations)
     warmup_task = await start_warmup_task()
@@ -590,7 +637,7 @@ async def lifespan(app_instance: FastAPI):
         trial_sequence_task, reconciliation_task, health_canary_task,
         revenue_share_task, sector_stats_task, support_sla_task,
         daily_volume_task, results_cleanup_task, tracker_cleanup_task,
-        warmup_task,
+        warmup_task, saturation_metrics_task,
     ]
     for t in _cron_tasks:
         t.cancel()

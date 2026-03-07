@@ -822,6 +822,42 @@ CACHE_QUALITY_SCORE = _create_histogram(
 
 
 # ============================================================================
+# HARDEN-024: Saturation metrics (connection pools, queue depth)
+# ============================================================================
+
+# AC1: Redis pool connections currently in use
+REDIS_POOL_CONNECTIONS_USED = _create_gauge(
+    "smartlic_redis_pool_connections_used",
+    "HARDEN-024: Redis pool connections currently in use",
+)
+
+# AC2: Redis pool max connections configured
+REDIS_POOL_CONNECTIONS_MAX = _create_gauge(
+    "smartlic_redis_pool_connections_max",
+    "HARDEN-024: Redis pool max connections configured",
+)
+
+# AC3: httpx pool connections in use per data source
+HTTPX_POOL_CONNECTIONS_USED = _create_gauge(
+    "smartlic_httpx_pool_connections_used",
+    "HARDEN-024: httpx pool connections in use per data source",
+    labelnames=["source"],
+)
+
+# AC4: Active progress trackers count
+TRACKER_ACTIVE_COUNT = _create_gauge(
+    "smartlic_tracker_active_count",
+    "HARDEN-024: Number of active progress trackers in memory",
+)
+
+# AC5: Background results stored in memory
+BACKGROUND_RESULTS_COUNT = _create_gauge(
+    "smartlic_background_results_count",
+    "HARDEN-024: Number of search results stored in memory (L1 cache)",
+)
+
+
+# ============================================================================
 # ASGI app factory for /metrics endpoint
 # ============================================================================
 

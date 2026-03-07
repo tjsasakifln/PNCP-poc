@@ -462,3 +462,26 @@ def get_sync_redis():
         _sync_redis = None
         _sync_redis_initialized = True
         return None
+
+
+# ============================================================================
+# HARDEN-024: Redis pool saturation stats
+# ============================================================================
+
+def get_pool_stats() -> dict:
+    """HARDEN-024 AC1/AC2: Return Redis connection pool usage stats.
+
+    Returns:
+        dict with 'used' and 'max' connection counts.
+        Returns zeros if Redis is unavailable or pool has no stats.
+    """
+    if _redis_pool is None:
+        return {"used": 0, "max": 0}
+    try:
+        pool = _redis_pool.connection_pool
+        # redis-py 5.x exposes _in_use_connections as a set
+        used = len(pool._in_use_connections) if hasattr(pool, "_in_use_connections") else 0
+        max_conns = pool.max_connections if hasattr(pool, "max_connections") else 0
+        return {"used": used, "max": max_conns}
+    except Exception:
+        return {"used": 0, "max": 0}

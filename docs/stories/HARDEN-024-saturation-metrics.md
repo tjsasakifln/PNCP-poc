@@ -11,12 +11,12 @@ Redis connection exhaustion foi invisível no post-mortem da Transloadit (Sept 2
 
 ## Critérios de Aceitação
 
-- [ ] AC1: Gauge `smartlic_redis_pool_connections_used` (ativo)
-- [ ] AC2: Gauge `smartlic_redis_pool_connections_max` (configurado)
-- [ ] AC3: Gauge `smartlic_httpx_pool_connections_used` por source
-- [ ] AC4: Gauge `smartlic_tracker_active_count` (trackers ativos)
-- [ ] AC5: Gauge `smartlic_background_results_count` (results em memória)
-- [ ] AC6: Background task reporta métricas a cada 30s
+- [x] AC1: Gauge `smartlic_redis_pool_connections_used` (ativo)
+- [x] AC2: Gauge `smartlic_redis_pool_connections_max` (configurado)
+- [x] AC3: Gauge `smartlic_httpx_pool_connections_used` por source
+- [x] AC4: Gauge `smartlic_tracker_active_count` (trackers ativos)
+- [x] AC5: Gauge `smartlic_background_results_count` (results em memória)
+- [x] AC6: Background task reporta métricas a cada 30s
 - [ ] AC7: Dashboard Grafana template (opcional)
 
 ## Arquivos Afetados

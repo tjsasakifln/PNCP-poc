@@ -168,6 +168,11 @@ _MAX_BACKGROUND_RESULTS = 200  # HARDEN-013 AC1: cap in-memory results dict
 _RESULTS_REDIS_PREFIX = "smartlic:results:"
 
 
+def get_background_results_count() -> int:
+    """HARDEN-024 AC5: Return number of background results in memory."""
+    return len(_background_results)
+
+
 def _cleanup_stale_results() -> None:
     """Remove background results older than TTL."""
     now = sync_time.time()

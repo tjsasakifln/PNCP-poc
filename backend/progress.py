@@ -878,5 +878,10 @@ async def _store_tracker_metadata(search_id: str, uf_count: int) -> None:
         logger.warning(f"Failed to store tracker metadata in Redis: {e}")
 
 
+def get_active_tracker_count() -> int:
+    """HARDEN-024 AC4: Return number of active progress trackers."""
+    return len(_active_trackers)
+
+
 # STORY-276 AC4: subscribe_to_events() removed — Redis Pub/Sub replaced by Streams.
 # SSE consumer now uses XREAD BLOCK directly in routes/search.py.
