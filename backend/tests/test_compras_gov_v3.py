@@ -1046,13 +1046,13 @@ class TestFeatureFlag:
             config = SourceConfig.from_env()
             assert config.compras_gov.enabled is False
 
+    @patch("config.COMPRASGOV_ENABLED", True)
     def test_source_config_enabled_via_env(self):
-        """AC31: ComprasGov can be enabled via ENABLE_SOURCE_COMPRAS_GOV=true."""
+        """AC31: ComprasGov can be enabled via COMPRASGOV_ENABLED=true."""
         from source_config.sources import SourceConfig
 
-        with patch.dict("os.environ", {"ENABLE_SOURCE_COMPRAS_GOV": "true"}, clear=False):
-            config = SourceConfig.from_env()
-            assert config.compras_gov.enabled is True
+        config = SourceConfig.from_env()
+        assert config.compras_gov.enabled is True
 
     def test_source_config_v3_base_url(self):
         """AC25: Source config uses v3 base URL."""

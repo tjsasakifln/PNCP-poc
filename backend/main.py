@@ -1152,10 +1152,11 @@ async def sources_health():
         })
 
     if source_config.compras_gov.enabled:
+        from config import COMPRASGOV_ENABLED as _cg_enabled
         sources_info.append({
             "code": "COMPRAS_GOV",
             "name": source_config.compras_gov.name,
-            "enabled": True,
+            "enabled": _cg_enabled,
             "priority": source_config.compras_gov.priority,
         })
 
@@ -1174,7 +1175,9 @@ async def sources_health():
 
         adapters = {}
         if source_config.compras_gov.enabled:
-            adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
+            from config import COMPRASGOV_ENABLED as _cg_on
+            if _cg_on:
+                adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
         # GTM-FIX-024 T2: PCP v2 API is public — no API key required
         # CRIT-047 AC8: Check health registry before including PCP
         if source_config.portal.enabled:

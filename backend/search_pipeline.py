@@ -974,8 +974,11 @@ class SearchPipeline:
                 )
 
         if source_config.compras_gov.enabled:
-            from config import COMPRASGOV_CB_ENABLED
-            if COMPRASGOV_CB_ENABLED and comprasgov_cb.is_degraded:
+            from config import COMPRASGOV_CB_ENABLED, COMPRASGOV_ENABLED
+            if not COMPRASGOV_ENABLED:
+                logger.info("[MULTI-SOURCE] ComprasGov DISABLED via COMPRASGOV_ENABLED flag — skipping")
+                skipped_sources.append("COMPRAS_GOV")
+            elif COMPRASGOV_CB_ENABLED and comprasgov_cb.is_degraded:
                 logger.warning("[MULTI-SOURCE] ComprasGov circuit breaker OPEN — skipping source")
                 skipped_sources.append("COMPRAS_GOV")
             else:

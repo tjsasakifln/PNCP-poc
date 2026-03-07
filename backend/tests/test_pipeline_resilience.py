@@ -131,21 +131,13 @@ class TestComprasGovDisabled:
             if original is not None:
                 os.environ["ENABLE_SOURCE_COMPRAS_GOV"] = original
 
+    @patch("config.COMPRASGOV_ENABLED", True)
     def test_compras_gov_can_be_enabled_via_env(self):
-        """ComprasGov can still be enabled via env var override."""
+        """ComprasGov can still be enabled via COMPRASGOV_ENABLED=true."""
         from source_config.sources import SourceConfig
-        import os
-        original = os.environ.get("ENABLE_SOURCE_COMPRAS_GOV")
-        os.environ["ENABLE_SOURCE_COMPRAS_GOV"] = "true"
-        try:
-            config = SourceConfig.from_env()
-            assert config.compras_gov.enabled is True
-            assert "ComprasGov" in config.get_enabled_sources()
-        finally:
-            if original is not None:
-                os.environ["ENABLE_SOURCE_COMPRAS_GOV"] = original
-            else:
-                os.environ.pop("ENABLE_SOURCE_COMPRAS_GOV", None)
+        config = SourceConfig.from_env()
+        assert config.compras_gov.enabled is True
+        assert "ComprasGov" in config.get_enabled_sources()
 
 
 # ---------------------------------------------------------------------------

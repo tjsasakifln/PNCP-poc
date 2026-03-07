@@ -532,6 +532,8 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "LLM_FALLBACK_PENDING_ENABLED": ("LLM_FALLBACK_PENDING_ENABLED", "true"),
     # CRIT-071: Partial data progressive SSE
     "PARTIAL_DATA_SSE_ENABLED": ("PARTIAL_DATA_SSE_ENABLED", "true"),
+    # HARDEN-010: ComprasGov v3 master flag (API down since 2026-03-03)
+    "COMPRASGOV_ENABLED": ("COMPRASGOV_ENABLED", "false"),
 }
 
 # ============================================
@@ -781,6 +783,12 @@ def log_feature_flags() -> None:
     logger.info(f"Feature Flag - LLM_ARBITER_ENABLED: {LLM_ARBITER_ENABLED}")
     logger.info(f"Feature Flag - SYNONYM_MATCHING_ENABLED: {SYNONYM_MATCHING_ENABLED}")
     logger.info(f"Feature Flag - ZERO_RESULTS_RELAXATION_ENABLED: {ZERO_RESULTS_RELAXATION_ENABLED}")
+    # HARDEN-010 AC3: Warn at startup if ComprasGov is disabled
+    if not COMPRASGOV_ENABLED:
+        logger.warning(
+            "ComprasGov v3 source is DISABLED (COMPRASGOV_ENABLED=false). "
+            "Set COMPRASGOV_ENABLED=true to re-enable when API is back online."
+        )
 
 
 # ============================================
@@ -951,6 +959,11 @@ PCP_SLOW_PAGE_THRESHOLD_S: float = float(os.getenv("PCP_SLOW_PAGE_THRESHOLD_S", 
 # databases have different failure semantics than HTTP APIs (sliding window with
 # fail-rate percentage is correct for DB; consecutive-failure count for HTTP APIs).
 COMPRASGOV_CB_ENABLED: bool = os.getenv("COMPRASGOV_CB_ENABLED", "true").lower() in ("true", "1", "yes")
+
+# HARDEN-010: ComprasGov v3 master enable/disable flag.
+# API is completely down since 2026-03-03 (404 on homepage). CB wastes resources retrying.
+# Set COMPRASGOV_ENABLED=true to re-enable when API comes back online.
+COMPRASGOV_ENABLED: bool = str_to_bool(os.getenv("COMPRASGOV_ENABLED", "false"))
 
 # ============================================================================
 # STORY-294: State Externalization to Redis
