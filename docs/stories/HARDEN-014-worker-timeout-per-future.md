@@ -11,14 +11,15 @@
 
 ## Critérios de Aceitação
 
-- [ ] AC1: `wait(timeout=20)` com `FIRST_COMPLETED` ao invés de `as_completed()`
-- [ ] AC2: Futures que excedem timeout são cancelled
-- [ ] AC3: Items não classificados marcados como `pending_review`
-- [ ] AC4: Metric `smartlic_llm_batch_timeout_total`
-- [ ] AC5: Teste unitário com future que trava
-- [ ] AC6: Zero regressions
+- [x] AC1: `wait(timeout=20)` com `FIRST_COMPLETED` ao invés de `as_completed()`
+- [x] AC2: Futures que excedem timeout são cancelled
+- [x] AC3: Items não classificados marcados como `pending_review`
+- [x] AC4: Metric `smartlic_llm_batch_timeout_total`
+- [x] AC5: Teste unitário com future que trava
+- [x] AC6: Zero regressions
 
 ## Arquivos Afetados
 
-- `backend/filter.py` — filter_licitacoes_parallel() ou seção zero-match
-- `backend/tests/test_filter.py`
+- `backend/filter.py` — 3 ThreadPoolExecutor loops converted (zero-match batch, zero-match individual, arbiter)
+- `backend/metrics.py` — `LLM_BATCH_TIMEOUT` counter with `phase` label
+- `backend/tests/test_harden014_future_timeout.py` — 5 tests (batch timeout, fast batch, individual timeout, arbiter timeout, metric)

@@ -120,6 +120,13 @@ LLM_ZERO_MATCH_BATCH_SIZE = _create_histogram(
     buckets=[1, 5, 10, 15, 20, 25, 30, 40, 50],
 )
 
+# HARDEN-014 AC4: Per-future timeout counter for LLM batch classification
+LLM_BATCH_TIMEOUT = _create_counter(
+    "smartlic_llm_batch_timeout_total",
+    "LLM batch futures that exceeded per-future timeout",
+    labelnames=["phase"],  # "zero_match_batch", "zero_match_individual", "arbiter"
+)
+
 # CRIT-003 AC22: Time spent in each pipeline state
 STATE_DURATION = _create_histogram(
     "smartlic_search_state_duration_seconds",

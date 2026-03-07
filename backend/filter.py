@@ -7,6 +7,7 @@ import time
 import threading
 import unicodedata
 import uuid
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from datetime import datetime, timezone
 from typing import Callable, Set, Tuple, List, Dict, Optional
 
@@ -3086,7 +3087,6 @@ def aplicar_todos_filtros(
             from llm_arbiter import classify_contract_primary_match as _classify_zm
             from llm_arbiter import _classify_zero_match_batch as _classify_batch
             from sectors import get_sector as _get_sector_zm
-            from concurrent.futures import ThreadPoolExecutor, as_completed
             from config import LLM_ZERO_MATCH_BATCH_ENABLED, LLM_ZERO_MATCH_BATCH_SIZE
             import time as _time_zm
 
@@ -3212,15 +3212,14 @@ def aplicar_todos_filtros(
                                 )
                             future_to_idx[fut] = idx
 
-                        for future in as_completed(future_to_idx):
-                            # CRIT-057 AC1: Check time budget after each batch
+                        pending = set(future_to_idx.keys())
+                        while pending:
+                            # CRIT-057 AC1: Check time budget
                             _zm_elapsed = _time_zm.time() - _batch_start
                             if _zm_elapsed > FILTER_ZERO_MATCH_BUDGET_S:
                                 _zm_budget_hit = True
-                                # Cancel remaining futures
-                                for remaining_future in future_to_idx:
-                                    if future_to_idx[remaining_future] not in _completed_batch_indices:
-                                        remaining_future.cancel()
+                                for f in pending:
+                                    f.cancel()
                                 # Mark unclassified items as pending_review
                                 for b_idx, b_group in enumerate(batch_lic_groups):
                                     if b_idx not in _completed_batch_indices:
@@ -3242,10 +3241,40 @@ def aplicar_todos_filtros(
                                 )
                                 break
 
-                            idx = future_to_idx[future]
-                            _completed_batch_indices.add(idx)
-                            batch_results = future.result()  # raises on error
-                            all_results.append((idx, batch_results))
+                            # HARDEN-014 AC1: wait with per-future timeout
+                            done, pending = wait(pending, timeout=20, return_when=FIRST_COMPLETED)
+
+                            if not done:
+                                # HARDEN-014 AC2: All pending futures exceeded timeout
+                                from metrics import LLM_BATCH_TIMEOUT
+                                for f in pending:
+                                    f.cancel()
+                                    LLM_BATCH_TIMEOUT.labels(phase="zero_match_batch").inc()
+                                # HARDEN-014 AC3: Mark timed-out items as pending_review
+                                for b_idx, b_group in enumerate(batch_lic_groups):
+                                    if b_idx not in _completed_batch_indices:
+                                        for lic_item in b_group:
+                                            lic_item["_relevance_source"] = "pending_review"
+                                            lic_item["_pending_review"] = True
+                                            lic_item["_pending_review_reason"] = "llm_future_timeout"
+                                            lic_item["_term_density"] = 0.0
+                                            lic_item["_matched_terms"] = []
+                                            lic_item["_confidence_score"] = 0
+                                            lic_item["_llm_evidence"] = []
+                                            resultado_pending_review.append(lic_item)
+                                            stats["pending_review_count"] += 1
+                                logger.warning(
+                                    f"[HARDEN-014] Per-future timeout (20s) hit for "
+                                    f"{len(pending)} batch futures, "
+                                    f"{len(_completed_batch_indices)}/{len(batches)} completed"
+                                )
+                                break
+
+                            for future in done:
+                                idx = future_to_idx[future]
+                                _completed_batch_indices.add(idx)
+                                batch_results = future.result()
+                                all_results.append((idx, batch_results))
 
                     # Sort by original batch index and apply results
                     all_results.sort(key=lambda x: x[0])
@@ -3321,16 +3350,14 @@ def aplicar_todos_filtros(
                         executor.submit(_classify_one, lic): lic
                         for lic in zero_match_pool
                     }
-                    for future in as_completed(futures):
-                        # CRIT-057 AC1: Check time budget after each individual result
+                    pending = set(futures.keys())
+                    while pending:
+                        # CRIT-057 AC1: Check time budget
                         _zm_elapsed = _time_zm.time() - _indiv_start
                         if _zm_elapsed > FILTER_ZERO_MATCH_BUDGET_S:
                             _zm_budget_hit = True
-                            # Cancel remaining futures
-                            for remaining_future in futures:
-                                if id(futures[remaining_future]) not in _indiv_classified_ids:
-                                    remaining_future.cancel()
-                            # Mark unclassified items as pending_review
+                            for f in pending:
+                                f.cancel()
                             for lic in zero_match_pool:
                                 if id(lic) not in _indiv_classified_ids:
                                     lic["_relevance_source"] = "pending_review"
@@ -3350,29 +3377,58 @@ def aplicar_todos_filtros(
                             )
                             break
 
-                        _llm_completed += 1
-                        stats["llm_zero_match_calls"] += 1
-                        _indiv_classified_ids.add(id(futures[future]))
-                        if on_progress:
-                            on_progress(_llm_completed, _llm_total, "llm_classify")
-                        try:
-                            lic_item, llm_result = future.result()
-                            _apply_result(lic_item, llm_result)
-                        except Exception as e:
-                            from config import LLM_FALLBACK_PENDING_ENABLED
-                            if LLM_FALLBACK_PENDING_ENABLED:
-                                stats["pending_review_count"] += 1
-                                lic_ref = futures[future]
-                                lic_ref["_relevance_source"] = "pending_review"
-                                lic_ref["_term_density"] = 0.0
-                                lic_ref["_matched_terms"] = []
-                                lic_ref["_confidence_score"] = 0
-                                lic_ref["_pending_review"] = True
-                                resultado_pending_review.append(lic_ref)
-                                logger.warning(f"LLM zero_match: FAILED → PENDING_REVIEW: {e}")
-                            else:
-                                stats["llm_zero_match_rejeitadas"] += 1
-                                logger.error(f"LLM zero_match: FAILED (REJECT fallback): {e}")
+                        # HARDEN-014 AC1: wait with per-future timeout
+                        done, pending = wait(pending, timeout=20, return_when=FIRST_COMPLETED)
+
+                        if not done:
+                            # HARDEN-014 AC2: All pending futures exceeded timeout
+                            from metrics import LLM_BATCH_TIMEOUT
+                            for f in pending:
+                                f.cancel()
+                                LLM_BATCH_TIMEOUT.labels(phase="zero_match_individual").inc()
+                            # HARDEN-014 AC3: Mark timed-out items as pending_review
+                            for lic in zero_match_pool:
+                                if id(lic) not in _indiv_classified_ids:
+                                    lic["_relevance_source"] = "pending_review"
+                                    lic["_pending_review"] = True
+                                    lic["_pending_review_reason"] = "llm_future_timeout"
+                                    lic["_term_density"] = 0.0
+                                    lic["_matched_terms"] = []
+                                    lic["_confidence_score"] = 0
+                                    lic["_llm_evidence"] = []
+                                    resultado_pending_review.append(lic)
+                                    stats["pending_review_count"] += 1
+                            logger.warning(
+                                f"[HARDEN-014] Per-future timeout (20s) hit for "
+                                f"{len(pending)} individual futures, "
+                                f"{_llm_completed}/{_llm_total} completed"
+                            )
+                            break
+
+                        for future in done:
+                            _llm_completed += 1
+                            stats["llm_zero_match_calls"] += 1
+                            _indiv_classified_ids.add(id(futures[future]))
+                            if on_progress:
+                                on_progress(_llm_completed, _llm_total, "llm_classify")
+                            try:
+                                lic_item, llm_result = future.result()
+                                _apply_result(lic_item, llm_result)
+                            except Exception as e:
+                                from config import LLM_FALLBACK_PENDING_ENABLED
+                                if LLM_FALLBACK_PENDING_ENABLED:
+                                    stats["pending_review_count"] += 1
+                                    lic_ref = futures[future]
+                                    lic_ref["_relevance_source"] = "pending_review"
+                                    lic_ref["_term_density"] = 0.0
+                                    lic_ref["_matched_terms"] = []
+                                    lic_ref["_confidence_score"] = 0
+                                    lic_ref["_pending_review"] = True
+                                    resultado_pending_review.append(lic_ref)
+                                    logger.warning(f"LLM zero_match: FAILED → PENDING_REVIEW: {e}")
+                                else:
+                                    stats["llm_zero_match_rejeitadas"] += 1
+                                    logger.error(f"LLM zero_match: FAILED (REJECT fallback): {e}")
 
                 # CRIT-057 AC3: Observe zero-match duration (individual mode)
                 _indiv_elapsed = _time_zm.time() - _indiv_start
@@ -3618,7 +3674,6 @@ def aplicar_todos_filtros(
 
     if resultado_llm_candidates:
         from llm_arbiter import classify_contract_primary_match
-        from concurrent.futures import ThreadPoolExecutor, as_completed
 
         # CRIT-FLT-002: Resolve sector name ONCE before dispatching threads
         _arbiter_setor_name = None
@@ -3683,77 +3738,96 @@ def aplicar_todos_filtros(
                 executor.submit(_classify_one_arbiter, lic): lic
                 for lic in resultado_llm_candidates
             }
-            for future in as_completed(futures):
-                with _arbiter_stats_lock:
-                    stats["llm_arbiter_calls"] += 1
-                try:
-                    lic, llm_result, valor = future.result()
-                    trace_id = lic.get("_trace_id", "unknown")
-                    prompt_level = lic.get("_llm_prompt_level", "standard")
-                    objeto = lic.get("objetoCompra", "")
-                    is_primary = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
+            pending = set(futures.keys())
+            while pending:
+                # HARDEN-014 AC1: wait with per-future timeout
+                done, pending = wait(pending, timeout=20, return_when=FIRST_COMPLETED)
 
-                    if is_primary:
-                        with _arbiter_stats_lock:
-                            stats["aprovadas_llm_arbiter"] += 1
-                        # GTM-FIX-028 AC8: Tag relevance source based on prompt level
-                        lic["_relevance_source"] = f"llm_{prompt_level}"
-                        # D-02 AC4: Confidence from LLM structured output
-                        if isinstance(llm_result, dict):
-                            lic["_confidence_score"] = llm_result.get("confidence", 70)
-                            lic["_llm_evidence"] = llm_result.get("evidence", [])
+                if not done:
+                    # HARDEN-014 AC2: All pending futures exceeded timeout — cancel and reject
+                    from metrics import LLM_BATCH_TIMEOUT
+                    for f in pending:
+                        f.cancel()
+                        LLM_BATCH_TIMEOUT.labels(phase="arbiter").inc()
+                    with _arbiter_stats_lock:
+                        stats["rejeitadas_llm_arbiter"] += len(pending)
+                    logger.warning(
+                        f"[HARDEN-014] Per-future timeout (20s) hit for "
+                        f"{len(pending)} arbiter futures"
+                    )
+                    break
+
+                for future in done:
+                    with _arbiter_stats_lock:
+                        stats["llm_arbiter_calls"] += 1
+                    try:
+                        lic, llm_result, valor = future.result()
+                        trace_id = lic.get("_trace_id", "unknown")
+                        prompt_level = lic.get("_llm_prompt_level", "standard")
+                        objeto = lic.get("objetoCompra", "")
+                        is_primary = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
+
+                        if is_primary:
+                            with _arbiter_stats_lock:
+                                stats["aprovadas_llm_arbiter"] += 1
+                            # GTM-FIX-028 AC8: Tag relevance source based on prompt level
+                            lic["_relevance_source"] = f"llm_{prompt_level}"
+                            # D-02 AC4: Confidence from LLM structured output
+                            if isinstance(llm_result, dict):
+                                lic["_confidence_score"] = llm_result.get("confidence", 70)
+                                lic["_llm_evidence"] = llm_result.get("evidence", [])
+                            else:
+                                lic["_confidence_score"] = 70
+                                lic["_llm_evidence"] = []
+                            resultado_densidade.append(lic)
+                            logger.debug(
+                                f"[{trace_id}] Camada 3A: ACCEPT (LLM={prompt_level}) "
+                                f"conf={lic.get('_confidence_score')} "
+                                f"density={lic.get('_term_density', 0):.1%} "
+                                f"objeto={objeto[:80]}"
+                            )
                         else:
-                            lic["_confidence_score"] = 70
-                            lic["_llm_evidence"] = []
-                        resultado_densidade.append(lic)
-                        logger.debug(
-                            f"[{trace_id}] Camada 3A: ACCEPT (LLM={prompt_level}) "
-                            f"conf={lic.get('_confidence_score')} "
-                            f"density={lic.get('_term_density', 0):.1%} "
-                            f"objeto={objeto[:80]}"
-                        )
-                    else:
+                            with _arbiter_stats_lock:
+                                stats["rejeitadas_llm_arbiter"] += 1
+                            # D-02 AC6: Store rejection reason for audit
+                            if isinstance(llm_result, dict):
+                                lic["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
+                            logger.debug(
+                                f"[{trace_id}] Camada 3A: REJECT (LLM={prompt_level}) "
+                                f"density={lic.get('_term_density', 0):.1%} "
+                                f"valor=R$ {valor:,.2f} objeto={objeto[:80]}"
+                            )
+                            # STORY-248 AC9: Record LLM rejection
+                            try:
+                                _get_tracker().record_rejection(
+                                    "llm_reject",
+                                    sector=setor,
+                                    description_preview=objeto[:100],
+                                )
+                            except Exception:
+                                pass
+
+                        # STORY-181 AC7: QA Audit sampling (AC2: preserved in parallel)
+                        # D-02 AC6: Now includes evidence and confidence in audit log
+                        if random.random() < QA_AUDIT_SAMPLE_RATE:
+                            lic["_qa_audit"] = True
+                            lic["_qa_audit_decision"] = {
+                                "trace_id": trace_id,
+                                "llm_response": "SIM" if is_primary else "NAO",
+                                "prompt_level": prompt_level,
+                                "density": lic.get("_term_density", 0),
+                                "matched_terms": lic.get("_matched_terms", []),
+                                "valor": valor,
+                                "confidence": llm_result.get("confidence") if isinstance(llm_result, dict) else None,
+                                "evidence": llm_result.get("evidence") if isinstance(llm_result, dict) else None,
+                                "rejection_reason": llm_result.get("rejection_reason") if isinstance(llm_result, dict) else None,
+                            }
+
+                    except Exception as e:
+                        # AC4: Fallback on LLM failure = REJECT (zero-noise philosophy)
                         with _arbiter_stats_lock:
                             stats["rejeitadas_llm_arbiter"] += 1
-                        # D-02 AC6: Store rejection reason for audit
-                        if isinstance(llm_result, dict):
-                            lic["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
-                        logger.debug(
-                            f"[{trace_id}] Camada 3A: REJECT (LLM={prompt_level}) "
-                            f"density={lic.get('_term_density', 0):.1%} "
-                            f"valor=R$ {valor:,.2f} objeto={objeto[:80]}"
-                        )
-                        # STORY-248 AC9: Record LLM rejection
-                        try:
-                            _get_tracker().record_rejection(
-                                "llm_reject",
-                                sector=setor,
-                                description_preview=objeto[:100],
-                            )
-                        except Exception:
-                            pass
-
-                    # STORY-181 AC7: QA Audit sampling (AC2: preserved in parallel)
-                    # D-02 AC6: Now includes evidence and confidence in audit log
-                    if random.random() < QA_AUDIT_SAMPLE_RATE:
-                        lic["_qa_audit"] = True
-                        lic["_qa_audit_decision"] = {
-                            "trace_id": trace_id,
-                            "llm_response": "SIM" if is_primary else "NAO",
-                            "prompt_level": prompt_level,
-                            "density": lic.get("_term_density", 0),
-                            "matched_terms": lic.get("_matched_terms", []),
-                            "valor": valor,
-                            "confidence": llm_result.get("confidence") if isinstance(llm_result, dict) else None,
-                            "evidence": llm_result.get("evidence") if isinstance(llm_result, dict) else None,
-                            "rejection_reason": llm_result.get("rejection_reason") if isinstance(llm_result, dict) else None,
-                        }
-
-                except Exception as e:
-                    # AC4: Fallback on LLM failure = REJECT (zero-noise philosophy)
-                    with _arbiter_stats_lock:
-                        stats["rejeitadas_llm_arbiter"] += 1
-                    logger.error(f"Camada 3A: LLM FAILED (REJECT fallback): {e}")
+                        logger.error(f"Camada 3A: LLM FAILED (REJECT fallback): {e}")
 
         elapsed_arbiter = time.monotonic() - t0_arbiter
         logger.info(
