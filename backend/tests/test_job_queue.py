@@ -18,18 +18,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# Ensure arq is mockable even if not installed locally.
-# CRIT-036: Always ensure connections.RedisSettings is MagicMock class,
-# even if another test file already installed a partial arq mock
-# (e.g. test_cache_global_warmup only sets .cron, not .connections).
-_arq_mod = sys.modules.get("arq")
-if _arq_mod is None:
-    _arq_mod = MagicMock()
-    sys.modules["arq"] = _arq_mod
-_arq_mod.connections = MagicMock()
-_arq_mod.connections.RedisSettings = MagicMock
-sys.modules["arq.connections"] = _arq_mod.connections
-
 
 # ============================================================================
 # AC2/AC3: Pool management

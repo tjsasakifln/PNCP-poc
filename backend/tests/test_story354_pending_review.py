@@ -22,23 +22,11 @@ Test coverage:
 import asyncio
 import json
 import os
-import sys
 import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-
-# ---------------------------------------------------------------------------
-# ARQ stub — arq is not installed locally (Railway worker only)
-# ---------------------------------------------------------------------------
-if "arq" not in sys.modules:
-    _fake_arq = MagicMock()
-    _fake_arq.connections = MagicMock()
-    _fake_arq.connections.RedisSettings = type("RedisSettings", (), {})
-    sys.modules["arq"] = _fake_arq
-    sys.modules["arq.connections"] = _fake_arq.connections
-
 
 from llm_arbiter import classify_contract_primary_match, clear_cache
 from schemas import BuscaResponse

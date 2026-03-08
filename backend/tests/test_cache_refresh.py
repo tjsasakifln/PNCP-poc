@@ -16,19 +16,10 @@ so we patch at the SOURCE module, not at job_queue:
   - supabase_client.get_supabase (for search_cache tests)
 """
 
-import sys
 from datetime import datetime, timezone, timedelta, date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# Ensure arq is mockable (not installed locally)
-if "arq" not in sys.modules:
-    _arq_mock = MagicMock()
-    _arq_mock.cron = MagicMock()
-    sys.modules["arq"] = _arq_mock
-    sys.modules["arq.connections"] = MagicMock()
-    sys.modules["arq.cron"] = _arq_mock
 
 
 def _make_supabase_mock(empty_data=None, hot_data=None, warm_data=None):

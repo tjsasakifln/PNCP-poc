@@ -14,19 +14,11 @@ Also tests:
 
 import asyncio
 import json
-import sys
 import time
 import uuid
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-
-# Ensure arq is mockable even if not installed locally
-if "arq" not in sys.modules:
-    arq_mock = MagicMock()
-    arq_mock.connections.RedisSettings = MagicMock
-    sys.modules["arq"] = arq_mock
-    sys.modules["arq.connections"] = arq_mock.connections
 
 
 # ============================================================================

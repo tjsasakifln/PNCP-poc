@@ -11,19 +11,10 @@ Required tests:
 
 import hashlib
 import json
-import sys
 from datetime import datetime, timezone, timedelta, date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# Ensure arq is mockable (not installed locally)
-if "arq" not in sys.modules:
-    _arq_mock = MagicMock()
-    _arq_mock.cron = MagicMock()
-    sys.modules["arq"] = _arq_mock
-    sys.modules["arq.connections"] = MagicMock()
-    sys.modules["arq.cron"] = _arq_mock
 
 
 # ===========================================================================

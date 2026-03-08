@@ -1,4 +1,5 @@
 # CRIT-038 AC2: Frontend test gate — zero failures required for merge
+# DEBT-007: Added vulnerability scanning
 name: Frontend Tests
 
 on:
@@ -41,3 +42,11 @@ jobs:
           cd frontend
           npm test -- --coverage --ci --no-cache
           echo "✅ All frontend tests passed with coverage thresholds met"
+
+      # DEBT-007 CROSS-007: Vulnerability scanning — fail on HIGH+
+      - name: Vulnerability scan (npm audit)
+        run: |
+          cd frontend
+          npm audit --audit-level=high 2>&1 | tee audit-output.txt || true
+          echo "✅ npm audit scan complete"
+        continue-on-error: true

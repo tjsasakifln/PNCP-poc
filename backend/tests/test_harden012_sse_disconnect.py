@@ -7,20 +7,9 @@ and performs proper cleanup (release_sse_connection + metric increment).
 
 import asyncio
 import json
-import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# ---------------------------------------------------------------------------
-# ARQ stub (not installed locally)
-# ---------------------------------------------------------------------------
-if "arq" not in sys.modules:
-    _arq = MagicMock()
-    _arq.connections = MagicMock()
-    _arq.connections.RedisSettings = type("RedisSettings", (), {})
-    sys.modules["arq"] = _arq
-    sys.modules["arq.connections"] = _arq.connections
 
 
 # ---------------------------------------------------------------------------

@@ -27,11 +27,6 @@ if "openai" not in sys.modules:
     sys.modules["openai"] = MagicMock()
 if "stripe" not in sys.modules:
     sys.modules["stripe"] = MagicMock()
-if "arq" not in sys.modules:
-    _fake_arq = MagicMock()
-    _fake_arq.connections = MagicMock()
-    sys.modules["arq"] = _fake_arq
-    sys.modules["arq.connections"] = _fake_arq.connections
 
 
 # ============================================================================

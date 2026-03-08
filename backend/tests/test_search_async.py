@@ -14,18 +14,10 @@ Tests T1-T10 per story specification:
 """
 
 import asyncio
-import sys
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# Ensure arq is mockable even if not installed locally
-if "arq" not in sys.modules:
-    arq_mock = MagicMock()
-    arq_mock.connections.RedisSettings = MagicMock
-    sys.modules["arq"] = arq_mock
-    sys.modules["arq.connections"] = arq_mock.connections
 
 
 # ============================================================================

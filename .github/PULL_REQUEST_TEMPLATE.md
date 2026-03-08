@@ -55,6 +55,7 @@ Closes #
 - [ ] Tests added/updated for new functionality
 - [ ] CI checks are passing locally
 - [ ] **Zero test failures** — backend (`pytest`) and frontend (`npm test`) exit code 0
+- [ ] **API contract** — If this PR changes API endpoints, update the OpenAPI snapshot: delete `backend/tests/snapshots/openapi_schema.json`, re-run `pytest tests/test_openapi_schema.py`, commit the new snapshot
 
 > **Zero-Failure Policy (CRIT-038):** Se testes falharem, corrija os testes — não adicione ao baseline.
 > O único baseline aceitável é **0 failures**. PRs com testes falhando serão bloqueados pelo CI.

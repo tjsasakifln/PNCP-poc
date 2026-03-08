@@ -12,11 +12,6 @@ import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import sys
-if "arq" not in sys.modules:
-    sys.modules["arq"] = MagicMock()
-    sys.modules["arq.connections"] = MagicMock()
-
 from httpx import AsyncClient, ASGITransport
 from main import app
 from auth import require_auth

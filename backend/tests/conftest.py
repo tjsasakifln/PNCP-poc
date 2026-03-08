@@ -4,13 +4,10 @@ Provides common mocks for authentication, Supabase, and external APIs.
 """
 
 import asyncio
-import sys
 
 import pytest
 from unittest.mock import Mock, AsyncMock
 from datetime import datetime, timezone, timedelta
-
-_SENTINEL = object()  # Used by _isolate_arq_module to detect missing keys
 
 
 @pytest.fixture
@@ -261,23 +258,3 @@ def _cleanup_pending_async_tasks():
         pass
 
 
-@pytest.fixture(autouse=True)
-def _isolate_arq_module():
-    """Ensure sys.modules['arq'] state doesn't leak between test files.
-
-    Multiple test files inject different MagicMock shapes into sys.modules['arq'].
-    Without cleanup, the FIRST file's mock persists and later files get a
-    contaminated module, causing attribute errors or silent wrong behavior.
-    """
-    original_arq = sys.modules.get("arq", _SENTINEL)
-    original_arq_conn = sys.modules.get("arq.connections", _SENTINEL)
-    yield
-    # Restore original state
-    if original_arq is _SENTINEL:
-        sys.modules.pop("arq", None)
-    else:
-        sys.modules["arq"] = original_arq
-    if original_arq_conn is _SENTINEL:
-        sys.modules.pop("arq.connections", None)
-    else:
-        sys.modules["arq.connections"] = original_arq_conn
