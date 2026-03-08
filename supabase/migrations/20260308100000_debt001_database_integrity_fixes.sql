@@ -36,8 +36,14 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_items_user_id
 -- DB-039: classification_feedback user_id index for RLS performance
 -- Existing idx_feedback_user_created covers (user_id, created_at)
 -- but RLS needs a standalone user_id index for auth.uid() = user_id
-CREATE INDEX IF NOT EXISTS idx_classification_feedback_user_id
-  ON public.classification_feedback(user_id);
+-- NOTE: Table may not exist yet in production; create index only if table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'classification_feedback') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_classification_feedback_user_id ON public.classification_feedback(user_id)';
+  END IF;
+END
+$$;
 
 -- Ensure search_results_store index exists (may have been lost with 20260307100000)
 CREATE INDEX IF NOT EXISTS idx_search_results_store_user_id

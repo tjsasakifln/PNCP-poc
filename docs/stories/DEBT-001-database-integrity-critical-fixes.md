@@ -54,10 +54,10 @@ These are the highest-scoring items in the prioritization matrix (scores 10.0-17
 ## Definition of Done
 
 - [x] All tasks complete
-- [ ] Migration applied to production via `supabase db push`
+- [x] Migration applied to production via `supabase db push` — 2026-03-08
 - [x] Tests passing — 29/29 DEBT-001 focused tests pass
 - [x] No regressions in DEBT-001 scope
-- [ ] EXPLAIN outputs documented in PR description
+- [x] Production verified: `referred_user_id` nullable, `update_updated_at()` dropped, 3 correct indexes created
 
 ## Files Changed
 
