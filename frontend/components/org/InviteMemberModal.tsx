@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import FocusTrap from "focus-trap-react";
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -21,6 +22,16 @@ export function InviteMemberModal({
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Lock body scroll while open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -72,6 +83,16 @@ export function InviteMemberModal({
   };
 
   return (
+    <FocusTrap
+      active={isOpen}
+      focusTrapOptions={{
+        escapeDeactivates: true,
+        onDeactivate: resetAndClose,
+        allowOutsideClick: true,
+        returnFocusOnDeactivate: true,
+        tabbableOptions: { displayCheck: "none" },
+      }}
+    >
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={(e) => {
@@ -175,5 +196,6 @@ export function InviteMemberModal({
         </form>
       </div>
     </div>
+    </FocusTrap>
   );
 }

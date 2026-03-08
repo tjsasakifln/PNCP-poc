@@ -362,6 +362,7 @@ export default function AdminPartnersPage() {
                   <button
                     onClick={() => { setSelectedPartner(null); setReferrals([]); setRevenue(null); }}
                     className="p-2 hover:bg-[var(--surface-1)] rounded-full transition-colors text-[var(--ink-muted)]"
+                    aria-label="Fechar"
                   >
                     &#10005;
                   </button>

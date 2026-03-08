@@ -17,6 +17,7 @@ export function EmptyResults({
     <div
       className="mt-6 sm:mt-8 animate-fade-in-up"
       data-testid="empty-results"
+      aria-live="polite"
     >
       <div className="text-center py-10 px-4">
         {/* AC1: Icon */}

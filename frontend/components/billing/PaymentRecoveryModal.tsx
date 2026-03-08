@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import FocusTrap from "focus-trap-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../app/components/AuthProvider";
 
@@ -54,6 +55,14 @@ export function PaymentRecoveryModal({ daysRemaining, trialValue, onClose }: Pay
   const hasData = trialValue && trialValue.total_opportunities > 0;
 
   return (
+    <FocusTrap
+      focusTrapOptions={{
+        escapeDeactivates: false,
+        allowOutsideClick: true,
+        returnFocusOnDeactivate: true,
+        tabbableOptions: { displayCheck: "none" },
+      }}
+    >
     <div
       className="fixed inset-0 z-[60] bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/30 flex items-center justify-center p-4 overflow-y-auto"
       data-testid="payment-recovery-modal"
@@ -128,5 +137,6 @@ export function PaymentRecoveryModal({ daysRemaining, trialValue, onClose }: Pay
         </p>
       </div>
     </div>
+    </FocusTrap>
   );
 }

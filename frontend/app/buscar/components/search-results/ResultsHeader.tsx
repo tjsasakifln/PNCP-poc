@@ -22,7 +22,7 @@ export function ResultsHeader({
   filterSummary,
 }: ResultsHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-strong">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-strong" aria-live="polite" aria-atomic="true">
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <h2 className="text-lg font-semibold text-ink" data-testid="results-header">

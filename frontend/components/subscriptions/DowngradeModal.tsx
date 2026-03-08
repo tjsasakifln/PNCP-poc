@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import FocusTrap from "focus-trap-react";
 
 /**
  * DowngradeModal Component
@@ -40,6 +41,16 @@ export function DowngradeModal({
 }: DowngradeModalProps) {
   const [confirmed, setConfirmed] = useState(false);
 
+  // Lock body scroll while open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
   // Format expiry date
   const formattedExpiryDate = expiryDate
     ? new Date(expiryDate).toLocaleDateString('pt-BR', {
@@ -63,10 +74,20 @@ export function DowngradeModal({
   if (!isOpen) return null;
 
   return (
-    <>
+    <FocusTrap
+      active={isOpen}
+      focusTrapOptions={{
+        escapeDeactivates: true,
+        onDeactivate: handleClose,
+        allowOutsideClick: true,
+        returnFocusOnDeactivate: true,
+        tabbableOptions: { displayCheck: "none" },
+      }}
+    >
+      <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 animate-fade-in"
+        className="absolute inset-0 bg-black bg-opacity-50 animate-fade-in"
         onClick={handleClose}
         aria-hidden="true"
       />
@@ -76,7 +97,7 @@ export function DowngradeModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="downgrade-modal-title"
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="absolute inset-0 flex items-center justify-center p-4"
       >
         <div className="bg-surface-0 rounded-card shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
           {/* Header */}
@@ -212,6 +233,7 @@ export function DowngradeModal({
           </div>
         </div>
       </div>
-    </>
+      </div>
+    </FocusTrap>
   );
 }

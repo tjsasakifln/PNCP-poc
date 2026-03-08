@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import FocusTrap from "focus-trap-react";
 
 interface DeepAnalysisData {
   score?: number;
@@ -177,22 +178,7 @@ export default function DeepAnalysisModal({
     }
   }, [isOpen]);
 
-  // ESC key handler
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
-
-  // Focus trap — focus close button when opened
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => closeButtonRef.current?.focus(), 50);
-    }
-  }, [isOpen]);
+  // Focus trap handles Escape key and initial focus via focus-trap-react
 
   // Click outside overlay
   const handleOverlayClick = useCallback(
@@ -210,6 +196,17 @@ export default function DeepAnalysisModal({
   if (!isOpen) return null;
 
   return (
+    <FocusTrap
+      active={isOpen}
+      focusTrapOptions={{
+        escapeDeactivates: true,
+        onDeactivate: onClose,
+        allowOutsideClick: true,
+        initialFocus: () => closeButtonRef.current || false,
+        returnFocusOnDeactivate: true,
+        tabbableOptions: { displayCheck: "none" },
+      }}
+    >
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
@@ -484,5 +481,6 @@ export default function DeepAnalysisModal({
         )}
       </div>
     </div>
+    </FocusTrap>
   );
 }

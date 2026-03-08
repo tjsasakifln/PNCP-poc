@@ -55,7 +55,7 @@ export function SearchErrorBanner({
     : "bg-amber-100 dark:bg-amber-800 text-amber-700 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-700";
 
   return (
-    <div className={`mb-4 p-4 rounded-lg border ${bgClass}`} role="alert">
+    <div className={`mb-4 p-4 rounded-lg border ${bgClass}`} role="alert" aria-live="assertive">
       <div className="flex items-start gap-3">
         {/* Icon */}
         <svg

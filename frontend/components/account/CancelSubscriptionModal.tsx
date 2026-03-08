@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import FocusTrap from "focus-trap-react";
 
 type CancelReason =
   | "too_expensive"
@@ -48,6 +49,19 @@ export function CancelSubscriptionModal({
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [endsAt, setEndsAt] = useState<string | null>(null);
+
+  const triggerRef = useRef<Element | null>(null);
+
+  // Capture trigger element and lock body scroll
+  useEffect(() => {
+    if (isOpen) {
+      triggerRef.current = document.activeElement;
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -131,6 +145,16 @@ export function CancelSubscriptionModal({
   };
 
   return (
+    <FocusTrap
+      active={isOpen}
+      focusTrapOptions={{
+        escapeDeactivates: true,
+        onDeactivate: resetAndClose,
+        allowOutsideClick: true,
+        returnFocusOnDeactivate: true,
+        tabbableOptions: { displayCheck: "none" },
+      }}
+    >
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div
         role="alertdialog"
@@ -473,6 +497,7 @@ export function CancelSubscriptionModal({
         )}
       </div>
     </div>
+    </FocusTrap>
   );
 }
 

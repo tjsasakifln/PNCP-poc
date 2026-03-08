@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import FocusTrap from "focus-trap-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../app/components/AuthProvider";
@@ -163,6 +164,16 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   };
 
   return (
+    <FocusTrap
+      active={open}
+      focusTrapOptions={{
+        escapeDeactivates: true,
+        onDeactivate: onClose,
+        allowOutsideClick: true,
+        returnFocusOnDeactivate: true,
+        tabbableOptions: { displayCheck: "none" },
+      }}
+    >
     <div className="lg:hidden fixed inset-0 z-[70]" data-testid="mobile-drawer">
       {/* AC6: Backdrop -- click to close */}
       <div
@@ -293,5 +304,6 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
         </div>
       </div>
     </div>
+    </FocusTrap>
   );
 }

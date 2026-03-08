@@ -165,7 +165,7 @@ describe('DowngradeModal Component', () => {
     it('should call onClose when clicking backdrop', () => {
       const { container } = render(<DowngradeModal {...defaultProps} />);
 
-      const backdrop = container.querySelector('.fixed.inset-0.bg-black');
+      const backdrop = container.querySelector('.absolute.inset-0.bg-black');
       fireEvent.click(backdrop!);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);

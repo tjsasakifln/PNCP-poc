@@ -115,6 +115,7 @@ export function SearchStateManager({
           transition={transition}
           className="mt-4 sm:mt-8 mx-0 p-3 sm:p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl max-w-full overflow-hidden"
           role="alert"
+          aria-live="assertive"
           data-testid="retry-countdown"
         >
           <p
@@ -160,6 +161,7 @@ export function SearchStateManager({
           transition={transition}
           className="mt-4 sm:mt-8 mx-0 p-3 sm:p-5 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl max-w-full overflow-hidden"
           role="alert"
+          aria-live="assertive"
           data-testid="retry-exhausted"
         >
           <p className="text-sm sm:text-base font-medium text-amber-700 dark:text-amber-300 mb-3 break-words">
@@ -205,6 +207,7 @@ export function SearchStateManager({
           transition={transition}
           className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-xl"
           role="alert"
+          aria-live="assertive"
           data-testid="search-state-failed"
         >
           <p className="text-sm sm:text-base font-medium text-error mb-3">
@@ -260,6 +263,7 @@ export function SearchStateManager({
           transition={transition}
           className="mt-6 sm:mt-8 p-4 sm:p-5 bg-warning-subtle border border-warning/20 rounded-xl"
           role="alert"
+          aria-live="assertive"
           data-testid="search-state-quota"
         >
           <div className="flex items-start gap-3">
