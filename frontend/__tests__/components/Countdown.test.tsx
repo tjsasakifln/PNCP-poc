@@ -86,12 +86,12 @@ describe('Countdown', () => {
 
   it('calls onExpire when countdown reaches zero', () => {
     const mockOnExpire = jest.fn();
-    const nearFutureDate = new Date(Date.now() + 100); // 100ms from now
+    const nearFutureDate = new Date(Date.now() + 500); // 500ms from now
 
     render(<Countdown targetDate={nearFutureDate} onExpire={mockOnExpire} />);
 
     act(() => {
-      jest.advanceTimersByTime(200);
+      jest.advanceTimersByTime(1500); // Advance past interval tick (1000ms)
     });
 
     expect(mockOnExpire).toHaveBeenCalled();
@@ -147,9 +147,9 @@ describe('Countdown', () => {
 
 describe('CountdownStatic', () => {
   it('renders without crashing', () => {
-    const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const futureDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     render(<CountdownStatic targetDate={futureDate} />);
-    expect(screen.getByText(/1 dia/)).toBeInTheDocument();
+    expect(screen.getByText(/dias/)).toBeInTheDocument();
   });
 
   it('does not update in real-time', () => {

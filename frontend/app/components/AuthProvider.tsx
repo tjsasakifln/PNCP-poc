@@ -60,13 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const authTimeout = setTimeout(async () => {
       if (!isMountedRef.current) return; // UX-408 AC1
-      console.warn("[AuthProvider] Auth check timeout — attempting session fallback");
+      if (process.env.NODE_ENV !== "production") console.warn("[AuthProvider] Auth check timeout — attempting session fallback");
       // AC5: On timeout, try getSession() which reads local cookies (fast, no network)
       try {
         const { data: { session: fallbackSession } } = await supabase.auth.getSession();
         if (!isMountedRef.current) return; // UX-408 AC1
         if (fallbackSession?.user) {
-          console.info("[AuthProvider] Timeout fallback: using session data");
+          if (process.env.NODE_ENV !== "production") console.info("[AuthProvider] Timeout fallback: using session data");
           setUser(fallbackSession.user);
           setSession(fallbackSession);
           setLoading(false);
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         // UX-408 AC2: AuthApiError from getUser() is expected on public pages — use warn, not error
-        if (userError) {
+        if (userError && process.env.NODE_ENV === "development") {
           console.warn("[AuthProvider] Sessão expirada, redirecionando para login.", userError.message);
         }
 
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (!isMountedRef.current) return; // UX-408 AC1
         if (currentSession) {
-          console.info("[AuthProvider] getUser returned null, attempting session refresh (AC6)");
+          if (process.env.NODE_ENV !== "production") console.info("[AuthProvider] getUser returned null, attempting session refresh (AC6)");
           const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
 
           if (!isMountedRef.current) return; // UX-408 AC1
@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       } catch (error) {
         // UX-408 AC2+AC5: Use console.warn for auth errors (not console.error)
-        console.warn("[AuthProvider] Sessão expirada, redirecionando para login.", error);
+        if (process.env.NODE_ENV !== "production") console.warn("[AuthProvider] Sessão expirada, redirecionando para login.", error);
 
         if (!isMountedRef.current) return; // UX-408 AC1
 
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data: { session: fallbackSession } } = await supabase.auth.getSession();
           if (!isMountedRef.current) return; // UX-408 AC1
           if (fallbackSession?.user) {
-            console.info("[AuthProvider] Falling back to session data (AC5)");
+            if (process.env.NODE_ENV !== "production") console.info("[AuthProvider] Falling back to session data (AC5)");
             clearTimeout(authTimeout);
             setUser(fallbackSession.user);
             setSession(fallbackSession);
@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
         } catch (sessionError) {
-          console.warn("[AuthProvider] Session fallback also failed:", sessionError);
+          if (process.env.NODE_ENV !== "production") console.warn("[AuthProvider] Session fallback also failed:", sessionError);
         }
 
         if (!isMountedRef.current) return; // UX-408 AC1
@@ -277,11 +277,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const canonicalUrl = process.env.NEXT_PUBLIC_CANONICAL_URL || window.location.origin;
     const redirectUrl = `${canonicalUrl}/auth/callback`;
 
-    // DEBUG: Log OAuth configuration
-    console.log("[AuthProvider] Google OAuth Login Starting");
-    console.log("[AuthProvider] NEXT_PUBLIC_CANONICAL_URL:", process.env.NEXT_PUBLIC_CANONICAL_URL);
-    console.log("[AuthProvider] window.location.origin:", window.location.origin);
-    console.log("[AuthProvider] Final redirect URL:", redirectUrl);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[AuthProvider] Google OAuth Login Starting");
+      console.log("[AuthProvider] NEXT_PUBLIC_CANONICAL_URL:", process.env.NEXT_PUBLIC_CANONICAL_URL);
+      console.log("[AuthProvider] window.location.origin:", window.location.origin);
+      console.log("[AuthProvider] Final redirect URL:", redirectUrl);
+    }
 
     // CRITICAL FIX: Force consent screen to avoid session conflicts in logged-in browsers
     const { error } = await supabase.auth.signInWithOAuth({
@@ -295,10 +296,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
     if (error) {
-      console.error("[AuthProvider] Google OAuth error:", error);
+      if (process.env.NODE_ENV !== "production") console.error("[AuthProvider] Google OAuth error:", error);
       throw error;
     }
-    console.log("[AuthProvider] OAuth redirect initiated");
+    if (process.env.NODE_ENV !== "production") console.log("[AuthProvider] OAuth redirect initiated");
   }, []);
 
   const signOut = useCallback(async () => {

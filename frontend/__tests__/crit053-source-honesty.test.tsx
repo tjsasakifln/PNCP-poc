@@ -64,8 +64,8 @@ jest.mock("../app/components/QuotaCounter", () => ({
   QuotaCounter: () => <div data-testid="quota-counter">Quota</div>,
 }));
 
-jest.mock("../app/components/EmptyState", () => ({
-  EmptyState: ({ rawCount }: any) => (
+jest.mock("../app/buscar/components/SearchEmptyState", () => ({
+  SearchEmptyState: ({ rawCount }: any) => (
     <div data-testid="empty-state">
       Analisamos {rawCount} editais
     </div>

@@ -24,7 +24,7 @@ jest.mock("../app/components/AddToPipelineButton", () => ({
 
 // ---- Component imports ----
 import { LicitacoesPreview } from "../app/components/LicitacoesPreview";
-import { EmptyState } from "../app/components/EmptyState";
+import { SearchEmptyState as EmptyState } from "../app/buscar/components/SearchEmptyState";
 import type { LicitacaoItem } from "../app/types";
 
 // ---- Helpers ----

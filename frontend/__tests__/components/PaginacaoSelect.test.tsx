@@ -36,10 +36,11 @@ describe('PaginacaoSelect', () => {
     const button = screen.getByLabelText('Itens por pagina');
     fireEvent.click(button);
 
-    expect(screen.getByText('10 por pagina')).toBeInTheDocument();
-    expect(screen.getByText('20 por pagina')).toBeInTheDocument();
-    expect(screen.getByText('50 por pagina')).toBeInTheDocument();
-    expect(screen.getByText('100 por pagina')).toBeInTheDocument();
+    const listbox = screen.getByRole('listbox');
+    expect(within(listbox).getByText('10 por pagina')).toBeInTheDocument();
+    expect(within(listbox).getByText('20 por pagina')).toBeInTheDocument();
+    expect(within(listbox).getByText('50 por pagina')).toBeInTheDocument();
+    expect(within(listbox).getByText('100 por pagina')).toBeInTheDocument();
   });
 
   it('calls onChange when option is selected', () => {

@@ -42,8 +42,8 @@ jest.mock("../components/EnhancedLoadingProgress", () => ({
 jest.mock("../app/components/LoadingResultsSkeleton", () => ({
   LoadingResultsSkeleton: () => null,
 }));
-jest.mock("../app/components/EmptyState", () => ({
-  EmptyState: () => null,
+jest.mock("../app/buscar/components/SearchEmptyState", () => ({
+  SearchEmptyState: () => null,
 }));
 jest.mock("../app/buscar/components/UfProgressGrid", () => ({
   UfProgressGrid: () => null,

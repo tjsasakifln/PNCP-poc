@@ -31,11 +31,11 @@ export default function GlobalError({
             --ge-card-bg: #ffffff;
             --ge-text: #0f172a;
             --ge-text-secondary: #64748b;
-            --ge-brand-navy: #1e3a5f;
-            --ge-brand-blue: #2563eb;
-            --ge-brand-blue-hover: #1d4ed8;
+            --ge-brand-navy: #0a1e3f;
+            --ge-brand-blue: #116dff;
+            --ge-brand-blue-hover: #0e5cd6;
             --ge-shadow: rgba(0, 0, 0, 0.1);
-            --ge-link: #2563eb;
+            --ge-link: #116dff;
           }
           @media (prefers-color-scheme: dark) {
             :root {

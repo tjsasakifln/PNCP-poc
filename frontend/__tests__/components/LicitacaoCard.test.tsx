@@ -71,17 +71,19 @@ describe('LicitacaoCard Component', () => {
 
   describe('Matched keywords', () => {
     it('should highlight matched keywords', () => {
-      render(<LicitacaoCard licitacao={mockLicitacao} matchedKeywords={['uniformes', 'escolares']} />);
+      const { container } = render(<LicitacaoCard licitacao={mockLicitacao} matchedKeywords={['uniformes', 'escolares']} />);
 
-      const marks = screen.getAllByRole('mark', { hidden: true });
+      // Component renders <mark> elements for keyword highlighting in the title
+      const marks = container.querySelectorAll('mark');
       expect(marks.length).toBeGreaterThan(0);
     });
 
     it('should display keyword tags', () => {
       render(<LicitacaoCard licitacao={mockLicitacao} matchedKeywords={['uniformes', 'escolares']} />);
 
-      expect(screen.getByText('uniformes')).toBeInTheDocument();
-      expect(screen.getByText('escolares')).toBeInTheDocument();
+      // Keywords appear both highlighted in title and as tags — use getAllByText
+      expect(screen.getAllByText('uniformes').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('escolares').length).toBeGreaterThan(0);
     });
 
     it('should limit displayed keywords to 5', () => {
@@ -108,9 +110,9 @@ describe('LicitacaoCard Component', () => {
 
       render(<LicitacaoCard licitacao={futureLicitacao} status="aberta" />);
 
-      // Countdown component should be rendered
-      const countdown = document.querySelector('[data-testid]') || screen.getByText(/\d+d/i);
-      expect(countdown).toBeTruthy();
+      // CountdownStatic renders a span with aria-label "Tempo restante: ..."
+      const countdown = screen.getByLabelText(/Tempo restante/i);
+      expect(countdown).toBeInTheDocument();
     });
 
     it('should not show countdown for past abertura', () => {
@@ -121,9 +123,10 @@ describe('LicitacaoCard Component', () => {
 
       render(<LicitacaoCard licitacao={pastLicitacao} />);
 
-      // No countdown for past dates
-      const hasCountdown = document.querySelectorAll('[data-testid]').length > 0;
-      expect(hasCountdown).toBe(false);
+      // CountdownStatic is only shown for upcoming abertura dates.
+      // When date is past, no element with aria-label "Tempo restante:" is rendered.
+      const countdown = screen.queryByLabelText(/Tempo restante/i);
+      expect(countdown).not.toBeInTheDocument();
     });
 
     it('should handle missing data_abertura', () => {
@@ -330,8 +333,9 @@ describe('LicitacaoCard Component', () => {
 
       render(<LicitacaoCard licitacao={noMunicipioLicitacao} />);
 
+      // Location span should show just "SP" without " - municipio" appended
       expect(screen.getByText('SP')).toBeInTheDocument();
-      expect(screen.queryByText(/-/)).not.toBeInTheDocument();
+      expect(screen.queryByText('SP - São Paulo')).not.toBeInTheDocument();
     });
   });
 });

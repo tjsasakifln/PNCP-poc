@@ -260,7 +260,7 @@ function HomePageContent() {
         setTrialValue(data);
       }
     } catch (err) {
-      console.error("[GTM-010] Failed to fetch trial value:", err);
+      if (process.env.NODE_ENV !== "production") console.error("[GTM-010] Failed to fetch trial value:", err);
     } finally {
       setTrialValueLoading(false);
     }

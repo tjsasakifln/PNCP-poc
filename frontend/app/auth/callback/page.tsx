@@ -35,7 +35,7 @@ export default function AuthCallbackPage() {
 
       // UX-336 AC5: 15s timeout (was 30s — too long for UX)
       const callbackTimeout = setTimeout(() => {
-        console.error("[OAuth Callback] TIMEOUT after 15 seconds");
+        if (process.env.NODE_ENV !== 'production') console.error("[OAuth Callback] TIMEOUT after 15 seconds");
         setStatus("error");
         setErrorMessage("Não foi possível completar o login. Tente novamente.");
       }, 15000);
@@ -62,7 +62,7 @@ export default function AuthCallbackPage() {
             }
           });
         } catch (storageError) {
-          console.warn("[OAuth Callback] Could not clear storage:", storageError);
+          if (process.env.NODE_ENV !== 'production') console.warn("[OAuth Callback] Could not clear storage:", storageError);
         }
 
         // Check for error in URL params (explicit OAuth rejection)
@@ -78,7 +78,7 @@ export default function AuthCallbackPage() {
 
         // Explicit OAuth error (user denied, invalid grant, etc.) — no fallback possible
         if (error) {
-          console.error("[OAuth Callback] OAuth error:", error, errorDescription);
+          if (process.env.NODE_ENV !== 'production') console.error("[OAuth Callback] OAuth error:", error, errorDescription);
           clearTimeout(callbackTimeout);
           setStatus("error");
           setErrorMessage(humanizeAuthError(errorDescription || error));
@@ -95,7 +95,7 @@ export default function AuthCallbackPage() {
           );
 
           if (!hasCodeVerifier) {
-            console.warn("[OAuth Callback] PKCE code_verifier missing from localStorage");
+            if (process.env.NODE_ENV !== 'production') console.warn("[OAuth Callback] PKCE code_verifier missing from localStorage");
             // UX-408 AC4: Track PKCE missing telemetry
             trackEventRef.current("oauth_pkce_missing", {
               has_code: true,
@@ -108,7 +108,7 @@ export default function AuthCallbackPage() {
             return;
           }
 
-          console.log("[OAuth Callback] Authorization code found, exchanging...");
+          if (process.env.NODE_ENV !== 'production') console.log("[OAuth Callback] Authorization code found, exchanging...");
 
           let session = null;
           let exchangeError = null;
@@ -118,7 +118,7 @@ export default function AuthCallbackPage() {
           while (retries < maxRetries && !session && !exchangeError) {
             if (retries > 0) {
               const backoff = Math.pow(2, retries) * 1000;
-              console.log(`[OAuth Callback] Retry ${retries}/${maxRetries} after ${backoff}ms...`);
+              if (process.env.NODE_ENV !== 'production') console.log(`[OAuth Callback] Retry ${retries}/${maxRetries} after ${backoff}ms...`);
               await new Promise(resolve => setTimeout(resolve, backoff));
             }
 
@@ -129,10 +129,10 @@ export default function AuthCallbackPage() {
           }
 
           const duration = Date.now() - startTime;
-          console.log("[OAuth Callback] Code exchange took:", duration, "ms", `(${retries} attempts)`);
+          if (process.env.NODE_ENV !== 'production') console.log("[OAuth Callback] Code exchange took:", duration, "ms", `(${retries} attempts)`);
 
           if (session) {
-            console.log("[OAuth Callback] Session obtained via code exchange");
+            if (process.env.NODE_ENV !== 'production') console.log("[OAuth Callback] Session obtained via code exchange");
             if (process.env.NODE_ENV === 'development') {
               console.log("[OAuth Callback] User:", session.user.email);
             }
@@ -156,22 +156,22 @@ export default function AuthCallbackPage() {
           // UX-336 AC1: Code exchange failed — log warning and fall through to getUser()
           // Do NOT setStatus("error") here — keep showing the loading spinner
           if (exchangeError) {
-            console.warn(
+            if (process.env.NODE_ENV !== 'production') console.warn(
               "[OAuth Callback] Code exchange failed, trying fallback...",
               exchangeError.message
             );
           }
         } else {
-          console.warn("[OAuth Callback] No authorization code in URL");
+          if (process.env.NODE_ENV !== 'production') console.warn("[OAuth Callback] No authorization code in URL");
         }
 
         // --- Phase 2: Fallback via getUser() (uses HTTP cookies) ---
-        console.log("[OAuth Callback] Attempting getUser() fallback...");
+        if (process.env.NODE_ENV !== 'production') console.log("[OAuth Callback] Attempting getUser() fallback...");
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (user) {
           const duration = Date.now() - startTime;
-          console.warn(
+          if (process.env.NODE_ENV !== 'production') console.warn(
             `[OAuth Callback] Recovered via getUser() fallback (${duration}ms)`,
             "— code exchange had failed but cookies were valid"
           );
@@ -183,15 +183,15 @@ export default function AuthCallbackPage() {
         }
 
         if (userError) {
-          console.warn("[OAuth Callback] getUser() failed:", userError.message);
+          if (process.env.NODE_ENV !== 'production') console.warn("[OAuth Callback] getUser() failed:", userError.message);
         }
 
         // --- Phase 3: Last resort — listen for onAuthStateChange ---
-        console.log("[OAuth Callback] Attempting onAuthStateChange fallback...");
+        if (process.env.NODE_ENV !== 'production') console.log("[OAuth Callback] Attempting onAuthStateChange fallback...");
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           if (event === "SIGNED_IN" && session) {
             const duration = Date.now() - startTime;
-            console.warn(
+            if (process.env.NODE_ENV !== 'production') console.warn(
               `[OAuth Callback] Recovered via onAuthStateChange (${duration}ms)`
             );
             clearTimeout(callbackTimeout);
@@ -210,7 +210,7 @@ export default function AuthCallbackPage() {
           subscription.unsubscribe();
           clearTimeout(callbackTimeout);
           const duration = Date.now() - startTime;
-          console.error(
+          if (process.env.NODE_ENV !== 'production') console.error(
             `[OAuth Callback] All fallbacks exhausted after ${duration}ms`
           );
           setStatus("error");
@@ -219,7 +219,7 @@ export default function AuthCallbackPage() {
 
       } catch (err) {
         clearTimeout(callbackTimeout);
-        console.error("[OAuth Callback] Unexpected error:", err);
+        if (process.env.NODE_ENV !== 'production') console.error("[OAuth Callback] Unexpected error:", err);
         setStatus("error");
         setErrorMessage("Erro inesperado ao processar o login. Tente novamente.");
       }

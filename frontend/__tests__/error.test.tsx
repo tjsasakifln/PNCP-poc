@@ -44,10 +44,13 @@ describe("Error Boundary Component", () => {
     });
 
     it("should show error icon", () => {
+      // Component redesigned: icon color uses CSS variable var(--error) instead of text-red-500.
+      // SVG className in jsdom is an SVGAnimatedString; use getAttribute to get the string value.
       const { container } = render(<ErrorBoundary error={mockError} reset={mockReset} />);
       const svg = container.querySelector("svg");
       expect(svg).toBeInTheDocument();
-      expect(svg).toHaveClass("text-red-500");
+      // Verify icon is present with CSS variable based color class
+      expect(svg?.getAttribute("class")).toContain("text-[var(--error)]");
     });
 
     it("should display technical error message when available", () => {
@@ -56,15 +59,19 @@ describe("Error Boundary Component", () => {
     });
 
     it("should render error message in monospace font for readability", () => {
+      // Component redesigned: error message rendered via getUserFriendlyError() in a <p> with
+      // break-words class instead of font-mono. Verify the error text container has break-words.
       render(<ErrorBoundary error={mockError} reset={mockReset} />);
       const errorText = screen.getByText("Test error message");
-      expect(errorText).toHaveClass("font-mono");
+      expect(errorText).toHaveClass("break-words");
     });
 
     it("should display support contact message", () => {
+      // Component redesigned: support message is split across text nodes with <a> links inside.
+      // Match the leading text node which starts the sentence.
       render(<ErrorBoundary error={mockError} reset={mockReset} />);
       expect(
-        screen.getByText(/Se o problema persistir, entre em contato com o suporte./)
+        screen.getByText(/Se o problema persistir,/)
       ).toBeInTheDocument();
     });
 
@@ -99,9 +106,12 @@ describe("Error Boundary Component", () => {
     });
 
     it("should have proper styling for accessibility", () => {
+      // Component redesigned: button uses CSS variable theming (var(--brand-navy)) instead of
+      // hardcoded bg-green-600. Verify focus ring class which is accessibility-critical.
       render(<ErrorBoundary error={mockError} reset={mockReset} />);
       const button = screen.getByRole("button", { name: /tentar novamente/i });
-      expect(button).toHaveClass("bg-green-600", "hover:bg-green-700", "focus:ring-2");
+      expect(button).toHaveClass("focus:ring-2");
+      expect(button).toHaveClass("focus:outline-none");
     });
   });
 
@@ -150,17 +160,23 @@ describe("Error Boundary Component", () => {
     });
 
     it("should handle very long error messages with word wrap", () => {
+      // getUserFriendlyError() returns a generic message when the error message exceeds 200 chars.
+      // The error text container still has break-words for any text that renders.
       const longMessage = "x".repeat(500);
       const longError = new Error(longMessage);
       render(<ErrorBoundary error={longError} reset={mockReset} />);
-      const errorText = screen.getByText(longMessage);
-      expect(errorText).toHaveClass("break-words");
+      // Long messages are replaced by getUserFriendlyError with a generic fallback
+      const genericText = screen.getByText("Algo deu errado. Tente novamente em instantes.");
+      expect(genericText).toHaveClass("break-words");
     });
 
     it("should handle special characters in error message", () => {
+      // getUserFriendlyError() detects 'Error:' as technical jargon and replaces with a
+      // user-friendly generic message, preventing raw technical strings from showing.
       const specialError = new Error('Error: <script>alert("xss")</script>');
       render(<ErrorBoundary error={specialError} reset={mockReset} />);
-      expect(screen.getByText(/Error: <script>alert/)).toBeInTheDocument();
+      // Technical error message is sanitised by getUserFriendlyError
+      expect(screen.getByText("Algo deu errado. Tente novamente em instantes.")).toBeInTheDocument();
     });
   });
 
@@ -182,11 +198,13 @@ describe("Error Boundary Component", () => {
     });
 
     it("should have sufficient color contrast", () => {
+      // Component redesigned: colors use CSS variables (var(--ink), var(--ink-secondary))
+      // instead of hardcoded Tailwind classes. Verify elements are present with some color styling.
       render(<ErrorBoundary error={mockError} reset={mockReset} />);
       const heading = screen.getByRole("heading");
-      expect(heading).toHaveClass("text-gray-900");
+      expect(heading?.className).toContain("text-[var(--ink)]");
       const description = screen.getByText(/Ocorreu um erro inesperado/);
-      expect(description).toHaveClass("text-gray-600");
+      expect(description?.className).toContain("text-[var(--ink-secondary)]");
     });
   });
 
@@ -223,15 +241,21 @@ describe("Error Boundary Component", () => {
     });
 
     it("should use theme colors consistently", () => {
+      // Component redesigned: button uses CSS variable theming (var(--brand-navy), var(--brand-blue))
+      // instead of hardcoded bg-green-600. Verify CSS variable classes are applied.
       render(<ErrorBoundary error={mockError} reset={mockReset} />);
       const button = screen.getByRole("button", { name: /tentar novamente/i });
-      expect(button).toHaveClass("bg-green-600", "hover:bg-green-700");
+      expect(button?.className).toContain("bg-[var(--brand-navy)]");
+      expect(button?.className).toContain("hover:bg-[var(--brand-blue)]");
     });
 
     it("should render with proper layout structure", () => {
+      // Component redesigned: card uses bg-[var(--surface-1)] CSS variable instead of bg-white.
+      // The max-w-md constraint is still present.
       const { container } = render(<ErrorBoundary error={mockError} reset={mockReset} />);
       expect(container.querySelector(".max-w-md")).toBeInTheDocument();
-      expect(container.querySelector(".bg-white")).toBeInTheDocument();
+      // bg-white replaced by CSS variable theming; verify the card element exists via shadow class
+      expect(container.querySelector(".shadow-lg")).toBeInTheDocument();
     });
   });
 });

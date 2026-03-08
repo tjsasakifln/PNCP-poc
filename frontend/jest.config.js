@@ -28,10 +28,7 @@ const customJestConfig = {
 
   // Path aliases (sync with tsconfig.json paths)
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/app/$1',
-    '^@/components/(.*)$': '<rootDir>/app/components/$1',
-    '^@/lib/(.*)$': '<rootDir>/lib/$1',
-    '^@/data/(.*)$': '<rootDir>/data/$1',
+    '^@/(.*)$': '<rootDir>/$1',
     '\\.css$': '<rootDir>/__mocks__/styleMock.js',
   },
 
@@ -86,7 +83,6 @@ const customJestConfig = {
     '/.next/',
     '/__tests__/e2e/', // E2E tests run via Playwright, not Jest
     '/e2e-tests/', // Playwright E2E tests directory
-    '/__tests__/quarantine/', // Quarantined tests (STORY-218) — run separately via test:quarantine
     '/__tests__/utils/',      // Shared test utilities (not test files) — STORY-368
   ],
 

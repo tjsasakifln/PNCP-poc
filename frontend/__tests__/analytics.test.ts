@@ -24,6 +24,11 @@ jest.mock('mixpanel-browser', () => ({
   },
 }));
 
+// Mock CookieConsentBanner so hasAnalyticsConsent() returns true (STORY-219 LGPD gate)
+jest.mock('../app/components/CookieConsentBanner', () => ({
+  getCookieConsent: () => ({ analytics: true }),
+}));
+
 describe('Analytics - useAnalytics Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();

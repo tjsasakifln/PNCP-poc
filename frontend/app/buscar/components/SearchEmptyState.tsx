@@ -2,7 +2,7 @@
 
 import type { FilterStats } from "../types";
 
-interface EmptyStateProps {
+interface SearchEmptyStateProps {
   onAdjustSearch?: () => void;
   rawCount?: number;
   stateCount?: number;
@@ -10,13 +10,13 @@ interface EmptyStateProps {
   sectorName?: string;
 }
 
-export function EmptyState({
+export function SearchEmptyState({
   onAdjustSearch,
   rawCount = 0,
   stateCount = 0,
   filterStats,
   sectorName = "uniformes",
-}: EmptyStateProps) {
+}: SearchEmptyStateProps) {
   const handleAdjust = () => {
     if (onAdjustSearch) {
       onAdjustSearch();
@@ -150,4 +150,4 @@ export function EmptyState({
   );
 }
 
-export default EmptyState;
+export default SearchEmptyState;

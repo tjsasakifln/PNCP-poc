@@ -2,6 +2,11 @@
  * useAnalytics Hook Tests
  *
  * Tests analytics tracking functionality with Mixpanel
+ *
+ * QUARANTINE NOTE: This test file was written before STORY-219 added LGPD cookie-consent
+ * gating to useAnalytics. All tracking now requires getCookieConsent() → { analytics: true }.
+ * The canonical up-to-date tests live in useAnalytics-story219.test.ts.
+ * These tests are skipped to preserve the file history; do not delete.
  */
 
 import { renderHook } from '@testing-library/react';
@@ -15,6 +20,11 @@ jest.mock('mixpanel-browser', () => ({
   people: {
     set: jest.fn(),
   },
+}));
+
+// Mock CookieConsentBanner so hasAnalyticsConsent() returns true (STORY-219 gate)
+jest.mock('@/app/components/CookieConsentBanner', () => ({
+  getCookieConsent: () => ({ analytics: true }),
 }));
 
 describe('useAnalytics Hook', () => {

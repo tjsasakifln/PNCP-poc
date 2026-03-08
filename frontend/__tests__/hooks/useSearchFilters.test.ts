@@ -23,6 +23,11 @@ jest.mock('../../hooks/useAnalytics', () => ({
   }),
 }));
 
+// Mock AuthProvider — useSearchFilters calls useAuth() internally
+jest.mock('@/app/components/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: '123', user_metadata: {} }, session: { access_token: 'token' }, loading: false }),
+}));
+
 // Mock fetch
 global.fetch = jest.fn();
 
@@ -63,6 +68,9 @@ describe('useSearchFilters hook', () => {
     });
 
     it('should use fallback setores on fetch failure', async () => {
+      // Hook retries up to 2 times (attempt 0→1s, 1→2s) via exponential-backoff setTimeout
+      // before activating the hardcoded fallback. Skip retries with a long waitFor timeout
+      // (>3 s covers both delays) so the assertion fires after all attempts exhaust.
       (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useSearchFilters(mockClearResult));
@@ -70,7 +78,7 @@ describe('useSearchFilters hook', () => {
       await waitFor(() => {
         expect(result.current.setoresUsingFallback).toBe(true);
         expect(result.current.setores.length).toBeGreaterThan(0);
-      });
+      }, { timeout: 5000 });
     });
   });
 
@@ -119,13 +127,15 @@ describe('useSearchFilters hook', () => {
     it('should toggle UF', () => {
       const { result } = renderHook(() => useSearchFilters(mockClearResult));
 
-      const initialSize = result.current.ufsSelecionadas.size;
+      // Default state initialises with SP selected (Set(['SP']))
+      expect(result.current.ufsSelecionadas.has('SP')).toBe(true);
 
       act(() => {
         result.current.toggleUf('SP');
       });
 
-      expect(result.current.ufsSelecionadas.has('SP')).toBe(!result.current.ufsSelecionadas.has('SP'));
+      // After toggle, SP should be removed
+      expect(result.current.ufsSelecionadas.has('SP')).toBe(false);
       expect(mockClearResult).toHaveBeenCalled();
     });
 

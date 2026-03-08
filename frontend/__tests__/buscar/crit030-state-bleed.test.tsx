@@ -27,8 +27,8 @@ jest.mock("../../app/components/LoadingResultsSkeleton", () => ({
   LoadingResultsSkeleton: () => <div data-testid="loading-skeleton">Skeleton</div>,
 }));
 
-jest.mock("../../app/components/EmptyState", () => ({
-  EmptyState: ({ rawCount }: any) => (
+jest.mock("../../app/buscar/components/SearchEmptyState", () => ({
+  SearchEmptyState: ({ rawCount }: any) => (
     <div data-testid="empty-state">
       Analisamos {rawCount} editais e nenhum correspondeu
     </div>

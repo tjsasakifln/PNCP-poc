@@ -26,7 +26,7 @@ import { ExpiredCacheBanner } from "./ExpiredCacheBanner";
 import { SearchStateManager } from "./SearchStateManager";
 import { deriveSearchPhase } from "../types/searchPhase";
 import { TrialUpsellCTA } from "../../../components/billing/TrialUpsellCTA";
-import { EmptyState } from "../../components/EmptyState";
+import { SearchEmptyState } from "./SearchEmptyState";
 import { EmptyResults } from "./EmptyResults";
 import { safeSetItem } from "../../../lib/storage";
 
@@ -150,7 +150,7 @@ export default function SearchResults(props: SearchResultsProps) {
       {!loading && result && result.response_state === "empty_failure" && <SourcesUnavailable onRetry={onSearch} onLoadLastSearch={onLoadLastSearch || (() => {})} hasLastSearch={!!hasLastSearch} retrying={loading} degradationGuidance={result.degradation_guidance} />}
       {!loading && result && result.response_state !== "empty_failure" && result.response_state !== "degraded_expired" && result.is_partial && (result.total_raw || 0) === 0 && result.resumo.total_oportunidades === 0 && !result.cached && <SourcesUnavailable onRetry={onSearch} onLoadLastSearch={onLoadLastSearch || (() => {})} hasLastSearch={!!hasLastSearch} retrying={loading} degradationGuidance={result.degradation_guidance} />}
       {!loading && result && result.response_state === "degraded_expired" && result.cached_at && <ExpiredCacheBanner cachedAt={result.cached_at} onRetry={onSearch} loading={loading} />}
-      {!loading && result && result.is_partial && (result.total_raw || 0) > 0 && result.resumo.total_oportunidades === 0 && <>{renderDataQualityBanner()}<EmptyState onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })} rawCount={rawCount} stateCount={ufsSelecionadas.size} filterStats={result.filter_stats} sectorName={sectorName} /></>}
+      {!loading && result && result.is_partial && (result.total_raw || 0) > 0 && result.resumo.total_oportunidades === 0 && <>{renderDataQualityBanner()}<SearchEmptyState onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })} rawCount={rawCount} stateCount={ufsSelecionadas.size} filterStats={result.filter_stats} sectorName={sectorName} /></>}
       {/* CRIT-053 AC5: Contextual zero results — degraded sources get degradation message, not "nenhuma corresponde" */}
       {!loading && result && result.resumo.total_oportunidades === 0 && result.sources_degraded && result.sources_degraded.length > 0 && result.response_state !== "empty_failure" && (
         <div className="mt-6 text-center py-10" data-testid="degraded-zero-results">

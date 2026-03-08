@@ -493,7 +493,13 @@ describe('Auth methods', () => {
 
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'http://localhost:3000/auth/callback' },
+      options: {
+        redirectTo: 'http://localhost:3000/auth/callback',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     });
   });
 

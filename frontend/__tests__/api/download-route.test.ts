@@ -35,10 +35,12 @@ describe('GET /api/download - STORY-202 Signed URL Feature', () => {
   });
 
   describe('X-Request-ID header (STORY-202 SYS-M01)', () => {
+    const allowedUrl = 'https://fqqyovlzdzimiwfofdjk.supabase.co/storage/v1/object/sign/file.xlsx';
+
     it('should log X-Request-ID if present', async () => {
       const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
 
-      const request = new NextRequest('http://localhost:3000/api/download?url=https://storage.example.com/file.xlsx', {
+      const request = new NextRequest(`http://localhost:3000/api/download?url=${encodeURIComponent(allowedUrl)}`, {
         headers: {
           Authorization: 'Bearer token',
           'X-Request-ID': 'req-12345',
@@ -52,7 +54,7 @@ describe('GET /api/download - STORY-202 Signed URL Feature', () => {
     });
 
     it('should work without X-Request-ID', async () => {
-      const request = new NextRequest('http://localhost:3000/api/download?url=https://storage.example.com/file.xlsx', {
+      const request = new NextRequest(`http://localhost:3000/api/download?url=${encodeURIComponent(allowedUrl)}`, {
         headers: { Authorization: 'Bearer token' },
       });
 
@@ -63,8 +65,9 @@ describe('GET /api/download - STORY-202 Signed URL Feature', () => {
   });
 
   describe('Signed URL redirect (STORY-202 CROSS-C02 Priority 1)', () => {
-    it('should redirect to signed URL when url param provided', async () => {
-      const signedUrl = 'https://storage.example.com/file.xlsx?signature=abc123';
+    it('should redirect to Supabase signed URL when url param provided', async () => {
+      // Only Supabase storage hosts are allowed (STORY-210 AC5 security hardening)
+      const signedUrl = 'https://fqqyovlzdzimiwfofdjk.supabase.co/storage/v1/object/sign/file.xlsx?signature=abc123';
 
       const request = new NextRequest(
         `http://localhost:3000/api/download?url=${encodeURIComponent(signedUrl)}`,
@@ -79,7 +82,7 @@ describe('GET /api/download - STORY-202 Signed URL Feature', () => {
 
     it('should log signed URL redirect', async () => {
       const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-      const signedUrl = 'https://storage.example.com/file.xlsx';
+      const signedUrl = 'https://fqqyovlzdzimiwfofdjk.supabase.co/storage/v1/object/sign/file.xlsx';
 
       const request = new NextRequest(
         `http://localhost:3000/api/download?url=${encodeURIComponent(signedUrl)}`,
@@ -90,6 +93,19 @@ describe('GET /api/download - STORY-202 Signed URL Feature', () => {
 
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Redirecting to signed URL'));
       consoleLogSpy.mockRestore();
+    });
+
+    it('should reject redirect to non-Supabase hosts (STORY-210 AC5)', async () => {
+      // Unauthorized domain should return 400
+      const unsignedUrl = 'https://storage.example.com/file.xlsx?signature=abc123';
+
+      const request = new NextRequest(
+        `http://localhost:3000/api/download?url=${encodeURIComponent(unsignedUrl)}`,
+        { headers: { Authorization: 'Bearer token' } }
+      );
+
+      const response = await GET(request);
+      expect(response.status).toBe(400);
     });
   });
 

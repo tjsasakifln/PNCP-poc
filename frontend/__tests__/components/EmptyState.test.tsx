@@ -5,7 +5,7 @@
  */
 
 import { render, screen, fireEvent } from '@testing-library/react';
-import { EmptyState } from '@/app/components/EmptyState';
+import { SearchEmptyState as EmptyState } from '@/app/buscar/components/SearchEmptyState';
 
 describe('EmptyState Component', () => {
   it('should render SVG icon', () => {

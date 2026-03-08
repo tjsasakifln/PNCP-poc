@@ -31,8 +31,8 @@ jest.mock('../../app/components/LoadingResultsSkeleton', () => ({
   LoadingResultsSkeleton: function Mock() { return null; },
 }));
 
-jest.mock('../../app/components/EmptyState', () => ({
-  EmptyState: function Mock() { return null; },
+jest.mock('../../app/buscar/components/SearchEmptyState', () => ({
+  SearchEmptyState: function Mock() { return null; },
 }));
 
 jest.mock('../../app/buscar/components/UfProgressGrid', () => ({

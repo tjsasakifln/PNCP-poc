@@ -15,7 +15,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { LicitacoesPreview } from "../app/components/LicitacoesPreview";
-import { EmptyState } from "../app/components/EmptyState";
+import { SearchEmptyState as EmptyState } from "../app/buscar/components/SearchEmptyState";
 import type { LicitacaoItem, FilterStats } from "../app/types";
 
 // Mock Next.js Link

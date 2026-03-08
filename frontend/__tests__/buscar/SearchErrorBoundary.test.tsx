@@ -103,7 +103,7 @@ describe("SearchErrorBoundary", () => {
     // Check for SVG icon (warning triangle) by class
     const icon = container.querySelector("svg.h-6.w-6");
     expect(icon).toBeInTheDocument();
-    expect(icon).toHaveClass("text-red-600");
+    expect(icon).toHaveClass("text-amber-600");
   });
 
   it("should handle errors without message", () => {
@@ -132,7 +132,7 @@ describe("SearchErrorBoundary", () => {
       </SearchErrorBoundary>
     );
 
-    const errorCard = container.querySelector(".dark\\:bg-red-950\\/20");
+    const errorCard = container.querySelector(".dark\\:bg-amber-950\\/20");
     expect(errorCard).toBeInTheDocument();
   });
 });
