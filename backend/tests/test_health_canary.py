@@ -47,8 +47,10 @@ class TestRealisticCanary:
 
             result = await check_source_health("PNCP", timeout=10.0)
 
-            call_args = mock_client.get.call_args
-            params = call_args.kwargs.get("params", call_args.args[1] if len(call_args.args) > 1 else {})
+            # DEBT-008: Now makes 2 calls (canary at 50 + validation at 51)
+            # Check the first call uses tamanhoPagina=50
+            first_call = mock_client.get.call_args_list[0]
+            params = first_call.kwargs.get("params", first_call.args[1] if len(first_call.args) > 1 else {})
             assert params["tamanhoPagina"] == 50
             assert result.status == HealthStatus.HEALTHY
 

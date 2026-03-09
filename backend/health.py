@@ -136,6 +136,11 @@ async def check_source_health(
             error=f"Unknown source: {source_code}",
         )
 
+    # DEBT-008 SYS-017: PNCP Page Size History
+    # - Pre-Feb 2026: tamanhoPagina max was 500
+    # - Feb 2026: Silently reduced to 50 (>50 returns HTTP 400)
+    # - Health canary now tests with tamanhoPagina=50 (production value)
+    # - Additionally validates limit hasn't changed by testing tamanhoPagina=51
     start_time = time.time()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -173,6 +178,38 @@ async def check_source_health(
                     response = await client.get(endpoint)
 
             response_time_ms = int((time.time() - start_time) * 1000)
+
+            # DEBT-008 SYS-017: PNCP page size limit validation (non-blocking)
+            if source_code == "PNCP" and response.status_code < 400:
+                try:
+                    from metrics import PNCP_PAGE_SIZE_LIMIT
+                    PNCP_PAGE_SIZE_LIMIT.set(50)  # Current known limit
+
+                    # Test with tamanhoPagina=51 to detect if the limit has changed
+                    limit_test = await client.get(
+                        endpoint,
+                        params={
+                            "dataInicial": "20260101",
+                            "dataFinal": "20260101",
+                            "codigoModalidadeContratacao": 6,
+                            "pagina": 1,
+                            "tamanhoPagina": 51,
+                        },
+                    )
+                    if limit_test.status_code < 400:
+                        logger.warning(
+                            "DEBT-008 SYS-017: PNCP accepted tamanhoPagina=51 — "
+                            "page size limit may have increased (was 50)"
+                        )
+                        PNCP_PAGE_SIZE_LIMIT.set(51)
+                    else:
+                        logger.debug(
+                            "DEBT-008 SYS-017: PNCP page size limit confirmed at 50 "
+                            "(tamanhoPagina=51 returned HTTP %d)",
+                            limit_test.status_code,
+                        )
+                except Exception as e:
+                    logger.debug("DEBT-008: Page size validation skipped: %s", e)
 
             if response.status_code < 400:
                 return SourceHealthResult(
@@ -864,3 +901,60 @@ async def get_uptime_history(days: int = 90) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.warning("Failed to get uptime history: %s", e)
         return []
+
+
+def get_memory_usage() -> dict:
+    """DEBT-008 SYS-016: Get current process memory usage.
+
+    Returns dict with rss_mb, vms_mb, peak_rss_mb for monitoring.
+    Uses resource module on Unix, psutil if available, fallback to /proc.
+    """
+    import sys
+    result = {"rss_mb": 0.0, "vms_mb": 0.0, "peak_rss_mb": 0.0}
+
+    try:
+        import resource
+        # Unix: getrusage returns kilobytes on Linux, bytes on macOS
+        usage = resource.getrusage(resource.RUSAGE_SELF)
+        if sys.platform == "darwin":
+            result["peak_rss_mb"] = usage.ru_maxrss / (1024 * 1024)  # bytes → MB
+        else:
+            result["peak_rss_mb"] = usage.ru_maxrss / 1024  # KB → MB
+    except ImportError:
+        pass  # Windows — no resource module
+
+    try:
+        import psutil
+        proc = psutil.Process()
+        mem = proc.memory_info()
+        result["rss_mb"] = mem.rss / (1024 * 1024)
+        result["vms_mb"] = mem.vms / (1024 * 1024)
+        if hasattr(mem, "peak_wset"):  # Windows
+            result["peak_rss_mb"] = mem.peak_wset / (1024 * 1024)
+    except ImportError:
+        # Fallback: read /proc/self/status on Linux
+        try:
+            with open("/proc/self/status") as f:
+                for line in f:
+                    if line.startswith("VmRSS:"):
+                        result["rss_mb"] = int(line.split()[1]) / 1024  # KB → MB
+                    elif line.startswith("VmSize:"):
+                        result["vms_mb"] = int(line.split()[1]) / 1024
+                    elif line.startswith("VmPeak:"):
+                        result["peak_rss_mb"] = int(line.split()[1]) / 1024
+        except (OSError, ValueError):
+            pass
+
+    return result
+
+
+def update_memory_metrics() -> None:
+    """DEBT-008 SYS-016: Update Prometheus memory metrics."""
+    try:
+        from metrics import PROCESS_MEMORY_RSS_BYTES, PROCESS_MEMORY_PEAK_RSS_BYTES
+        mem = get_memory_usage()
+        PROCESS_MEMORY_RSS_BYTES.set(mem["rss_mb"] * 1024 * 1024)
+        if mem["peak_rss_mb"] > 0:
+            PROCESS_MEMORY_PEAK_RSS_BYTES.set(mem["peak_rss_mb"] * 1024 * 1024)
+    except Exception:
+        pass  # Graceful degradation

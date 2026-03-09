@@ -32,6 +32,7 @@ Architecture:
 - Migrated from SQLAlchemy in STORY-201
 """
 
+import asyncio
 import os
 from datetime import datetime, timezone, timedelta
 
@@ -51,8 +52,14 @@ router = APIRouter()
 # Webhook signature validation uses STRIPE_WEBHOOK_SECRET only
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
+# SYS-024: Timeout for webhook event processing (seconds)
+WEBHOOK_DB_TIMEOUT_S = 30
+
 if not STRIPE_WEBHOOK_SECRET:
-    logger.error("STRIPE_WEBHOOK_SECRET not configured - webhook signature validation will fail")
+    logger.error(
+        "STRIPE_WEBHOOK_SECRET not configured — webhook signature validation will fail. "
+        "Set STRIPE_WEBHOOK_SECRET in .env (get from Stripe Dashboard > Developers > Webhooks > Signing secret)"
+    )
 
 
 def _resolve_user_id(sb, session_data: dict) -> str | None:
@@ -198,25 +205,44 @@ async def stripe_webhook(request: Request):
                     logger.info(f"Webhook already processed: event_id={event.id}")
                     return {"status": "already_processed", "event_id": event.id}
 
-        # Process event based on type
-        if event.type == "checkout.session.completed":
-            await _handle_checkout_session_completed(sb, event)
-        elif event.type == "checkout.session.async_payment_succeeded":
-            await _handle_async_payment_succeeded(sb, event)
-        elif event.type == "checkout.session.async_payment_failed":
-            await _handle_async_payment_failed(sb, event)
-        elif event.type == "customer.subscription.updated":
-            await _handle_subscription_updated(sb, event)
-        elif event.type == "customer.subscription.deleted":
-            await _handle_subscription_deleted(sb, event)
-        elif event.type == "invoice.payment_succeeded":
-            await _handle_invoice_payment_succeeded(sb, event)
-        elif event.type == "invoice.payment_failed":
-            await _handle_invoice_payment_failed(sb, event)
-        elif event.type == "invoice.payment_action_required":
-            await _handle_payment_action_required(sb, event)
-        else:
-            logger.info(f"Unhandled event type: {event.type}")
+        # SYS-024: Wrap event routing in asyncio.wait_for() to prevent DB hangs
+        async def _process_event():
+            """Process webhook event with timeout protection."""
+            if event.type == "checkout.session.completed":
+                await _handle_checkout_session_completed(sb, event)
+            elif event.type == "checkout.session.async_payment_succeeded":
+                await _handle_async_payment_succeeded(sb, event)
+            elif event.type == "checkout.session.async_payment_failed":
+                await _handle_async_payment_failed(sb, event)
+            elif event.type == "customer.subscription.updated":
+                await _handle_subscription_updated(sb, event)
+            elif event.type == "customer.subscription.deleted":
+                await _handle_subscription_deleted(sb, event)
+            elif event.type == "invoice.payment_succeeded":
+                await _handle_invoice_payment_succeeded(sb, event)
+            elif event.type == "invoice.payment_failed":
+                await _handle_invoice_payment_failed(sb, event)
+            elif event.type == "invoice.payment_action_required":
+                await _handle_payment_action_required(sb, event)
+            else:
+                logger.info(f"Unhandled event type: {event.type}")
+
+        try:
+            await asyncio.wait_for(_process_event(), timeout=WEBHOOK_DB_TIMEOUT_S)
+        except asyncio.TimeoutError:
+            logger.error(
+                f"Webhook processing timed out after {WEBHOOK_DB_TIMEOUT_S}s: "
+                f"event_id={event.id}, type={event.type}"
+            )
+            try:
+                sb.table("stripe_webhook_events").update({
+                    "status": "timeout",
+                    "processed_at": datetime.now(timezone.utc).isoformat(),
+                    "payload": {"error": f"Processing timed out after {WEBHOOK_DB_TIMEOUT_S}s"},
+                }).eq("id", event.id).execute()
+            except Exception:
+                pass
+            raise HTTPException(status_code=504, detail="Webhook processing timed out")
 
         # AC2: Mark event as completed after successful processing
         sb.table("stripe_webhook_events").update({
@@ -228,6 +254,8 @@ async def stripe_webhook(request: Request):
         logger.info(f"Webhook processed successfully: event_id={event.id}")
         return {"status": "success", "event_id": event.id}
 
+    except HTTPException:
+        raise
     except Exception as e:
         # AC3: Mark event as failed on processing error
         try:

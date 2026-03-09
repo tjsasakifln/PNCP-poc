@@ -119,6 +119,16 @@ class InMemoryCache:
         """LRU eviction: remove oldest entries when exceeding max_entries."""
         while len(self._store) > self._max_entries:
             self._store.popitem(last=False)  # Remove oldest (front of OrderedDict)
+        self._update_cache_metrics()
+
+    def _update_cache_metrics(self) -> None:
+        """DEBT-008 SYS-016: Update Prometheus gauge with current cache size."""
+        try:
+            from metrics import INMEMORY_CACHE_ENTRIES, INMEMORY_CACHE_MAX_ENTRIES
+            INMEMORY_CACHE_ENTRIES.set(len(self._store))
+            INMEMORY_CACHE_MAX_ENTRIES.set(self._max_entries)
+        except Exception:
+            pass  # Graceful degradation
 
     def incr(self, key: str) -> int:
         """Increment value by 1 (returns new value). Creates key with value 1 if missing.

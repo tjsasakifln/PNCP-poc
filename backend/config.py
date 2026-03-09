@@ -909,7 +909,7 @@ def validate_env_vars() -> None:
     AC13: Warn on recommended vars: OPENAI_API_KEY, STRIPE_SECRET_KEY, SENTRY_DSN
     AC14: Raise RuntimeError if critical vars missing AND ENVIRONMENT=production
     """
-    required_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_JWT_SECRET"]
+    required_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_JWT_SECRET", "STRIPE_WEBHOOK_SECRET"]
     recommended_vars = ["OPENAI_API_KEY", "STRIPE_SECRET_KEY", "SENTRY_DSN"]
 
     env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()

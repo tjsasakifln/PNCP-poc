@@ -446,6 +446,15 @@ async def lifespan(app_instance: FastAPI):
     # AC12-AC14: Validate environment variables
     validate_env_vars()
 
+    # DEBT-008 SYS-016: Log memory usage at startup for OOM baseline
+    from health import get_memory_usage, update_memory_metrics
+    mem = get_memory_usage()
+    logger.info(
+        "DEBT-008: Startup memory — RSS=%.1fMB, VMS=%.1fMB, Peak=%.1fMB",
+        mem["rss_mb"], mem["vms_mb"], mem["peak_rss_mb"],
+    )
+    update_memory_metrics()
+
     # STORY-290-patch: Configure thread pool for asyncio.to_thread() calls
     # Default pool = min(32, cpu+4) ≈ 5-6 on Railway 1-2 vCPU.
     # Each search uses ~5-8 to_thread calls (auth, quota, cache, excel, upload).

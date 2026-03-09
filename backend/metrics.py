@@ -857,6 +857,38 @@ BACKGROUND_RESULTS_COUNT = _create_gauge(
 )
 
 
+# DEBT-008 SYS-017: PNCP page size limit gauge
+PNCP_PAGE_SIZE_LIMIT = _create_gauge(
+    "smartlic_pncp_page_size_limit",
+    "Current known PNCP API page size limit (tamanhoPagina max)",
+)
+
+
+# ============================================================================
+# DEBT-008 SYS-016: Memory monitoring
+# ============================================================================
+
+INMEMORY_CACHE_ENTRIES = _create_gauge(
+    "smartlic_inmemory_cache_entries",
+    "Current number of entries in InMemoryCache (L1 fallback)",
+)
+
+INMEMORY_CACHE_MAX_ENTRIES = _create_gauge(
+    "smartlic_inmemory_cache_max_entries",
+    "Maximum allowed entries in InMemoryCache",
+)
+
+PROCESS_MEMORY_RSS_BYTES = _create_gauge(
+    "smartlic_process_memory_rss_bytes",
+    "Process resident set size in bytes (RSS)",
+)
+
+PROCESS_MEMORY_PEAK_RSS_BYTES = _create_gauge(
+    "smartlic_process_memory_peak_rss_bytes",
+    "Peak process RSS in bytes (high-water mark)",
+)
+
+
 # ============================================================================
 # ASGI app factory for /metrics endpoint
 # ============================================================================
