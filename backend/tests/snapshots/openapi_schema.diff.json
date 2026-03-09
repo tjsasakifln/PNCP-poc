@@ -2421,6 +2421,154 @@
           "title": "FPKeywordSuggestion",
           "type": "object"
         },
+        "FeatureFlagItem": {
+          "properties": {
+            "default": {
+              "default": "",
+              "description": "Registry default value",
+              "title": "Default",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "description": "Human-readable description",
+              "title": "Description",
+              "type": "string"
+            },
+            "env_var": {
+              "default": "",
+              "description": "Environment variable name",
+              "title": "Env Var",
+              "type": "string"
+            },
+            "name": {
+              "description": "Flag name (e.g. LLM_ARBITER_ENABLED)",
+              "title": "Name",
+              "type": "string"
+            },
+            "source": {
+              "description": "Value source: redis, memory, env, or default",
+              "title": "Source",
+              "type": "string"
+            },
+            "value": {
+              "description": "Current effective value",
+              "title": "Value",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "value",
+            "source"
+          ],
+          "title": "FeatureFlagItem",
+          "type": "object"
+        },
+        "FeatureFlagListResponse": {
+          "properties": {
+            "flags": {
+              "items": {
+                "$ref": "#/components/schemas/FeatureFlagItem"
+              },
+              "title": "Flags",
+              "type": "array"
+            },
+            "redis_available": {
+              "title": "Redis Available",
+              "type": "boolean"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "flags",
+            "total",
+            "redis_available"
+          ],
+          "title": "FeatureFlagListResponse",
+          "type": "object"
+        },
+        "FeatureFlagReloadResponse": {
+          "properties": {
+            "flags": {
+              "additionalProperties": {
+                "type": "boolean"
+              },
+              "title": "Flags",
+              "type": "object"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "overrides_cleared": {
+              "title": "Overrides Cleared",
+              "type": "integer"
+            },
+            "success": {
+              "title": "Success",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "success",
+            "flags",
+            "overrides_cleared",
+            "message"
+          ],
+          "title": "FeatureFlagReloadResponse",
+          "type": "object"
+        },
+        "FeatureFlagUpdateRequest": {
+          "properties": {
+            "value": {
+              "description": "New flag value (true/false)",
+              "title": "Value",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "title": "FeatureFlagUpdateRequest",
+          "type": "object"
+        },
+        "FeatureFlagUpdateResponse": {
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "previous_source": {
+              "title": "Previous Source",
+              "type": "string"
+            },
+            "previous_value": {
+              "title": "Previous Value",
+              "type": "boolean"
+            },
+            "source": {
+              "title": "Source",
+              "type": "string"
+            },
+            "value": {
+              "title": "Value",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "value",
+            "source",
+            "previous_value",
+            "previous_source"
+          ],
+          "title": "FeatureFlagUpdateResponse",
+          "type": "object"
+        },
         "FeatureInfo": {
           "description": "Single feature flag information.",
           "properties": {
@@ -3059,102 +3207,6 @@
             }
           },
           "title": "HTTPValidationError",
-          "type": "object"
-        },
-        "HealthDependencies": {
-          "description": "Health check dependency statuses.",
-          "properties": {
-            "openai": {
-              "title": "Openai",
-              "type": "string"
-            },
-            "queue": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "GTM-RESILIENCE-F01 AC4: ARQ job queue status \u2014 'healthy' or 'unavailable'",
-              "title": "Queue"
-            },
-            "redis": {
-              "title": "Redis",
-              "type": "string"
-            },
-            "redis_metrics": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/RedisMetrics"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "supabase": {
-              "title": "Supabase",
-              "type": "string"
-            }
-          },
-          "required": [
-            "supabase",
-            "openai",
-            "redis"
-          ],
-          "title": "HealthDependencies",
-          "type": "object"
-        },
-        "HealthResponse": {
-          "description": "Response for GET /health endpoint.",
-          "properties": {
-            "dependencies": {
-              "$ref": "#/components/schemas/HealthDependencies"
-            },
-            "ready": {
-              "default": true,
-              "title": "Ready",
-              "type": "boolean"
-            },
-            "sources": {
-              "anyOf": [
-                {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Sources"
-            },
-            "status": {
-              "title": "Status",
-              "type": "string"
-            },
-            "timestamp": {
-              "title": "Timestamp",
-              "type": "string"
-            },
-            "uptime_seconds": {
-              "default": 0.0,
-              "title": "Uptime Seconds",
-              "type": "number"
-            },
-            "version": {
-              "title": "Version",
-              "type": "string"
-            }
-          },
-          "required": [
-            "status",
-            "timestamp",
-            "version",
-            "dependencies"
-          ],
-          "title": "HealthResponse",
           "type": "object"
         },
         "InviteMemberRequest": {
@@ -4397,40 +4449,6 @@
           "title": "RecoveryCodesResponse",
           "type": "object"
         },
-        "RedisMetrics": {
-          "description": "Redis health metrics (B-04 AC8).",
-          "properties": {
-            "connected": {
-              "default": false,
-              "title": "Connected",
-              "type": "boolean"
-            },
-            "latency_ms": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Latency Ms"
-            },
-            "memory_used_mb": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Memory Used Mb"
-            }
-          },
-          "title": "RedisMetrics",
-          "type": "object"
-        },
         "RegenerateRecoveryResponse": {
           "properties": {
             "codes": {
@@ -5191,94 +5209,6 @@
           "title": "SetoresResponse",
           "type": "object"
         },
-        "SourceInfo": {
-          "description": "Individual data source health info.",
-          "properties": {
-            "code": {
-              "title": "Code",
-              "type": "string"
-            },
-            "enabled": {
-              "title": "Enabled",
-              "type": "boolean"
-            },
-            "name": {
-              "title": "Name",
-              "type": "string"
-            },
-            "priority": {
-              "title": "Priority",
-              "type": "integer"
-            },
-            "response_ms": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Response Ms"
-            },
-            "status": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          "required": [
-            "code",
-            "name",
-            "enabled",
-            "priority"
-          ],
-          "title": "SourceInfo",
-          "type": "object"
-        },
-        "SourcesHealthResponse": {
-          "description": "Response for GET /sources/health endpoint.",
-          "properties": {
-            "checked_at": {
-              "title": "Checked At",
-              "type": "string"
-            },
-            "multi_source_enabled": {
-              "title": "Multi Source Enabled",
-              "type": "boolean"
-            },
-            "sources": {
-              "items": {
-                "$ref": "#/components/schemas/SourceInfo"
-              },
-              "title": "Sources",
-              "type": "array"
-            },
-            "total_available": {
-              "title": "Total Available",
-              "type": "integer"
-            },
-            "total_enabled": {
-              "title": "Total Enabled",
-              "type": "integer"
-            }
-          },
-          "required": [
-            "sources",
-            "multi_source_enabled",
-            "total_enabled",
-            "total_available",
-            "checked_at"
-          ],
-          "title": "SourcesHealthResponse",
-          "type": "object"
-        },
         "StatusLicitacao": {
           "description": "Status da licita\u00e7\u00e3o para filtro de busca.\n\nDefine o est\u00e1gio atual do processo licitat\u00f3rio:\n- RECEBENDO_PROPOSTA: Licita\u00e7\u00f5es abertas para envio de propostas (padr\u00e3o)\n- EM_JULGAMENTO: Propostas encerradas, em an\u00e1lise pelo \u00f3rg\u00e3o\n- ENCERRADA: Processo finalizado (com ou sem vencedor)\n- TODOS: Sem filtro de status (retorna todas)",
           "enum": [
@@ -5965,13 +5895,6 @@
         },
         "ValidationError": {
           "properties": {
-            "ctx": {
-              "title": "Context",
-              "type": "object"
-            },
-            "input": {
-              "title": "Input"
-            },
             "loc": {
               "items": {
                 "anyOf": [
@@ -6068,7 +5991,7 @@
       }
     },
     "info": {
-      "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es em fontes oficiais. Permite filtrar oportunidades por estado, valor e setor, gerando relat\u00f3rios Excel e avalia\u00e7\u00e3o estrat\u00e9gica via IA.",
+      "description": "API para busca e analise de licitacoes em fontes oficiais brasileiras.\n\n## Data Sources\n- **PNCP** (Portal Nacional de Contratacoes Publicas) - primary\n- **PCP v2** (Portal de Compras Publicas) - secondary\n- **ComprasGov v3** (Dados Abertos de Compras Governamentais) - tertiary\n\n## Authentication\nAll endpoints require a Supabase JWT Bearer token unless noted otherwise.\n\n## Contact\nCONFENGE Avaliacoes e Inteligencia Artificial LTDA\n- Website: https://smartlic.tech\n- Email: suporte@smartlic.tech",
       "title": "SmartLic API",
       "version": "dev"
     },
@@ -6076,7 +5999,7 @@
     "paths": {
       "/": {
         "get": {
-          "description": "API root endpoint - provides navigation to documentation.\n\nSYS-M08: Informs clients about API versioning.",
+          "description": "API root \u2014 navigation and version info.",
           "operationId": "root__get",
           "responses": {
             "200": {
@@ -6095,7 +6018,7 @@
       },
       "/debug/pncp-test": {
         "get": {
-          "description": "Diagnostic: test if PNCP API is reachable from this server. Admin only.",
+          "description": "Diagnostic: test if PNCP API is reachable. Admin only.",
           "operationId": "debug_pncp_test_debug_pncp_test_get",
           "responses": {
             "200": {
@@ -6119,26 +6042,27 @@
       },
       "/health": {
         "get": {
-          "description": "Health check endpoint for monitoring and load balancers.\n\nProvides lightweight service health verification including dependency\nchecks for Supabase, OpenAI, and Redis connectivity.",
+          "description": "Comprehensive health check with dependency status, circuit breakers, bulkheads.",
           "operationId": "health_health_get",
           "responses": {
             "200": {
               "content": {
                 "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/HealthResponse"
-                  }
+                  "schema": {}
                 }
               },
               "description": "Successful Response"
             }
           },
-          "summary": "Health"
+          "summary": "Health",
+          "tags": [
+            "health-core"
+          ]
         }
       },
       "/health/live": {
         "get": {
-          "description": "HARDEN-016 AC1: Pure liveness probe \u2014 process is alive, no dependency checks.\n\nALWAYS returns 200. Use this for container liveness checks where you only\nneed to know the process is running (not whether dependencies are reachable).",
+          "description": "HARDEN-016 AC1: Pure liveness probe \u2014 ALWAYS returns 200.",
           "operationId": "health_live_health_live_get",
           "responses": {
             "200": {
@@ -6150,12 +6074,15 @@
               "description": "Successful Response"
             }
           },
-          "summary": "Health Live"
+          "summary": "Health Live",
+          "tags": [
+            "health-core"
+          ]
         }
       },
       "/health/ready": {
         "get": {
-          "description": "HARDEN-016 AC2: Readiness probe \u2014 checks Redis + Supabase dependencies.\n\nReturns 200 if ALL dependencies are reachable, 503 if ANY dependency is down.\nAC3: Each check has an individual timeout (Redis 2s, Supabase 3s).\nAC4: Response body includes per-check details (status, latency_ms, error).\nAC6: Railway healthcheckPath points here.",
+          "description": "HARDEN-016 AC2: Readiness probe \u2014 checks Redis + Supabase.",
           "operationId": "health_ready_health_ready_get",
           "responses": {
             "200": {
@@ -6167,26 +6094,30 @@
               "description": "Successful Response"
             }
           },
-          "summary": "Health Ready"
+          "summary": "Health Ready",
+          "tags": [
+            "health-core"
+          ]
         }
       },
       "/sources/health": {
         "get": {
-          "description": "Health check for all configured procurement data sources.\n\nReturns status, response time, and priority for each source.",
+          "description": "Health check for all configured procurement data sources.",
           "operationId": "sources_health_sources_health_get",
           "responses": {
             "200": {
               "content": {
                 "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/SourcesHealthResponse"
-                  }
+                  "schema": {}
                 }
               },
               "description": "Successful Response"
             }
           },
-          "summary": "Sources Health"
+          "summary": "Sources Health",
+          "tags": [
+            "health-core"
+          ]
         }
       },
       "/v1/admin/admin/filter-stats": {
@@ -6388,15 +6319,17 @@
           ]
         }
       },
-      "/v1/admin/feature-flags/reload": {
-        "post": {
-          "description": "Reload all feature flags from environment variables (admin only).\n\nSTORY-226 AC16: Clears the feature flag cache, forcing re-read from\nenvironment on next access. Returns current values after reload.",
-          "operationId": "reload_feature_flags_endpoint_v1_admin_feature_flags_reload_post",
+      "/v1/admin/feature-flags": {
+        "get": {
+          "description": "List all registered feature flags with current values and sources.\n\nReturns each flag's effective value, where it comes from (redis override,\nenv var, or default), its description, and registry metadata.\n\nAdmin only.",
+          "operationId": "list_feature_flags_v1_admin_feature_flags_get",
           "responses": {
             "200": {
               "content": {
                 "application/json": {
-                  "schema": {}
+                  "schema": {
+                    "$ref": "#/components/schemas/FeatureFlagListResponse"
+                  }
                 }
               },
               "description": "Successful Response"
@@ -6407,9 +6340,99 @@
               "HTTPBearer": []
             }
           ],
-          "summary": "Reload Feature Flags Endpoint",
+          "summary": "List Feature Flags",
           "tags": [
-            "admin"
+            "admin",
+            "feature-flags"
+          ]
+        }
+      },
+      "/v1/admin/feature-flags/reload": {
+        "post": {
+          "description": "Reload all feature flags from environment variables (admin only).\n\nThis clears:\n1. All Redis overrides (smartlic:ff:* keys)\n2. All in-memory overrides\n3. The feature flag TTL cache\n\nAfter reload, flags return to their env var or registry default values.\nUseful after updating env vars via Railway dashboard without restarting.",
+          "operationId": "reload_flags_endpoint_v1_admin_feature_flags_reload_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FeatureFlagReloadResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Reload Flags Endpoint",
+          "tags": [
+            "admin",
+            "feature-flags"
+          ]
+        }
+      },
+      "/v1/admin/feature-flags/{flag_name}": {
+        "patch": {
+          "description": "Update a feature flag value at runtime (admin only).\n\nThe new value is persisted to Redis (if available) and stored in-memory.\nTakes effect immediately -- no container restart required.\n\nThe change persists across process restarts as long as Redis is available.\nUse POST /admin/feature-flags/reload to clear all overrides.",
+          "operationId": "update_feature_flag_v1_admin_feature_flags__flag_name__patch",
+          "parameters": [
+            {
+              "description": "Feature flag name from the registry",
+              "in": "path",
+              "name": "flag_name",
+              "required": true,
+              "schema": {
+                "description": "Feature flag name from the registry",
+                "title": "Flag Name",
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagUpdateRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FeatureFlagUpdateResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Update Feature Flag",
+          "tags": [
+            "admin",
+            "feature-flags"
           ]
         }
       },
@@ -9637,9 +9660,29 @@
           ]
         }
       },
+      "/v1/health/tasks": {
+        "get": {
+          "description": "DEBT-014 SYS-006: Background task health via TaskRegistry.",
+          "operationId": "background_tasks_health_v1_health_tasks_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Background Tasks Health",
+          "tags": [
+            "health"
+          ]
+        }
+      },
       "/v1/me": {
         "delete": {
-          "description": "Delete entire user account and all associated data (LGPD Art. 18 VI).\n\nCascade order:\n1. Cancel active Stripe subscription (if any)\n2. Delete from: search_sessions, monthly_quota, user_subscriptions,\n   user_oauth_tokens, messages, profiles\n3. Delete auth user via Supabase admin API\n4. Log anonymized audit entry",
+          "description": "Delete entire user account and all associated data (LGPD Art. 18 VI).\n\nUses admin client (get_db) because it needs db.auth.admin.delete_user()\nand must delete across multiple tables regardless of RLS.\n\nCascade order:\n1. Cancel active Stripe subscription (if any)\n2. Delete from: search_sessions, monthly_quota, user_subscriptions,\n   user_oauth_tokens, messages, profiles\n3. Delete auth user via Supabase admin API\n4. Log anonymized audit entry",
           "operationId": "delete_account_v1_me_delete",
           "responses": {
             "200": {
@@ -9664,7 +9707,7 @@
           ]
         },
         "get": {
-          "description": "Get current user profile with plan capabilities and quota status.",
+          "description": "Get current user profile with plan capabilities and quota status.\n\nUses admin client (get_db) because it needs db.auth.admin.get_user_by_id()\nto fetch the user's email from auth.users \u2014 an admin-only operation.",
           "operationId": "get_profile_v1_me_get",
           "responses": {
             "200": {
@@ -9691,7 +9734,7 @@
       },
       "/v1/me/export": {
         "get": {
-          "description": "Export all user data as JSON file (LGPD Art. 18 V \u2014 data portability).\n\nReturns a downloadable JSON file containing:\n- Profile information\n- Search history (sessions)\n- Subscription history\n- Messages",
+          "description": "Export all user data as JSON file (LGPD Art. 18 V \u2014 data portability).\n\nUses admin client (get_db) because it queries across multiple tables\nand needs unrestricted access to gather all user data for export.\n\nReturns a downloadable JSON file containing:\n- Profile information\n- Search history (sessions)\n- Subscription history\n- Messages",
           "operationId": "export_user_data_v1_me_export_get",
           "responses": {
             "200": {
@@ -10389,7 +10432,7 @@
       },
       "/v1/pipeline": {
         "get": {
-          "description": "List pipeline items for the authenticated user (AC3).\n\nSTORY-265 AC3: Trial expired can VIEW pipeline (read-only).\nSupports filtering by stage and pagination via limit/offset.",
+          "description": "List pipeline items for the authenticated user (AC3).\n\nSYS-023: Uses user-scoped Supabase client. RLS policy on pipeline_items\nensures users can only see their own items (WHERE user_id = auth.uid()).\n\nSTORY-265 AC3: Trial expired can VIEW pipeline (read-only).\nSupports filtering by stage and pagination via limit/offset.",
           "operationId": "list_pipeline_items_v1_pipeline_get",
           "parameters": [
             {
@@ -10461,6 +10504,9 @@
             }
           },
           "security": [
+            {
+              "HTTPBearer": []
+            },
             {
               "HTTPBearer": []
             }
@@ -10665,7 +10711,7 @@
       },
       "/v1/profile/alert-preferences": {
         "get": {
-          "description": "Get user's alert preferences (STORY-278 AC6).",
+          "description": "Get user's alert preferences (STORY-278 AC6).\n\nSYS-023: Uses user-scoped Supabase client. RLS on alert_preferences\nensures users can only read their own preferences.",
           "operationId": "get_alert_preferences_v1_profile_alert_preferences_get",
           "responses": {
             "200": {
@@ -10682,6 +10728,9 @@
           "security": [
             {
               "HTTPBearer": []
+            },
+            {
+              "HTTPBearer": []
             }
           ],
           "summary": "Get Alert Preferences",
@@ -10690,7 +10739,7 @@
           ]
         },
         "put": {
-          "description": "Update user's alert preferences (STORY-278 AC6).",
+          "description": "Update user's alert preferences (STORY-278 AC6).\n\nSYS-023: Uses user-scoped Supabase client. RLS on alert_preferences\nensures users can only modify their own preferences.",
           "operationId": "update_alert_preferences_v1_profile_alert_preferences_put",
           "requestBody": {
             "content": {
@@ -10727,6 +10776,9 @@
           "security": [
             {
               "HTTPBearer": []
+            },
+            {
+              "HTTPBearer": []
             }
           ],
           "summary": "Update Alert Preferences",
@@ -10737,7 +10789,7 @@
       },
       "/v1/profile/completeness": {
         "get": {
-          "description": "STORY-260 AC3: Calculate profile completeness and suggest next question.",
+          "description": "STORY-260 AC3: Calculate profile completeness and suggest next question.\n\nSYS-023: Uses user-scoped Supabase client. RLS ensures user can only\nread their own profile.",
           "operationId": "get_profile_completeness_v1_profile_completeness_get",
           "responses": {
             "200": {
@@ -10754,6 +10806,9 @@
           "security": [
             {
               "HTTPBearer": []
+            },
+            {
+              "HTTPBearer": []
             }
           ],
           "summary": "Get Profile Completeness",
@@ -10764,7 +10819,7 @@
       },
       "/v1/profile/context": {
         "get": {
-          "description": "Get business context from profile (STORY-247 AC3).",
+          "description": "Get business context from profile (STORY-247 AC3).\n\nSYS-023: Uses user-scoped Supabase client. RLS policy on profiles\nensures users can only read their own profile row.",
           "operationId": "get_profile_context_v1_profile_context_get",
           "responses": {
             "200": {
@@ -10781,6 +10836,9 @@
           "security": [
             {
               "HTTPBearer": []
+            },
+            {
+              "HTTPBearer": []
             }
           ],
           "summary": "Get Profile Context",
@@ -10789,7 +10847,7 @@
           ]
         },
         "put": {
-          "description": "Save business context from onboarding wizard (STORY-247 AC2).\n\nStores context_data as JSONB in profiles table.",
+          "description": "Save business context from onboarding wizard (STORY-247 AC2).\n\nSYS-023: Uses user-scoped Supabase client. RLS policy on profiles\nensures users can only update their own profile row.\nStores context_data as JSONB in profiles table.",
           "operationId": "save_profile_context_v1_profile_context_put",
           "requestBody": {
             "content": {
@@ -10824,6 +10882,9 @@
             }
           },
           "security": [
+            {
+              "HTTPBearer": []
+            },
             {
               "HTTPBearer": []
             }
@@ -11573,7 +11634,37 @@
           "summary": "Stripe Webhook"
         }
       }
-    }
+    },
+    "tags": [
+      {
+        "description": "Multi-source procurement search with AI classification",
+        "name": "search"
+      },
+      {
+        "description": "Opportunity pipeline (kanban board)",
+        "name": "pipeline"
+      },
+      {
+        "description": "Stripe billing, subscriptions, and plan management",
+        "name": "billing"
+      },
+      {
+        "description": "Admin-only user management and system operations",
+        "name": "admin"
+      },
+      {
+        "description": "Runtime feature flag management (admin only)",
+        "name": "feature-flags"
+      },
+      {
+        "description": "Usage analytics and dashboards",
+        "name": "analytics"
+      },
+      {
+        "description": "Health checks and readiness probes",
+        "name": "health"
+      }
+    ]
   },
   "snapshot": {
     "components": {
