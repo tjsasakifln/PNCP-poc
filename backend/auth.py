@@ -25,10 +25,12 @@ STORY-227 Track 1: ES256+JWKS support
 - Key detection order: JWKS endpoint > PEM key > HS256 symmetric secret
 """
 
+import json
 import time
 import os
 import hashlib
 import jwt
+from collections import OrderedDict
 from jwt import PyJWKClient
 from typing import Any, Optional, Dict, Tuple
 
@@ -40,12 +42,69 @@ logger = get_sanitized_logger(__name__)
 
 security = HTTPBearer(auto_error=False)
 
-# Token validation cache - reduces Supabase Auth API calls by ~95%
-# Key: SHA256 hash of FULL token, Value: (user_data, timestamp)
-# STORY-210 AC3: MUST hash full token. Hashing only a prefix (e.g. [:16])
-# causes identity collision — all Supabase HS256 JWTs share the same prefix.
-_token_cache: Dict[str, Tuple[dict, float]] = {}
-CACHE_TTL = 60  # seconds - balances security (short-lived) vs performance
+# ---------------------------------------------------------------------------
+# DEBT-014 SYS-010 + SYS-018: Bounded LRU auth cache with Redis L2
+# ---------------------------------------------------------------------------
+# L1 (in-memory): OrderedDict with LRU eviction, 60s TTL, max 1000 entries
+# L2 (Redis): shared between Gunicorn workers, 5min TTL
+# Fallback: if Redis unavailable, L1 still works (per-worker only)
+#
+# Key: SHA256 hash of FULL token (STORY-210 AC3)
+# Value: (user_data, timestamp)
+# ---------------------------------------------------------------------------
+_token_cache: OrderedDict[str, Tuple[dict, float]] = OrderedDict()
+CACHE_TTL = 60  # L1 in-memory TTL (seconds)
+REDIS_CACHE_TTL = 300  # L2 Redis TTL (5 minutes, shared between workers)
+MAX_CACHE_ENTRIES = 1000  # Max L1 entries (LRU eviction when exceeded)
+_REDIS_KEY_PREFIX = "smartlic:auth:"
+
+
+def _cache_store_memory(token_hash: str, user_data: dict) -> None:
+    """Store in L1 with LRU eviction."""
+    _token_cache[token_hash] = (user_data, time.time())
+    _token_cache.move_to_end(token_hash)
+    # Evict oldest entries if over limit
+    while len(_token_cache) > MAX_CACHE_ENTRIES:
+        _token_cache.popitem(last=False)
+        try:
+            from metrics import AUTH_CACHE_EVICTIONS
+            AUTH_CACHE_EVICTIONS.inc()
+        except Exception:
+            pass
+    try:
+        from metrics import AUTH_CACHE_SIZE
+        AUTH_CACHE_SIZE.set(len(_token_cache))
+    except Exception:
+        pass
+
+
+async def _redis_cache_get(token_hash: str) -> Optional[dict]:
+    """Try to get user data from Redis L2 cache."""
+    try:
+        from redis_pool import get_redis_pool
+        redis = await get_redis_pool()
+        if redis:
+            data = await redis.get(f"{_REDIS_KEY_PREFIX}{token_hash}")
+            if data:
+                return json.loads(data)
+    except Exception:
+        pass
+    return None
+
+
+async def _redis_cache_set(token_hash: str, user_data: dict) -> None:
+    """Store user data in Redis L2 cache with TTL (fire-and-forget)."""
+    try:
+        from redis_pool import get_redis_pool
+        redis = await get_redis_pool()
+        if redis:
+            await redis.setex(
+                f"{_REDIS_KEY_PREFIX}{token_hash}",
+                REDIS_CACHE_TTL,
+                json.dumps(user_data),
+            )
+    except Exception:
+        pass
 
 # ---------------------------------------------------------------------------
 # JWKS client — lazily initialized on first use to avoid startup failures
@@ -248,20 +307,43 @@ async def get_current_user(
     # Previously hashed only first 16 chars, which are identical for all Supabase JWTs.
     token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
 
-    # FAST PATH: Check cache first (avoids remote Supabase call)
+    # FAST PATH 1: Check L1 in-memory cache (no I/O)
     if token_hash in _token_cache:
         user_data, cached_at = _token_cache[token_hash]
         age = time.time() - cached_at
         if age < CACHE_TTL:
-            logger.debug(f"Auth cache HIT (age={age:.1f}s, user={user_data['id'][:8]})")
+            _token_cache.move_to_end(token_hash)  # LRU refresh
+            logger.debug(f"Auth cache L1 HIT (age={age:.1f}s, user={user_data['id'][:8]})")
+            try:
+                from metrics import AUTH_CACHE_HITS
+                AUTH_CACHE_HITS.labels(level="memory").inc()
+            except Exception:
+                pass
             return user_data
         else:
             # Expired - remove from cache
             del _token_cache[token_hash]
-            logger.debug(f"Auth cache EXPIRED (age={age:.1f}s)")
+            logger.debug(f"Auth cache L1 EXPIRED (age={age:.1f}s)")
 
-    # SLOW PATH: Cache miss or expired - validate locally with JWT
+    # FAST PATH 2: Check L2 Redis cache (shared between workers)
+    redis_data = await _redis_cache_get(token_hash)
+    if redis_data:
+        logger.debug(f"Auth cache L2 HIT (redis, user={redis_data.get('id', '?')[:8]})")
+        _cache_store_memory(token_hash, redis_data)  # Promote to L1
+        try:
+            from metrics import AUTH_CACHE_HITS
+            AUTH_CACHE_HITS.labels(level="redis").inc()
+        except Exception:
+            pass
+        return redis_data
+
+    # SLOW PATH: Cache miss — validate locally with JWT
     logger.debug("Auth cache MISS - validating JWT locally")
+    try:
+        from metrics import AUTH_CACHE_MISSES
+        AUTH_CACHE_MISSES.inc()
+    except Exception:
+        pass
     try:
         # Determine key and algorithm(s) based on configuration
         # (raises HTTPException 401 if completely unconfigured)
@@ -311,9 +393,10 @@ async def get_current_user(
             "aal": aal,
         }
 
-        # Cache validated token
-        _token_cache[token_hash] = (user_data, time.time())
-        logger.debug(f"Auth cache STORED for user {user_data['id'][:8]}")
+        # Cache validated token in L1 + L2
+        _cache_store_memory(token_hash, user_data)
+        await _redis_cache_set(token_hash, user_data)
+        logger.debug(f"Auth cache STORED (L1+L2) for user {user_data['id'][:8]}")
         logger.info(f"JWT validation SUCCESS for user {user_data['id'][:8]} ({email})")
 
         return user_data

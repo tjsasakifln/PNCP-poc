@@ -539,6 +539,20 @@ async def _cache_cleanup_loop() -> None:
             await asyncio.sleep(CLEANUP_INTERVAL_SECONDS)
             from search_cache import cleanup_local_cache
             deleted = cleanup_local_cache()
+
+            # DEBT-014 SYS-010: Cleanup filter stats trackers
+            try:
+                from filter_stats import filter_stats_tracker, discard_rate_tracker
+                fs_removed = filter_stats_tracker.cleanup_old()
+                dr_removed = discard_rate_tracker.cleanup_old()
+                if fs_removed or dr_removed:
+                    logger.info(
+                        "Filter stats cleanup: %d filter entries, %d discard entries removed",
+                        fs_removed, dr_removed,
+                    )
+            except Exception as e:
+                logger.warning("Filter stats cleanup failed: %s", e)
+
             logger.info(
                 f"Periodic cache cleanup: deleted {deleted} expired files "
                 f"at {datetime.now(timezone.utc).isoformat()}"

@@ -912,6 +912,40 @@ PLAN_RECONCILIATION_DRIFT = _create_counter(
 )
 
 
+# DEBT-014 SYS-010/SYS-018: Auth token cache metrics
+AUTH_CACHE_HITS = _create_counter(
+    "smartlic_auth_cache_hits_total",
+    "Auth token cache hits",
+    labelnames=["level"],  # "memory" or "redis"
+)
+
+AUTH_CACHE_MISSES = _create_counter(
+    "smartlic_auth_cache_misses_total",
+    "Auth token cache misses (JWT validation required)",
+)
+
+AUTH_CACHE_SIZE = _create_gauge(
+    "smartlic_auth_cache_size",
+    "Current number of entries in auth in-memory cache",
+)
+
+AUTH_CACHE_EVICTIONS = _create_counter(
+    "smartlic_auth_cache_evictions_total",
+    "Auth cache LRU evictions when max size exceeded",
+)
+
+# DEBT-014 SYS-006: Task registry metrics
+TASK_REGISTRY_HEALTHY = _create_gauge(
+    "smartlic_task_registry_healthy",
+    "Number of healthy background tasks in TaskRegistry",
+)
+
+TASK_REGISTRY_TOTAL = _create_gauge(
+    "smartlic_task_registry_total",
+    "Total registered background tasks in TaskRegistry",
+)
+
+
 # ============================================================================
 # ASGI app factory for /metrics endpoint
 # ============================================================================

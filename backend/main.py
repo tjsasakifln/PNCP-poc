@@ -478,56 +478,46 @@ async def lifespan(app_instance: FastAPI):
     from job_queue import get_arq_pool
     await get_arq_pool()
 
-    # UX-303 AC8: Start periodic cache cleanup
-    from cron_jobs import start_cache_cleanup_task, start_session_cleanup_task, start_cache_refresh_task, warmup_top_params, start_warmup_task, start_trial_sequence_task, start_reconciliation_task, start_health_canary_task, start_revenue_share_task, start_sector_stats_task, start_support_sla_task, start_daily_volume_task, start_results_cleanup_task, start_stripe_events_purge_task, start_plan_reconciliation_task
-    cleanup_task = await start_cache_cleanup_task()
-
-    # CRIT-011 AC7: Start periodic session cleanup (stale + old sessions)
-    session_cleanup_task = await start_session_cleanup_task()
-
-    # GTM-ARCH-002 AC5: Start periodic cache refresh (stale HOT/WARM entries every 4h)
-    cache_refresh_task = await start_cache_refresh_task()
-
-    # STORY-310 AC9: Start daily trial email sequence (08:00 BRT)
-    # CRIT-044: Legacy STORY-266 trial reminders removed — replaced by STORY-310 sequence
-    trial_sequence_task = await start_trial_sequence_task()
-
-    # STORY-314: Start daily Stripe reconciliation (03:00 BRT)
-    reconciliation_task = await start_reconciliation_task()
-
-    # STORY-316: Start health canary (every 5 minutes)
-    health_canary_task = await start_health_canary_task()
-
-    # STORY-323 AC9: Start monthly revenue share report (day 1, 09:00 BRT)
-    revenue_share_task = await start_revenue_share_task()
-
-    # STORY-324 AC3: Start daily sector stats refresh (06:00 UTC)
-    sector_stats_task = await start_sector_stats_task()
-
-    # STORY-353 AC3: Start support SLA check (every 4h)
-    support_sla_task = await start_support_sla_task()
-
-    # STORY-358 AC2: Start daily volume recording (07:00 UTC)
-    daily_volume_task = await start_daily_volume_task()
-
-    # STORY-362 AC7: Start periodic expired search results cleanup (every 6h)
-    results_cleanup_task = await start_results_cleanup_task()
-
-    # HARDEN-028: Start daily Stripe webhook events purge (> 90 days)
-    stripe_purge_task = await start_stripe_events_purge_task()
-
-    # DEBT-010: Start plan reconciliation + table size monitoring (every 12h)
-    plan_reconciliation_task = await start_plan_reconciliation_task()
-
-    # HARDEN-004 AC2: Start periodic tracker cleanup (every 120s)
+    # DEBT-014 SYS-006: Register all background tasks with TaskRegistry
+    from task_registry import task_registry
+    from cron_jobs import (
+        start_cache_cleanup_task, start_session_cleanup_task,
+        start_cache_refresh_task, warmup_top_params, start_warmup_task,
+        start_trial_sequence_task, start_reconciliation_task,
+        start_health_canary_task, start_revenue_share_task,
+        start_sector_stats_task, start_support_sla_task,
+        start_daily_volume_task, start_results_cleanup_task,
+        start_stripe_events_purge_task, start_plan_reconciliation_task,
+    )
     from progress import _periodic_tracker_cleanup
-    tracker_cleanup_task = asyncio.create_task(_periodic_tracker_cleanup())
 
-    # HARDEN-024 AC6: Start periodic saturation metrics reporter (every 30s)
-    saturation_metrics_task = asyncio.create_task(_periodic_saturation_metrics())
+    task_registry.register("cache_cleanup", start_cache_cleanup_task)
+    task_registry.register("session_cleanup", start_session_cleanup_task)
+    task_registry.register("cache_refresh", start_cache_refresh_task)
+    task_registry.register("trial_sequence", start_trial_sequence_task)
+    task_registry.register("reconciliation", start_reconciliation_task)
+    task_registry.register("health_canary", start_health_canary_task)
+    task_registry.register("revenue_share", start_revenue_share_task)
+    task_registry.register("sector_stats", start_sector_stats_task)
+    task_registry.register("support_sla", start_support_sla_task)
+    task_registry.register("daily_volume", start_daily_volume_task)
+    task_registry.register("results_cleanup", start_results_cleanup_task)
+    task_registry.register("stripe_purge", start_stripe_events_purge_task)
+    task_registry.register("plan_reconciliation", start_plan_reconciliation_task)
+    task_registry.register("tracker_cleanup", _periodic_tracker_cleanup, is_coroutine=True)
+    task_registry.register("saturation_metrics", _periodic_saturation_metrics, is_coroutine=True)
+    task_registry.register("warmup", start_warmup_task)
 
-    # P1.2: Start startup cache warm-up (top sector+UF combinations)
-    warmup_task = await start_warmup_task()
+    await task_registry.start_all()
+
+    # Update registry metrics
+    try:
+        from metrics import TASK_REGISTRY_TOTAL, TASK_REGISTRY_HEALTHY
+        health = task_registry.get_health()
+        TASK_REGISTRY_TOTAL.set(health["total"])
+        TASK_REGISTRY_HEALTHY.set(health["healthy"])
+    except Exception:
+        pass
 
     # CRIT-001 AC4: Schema health check for search_results_cache
     await _check_cache_schema()
@@ -646,19 +636,12 @@ async def lifespan(app_instance: FastAPI):
     else:
         logger.info("HARDEN-022: No active background tasks to drain")
 
-    # HARDEN-022 AC5: Cancel ALL cron/periodic tasks in batch
-    _cron_tasks = [
-        cleanup_task, session_cleanup_task, cache_refresh_task,
-        trial_sequence_task, reconciliation_task, health_canary_task,
-        revenue_share_task, sector_stats_task, support_sla_task,
-        daily_volume_task, results_cleanup_task, tracker_cleanup_task,
-        warmup_task, saturation_metrics_task,
-    ]
-    for t in _cron_tasks:
-        t.cancel()
-    # Gather all cancellations — suppress CancelledError
-    await asyncio.gather(*_cron_tasks, return_exceptions=True)
-    logger.info("HARDEN-022: %d cron tasks cancelled", len(_cron_tasks))
+    # DEBT-014 SYS-006: Stop all registered tasks via TaskRegistry
+    # Replaces ad-hoc _cron_tasks list — now includes stripe_purge + plan_reconciliation
+    from task_registry import task_registry
+    stop_results = await task_registry.stop_all(timeout=10.0)
+    logger.info("HARDEN-022: TaskRegistry stopped %d tasks: %s",
+                len(stop_results), {k: v for k, v in stop_results.items() if v != "cancelled"})
 
     # GTM-RESILIENCE-F01: Close ARQ pool
     from job_queue import close_arq_pool

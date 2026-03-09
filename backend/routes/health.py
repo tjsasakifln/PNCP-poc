@@ -57,6 +57,13 @@ async def uptime_history():
     return {"history": history}
 
 
+@router.get("/health/tasks")
+async def background_tasks_health():
+    """DEBT-014 SYS-006: Background task health via TaskRegistry."""
+    from task_registry import task_registry
+    return task_registry.get_health()
+
+
 @router.get("/health/cache")
 async def cache_health():
     """AC7: Health check for all cache levels.
