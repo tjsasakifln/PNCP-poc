@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     let authRefreshAttempted = false;
 
     let response: Response | null = null;
-    let lastError: { detail?: any; status: number } | null = null;
+    let lastError: { detail?: string | Record<string, unknown>; status: number } | null = null;
 
     // STORY-357: Build request body once (reused on auth retry)
     const requestBody = JSON.stringify({

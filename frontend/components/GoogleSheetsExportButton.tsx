@@ -18,6 +18,7 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { LicitacaoItem } from '../app/types';
 
 /**
  * Google Sheets Brand Icon Component
@@ -38,13 +39,13 @@ function GoogleSheetsIcon({ className }: { className?: string }) {
 
 interface GoogleSheetsExportButtonProps {
   /** List of licitações to export */
-  licitacoes: any[];
+  licitacoes: LicitacaoItem[];
   /** Label for spreadsheet title (e.g., "Informática - SP, RJ") */
   searchLabel: string;
   /** Disable button (e.g., while search is loading) */
   disabled?: boolean;
   /** Session object with access_token (from useAuth) */
-  session?: any;
+  session?: { access_token: string } | null;
 }
 
 export default function GoogleSheetsExportButton({
@@ -167,10 +168,11 @@ export default function GoogleSheetsExportButton({
         duration: 5000
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Show error toast
+      const message = error instanceof Error ? error.message : 'Erro desconhecido. Tente novamente.';
       toast.error('Falha ao exportar para Google Sheets', {
-        description: error.message || 'Erro desconhecido. Tente novamente.',
+        description: message,
         duration: 5000
       });
       console.error('Google Sheets export error:', error);

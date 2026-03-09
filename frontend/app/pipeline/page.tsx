@@ -216,10 +216,11 @@ export default function PipelinePage() {
     if (item.stage !== originalItem.stage) {
       try {
         await updateItem(activeId, { stage: item.stage, version: originalItem.version });
-      } catch (err: any) {
+      } catch (err: unknown) {
         setOptimisticItems(items);
         // STORY-307 AC11: On 409 conflict, show specific toast and reload
-        if (err?.isConflict) {
+        const isConflict = err !== null && typeof err === 'object' && 'isConflict' in err && (err as { isConflict: boolean }).isConflict;
+        if (isConflict) {
           toast.error("Item foi atualizado por outra operação. Recarregando...");
           fetchItems();
         } else {

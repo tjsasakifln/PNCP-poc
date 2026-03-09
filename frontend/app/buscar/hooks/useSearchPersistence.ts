@@ -153,7 +153,7 @@ export function useSearchPersistence(params: UseSearchPersistenceParams): UseSea
   const restoreSearchStateOnMount = useCallback(() => {
     const restored = restoreSearchState();
     if (restored) {
-      if (restored.result) setResult(restored.result);
+      if (restored.result) setResult(restored.result as BuscaResult);
       const { formState } = restored;
       if (formState.ufs?.length) filters.setUfsSelecionadas(new Set(formState.ufs));
       if (formState.startDate) filters.setDataInicial(formState.startDate);

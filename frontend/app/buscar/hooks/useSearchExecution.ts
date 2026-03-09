@@ -430,8 +430,17 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
 
           const err = await response.json().catch(() => ({ message: null, error_code: null, data: null }));
 
-          const attachMeta = (error: Error) => {
-            (error as any)._searchErrorMeta = {
+          interface SearchErrorMeta {
+            errorCode: string | null;
+            searchId: string;
+            correlationId: string | null;
+            requestId: string | null;
+            httpStatus: number;
+            rawMessage: string;
+          }
+          type ErrorWithMeta = Error & { _searchErrorMeta?: SearchErrorMeta };
+          const attachMeta = (error: Error): ErrorWithMeta => {
+            (error as ErrorWithMeta)._searchErrorMeta = {
               errorCode: err.error_code || null,
               searchId: err.search_id || newSearchId,
               correlationId: err.correlation_id || null,
@@ -439,7 +448,7 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
               httpStatus: response.status,
               rawMessage: err.message || error.message,
             };
-            return error;
+            return error as ErrorWithMeta;
           };
 
           if (response.status === 401) {
@@ -465,7 +474,9 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
             const returnTo = err.returnTo || "/buscar";
             setTimeout(() => { window.location.href = `/login?returnTo=${encodeURIComponent(returnTo)}`; }, 1500);
             const authError = attachMeta(new Error("Sua sessão expirou. Reconectando..."));
-            (authError as any)._searchErrorMeta.errorCode = "SESSION_EXPIRED";
+            if (authError._searchErrorMeta) {
+              authError._searchErrorMeta.errorCode = "SESSION_EXPIRED";
+            }
             throw authError;
           }
 
@@ -595,10 +606,9 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
         return;
       }
       const rawMsg = e instanceof Error ? e.message : String(e);
-      const errMeta = (e as any)?._searchErrorMeta as {
-        errorCode?: string; searchId?: string; correlationId?: string;
-        requestId?: string; httpStatus?: number; rawMessage?: string;
-      } | undefined;
+      const errMeta = (e !== null && typeof e === 'object' && '_searchErrorMeta' in e)
+        ? (e as { _searchErrorMeta?: { errorCode?: string; searchId?: string; correlationId?: string; requestId?: string; httpStatus?: number; rawMessage?: string } })._searchErrorMeta
+        : undefined;
       const errorCode = errMeta?.errorCode || null;
       const friendlyFromCode = getMessageFromErrorCode(errorCode);
       const friendlyMessage = friendlyFromCode || getUserFriendlyError(e);

@@ -29,9 +29,10 @@ export function PipelineMobileTabs({ items, onUpdateItem, onRemoveItem }: Pipeli
       const item = items.find((i) => i.id === itemId);
       await onUpdateItem(itemId, { stage: targetStage, version: item?.version });
       toast.success(`Movido para ${STAGE_CONFIG[targetStage].label}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // STORY-307 AC11: Show conflict-specific message on 409
-      if (err?.isConflict) {
+      const isConflict = err !== null && typeof err === 'object' && 'isConflict' in err && (err as { isConflict: boolean }).isConflict;
+      if (isConflict) {
         toast.error("Item foi atualizado por outra operação. Recarregue a página.");
       } else {
         toast.error("Erro ao mover item");

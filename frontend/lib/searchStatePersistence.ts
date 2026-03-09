@@ -8,6 +8,12 @@
  * @see docs/ux-analysis/state-persistence-recommendations.md
  */
 
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
 const STORAGE_KEY = 'smartlic_pending_search_state';
 const TTL_MS = 3600000; // 1 hour
 
@@ -22,7 +28,7 @@ export interface SearchFormState {
 }
 
 export interface PersistedSearchState {
-  result: any; // BuscaResult type
+  result: unknown;
   downloadId: string;
   formState: SearchFormState;
   timestamp: number;
@@ -33,7 +39,7 @@ export interface PersistedSearchState {
  * Save search state before navigating to auth
  */
 export function saveSearchState(
-  result: any,
+  result: unknown,
   downloadId: string,
   formState: SearchFormState
 ): boolean {
@@ -49,8 +55,8 @@ export function saveSearchState(
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
     // Track analytics
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'search_state_saved_for_auth', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'search_state_saved_for_auth', {
         download_id: downloadId,
         has_results: !!result,
       });
@@ -61,8 +67,8 @@ export function saveSearchState(
     console.error('[searchStatePersistence] Failed to save state:', error);
 
     // Track failure
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'search_state_save_failed', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'search_state_save_failed', {
         error: error instanceof Error ? error.message : 'unknown',
       });
     }
@@ -90,8 +96,8 @@ export function restoreSearchState(): PersistedSearchState | null {
       clearSearchState();
 
       // Track expiration
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'search_state_expired', {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'search_state_expired', {
           age_ms: Date.now() - state.timestamp,
         });
       }
@@ -100,8 +106,8 @@ export function restoreSearchState(): PersistedSearchState | null {
     }
 
     // Track successful restore
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'search_state_restored', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'search_state_restored', {
         download_id: state.downloadId,
         age_ms: Date.now() - state.timestamp,
       });
@@ -116,8 +122,8 @@ export function restoreSearchState(): PersistedSearchState | null {
     clearSearchState();
 
     // Track failure
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'search_state_restore_failed', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'search_state_restore_failed', {
         error: error instanceof Error ? error.message : 'unknown',
       });
     }

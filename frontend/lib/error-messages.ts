@@ -78,7 +78,7 @@ const ERROR_MAP: Record<string, string> = {
  * HOTFIX 2026-02-10: Enhanced to properly extract error messages from API responses,
  * fixing "[object Object]" display bug that was showing to paying users.
  */
-export function getUserFriendlyError(error: any): string {
+export function getUserFriendlyError(error: unknown): string {
   // HOTFIX: Handle API error responses (Axios/fetch error objects)
   // This fixes the "[object Object]" bug
   let message: string;
@@ -87,20 +87,41 @@ export function getUserFriendlyError(error: any): string {
     message = error;
   } else if (error instanceof Error) {
     message = error.message;
-  } else if (error?.response?.data) {
+  } else if (
+    error !== null &&
+    typeof error === 'object' &&
+    'response' in error &&
+    error.response !== null &&
+    typeof error.response === 'object' &&
+    'data' in error.response
+  ) {
     // Axios error with structured response
-    const data = error.response.data;
+    const data = (error.response as Record<string, unknown>).data;
 
     // Try to extract message from various formats
-    if (data.detail?.message) {
+    if (
+      data !== null && typeof data === 'object' &&
+      'detail' in data &&
+      data.detail !== null && typeof data.detail === 'object' &&
+      'message' in data.detail &&
+      typeof (data.detail as Record<string, unknown>).message === 'string'
+    ) {
       // FastAPI HTTPException with structured detail
-      message = data.detail.message;
-    } else if (typeof data.detail === 'string') {
+      message = (data.detail as Record<string, string>).message;
+    } else if (
+      data !== null && typeof data === 'object' &&
+      'detail' in data &&
+      typeof (data as Record<string, unknown>).detail === 'string'
+    ) {
       // FastAPI HTTPException with string detail
-      message = data.detail;
-    } else if (data.message) {
+      message = (data as Record<string, string>).detail;
+    } else if (
+      data !== null && typeof data === 'object' &&
+      'message' in data &&
+      typeof (data as Record<string, unknown>).message === 'string'
+    ) {
       // Simple message field
-      message = data.message;
+      message = (data as Record<string, string>).message;
     } else if (typeof data === 'string') {
       // Entire data is a string
       message = data;
@@ -109,12 +130,20 @@ export function getUserFriendlyError(error: any): string {
       console.error('Could not extract error message from:', data);
       message = "Não foi possível processar sua análise. Tente novamente em instantes.";
     }
-  } else if (error?.request && !error?.response) {
+  } else if (
+    error !== null && typeof error === 'object' &&
+    'request' in error &&
+    !('response' in error)
+  ) {
     // Network error (request sent but no response)
     message = "Erro de conexão. Verifique sua internet.";
-  } else if (error?.message) {
+  } else if (
+    error !== null && typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as Record<string, unknown>).message === 'string'
+  ) {
     // Error object with message
-    message = error.message;
+    message = (error as Record<string, string>).message;
   } else {
     // Unknown error format
     console.error('Unknown error format:', error);

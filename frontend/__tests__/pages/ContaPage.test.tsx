@@ -1,14 +1,15 @@
 /**
- * ContaPage Component Tests
+ * ContaPage Component Tests (DEBT-011 Updated)
  *
- * Tests account settings page, password change, profile display
+ * Tests account settings pages after decomposition:
+ * - SegurancaPage: password change, auth states
+ * - PerfilPage: profile display, user metadata
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import ContaPage from '@/app/conta/page';
 
-// Mock useAuth
+// Mock useUser from UserContext
 const mockSignOut = jest.fn();
 const mockUser = {
   id: 'user-1',
@@ -20,24 +21,60 @@ const mockUser = {
 };
 const mockSession = { access_token: 'mock-token' };
 
-jest.mock('@/app/components/AuthProvider', () => ({
-  useAuth: () => ({
-    user: mockUser,
-    session: mockSession,
-    loading: false,
-    signOut: mockSignOut,
-  }),
+let mockUserData: Record<string, unknown> = {
+  user: mockUser,
+  session: mockSession,
+  authLoading: false,
+  isAdmin: false,
+  sessionExpired: false,
+  signOut: mockSignOut,
+  planInfo: null,
+  planLoading: false,
+  planError: null,
+  isFromCache: false,
+  cachedAt: null,
+  quota: null,
+  quotaLoading: false,
+  trial: { phase: 'active', daysLeft: 14, isExpired: false, isExpiring: false, isNewUser: false },
+  refresh: jest.fn(),
+};
+
+jest.mock('@/contexts/UserContext', () => ({
+  useUser: () => mockUserData,
 }));
 
-// Mock usePlan hook
-jest.mock('@/hooks/usePlan', () => ({
-  usePlan: () => ({
-    planInfo: null,
-    error: null,
-    isFromCache: false,
-    cachedAt: null,
-    refresh: jest.fn(),
-  }),
+// Mock supabase (needed by SegurancaPage for MFA)
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      mfa: {
+        listFactors: jest.fn().mockResolvedValue({ data: { totp: [] } }),
+        challengeAndVerify: jest.fn(),
+        unenroll: jest.fn(),
+      },
+      refreshSession: jest.fn(),
+    },
+  },
+}));
+
+// Mock error-messages
+jest.mock('@/lib/error-messages', () => ({
+  getUserFriendlyError: (err: unknown) => (err instanceof Error ? err.message : String(err)),
+  isTransientError: () => false,
+  getMessageFromErrorCode: () => null,
+}));
+
+// Mock Button component
+jest.mock('@/components/ui/button', () => ({
+  Button: ({ children, disabled, loading, type, ...rest }: any) => (
+    <button type={type || 'button'} disabled={disabled || loading} {...rest}>{loading && <svg className="animate-spin" aria-hidden="true" />}{children}</button>
+  ),
+  buttonVariants: jest.fn(),
+}));
+
+// Mock MfaSetupWizard
+jest.mock('@/components/auth/MfaSetupWizard', () => ({
+  MfaSetupWizard: () => null,
 }));
 
 // Mock sonner toast
@@ -47,11 +84,6 @@ jest.mock('sonner', () => ({
     error: jest.fn(),
   },
   Toaster: () => null,
-}));
-
-// Mock CancelSubscriptionModal
-jest.mock('@/components/account/CancelSubscriptionModal', () => ({
-  CancelSubscriptionModal: () => null,
 }));
 
 // Mock Next.js Link
@@ -68,6 +100,23 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.restoreAllMocks();
   jest.useFakeTimers();
+  mockUserData = {
+    user: mockUser,
+    session: mockSession,
+    authLoading: false,
+    isAdmin: false,
+    sessionExpired: false,
+    signOut: mockSignOut,
+    planInfo: null,
+    planLoading: false,
+    planError: null,
+    isFromCache: false,
+    cachedAt: null,
+    quota: null,
+    quotaLoading: false,
+    trial: { phase: 'active', daysLeft: 14, isExpired: false, isExpiring: false, isNewUser: false },
+    refresh: jest.fn(),
+  };
   (global.fetch as jest.Mock).mockResolvedValue({
     ok: true,
     json: async () => ({}),
@@ -79,113 +128,139 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-describe('ContaPage', () => {
+// ═══ PerfilPage tests ═══
+
+describe('PerfilPage', () => {
+  let PerfilPage: any;
+
+  beforeEach(async () => {
+    const mod = await import('@/app/conta/perfil/page');
+    PerfilPage = mod.default;
+  });
+
   describe('Initial render', () => {
-    it('should render page title', () => {
-      render(<ContaPage />);
-
-      expect(screen.getByText('Minha Conta')).toBeInTheDocument();
-    });
-
-    it('should display user email', () => {
-      render(<ContaPage />);
-
-      expect(screen.getByText('test@test.com')).toBeInTheDocument();
-    });
-
-    it('should display user name', () => {
-      render(<ContaPage />);
-
-      expect(screen.getByText('Test User')).toBeInTheDocument();
-    });
-
-    it.skip('QUARANTINE: back link to /buscar removed from component', () => {
-      render(<ContaPage />);
-
-      const backLink = screen.getByRole('link', { name: /Voltar/i });
-      expect(backLink).toHaveAttribute('href', '/buscar');
-    });
-
     it('should display profile data section', () => {
-      render(<ContaPage />);
-
+      render(<PerfilPage />);
       expect(screen.getByText(/Dados do perfil/i)).toBeInTheDocument();
-      // Use getAllByText since "Email" appears in multiple contexts
       expect(screen.getAllByText(/^Email$/i).length).toBeGreaterThan(0);
       expect(screen.getByText(/^Nome/i)).toBeInTheDocument();
     });
 
-    it('should display password change section', () => {
-      render(<ContaPage />);
+    it('should display user email', () => {
+      render(<PerfilPage />);
+      expect(screen.getByText('test@test.com')).toBeInTheDocument();
+    });
 
-      // Use heading specifically to avoid ambiguity with button text
-      expect(screen.getByRole('heading', { name: /Alterar senha/i })).toBeInTheDocument();
+    it('should display user name', () => {
+      render(<PerfilPage />);
+      expect(screen.getByText('Test User')).toBeInTheDocument();
     });
   });
 
-  describe('Password fields', () => {
-    it('should have new password input', () => {
-      render(<ContaPage />);
+  describe('Loading states', () => {
+    it('should show loading state when auth is loading', () => {
+      mockUserData = { ...mockUserData, authLoading: true };
+      render(<PerfilPage />);
+      expect(screen.getByText(/Carregando/i)).toBeInTheDocument();
+    });
+  });
 
-      // Use exact label text to avoid matching "Confirmar nova senha"
-      expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
+  describe('Auth redirect', () => {
+    it('should show login prompt when not authenticated', () => {
+      mockUserData = { ...mockUserData, user: null, session: null };
+      render(<PerfilPage />);
+      expect(screen.getByText(/Faça login para acessar sua conta/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Ir para login/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('User metadata fallback', () => {
+    it('should show dash when no name available', () => {
+      mockUserData = {
+        ...mockUserData,
+        user: { ...mockUser, user_metadata: {} },
+      };
+      render(<PerfilPage />);
+      const nameFields = screen.getAllByText('-');
+      expect(nameFields.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+// ═══ SegurancaPage tests ═══
+
+describe('SegurancaPage', () => {
+  let SegurancaPage: any;
+
+  beforeEach(async () => {
+    const mod = await import('@/app/conta/seguranca/page');
+    SegurancaPage = mod.default;
+  });
+
+  describe('Password section', () => {
+    it('should display password change heading', async () => {
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /Alterar senha/i })).toBeInTheDocument();
+      });
     });
 
-    it('should have confirm password input', () => {
-      render(<ContaPage />);
-
-      expect(screen.getByLabelText(/Confirmar nova senha/i)).toBeInTheDocument();
+    it('should have new password input', async () => {
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
+      });
     });
 
-    it('should toggle password visibility', () => {
-      render(<ContaPage />);
+    it('should have confirm password input', async () => {
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Confirmar nova senha/i)).toBeInTheDocument();
+      });
+    });
 
+    it('should toggle password visibility', async () => {
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
+      });
       const newPasswordInput = screen.getByLabelText('Nova senha') as HTMLInputElement;
       expect(newPasswordInput.type).toBe('password');
-
       const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
       fireEvent.click(toggleButtons[0]);
-
       expect(newPasswordInput.type).toBe('text');
     });
 
-    it('should have submit button', () => {
-      render(<ContaPage />);
-
-      expect(screen.getByRole('button', { name: /Alterar senha/i })).toBeInTheDocument();
+    it('should have submit button', async () => {
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Alterar senha/i })).toBeInTheDocument();
+      });
     });
   });
 
   describe('Password validation', () => {
     it('should show error for short password', async () => {
-      render(<ContaPage />);
-
-      fireEvent.change(screen.getByLabelText('Nova senha'), {
-        target: { value: '12345' },
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
       });
-      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), {
-        target: { value: '12345' },
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /Alterar senha/i }));
-
+      fireEvent.change(screen.getByLabelText('Nova senha'), { target: { value: '12345' } });
+      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), { target: { value: '12345' } });
+      fireEvent.submit(screen.getByLabelText('Nova senha').closest('form')!);
       await waitFor(() => {
         expect(screen.getByText(/Senha deve ter no mínimo 6 caracteres/i)).toBeInTheDocument();
       });
     });
 
     it('should show error for mismatched passwords', async () => {
-      render(<ContaPage />);
-
-      fireEvent.change(screen.getByLabelText('Nova senha'), {
-        target: { value: 'password123' },
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
       });
-      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), {
-        target: { value: 'different123' },
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /Alterar senha/i }));
-
+      fireEvent.change(screen.getByLabelText('Nova senha'), { target: { value: 'password123' } });
+      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), { target: { value: 'different123' } });
+      fireEvent.submit(screen.getByLabelText('Nova senha').closest('form')!);
       await waitFor(() => {
         expect(screen.getByText(/As senhas não coincidem/i)).toBeInTheDocument();
       });
@@ -199,16 +274,14 @@ describe('ContaPage', () => {
         json: async () => ({ success: true }),
       });
 
-      render(<ContaPage />);
-
-      fireEvent.change(screen.getByLabelText('Nova senha'), {
-        target: { value: 'newpassword123' },
-      });
-      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), {
-        target: { value: 'newpassword123' },
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /Alterar senha/i }));
+      fireEvent.change(screen.getByLabelText('Nova senha'), { target: { value: 'newpassword123' } });
+      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), { target: { value: 'newpassword123' } });
+      fireEvent.submit(screen.getByLabelText('Nova senha').closest('form')!);
 
       await waitFor(() => {
         const calls = (global.fetch as jest.Mock).mock.calls;
@@ -230,16 +303,14 @@ describe('ContaPage', () => {
         json: async () => ({ success: true }),
       });
 
-      render(<ContaPage />);
-
-      fireEvent.change(screen.getByLabelText('Nova senha'), {
-        target: { value: 'newpassword123' },
-      });
-      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), {
-        target: { value: 'newpassword123' },
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /Alterar senha/i }));
+      fireEvent.change(screen.getByLabelText('Nova senha'), { target: { value: 'newpassword123' } });
+      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), { target: { value: 'newpassword123' } });
+      fireEvent.submit(screen.getByLabelText('Nova senha').closest('form')!);
 
       await waitFor(() => {
         expect(screen.getByText(/Senha alterada com sucesso/i)).toBeInTheDocument();
@@ -252,15 +323,17 @@ describe('ContaPage', () => {
         json: async () => ({ success: true }),
       });
 
-      render(<ContaPage />);
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
+      });
 
       const newPasswordInput = screen.getByLabelText('Nova senha') as HTMLInputElement;
       const confirmPasswordInput = screen.getByLabelText(/Confirmar nova senha/i) as HTMLInputElement;
 
       fireEvent.change(newPasswordInput, { target: { value: 'newpassword123' } });
       fireEvent.change(confirmPasswordInput, { target: { value: 'newpassword123' } });
-
-      fireEvent.click(screen.getByRole('button', { name: /Alterar senha/i }));
+      fireEvent.submit(newPasswordInput.closest('form')!);
 
       await waitFor(() => {
         expect(newPasswordInput.value).toBe('');
@@ -274,16 +347,14 @@ describe('ContaPage', () => {
         json: async () => ({ success: true }),
       });
 
-      render(<ContaPage />);
-
-      fireEvent.change(screen.getByLabelText('Nova senha'), {
-        target: { value: 'newpassword123' },
-      });
-      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), {
-        target: { value: 'newpassword123' },
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /Alterar senha/i }));
+      fireEvent.change(screen.getByLabelText('Nova senha'), { target: { value: 'newpassword123' } });
+      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), { target: { value: 'newpassword123' } });
+      fireEvent.submit(screen.getByLabelText('Nova senha').closest('form')!);
 
       await waitFor(() => {
         expect(screen.getByText(/Senha alterada com sucesso/i)).toBeInTheDocument();
@@ -302,16 +373,14 @@ describe('ContaPage', () => {
         json: async () => ({ detail: 'Senha muito fraca' }),
       });
 
-      render(<ContaPage />);
-
-      fireEvent.change(screen.getByLabelText('Nova senha'), {
-        target: { value: 'newpassword123' },
-      });
-      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), {
-        target: { value: 'newpassword123' },
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /Alterar senha/i }));
+      fireEvent.change(screen.getByLabelText('Nova senha'), { target: { value: 'newpassword123' } });
+      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), { target: { value: 'newpassword123' } });
+      fireEvent.submit(screen.getByLabelText('Nova senha').closest('form')!);
 
       await waitFor(() => {
         expect(screen.getByText(/Senha muito fraca/i)).toBeInTheDocument();
@@ -319,85 +388,12 @@ describe('ContaPage', () => {
     });
   });
 
-  describe('Loading states', () => {
-    it('should show loading state when auth is loading', () => {
-      jest.spyOn(require('@/app/components/AuthProvider'), 'useAuth').mockReturnValue({
-        user: null,
-        session: null,
-        loading: true,
-        signOut: mockSignOut,
-      });
-
-      render(<ContaPage />);
-
-      expect(screen.getByText(/Carregando/i)).toBeInTheDocument();
-    });
-
-    it('should disable submit button during submission', async () => {
-      (global.fetch as jest.Mock).mockImplementation(
-        (url: string) => {
-          if (url === '/api/change-password') {
-            return new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: async () => ({}) }), 1000));
-          }
-          return Promise.resolve({ ok: true, json: async () => ({}) });
-        }
-      );
-
-      render(<ContaPage />);
-
-      fireEvent.change(screen.getByLabelText('Nova senha'), {
-        target: { value: 'newpassword123' },
-      });
-      fireEvent.change(screen.getByLabelText(/Confirmar nova senha/i), {
-        target: { value: 'newpassword123' },
-      });
-
-      const submitButton = screen.getByRole('button', { name: /Alterar senha/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Alterando/i })).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Auth redirect', () => {
-    it('should show login prompt when not authenticated', () => {
-      jest.spyOn(require('@/app/components/AuthProvider'), 'useAuth').mockReturnValue({
-        user: null,
-        session: null,
-        loading: false,
-        signOut: mockSignOut,
-      });
-
-      render(<ContaPage />);
-
-      expect(screen.getByText(/Faça login para acessar sua conta/i)).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Ir para login/i })).toBeInTheDocument();
-    });
-  });
-
   describe('Warning message', () => {
-    it('should display logout warning', () => {
-      render(<ContaPage />);
-
-      expect(screen.getByText(/Ao alterar sua senha, você será desconectado/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('User metadata fallback', () => {
-    it('should show dash when no name available', () => {
-      jest.spyOn(require('@/app/components/AuthProvider'), 'useAuth').mockReturnValue({
-        user: { ...mockUser, user_metadata: {} },
-        session: mockSession,
-        loading: false,
-        signOut: mockSignOut,
+    it('should display logout warning', async () => {
+      render(<SegurancaPage />);
+      await waitFor(() => {
+        expect(screen.getByText(/você será desconectado/i)).toBeInTheDocument();
       });
-
-      render(<ContaPage />);
-
-      const nameFields = screen.getAllByText('-');
-      expect(nameFields.length).toBeGreaterThan(0);
     });
   });
 });

@@ -13,7 +13,7 @@ export function GoogleAnalytics() {
     if (hasConsent && GA_MEASUREMENT_ID && typeof window !== 'undefined') {
       // Initialize dataLayer
       window.dataLayer = window.dataLayer || [];
-      function gtag(...args: any[]) {
+      function gtag(...args: unknown[]) {
         window.dataLayer.push(args);
       }
 
@@ -58,7 +58,7 @@ export function GoogleAnalytics() {
 // Helper function to track custom events
 export function trackEvent(
   eventName: string,
-  eventParams?: Record<string, any>
+  eventParams?: Record<string, string | number | boolean | object>
 ) {
   if (typeof window !== 'undefined' && window.gtag) {
     const hasConsent = localStorage.getItem('cookie-consent') === 'accepted';
@@ -107,10 +107,10 @@ export const trackPlanSelectedEvent = (planName: string, planPrice: number) => {
   });
 };
 
-// Declare gtag on window
+// Declare gtag on window — must match searchStatePersistence.ts declaration
 declare global {
   interface Window {
-    dataLayer: any[];
-    gtag: (...args: any[]) => void;
+    dataLayer: unknown[];
+    gtag?: (...args: unknown[]) => void;
   }
 }

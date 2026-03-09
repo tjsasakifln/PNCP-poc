@@ -7,6 +7,11 @@ import type { PipelineItem, PipelineStage } from "../app/pipeline/types";
 import { getUserFriendlyError } from "../lib/error-messages";
 import { FetchError } from "../lib/fetcher";
 
+interface PipelineApiResponse {
+  items: PipelineItem[];
+  total: number;
+}
+
 /**
  * TD-008 AC6/AC9/AC11/AC12: SWR-based pipeline hook.
  * - GET uses useSWR with deduplication
@@ -116,11 +121,11 @@ export function usePipeline() {
         if (res.status === 409) throw new Error("Esta licitação já está no seu pipeline.");
         if (res.status === 403) {
           if (data.detail?.error_code === "PIPELINE_LIMIT_EXCEEDED") {
-            const err = new Error(`Limite de ${data.detail.limit} itens no pipeline atingido.`);
-            (err as any).isPipelineLimitExceeded = true;
-            (err as any).limit = data.detail.limit;
-            (err as any).current = data.detail.current;
-            throw err;
+            const pipelineErr = Object.assign(
+            new Error(`Limite de ${data.detail.limit} itens no pipeline atingido.`),
+            { isPipelineLimitExceeded: true as const, limit: data.detail.limit as number, current: data.detail.current as number }
+          );
+            throw pipelineErr;
           }
           throw new Error(data.detail?.message || "Pipeline não disponível no seu plano.");
         }
@@ -129,7 +134,7 @@ export function usePipeline() {
       const newItem = await res.json();
       // AC11: Optimistic update + AC12: cache invalidation
       await mutate(
-        (current: any) => ({
+        (current: PipelineApiResponse | undefined) => ({
           ...current,
           items: [newItem, ...(current?.items || [])],
           total: (current?.total || 0) + 1,
@@ -154,16 +159,18 @@ export function usePipeline() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         if (res.status === 409) {
-          const err = new Error(data.detail || "Item foi atualizado por outra operação. Recarregue a página.");
-          (err as any).isConflict = true;
-          throw err;
+          const conflictErr = Object.assign(
+          new Error(data.detail || "Item foi atualizado por outra operação. Recarregue a página."),
+          { isConflict: true as const }
+        );
+          throw conflictErr;
         }
         throw new Error(data.detail || "Erro ao atualizar item.");
       }
       const updated = await res.json();
       // AC11: Optimistic update
       await mutate(
-        (current: any) => ({
+        (current: PipelineApiResponse | undefined) => ({
           ...current,
           items: (current?.items || []).map((i: PipelineItem) =>
             i.id === itemId ? updated : i
@@ -189,7 +196,7 @@ export function usePipeline() {
       }
       // AC11: Optimistic update
       await mutate(
-        (current: any) => ({
+        (current: PipelineApiResponse | undefined) => ({
           ...current,
           items: (current?.items || []).filter((i: PipelineItem) => i.id !== itemId),
           total: Math.max(0, (current?.total || 0) - 1),

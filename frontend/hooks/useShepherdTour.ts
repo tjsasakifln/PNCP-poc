@@ -67,7 +67,7 @@ export function useShepherdTour({ tourId, steps, onComplete, onSkip }: UseShephe
       const isLast = index === steps.length - 1;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const buttons: any[] = [];
+      const buttons: Array<{ text: string; action: () => void; secondary?: boolean }> = [];
 
       if (!isFirst) {
         buttons.push({
@@ -86,15 +86,14 @@ export function useShepherdTour({ tourId, steps, onComplete, onSkip }: UseShephe
         action: () => isLast ? tour.complete() : tour.next(),
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tour.addStep({
         id: step.id,
         title: step.title,
         text: step.text,
         attachTo: step.attachTo ? {
           element: step.attachTo.element,
-          on: step.attachTo.on,
-        } as any : undefined,
+          on: step.attachTo.on as "top" | "bottom" | "left" | "right",
+        } : undefined,
         scrollTo: step.scrollTo ?? { behavior: 'smooth', block: 'center' } as ScrollIntoViewOptions,
         showOn: step.showOn,
         beforeShowPromise: step.beforeShowPromise,

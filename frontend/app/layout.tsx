@@ -12,6 +12,7 @@ import { PaymentFailedBanner } from "../components/billing/PaymentFailedBanner";
 import { NavigationShell } from "../components/NavigationShell";
 import { BackendStatusProvider } from "../components/BackendStatusIndicator";
 import { SWRProvider } from "../components/SWRProvider";
+import { UserProvider } from "../contexts/UserContext";
 import { StructuredData } from "./components/StructuredData";
 import { GoogleAnalytics } from "./components/GoogleAnalytics";
 import { ClarityAnalytics } from "./components/ClarityAnalytics";
@@ -163,6 +164,7 @@ export default function RootLayout({
         <AnalyticsProvider>
           <AuthProvider>
             <SWRProvider>
+            <UserProvider>
             <ThemeProvider>
               <NProgressProvider>
                 <BackendStatusProvider>
@@ -177,6 +179,7 @@ export default function RootLayout({
                 </BackendStatusProvider>
               </NProgressProvider>
             </ThemeProvider>
+            </UserProvider>
             </SWRProvider>
           </AuthProvider>
         </AnalyticsProvider>

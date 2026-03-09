@@ -2,10 +2,11 @@
 
 import { useAuth } from "../components/AuthProvider";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { safeSetItem } from "../../lib/storage";
+import ProtectedLoading from "./loading";
 
 /**
  * Shared layout for all authenticated (protected) pages.
@@ -85,7 +86,9 @@ export default function ProtectedLayout({
       <AppHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <Breadcrumbs />
-        {children}
+        <Suspense fallback={<ProtectedLoading />}>
+          {children}
+        </Suspense>
       </main>
     </>
   );

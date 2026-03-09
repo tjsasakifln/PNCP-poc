@@ -35,11 +35,12 @@ export function AddToPipelineButton({ licitacao, className = "" }: AddToPipeline
       });
       setStatus("saved");
       setTimeout(() => setStatus("idle"), 3000);
-    } catch (err: any) {
-      const raw = err.message || "";
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : "";
+      const isPipelineLimit = err !== null && typeof err === 'object' && 'isPipelineLimitExceeded' in err && (err as { isPipelineLimitExceeded: boolean }).isPipelineLimitExceeded;
       if (raw.includes("já está no")) {
         setStatus("saved");
-      } else if (err.isPipelineLimitExceeded) {
+      } else if (isPipelineLimit) {
         // STORY-356 AC4: Pipeline limit exceeded — show upgrade state
         setStatus("limit");
         setErrorMsg(raw);

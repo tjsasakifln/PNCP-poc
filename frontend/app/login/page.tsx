@@ -218,18 +218,20 @@ function LoginContent() {
   if (showMfaVerification) {
     const redirectTo = searchParams.get("redirect") || "/buscar";
     return (
-      <TotpVerificationScreen
-        onVerified={() => {
-          toast.success("Verificação MFA bem-sucedida!");
-          router.push(redirectTo);
-        }}
-        onCancel={async () => {
-          const { supabase: sb } = await import("../../lib/supabase");
-          await sb.auth.signOut();
-          setShowMfaVerification(false);
-        }}
-        redirectTo={redirectTo}
-      />
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]"><div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" /></div>}>
+        <TotpVerificationScreen
+          onVerified={() => {
+            toast.success("Verificação MFA bem-sucedida!");
+            router.push(redirectTo);
+          }}
+          onCancel={async () => {
+            const { supabase: sb } = await import("../../lib/supabase");
+            await sb.auth.signOut();
+            setShowMfaVerification(false);
+          }}
+          redirectTo={redirectTo}
+        />
+      </Suspense>
     );
   }
 

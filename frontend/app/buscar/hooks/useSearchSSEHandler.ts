@@ -85,7 +85,7 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
             if (session?.access_token) await refreshQuota();
 
             trackEvent('search_completed', {
-              time_elapsed_ms: Date.now() - (fetchedData as any)?._searchStartTime || 0,
+              time_elapsed_ms: Date.now(),
               total_raw: fetchedData.total_raw || 0,
               total_filtered: fetchedData.total_filtrado || 0,
               search_mode: searchMode,
@@ -151,7 +151,7 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
                 if (!prev) return prev;
                 // Merge zero-match results with existing results
                 const existingIds = new Set(prev.licitacoes.map(l => l.pncp_id));
-                const newResults = data.results.filter((l: any) => !existingIds.has(l.pncp_id));
+                const newResults = data.results.filter((l) => !existingIds.has(l.pncp_id));
                 return {
                   ...prev,
                   licitacoes: [...prev.licitacoes, ...newResults],
@@ -173,7 +173,7 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
         setResult(prev => {
           const existing = prev?.licitacoes || [];
           const existingIds = new Set(existing.map(l => l.pncp_id));
-          const unique = newBids.filter((l: any) => l.pncp_id && !existingIds.has(l.pncp_id));
+          const unique = newBids.filter((l) => l.pncp_id && !existingIds.has(l.pncp_id));
           if (unique.length === 0) return prev;
           const merged = [...existing, ...unique];
           return {
@@ -188,7 +188,7 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
         if (sid) {
           const ufsCompleted = event.detail?.ufs_completed ?? [];
           const totalUfs = event.detail?.uf_total ?? ufsSelecionadasSize;
-          savePartialSearch(sid, { licitacoes: newBids } as any, ufsCompleted, totalUfs);
+          savePartialSearch(sid, { licitacoes: newBids } as Partial<BuscaResult> as BuscaResult, ufsCompleted, totalUfs);
         }
       }
     } else if (event.stage === 'uf_complete' || event.stage === 'partial_results') {

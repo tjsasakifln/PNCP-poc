@@ -97,6 +97,34 @@ jest.mock("../components/account/CancelSubscriptionModal", () => ({
   CancelSubscriptionModal: () => null,
 }));
 
+jest.mock("../contexts/UserContext", () => ({
+  useUser: () => ({
+    user: mockAuthState.user,
+    session: mockAuthState.session,
+    authLoading: mockAuthState.loading,
+    isAdmin: false,
+    sessionExpired: false,
+    signOut: mockAuthState.signOut,
+    planInfo: mockPlanInfo,
+    planLoading: false,
+    planError: null,
+    isFromCache: false,
+    cachedAt: null,
+    quota: null,
+    quotaLoading: false,
+    trial: { phase: 'active', daysLeft: 14, isExpired: false, isExpiring: false, isNewUser: false },
+    refresh: jest.fn(),
+  }),
+}));
+
+jest.mock("../lib/plans", () => ({
+  getPlanDisplayName: (id: string, name?: string) => name || id,
+}));
+
+jest.mock("../app/conta/plano/AlertPreferences", () => ({
+  AlertPreferences: () => null,
+}));
+
 // ─── Reset state before each test ────────────────────────────────────────────
 
 beforeEach(() => {
@@ -359,7 +387,7 @@ describe("Conta plan section (AC9-AC13)", () => {
   let ContaPage: any;
 
   beforeEach(async () => {
-    const mod = await import("../app/conta/page");
+    const mod = await import("../app/conta/plano/page");
     ContaPage = mod.default;
   });
 

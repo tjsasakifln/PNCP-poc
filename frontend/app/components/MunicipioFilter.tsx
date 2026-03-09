@@ -37,6 +37,7 @@ const municipioCache: Record<string, Municipio[]> = {};
 /**
  * Custom debounce hook - lightweight alternative to use-debounce package
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   delay: number
