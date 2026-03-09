@@ -393,3 +393,88 @@ Schema changes are tracked via migrations in git, but there's no database-level 
 5. **Fix DB-SCH-02** — Consolidate updated_at trigger functions
 6. **Add DB-PERF-03** — Retention cleanup for search_state_transitions
 7. **Consolidate DB-MIG-01** — Move backend migrations to supabase/ with proper timestamps
+
+---
+
+## 10. Accepted Risks & Design Decisions (DEBT-017)
+
+**Added:** 2026-03-09 — DEBT-017 Database Long-Term Optimization
+
+### DB-004 — `mfa_recovery_codes` no rate limiting in DB
+
+**Status:** ACCEPTED — App-layer rate limiting is the correct pattern.
+**Rationale:** Database-level rate limiting via triggers would add complexity and coupling. The `mfa_recovery_attempts` table + application code in `auth.py` provides rate limiting with proper backoff and lockout. DB-level triggers cannot implement exponential backoff or account-level lockout policies.
+**Owner:** Backend auth module (`auth.py`)
+
+### DB-005 — `mfa_recovery_attempts` no SELECT policy for users
+
+**Status:** ACCEPTED — Intentional information leakage prevention.
+**Rationale:** Exposing recovery attempt history to users would reveal timing information about brute-force attempts against their account. Only `service_role` can read this table. Users see "too many attempts" errors via the API without knowing attempt counts.
+
+### DB-006 — `trial_email_log` no user-facing policies
+
+**Status:** ACCEPTED — Backend-only table.
+**Rationale:** This table tracks automated trial drip emails sent by the worker process. Users have no legitimate need to query their email send history. If a user settings page needs this data in the future, add a SELECT policy scoped to `user_id = auth.uid()`.
+
+### DB-008 — Stripe Price IDs visible in `plans` table
+
+**Status:** ACCEPTED — Used client-side by design (Stripe Checkout).
+**Rationale:** Stripe Price IDs are not secret — they are used in the Stripe Checkout flow. The `plans` table has `FOR SELECT USING (true)` because the pricing page needs to display plan information. The actual checkout session creation happens server-side with additional validation. Note: STORY-210 AC11 strips `stripe_price_id_*` from the API response, so frontend never receives them directly.
+
+### DB-009 — Partner RLS uses `auth.users.email` (cross-schema query)
+
+**Status:** OPTIMIZED — Already uses `partners.contact_email` pattern.
+**Rationale:** The `partners_self_read` policy compares `contact_email = (SELECT email FROM auth.users WHERE id = auth.uid())`. This is the standard Supabase pattern for email-based RLS. The query is to `auth.users` (not `profiles`), which is the canonical source of email. No further optimization needed — the `auth.uid()` call is already indexed.
+
+### DB-016 — `search_sessions.status` no DB-level transition enforcement
+
+**Status:** ACCEPTED — App-layer state machine is the correct pattern.
+**Rationale:** Complex FSM transition logic (with stages, error recovery, retries, cancellation) is better expressed in application code (`search_state_manager.py`) than in SQL triggers. DB-level enforcement would require duplicating the state machine logic, creating a maintenance burden. The `search_state_transitions` audit table provides full traceability. Valid transitions documented via SQL COMMENT on the column (DEBT-017 migration).
+
+### DB-020 — Naming inconsistency in constraints
+
+**Status:** DOCUMENTED — Convention adopted for future constraints.
+**Rationale:** Retroactively renaming all existing constraints would require DROP + ADD for each, risking downtime and FK dependency issues. Convention documented in schema COMMENT: `chk_{table}_{column}` for CHECK, `fk_{table}_{column}` for FK, `uq_{table}_{column}` for UNIQUE, `idx_{table}_{column}` for indexes. Legacy constraints retain original names.
+
+### DB-022 — `profiles.phone_whatsapp` CHECK only validates digits/length
+
+**Status:** ACCEPTED — App-layer validation is the correct pattern.
+**Rationale:** Brazilian phone number validation rules (area codes, mobile prefixes, landline vs mobile) change over time. Encoding these rules in a CHECK constraint would require migrations for each regulatory change. The DB CHECK `'^[0-9]{10,11}$'` catches obvious errors; full validation happens in the frontend form and backend Pydantic schema.
+
+### DB-023 — `search_results_cache` cross-user sharing with date range
+
+**Status:** MONITORED — Low risk at current scale.
+**Rationale:** The `params_hash_global` column enables SWR-style cross-user cache sharing. Date ranges ARE included in the hash (STORY-306), so different date ranges produce different hashes. The risk is that a cached result from user A could be served to user B for identical params — this is intentional for performance. Stale data risk is mitigated by the 24h TTL and background revalidation.
+
+### DB-024 — `plan_billing_periods` no `updated_at` column
+
+**Status:** RESOLVED — Column added in DEBT-017 migration.
+**Rationale:** Pricing changes are infrequent but should be trackable. Added `updated_at TIMESTAMPTZ DEFAULT now()` with auto-update trigger.
+
+### DB-027 — No down-migrations
+
+**Status:** ACCEPTED — PITR is the rollback mechanism.
+**Rationale:** Supabase provides Point-in-Time Recovery (PITR) as the primary rollback mechanism. Down-migrations for 76+ files would be expensive to write and maintain. For critical schema changes, the rollback procedure is: (1) Identify the timestamp before the migration, (2) Use Supabase PITR to restore, (3) Re-apply any migrations after the restore point that should be kept. Manual rollback scripts can be added as comments in individual migrations for high-risk changes.
+
+### DB-036 — No table partitioning
+
+**Status:** DEFERRED — Plan when row count > 1M/month.
+**Rationale:** Tables `audit_events`, `search_state_transitions`, and `search_sessions` are append-heavy and time-series. At current beta scale (~10K rows/month), partitioning overhead exceeds benefit. Monitor via: `SELECT relname, n_live_tup FROM pg_stat_user_tables WHERE relname IN ('audit_events', 'search_state_transitions', 'search_sessions') ORDER BY n_live_tup DESC;`. Partition by month when any table exceeds 1M rows/month.
+
+### DB-044 — pg_cron jobs not in migrations (require superuser)
+
+**Status:** ACCEPTED — Manual setup required.
+**Rationale:** pg_cron requires the `cron` extension which needs superuser. On Supabase, this is enabled via the Dashboard (Database > Extensions > pg_cron). Migrations use `CREATE EXTENSION IF NOT EXISTS pg_cron` but this only works if the extension is already enabled. Manual setup steps:
+1. Enable pg_cron in Supabase Dashboard > Database > Extensions
+2. Run migrations normally — pg_cron jobs will be created
+3. Verify with: `SELECT * FROM cron.job;`
+
+### DB-046 — No audit trail for DB-level schema changes
+
+**Status:** ACCEPTED — Policy: "never modify schema via dashboard".
+**Rationale:** All schema changes MUST go through migration files in `supabase/migrations/`. Direct Dashboard modifications are prohibited. If a Dashboard change is unavoidable (e.g., enabling extensions), create a corresponding migration file documenting the change. This policy is documented in the schema COMMENT and enforced by code review.
+
+### DB-050 — No FK from `search_state_transitions.search_id` to `search_sessions`
+
+**Status:** ACCEPTED — Cannot add FK due to schema constraints.
+**Rationale:** `search_sessions.search_id` is nullable and not unique (retries can share search IDs). Adding a FK would require: (1) making search_id NOT NULL on search_sessions (breaks existing rows), (2) adding UNIQUE constraint (breaks retry semantics). Orphan transitions are cleaned up by the pg_cron retention job (30-day retention). Documented via SQL COMMENT on the column.

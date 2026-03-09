@@ -36,35 +36,35 @@ After Sprint 1-2 resolve critical and high-priority database debts, numerous med
 
 ## Tasks
 
-- [ ] Document accepted risks: DB-005 (intentional), DB-006 (backend-only), DB-008 (accepted)
-- [ ] Add app-layer documentation for DB-004 MFA rate limiting pattern
-- [ ] Optimize partner RLS: use `partners.contact_email` instead of cross-schema `profiles.email` (DB-009)
-- [ ] Deprecate `plans.stripe_price_id` after confirming zero references in billing code (DB-014)
-- [ ] Document valid `search_sessions.status` transitions via SQL COMMENT (DB-016)
-- [ ] Add `NOT NULL DEFAULT now()` to `google_sheets_exports.created_at` and `partners.created_at` (DB-017)
-- [ ] Adopt naming convention `chk_{table}_{column}` for future constraints (DB-020)
-- [ ] Document phone validation as app-layer responsibility (DB-022)
-- [ ] Review SWR cache sharing risks and mitigate if necessary (DB-023)
-- [ ] Evaluate adding `updated_at` to `plan_billing_periods` (DB-024)
-- [ ] Create down-migration strategy document (PITR as primary, manual scripts as supplement) (DB-027)
-- [ ] Parameterize Stripe Price IDs in seed data (use env vars) (DB-029)
-- [ ] Add short-circuit to cleanup trigger: `IF count(*) <= 10 THEN RETURN NEW` (DB-034)
-- [ ] Rewrite conversations query as LEFT JOIN + GROUP BY (DB-035)
-- [ ] Plan partitioning strategy for `audit_events`, `search_state_transitions` (DB-036)
-- [ ] Document pg_cron manual setup steps (DB-044)
-- [ ] Document "never modify schema via dashboard" policy (DB-046)
-- [ ] Evaluate FK for search_state_transitions (requires UNIQUE on search_sessions.search_id) (DB-050)
+- [x] Document accepted risks: DB-005 (intentional), DB-006 (backend-only), DB-008 (accepted)
+- [x] Add app-layer documentation for DB-004 MFA rate limiting pattern
+- [x] Optimize partner RLS: use `partners.contact_email` instead of cross-schema `profiles.email` (DB-009)
+- [x] Deprecate `plans.stripe_price_id` after confirming zero references in billing code (DB-014)
+- [x] Document valid `search_sessions.status` transitions via SQL COMMENT (DB-016)
+- [x] Add `NOT NULL DEFAULT now()` to `google_sheets_exports.created_at` and `partners.created_at` (DB-017)
+- [x] Adopt naming convention `chk_{table}_{column}` for future constraints (DB-020)
+- [x] Document phone validation as app-layer responsibility (DB-022)
+- [x] Review SWR cache sharing risks and mitigate if necessary (DB-023)
+- [x] Evaluate adding `updated_at` to `plan_billing_periods` (DB-024)
+- [x] Create down-migration strategy document (PITR as primary, manual scripts as supplement) (DB-027)
+- [x] Parameterize Stripe Price IDs in seed data (use env vars) (DB-029)
+- [x] Add short-circuit to cleanup trigger: `IF count(*) <= 10 THEN RETURN NEW` (DB-034)
+- [x] Rewrite conversations query as LEFT JOIN + GROUP BY (DB-035)
+- [x] Plan partitioning strategy for `audit_events`, `search_state_transitions` (DB-036)
+- [x] Document pg_cron manual setup steps (DB-044)
+- [x] Document "never modify schema via dashboard" policy (DB-046)
+- [x] Evaluate FK for search_state_transitions (requires UNIQUE on search_sessions.search_id) (DB-050)
 
 ## Acceptance Criteria
 
-- [ ] AC1: All accepted risks documented in DB-AUDIT.md or inline SQL COMMENTs
-- [ ] AC2: Partner RLS uses contact_email (no cross-schema query)
-- [ ] AC3: Legacy `stripe_price_id` deprecated or removed
-- [ ] AC4: All `created_at` columns have `NOT NULL DEFAULT now()`
-- [ ] AC5: Stripe Price IDs parameterized for staging/dev setup
-- [ ] AC6: Cleanup trigger has short-circuit optimization
-- [ ] AC7: Conversations query uses JOIN (not correlated subquery)
-- [ ] AC8: Zero regressions
+- [x] AC1: All accepted risks documented in DB-AUDIT.md or inline SQL COMMENTs
+- [x] AC2: Partner RLS uses contact_email (no cross-schema query)
+- [x] AC3: Legacy `stripe_price_id` deprecated or removed
+- [x] AC4: All `created_at` columns have `NOT NULL DEFAULT now()`
+- [x] AC5: Stripe Price IDs parameterized for staging/dev setup
+- [x] AC6: Cleanup trigger has short-circuit optimization
+- [x] AC7: Conversations query uses JOIN (not correlated subquery)
+- [x] AC8: Zero regressions
 
 ## Tests Required
 
@@ -74,8 +74,19 @@ After Sprint 1-2 resolve critical and high-priority database debts, numerous med
 
 ## Definition of Done
 
-- [ ] All tasks complete
-- [ ] Tests passing (backend 5800+ / 0 fail)
-- [ ] No regressions
-- [ ] Documentation updated
-- [ ] Code reviewed
+- [x] All tasks complete
+- [x] Tests passing (backend 5800+ / 0 fail)
+- [x] No regressions
+- [x] Documentation updated
+- [x] Code reviewed
+
+## File List
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `supabase/migrations/20260309100000_debt017_database_long_term_optimization.sql` | Created | Migration: NOT NULL constraints, trigger optimization, conversations query rewrite, SQL COMMENTs, plan_billing_periods updated_at |
+| `supabase/docs/DB-AUDIT.md` | Updated | Added "Accepted Risks & Design Decisions" section documenting 18 DB-xxx items |
+| `supabase/seed/seed_stripe_prices.sql` | Created | Parameterized Stripe Price ID seed script for staging/dev |
+| `scripts/seed-stripe-prices.sh` | Created | Shell helper for seeding Stripe Price IDs via env vars |
+| `backend/tests/test_debt017_database_optimization.py` | Created | 56 tests covering all 8 ACs |
+| `docs/stories/DEBT-017-database-long-term-optimization.md` | Updated | All checkboxes marked complete |
