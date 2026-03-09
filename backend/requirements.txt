@@ -18,7 +18,7 @@ python-multipart>=0.0.22           # CVE-2026-24486: Path Traversal fix (STORY-2
 httpx==0.28.1
 # DEBT-018 SYS-029: requests still needed for sync PNCPClient fallback (pncp_client.py).
 # Remove after fully migrating PNCPClient to AsyncPNCPClient (httpx-based).
-requests==2.32.3
+requests==2.32.5
 urllib3==2.6.3
 # chardet 6.0.0 (Feb 2026) breaks requests<=2.32.5 runtime check_compatibility()
 # which enforces chardet < (6,0,0). Transitive dep pulled by other packages.
