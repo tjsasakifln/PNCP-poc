@@ -1,3 +1,5 @@
+// DEBT-012: Use Tailwind theme tokens (e.g., text-primary, bg-error) instead of raw hex values.
+// For new colors, add CSS var to globals.css + Tailwind mapping here.
 import type { Config } from "tailwindcss";
 
 const config: Config = {
@@ -34,6 +36,23 @@ const config: Config = {
         "gem-emerald": "var(--gem-emerald)",
         "gem-amethyst": "var(--gem-amethyst)",
         "gem-ruby": "var(--gem-ruby)",
+        /* DEBT-012: Semantic aliases */
+        primary: "var(--brand-blue)",
+        secondary: "var(--brand-navy)",
+        accent: "var(--brand-blue-hover)",
+        /* DEBT-012: Chart palette (mirrors globals.css --chart-N) */
+        "chart-1": "var(--chart-1)",
+        "chart-2": "var(--chart-2)",
+        "chart-3": "var(--chart-3)",
+        "chart-4": "var(--chart-4)",
+        "chart-5": "var(--chart-5)",
+        "chart-6": "var(--chart-6)",
+        "chart-7": "var(--chart-7)",
+        "chart-8": "var(--chart-8)",
+        "chart-9": "var(--chart-9)",
+        "chart-10": "var(--chart-10)",
+        /* DEBT-012: Third-party brand colors */
+        whatsapp: "var(--whatsapp)",
       },
       borderColor: {
         DEFAULT: "var(--border)",

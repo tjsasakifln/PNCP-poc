@@ -2,6 +2,8 @@
  * DEBT-011: Shared form field components for conta sub-routes.
  */
 
+import { Label } from "../../components/ui/Label";
+
 export function ProfileField({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="flex items-start justify-between">
@@ -13,15 +15,16 @@ export function ProfileField({ label, value }: { label: string; value: string | 
   );
 }
 
-export function SelectField({ label, value, onChange, options }: {
+export function SelectField({ label, value, onChange, options, error }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: Array<{ value: string; label: string }>;
+  error?: string;
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">{label}</label>
+      <Label>{label}</Label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -32,19 +35,21 @@ export function SelectField({ label, value, onChange, options }: {
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
+      {error && <p className="mt-1 text-xs text-error" role="alert">{error}</p>}
     </div>
   );
 }
 
-export function NumberField({ label, value, onChange, placeholder }: {
+export function NumberField({ label, value, onChange, placeholder, error }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
+  error?: string;
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">{label}</label>
+      <Label>{label}</Label>
       <input
         type="number"
         min={0}
@@ -53,6 +58,7 @@ export function NumberField({ label, value, onChange, placeholder }: {
         placeholder={placeholder}
         className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] text-sm focus:border-[var(--brand-blue)] focus:outline-none"
       />
+      {error && <p className="mt-1 text-xs text-error" role="alert">{error}</p>}
     </div>
   );
 }

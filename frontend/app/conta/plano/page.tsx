@@ -30,7 +30,7 @@ export default function PlanoPage() {
         <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Seu Acesso ao SmartLic</h2>
 
         {isFromCache && cachedAt && (
-          <div className="mb-4 p-3 bg-[var(--warning-subtle,#fef3cd)] rounded-input text-sm text-[var(--warning,#856404)] flex items-center gap-2" data-testid="plan-cache-notice">
+          <div className="mb-4 p-3 bg-[var(--warning-subtle)] rounded-input text-sm text-[var(--warning)] flex items-center gap-2" data-testid="plan-cache-notice">
             <svg aria-hidden="true" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -68,7 +68,7 @@ export default function PlanoPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm"><span className="text-[var(--ink-secondary)]">Dias restantes</span><span className="font-medium text-[var(--ink)]">{daysLeft} de 7</span></div>
                   <div className="flex items-center justify-between text-sm"><span className="text-[var(--ink-secondary)]">Análises usadas</span><span className="font-medium text-[var(--ink)]">{used} de {total}</span></div>
-                  <div className="w-full h-2 bg-[var(--surface-1)] rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${usagePct}%`, backgroundColor: usagePct > 80 ? "var(--error,#dc2626)" : "var(--brand-blue)" }} /></div>
+                  <div className="w-full h-2 bg-[var(--surface-1)] rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${usagePct}%`, backgroundColor: usagePct > 80 ? "var(--error)" : "var(--brand-blue)" }} /></div>
                   <p className="text-xs text-[var(--ink-muted)] text-right">{usagePct}% utilizado</p>
                 </div>
               );
@@ -84,9 +84,9 @@ export default function PlanoPage() {
             )}
 
             {cancellingEndsAt && (
-              <div className="flex items-center gap-3 p-3 bg-[var(--warning-subtle,#fef3cd)] rounded-input">
-                <svg aria-hidden="true" className="w-5 h-5 text-[var(--warning,#856404)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <div><p className="text-sm font-medium text-[var(--warning,#856404)]">Ativo ate {new Date(cancellingEndsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</p></div>
+              <div className="flex items-center gap-3 p-3 bg-[var(--warning-subtle)] rounded-input">
+                <svg aria-hidden="true" className="w-5 h-5 text-[var(--warning)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div><p className="text-sm font-medium text-[var(--warning)]">Ativo ate {new Date(cancellingEndsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</p></div>
               </div>
             )}
 
@@ -100,7 +100,7 @@ export default function PlanoPage() {
               ) : null}
 
               {planInfo.subscription_status === "active" && !cancellingEndsAt && planInfo.plan_id !== "free_trial" && (
-                <button onClick={() => setShowCancelModal(true)} className="w-full text-center text-xs text-[var(--ink-muted)] hover:text-[var(--error,#dc2626)] transition-colors py-2" data-testid="cancel-link">Cancelar acesso</button>
+                <button onClick={() => setShowCancelModal(true)} className="w-full text-center text-xs text-[var(--ink-muted)] hover:text-[var(--error)] transition-colors py-2" data-testid="cancel-link">Cancelar acesso</button>
               )}
             </div>
           </div>

@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useUser } from "../../../contexts/UserContext";
 import { toast } from "sonner";
 import Link from "next/link";
 import { completenessCount, TOTAL_PROFILE_FIELDS, type ProfileContext } from "../profile-utils";
 import { ATESTADOS_CATALOG, PORTE_OPTIONS, EXPERIENCIA_OPTIONS, ALL_UFS } from "../conta-constants";
 import { ProfileField, SelectField, NumberField } from "../conta-fields";
+import { Label } from "../../../components/ui/Label";
+import { profileSchema, type ProfileFormData } from "../../../lib/schemas/forms";
 
 /** DEBT-011 FE-001: /conta/perfil — Profile editing + Licitante profile. */
 export default function PerfilPage() {
@@ -17,14 +21,36 @@ export default function PerfilPage() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileEdit, setProfileEdit] = useState(false);
-  const [editUfs, setEditUfs] = useState<string[]>([]);
-  const [editPorte, setEditPorte] = useState("");
-  const [editExperiencia, setEditExperiencia] = useState("");
-  const [editValorMin, setEditValorMin] = useState("");
-  const [editValorMax, setEditValorMax] = useState("");
-  const [editFuncionários, setEditFuncionários] = useState("");
-  const [editFaturamento, setEditFaturamento] = useState("");
-  const [editAtestados, setEditAtestados] = useState<string[]>([]);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      ufs_atuacao: [],
+      porte_empresa: "",
+      experiencia_licitacoes: "",
+      faixa_valor_min: "",
+      faixa_valor_max: "",
+      capacidade_funcionarios: "",
+      faturamento_anual: "",
+      atestados: [],
+    },
+  });
+
+  const watchedUfs = watch("ufs_atuacao");
+  const watchedAtestados = watch("atestados");
+  const watchedPorte = watch("porte_empresa");
+  const watchedExperiencia = watch("experiencia_licitacoes");
+  const watchedValorMin = watch("faixa_valor_min");
+  const watchedValorMax = watch("faixa_valor_max");
+  const watchedFuncionarios = watch("capacidade_funcionarios");
+  const watchedFaturamento = watch("faturamento_anual");
 
   const fetchProfileCtx = useCallback(async () => {
     if (!session?.access_token) return;
@@ -50,31 +76,33 @@ export default function PerfilPage() {
 
   const startEdit = () => {
     if (!profileCtx) return;
-    setEditUfs(profileCtx.ufs_atuacao ?? []);
-    setEditPorte(profileCtx.porte_empresa ?? "");
-    setEditExperiencia(profileCtx.experiencia_licitacoes ?? "");
-    setEditValorMin(profileCtx.faixa_valor_min != null ? String(profileCtx.faixa_valor_min) : "");
-    setEditValorMax(profileCtx.faixa_valor_max != null ? String(profileCtx.faixa_valor_max) : "");
-    setEditFuncionários(profileCtx.capacidade_funcionarios != null ? String(profileCtx.capacidade_funcionarios) : "");
-    setEditFaturamento(profileCtx.faturamento_anual != null ? String(profileCtx.faturamento_anual) : "");
-    setEditAtestados(profileCtx.atestados ?? []);
+    reset({
+      ufs_atuacao: profileCtx.ufs_atuacao ?? [],
+      porte_empresa: profileCtx.porte_empresa ?? "",
+      experiencia_licitacoes: profileCtx.experiencia_licitacoes ?? "",
+      faixa_valor_min: profileCtx.faixa_valor_min != null ? String(profileCtx.faixa_valor_min) : "",
+      faixa_valor_max: profileCtx.faixa_valor_max != null ? String(profileCtx.faixa_valor_max) : "",
+      capacidade_funcionarios: profileCtx.capacidade_funcionarios != null ? String(profileCtx.capacidade_funcionarios) : "",
+      faturamento_anual: profileCtx.faturamento_anual != null ? String(profileCtx.faturamento_anual) : "",
+      atestados: profileCtx.atestados ?? [],
+    });
     setProfileEdit(true);
   };
 
-  const handleSaveProfile = async () => {
+  const onSubmit = async (data: ProfileFormData) => {
     if (!session?.access_token) return;
     setProfileSaving(true);
     try {
       const payload: ProfileContext = {
         ...(profileCtx ?? {}),
-        ufs_atuacao: editUfs.length ? editUfs : undefined,
-        porte_empresa: editPorte || undefined,
-        experiencia_licitacoes: editExperiencia || undefined,
-        faixa_valor_min: editValorMin ? Number(editValorMin) : null,
-        faixa_valor_max: editValorMax ? Number(editValorMax) : null,
-        capacidade_funcionarios: editFuncionários ? Number(editFuncionários) : null,
-        faturamento_anual: editFaturamento ? Number(editFaturamento) : null,
-        atestados: editAtestados.length ? editAtestados : undefined,
+        ufs_atuacao: data.ufs_atuacao.length ? data.ufs_atuacao : undefined,
+        porte_empresa: data.porte_empresa || undefined,
+        experiencia_licitacoes: data.experiencia_licitacoes || undefined,
+        faixa_valor_min: data.faixa_valor_min ? Number(data.faixa_valor_min) : null,
+        faixa_valor_max: data.faixa_valor_max ? Number(data.faixa_valor_max) : null,
+        capacidade_funcionarios: data.capacidade_funcionarios ? Number(data.capacidade_funcionarios) : null,
+        faturamento_anual: data.faturamento_anual ? Number(data.faturamento_anual) : null,
+        atestados: data.atestados.length ? data.atestados : undefined,
       };
       const res = await fetch("/api/profile-context", {
         method: "PUT",
@@ -85,8 +113,8 @@ export default function PerfilPage() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const data = await res.json();
-        setProfileCtx(data.context_data ?? payload);
+        const resData = await res.json();
+        setProfileCtx(resData.context_data ?? payload);
         setProfileEdit(false);
         toast.success("Perfil de licitante atualizado!");
       } else {
@@ -97,6 +125,18 @@ export default function PerfilPage() {
     } finally {
       setProfileSaving(false);
     }
+  };
+
+  const toggleUf = (uf: string) => {
+    const current = watchedUfs ?? [];
+    const next = current.includes(uf) ? current.filter((u) => u !== uf) : [...current, uf];
+    setValue("ufs_atuacao", next, { shouldValidate: true });
+  };
+
+  const toggleAtestado = (id: string) => {
+    const current = watchedAtestados ?? [];
+    const next = current.includes(id) ? current.filter((a) => a !== id) : [...current, id];
+    setValue("atestados", next, { shouldValidate: true });
   };
 
   if (authLoading) {
@@ -221,18 +261,18 @@ export default function PerfilPage() {
 
         {/* Edit form */}
         {!profileLoading && profileEdit && (
-          <div className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
             {/* UFs */}
             <div>
-              <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-2">Estados de atuação</label>
+              <Label>Estados de atuação</Label>
               <div className="flex flex-wrap gap-1.5">
                 {ALL_UFS.map((uf) => (
                   <button
                     key={uf}
                     type="button"
-                    onClick={() => setEditUfs((prev) => prev.includes(uf) ? prev.filter((u) => u !== uf) : [...prev, uf])}
+                    onClick={() => toggleUf(uf)}
                     className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
-                      editUfs.includes(uf)
+                      (watchedUfs ?? []).includes(uf)
                         ? "border-[var(--brand-blue)] bg-[var(--brand-blue-subtle)] text-[var(--brand-blue)] font-medium"
                         : "border-[var(--border)] text-[var(--ink-secondary)] hover:border-[var(--border-strong)]"
                     }`}
@@ -241,33 +281,72 @@ export default function PerfilPage() {
                   </button>
                 ))}
               </div>
+              {errors.ufs_atuacao && (
+                <p className="mt-1 text-xs text-error" role="alert">{errors.ufs_atuacao.message}</p>
+              )}
             </div>
 
-            <SelectField label="Porte da empresa" value={editPorte} onChange={setEditPorte} options={PORTE_OPTIONS} />
-            <SelectField label="Experiência com licitações" value={editExperiencia} onChange={setEditExperiencia} options={EXPERIENCIA_OPTIONS} />
+            <SelectField
+              label="Porte da empresa"
+              value={watchedPorte}
+              onChange={(v) => setValue("porte_empresa", v, { shouldValidate: true })}
+              options={PORTE_OPTIONS}
+              error={errors.porte_empresa?.message}
+            />
+            <SelectField
+              label="Experiência com licitações"
+              value={watchedExperiencia}
+              onChange={(v) => setValue("experiencia_licitacoes", v, { shouldValidate: true })}
+              options={EXPERIENCIA_OPTIONS}
+              error={errors.experiencia_licitacoes?.message}
+            />
 
             {/* Value range */}
             <div className="grid grid-cols-2 gap-3">
-              <NumberField label="Valor mínimo (R$)" value={editValorMin} onChange={setEditValorMin} placeholder="Ex: 50000" />
-              <NumberField label="Valor máximo (R$)" value={editValorMax} onChange={setEditValorMax} placeholder="Ex: 5000000" />
+              <NumberField
+                label="Valor mínimo (R$)"
+                value={watchedValorMin}
+                onChange={(v) => setValue("faixa_valor_min", v, { shouldValidate: true })}
+                placeholder="Ex: 50000"
+                error={errors.faixa_valor_min?.message}
+              />
+              <NumberField
+                label="Valor máximo (R$)"
+                value={watchedValorMax}
+                onChange={(v) => setValue("faixa_valor_max", v, { shouldValidate: true })}
+                placeholder="Ex: 5000000"
+                error={errors.faixa_valor_max?.message}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <NumberField label="Funcionários" value={editFuncionários} onChange={setEditFuncionários} placeholder="Ex: 15" />
-              <NumberField label="Faturamento anual (R$)" value={editFaturamento} onChange={setEditFaturamento} placeholder="Ex: 500000" />
+              <NumberField
+                label="Funcionários"
+                value={watchedFuncionarios}
+                onChange={(v) => setValue("capacidade_funcionarios", v, { shouldValidate: true })}
+                placeholder="Ex: 15"
+                error={errors.capacidade_funcionarios?.message}
+              />
+              <NumberField
+                label="Faturamento anual (R$)"
+                value={watchedFaturamento}
+                onChange={(v) => setValue("faturamento_anual", v, { shouldValidate: true })}
+                placeholder="Ex: 500000"
+                error={errors.faturamento_anual?.message}
+              />
             </div>
 
             {/* Certifications */}
             <div>
-              <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-2">Atestados e certificações</label>
+              <Label>Atestados e certificações</Label>
               <div className="space-y-1.5">
                 {ATESTADOS_CATALOG.map((cert) => (
                   <button
                     key={cert.id}
                     type="button"
-                    onClick={() => setEditAtestados((prev) => prev.includes(cert.id) ? prev.filter((id) => id !== cert.id) : [...prev, cert.id])}
+                    onClick={() => toggleAtestado(cert.id)}
                     className={`w-full text-left px-3 py-2 rounded-input border text-sm transition-colors ${
-                      editAtestados.includes(cert.id)
+                      (watchedAtestados ?? []).includes(cert.id)
                         ? "border-[var(--brand-blue)] bg-[var(--brand-blue-subtle)] text-[var(--brand-blue)]"
                         : "border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] hover:bg-[var(--surface-1)]"
                     }`}
@@ -276,12 +355,15 @@ export default function PerfilPage() {
                   </button>
                 ))}
               </div>
+              {errors.atestados && (
+                <p className="mt-1 text-xs text-error" role="alert">{errors.atestados.message}</p>
+              )}
             </div>
 
             {/* Actions */}
             <div className="flex gap-3 pt-2">
               <button
-                onClick={handleSaveProfile}
+                type="submit"
                 disabled={profileSaving}
                 className="flex-1 py-2.5 bg-[var(--brand-navy)] text-white rounded-button font-semibold text-sm hover:bg-[var(--brand-blue)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 data-testid="save-profile-btn"
@@ -289,6 +371,7 @@ export default function PerfilPage() {
                 {profileSaving ? "Salvando..." : "Salvar perfil"}
               </button>
               <button
+                type="button"
                 onClick={() => setProfileEdit(false)}
                 disabled={profileSaving}
                 className="px-4 py-2.5 border border-[var(--border)] rounded-button text-sm text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors"
@@ -296,7 +379,7 @@ export default function PerfilPage() {
                 Cancelar
               </button>
             </div>
-          </div>
+          </form>
         )}
       </div>
     </div>

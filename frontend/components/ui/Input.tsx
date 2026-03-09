@@ -1,0 +1,84 @@
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
+
+const inputVariants = cva(
+  "w-full border bg-surface-0 text-ink placeholder:text-ink-muted transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed",
+  {
+    variants: {
+      inputSize: {
+        sm: "h-8 px-3 text-xs rounded-input",
+        default: "h-10 px-4 py-2 text-sm rounded-input",
+        lg: "h-12 px-4 py-3 text-base rounded-input",
+      },
+      state: {
+        default:
+          "border-DEFAULT focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20",
+        error:
+          "border-error focus:border-error focus:ring-2 focus:ring-error/20",
+        success:
+          "border-success focus:border-success focus:ring-2 focus:ring-success/20",
+      },
+    },
+    defaultVariants: {
+      inputSize: "default",
+      state: "default",
+    },
+  }
+);
+
+export interface InputProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
+    VariantProps<typeof inputVariants> {
+  error?: string;
+  errorTestId?: string;
+  helperText?: string;
+}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  (
+    { className, inputSize, state, error, errorTestId, helperText, id, type, ...props },
+    ref
+  ) => {
+    const effectiveState = error ? "error" : state;
+    const descriptionId = id ? `${id}-description` : undefined;
+    const errorId = id ? `${id}-error` : undefined;
+
+    const ariaDescribedBy = [
+      error && errorId,
+      helperText && !error && descriptionId,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+    return (
+      <div className="w-full">
+        <input
+          ref={ref}
+          id={id}
+          type={type}
+          className={cn(
+            inputVariants({ inputSize, state: effectiveState }),
+            className
+          )}
+          aria-invalid={!!error}
+          aria-describedby={ariaDescribedBy}
+          {...props}
+        />
+        {error && (
+          <p id={errorId} className="mt-1 text-xs text-error" role="alert" data-testid={errorTestId}>
+            {error}
+          </p>
+        )}
+        {helperText && !error && (
+          <p id={descriptionId} className="mt-1 text-xs text-ink-secondary">
+            {helperText}
+          </p>
+        )}
+      </div>
+    );
+  }
+);
+Input.displayName = "Input";
+
+export { Input, inputVariants };

@@ -166,11 +166,11 @@ export function CancelSubscriptionModal({
         {step === "reason" && (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[var(--warning-subtle,#fef3cd)] flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[var(--warning-subtle)] flex items-center justify-center flex-shrink-0">
                 <svg
                   role="img"
                   aria-label="Atenção"
-                  className="w-5 h-5 text-[var(--warning,#856404)]"
+                  className="w-5 h-5 text-[var(--warning)]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -198,7 +198,7 @@ export function CancelSubscriptionModal({
                   key={r.value}
                   className={`flex items-center gap-3 p-3 rounded-input border cursor-pointer transition-colors ${
                     reason === r.value
-                      ? "border-[var(--brand-blue)] bg-[var(--brand-blue-subtle,#eff6ff)]"
+                      ? "border-[var(--brand-blue)] bg-[var(--brand-blue-subtle)]"
                       : "border-[var(--border)] hover:bg-[var(--surface-1)]"
                   }`}
                 >
@@ -241,7 +241,7 @@ export function CancelSubscriptionModal({
         {step === "retention" && (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[var(--brand-blue-subtle,#eff6ff)] flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[var(--brand-blue-subtle)] flex items-center justify-center flex-shrink-0">
                 <svg
                   role="img"
                   aria-label="Oferta"
@@ -268,7 +268,7 @@ export function CancelSubscriptionModal({
             {reason === "too_expensive" ? (
               /* AC3: Discount Offer */
               <div className="mb-6">
-                <div className="p-4 rounded-input bg-[var(--brand-blue-subtle,#eff6ff)] border border-[var(--brand-blue,#2563eb)] mb-4">
+                <div className="p-4 rounded-input bg-[var(--brand-blue-subtle)] border border-[var(--brand-blue)] mb-4">
                   <p className="text-sm font-medium text-[var(--brand-blue)]">
                     20% de desconto nos próximos 3 meses
                   </p>
@@ -288,7 +288,7 @@ export function CancelSubscriptionModal({
             ) : (
               /* AC4: Pause Offer */
               <div className="mb-6">
-                <div className="p-4 rounded-input bg-[var(--brand-blue-subtle,#eff6ff)] border border-[var(--brand-blue,#2563eb)] mb-4">
+                <div className="p-4 rounded-input bg-[var(--brand-blue-subtle)] border border-[var(--brand-blue)] mb-4">
                   <p className="text-sm font-medium text-[var(--brand-blue)]">
                     Pause sua assinatura por 30 dias
                   </p>
@@ -318,8 +318,8 @@ export function CancelSubscriptionModal({
               </button>
               <button
                 onClick={handleRetentionDecline}
-                className="flex-1 px-4 py-2.5 rounded-button border border-[var(--error,#dc2626)]
-                           text-[var(--error,#dc2626)] bg-transparent
+                className="flex-1 px-4 py-2.5 rounded-button border border-[var(--error)]
+                           text-[var(--error)] bg-transparent
                            hover:bg-[var(--error-subtle)] transition-colors text-sm"
               >
                 Continuar cancelamento
@@ -332,11 +332,11 @@ export function CancelSubscriptionModal({
         {step === "confirm" && (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[var(--error-subtle,#fee2e2)] flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[var(--error-subtle)] flex items-center justify-center flex-shrink-0">
                 <svg
                   role="img"
                   aria-label="Atenção"
-                  className="w-5 h-5 text-[var(--error,#dc2626)]"
+                  className="w-5 h-5 text-[var(--error)]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -363,7 +363,7 @@ export function CancelSubscriptionModal({
                 <li key={benefit} className="flex items-center gap-2">
                   <svg
                     aria-hidden="true"
-                    className="w-4 h-4 text-[var(--error,#dc2626)]"
+                    className="w-4 h-4 text-[var(--error)]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -385,7 +385,7 @@ export function CancelSubscriptionModal({
                 type="checkbox"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
-                className="mt-0.5 accent-[var(--error,#dc2626)]"
+                className="mt-0.5 accent-[var(--error)]"
               />
               <span className="text-sm text-[var(--ink)]">
                 Entendo que perderei acesso aos benefícios ao final do período atual
@@ -419,7 +419,7 @@ export function CancelSubscriptionModal({
               <button
                 onClick={handleCancel}
                 disabled={!confirmed || cancelling}
-                className="flex-1 px-4 py-2.5 rounded-button bg-[var(--error,#dc2626)] text-white
+                className="flex-1 px-4 py-2.5 rounded-button bg-[var(--error)] text-white
                            hover:opacity-90 transition-opacity text-sm
                            disabled:opacity-50 disabled:cursor-not-allowed"
               >

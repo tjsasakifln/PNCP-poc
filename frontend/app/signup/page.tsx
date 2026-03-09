@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics, getStoredUTMParams } from "../../hooks/useAnalytics";
 import { translateAuthError } from "../../lib/error-messages";
@@ -10,7 +12,10 @@ import { toast } from "sonner";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 import { APP_NAME } from "../../lib/config";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/Input";
+import { Label } from "../../components/ui/Label";
 import { safeSetItem } from "../../lib/storage";
+import { signupSchema, type SignupFormData, getPasswordStrength } from "../../lib/schemas/forms";
 
 // STORY-258: Email type result
 type EmailCheckResult = {
@@ -30,17 +35,34 @@ export default function SignupPage() {
   const { signUpWithEmail, signInWithGoogle } = useAuth();
   const { trackEvent } = useAnalytics();
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
+
+  // react-hook-form with zod resolver (FE-028)
+  const {
+    register,
+    handleSubmit: rhfHandleSubmit,
+    watch,
+    formState: { errors, isDirty },
+    setError: setFieldError,
+    clearErrors,
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    mode: "onBlur",
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  const fullName = watch("fullName");
+  const password = watch("password");
+  const confirmPassword = watch("confirmPassword");
+  const email = watch("email");
+  const phone = watch("phone") || "";
+
   const [showPassword, setShowPassword] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [formTouched, setFormTouched] = useState(false);
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [nameTouched, setNameTouched] = useState(false);
-  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -63,6 +85,12 @@ export default function SignupPage() {
   const [countdown, setCountdown] = useState(60);
   const [isResending, setIsResending] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+
+  // Password strength
+  const passwordStrength = getPasswordStrength(password);
+  const passwordMeetsPolicy =
+    password.length >= 8 && /[A-Z]/.test(password) && /\d/.test(password);
+  const confirmPasswordMatch = confirmPassword !== "" && confirmPassword === password;
 
   // GTM-FIX-009 AC2: Countdown timer (starts at 60s on success)
   useEffect(() => {
@@ -122,7 +150,6 @@ export default function SignupPage() {
 
   // STORY-258: Email check on blur
   const handleEmailBlur = useCallback(async () => {
-    setEmailTouched(true);
     const trimmed = email.trim();
     const basicValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
     if (!basicValid || !trimmed) return;
@@ -181,43 +208,7 @@ export default function SignupPage() {
     }, 300);
   }, [phone]);
 
-  // STORY-226 AC17: Enforce password policy (8+ chars, 1 uppercase, 1 digit)
-  const passwordMeetsPolicy =
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /\d/.test(password);
-
-  // GTM-FIX-037 AC1: Email validation
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const showEmailError = emailTouched && email.trim() !== "" && !isEmailValid;
-
-  // SAB-007 AC1: Name validation
-  const showNameError = nameTouched && fullName.trim() === "";
-
-  // SAB-007 AC4: Confirm password validation
-  const showConfirmPasswordError =
-    confirmPasswordTouched && (
-      (confirmPassword === "" && formTouched) ||
-      (confirmPassword !== "" && confirmPassword !== password)
-    );
-  const confirmPasswordMatch = confirmPassword !== "" && confirmPassword === password;
-
-  // SAB-007 AC3: Password strength indicator
-  const getPasswordStrength = (pw: string): { level: "fraca" | "média" | "forte"; score: number } => {
-    if (!pw) return { level: "fraca", score: 0 };
-    let score = 0;
-    if (pw.length >= 8) score++;
-    if (pw.length >= 12) score++;
-    if (/[A-Z]/.test(pw)) score++;
-    if (/[a-z]/.test(pw)) score++;
-    if (/\d/.test(pw)) score++;
-    if (/[^A-Za-z0-9]/.test(pw)) score++;
-    if (score <= 2) return { level: "fraca", score: 1 };
-    if (score <= 4) return { level: "média", score: 2 };
-    return { level: "forte", score: 3 };
-  };
-  const passwordStrength = getPasswordStrength(password);
-
   const isFormValid =
     fullName.trim() !== "" &&
     email.trim() !== "" &&
@@ -228,26 +219,10 @@ export default function SignupPage() {
     !emailCheckError &&
     !phoneCheckError;
 
-  // SAB-007 AC8: Touch all fields to show inline errors on submit attempt
-  const touchAllFields = () => {
-    setNameTouched(true);
-    setEmailTouched(true);
-    setPasswordTouched(true);
-    setConfirmPasswordTouched(true);
-    setFormTouched(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: SignupFormData) => {
     setError(null);
-    touchAllFields();
 
-    if (!isFormValid) return;
-
-    if (!passwordMeetsPolicy) {
-      setError("A senha deve ter pelo menos 8 caracteres, 1 letra maiúscula e 1 número");
-      return;
-    }
+    if (emailCheckError || phoneCheckError) return;
 
     // AC13: Track signup attempt (after validation, before async work)
     trackEvent('signup_attempted', { method: "email" });
@@ -255,7 +230,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      await signUpWithEmail(email, password, fullName);
+      await signUpWithEmail(data.email, data.password, data.fullName);
       setSuccess(true);
       // AC14 + AC26: Track signup_completed with UTM params
       trackEvent('signup_completed', {
@@ -305,8 +280,8 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
-        <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg text-center">
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <div className="w-full max-w-md p-8 bg-surface-0 rounded-card shadow-lg text-center">
           {/* AC10: Confirmed transition */}
           {isConfirmed ? (
             <>
@@ -314,25 +289,25 @@ export default function SignupPage() {
               <h2 className="text-xl font-semibold text-green-600 mb-2">
                 Email confirmado!
               </h2>
-              <p className="text-[var(--ink-secondary)]">Redirecionando...</p>
+              <p className="text-ink-secondary">Redirecionando...</p>
             </>
           ) : (
             <>
               {/* AC1: Mail icon */}
               <div className="text-4xl mb-4" data-testid="mail-icon">&#9993;</div>
 
-              <h2 className="text-xl font-semibold text-[var(--ink)] mb-2">
+              <h2 className="text-xl font-semibold text-ink mb-2">
                 Confirme seu email
               </h2>
 
-              <p className="text-[var(--ink-secondary)] mb-4">
+              <p className="text-ink-secondary mb-4">
                 Enviamos um link de confirmação para:
                 <br />
                 <strong>{email}</strong>
               </p>
 
               {/* AC7: Polling indicator */}
-              <p className="text-sm text-[var(--brand-blue)] mb-4" data-testid="polling-indicator">
+              <p className="text-sm text-brand-blue mb-4" data-testid="polling-indicator">
                 Aguardando confirmação...
               </p>
 
@@ -341,7 +316,7 @@ export default function SignupPage() {
                 onClick={handleResend}
                 disabled={countdown > 0 || isResending}
                 data-testid="resend-button"
-                className="w-full py-3 bg-[var(--brand-blue)] text-white rounded-button
+                className="w-full py-3 bg-brand-blue text-white rounded-button
                            font-semibold disabled:bg-gray-300 disabled:text-gray-500
                            disabled:cursor-not-allowed hover:opacity-90 transition-colors"
               >
@@ -353,11 +328,11 @@ export default function SignupPage() {
               </button>
 
               {/* AC11: Spam helper section */}
-              <div className="mt-6 p-4 bg-[var(--surface-1)] rounded-input text-left">
-                <h3 className="font-semibold text-sm mb-2 text-[var(--ink)]">
+              <div className="mt-6 p-4 bg-surface-1 rounded-input text-left">
+                <h3 className="font-semibold text-sm mb-2 text-ink">
                   Não recebeu o email?
                 </h3>
-                <ul className="text-sm space-y-1 text-[var(--ink-secondary)]">
+                <ul className="text-sm space-y-1 text-ink-secondary">
                   <li>• Verifique sua caixa de spam/lixo eletrônico</li>
                   <li>• Aguarde até 5 minutos</li>
                   <li>• Confirme se o email está correto</li>
@@ -369,7 +344,7 @@ export default function SignupPage() {
                     setCountdown(60);
                   }}
                   data-testid="change-email-link"
-                  className="text-[var(--brand-blue)] text-sm mt-2 underline hover:opacity-80"
+                  className="text-brand-blue text-sm mt-2 underline hover:opacity-80"
                 >
                   Alterar email
                 </button>
@@ -377,7 +352,7 @@ export default function SignupPage() {
 
               <Link
                 href="/login"
-                className="mt-4 inline-block text-sm text-[var(--ink-muted)] hover:underline"
+                className="mt-4 inline-block text-sm text-ink-muted hover:underline"
               >
                 Ir para login
               </Link>
@@ -394,12 +369,12 @@ export default function SignupPage() {
       <InstitutionalSidebar variant="signup" className="w-full md:w-1/2" scrollTargetId="signup-form" />
 
       {/* Right: Signup Form */}
-      <div id="signup-form" ref={formRef} className="w-full md:w-1/2 flex items-center justify-center bg-[var(--canvas)] p-4 py-4 md:py-8 scroll-mt-4">
-        <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg">
-          <h1 className="text-2xl font-display font-bold text-center text-[var(--ink)] mb-2">
+      <div id="signup-form" ref={formRef} className="w-full md:w-1/2 flex items-center justify-center bg-canvas p-4 py-4 md:py-8 scroll-mt-4">
+        <div className="w-full max-w-md p-8 bg-surface-0 rounded-card shadow-lg">
+          <h1 className="text-2xl font-display font-bold text-center text-ink mb-2">
             Criar conta
           </h1>
-          <p className="text-center text-[var(--ink-secondary)] mb-4">
+          <p className="text-center text-ink-secondary mb-4">
             Veja quais licitações valem a pena para sua empresa — em 2 minutos
           </p>
 
@@ -414,8 +389,8 @@ export default function SignupPage() {
               </p>
             </div>
           )}
-          <div className="mb-6 p-3 bg-[var(--surface-1)] rounded-input text-xs text-[var(--ink-secondary)] space-y-1">
-            <p className="font-medium text-[var(--ink)]">Acesso imediato:</p>
+          <div className="mb-6 p-3 bg-surface-1 rounded-input text-xs text-ink-secondary space-y-1">
+            <p className="font-medium text-ink">Acesso imediato:</p>
             <ul className="space-y-0.5">
               <li>&#10003; Análise de compatibilidade com seu perfil</li>
               <li>&#10003; Editais filtrados por setor e região</li>
@@ -424,7 +399,7 @@ export default function SignupPage() {
           </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-[var(--error-subtle)] text-[var(--error)] rounded-input text-sm">
+          <div className="mb-4 p-3 bg-error-subtle text-error rounded-input text-sm">
             {error}
           </div>
         )}
@@ -433,8 +408,8 @@ export default function SignupPage() {
         <button
           onClick={() => signInWithGoogle()}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 mb-4
-                     border border-[var(--border)] rounded-button bg-[var(--surface-0)]
-                     text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors"
+                     border rounded-button bg-surface-0
+                     text-ink hover:bg-surface-1 transition-colors"
         >
           <svg
               role="img"
@@ -449,69 +424,53 @@ export default function SignupPage() {
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-[var(--border)]" />
-          <span className="text-xs text-[var(--ink-muted)]">OU</span>
+          <span className="text-xs text-ink-muted">OU</span>
           <div className="flex-1 h-px bg-[var(--border)]" />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={rhfHandleSubmit(onSubmit)} className="space-y-4">
           {/* Full Name — SAB-007 AC1 */}
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">
+            <Label htmlFor="fullName" required>
               Nome completo
-            </label>
-            <input
+            </Label>
+            <Input
               id="fullName"
               type="text"
-              required
-              value={fullName}
-              onChange={(e) => { setFullName(e.target.value); setFormTouched(true); }}
-              onBlur={() => setNameTouched(true)}
-              className={`w-full px-4 py-3 rounded-input border
-                         bg-[var(--surface-0)] text-[var(--ink)]
-                         focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
-                         focus:ring-[var(--brand-blue-subtle)]
-                         ${showNameError ? 'border-[var(--error)]' : 'border-[var(--border)]'}`}
+              inputSize="lg"
               placeholder="Seu nome"
+              required
+              error={errors.fullName?.message}
+              errorTestId="name-error"
+              {...register("fullName")}
             />
-            {showNameError && (
-              <p className="mt-1 text-xs text-[var(--error)]" data-testid="name-error">
-                Nome é obrigatório
-              </p>
-            )}
           </div>
 
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">
+            <Label htmlFor="email" required>
               Email
-            </label>
+            </Label>
             <div className="relative">
-              <input
+              <Input
                 id="email"
                 type="email"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setFormTouched(true);
-                  // SAB-007 AC2: Validate on change after first blur
-                  if (!emailTouched) setEmailTouched(false);
-                  // Reset check result on change
-                  setEmailCheckResult(null);
-                  setEmailCheckError(null);
-                }}
-                onBlur={handleEmailBlur}
-                className={`w-full px-4 py-3 rounded-input border
-                           bg-[var(--surface-0)] text-[var(--ink)]
-                           focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
-                           focus:ring-[var(--brand-blue-subtle)]
-                           ${showEmailError || emailCheckError ? 'border-[var(--error)]' : 'border-[var(--border)]'}`}
+                inputSize="lg"
                 placeholder="seu@email.com"
+                required
+                state={errors.email || emailCheckError ? "error" : undefined}
+                {...register("email", {
+                  onChange: () => {
+                    setEmailCheckResult(null);
+                    setEmailCheckError(null);
+                  },
+                  onBlur: handleEmailBlur,
+                })}
               />
               {/* STORY-258: Loading spinner */}
               {emailCheckLoading && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <svg className="animate-spin h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 24 24" aria-hidden="true">
+                <div className="absolute right-3 top-3">
+                  <svg className="animate-spin h-4 w-4 text-ink-muted" viewBox="0 0 24 24" aria-hidden="true">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -519,14 +478,14 @@ export default function SignupPage() {
               )}
             </div>
             {/* SAB-007 AC2: Format error */}
-            {showEmailError && !emailCheckError && (
-              <p className="mt-1 text-xs text-[var(--error)]" data-testid="email-error">
-                Email inválido
+            {errors.email && !emailCheckError && (
+              <p className="mt-1 text-xs text-error" data-testid="email-error">
+                {errors.email.message}
               </p>
             )}
             {/* STORY-258: Disposable email error */}
             {emailCheckError && (
-              <p className="mt-1 text-xs text-[var(--error)]" data-testid="email-disposable-error">
+              <p className="mt-1 text-xs text-error" data-testid="email-disposable-error">
                 {emailCheckError}
               </p>
             )}
@@ -554,33 +513,26 @@ export default function SignupPage() {
 
           {/* Phone (STORY-258) */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">
-              Telefone <span className="text-[var(--ink-muted)] font-normal">(opcional)</span>
-            </label>
-            <input
+            <Label htmlFor="phone">
+              Telefone <span className="text-ink-muted font-normal">(opcional)</span>
+            </Label>
+            <Input
               id="phone"
               type="tel"
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
-                setPhoneCheckResult(null);
-                setPhoneCheckError(null);
-              }}
-              onBlur={handlePhoneBlur}
-              className={`w-full px-4 py-3 rounded-input border
-                         bg-[var(--surface-0)] text-[var(--ink)]
-                         focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
-                         focus:ring-[var(--brand-blue-subtle)]
-                         ${phoneCheckError ? 'border-[var(--error)]' : 'border-[var(--border)]'}`}
+              inputSize="lg"
               placeholder="+55 11 91234-5678"
+              error={phoneCheckError || undefined}
+              errorTestId="phone-error"
+              {...register("phone", {
+                onChange: () => {
+                  setPhoneCheckResult(null);
+                  setPhoneCheckError(null);
+                },
+                onBlur: handlePhoneBlur,
+              })}
             />
             {phoneCheckLoading && (
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">Verificando...</p>
-            )}
-            {phoneCheckError && (
-              <p className="mt-1 text-xs text-[var(--error)]" data-testid="phone-error">
-                {phoneCheckError}
-              </p>
+              <p className="mt-1 text-xs text-ink-muted">Verificando...</p>
             )}
             {phoneCheckResult && !phoneCheckError && (
               <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400" data-testid="phone-ok">
@@ -591,30 +543,26 @@ export default function SignupPage() {
 
           {/* Password — SAB-007 AC3 */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">
+            <Label htmlFor="password" required>
               Senha
-            </label>
+            </Label>
             <div className="relative">
-              <input
+              <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setFormTouched(true); }}
-                onBlur={() => setPasswordTouched(true)}
-                className={`w-full px-4 py-3 pr-12 rounded-input border
-                           bg-[var(--surface-0)] text-[var(--ink)]
-                           focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
-                           focus:ring-[var(--brand-blue-subtle)]
-                           ${passwordTouched && !passwordMeetsPolicy && password ? 'border-[var(--error)]' : 'border-[var(--border)]'}`}
+                inputSize="lg"
+                className="pr-12"
                 placeholder="Min. 8 caracteres, 1 maiúscula, 1 número"
+                required
                 minLength={8}
+                error={errors.password?.message}
+                {...register("password")}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--ink-muted)]
-                           hover:text-[var(--ink)] transition-colors"
+                className="absolute right-3 top-3 p-1 text-ink-muted
+                           hover:text-ink transition-colors"
                 aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
               >
                 {showPassword ? (
@@ -667,13 +615,13 @@ export default function SignupPage() {
             {/* Password policy requirements */}
             {password && !passwordMeetsPolicy && (
               <ul className="mt-1 text-xs space-y-0.5">
-                <li className={password.length >= 8 ? "text-green-600" : "text-[var(--error)]"}>
+                <li className={password.length >= 8 ? "text-green-600" : "text-error"}>
                   {password.length >= 8 ? "\u2713" : "\u2717"} Mínimo 8 caracteres
                 </li>
-                <li className={/[A-Z]/.test(password) ? "text-green-600" : "text-[var(--error)]"}>
+                <li className={/[A-Z]/.test(password) ? "text-green-600" : "text-error"}>
                   {/[A-Z]/.test(password) ? "\u2713" : "\u2717"} Pelo menos 1 letra maiúscula
                 </li>
-                <li className={/\d/.test(password) ? "text-green-600" : "text-[var(--error)]"}>
+                <li className={/\d/.test(password) ? "text-green-600" : "text-error"}>
                   {/\d/.test(password) ? "\u2713" : "\u2717"} Pelo menos 1 número
                 </li>
               </ul>
@@ -682,29 +630,21 @@ export default function SignupPage() {
 
           {/* Confirm Password — SAB-007 AC4 */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">
+            <Label htmlFor="confirmPassword" required>
               Confirmar senha
-            </label>
-            <input
+            </Label>
+            <Input
               id="confirmPassword"
               type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); setFormTouched(true); }}
-              onBlur={() => setConfirmPasswordTouched(true)}
-              className={`w-full px-4 py-3 rounded-input border
-                         bg-[var(--surface-0)] text-[var(--ink)]
-                         focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
-                         focus:ring-[var(--brand-blue-subtle)]
-                         ${showConfirmPasswordError ? 'border-[var(--error)]' : confirmPasswordMatch ? 'border-green-500' : 'border-[var(--border)]'}`}
+              inputSize="lg"
               placeholder="Repita sua senha"
+              required
+              state={confirmPasswordMatch ? "success" : undefined}
+              error={errors.confirmPassword?.message}
+              errorTestId="confirm-password-error"
+              {...register("confirmPassword")}
             />
-            {showConfirmPasswordError && (
-              <p className="mt-1 text-xs text-[var(--error)]" data-testid="confirm-password-error">
-                {confirmPassword === "" ? "Confirme sua senha" : "Senhas não coincidem"}
-              </p>
-            )}
-            {confirmPasswordMatch && (
+            {confirmPasswordMatch && !errors.confirmPassword && (
               <p className="mt-1 text-xs text-green-600" data-testid="confirm-password-match">
                 &#10003; Senhas coincidem
               </p>
@@ -743,16 +683,16 @@ export default function SignupPage() {
               </div>
             )}
           </div>
-          {!isFormValid && formTouched && !loading && (
-            <p className="mt-2 text-xs text-center text-[var(--ink-muted)]" data-testid="form-hint">
+          {!isFormValid && isDirty && !loading && (
+            <p className="mt-2 text-xs text-center text-ink-muted" data-testid="form-hint">
               Preencha todos os campos corretamente para continuar.
             </p>
           )}
         </form>
 
-        <p className="mt-6 text-center text-sm text-[var(--ink-secondary)]">
+        <p className="mt-6 text-center text-sm text-ink-secondary">
           Já tem conta?{" "}
-          <Link href="/login" className="text-[var(--brand-blue)] hover:underline">
+          <Link href="/login" className="text-brand-blue hover:underline">
             Fazer login
           </Link>
         </p>

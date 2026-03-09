@@ -446,15 +446,17 @@ describe("SignupPage — SAB-007 inline validation", () => {
 
   // ── AC1: Name field onBlur ─────────────────────────────────────────────────
 
-  it("AC1: shows 'Nome é obrigatório' on blur when name is empty", () => {
+  it("AC1: shows 'Nome é obrigatório' on blur when name is empty", async () => {
     render(<SignupPage />);
 
     const nameInput = screen.getByLabelText("Nome completo");
     fireEvent.focus(nameInput);
     fireEvent.blur(nameInput);
 
-    expect(screen.getByTestId("name-error")).toBeInTheDocument();
-    expect(screen.getByTestId("name-error")).toHaveTextContent("Nome é obrigatório");
+    await waitFor(() => {
+      expect(screen.getByTestId("name-error")).toBeInTheDocument();
+      expect(screen.getByTestId("name-error")).toHaveTextContent("Nome é obrigatório");
+    });
   });
 
   it("AC1: does not show name error when name is filled", () => {
@@ -469,15 +471,17 @@ describe("SignupPage — SAB-007 inline validation", () => {
 
   // ── AC2: Email inline error ────────────────────────────────────────────────
 
-  it("AC2: shows 'Email inválido' for malformed email on blur", () => {
+  it("AC2: shows 'Email inválido' for malformed email on blur", async () => {
     render(<SignupPage />);
 
     const emailInput = screen.getByLabelText("Email");
     fireEvent.change(emailInput, { target: { value: "not-an-email" } });
     fireEvent.blur(emailInput);
 
-    expect(screen.getByTestId("email-error")).toBeInTheDocument();
-    expect(screen.getByTestId("email-error")).toHaveTextContent("Email inválido");
+    await waitFor(() => {
+      expect(screen.getByTestId("email-error")).toBeInTheDocument();
+      expect(screen.getByTestId("email-error")).toHaveTextContent("Email inválido");
+    });
   });
 
   // ── AC3: Password strength bar ─────────────────────────────────────────────
@@ -503,7 +507,7 @@ describe("SignupPage — SAB-007 inline validation", () => {
 
   // ── AC4: Confirm password mismatch ─────────────────────────────────────────
 
-  it("AC4: shows 'Senhas não coincidem' when passwords differ", () => {
+  it("AC4: shows 'Senhas não coincidem' when passwords differ", async () => {
     render(<SignupPage />);
 
     const passwordInput = screen.getByLabelText("Senha");
@@ -513,8 +517,10 @@ describe("SignupPage — SAB-007 inline validation", () => {
     fireEvent.change(confirmInput, { target: { value: "Different" } });
     fireEvent.blur(confirmInput);
 
-    expect(screen.getByTestId("confirm-password-error")).toBeInTheDocument();
-    expect(screen.getByTestId("confirm-password-error")).toHaveTextContent("Senhas não coincidem");
+    await waitFor(() => {
+      expect(screen.getByTestId("confirm-password-error")).toBeInTheDocument();
+      expect(screen.getByTestId("confirm-password-error")).toHaveTextContent("Senhas não coincidem");
+    });
   });
 
   it("AC4: shows match indicator when passwords are equal", () => {
@@ -543,12 +549,14 @@ describe("SignupPage — SAB-007 inline validation", () => {
     expect(screen.getByTestId("submit-tooltip")).toHaveTextContent("Preencha todos os campos");
   });
 
-  it("AC5: tooltip disappears when form becomes valid", () => {
+  it("AC5: tooltip disappears when form becomes valid", async () => {
     render(<SignupPage />);
 
     fillValidForm();
 
-    expect(screen.queryByTestId("submit-tooltip")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByTestId("submit-tooltip")).not.toBeInTheDocument();
+    });
   });
 
   // ── AC6: Smooth button transition ──────────────────────────────────────────
@@ -600,21 +608,23 @@ describe("SignupPage — SAB-007 inline validation", () => {
 
   // ── AC9: Invalid email → specific inline error ─────────────────────────────
 
-  it("AC9: shows specific inline error for invalid email format", () => {
+  it("AC9: shows specific inline error for invalid email format", async () => {
     render(<SignupPage />);
 
     const emailInput = screen.getByLabelText("Email");
     fireEvent.change(emailInput, { target: { value: "not-valid" } });
     fireEvent.blur(emailInput);
 
-    const error = screen.getByTestId("email-error");
-    expect(error).toBeInTheDocument();
-    expect(error).toHaveTextContent("Email inválido");
+    await waitFor(() => {
+      const error = screen.getByTestId("email-error");
+      expect(error).toBeInTheDocument();
+      expect(error).toHaveTextContent("Email inválido");
+    });
   });
 
   // ── AC10: Mismatched passwords → inline error on confirm field ─────────────
 
-  it("AC10: shows inline error on confirm password when passwords don't match", () => {
+  it("AC10: shows inline error on confirm password when passwords don't match", async () => {
     render(<SignupPage />);
 
     const passwordInput = screen.getByLabelText("Senha");
@@ -624,8 +634,10 @@ describe("SignupPage — SAB-007 inline validation", () => {
     fireEvent.change(confirmInput, { target: { value: "WrongPass2" } });
     fireEvent.blur(confirmInput);
 
-    const error = screen.getByTestId("confirm-password-error");
-    expect(error).toBeInTheDocument();
-    expect(error).toHaveTextContent("Senhas não coincidem");
+    await waitFor(() => {
+      const error = screen.getByTestId("confirm-password-error");
+      expect(error).toBeInTheDocument();
+      expect(error).toHaveTextContent("Senhas não coincidem");
+    });
   });
 });

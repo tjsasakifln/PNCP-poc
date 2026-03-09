@@ -107,7 +107,7 @@ export function InviteMemberModal({
       >
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-[var(--brand-blue-subtle,#eff6ff)] flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-[var(--brand-blue-subtle)] flex items-center justify-center flex-shrink-0">
             <svg
               role="img"
               aria-label="Convidar membro"
@@ -154,7 +154,7 @@ export function InviteMemberModal({
               autoComplete="off"
               className="w-full px-3 py-2.5 rounded-button border border-[var(--border)]
                          bg-[var(--surface-0)] text-sm text-[var(--ink)]
-                         placeholder:text-[var(--ink-muted,#9ca3af)]
+                         placeholder:text-[var(--ink-muted)]
                          focus:outline-none focus:ring-2 focus:ring-[var(--brand-blue)]
                          disabled:opacity-50"
               disabled={loading}
@@ -164,7 +164,7 @@ export function InviteMemberModal({
           {error && (
             <div
               role="alert"
-              className="mb-4 p-3 bg-[var(--error-subtle,#fee2e2)] text-[var(--error,#dc2626)]
+              className="mb-4 p-3 bg-[var(--error-subtle)] text-[var(--error)]
                          rounded-button text-sm"
             >
               {error}

@@ -76,9 +76,10 @@ type Period = "day" | "week" | "month";
 import { UF_NAMES } from "../../lib/constants/uf-names";
 import { getSectorDisplayName } from "../../lib/constants/sector-names";
 
+// DEBT-012: References CSS vars defined in globals.css (--chart-1 … --chart-10)
 const CHART_COLORS = [
-  "#116dff", "#0d5ad4", "#0a1e3f", "#3b8bff", "#6aa7ff",
-  "#16a34a", "#ca8a04", "#dc2626", "#8b5cf6", "#ec4899",
+  "var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)",
+  "var(--chart-6)", "var(--chart-7)", "var(--chart-8)", "var(--chart-9)", "var(--chart-10)",
 ];
 
 // ============================================================================

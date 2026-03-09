@@ -254,7 +254,7 @@ describe('SignupPage Component', () => {
       expect(screen.queryByTestId('email-error')).not.toBeInTheDocument();
     });
 
-    it('should NOT show email error when field is empty after blur', async () => {
+    it('should show required error when email field is empty after blur', async () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
@@ -263,8 +263,11 @@ describe('SignupPage Component', () => {
         fireEvent.blur(emailInput);
       });
 
-      // Empty field should not show "invalid email" — only required validation applies
-      expect(screen.queryByTestId('email-error')).not.toBeInTheDocument();
+      // FE-028: With react-hook-form + zod, empty required field shows error on blur
+      await waitFor(() => {
+        expect(screen.getByTestId('email-error')).toBeInTheDocument();
+        expect(screen.getByTestId('email-error')).toHaveTextContent(/Email é obrigatório/i);
+      });
     });
 
     it('should disable submit button when email is invalid', async () => {
@@ -272,8 +275,10 @@ describe('SignupPage Component', () => {
 
       await fillForm({ email: 'not-an-email' });
 
-      const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
-      expect(submitButton).toBeDisabled();
+      await waitFor(() => {
+        const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
+        expect(submitButton).toBeDisabled();
+      });
     });
   });
 

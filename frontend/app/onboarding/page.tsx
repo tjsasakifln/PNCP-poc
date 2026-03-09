@@ -2,10 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../components/AuthProvider";
 import { UF_NAMES, UFS } from "../../lib/constants/uf-names";
 import { toast } from "sonner";
 import { safeSetItem } from "../../lib/storage";
+import { Input } from "../../components/ui/Input";
+import { Label } from "../../components/ui/Label";
+import {
+  onboardingStep1Schema,
+  onboardingStep2Schema,
+  type OnboardingStep1Data,
+  type OnboardingStep2Data,
+} from "../../lib/schemas/forms";
 
 // ============================================================================
 // Constants
@@ -93,9 +103,13 @@ function ProgressBar({ currentStep, totalSteps }: { currentStep: number; totalSt
 function CNAEInput({
   value,
   onChange,
+  onBlur,
+  error,
 }: {
   value: string;
   onChange: (val: string) => void;
+  onBlur?: () => void;
+  error?: string;
 }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState(CNAE_SUGGESTIONS.slice());
@@ -127,17 +141,18 @@ function CNAEInput({
 
   return (
     <div ref={wrapperRef} className="relative">
-      <label className="block text-sm font-medium text-[var(--ink)] mb-1">
-        Segmento / CNAE *
-      </label>
-      <input
+      <Label required>Segmento / CNAE</Label>
+      <Input
+        id="cnae"
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         onFocus={() => setShowSuggestions(true)}
         placeholder="Ex: Comércio de uniformes, 4781, Limpeza..."
-        className="w-full px-3 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-secondary)] focus:ring-2 focus:ring-[var(--brand-blue)]/30 focus:border-[var(--brand-blue)] transition-all"
         autoComplete="off"
+        error={error}
+        errorTestId="cnae-error"
       />
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div className="absolute z-10 mt-1 w-full bg-[var(--surface-0)] border border-[var(--border)] rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -183,12 +198,10 @@ function ValueRangeSelector({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-[var(--ink)] mb-2">
-        Faixa de valor ideal dos contratos
-      </label>
+      <Label>Faixa de valor ideal dos contratos</Label>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs text-[var(--ink-secondary)] mb-1">Valor mínimo</label>
+          <Label className="text-xs">Valor mínimo</Label>
           <select
             value={valorMin}
             onChange={(e) => onChangeMin(parseInt(e.target.value))}
@@ -201,7 +214,7 @@ function ValueRangeSelector({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-[var(--ink-secondary)] mb-1">Valor máximo</label>
+          <Label className="text-xs">Valor máximo</Label>
           <select
             value={valorMax}
             onChange={(e) => onChangeMax(parseInt(e.target.value))}
@@ -235,9 +248,13 @@ function ValueRangeSelector({
 function StepOne({
   data,
   onChange,
+  errors,
+  onBlur,
 }: {
   data: OnboardingData;
   onChange: (partial: Partial<OnboardingData>) => void;
+  errors: Record<string, { message?: string }>;
+  onBlur: (field: string) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -251,20 +268,31 @@ function StepOne({
       <CNAEInput
         value={data.cnae}
         onChange={(cnae) => onChange({ cnae })}
+        onBlur={() => onBlur("cnae")}
+        error={errors.cnae?.message}
       />
 
       <div>
-        <label className="block text-sm font-medium text-[var(--ink)] mb-1">
-          Qual é seu objetivo principal? *
-        </label>
+        <Label required htmlFor="objetivo_principal">Qual é seu objetivo principal?</Label>
         <textarea
+          id="objetivo_principal"
           value={data.objetivo_principal}
           onChange={(e) => onChange({ objetivo_principal: e.target.value.slice(0, 200) })}
+          onBlur={() => onBlur("objetivo_principal")}
           placeholder="Ex: Encontrar oportunidades de uniformes escolares acima de R$ 100.000 em São Paulo"
           rows={3}
-          className="w-full px-3 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-secondary)] focus:ring-2 focus:ring-[var(--brand-blue)]/30 focus:border-[var(--brand-blue)] transition-all resize-none"
+          className={`w-full px-3 py-2.5 rounded-lg border bg-[var(--surface-0)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-secondary)] focus:ring-2 focus:ring-[var(--brand-blue)]/30 focus:border-[var(--brand-blue)] transition-all resize-none ${
+            errors.objetivo_principal ? "border-[var(--error)]" : "border-[var(--border)]"
+          }`}
           maxLength={200}
+          aria-invalid={!!errors.objetivo_principal}
+          aria-describedby={errors.objetivo_principal ? "objetivo-error" : undefined}
         />
+        {errors.objetivo_principal && (
+          <p id="objetivo-error" className="text-xs text-[var(--error)] mt-1" role="alert" data-testid="objetivo-error">
+            {errors.objetivo_principal.message}
+          </p>
+        )}
         <p className="text-xs text-[var(--ink-secondary)] mt-1 text-right">
           {data.objetivo_principal.length}/200
         </p>
@@ -280,9 +308,11 @@ function StepOne({
 function StepTwo({
   data,
   onChange,
+  errors,
 }: {
   data: OnboardingData;
   onChange: (partial: Partial<OnboardingData>) => void;
+  errors: Record<string, { message?: string }>;
 }) {
   const toggleUf = (uf: string) => {
     const current = new Set(data.ufs_atuacao);
@@ -314,9 +344,7 @@ function StepTwo({
       {/* UFs de atuação */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-[var(--ink)]">
-            Estados de atuação * <span className="font-normal text-[var(--ink-secondary)]">({data.ufs_atuacao.length} selecionados)</span>
-          </label>
+          <Label required>Estados de atuação <span className="font-normal text-ink-secondary">({data.ufs_atuacao.length} selecionados)</span></Label>
           <div className="flex gap-2">
             <button onClick={selectAll} className="text-xs text-[var(--brand-blue)] hover:underline">
               Todos
@@ -368,6 +396,12 @@ function StepTwo({
         </div>
       </div>
 
+      {errors.ufs_atuacao && (
+        <p className="text-xs text-[var(--error)] mt-1" role="alert" data-testid="ufs-error">
+          {errors.ufs_atuacao.message}
+        </p>
+      )}
+
       {/* Value Range */}
       <ValueRangeSelector
         valorMin={data.faixa_valor_min}
@@ -375,6 +409,11 @@ function StepTwo({
         onChangeMin={(v) => onChange({ faixa_valor_min: v })}
         onChangeMax={(v) => onChange({ faixa_valor_max: v })}
       />
+      {errors.faixa_valor_max && (
+        <p className="text-xs text-[var(--error)] mt-1" role="alert" data-testid="valor-error">
+          {errors.faixa_valor_max.message}
+        </p>
+      )}
     </div>
   );
 }
@@ -476,9 +515,32 @@ export default function OnboardingPage() {
     experiencia_licitacoes: "INICIANTE",
   });
 
+  // react-hook-form for step 1
+  const step1Form = useForm<OnboardingStep1Data>({
+    resolver: zodResolver(onboardingStep1Schema),
+    mode: "onBlur",
+    defaultValues: { cnae: "", objetivo_principal: "" },
+  });
+
+  // react-hook-form for step 2
+  const step2Form = useForm<OnboardingStep2Data>({
+    resolver: zodResolver(onboardingStep2Schema),
+    mode: "onChange",
+    defaultValues: { ufs_atuacao: [], faixa_valor_min: 100_000, faixa_valor_max: 500_000 },
+  });
+
   const updateData = useCallback((partial: Partial<OnboardingData>) => {
-    setData((prev) => ({ ...prev, ...partial }));
-  }, []);
+    setData((prev) => {
+      const next = { ...prev, ...partial };
+      // Sync react-hook-form values
+      if ("cnae" in partial) step1Form.setValue("cnae", next.cnae, { shouldValidate: step1Form.formState.isSubmitted });
+      if ("objetivo_principal" in partial) step1Form.setValue("objetivo_principal", next.objetivo_principal, { shouldValidate: step1Form.formState.isSubmitted });
+      if ("ufs_atuacao" in partial) step2Form.setValue("ufs_atuacao", next.ufs_atuacao, { shouldValidate: true });
+      if ("faixa_valor_min" in partial) step2Form.setValue("faixa_valor_min", next.faixa_valor_min, { shouldValidate: true });
+      if ("faixa_valor_max" in partial) step2Form.setValue("faixa_valor_max", next.faixa_valor_max, { shouldValidate: true });
+      return next;
+    });
+  }, [step1Form, step2Form]);
 
   // Load existing context if user re-visits
   useEffect(() => {
@@ -492,8 +554,7 @@ export default function OnboardingPage() {
         if (res.context_data && Object.keys(res.context_data).length > 0) {
           setExistingContext(res.context_data);
           const ctx = res.context_data;
-          setData((prev) => ({
-            ...prev,
+          const loadedData = {
             cnae: ctx.cnae || "",
             objetivo_principal: ctx.objetivo_principal || "",
             ufs_atuacao: ctx.ufs_atuacao || [],
@@ -501,13 +562,17 @@ export default function OnboardingPage() {
             faixa_valor_max: ctx.faixa_valor_max ?? 500_000,
             porte_empresa: ctx.porte_empresa || "EPP",
             experiencia_licitacoes: ctx.experiencia_licitacoes || "INICIANTE",
-          }));
+          };
+          setData((prev) => ({ ...prev, ...loadedData }));
+          // Sync react-hook-form
+          step1Form.reset({ cnae: loadedData.cnae, objetivo_principal: loadedData.objetivo_principal });
+          step2Form.reset({ ufs_atuacao: loadedData.ufs_atuacao, faixa_valor_min: loadedData.faixa_valor_min, faixa_valor_max: loadedData.faixa_valor_max });
         }
       })
       .catch(() => {});
   }, [session?.access_token]);
 
-  // Validation per step
+  // Validation per step — uses value checks for button state, zod for inline errors
   const canProceed = (): boolean => {
     if (currentStep === 0) {
       return data.cnae.trim().length > 0 && data.objetivo_principal.trim().length > 0;
@@ -590,9 +655,25 @@ export default function OnboardingPage() {
     router.push("/buscar");
   };
 
-  const nextStep = () => {
-    if (currentStep < 2) setCurrentStep(currentStep + 1);
-    else submitAndAnalyze();
+  const nextStep = async () => {
+    if (currentStep === 0) {
+      // Trigger zod validation for step 1
+      step1Form.setValue("cnae", data.cnae);
+      step1Form.setValue("objetivo_principal", data.objetivo_principal);
+      const valid = await step1Form.trigger();
+      if (!valid) return;
+      setCurrentStep(1);
+    } else if (currentStep === 1) {
+      // Trigger zod validation for step 2
+      step2Form.setValue("ufs_atuacao", data.ufs_atuacao);
+      step2Form.setValue("faixa_valor_min", data.faixa_valor_min);
+      step2Form.setValue("faixa_valor_max", data.faixa_valor_max);
+      const valid = await step2Form.trigger();
+      if (!valid) return;
+      setCurrentStep(2);
+    } else {
+      submitAndAnalyze();
+    }
   };
 
   const prevStep = () => {
@@ -631,8 +712,21 @@ export default function OnboardingPage() {
           <ProgressBar currentStep={currentStep} totalSteps={3} />
 
           {/* Steps */}
-          {currentStep === 0 && <StepOne data={data} onChange={updateData} />}
-          {currentStep === 1 && <StepTwo data={data} onChange={updateData} />}
+          {currentStep === 0 && (
+            <StepOne
+              data={data}
+              onChange={updateData}
+              errors={step1Form.formState.errors as Record<string, { message?: string }>}
+              onBlur={(field) => step1Form.trigger(field as keyof OnboardingStep1Data)}
+            />
+          )}
+          {currentStep === 1 && (
+            <StepTwo
+              data={data}
+              onChange={updateData}
+              errors={step2Form.formState.errors as Record<string, { message?: string }>}
+            />
+          )}
           {currentStep === 2 && <StepThree data={data} isAnalyzing={isAnalyzing} />}
 
           {/* Navigation */}

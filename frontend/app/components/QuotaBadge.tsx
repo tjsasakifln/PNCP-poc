@@ -57,8 +57,8 @@ export function QuotaBadge() {
     return (
       <span
         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium
-                   bg-[var(--warning-subtle,#fef3cd)] text-[var(--warning,#856404)]
-                   rounded-full border border-[var(--warning,#856404)]/20"
+                   bg-[var(--warning-subtle)] text-[var(--warning)]
+                   rounded-full border border-[var(--warning)]/20"
         title={`Cancelamento agendado${endsAtDisplay ? ` — ativa até ${endsAtDisplay}` : ""}`}
       >
         <svg

@@ -91,6 +91,21 @@
   --section-padding-sm: 4rem;   /* 64px - Mobile */
   --section-padding-lg: 6rem;   /* 96px - Desktop */
   --section-gap: 8rem;          /* 128px - Between sections */
+
+  /* DEBT-012: Chart palette (10 colors for Recharts + data viz) */
+  --chart-1: #116dff;
+  --chart-2: #0d5ad4;
+  --chart-3: #0a1e3f;
+  --chart-4: #3b8bff;
+  --chart-5: #6aa7ff;
+  --chart-6: #16a34a;
+  --chart-7: #ca8a04;
+  --chart-8: #dc2626;
+  --chart-9: #8b5cf6;
+  --chart-10: #ec4899;
+
+  /* DEBT-012: Third-party brand colors */
+  --whatsapp: #25D366;
 }
 
 /* Dark mode overrides - WCAG Contrast Documentation */

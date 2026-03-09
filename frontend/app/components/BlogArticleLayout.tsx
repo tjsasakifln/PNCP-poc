@@ -113,7 +113,7 @@ function ShareButtons({ title, url }: { title: string; url: string }) {
 
       <button
         onClick={shareWhatsApp}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-ink-secondary hover:text-[#25D366] border border-[var(--border)] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-ink-secondary hover:text-[var(--whatsapp)] border border-[var(--border)] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]"
         aria-label="Compartilhar no WhatsApp"
         data-testid="share-whatsapp"
       >

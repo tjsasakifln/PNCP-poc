@@ -43,8 +43,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  owner: "bg-[var(--brand-blue-subtle,#eff6ff)] text-[var(--brand-blue)]",
-  admin: "bg-[var(--success-subtle,#d1fae5)] text-[var(--success,#059669)]",
+  owner: "bg-[var(--brand-blue-subtle)] text-[var(--brand-blue)]",
+  admin: "bg-[var(--success-subtle)] text-[var(--success)]",
   member: "bg-[var(--surface-1)] text-[var(--ink-secondary)]",
 };
 
@@ -166,7 +166,7 @@ export default function EquipePage() {
         <PageHeader title="Equipe" />
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
           <div className="bg-[var(--surface-0)] rounded-card border border-[var(--border)] p-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-[var(--brand-blue-subtle,#eff6ff)] flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 rounded-full bg-[var(--brand-blue-subtle)] flex items-center justify-center mx-auto mb-4">
               <svg
                 aria-hidden="true"
                 className="w-6 h-6 text-[var(--brand-blue)]"
@@ -228,7 +228,7 @@ export default function EquipePage() {
       <>
         <PageHeader title="Equipe" />
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-          <div className="bg-[var(--error-subtle,#fee2e2)] border border-[var(--error,#dc2626)] rounded-card p-4 text-sm text-[var(--error,#dc2626)]">
+          <div className="bg-[var(--error-subtle)] border border-[var(--error)] rounded-card p-4 text-sm text-[var(--error)]">
             {orgError}
           </div>
           <button
@@ -309,14 +309,14 @@ export default function EquipePage() {
                 {/* Slot counter */}
                 <span className="text-sm text-[var(--ink-secondary)]">
                   <span
-                    className={`font-medium ${slotsUsed >= maxSeats ? "text-[var(--error,#dc2626)]" : "text-[var(--ink)]"}`}
+                    className={`font-medium ${slotsUsed >= maxSeats ? "text-[var(--error)]" : "text-[var(--ink)]"}`}
                   >
                     {slotsUsed}
                   </span>
                   /{maxSeats} membros
                 </span>
                 {pendingCount > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--warning-subtle,#fef3cd)] text-[var(--warning,#856404)]">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--warning-subtle)] text-[var(--warning)]">
                     {pendingCount} pendente{pendingCount > 1 ? "s" : ""}
                   </span>
                 )}
@@ -358,7 +358,7 @@ export default function EquipePage() {
             <div className="h-1.5 rounded-full bg-[var(--surface-1)] overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
-                  slotsUsed >= maxSeats ? "bg-[var(--error,#dc2626)]" : "bg-[var(--brand-blue)]"
+                  slotsUsed >= maxSeats ? "bg-[var(--error)]" : "bg-[var(--brand-blue)]"
                 }`}
                 style={{ width: `${Math.min((slotsUsed / maxSeats) * 100, 100)}%` }}
               />
@@ -370,7 +370,7 @@ export default function EquipePage() {
         {removeError && (
           <div
             role="alert"
-            className="mb-4 p-3 bg-[var(--error-subtle,#fee2e2)] text-[var(--error,#dc2626)] rounded-card text-sm"
+            className="mb-4 p-3 bg-[var(--error-subtle)] text-[var(--error)] rounded-card text-sm"
           >
             {removeError}
           </div>
@@ -393,7 +393,7 @@ export default function EquipePage() {
               >
                 {/* Avatar */}
                 <div
-                  className="w-9 h-9 rounded-full bg-[var(--brand-blue-subtle,#eff6ff)]
+                  className="w-9 h-9 rounded-full bg-[var(--brand-blue-subtle)]
                                flex items-center justify-center flex-shrink-0"
                   aria-hidden="true"
                 >
@@ -421,7 +421,7 @@ export default function EquipePage() {
 
                     {/* Status badge */}
                     {isPending && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--warning-subtle,#fef3cd)] text-[var(--warning,#856404)]">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--warning-subtle)] text-[var(--warning)]">
                         Pendente
                       </span>
                     )}
@@ -460,7 +460,7 @@ export default function EquipePage() {
                           onClick={() => handleRemoveMember(member.id)}
                           disabled={isRemoving}
                           className="text-xs px-3 py-1.5 rounded-button
-                                     bg-[var(--error,#dc2626)] text-white
+                                     bg-[var(--error)] text-white
                                      hover:opacity-90 transition-opacity
                                      disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -473,8 +473,8 @@ export default function EquipePage() {
                           setConfirmRemoveId(member.id);
                           setRemoveError(null);
                         }}
-                        className="text-xs px-3 py-1.5 rounded-button border border-[var(--error,#dc2626)]
-                                   text-[var(--error,#dc2626)] hover:bg-[var(--error-subtle,#fee2e2)]
+                        className="text-xs px-3 py-1.5 rounded-button border border-[var(--error)]
+                                   text-[var(--error)] hover:bg-[var(--error-subtle)]
                                    transition-colors"
                       >
                         Remover
