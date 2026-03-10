@@ -36,12 +36,8 @@ INTEL_DIR = Path(__file__).parent.parent / "docs" / "intel-b2g"
 SETOR_DEFAULT = "engenharia e construcao civil"
 
 OFERTA = {
-    "valor": "R$1.500/mes",
-    "comissao": "3%",
-    "mercado": "R$3.000-5.000/mes",
+    "valor": "R$1.500/mês",
     "remetente": "Tiago Sasaki",
-    "empresa": "CONFENGE Avaliacoes e IA",
-    "site": "smartlic.tech",
 }
 
 # Column indices (0-based) in existing Leads sheet
@@ -188,39 +184,25 @@ def build_whatsapp_message(
 
     # Greeting
     if first_name:
-        greeting = f"Bom dia, {first_name}!"
+        greeting = f"Olá, {first_name}! Tudo bem?"
     else:
-        greeting = f"Bom dia! Falo com o responsavel por licitacoes da {company}?"
+        greeting = f"Olá! Tudo bem? Falo com o responsável por licitações da {company}?"
 
     # UFs formatting
-    ufs_str = ufs if ufs else "diversas regioes"
-
-    # Contracts pluralization
-    if contratos and contratos > 1:
-        contratos_str = f"com {contratos} contratos recentes"
-    elif contratos == 1:
-        contratos_str = "com contrato recente"
-    else:
-        contratos_str = "ativa"
+    ufs_str = ufs if ufs else "diversas regiões"
 
     msg = f"""{greeting}
 
-Me chamo {OFERTA['remetente']}, da {OFERTA['empresa']} — trabalhamos com inteligencia em licitacoes publicas.
+Me chamo Tiago Sasaki, sou engenheiro civil com 7 anos de experiência como servidor público efetivo em SC. Hoje atendo empresas de engenharia do Brasil todo, ajudando a não perderem editais relevantes.
 
-Vi que a {company} tem atuacao em licitacoes de {setor} ({ufs_str}), {contratos_str}.
+Vi que a {company} atua com licitações em {ufs_str}. Faço um trabalho de consolidação de editais: monitoro PNCP, Portal de Compras e ComprasGov diariamente, filtro o que é relevante pro perfil de vocês e entrego um relatório semanal organizado.
 
-Oferecemos um servico de consolidacao de licitacoes: monitoramos editais relevantes para voces em 3 fontes oficiais (PNCP, Portal de Compras, ComprasGov), classificamos por relevancia com IA e entregamos relatorio semanal com analise de viabilidade.
+O valor é {OFERTA['valor']}.
 
-Valor: {OFERTA['valor']} + {OFERTA['comissao']} de comissao apenas sobre editais que voces vencerem.
+Posso te mandar um exemplo com editais reais da sua região?
 
-No mercado, servicos similares custam {OFERTA['mercado']}. Nosso diferencial e a tecnologia — cobrimos mais editais com menos custo.
-
-Posso mandar um exemplo de relatorio com editais reais do seu setor esta semana?
-
-Abraco,
-{OFERTA['remetente']}
-{OFERTA['empresa']}
-{OFERTA['site']}"""
+Abraço,
+Tiago Sasaki"""
 
     return msg.strip()
 
@@ -240,13 +222,16 @@ def enrich_workbook(filepath: Path) -> dict:
     setor = detect_setor_from_filename(filepath.name)
     print(f"  Setor detected: {setor}")
 
-    # Check if already enriched (idempotent)
+    # Check if already enriched
     existing_headers = [cell.value for cell in ws_leads[1]]
-    if "Mensagem WhatsApp" in existing_headers:
-        print("  Already enriched — skipping Leads sheet, rebuilding WhatsApp Outreach")
+    already_enriched = "Mensagem WhatsApp" in existing_headers
+    if already_enriched:
+        print("  Already enriched — updating messages + rebuilding WhatsApp Outreach")
         wa_num_col = existing_headers.index("WhatsApp Numero") + 1
         wa_link_col = existing_headers.index("Link wa.me") + 1
         wa_msg_col = existing_headers.index("Mensagem WhatsApp") + 1
+        wa_sent_col = existing_headers.index("Mensagem Enviada?") + 1
+        wa_resp_col = existing_headers.index("Resposta WhatsApp") + 1
     else:
         # Add new column headers
         start_col = ws_leads.max_column + 1
@@ -323,8 +308,8 @@ def enrich_workbook(filepath: Path) -> dict:
         )
         stats["with_message"] += 1
 
-        # Write to Leads sheet
-        if "Mensagem WhatsApp" not in existing_headers:
+        # Write to Leads sheet (always update — messages may have changed)
+        if True:
             ws_leads.cell(row=row_idx, column=wa_num_col, value=wa_number or "").border = THIN_BORDER
             link_cell = ws_leads.cell(
                 row=row_idx,

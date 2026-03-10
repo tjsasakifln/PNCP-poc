@@ -29,7 +29,7 @@ Varredura multi-fonte para mapear TODOS os players ativos de um setor em licitac
 5. **Consolidacao** — Gera relatorio ordenado por faturamento gov mensal
 6. **WhatsApp Outreach** — Gera aba Excel com mensagem personalizada por lead, link wa.me clicavel, e colunas de tracking
 
-**Oferta padrao:** Consultoria de consolidacao de licitacoes R$1.500/mes + 3% comissao (MAYDAY Track A1)
+**Oferta padrão:** Consultoria de consolidação de licitações R$1.500/mês (sem mencionar CONFENGE/SmartLic)
 
 ## Output Schema (por lead)
 
