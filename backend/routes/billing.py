@@ -86,15 +86,30 @@ async def create_checkout(
     # NOTE: stripe_lib.api_key NOT set globally (thread safety - STORY-221 Track 2)
     # Pass api_key= parameter to Stripe API calls instead
 
-    plan_result = await sb_execute(db.table("plans").select("*").eq("id", plan_id).eq("is_active", True).single())
+    plan_result = await sb_execute(db.table("plans").select("id, name, is_active").eq("id", plan_id).eq("is_active", True).single())
     if not plan_result.data:
         raise HTTPException(status_code=404, detail="Plano nao encontrado")
 
     plan = plan_result.data
 
-    price_id_key = f"stripe_price_id_{billing_period}"
-    stripe_price_id = plan.get(price_id_key) or plan.get("stripe_price_id")
+    # DEBT-114 AC1: Use plan_billing_periods as sole source of truth for stripe_price_id
+    bp_result = await sb_execute(
+        db.table("plan_billing_periods")
+        .select("stripe_price_id")
+        .eq("plan_id", plan_id)
+        .eq("billing_period", billing_period)
+        .single()
+    )
+
+    stripe_price_id = (bp_result.data or {}).get("stripe_price_id") if bp_result.data else None
+
     if not stripe_price_id:
+        # DEBT-114 AC2: WARNING log for missing billing period config (safety net)
+        logger.warning(
+            f"DEBT-114: No stripe_price_id in plan_billing_periods for "
+            f"plan_id={plan_id}, billing_period={billing_period}. "
+            f"Legacy plans.stripe_price_id fallback has been removed."
+        )
         raise HTTPException(status_code=400, detail="Plano sem configuração de preço")
 
     is_subscription = plan_id in ("smartlic_pro", "consultoria", "consultor_agil", "maquina", "sala_guerra")

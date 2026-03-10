@@ -500,14 +500,16 @@ class TestAC8ZeroRegressions:
         for param in ["p_user_id", "p_is_admin", "p_status", "p_limit", "p_offset"]:
             assert param in code, f"messages.py missing parameter: {param}"
 
-    def test_billing_route_still_uses_stripe_price_id_fallback(self):
-        """billing.py checkout still falls back to stripe_price_id."""
+    def test_billing_route_uses_plan_billing_periods(self):
+        """DEBT-114: billing.py checkout uses plan_billing_periods (not legacy fallback)."""
         billing_path = os.path.join(
             os.path.dirname(__file__), "..", "routes", "billing.py"
         )
         code = _read_file(billing_path)
-        assert 'plan.get("stripe_price_id")' in code, \
-            "billing.py must retain stripe_price_id fallback until migration is complete"
+        assert 'plan.get("stripe_price_id")' not in code, \
+            "DEBT-114: Legacy stripe_price_id fallback must be removed"
+        assert "plan_billing_periods" in code, \
+            "DEBT-114: billing.py must use plan_billing_periods table"
 
 
 # ---------------------------------------------------------------------------

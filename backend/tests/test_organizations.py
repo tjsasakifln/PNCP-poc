@@ -752,18 +752,24 @@ class TestCheckoutConsultoriaStripe:
                 "id": "consultoria",
                 "name": "SmartLic Consultoria",
                 "is_active": True,
-                "stripe_price_id_monthly": "price_consultoria_monthly",
+            }
+            bp_data = {
                 "stripe_price_id": "price_consultoria_monthly",
             }
 
             mock_session = MagicMock()
             mock_session.url = "https://checkout.stripe.com/pay/cs_test_abc123"
 
+            # DEBT-114: sb_execute called twice — first for plans, then plan_billing_periods
+            mock_sb_execute = AsyncMock(side_effect=[
+                MagicMock(data=plan_data),
+                MagicMock(data=bp_data),
+            ])
+
             with (
                 patch(
                     "routes.billing.sb_execute",
-                    new_callable=AsyncMock,
-                    return_value=MagicMock(data=plan_data),
+                    mock_sb_execute,
                 ),
                 patch.dict(os.environ, {
                     "STRIPE_SECRET_KEY": "sk_test_fake",
