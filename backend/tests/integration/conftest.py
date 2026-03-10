@@ -13,15 +13,11 @@ All integration tests use @pytest.mark.integration marker (AC5).
 
 import os
 import sys
-import warnings
 import pytest
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from types import SimpleNamespace
 
-# Suppress warnings that fire from async mocks used with create_task() in sync TestClient
-warnings.filterwarnings("ignore", message="coroutine.*was never awaited", category=RuntimeWarning)
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic")
-warnings.filterwarnings("ignore", message="datetime.datetime.utcnow", category=DeprecationWarning)
+# DEBT-109 AC9: Warning suppression removed — warnings resolved via proper async cleanup fixtures
 
 # Ensure backend is on sys.path
 backend_dir = os.path.join(os.path.dirname(__file__), "..", "..")
@@ -48,6 +44,57 @@ def integration_env(monkeypatch):
     monkeypatch.setenv("REDIS_URL", "")
     monkeypatch.setenv("LOG_LEVEL", "WARNING")
     monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
+
+
+# ---------------------------------------------------------------------------
+# DEBT-109 AC7: Async task cleanup (prevents lingering fire-and-forget tasks)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _cleanup_pending_async_tasks():
+    """Cancel lingering asyncio tasks after each test.
+
+    Fire-and-forget tasks (asyncio.create_task) in search pipeline and SSE
+    handlers are never awaited by sync TestClient. Without cleanup, these
+    tasks accumulate and can deadlock the event loop on full-suite runs.
+    """
+    import asyncio
+    yield
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            return
+        pending = [t for t in asyncio.all_tasks(loop) if not t.done()]
+        for task in pending:
+            task.cancel()
+        if pending:
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+    except RuntimeError:
+        # No running event loop or loop already closed — nothing to clean
+        pass
+
+
+# ---------------------------------------------------------------------------
+# DEBT-109 AC8: ARQ module isolation (prevents sys.modules pollution)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _isolate_arq_module():
+    """Isolate arq module state between tests.
+
+    Multiple test files inject fake arq modules via sys.modules. Without cleanup,
+    a MagicMock arq module from one test leaks into subsequent tests, causing
+    attribute access on mock objects to silently succeed with wrong values.
+    """
+    # Snapshot current arq-related modules
+    saved_arq = {k: sys.modules[k] for k in list(sys.modules) if k.startswith("arq")}
+    yield
+    # Remove any arq modules injected during the test
+    for k in list(sys.modules):
+        if k.startswith("arq"):
+            del sys.modules[k]
+    # Restore pre-test state
+    sys.modules.update(saved_arq)
 
 
 # ---------------------------------------------------------------------------

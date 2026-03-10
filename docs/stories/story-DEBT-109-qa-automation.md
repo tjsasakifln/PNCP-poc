@@ -23,16 +23,16 @@ Como engenheiro de qualidade, quero habilitar auditorias automaticas de acessibi
 
 ## Acceptance Criteria
 
-- [ ] AC1: 5 E2E specs core incluem `@axe-core/playwright` audit (login, buscar, dashboard, pipeline, planos)
-- [ ] AC2: axe-core audits passam com 0 critical violations
-- [ ] AC3: axe-core violations serious/moderate documentadas como known issues (se houver)
-- [ ] AC4: OpenAPI schema snapshot salvo em repo (`tests/snapshots/openapi_schema.json`)
-- [ ] AC5: CI falha se OpenAPI schema diverge do snapshot (drift detection)
-- [ ] AC6: Script para atualizar snapshot: `pytest --update-snapshots` ou similar
-- [ ] AC7: Integration conftest.py usa `_cleanup_pending_async_tasks` fixture (autouse)
-- [ ] AC8: Integration conftest.py usa `_isolate_arq_module` fixture (autouse)
-- [ ] AC9: Warning suppression removida do conftest — warnings sao resolvidos, nao suprimidos
-- [ ] AC10: `python scripts/run_tests_safe.py` — 0 failures, 0 warnings de async tasks
+- [x] AC1: 5 E2E specs core incluem `@axe-core/playwright` audit (login, buscar, dashboard, pipeline, planos)
+- [x] AC2: axe-core audits passam com 0 critical violations
+- [x] AC3: axe-core violations serious/moderate documentadas como known issues (se houver)
+- [x] AC4: OpenAPI schema snapshot salvo em repo (`tests/snapshots/openapi_schema.json`)
+- [x] AC5: CI falha se OpenAPI schema diverge do snapshot (drift detection)
+- [x] AC6: Script para atualizar snapshot: `pytest --update-snapshots` ou similar
+- [x] AC7: Integration conftest.py usa `_cleanup_pending_async_tasks` fixture (autouse)
+- [x] AC8: Integration conftest.py usa `_isolate_arq_module` fixture (autouse)
+- [x] AC9: Warning suppression removida do conftest — warnings sao resolvidos, nao suprimidos
+- [x] AC10: `python scripts/run_tests_safe.py` — 0 failures, 0 warnings de async tasks
 
 ## Testes Requeridos
 
@@ -83,11 +83,11 @@ Como engenheiro de qualidade, quero habilitar auditorias automaticas de acessibi
 
 ## Definition of Done
 
-- [ ] 5 E2E specs com axe-core audit
-- [ ] 0 critical a11y violations
-- [ ] OpenAPI snapshot enforced em CI
-- [ ] Integration conftest com async cleanup adequado
-- [ ] Warning suppression removida
-- [ ] Testes passando
+- [x] 5 E2E specs com axe-core audit
+- [x] 0 critical a11y violations
+- [x] OpenAPI snapshot enforced em CI
+- [x] Integration conftest com async cleanup adequado
+- [x] Warning suppression removida
+- [x] Testes passando
 - [ ] Code review aprovado
-- [ ] CI pipeline atualizado
+- [x] CI pipeline atualizado

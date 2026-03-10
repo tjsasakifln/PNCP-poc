@@ -6,6 +6,7 @@ when new endpoints or modifications are introduced.
 """
 
 import json
+import os
 import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
@@ -31,7 +32,7 @@ class TestOpenAPISchema:
         """Clear cached OpenAPI schema to prevent test pollution."""
         app.openapi_schema = None
 
-    def test_openapi_schema_matches_snapshot(self, client, schema_snapshot_path):
+    def test_openapi_schema_matches_snapshot(self, client, schema_snapshot_path, request):
         """
         Verify that the OpenAPI schema matches the stored snapshot.
 
@@ -71,8 +72,26 @@ class TestOpenAPISchema:
         with open(schema_snapshot_path, "r", encoding="utf-8") as f:
             snapshot_schema = json.load(f)
 
+        # Check if we should update the snapshot
+        update_mode = (
+            request.config.getoption("--update-snapshots", default=False)
+            or os.environ.get("UPDATE_SNAPSHOTS", "").lower() in ("1", "true", "yes")
+        )
+
         # Compare schemas
         if current_schema != snapshot_schema:
+            if update_mode:
+                with open(schema_snapshot_path, "w", encoding="utf-8") as f:
+                    json.dump(current_schema, f, indent=2, sort_keys=True)
+                # Clean up stale diff file
+                diff_path = schema_snapshot_path.parent / "openapi_schema.diff.json"
+                if diff_path.exists():
+                    diff_path.unlink()
+                pytest.skip(
+                    f"OpenAPI schema snapshot updated at {schema_snapshot_path}. "
+                    "Re-run without --update-snapshots to validate."
+                )
+
             # Generate diff for debugging
             diff_path = schema_snapshot_path.parent / "openapi_schema.diff.json"
             with open(diff_path, "w", encoding="utf-8") as f:
@@ -100,10 +119,10 @@ class TestOpenAPISchema:
 
             error_msg += (
                 "\nIf these changes are intentional:\n"
-                f"1. Review the changes in {diff_path}\n"
-                f"2. Delete {schema_snapshot_path}\n"
-                "3. Re-run this test to generate a new snapshot\n"
-                "4. Commit the updated snapshot with your changes\n"
+                "Option A: Run `pytest --update-snapshots -k test_openapi_schema`\n"
+                "Option B: Set UPDATE_SNAPSHOTS=1 and re-run\n"
+                f"Option C: Delete {schema_snapshot_path} and re-run\n"
+                "Then commit the updated snapshot with your changes.\n"
             )
 
             pytest.fail(error_msg)

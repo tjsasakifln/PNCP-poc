@@ -10,6 +10,16 @@ from unittest.mock import Mock, AsyncMock
 from datetime import datetime, timezone, timedelta
 
 
+def pytest_addoption(parser):
+    """Register custom CLI options for snapshot management."""
+    parser.addoption(
+        "--update-snapshots",
+        action="store_true",
+        default=False,
+        help="Update OpenAPI schema snapshot instead of failing on drift",
+    )
+
+
 @pytest.fixture
 def mock_user():
     """Mock authenticated user."""
