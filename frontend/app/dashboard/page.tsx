@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics } from "../../hooks/useAnalytics";
-import { useBackendStatusContext } from "../../components/BackendStatusIndicator";
+import { useBackendStatusContext } from "../components/BackendStatusIndicator";
 import { useFetchWithBackoff } from "../../hooks/useFetchWithBackoff";
 import { useProfileCompleteness } from "../../hooks/useProfileCompleteness";
 import { PageHeader } from "../../components/PageHeader";

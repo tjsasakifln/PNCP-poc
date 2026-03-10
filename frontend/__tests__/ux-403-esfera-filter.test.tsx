@@ -30,7 +30,7 @@ jest.mock("../hooks/useAnalytics", () => ({
   useAnalytics: () => ({ trackEvent: jest.fn() }),
 }));
 
-jest.mock("../components/BackendStatusIndicator", () => ({
+jest.mock("../app/components/BackendStatusIndicator", () => ({
   useBackendStatusContext: () => ({ status: "online", isPolling: false, checkHealth: jest.fn() }),
   BackendStatusProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useBackendStatus: () => ({ status: "online", isPolling: false, checkHealth: jest.fn() }),

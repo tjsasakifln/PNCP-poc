@@ -34,7 +34,7 @@ jest.mock("../hooks/useAnalytics", () => ({
   }),
 }));
 
-jest.mock("../components/BackendStatusIndicator", () => ({
+jest.mock("../app/components/BackendStatusIndicator", () => ({
   useBackendStatusContext: () => ({
     status: mockBackendStatus,
     isPolling: false,

@@ -1,158 +1,21 @@
 "use client";
 
-import Link from "next/link";
-import type { BuscaResult, ValidationErrors, Setor } from "../../types";
-import { RegionSelector } from "../../components/RegionSelector";
-import { CustomSelect } from "../../components/CustomSelect";
-import { CustomDateInput } from "../../components/CustomDateInput";
-import { Tooltip } from "../../components/ui/Tooltip";
-import type { TermValidation } from "../hooks/useSearchFilters";
-import { DEFAULT_SEARCH_DAYS } from "../hooks/useSearchFilters";
-import type { StatusLicitacao } from "./StatusFilter";
-import type { Esfera } from "../../components/EsferaFilter";
-import type { Municipio } from "../../components/MunicipioFilter";
-import type { OrdenacaoOption } from "../../components/OrdenacaoSelect";
-import FilterPanel from "./FilterPanel";
-import { UFS, UF_NAMES } from "../../../lib/constants/uf-names";
+import { UF_NAMES } from "../../../lib/constants/uf-names";
 import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
-import { Button } from "../../../components/ui/button";
-import {
-  Info,
-  AlertTriangle,
-  AlertCircle,
-  X,
-  SlidersHorizontal,
-  ChevronDown,
-  Globe,
-  Check,
-  RefreshCw,
-  Bookmark,
-} from "lucide-react";
+import SearchFormHeader from "./SearchFormHeader";
+import SearchFormActions from "./SearchFormActions";
+import SearchCustomizePanel from "./SearchCustomizePanel";
 
-export interface SearchFormProps {
-  // Sectors
-  setores: Setor[];
-  setoresLoading: boolean;
-  setoresError: boolean;
-  setoresUsingFallback: boolean;
-  setoresUsingStaleCache: boolean;
-  staleCacheAge: number | null;
-  setoresRetryCount: number;
-  setorId: string;
-  setSetorId: (id: string) => void;
-  fetchSetores: (attempt?: number) => Promise<void>;
+export type { SearchFormProps } from "./SearchForm.types";
+import type { SearchFormProps } from "./SearchForm.types";
 
-  // Search mode
-  searchMode: "setor" | "termos";
-  setSearchMode: (mode: "setor" | "termos") => void;
+export default function SearchForm(props: SearchFormProps) {
+  const {
+    ufsSelecionadas, status, modalidades, modoBusca, dataInicial, dataFinal,
+  } = props;
 
-  // Search paradigm (STORY-240)
-  modoBusca: "abertas" | "publicacao";
-  dateLabel: string;
-
-  // Terms
-  termosArray: string[];
-  termoInput: string;
-  setTermoInput: (input: string) => void;
-  termValidation: TermValidation | null;
-  addTerms: (newTerms: string[]) => void;
-  removeTerm: (term: string) => void;
-
-  // UFs
-  ufsSelecionadas: Set<string>;
-  toggleUf: (uf: string) => void;
-  toggleRegion: (regionUfs: string[]) => void;
-  selecionarTodos: () => void;
-  limparSelecao: () => void;
-
-  // Dates
-  dataInicial: string;
-  setDataInicial: (date: string) => void;
-  dataFinal: string;
-  setDataFinal: (date: string) => void;
-
-  // Validation
-  validationErrors: ValidationErrors;
-  canSearch: boolean;
-  searchLabel: string;
-
-  // Filters
-  locationFiltersOpen: boolean;
-  setLocationFiltersOpen: (open: boolean) => void;
-  advancedFiltersOpen: boolean;
-  setAdvancedFiltersOpen: (open: boolean) => void;
-  esferas: Esfera[];
-  setEsferas: (e: Esfera[]) => void;
-  municipios: Municipio[];
-  setMunicipios: (m: Municipio[]) => void;
-  status: StatusLicitacao;
-  setStatus: (s: StatusLicitacao) => void;
-  modalidades: number[];
-  setModalidades: (m: number[]) => void;
-  valorMin: number | null;
-  setValorMin: (v: number | null) => void;
-  valorMax: number | null;
-  setValorMax: (v: number | null) => void;
-  setValorValid: (valid: boolean) => void;
-
-  // Search execution
-  loading: boolean;
-  buscar: () => void;
-  searchButtonRef: React.RefObject<HTMLButtonElement | null>;
-
-  // Result (for save button visibility)
-  result: BuscaResult | null;
-  handleSaveSearch: () => void;
-  isMaxCapacity: boolean;
-
-  // Plan info (for date range warning)
-  planInfo: { plan_name: string; capabilities: { max_history_days: number } } | null;
-  onShowUpgradeModal: (plan?: string, source?: string) => void;
-
-  // Clear result callback
-  clearResult: () => void;
-
-  // Customize accordion (AC6-AC8)
-  customizeOpen: boolean;
-  setCustomizeOpen: (open: boolean) => void;
-
-  // STORY-265 AC14: Trial expired state
-  isTrialExpired?: boolean;
-
-  // STORY-309 AC17: Grace period — searches suspended
-  isGracePeriod?: boolean;
-
-  // UX-346 AC5: First-use tip
-  showFirstUseTip?: boolean;
-  onDismissFirstUseTip?: () => void;
-}
-
-export default function SearchForm({
-  setores, setoresLoading, setoresError, setoresUsingFallback, setoresUsingStaleCache, staleCacheAge, setoresRetryCount,
-  setorId, setSetorId, fetchSetores,
-  searchMode, setSearchMode,
-  modoBusca, dateLabel,
-  termosArray, termoInput, setTermoInput, termValidation, addTerms, removeTerm,
-  ufsSelecionadas, toggleUf, toggleRegion, selecionarTodos, limparSelecao,
-  dataInicial, setDataInicial, dataFinal, setDataFinal,
-  validationErrors, canSearch, searchLabel,
-  locationFiltersOpen, setLocationFiltersOpen,
-  advancedFiltersOpen, setAdvancedFiltersOpen,
-  esferas, setEsferas, municipios, setMunicipios,
-  status, setStatus, modalidades, setModalidades,
-  valorMin, setValorMin, valorMax, setValorMax, setValorValid,
-  loading, buscar, searchButtonRef,
-  result, handleSaveSearch, isMaxCapacity,
-  planInfo, onShowUpgradeModal, clearResult,
-  customizeOpen, setCustomizeOpen,
-  showFirstUseTip, onDismissFirstUseTip,
-  isTrialExpired,
-  isGracePeriod,
-}: SearchFormProps) {
-  // UX-346 AC3/AC4: Build compact summary text
   const compactSummary = (() => {
     const parts: string[] = [];
-    // UF count
     if (ufsSelecionadas.size === 27) {
       parts.push('Todo o Brasil');
     } else if (ufsSelecionadas.size === 1) {
@@ -161,7 +24,6 @@ export default function SearchForm({
     } else {
       parts.push(`${ufsSelecionadas.size} estados`);
     }
-    // Status
     const statusLabels: Record<string, string> = {
       recebendo_proposta: 'Abertas',
       em_julgamento: 'Em julgamento',
@@ -169,11 +31,9 @@ export default function SearchForm({
       todos: 'Todos os status',
     };
     parts.push(statusLabels[status] || 'Abertas');
-    // Modalidades
     if (modalidades.length > 0) {
       parts.push(`${modalidades.length} modalidade${modalidades.length !== 1 ? 's' : ''}`);
     }
-    // Period
     if (modoBusca === 'abertas') {
       parts.push("Oportunidades recentes");
     } else if (dataInicial && dataFinal) {
@@ -182,506 +42,84 @@ export default function SearchForm({
     }
     return parts.join(' • ');
   })();
+
   return (
     <>
-      {/* AC3: Stale cache banner (blue/informative) */}
-      {setoresUsingStaleCache && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-card flex items-start gap-3 animate-fade-in-up" role="status">
-          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-              Usando setores em cache
-              {staleCacheAge != null && (
-                <span className="font-normal"> (atualizado há {Math.round(staleCacheAge / 60000)} min)</span>
-              )}
-            </p>
-            <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-0.5">Atualizando em segundo plano...</p>
-          </div>
-        </div>
-      )}
-
-      {/* AC3: Hardcoded fallback banner (yellow/warning) — only when no cache at all */}
-      {setoresUsingFallback && !setoresUsingStaleCache && (
-        <div className="mb-4 p-3 bg-[var(--warning-subtle)] border border-[var(--warning)]/20 rounded-card flex items-start gap-3 animate-fade-in-up" role="alert">
-          <AlertTriangle className="w-5 h-5 text-[var(--warning)] flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-[var(--warning)]">Usando lista offline de setores</p>
-            <p className="text-xs text-ink-secondary mt-0.5">Alguns setores novos podem não aparecer.</p>
-          </div>
-          <button
-            onClick={() => fetchSetores(0)}
-            className="text-xs font-medium text-brand-blue hover:underline flex-shrink-0"
-            type="button"
-          >
-            Tentar atualizar
-          </button>
-        </div>
-      )}
-
-      {/* Search Mode Toggle */}
-      <section className="mb-6 animate-fade-in-up stagger-1 relative z-30" data-tour="setor-filter">
-        <label className="block text-base font-semibold text-ink mb-3">
-          Buscar por:
-        </label>
-        <div className="flex rounded-button border border-strong overflow-hidden mb-4">
-          <button
-            type="button"
-            onClick={() => { setSearchMode("setor"); clearResult(); }}
-            className={`flex-1 py-2.5 text-sm sm:text-base font-medium transition-all duration-200 ${
-              searchMode === "setor"
-                ? "bg-brand-navy text-white"
-                : "bg-surface-0 text-ink-secondary hover:bg-surface-1"
-            }`}
-          >
-            Setor
-          </button>
-          <button
-            type="button"
-            onClick={() => { setSearchMode("termos"); clearResult(); }}
-            className={`flex-1 py-2.5 text-sm sm:text-base font-medium transition-all duration-200 ${
-              searchMode === "termos"
-                ? "bg-brand-navy text-white"
-                : "bg-surface-0 text-ink-secondary hover:bg-surface-1"
-            }`}
-          >
-            Termos Específicos
-          </button>
-        </div>
-
-        {/* Sector Selector */}
-        {searchMode === "setor" && (
-          <div className="relative z-20">
-            {setoresLoading ? (
-              <div className="border border-strong rounded-input px-4 py-3 bg-surface-1 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-blue"></div>
-                  <div className="h-5 bg-surface-2 rounded w-48 animate-pulse"></div>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-4 bg-surface-2 rounded w-full animate-pulse"></div>
-                  <div className="h-4 bg-surface-2 rounded w-3/4 animate-pulse"></div>
-                  <div className="h-4 bg-surface-2 rounded w-5/6 animate-pulse"></div>
-                </div>
-              </div>
-            ) : setoresError && !setoresUsingFallback ? (
-              <div className="border border-error/20 rounded-input px-4 py-3 bg-error-subtle">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-error">Não foi possível carregar setores</p>
-                    <p className="text-xs text-ink-secondary mt-0.5">
-                      Tentativa {setoresRetryCount + 1} de 3
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => fetchSetores(0)}
-                    className="text-sm font-medium text-brand-blue hover:underline flex items-center gap-1 flex-shrink-0"
-                    type="button"
-                    aria-label="Tentar carregar setores novamente"
-                  >
-                    <RefreshCw className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-                    Tentar novamente
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <CustomSelect
-                id="setor"
-                value={setorId}
-                options={setores.map(s => ({ value: s.id, label: s.name, description: s.description }))}
-                onChange={(value) => { setSetorId(value); clearResult(); }}
-                placeholder="Ex: TI, Engenharia, Facilities, Saúde..."
-              />
-            )}
-          </div>
-        )}
-
-        {/* Custom Terms Input with Tags */}
-        {searchMode === "termos" && (
-          <div>
-            {termValidation && termValidation.ignored.length > 0 && (
-              <div className="mb-4 border border-warning/30 bg-warning-subtle rounded-card p-4 animate-fade-in-up">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm text-warning mb-2">
-                      Atenção: {termValidation.ignored.length} termo{termValidation.ignored.length > 1 ? 's' : ''} não será{termValidation.ignored.length > 1 ? 'ão' : ''} utilizado{termValidation.ignored.length > 1 ? 's' : ''} na análise
-                    </p>
-                    <ul className="space-y-1.5 text-sm text-ink-secondary">
-                      {termValidation.ignored.map(term => (
-                        <li key={term} className="flex items-start gap-2">
-                          <span className="text-warning font-medium">•</span>
-                          <span>
-                            <strong className="text-ink font-medium">&quot;{term}&quot;</strong>: {termValidation.reasons[term]}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-xs text-ink-muted mt-3">
-                      Dica: Use termos com pelo menos 4 caracteres e evite palavras muito comuns como &quot;de&quot;, &quot;para&quot;, &quot;com&quot;.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="border border-strong rounded-input bg-surface-0 px-3 py-2 flex flex-wrap gap-2 items-center
-                            focus-within:ring-2 focus-within:ring-brand-blue focus-within:border-brand-blue
-                            transition-colors min-h-[48px]">
-              {termosArray.map((termo, i) => (
-                <span
-                  key={`${termo}-${i}`}
-                  className="inline-flex items-center gap-1 bg-brand-blue-subtle text-brand-navy
-                             px-2.5 py-1 rounded-full text-sm font-medium border border-brand-blue/20
-                             animate-fade-in-up"
-                >
-                  {termo}
-                  <button
-                    type="button"
-                    onClick={() => removeTerm(termo)}
-                    className="ml-0.5 hover:text-error transition-colors"
-                    aria-label={`Remover termo ${termo}`}
-                  >
-                    <X className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
-                  </button>
-                </span>
-              ))}
-              <input
-                id="termos-busca"
-                type="text"
-                value={termoInput}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (val.includes(",")) {
-                    const segments = val.split(",");
-                    const toCommit = segments.slice(0, -1);
-                    const remaining = segments[segments.length - 1];
-                    const validTerms = toCommit
-                      .map(seg => seg.trim().toLowerCase())
-                      .filter(term => term && !termosArray.includes(term));
-                    if (validTerms.length > 0) {
-                      addTerms(validTerms);
-                    }
-                    setTermoInput(remaining);
-                  } else {
-                    setTermoInput(val);
-                  }
-                }}
-                onKeyDown={e => {
-                  if (e.key === "Backspace" && termoInput === "" && termosArray.length > 0) {
-                    removeTerm(termosArray[termosArray.length - 1]);
-                  }
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    const term = termoInput.trim().toLowerCase();
-                    if (term && !termosArray.includes(term)) {
-                      addTerms([term]);
-                    }
-                    setTermoInput("");
-                  }
-                }}
-                onPaste={e => {
-                  const pasted = e.clipboardData.getData("text");
-                  if (pasted.includes(",")) {
-                    e.preventDefault();
-                    const segments = pasted.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-                    const newTerms = segments.filter(t => !termosArray.includes(t));
-                    if (newTerms.length > 0) {
-                      addTerms(newTerms);
-                    }
-                    setTermoInput("");
-                  }
-                }}
-                placeholder={termosArray.length === 0 ? "Ex: terraplenagem, drenagem, levantamento topográfico" : "Adicionar mais..."}
-                className="flex-1 min-w-[120px] outline-none bg-transparent text-base text-ink
-                           placeholder:text-ink-faint py-1"
-              />
-            </div>
-            <p className="text-sm text-ink-muted mt-1.5">
-              Dica: digite frases completas e separe com <kbd className="px-1.5 py-0.5 bg-surface-2 rounded text-xs font-mono border">vírgula</kbd> ou <kbd className="px-1.5 py-0.5 bg-surface-2 rounded text-xs font-mono border">Enter</kbd>. Ex: levantamento topográfico, pavimentação
-              {termosArray.length > 0 && (
-                <span className="text-brand-blue font-medium">
-                  {" "}{termosArray.length} termo{termosArray.length > 1 ? "s" : ""} selecionado{termosArray.length > 1 ? "s" : ""}
-                </span>
-              )}
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* UX-346 AC5: First-use tip for new users */}
-      {showFirstUseTip && (
-        <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 flex items-start gap-3 animate-fade-in-up" data-testid="first-use-tip">
-          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
-          <p className="text-sm text-blue-700 dark:text-blue-300 flex-1">
-            <strong>Dica:</strong> selecione seu setor e clique Buscar. Personalize depois se quiser.
-          </p>
-          <Button
-            type="button"
-            onClick={onDismissFirstUseTip}
-            variant="ghost"
-            size="icon"
-            aria-label="Fechar dica"
-            className="h-6 w-6 text-blue-400 hover:text-blue-600 dark:hover:text-blue-200 flex-shrink-0"
-            data-testid="dismiss-first-use-tip"
-          >
-            <X className="w-4 h-4" strokeWidth={2} />
-          </Button>
-        </div>
-      )}
-
-      {/* Search Buttons - AC5: moved up, right after sector selection */}
-      <div className="mb-6 space-y-3 sm:relative sticky bottom-4 sm:bottom-auto z-20 bg-[var(--canvas)] sm:bg-transparent pt-2 sm:pt-0 -mx-4 px-4 sm:mx-0 sm:px-0 pb-2 sm:pb-0 animate-fade-in-up stagger-2">
-        <Button
-          ref={searchButtonRef}
-          onClick={buscar}
-          disabled={loading || !canSearch || isTrialExpired || isGracePeriod}
-          loading={loading}
-          type="button"
-          aria-busy={loading}
-          data-tour="search-button"
-          title={isGracePeriod ? "Análises suspensas ate regularizacao do pagamento." : isTrialExpired ? "Seu trial expirou. Ative um plano para continuar buscando." : undefined}
-          variant="primary"
-          size="lg"
-          className="w-full py-3.5 sm:py-4 text-base sm:text-lg font-semibold
-                     active:bg-brand-blue
-                     disabled:bg-ink-faint disabled:text-ink-muted
-                     min-h-[48px] sm:min-h-[52px]"
-        >
-          {loading ? (
-            "Consultando múltiplas fontes e aplicando filtros inteligentes..."
-          ) : searchMode === "termos" && termValidation ? (
-            termValidation.valid.length === 0
-              ? "Adicione termos válidos para buscar"
-              : `Buscar ${termValidation.valid.length} termo${termValidation.valid.length > 1 ? 's' : ''}`
-          ) : (
-            `Buscar ${searchLabel}`
-          )}
-        </Button>
-
-        {result && result.resumo.total_oportunidades > 0 && (
-          <Button
-            onClick={handleSaveSearch}
-            disabled={isMaxCapacity}
-            type="button"
-            variant="outline"
-            size="lg"
-            className="w-full text-brand-navy border-brand-navy hover:bg-brand-blue-subtle
-                       disabled:text-ink-muted disabled:border-ink-faint"
-            title={isMaxCapacity ? "Máximo de 10 análises salvas atingido" : "Salvar esta análise"}
-          >
-            <Bookmark className="w-5 h-5" strokeWidth={2} aria-hidden="true" />
-            {isMaxCapacity ? "Limite de análises atingido" : "Salvar Análise"}
-          </Button>
-        )}
-      </div>
-
-      {/* AC6: Personalizar busca accordion - collapsed by default */}
-      <section className="mb-6 animate-fade-in-up stagger-3">
-        <button
-          type="button"
-          onClick={() => setCustomizeOpen(!customizeOpen)}
-          aria-expanded={customizeOpen}
-          data-tour="customize-toggle"
-          className="w-full text-base font-semibold text-ink mb-2 flex items-center gap-2 hover:text-brand-blue transition-colors"
-        >
-          <SlidersHorizontal className="w-5 h-5 text-ink-muted" strokeWidth={2} aria-hidden="true" />
-          Personalizar análise
-          <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${customizeOpen ? 'rotate-180' : ''}`} strokeWidth={2} aria-hidden="true" />
-        </button>
-
-        {/* UX-346 AC3/AC4: Compact summary when collapsed — clickable to expand */}
-        {!customizeOpen && (
-          <button
-            type="button"
-            onClick={() => setCustomizeOpen(true)}
-            className="w-full flex items-center justify-center gap-2 text-sm text-ink-secondary py-2 hover:text-brand-blue transition-colors cursor-pointer animate-fade-in-up"
-            data-testid="compact-summary"
-          >
-            <Info className="w-4 h-4 flex-shrink-0" strokeWidth={2} aria-hidden="true" />
-            <span>{compactSummary}</span>
-          </button>
-        )}
-
-        {customizeOpen && (
-          <div className="space-y-6 animate-fade-in-up">
-            {/* UF Selection Section - moved into accordion */}
-            <div className="relative z-10" data-tour="uf-selector">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-                <label className="text-base sm:text-lg font-semibold text-ink">
-                  Estados (<Tooltip content="UF = Unidade Federativa (Estado brasileiro). Selecione os estados onde deseja buscar licitações.">UFs</Tooltip>):
-                </label>
-                <div className="flex gap-3">
-                  <button
-                    onClick={selecionarTodos}
-                    className="text-sm sm:text-base font-medium text-brand-blue hover:text-brand-blue-hover hover:underline transition-colors"
-                    type="button"
-                  >
-                    Selecionar todos
-                  </button>
-                  <button
-                    onClick={limparSelecao}
-                    className="text-sm sm:text-base font-medium text-ink-muted hover:text-ink transition-colors"
-                    type="button"
-                  >
-                    Limpar
-                  </button>
-                </div>
-              </div>
-
-              {/* "Todo o Brasil" quick-select button */}
-              <div className="flex items-center gap-3 mb-3">
-                <button
-                  type="button"
-                  onClick={selecionarTodos}
-                  aria-pressed={ufsSelecionadas.size === UFS.length}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-button border text-sm font-semibold transition-all duration-200 ${
-                    ufsSelecionadas.size === UFS.length
-                      ? "bg-brand-navy text-white border-brand-navy"
-                      : "bg-surface-0 text-ink border-strong hover:border-accent hover:text-brand-blue hover:bg-brand-blue-subtle"
-                  }`}
-                >
-                  <Globe className="w-4 h-4 flex-shrink-0" strokeWidth={2} aria-hidden="true" />
-                  Todo o Brasil (27 estados)
-                  {ufsSelecionadas.size === UFS.length && (
-                    <Check className="w-4 h-4 flex-shrink-0" strokeWidth={2} aria-hidden="true" />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={limparSelecao}
-                  className="text-sm font-medium text-ink-muted hover:text-ink transition-colors whitespace-nowrap"
-                >
-                  Limpar seleção
-                </button>
-              </div>
-
-              <RegionSelector selected={ufsSelecionadas} onToggleRegion={toggleRegion} />
-
-              <div className="grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5 sm:gap-2">
-                {UFS.map(uf => (
-                  <button
-                    key={uf}
-                    onClick={() => toggleUf(uf)}
-                    type="button"
-                    title={UF_NAMES[uf]}
-                    aria-pressed={ufsSelecionadas.has(uf)}
-                    className={`px-1.5 py-2.5 sm:px-4 sm:py-2 rounded-button border text-xs sm:text-base font-medium transition-all duration-200 min-h-[44px] ${
-                      ufsSelecionadas.has(uf)
-                        ? "bg-brand-navy text-white border-brand-navy hover:bg-brand-blue-hover"
-                        : "bg-surface-0 text-ink-secondary border hover:border-accent hover:text-brand-blue hover:bg-brand-blue-subtle"
-                    }`}
-                  >
-                    {uf}
-                  </button>
-                ))}
-              </div>
-
-              <p className="text-sm sm:text-base text-ink-muted mt-2">
-                {ufsSelecionadas.size === 1 ? '1 estado selecionado' : `${ufsSelecionadas.size} estados selecionados`}
-              </p>
-
-              {validationErrors.ufs && (
-                <p className="text-sm sm:text-base text-error mt-2 font-medium" role="alert">
-                  {validationErrors.ufs}
-                </p>
-              )}
-            </div>
-
-            {/* Date Range Section - moved into accordion */}
-            <div className="relative z-0" data-tour="period-selector">
-              {modoBusca === "abertas" ? (
-                <div className="p-3 bg-brand-blue-subtle rounded-card border border-brand-blue/20">
-                  <p className="text-sm font-medium text-brand-navy">
-                    {dateLabel}
-                  </p>
-                  <p className="text-xs text-ink-secondary mt-1">
-                    Oportunidades recentes — somente licitações com prazo aberto
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <CustomDateInput
-                    id="data-inicial"
-                    value={dataInicial}
-                    onChange={(value) => { setDataInicial(value); clearResult(); }}
-                    label="Data inicial:"
-                  />
-                  <CustomDateInput
-                    id="data-final"
-                    value={dataFinal}
-                    onChange={(value) => { setDataFinal(value); clearResult(); }}
-                    label="Data final:"
-                  />
-                </div>
-              )}
-
-              {validationErrors.date_range && (
-                <p className="text-sm sm:text-base text-error mt-3 font-medium" role="alert">
-                  {validationErrors.date_range}
-                </p>
-              )}
-
-              {planInfo && dataInicial && dataFinal && (() => {
-                const days = dateDiffInDays(dataInicial, dataFinal);
-                const maxDays = planInfo.capabilities.max_history_days;
-                if (days > maxDays) {
-                  return (
-                    <div className="mt-3 p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle role="img" aria-label="Aviso" className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" strokeWidth={2} />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-warning mb-1">
-                            Período muito longo para seu plano
-                          </p>
-                          <p className="text-sm text-ink-secondary">
-                            Seu plano {planInfo.plan_name} permite análises de até {maxDays} dias.
-                            Você selecionou {days} dias. Ajuste as datas ou faça upgrade.
-                          </p>
-                          <button
-                            onClick={() => {
-                              onShowUpgradeModal("smartlic_pro", "date_range");
-                            }}
-                            className="mt-2 text-sm font-medium text-brand-blue hover:underline"
-                          >
-                            Ver planos →
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-
-            {/* Filter Panels - moved into accordion */}
-            <FilterPanel
-              locationFiltersOpen={locationFiltersOpen}
-              setLocationFiltersOpen={setLocationFiltersOpen}
-              advancedFiltersOpen={advancedFiltersOpen}
-              setAdvancedFiltersOpen={setAdvancedFiltersOpen}
-              esferas={esferas}
-              setEsferas={setEsferas}
-              ufsSelecionadas={ufsSelecionadas}
-              municipios={municipios}
-              setMunicipios={setMunicipios}
-              status={status}
-              setStatus={setStatus}
-              modalidades={modalidades}
-              setModalidades={setModalidades}
-              valorMin={valorMin}
-              setValorMin={setValorMin}
-              valorMax={valorMax}
-              setValorMax={setValorMax}
-              setValorValid={setValorValid}
-              loading={loading}
-              clearResult={clearResult}
-            />
-          </div>
-        )}
-      </section>
-
+      <SearchFormHeader
+        setores={props.setores}
+        setoresLoading={props.setoresLoading}
+        setoresError={props.setoresError}
+        setoresUsingFallback={props.setoresUsingFallback}
+        setoresUsingStaleCache={props.setoresUsingStaleCache}
+        staleCacheAge={props.staleCacheAge}
+        setoresRetryCount={props.setoresRetryCount}
+        setorId={props.setorId}
+        setSetorId={props.setSetorId}
+        fetchSetores={props.fetchSetores}
+        searchMode={props.searchMode}
+        setSearchMode={props.setSearchMode}
+        termosArray={props.termosArray}
+        termoInput={props.termoInput}
+        setTermoInput={props.setTermoInput}
+        termValidation={props.termValidation}
+        addTerms={props.addTerms}
+        removeTerm={props.removeTerm}
+        clearResult={props.clearResult}
+        showFirstUseTip={props.showFirstUseTip}
+        onDismissFirstUseTip={props.onDismissFirstUseTip}
+      />
+      <SearchFormActions
+        loading={props.loading}
+        buscar={props.buscar}
+        searchButtonRef={props.searchButtonRef}
+        canSearch={props.canSearch}
+        searchLabel={props.searchLabel}
+        searchMode={props.searchMode}
+        termValidation={props.termValidation}
+        result={props.result}
+        handleSaveSearch={props.handleSaveSearch}
+        isMaxCapacity={props.isMaxCapacity}
+        isTrialExpired={props.isTrialExpired}
+        isGracePeriod={props.isGracePeriod}
+      />
+      <SearchCustomizePanel
+        customizeOpen={props.customizeOpen}
+        setCustomizeOpen={props.setCustomizeOpen}
+        ufsSelecionadas={props.ufsSelecionadas}
+        toggleUf={props.toggleUf}
+        toggleRegion={props.toggleRegion}
+        selecionarTodos={props.selecionarTodos}
+        limparSelecao={props.limparSelecao}
+        dataInicial={props.dataInicial}
+        setDataInicial={props.setDataInicial}
+        dataFinal={props.dataFinal}
+        setDataFinal={props.setDataFinal}
+        modoBusca={props.modoBusca}
+        dateLabel={props.dateLabel}
+        locationFiltersOpen={props.locationFiltersOpen}
+        setLocationFiltersOpen={props.setLocationFiltersOpen}
+        advancedFiltersOpen={props.advancedFiltersOpen}
+        setAdvancedFiltersOpen={props.setAdvancedFiltersOpen}
+        esferas={props.esferas}
+        setEsferas={props.setEsferas}
+        municipios={props.municipios}
+        setMunicipios={props.setMunicipios}
+        status={props.status}
+        setStatus={props.setStatus}
+        modalidades={props.modalidades}
+        setModalidades={props.setModalidades}
+        valorMin={props.valorMin}
+        setValorMin={props.setValorMin}
+        valorMax={props.valorMax}
+        setValorMax={props.setValorMax}
+        setValorValid={props.setValorValid}
+        validationErrors={props.validationErrors}
+        loading={props.loading}
+        clearResult={props.clearResult}
+        planInfo={props.planInfo}
+        onShowUpgradeModal={props.onShowUpgradeModal}
+        compactSummary={compactSummary}
+      />
     </>
   );
 }

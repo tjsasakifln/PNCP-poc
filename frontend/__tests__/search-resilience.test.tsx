@@ -615,7 +615,7 @@ describe("T11-T13: BackendStatusIndicator", () => {
     });
 
     // Import the hook and build a test wrapper
-    const { useBackendStatus } = require("../components/BackendStatusIndicator");
+    const { useBackendStatus } = require("../app/components/BackendStatusIndicator");
 
     function TestIndicator() {
       const { status } = useBackendStatus();
@@ -669,7 +669,7 @@ describe("T11-T13: BackendStatusIndicator", () => {
       });
     });
 
-    const { useBackendStatus } = require("../components/BackendStatusIndicator");
+    const { useBackendStatus } = require("../app/components/BackendStatusIndicator");
 
     function TestIndicator() {
       const { status } = useBackendStatus();
@@ -736,7 +736,7 @@ describe("T11-T13: BackendStatusIndicator", () => {
       json: () => Promise.resolve({ status: "healthy", backend: "healthy" }),
     });
 
-    const { useBackendStatus } = require("../components/BackendStatusIndicator");
+    const { useBackendStatus } = require("../app/components/BackendStatusIndicator");
 
     function TestIndicator() {
       const { status, isPolling } = useBackendStatus();

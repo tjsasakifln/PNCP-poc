@@ -11,7 +11,7 @@ import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { SessionExpiredBanner } from "./components/SessionExpiredBanner";
 import { PaymentFailedBanner } from "../components/billing/PaymentFailedBanner";
 import { NavigationShell } from "../components/NavigationShell";
-import { BackendStatusProvider } from "../components/BackendStatusIndicator";
+import { BackendStatusProvider } from "./components/BackendStatusIndicator";
 import { SWRProvider } from "../components/SWRProvider";
 import { UserProvider } from "../contexts/UserContext";
 import { StructuredData } from "./components/StructuredData";

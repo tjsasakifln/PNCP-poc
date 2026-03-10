@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { safeSetItem, safeRemoveItem } from "../lib/storage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -516,135 +515,124 @@ export default function ProfileCompletionPrompt({
   if (loading || dismissed || !question) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -6 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        className="rounded-2xl border border-[var(--border)] bg-[var(--surface-0)] shadow-sm overflow-hidden"
-        data-testid="profile-completion-prompt"
-      >
-        {/* Header strip */}
-        <div className="px-5 py-3 bg-[var(--surface-1)] border-b border-[var(--border)] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <svg
-              className="w-4 h-4 text-[var(--brand-blue)]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-            <span className="text-xs font-semibold text-[var(--ink-secondary)] uppercase tracking-wide">
-              Complete seu perfil
-            </span>
-          </div>
-          <span className="text-xs text-[var(--ink-muted)]">
-            {QUESTION_ORDER.indexOf(question.id) + 1}/{QUESTION_ORDER.length}
+    <div
+      className="animate-fade-in-up rounded-2xl border border-[var(--border)] bg-[var(--surface-0)] shadow-sm overflow-hidden"
+      data-testid="profile-completion-prompt"
+    >
+      {/* Header strip */}
+      <div className="px-5 py-3 bg-[var(--surface-1)] border-b border-[var(--border)] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <svg
+            className="w-4 h-4 text-[var(--brand-blue)]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
+          <span className="text-xs font-semibold text-[var(--ink-secondary)] uppercase tracking-wide">
+            Complete seu perfil
           </span>
         </div>
+        <span className="text-xs text-[var(--ink-muted)]">
+          {QUESTION_ORDER.indexOf(question.id) + 1}/{QUESTION_ORDER.length}
+        </span>
+      </div>
 
-        <div className="px-5 py-5">
-          {/* Success state */}
-          <AnimatePresence>
-            {saveSuccess && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-6 text-center"
-                data-testid="save-success"
+      <div className="px-5 py-5">
+        {/* Success state */}
+        {saveSuccess && (
+          <div
+            className="animate-fade-in-up flex flex-col items-center justify-center py-6 text-center"
+            data-testid="save-success"
+          >
+            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center mb-3">
+              <svg
+                className="w-6 h-6 text-emerald-600 dark:text-emerald-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
               >
-                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center mb-3">
-                  <svg
-                    className="w-6 h-6 text-emerald-600 dark:text-emerald-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2.5}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <p className="text-sm font-semibold text-[var(--ink)]">Salvo!</p>
-                <p className="text-xs text-[var(--ink-secondary)] mt-1">
-                  Suas análises ficaram mais precisas.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Question */}
-          {!saveSuccess && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-base font-semibold text-[var(--ink)] mb-1">
-                  {question.title}
-                </h3>
-                <p className="text-xs text-[var(--ink-secondary)] leading-relaxed">
-                  {question.micro_copy}
-                </p>
-              </div>
-
-              {/* Input */}
-              {question.type === "select" && (
-                <SelectQuestion
-                  question={question}
-                  value={selectValue}
-                  onChange={setSelectValue}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M5 13l4 4L19 7"
                 />
-              )}
-
-              {question.type === "multi-select" && (
-                <MultiSelectQuestion
-                  question={question}
-                  values={multiValues}
-                  onChange={setMultiValues}
-                />
-              )}
-
-              {question.type === "numeric-pair" && (
-                <NumericPairQuestion
-                  question={question}
-                  values={numericValues}
-                  onChange={setNumericValues}
-                />
-              )}
-
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={handleSave}
-                  disabled={saving || !isValid}
-                  className="flex-1 py-2.5 bg-[var(--brand-navy)] text-white rounded-button font-semibold text-sm hover:bg-[var(--brand-blue)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  data-testid="save-button"
-                >
-                  {saving ? "Salvando..." : "Salvar"}
-                </button>
-                <button
-                  onClick={handleSkip}
-                  className="text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline transition-colors py-2.5 px-2"
-                  data-testid="skip-button"
-                >
-                  Pular por enquanto
-                </button>
-              </div>
+              </svg>
             </div>
-          )}
-        </div>
-      </motion.div>
-    </AnimatePresence>
+            <p className="text-sm font-semibold text-[var(--ink)]">Salvo!</p>
+            <p className="text-xs text-[var(--ink-secondary)] mt-1">
+              Suas análises ficaram mais precisas.
+            </p>
+          </div>
+        )}
+
+        {/* Question */}
+        {!saveSuccess && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold text-[var(--ink)] mb-1">
+                {question.title}
+              </h3>
+              <p className="text-xs text-[var(--ink-secondary)] leading-relaxed">
+                {question.micro_copy}
+              </p>
+            </div>
+
+            {/* Input */}
+            {question.type === "select" && (
+              <SelectQuestion
+                question={question}
+                value={selectValue}
+                onChange={setSelectValue}
+              />
+            )}
+
+            {question.type === "multi-select" && (
+              <MultiSelectQuestion
+                question={question}
+                values={multiValues}
+                onChange={setMultiValues}
+              />
+            )}
+
+            {question.type === "numeric-pair" && (
+              <NumericPairQuestion
+                question={question}
+                values={numericValues}
+                onChange={setNumericValues}
+              />
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={handleSave}
+                disabled={saving || !isValid}
+                className="flex-1 py-2.5 bg-[var(--brand-navy)] text-white rounded-button font-semibold text-sm hover:bg-[var(--brand-blue)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                data-testid="save-button"
+              >
+                {saving ? "Salvando..." : "Salvar"}
+              </button>
+              <button
+                onClick={handleSkip}
+                className="text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline transition-colors py-2.5 px-2"
+                data-testid="skip-button"
+              >
+                Pular por enquanto
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

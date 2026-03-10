@@ -196,7 +196,7 @@ describe('STORY-273 AC5: LGPD Badge in Portuguese', () => {
       },
     }));
 
-    jest.mock('../components/BackendStatusIndicator', () => ({
+    jest.mock('../app/components/BackendStatusIndicator', () => ({
       useBackendStatusContext: () => ({ status: 'online' as const }),
     }));
 

@@ -6,7 +6,7 @@ import { Menu } from "lucide-react";
 import { ThemeToggle } from "../app/components/ThemeToggle";
 import { UserMenu } from "../app/components/UserMenu";
 import { QuotaBadge } from "../app/components/QuotaBadge";
-import { AlertNotificationBell } from "./AlertNotificationBell";
+import { AlertNotificationBell } from "../app/components/AlertNotificationBell";
 import { MobileDrawer } from "./MobileDrawer";
 import { ReactNode } from "react";
 

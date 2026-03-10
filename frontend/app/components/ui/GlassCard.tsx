@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { motion, HTMLMotionProps } from 'framer-motion';
 
 type GlassVariant = 'default' | 'subtle' | 'strong' | 'result' | 'pricing' | 'feature';
 type GemAccent = 'sapphire' | 'emerald' | 'amethyst' | 'ruby';
@@ -50,35 +49,25 @@ export function GlassCard({
   role,
   'aria-label': ariaLabel,
 }: GlassCardProps) {
-  const hoverAnimation: HTMLMotionProps<'div'>['whileHover'] = hoverable ? {
-    y: -8,
-    scale: 1.02,
-    boxShadow: 'var(--shadow-xl)',
-  } : undefined;
-
   return (
-    <motion.div
+    <div
       className={`
         ${variantStyles[variant]}
         border
         rounded-3xl
         p-8
         shadow-glass
-        transition-shadow
+        transition-all
         duration-300
+        ease-[cubic-bezier(0.4,0,0.2,1)]
+        ${hoverable ? 'hover:-translate-y-2 hover:scale-[1.02] hover:shadow-xl cursor-pointer' : ''}
         ${gemAccent ? gemShadowClass[gemAccent] : ''}
-        ${hoverable ? 'cursor-pointer' : ''}
         ${className}
       `}
-      whileHover={hoverAnimation}
-      transition={{
-        duration: 0.3,
-        ease: [0.4, 0, 0.2, 1],
-      }}
       role={role}
       aria-label={ariaLabel}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

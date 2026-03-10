@@ -1,7 +1,6 @@
 'use client';
 
-import { ReactNode, ButtonHTMLAttributes } from 'react';
-import { motion } from 'framer-motion';
+import { ReactNode } from 'react';
 
 interface GradientButtonProps {
   children: ReactNode;
@@ -65,11 +64,14 @@ export function GradientButton({
   };
 
   return (
-    <motion.button
+    <button
       className={`
         font-semibold
         transition-all
-        duration-300
+        duration-200
+        ease-out
+        hover:scale-[1.02]
+        active:scale-[0.98]
         focus:outline-none
         focus:ring-4
         focus:ring-brand-blue/50
@@ -80,17 +82,11 @@ export function GradientButton({
         ${sizeStyles[size]}
         ${className}
       `}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{
-        duration: 0.2,
-        ease: 'easeOut',
-      }}
       onClick={onClick}
       disabled={disabled}
       type={type}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }

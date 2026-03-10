@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
 import { getScoreColor } from '@/lib/data/analysisExamples';
 
 interface ScoreBarProps {
@@ -22,16 +22,33 @@ export function ScoreBar({
 }: ScoreBarProps) {
   const { text, bar } = getScoreColor(score);
   const percentage = (score / maxScore) * 100;
+  const [width, setWidth] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setWidth(percentage);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [percentage]);
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${bar}`}
-          initial={{ width: 0 }}
-          whileInView={{ width: `${percentage}%` }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+      <div ref={ref} className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full ${bar} transition-all duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]`}
+          style={{ width: `${width}%` }}
         />
       </div>
       {showLabel && (

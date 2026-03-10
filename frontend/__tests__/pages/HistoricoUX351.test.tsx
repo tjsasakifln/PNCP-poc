@@ -57,7 +57,7 @@ jest.mock('../../components/MobileDrawer', () => ({
 }));
 
 // Mock AlertNotificationBell (fetches /api/alerts — would consume the sessions mock)
-jest.mock('../../components/AlertNotificationBell', () => ({
+jest.mock('../../app/components/AlertNotificationBell', () => ({
   AlertNotificationBell: () => null,
 }));
 

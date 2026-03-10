@@ -43,6 +43,11 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     // 'strict-dynamic' propagates trust to scripts loaded by nonced scripts.
     // Fallback hosts kept for browsers that do not support strict-dynamic/nonces.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com https://static.cloudflareinsights.com https://cdn.sentry.io https://www.clarity.ms https://www.googletagmanager.com`,
+    // DEBT-116: style-src unsafe-inline is an accepted risk.
+    // Tailwind CSS and Next.js inject inline styles at runtime (className -> style).
+    // Nonce-based styles would require a custom PostCSS plugin + Next.js config changes
+    // with marginal security benefit (inline styles are low-risk vs inline scripts).
+    // Revisit if Next.js adds native CSP nonce support for styles.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",

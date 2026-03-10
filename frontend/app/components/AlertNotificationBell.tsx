@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAuth } from "../app/components/AuthProvider";
+import { useAuth } from "./AuthProvider";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 

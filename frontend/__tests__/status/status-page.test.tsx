@@ -8,7 +8,7 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 // Mock BackendStatusIndicator before import
-jest.mock("../../components/BackendStatusIndicator", () => ({
+jest.mock("../../app/components/BackendStatusIndicator", () => ({
   useBackendStatusContext: () => ({ status: "online", isPolling: false, checkHealth: jest.fn() }),
   useBackendStatus: () => ({ status: "online", isPolling: false, checkHealth: jest.fn() }),
   BackendStatusProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

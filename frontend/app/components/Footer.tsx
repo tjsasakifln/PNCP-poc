@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { fadeInUp } from '@/lib/animations';
 import { footer } from '@/lib/copy/valueProps';
-import { useBackendStatusContext, type BackendStatus } from '@/components/BackendStatusIndicator';
+import { useBackendStatusContext, type BackendStatus } from '@/app/components/BackendStatusIndicator';
 
 /**
  * STORY-174 AC6: Footer - Refined Layout with Animations

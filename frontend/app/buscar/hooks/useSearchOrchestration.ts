@@ -12,7 +12,7 @@ import { useAuth } from "../../components/AuthProvider";
 import { useSearchFilters } from "./useSearchFilters";
 import { useSearch } from "./useSearch";
 import { useNavigationGuard } from "../../../hooks/useNavigationGuard";
-import { useBackendStatusContext } from "../../../components/BackendStatusIndicator";
+import { useBackendStatusContext } from "../../components/BackendStatusIndicator";
 import { useBroadcastChannel } from "../../../hooks/useBroadcastChannel";
 
 import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";

@@ -559,7 +559,7 @@ jest.mock("../../app/buscar/components/SearchResults", () => ({
   default: () => <div data-testid="search-results" />,
 }));
 
-jest.mock("../../components/BackendStatusIndicator", () => ({
+jest.mock("../../app/components/BackendStatusIndicator", () => ({
   __esModule: true,
   default: () => <div />,
   useBackendStatusContext: () => ({ status: "online", lastChecked: null }),

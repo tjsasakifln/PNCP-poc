@@ -13,7 +13,7 @@ import { OnboardingEmptyState } from "./components/OnboardingEmptyState";
 import { BuscarModals } from "./components/BuscarModals";
 import { useSearchOrchestration } from "./hooks/useSearchOrchestration";
 
-import BackendStatusIndicator from "../../components/BackendStatusIndicator";
+import BackendStatusIndicator from "../components/BackendStatusIndicator";
 import { MobileDrawer } from "../../components/MobileDrawer";
 import { SavedSearchesDropdown } from "../components/SavedSearchesDropdown";
 import { ThemeToggle } from "../components/ThemeToggle";

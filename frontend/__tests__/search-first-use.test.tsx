@@ -40,7 +40,7 @@ jest.mock("../hooks/useKeyboardShortcuts", () => ({
   getShortcutDisplay: () => "",
 }));
 
-jest.mock("../components/BackendStatusIndicator", () => {
+jest.mock("../app/components/BackendStatusIndicator", () => {
   const MockIndicator = () => null;
   MockIndicator.displayName = "BackendStatusIndicator";
   return {

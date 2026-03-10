@@ -30,7 +30,7 @@ jest.mock("../hooks/useAnalytics", () => ({
   useAnalytics: () => ({ trackEvent: mockTrackEvent }),
 }));
 
-jest.mock("../components/BackendStatusIndicator", () => ({
+jest.mock("../app/components/BackendStatusIndicator", () => ({
   useBackendStatusContext: () => ({
     status: "online",
     isPolling: false,

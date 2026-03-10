@@ -49,7 +49,7 @@ jest.mock("../components/auth/MfaEnforcementBanner", () => ({
 }));
 
 // Mock BackendStatusIndicator for Footer
-jest.mock("../components/BackendStatusIndicator", () => ({
+jest.mock("../app/components/BackendStatusIndicator", () => ({
   useBackendStatusContext: () => ({ status: "online" }),
 }));
 

@@ -30,7 +30,7 @@ jest.mock('../../hooks/useAnalytics', () => ({
 }));
 
 // Mock BackendStatusIndicator — DashboardPage calls useBackendStatusContext()
-jest.mock('../../components/BackendStatusIndicator', () => ({
+jest.mock('../../app/components/BackendStatusIndicator', () => ({
   useBackendStatusContext: () => ({ status: 'online' }),
   BackendStatusProvider: ({ children }: { children: React.ReactNode }) => children,
   default: () => null,
