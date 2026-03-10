@@ -386,10 +386,10 @@ class TestAC15Stage4CrashPartialResponse:
     """AC15: When stage_filter crashes, partial response still returns results."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.quota")
-    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
-    @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
-    @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None)
+    @patch("pipeline.stages.persist.quota")
+    @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
+    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
+    @patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None)
     @patch("pipeline.cache_manager.get_fallback_cache", new_callable=AsyncMock, return_value=None)
     async def test_stage_filter_exception_uses_fallback_resumo(
         self, mock_fallback_cache, mock_supa_get, mock_supa_save,
@@ -404,8 +404,8 @@ class TestAC15Stage4CrashPartialResponse:
         pipeline = SearchPipeline(make_deps())
 
         # Call stage_persist directly — it should handle None resumo
-        with patch("search_pipeline.quota.update_search_session_status", new_callable=AsyncMock):
-            with patch("search_pipeline.quota.save_search_session", new_callable=AsyncMock, return_value="sess-123"):
+        with patch("pipeline.stages.persist.quota.update_search_session_status", new_callable=AsyncMock):
+            with patch("pipeline.stages.persist.quota.save_search_session", new_callable=AsyncMock, return_value="sess-123"):
                 result = await pipeline.stage_persist(ctx)
 
         # resumo should have been filled by fallback
@@ -439,7 +439,7 @@ class TestAC16NullQuotaInfo:
     """AC16: When quota_info is None, pipeline handles gracefully."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.quota")
+    @patch("pipeline.stages.persist.quota")
     async def test_null_quota_info_stage_persist(self, mock_quota):
         """stage_persist works when quota_info is None — no crash."""
         ctx = make_ctx(
@@ -493,7 +493,7 @@ class TestAC17NullResumoFallback:
     """AC17: When resumo is None at stage_persist, fallback is generated."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.quota")
+    @patch("pipeline.stages.persist.quota")
     async def test_resumo_none_triggers_fallback(self, mock_quota):
         """stage_persist generates fallback resumo when ctx.resumo is None."""
         ctx = make_ctx(
@@ -512,7 +512,7 @@ class TestAC17NullResumoFallback:
         assert isinstance(ctx.resumo, ResumoEstrategico)
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.quota")
+    @patch("pipeline.stages.persist.quota")
     async def test_resumo_none_with_no_sector_uses_geral(self, mock_quota):
         """Fallback resumo uses 'geral' when sector is None."""
         ctx = make_ctx(
@@ -530,7 +530,7 @@ class TestAC17NullResumoFallback:
         assert ctx.resumo is not None
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.quota")
+    @patch("pipeline.stages.persist.quota")
     async def test_resumo_set_is_preserved(self, mock_quota):
         """When resumo is already set, stage_persist preserves it."""
         original_resumo = make_resumo(resumo_executivo="Original summary")
@@ -549,7 +549,7 @@ class TestAC17NullResumoFallback:
         assert ctx.resumo.resumo_executivo == "Original summary"
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.quota")
+    @patch("pipeline.stages.persist.quota")
     async def test_resumo_none_empty_filtradas_fallback(self, mock_quota):
         """Fallback resumo with empty filtered results."""
         ctx = make_ctx(

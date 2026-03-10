@@ -145,7 +145,7 @@ class TestBuildCoverageMetadata:
 
     def test_live_search(self):
         """Live search returns freshness='live'."""
-        from search_pipeline import _build_coverage_metadata
+        from pipeline.helpers import _build_coverage_metadata
         ctx = MagicMock()
         ctx.request.ufs = ["SP", "RJ", "MG"]
         ctx.succeeded_ufs = ["SP", "RJ", "MG"]
@@ -164,7 +164,7 @@ class TestBuildCoverageMetadata:
 
     def test_partial_failure(self):
         """Some UFs failed returns correct coverage."""
-        from search_pipeline import _build_coverage_metadata
+        from pipeline.helpers import _build_coverage_metadata
         ctx = MagicMock()
         ctx.request.ufs = ["SP", "RJ", "MG", "BA"]
         ctx.succeeded_ufs = ["SP", "RJ"]
@@ -182,7 +182,7 @@ class TestBuildCoverageMetadata:
 
     def test_cached_fresh_status(self):
         """Cached fresh results return freshness='cached_fresh'."""
-        from search_pipeline import _build_coverage_metadata
+        from pipeline.helpers import _build_coverage_metadata
         ctx = MagicMock()
         ctx.request.ufs = ["SP"]
         ctx.succeeded_ufs = ["SP"]
@@ -198,7 +198,7 @@ class TestBuildCoverageMetadata:
 
     def test_cached_stale_status(self):
         """Cached stale results return freshness='cached_stale'."""
-        from search_pipeline import _build_coverage_metadata
+        from pipeline.helpers import _build_coverage_metadata
         ctx = MagicMock()
         ctx.request.ufs = ["SP", "RJ"]
         ctx.succeeded_ufs = ["SP", "RJ"]
@@ -214,7 +214,7 @@ class TestBuildCoverageMetadata:
 
     def test_none_ufs_defaults(self):
         """When succeeded/failed UFs are None, defaults to empty lists."""
-        from search_pipeline import _build_coverage_metadata
+        from pipeline.helpers import _build_coverage_metadata
         ctx = MagicMock()
         ctx.request.ufs = ["SP"]
         ctx.succeeded_ufs = None

@@ -384,7 +384,7 @@ class TestMetricsIncrementOnDegradation:
         pncp_sr = _make_source_result(source_code="PNCP", record_count=0, status="success")
         consolidation_result = _make_consolidation_result(source_results=[pncp_sr])
 
-        with patch("search_pipeline.SOURCE_DEGRADATION_TOTAL") as mock_metric:
+        with patch("metrics.SOURCE_DEGRADATION_TOTAL") as mock_metric:
             mock_labels = MagicMock()
             mock_metric.labels.return_value = mock_labels
 
@@ -398,7 +398,7 @@ class TestMetricsIncrementOnDegradation:
         ctx = _make_search_context()
         ctx.is_partial = True
 
-        with patch("search_pipeline.PARTIAL_RESULTS_SERVED_TOTAL") as mock_metric:
+        with patch("metrics.PARTIAL_RESULTS_SERVED_TOTAL") as mock_metric:
             # Simulate what stage_persist does
             if ctx.is_partial:
                 mock_metric.inc()
@@ -413,7 +413,7 @@ class TestMetricsIncrementOnDegradation:
         pncp_sr = _make_source_result(source_code="PNCP", record_count=0, status="success")
         consolidation_result = _make_consolidation_result(source_results=[pncp_sr])
 
-        with patch("search_pipeline.SOURCE_DEGRADATION_TOTAL") as mock_metric:
+        with patch("metrics.SOURCE_DEGRADATION_TOTAL") as mock_metric:
             _apply_degradation_logic(ctx, consolidation_result, source_degradation_metric=mock_metric)
 
             mock_metric.labels.assert_not_called()
@@ -426,7 +426,7 @@ class TestMetricsIncrementOnDegradation:
         pncp_sr = _make_source_result(source_code="PNCP", record_count=50, status="success")
         consolidation_result = _make_consolidation_result(source_results=[pncp_sr])
 
-        with patch("search_pipeline.SOURCE_DEGRADATION_TOTAL") as mock_metric:
+        with patch("metrics.SOURCE_DEGRADATION_TOTAL") as mock_metric:
             _apply_degradation_logic(ctx, consolidation_result, source_degradation_metric=mock_metric)
 
             mock_metric.labels.assert_not_called()

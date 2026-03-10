@@ -6,7 +6,7 @@ AC2: link_edital / link is never empty string — valid URL or None.
 
 import pytest
 
-from search_pipeline import _build_pncp_link, _convert_to_licitacao_items
+from pipeline.helpers import _build_pncp_link, _convert_to_licitacao_items
 
 
 # ============================================================================

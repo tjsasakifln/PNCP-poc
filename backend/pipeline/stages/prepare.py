@@ -5,25 +5,17 @@ Extracted from SearchPipeline.stage_prepare (DEBT-015 SYS-002).
 
 import logging
 
+from sectors import get_sector
+from term_parser import parse_search_terms
+from relevance import calculate_min_matches
 from search_context import SearchContext
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
 
-def _sp():
-    """Lazy reference to search_pipeline module (avoids circular import at load time)."""
-    import search_pipeline
-    return search_pipeline
-
-
 async def stage_prepare(pipeline, ctx: SearchContext) -> None:
     """Load sector, parse custom terms, configure keywords and exclusions."""
-    # Access patched symbols through search_pipeline module for test compatibility
-    sp = _sp()
-    get_sector = sp.get_sector
-    parse_search_terms = sp.parse_search_terms
-    calculate_min_matches = sp.calculate_min_matches
     # GTM-FIX-032 AC3: Override dates for "abertas" mode using explicit UTC
     if ctx.request.modo_busca == "abertas":
         from datetime import timedelta, timezone, datetime as dt

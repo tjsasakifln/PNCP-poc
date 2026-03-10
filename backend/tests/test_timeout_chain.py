@@ -104,12 +104,13 @@ class TestPerUfTimeout:
         assert PNCP_TIMEOUT_PER_UF_DEGRADED == 15.0
 
     def test_env_var_override(self):
-        """AC5: PNCP_TIMEOUT_PER_UF env var overrides default."""
-        # This test verifies the env var lookup pattern exists in source
-        import pncp_client
-        src = Path(pncp_client.__file__).read_text()
+        """AC5: PNCP_TIMEOUT_PER_UF env var overrides default.
+        DEBT-118: env var read moved from pncp_client.py to config/pncp.py."""
+        # Verify the env var lookup exists in config/pncp.py (source of truth)
+        import config.pncp as config_pncp
+        src = Path(config_pncp.__file__).read_text()
         assert 'PNCP_TIMEOUT_PER_UF' in src
-        assert 'os.environ.get("PNCP_TIMEOUT_PER_UF"' in src
+        assert 'os.getenv("PNCP_TIMEOUT_PER_UF"' in src or 'os.environ.get("PNCP_TIMEOUT_PER_UF"' in src
 
 
 # ---------------------------------------------------------------------------

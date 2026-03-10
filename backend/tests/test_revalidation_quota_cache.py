@@ -215,9 +215,9 @@ class TestT3_CacheHitSkipsQuota:
 
         # _supabase_get_cache is a top-level import in search_pipeline
         with (
-            patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=mock_cache_result),
-            patch("search_pipeline.quota") as mock_quota_mod,
-            patch("search_pipeline.get_admin_ids", return_value=set()),
+            patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=mock_cache_result),
+            patch("pipeline.stages.validate.quota") as mock_quota_mod,
+            patch("pipeline.stages.validate.get_admin_ids", return_value=set()),
             patch("search_cache.compute_search_hash", return_value="abc123hash"),
             patch("metrics.CACHE_QUOTA_SKIPPED") as mock_metric,
         ):
@@ -283,10 +283,10 @@ class TestT4_LiveSearchConsumesQuota:
         deps.rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
         with (
-            patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None),  # Cache MISS
-            patch("search_pipeline.quota") as mock_quota_mod,
-            patch("search_pipeline.get_admin_ids", return_value=set()),
-            patch("search_pipeline._maybe_send_quota_email"),
+            patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None),  # Cache MISS
+            patch("pipeline.stages.validate.quota") as mock_quota_mod,
+            patch("pipeline.stages.validate.get_admin_ids", return_value=set()),
+            patch("pipeline.stages.validate._maybe_send_quota_email"),
         ):
             mock_quota_mod.check_quota = MagicMock(return_value=mock_quota_info)
             mock_quota_mod.register_search_session = AsyncMock(return_value="session-2")

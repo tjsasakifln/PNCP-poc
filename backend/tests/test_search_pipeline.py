@@ -132,8 +132,8 @@ class TestStageValidate:
     # 1. Admin bypass
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_master_quota_info")
-    @patch("search_pipeline.get_admin_ids", return_value={"admin-42"})
+    @patch("pipeline.stages.validate.get_master_quota_info")
+    @patch("pipeline.stages.validate.get_admin_ids", return_value={"admin-42"})
     async def test_admin_bypass_skips_quota_and_rate_limit(
         self, mock_admin_ids, mock_master_quota
     ):
@@ -159,7 +159,7 @@ class TestStageValidate:
     # 2. Rate limit exceeded
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_admin_ids", return_value=set())
+    @patch("pipeline.stages.validate.get_admin_ids", return_value=set())
     @patch("quota.check_quota")
     async def test_rate_limit_exceeded_raises_429(self, mock_check_quota, _):
         """Non-admin user whose rate limiter returns (False, 30) gets HTTP 429."""
@@ -184,7 +184,7 @@ class TestStageValidate:
     # 3. Quota exhausted (new pricing)
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_admin_ids", return_value=set())
+    @patch("pipeline.stages.validate.get_admin_ids", return_value=set())
     @patch("quota.check_quota")
     async def test_quota_exhausted_new_pricing_raises_403(self, mock_check_quota, _):
         """ENABLE_NEW_PRICING=True, quota.check_quota returns allowed=False -> HTTP 403."""
@@ -211,7 +211,7 @@ class TestStageValidate:
     # 4. Quota fallback on exception
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_admin_ids", return_value=set())
+    @patch("pipeline.stages.validate.get_admin_ids", return_value=set())
     @patch("quota.create_fallback_quota_info")
     @patch("quota.check_quota")
     async def test_quota_fallback_on_exception(
@@ -244,7 +244,7 @@ class TestStageValidate:
     # 5. Legacy mode (ENABLE_NEW_PRICING=False)
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_admin_ids", return_value=set())
+    @patch("pipeline.stages.validate.get_admin_ids", return_value=set())
     @patch("quota.create_legacy_quota_info")
     @patch("quota.check_quota")
     async def test_legacy_mode_sets_legacy_quota(
@@ -298,7 +298,7 @@ class TestStagePrepare:
     # 1. Sector loading - valid sector
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_sector")
+    @patch("pipeline.stages.prepare.get_sector")
     async def test_sector_loading_sets_active_keywords_from_sector(self, mock_get_sector):
         """Valid setor_id loads sector config and sets active_keywords from sector keywords."""
         sector = self._make_sector()
@@ -319,7 +319,7 @@ class TestStagePrepare:
     # 2. Invalid sector raises 400
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_sector")
+    @patch("pipeline.stages.prepare.get_sector")
     async def test_invalid_sector_raises_400(self, mock_get_sector):
         """Invalid setor_id causes get_sector to raise KeyError -> HTTP 400."""
         mock_get_sector.side_effect = KeyError("Setor 'xyz' nao encontrado")
@@ -338,9 +338,9 @@ class TestStagePrepare:
     # 3. Custom terms parsing
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.calculate_min_matches", return_value=1)
-    @patch("search_pipeline.parse_search_terms", return_value=["jaleco", "avental"])
-    @patch("search_pipeline.get_sector")
+    @patch("pipeline.stages.prepare.calculate_min_matches", return_value=1)
+    @patch("pipeline.stages.prepare.parse_search_terms", return_value=["jaleco", "avental"])
+    @patch("pipeline.stages.prepare.get_sector")
     async def test_custom_terms_parsed_and_set_as_active_keywords(
         self, mock_get_sector, mock_parse, mock_calc
     ):
@@ -369,9 +369,9 @@ class TestStagePrepare:
     # 4. Custom terms with stopwords
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.calculate_min_matches", return_value=1)
-    @patch("search_pipeline.parse_search_terms", return_value=["jaleco", "de", "avental"])
-    @patch("search_pipeline.get_sector")
+    @patch("pipeline.stages.prepare.calculate_min_matches", return_value=1)
+    @patch("pipeline.stages.prepare.parse_search_terms", return_value=["jaleco", "de", "avental"])
+    @patch("pipeline.stages.prepare.get_sector")
     async def test_custom_terms_with_stopwords_populates_stopwords_removed(
         self, mock_get_sector, mock_parse, mock_calc
     ):
@@ -398,9 +398,9 @@ class TestStagePrepare:
     # 5. Min match floor calculation
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline.calculate_min_matches", return_value=2)
-    @patch("search_pipeline.parse_search_terms", return_value=["jaleco", "avental", "camisa"])
-    @patch("search_pipeline.get_sector")
+    @patch("pipeline.stages.prepare.calculate_min_matches", return_value=2)
+    @patch("pipeline.stages.prepare.parse_search_terms", return_value=["jaleco", "avental", "camisa"])
+    @patch("pipeline.stages.prepare.get_sector")
     async def test_min_match_floor_set_when_custom_terms_and_not_show_all(
         self, mock_get_sector, mock_parse, mock_calc
     ):

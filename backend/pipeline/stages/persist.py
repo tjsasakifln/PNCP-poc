@@ -14,13 +14,9 @@ from pncp_client import get_circuit_breaker
 from log_sanitizer import mask_user_id
 from metrics import SEARCH_RESPONSE_STATE, PARTIAL_RESULTS_SERVED_TOTAL
 
+import quota
+
 logger = logging.getLogger(__name__)
-
-
-def _sp():
-    """Lazy reference to search_pipeline module (avoids circular import at load time)."""
-    import search_pipeline
-    return search_pipeline
 
 
 async def stage_persist(pipeline, ctx: SearchContext) -> BuscaResponse:
@@ -28,8 +24,6 @@ async def stage_persist(pipeline, ctx: SearchContext) -> BuscaResponse:
 
     Errors in session save do NOT fail the search request.
     """
-    # Access patched symbols through search_pipeline module for test compatibility
-    quota = _sp().quota
 
     # CRIT-050 AC8: Ensure resumo is never None (fallback if stage_generate crashed)
     if ctx.resumo is None:

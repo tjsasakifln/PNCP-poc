@@ -76,9 +76,8 @@ router = APIRouter(tags=["search"])
 # backward compatibility with tests that patch "routes.search._build_error_detail".
 from error_response import build_error_detail as _build_error_detail  # noqa: E402
 
-# Helper functions moved to search_pipeline.py (STORY-216 AC6)
-# Re-exported for any external callers (backward compat)
-from search_pipeline import _build_pncp_link, _calcular_urgencia, _calcular_dias_restantes, _convert_to_licitacao_items  # noqa: F401, E402
+# Helper functions (STORY-216 AC6, DEBT-118: import from source modules)
+from pipeline.helpers import _build_pncp_link, _calcular_urgencia, _calcular_dias_restantes, _convert_to_licitacao_items  # noqa: F401, E402
 
 # ---------------------------------------------------------------------------
 # DEBT-115: Include sub-routers for decomposed endpoints
@@ -389,7 +388,7 @@ async def buscar_licitacoes(
     if not request.force_fresh and request.search_id:
         try:
             from search_cache import get_from_cache_cascade
-            from search_pipeline import _build_cache_params
+            from pipeline.cache_manager import _build_cache_params
 
             cache_params = _build_cache_params(request)
             stale_cache = None
@@ -468,7 +467,7 @@ async def buscar_licitacoes(
                         f"(active={active_count}, max={_MAX_BACKGROUND_TASKS})"
                     )
                     if tracker:
-                        from search_pipeline import _build_degraded_detail
+                        from pipeline.cache_manager import _build_degraded_detail
                         await tracker.emit_degraded("source_failure", _build_degraded_detail(ctx))
                         await remove_tracker(request.search_id)
 
@@ -509,7 +508,7 @@ async def buscar_licitacoes(
         # SSE: Emit terminal event based on response_state (A-02 AC3-AC5)
         if tracker:
             if ctx.response_state in ("cached", "degraded") or (ctx.is_partial and ctx.response_state == "live"):
-                from search_pipeline import _build_degraded_detail
+                from pipeline.cache_manager import _build_degraded_detail
                 if ctx.response_state == "cached":
                     reason = "timeout" if "expirou" in (ctx.degradation_reason or "") else "source_failure"
                 elif ctx.is_partial and ctx.response_state == "live":
@@ -681,7 +680,7 @@ async def buscar_licitacoes(
                 f"results as partial (error: {type(e).__name__}: {e})"
             )
             if tracker:
-                from search_pipeline import _build_degraded_detail
+                from pipeline.cache_manager import _build_degraded_detail
                 await tracker.emit_degraded("source_failure", _build_degraded_detail(ctx))
                 await remove_tracker(request.search_id)
             ctx.response.is_partial = True
@@ -700,10 +699,10 @@ async def buscar_licitacoes(
                 f"building minimal partial response (error: {type(e).__name__}: {e})"
             )
             if tracker:
-                from search_pipeline import _build_degraded_detail
+                from pipeline.cache_manager import _build_degraded_detail
                 await tracker.emit_degraded("source_failure", _build_degraded_detail(ctx))
                 await remove_tracker(request.search_id)
-            from search_pipeline import _convert_to_licitacao_items
+            from pipeline.helpers import _convert_to_licitacao_items
             from llm import gerar_resumo_fallback
             items = _convert_to_licitacao_items(ctx.licitacoes_filtradas)
             _fb_resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas)

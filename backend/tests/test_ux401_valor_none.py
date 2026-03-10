@@ -223,7 +223,7 @@ class TestConvertToLicitacaoItems:
 
     def test_none_valor_propagated(self):
         """Raw bid with valorTotalEstimado=None should produce LicitacaoItem with valor=None."""
-        from search_pipeline import _convert_to_licitacao_items
+        from pipeline.helpers import _convert_to_licitacao_items
 
         raw_bids = [
             {
@@ -243,7 +243,7 @@ class TestConvertToLicitacaoItems:
 
     def test_positive_valor_preserved(self):
         """Raw bid with positive valorTotalEstimado should be preserved."""
-        from search_pipeline import _convert_to_licitacao_items
+        from pipeline.helpers import _convert_to_licitacao_items
 
         raw_bids = [
             {

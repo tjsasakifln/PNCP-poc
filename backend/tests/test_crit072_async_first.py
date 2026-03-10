@@ -357,7 +357,8 @@ class TestExecutarBuscaDeadline:
     @pytest.mark.asyncio
     async def test_deadline_ts_forwarded_to_context(self):
         """deadline_ts parameter is forwarded to SearchContext."""
-        from search_pipeline import executar_busca_completa, SearchPipeline
+        from pipeline.worker import executar_busca_completa
+        from search_pipeline import SearchPipeline
         from progress import ProgressTracker
 
         tracker = ProgressTracker("test-deadline", uf_count=1, use_redis=False)

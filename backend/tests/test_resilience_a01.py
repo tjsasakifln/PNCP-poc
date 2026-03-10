@@ -116,8 +116,8 @@ class TestTimeoutWithCacheFallback:
         make_deps()
         cache_data = make_cache_data()
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=cache_data), \
-             patch("search_pipeline._read_cache", return_value=None):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=cache_data), \
+             patch("pipeline.cache_manager._read_cache", return_value=None):
 
             # Simulate the timeout handler logic from search_pipeline.py L812-877
             # We don't call the full pipeline, just verify the cache fallback behavior
@@ -156,8 +156,8 @@ class TestTimeoutWithCacheFallback:
         ctx = make_ctx()
         cache_data = make_cache_data(cache_status="stale", cache_age_hours=12.5)
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=cache_data), \
-             patch("search_pipeline._read_cache", return_value=None):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=cache_data), \
+             patch("pipeline.cache_manager._read_cache", return_value=None):
 
             # Simulate PNCP-only timeout handler (L1084-1146)
             stale_cache = cache_data
@@ -193,7 +193,7 @@ class TestTimeoutWithCacheFallback:
             cache_level="supabase",
         )
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=cache_data):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=cache_data):
             stale_cache = cache_data
 
             if stale_cache:
@@ -228,8 +228,8 @@ class TestTimeoutWithoutCacheRaises504:
 
         make_ctx()
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
-             patch("search_pipeline._read_cache", return_value=None):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
+             patch("pipeline.cache_manager._read_cache", return_value=None):
 
             # Simulate timeout handler when no cache exists (L878-887)
             stale_cache = None
@@ -253,8 +253,8 @@ class TestTimeoutWithoutCacheRaises504:
     async def test_pncp_only_timeout_no_cache_raises_504(self):
         """PNCP-only timeout with no cache available → HTTPException 504."""
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
-             patch("search_pipeline._read_cache", return_value=None):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
+             patch("pipeline.cache_manager._read_cache", return_value=None):
 
             stale_cache = None
 
@@ -279,8 +279,8 @@ class TestTimeoutWithoutCacheRaises504:
         ctx.tracker = MagicMock()
         ctx.tracker.emit_error = AsyncMock()
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
-             patch("search_pipeline._read_cache", return_value=None), \
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
+             patch("pipeline.cache_manager._read_cache", return_value=None), \
              patch("progress.remove_tracker"):
 
             # Simulate timeout handler with tracker cleanup (L815-822)
@@ -308,8 +308,8 @@ class TestEmptyFailureState:
 
         ctx = make_ctx()
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
-             patch("search_pipeline._read_cache", return_value=None):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
+             patch("pipeline.cache_manager._read_cache", return_value=None):
 
             # Simulate AllSourcesFailedError handler with no cache (L784-811)
             stale_cache = None
@@ -338,8 +338,8 @@ class TestEmptyFailureState:
 
         ctx = make_ctx()
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
-             patch("search_pipeline._read_cache", return_value=None):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
+             patch("pipeline.cache_manager._read_cache", return_value=None):
 
             # Simulate PNCPDegradedError handler with no cache (L1069-1083)
             stale_cache = None
@@ -368,8 +368,8 @@ class TestEmptyFailureState:
 
         ctx = make_ctx()
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
-             patch("search_pipeline._read_cache", return_value=None):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None), \
+             patch("pipeline.cache_manager._read_cache", return_value=None):
 
             # Simulate generic exception handler with no cache (L930-940)
             error = ValueError("Unexpected database error")
@@ -396,7 +396,7 @@ class TestEmptyFailureState:
 
         ctx = make_ctx()
 
-        with patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None):
+        with patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None):
             ctx.licitacoes_raw = []
             ctx.is_partial = True
             ctx.response_state = "empty_failure"

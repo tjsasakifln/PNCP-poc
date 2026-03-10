@@ -34,19 +34,13 @@ from pipeline.cache_manager import (
 logger = logging.getLogger(__name__)
 
 
-def _sp():
-    """Lazy reference to search_pipeline module (avoids circular import at load time)."""
-    import search_pipeline
-    return search_pipeline
+import quota
+from status_inference import enriquecer_com_status_inferido
+from search_cache import get_from_cache_cascade
 
 
 async def stage_execute(pipeline, ctx: SearchContext) -> None:
     """Fetch procurement data from PNCP API (and optionally other sources)."""
-    # Access patched symbols through search_pipeline module for test compatibility
-    sp = _sp()
-    quota = sp.quota
-    enriquecer_com_status_inferido = sp.enriquecer_com_status_inferido
-    get_from_cache_cascade = sp.get_from_cache_cascade
     import os
 
     # CRIT-002 AC8: Track pipeline stage
@@ -394,10 +388,6 @@ async def _execute_multi_source(
     Args:
         ufs_override: CRIT-051 AC3 — if set, fetch only these UFs (hybrid fetch).
     """
-    # Access patched symbols through search_pipeline module for test compatibility
-    sp = _sp()
-    quota = sp.quota
-    get_from_cache_cascade = sp.get_from_cache_cascade
 
     logger.debug("Multi-source fetch enabled, using ConsolidationService")
     from consolidation import ConsolidationService
@@ -955,10 +945,6 @@ async def _execute_pncp_only(
     uf_status_callback=None,
 ):
     """PNCP-only fetch path (default)."""
-    # Access patched symbols through search_pipeline module for test compatibility
-    sp = _sp()
-    quota = sp.quota
-    get_from_cache_cascade = sp.get_from_cache_cascade
 
     logger.debug(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
 

@@ -193,7 +193,7 @@ class TestConcurrentSearches:
         Multiple calls with different inputs produce independent outputs
         without any module-level caching or mutation.
         """
-        from search_pipeline import _convert_to_licitacao_items
+        from pipeline.helpers import _convert_to_licitacao_items
 
         sp_lics = [lic for lic in sample_licitacoes_raw if lic["uf"] == "SP"]
         all_lics = list(sample_licitacoes_raw)

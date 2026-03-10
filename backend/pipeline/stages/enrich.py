@@ -5,25 +5,16 @@ Extracted from SearchPipeline.stage_enrich + _enrich_with_sanctions (DEBT-015 SY
 
 import logging
 
+from relevance import score_relevance, count_phrase_matches
+from utils.ordenacao import ordenar_licitacoes
 from search_context import SearchContext
 from viability import assess_batch as viability_assess_batch
 
 logger = logging.getLogger(__name__)
 
 
-def _sp():
-    """Lazy reference to search_pipeline module (avoids circular import at load time)."""
-    import search_pipeline
-    return search_pipeline
-
-
 async def stage_enrich(pipeline, ctx: SearchContext) -> None:
     """Compute relevance scores, viability assessment, confidence-based re-ranking, and sorting."""
-    # Access patched symbols through search_pipeline module for test compatibility
-    sp = _sp()
-    score_relevance = sp.score_relevance
-    count_phrase_matches = sp.count_phrase_matches
-    ordenar_licitacoes = sp.ordenar_licitacoes
 
     # D-04 AC7: Viability assessment (Stage 4.5 — post-filter, pre-ranking)
     from config import get_feature_flag
@@ -107,7 +98,7 @@ async def stage_enrich(pipeline, ctx: SearchContext) -> None:
         )
 
     if ctx.licitacoes_filtradas:
-        _sync_time = sp.sync_time_module if hasattr(sp, 'sync_time_module') else __import__('time')
+        import time as _sync_time
         filter_elapsed = _sync_time.time() - ctx.start_time
         logger.debug(
             f"Filtering and sorting complete in {filter_elapsed:.2f}s: "

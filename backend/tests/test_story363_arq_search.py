@@ -197,7 +197,7 @@ class TestAC16WorkerPersistsResults:
         """AC16: search_job calls executar_busca_completa and persists to L2+L3."""
         from job_queue import search_job
 
-        with patch("search_pipeline.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
+        with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
              patch("job_queue.check_cancel_flag", new_callable=AsyncMock, return_value=False), \
@@ -238,7 +238,7 @@ class TestAC16WorkerPersistsResults:
         """AC16: search_job emits error SSE event on pipeline failure."""
         from job_queue import search_job
 
-        with patch("search_pipeline.executar_busca_completa", new_callable=AsyncMock, side_effect=RuntimeError("Pipeline boom")), \
+        with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, side_effect=RuntimeError("Pipeline boom")), \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
              patch("job_queue.check_cancel_flag", new_callable=AsyncMock, return_value=False), \
@@ -434,7 +434,7 @@ class TestAC18PipelineCompletesIndependently:
         """AC18: search_job completes and persists even when no SSE tracker exists."""
         from job_queue import search_job
 
-        with patch("search_pipeline.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
+        with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=None), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
              patch("job_queue.check_cancel_flag", new_callable=AsyncMock, return_value=False), \

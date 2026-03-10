@@ -164,7 +164,7 @@ class TestBuildPncpLinkPriority:
 
     def test_prioritizes_link_sistema_origem(self):
         """linkSistemaOrigem should be used when present."""
-        from search_pipeline import _build_pncp_link
+        from pipeline.helpers import _build_pncp_link
 
         lic = {
             "linkSistemaOrigem": "https://compras.gov.br/edital/123",
@@ -174,14 +174,14 @@ class TestBuildPncpLinkPriority:
 
     def test_falls_back_to_link_processo_eletronico(self):
         """Falls back to linkProcessoEletronico when linkSistemaOrigem is absent."""
-        from search_pipeline import _build_pncp_link
+        from pipeline.helpers import _build_pncp_link
 
         lic = {"linkProcessoEletronico": "https://processo.gov.br/456"}
         assert _build_pncp_link(lic) == "https://processo.gov.br/456"
 
     def test_constructs_url_from_numero_controle(self):
         """Constructs PNCP URL from numeroControlePNCP when both links are absent."""
-        from search_pipeline import _build_pncp_link
+        from pipeline.helpers import _build_pncp_link
 
         lic = {"numeroControlePNCP": "12345678000190-1-000001/2026"}
         result = _build_pncp_link(lic)
@@ -190,6 +190,6 @@ class TestBuildPncpLinkPriority:
 
     def test_returns_none_when_no_link_data(self):
         """UX-400 AC2: Returns None (not empty string) when no link data is available."""
-        from search_pipeline import _build_pncp_link
+        from pipeline.helpers import _build_pncp_link
 
         assert _build_pncp_link({}) is None

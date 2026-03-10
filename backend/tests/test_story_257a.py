@@ -15,7 +15,7 @@ from pncp_client import (
     ParallelFetchResult,
     get_circuit_breaker,
 )
-from search_pipeline import _compute_cache_key, _read_cache, _write_cache
+from pipeline.cache_manager import _compute_cache_key, _read_cache, _write_cache
 from source_config.sources import SingleSourceConfig, SourceCode, SourceCredentials
 from schemas import BuscaRequest
 
@@ -499,9 +499,9 @@ def test_t13_structured_log_fields():
     # This test validates the log structure exists in stage_persist
     # by checking the expected fields are present in the JSON template
     import inspect
-    from search_pipeline import SearchPipeline
+    from pipeline.stages.persist import stage_persist
 
-    source = inspect.getsource(SearchPipeline.stage_persist)
+    source = inspect.getsource(stage_persist)
 
     required_fields = [
         "search_complete",

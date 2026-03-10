@@ -150,12 +150,12 @@ class TestT2WorkerProcesses:
         import job_queue
 
         # Inside search_job, all these are function-level imports:
-        #   from search_pipeline import executar_busca_completa
+        #   from pipeline.worker import executar_busca_completa
         #   from progress import get_tracker, remove_tracker
         #   from metrics import SEARCH_JOB_DURATION
         #   from middleware import search_id_var, request_id_var
         # So patch at their source modules, not at job_queue.X.
-        with patch("search_pipeline.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
+        with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
              patch("job_queue.persist_job_result", new_callable=AsyncMock) as mock_persist, \
@@ -194,7 +194,7 @@ class TestT3SSEDelivery:
         import job_queue
 
         # Same function-level imports inside search_job -- patch at source.
-        with patch("search_pipeline.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
+        with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
              patch("job_queue.persist_job_result", new_callable=AsyncMock), \
@@ -403,10 +403,10 @@ class TestT6QuotaInPOST:
         self, mock_request_data, mock_user, mock_busca_response, mock_tracker,
     ):
         """executar_busca_completa with quota_pre_consumed=True skips quota check."""
-        from search_pipeline import executar_busca_completa
+        from pipeline.worker import executar_busca_completa
 
         with patch("search_pipeline.SearchPipeline") as mock_pipeline_cls, \
-             patch("search_pipeline.build_default_deps") as mock_deps, \
+             patch("pipeline.worker.build_default_deps") as mock_deps, \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.create_tracker", new_callable=AsyncMock, return_value=mock_tracker):
 
@@ -651,7 +651,7 @@ class TestT10Heartbeat:
         import job_queue
 
         # Inside search_job, all these are function-level imports -- patch at source.
-        with patch("search_pipeline.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response) as mock_exec, \
+        with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response) as mock_exec, \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
              patch("job_queue.persist_job_result", new_callable=AsyncMock), \

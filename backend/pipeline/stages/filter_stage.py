@@ -12,19 +12,13 @@ import time as sync_time_module
 from search_context import SearchContext
 from metrics import FILTER_DECISIONS, FILTER_INPUT_TOTAL, FILTER_OUTPUT_TOTAL, FILTER_DISCARD_RATE
 
+import quota
+
 logger = logging.getLogger(__name__)
-
-
-def _sp():
-    """Lazy reference to search_pipeline module (avoids circular import at load time)."""
-    import search_pipeline
-    return search_pipeline
 
 
 async def stage_filter(pipeline, ctx: SearchContext) -> None:
     """Apply all filters (UF, status, esfera, modalidade, municipio, valor, keyword)."""
-    # Access patched symbols through search_pipeline module for test compatibility
-    quota = _sp().quota
 
     # CRIT-002 AC9: Track pipeline stage
     if ctx.session_id:

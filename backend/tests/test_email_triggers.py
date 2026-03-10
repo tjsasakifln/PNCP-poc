@@ -71,7 +71,7 @@ class TestQuotaEmailTrigger:
 
     def test_quota_warning_at_80_percent(self):
         """AC20: Quota warning triggered at exactly 80%."""
-        from search_pipeline import _maybe_send_quota_email
+        from pipeline.helpers import _maybe_send_quota_email
 
         mock_quota_info = MagicMock()
         mock_quota_info.capabilities = {"max_requests_per_month": 10}
@@ -98,7 +98,7 @@ class TestQuotaEmailTrigger:
 
     def test_no_warning_below_80_percent(self):
         """No email sent when below 80% threshold."""
-        from search_pipeline import _maybe_send_quota_email
+        from pipeline.helpers import _maybe_send_quota_email
 
         mock_quota_info = MagicMock()
         mock_quota_info.capabilities = {"max_requests_per_month": 10}
@@ -115,7 +115,7 @@ class TestQuotaEmailTrigger:
 
     def test_exhaustion_at_100_percent(self):
         """AC20: Quota exhausted email at 100%."""
-        from search_pipeline import _maybe_send_quota_email
+        from pipeline.helpers import _maybe_send_quota_email
 
         mock_quota_info = MagicMock()
         mock_quota_info.capabilities = {"max_requests_per_month": 10}
@@ -135,7 +135,7 @@ class TestQuotaEmailTrigger:
 
     def test_no_email_for_unsubscribed_user(self):
         """Unsubscribed users don't receive quota emails."""
-        from search_pipeline import _maybe_send_quota_email
+        from pipeline.helpers import _maybe_send_quota_email
 
         mock_quota_info = MagicMock()
         mock_quota_info.capabilities = {"max_requests_per_month": 10}
@@ -152,7 +152,7 @@ class TestQuotaEmailTrigger:
 
     def test_quota_email_failure_does_not_crash(self):
         """AC22: Email failure doesn't crash the search pipeline."""
-        from search_pipeline import _maybe_send_quota_email
+        from pipeline.helpers import _maybe_send_quota_email
 
         mock_quota_info = MagicMock()
         mock_quota_info.capabilities = {"max_requests_per_month": 10}

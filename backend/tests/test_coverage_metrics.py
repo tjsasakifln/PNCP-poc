@@ -26,7 +26,7 @@ class TestBuildCoverageMetrics:
 
     def test_ac14_coverage_pct_7_of_9(self):
         """AC14: 7 UFs succeeded de 9 solicitadas -> coverage_pct = 77."""
-        from search_pipeline import _build_coverage_metrics
+        from pipeline.helpers import _build_coverage_metrics
 
         ufs = ["SP", "RJ", "MG", "BA", "RS", "PR", "SC", "PE", "CE"]
         failed = ["PE", "CE"]
@@ -50,7 +50,7 @@ class TestBuildCoverageMetrics:
 
     def test_ac15_ufs_status_detail_3_ufs_2_ok_1_timeout(self):
         """AC15: busca com 3 UFs (2 OK, 1 timeout) -> 3 entries com status corretos."""
-        from search_pipeline import _build_coverage_metrics
+        from pipeline.helpers import _build_coverage_metrics
 
         ufs = ["SP", "RJ", "BA"]
         succeeded = ["SP", "RJ"]
@@ -82,7 +82,7 @@ class TestBuildCoverageMetrics:
 
     def test_100_percent_coverage(self):
         """All UFs succeeded -> coverage_pct = 100."""
-        from search_pipeline import _build_coverage_metrics
+        from pipeline.helpers import _build_coverage_metrics
 
         ufs = ["SP", "RJ"]
         ctx = self._make_ctx(ufs, succeeded_ufs=["SP", "RJ"], failed_ufs=[], raw_items=[
@@ -97,7 +97,7 @@ class TestBuildCoverageMetrics:
 
     def test_zero_percent_coverage(self):
         """All UFs failed -> coverage_pct = 0."""
-        from search_pipeline import _build_coverage_metrics
+        from pipeline.helpers import _build_coverage_metrics
 
         ufs = ["SP", "RJ", "MG"]
         ctx = self._make_ctx(ufs, succeeded_ufs=[], failed_ufs=["SP", "RJ", "MG"], raw_items=[])
@@ -109,7 +109,7 @@ class TestBuildCoverageMetrics:
 
     def test_single_uf_succeeded(self):
         """Single UF requested and succeeded -> 100%."""
-        from search_pipeline import _build_coverage_metrics
+        from pipeline.helpers import _build_coverage_metrics
 
         ctx = self._make_ctx(["SP"], succeeded_ufs=["SP"], failed_ufs=[], raw_items=[
             {"uf": "SP", "objeto": "teste"},
@@ -125,7 +125,7 @@ class TestBuildCoverageMetrics:
 
     def test_empty_ufs_list(self):
         """Empty UFs list -> 100% (edge case)."""
-        from search_pipeline import _build_coverage_metrics
+        from pipeline.helpers import _build_coverage_metrics
 
         ctx = self._make_ctx([], succeeded_ufs=[], failed_ufs=[], raw_items=[])
 
@@ -136,7 +136,7 @@ class TestBuildCoverageMetrics:
 
     def test_none_failed_ufs_defaults_to_all_ok(self):
         """When failed_ufs is None, all UFs are treated as OK."""
-        from search_pipeline import _build_coverage_metrics
+        from pipeline.helpers import _build_coverage_metrics
 
         ctx = self._make_ctx(["SP", "RJ"], succeeded_ufs=None, failed_ufs=None, raw_items=[])
 

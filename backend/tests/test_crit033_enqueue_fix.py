@@ -261,7 +261,7 @@ class TestPipelineEnqueueFallback:
 
         with patch("job_queue.is_queue_available", new_callable=lambda: AsyncMock(return_value=True)):
             with patch("job_queue.enqueue_job", new_callable=lambda: AsyncMock(return_value=None)):
-                with patch("search_pipeline.gerar_resumo_fallback", return_value=mock_resumo):
+                with patch("pipeline.stages.generate.gerar_resumo_fallback", return_value=mock_resumo):
                     # Import and call the relevant pipeline section
                     from job_queue import is_queue_available, enqueue_job
 
@@ -316,7 +316,7 @@ class TestPipelineEnqueueFallback:
             with patch("job_queue.enqueue_job", new_callable=lambda: AsyncMock(
                 side_effect=[mock_job, None]
             )):
-                with patch("search_pipeline.gerar_resumo_fallback", return_value=MagicMock()):
+                with patch("pipeline.stages.generate.gerar_resumo_fallback", return_value=MagicMock()):
                     from job_queue import is_queue_available, enqueue_job
 
                     queue_available = await is_queue_available()
@@ -381,7 +381,7 @@ class TestPipelineEnqueueFallback:
             with patch("job_queue.enqueue_job", new_callable=lambda: AsyncMock(
                 side_effect=[mock_llm_job, mock_excel_job]
             )):
-                with patch("search_pipeline.gerar_resumo_fallback", return_value=MagicMock()):
+                with patch("pipeline.stages.generate.gerar_resumo_fallback", return_value=MagicMock()):
                     from job_queue import is_queue_available, enqueue_job
 
                     queue_available = await is_queue_available()

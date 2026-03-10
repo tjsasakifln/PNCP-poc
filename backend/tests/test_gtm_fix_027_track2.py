@@ -30,7 +30,7 @@ async def test_abertas_mode_uses_10_day_window():
     ctx = FakeContext()
 
     # Mock get_sector
-    with patch('search_pipeline.get_sector') as mock_get_sector:
+    with patch('pipeline.stages.prepare.get_sector') as mock_get_sector:
         mock_get_sector.return_value = MagicMock(
             name="Vestuário",
             keywords=["vestuario"],

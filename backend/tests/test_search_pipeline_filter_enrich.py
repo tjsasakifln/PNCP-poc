@@ -238,9 +238,9 @@ class TestStageEnrich:
     """Tests for SearchPipeline.stage_enrich (Stage 5)."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.ordenar_licitacoes")
-    @patch("search_pipeline.count_phrase_matches", return_value=1)
-    @patch("search_pipeline.score_relevance", return_value=0.85)
+    @patch("pipeline.stages.enrich.ordenar_licitacoes")
+    @patch("pipeline.stages.enrich.count_phrase_matches", return_value=1)
+    @patch("pipeline.stages.enrich.score_relevance", return_value=0.85)
     async def test_relevance_scoring_with_custom_terms(
         self, mock_score_relevance, mock_count_phrases, mock_ordenar
     ):
@@ -274,8 +274,8 @@ class TestStageEnrich:
             assert item["_relevance_score"] == 0.85
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.ordenar_licitacoes")
-    @patch("search_pipeline.score_relevance")
+    @patch("pipeline.stages.enrich.ordenar_licitacoes")
+    @patch("pipeline.stages.enrich.score_relevance")
     async def test_no_scoring_without_custom_terms(self, mock_score_relevance, mock_ordenar):
         """When custom_terms is empty, score_relevance should NOT be called and
         items should NOT have _relevance_score modified."""
@@ -301,7 +301,7 @@ class TestStageEnrich:
 
     @pytest.mark.asyncio
     @patch("search_pipeline.sync_time_module")
-    @patch("search_pipeline.ordenar_licitacoes")
+    @patch("pipeline.stages.enrich.ordenar_licitacoes")
     async def test_sorting_applied(self, mock_ordenar, mock_time_module):
         """When ordenacao != 'data_desc', ordenar_licitacoes is called
         after D-02 confidence re-ranking."""
@@ -340,7 +340,7 @@ class TestStageEnrich:
 
     @pytest.mark.asyncio
     @patch("search_pipeline.sync_time_module")
-    @patch("search_pipeline.ordenar_licitacoes")
+    @patch("pipeline.stages.enrich.ordenar_licitacoes")
     async def test_data_desc_uses_confidence_reranking(self, mock_ordenar, mock_time_module):
         """D-02: When ordenacao='data_desc', confidence re-ranking is applied
         instead of ordenar_licitacoes."""

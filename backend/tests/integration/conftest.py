@@ -407,15 +407,13 @@ def integration_app(mock_user, mock_supabase_client, mock_redis, mock_quota_info
         patch("quota.register_search_session", new_callable=AsyncMock, return_value="session-test-id"),
         patch("quota.update_search_session_status", new_callable=AsyncMock),
         patch("storage.upload_excel", return_value={"file_path": "test.xlsx", "signed_url": "https://test.storage/test.xlsx"}),
-        # search_pipeline uses `from storage import upload_excel` (top-level),
-        # so we must also patch the name in search_pipeline's namespace.
-        patch("search_pipeline.upload_excel", return_value={"file_path": "test.xlsx", "signed_url": "https://test.storage/test.xlsx", "file_id": "test-file-id", "expires_in": 3600}),
+        # DEBT-118: generate.py imports from storage/llm directly, patch there too
+        patch("pipeline.stages.generate.upload_excel", return_value={"file_path": "test.xlsx", "signed_url": "https://test.storage/test.xlsx", "file_id": "test-file-id", "expires_in": 3600}),
         patch("llm.gerar_resumo", return_value=_make_mock_resumo()),
         patch("llm.gerar_resumo_fallback", return_value=_make_mock_resumo(fallback=True)),
-        # search_pipeline uses `from llm import gerar_resumo, gerar_resumo_fallback` (top-level),
-        # so we must also patch the names in search_pipeline's namespace.
-        patch("search_pipeline.gerar_resumo", return_value=_make_mock_resumo()),
-        patch("search_pipeline.gerar_resumo_fallback", return_value=_make_mock_resumo(fallback=True)),
+        # DEBT-118: generate.py imports from llm directly, patch there too
+        patch("pipeline.stages.generate.gerar_resumo", return_value=_make_mock_resumo()),
+        patch("pipeline.stages.generate.gerar_resumo_fallback", return_value=_make_mock_resumo(fallback=True)),
         patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=False),
         patch("job_queue.enqueue_job", new_callable=AsyncMock, return_value=None),
         # Rate limiter: always allow requests

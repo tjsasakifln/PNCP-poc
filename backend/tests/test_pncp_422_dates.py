@@ -220,12 +220,7 @@ class TestStagePrepareNormalization:
         pipeline = SearchPipeline.__new__(SearchPipeline)
         pipeline.deps = MagicMock()
 
-        with patch("search_pipeline.datetime"):
-            # This won't work for deferred import — patch the right target
-            pass
-
-        # Use a more direct approach: mock at the deferred import level
-        with patch("search_pipeline.get_sector") as mock_get_sector:
+        with patch("pipeline.stages.prepare.get_sector") as mock_get_sector:
             mock_sector = MagicMock()
             mock_sector.name = "Vestuário"
             mock_sector.keywords = ["uniforme"]
@@ -265,7 +260,7 @@ class TestStagePrepareNormalization:
         pipeline = SearchPipeline.__new__(SearchPipeline)
         pipeline.deps = MagicMock()
 
-        with patch("search_pipeline.get_sector") as mock_get_sector:
+        with patch("pipeline.stages.prepare.get_sector") as mock_get_sector:
             mock_sector = MagicMock()
             mock_sector.name = "Vestuário"
             mock_sector.keywords = ["uniforme"]

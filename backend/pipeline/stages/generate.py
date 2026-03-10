@@ -25,20 +25,13 @@ logger = logging.getLogger(__name__)
 _tracer = get_tracer("search_pipeline")
 
 
-def _sp():
-    """Lazy reference to search_pipeline module (avoids circular import at load time)."""
-    import search_pipeline
-    return search_pipeline
+import quota
+from storage import upload_excel
+from llm import gerar_resumo, gerar_resumo_fallback
 
 
 async def stage_generate(pipeline, ctx: SearchContext) -> None:
     """Generate LLM summary, Excel report, and convert to LicitacaoItems."""
-    # Access patched symbols through search_pipeline module for test compatibility
-    sp = _sp()
-    quota = sp.quota
-    upload_excel = sp.upload_excel
-    gerar_resumo = sp.gerar_resumo
-    gerar_resumo_fallback = sp.gerar_resumo_fallback
 
     # CRIT-002 AC10: Track pipeline stage
     if ctx.session_id:

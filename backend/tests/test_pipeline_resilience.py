@@ -150,10 +150,10 @@ class TestFallbackAdapterNone:
     @pytest.mark.asyncio
     @patch("source_config.sources.get_source_config")
     @patch("utils.error_reporting.sentry_sdk")
-    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
-    @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
-    @patch("search_pipeline.enriquecer_com_status_inferido")
-    @patch("search_pipeline.os.getenv", return_value="true")  # ENABLE_MULTI_SOURCE
+    @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
+    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
+    @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
+    @patch("os.getenv", return_value="true")  # ENABLE_MULTI_SOURCE
     async def test_ac2_fallback_adapter_is_none(
         self, mock_getenv, mock_enrich, mock_save, mock_get_cache,
         mock_sentry, mock_config,
@@ -322,10 +322,10 @@ class TestGenericExceptionHandler:
     """T2 AC5-AC9 + T5 AC20: Generic exception handler in multi-source fetch."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock)
-    @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
+    @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock)
+    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
-    @patch("search_pipeline.enriquecer_com_status_inferido")
+    @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
     async def test_ac20_unexpected_exception_triggers_cache(
         self, mock_config, mock_enrich, mock_sentry,
@@ -387,10 +387,10 @@ class TestGenericExceptionHandler:
         mock_sentry.capture_exception.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
-    @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
+    @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
+    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
-    @patch("search_pipeline.enriquecer_com_status_inferido")
+    @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
     async def test_ac9_no_http_500_on_unexpected_exception(
         self, mock_config, mock_enrich, mock_sentry,
@@ -442,10 +442,10 @@ class TestAllSourcesFailCache:
     """T5 AC21: When all sources fail, stale cache is served."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock)
-    @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
+    @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock)
+    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
-    @patch("search_pipeline.enriquecer_com_status_inferido")
+    @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
     async def test_ac21_all_sources_fail_triggers_stale_cache(
         self, mock_config, mock_enrich, mock_sentry,
@@ -597,10 +597,10 @@ class TestSearchWithoutComprasGov:
     """T1 AC4: Search completes successfully with only PNCP+PCP."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
-    @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
+    @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
+    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
-    @patch("search_pipeline.enriquecer_com_status_inferido")
+    @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
     async def test_ac4_search_completes_with_pncp_pcp_only(
         self, mock_config, mock_enrich, mock_sentry,

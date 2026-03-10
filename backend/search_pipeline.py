@@ -7,40 +7,15 @@ import logging
 import time as sync_time_module
 from types import SimpleNamespace
 
-import quota  # noqa: F401 — module-level for mock compatibility
 from search_context import SearchContext
 from schemas import BuscaResponse
-from pncp_client import get_circuit_breaker  # noqa: F401
-from consolidation import AllSourcesFailedError  # noqa: F401
-from term_parser import parse_search_terms  # noqa: F401
-from relevance import calculate_min_matches, score_relevance, count_phrase_matches  # noqa: F401
-from status_inference import enriquecer_com_status_inferido  # noqa: F401
-from utils.ordenacao import ordenar_licitacoes  # noqa: F401
-from sectors import get_sector  # noqa: F401
-from storage import upload_excel  # noqa: F401
-from llm import gerar_resumo, gerar_resumo_fallback  # noqa: F401
-from authorization import get_admin_ids, get_master_quota_info  # noqa: F401
-from log_sanitizer import mask_user_id  # noqa: F401
-from search_cache import save_to_cache as _supabase_save_cache, get_from_cache as _supabase_get_cache, get_from_cache_cascade  # noqa: F401
 from metrics import SEARCH_DURATION, ACTIVE_SEARCHES, SEARCHES
 from telemetry import get_tracer, optional_span
 from pipeline.stages import (
     stage_validate, stage_prepare, stage_execute,
     stage_filter, stage_enrich, stage_generate, stage_persist,
 )
-from pipeline.tracing import traced_stage, validate_stage_outputs  # noqa: F401
-from pipeline.helpers import (  # noqa: F401
-    _build_pncp_link, _calcular_urgencia, _calcular_dias_restantes,
-    _map_confidence, _convert_to_licitacao_items,
-    _build_coverage_metrics, _build_coverage_metadata, _maybe_send_quota_email,
-)
-from pipeline.cache_manager import (  # noqa: F401
-    SEARCH_CACHE_TTL, _compute_cache_key, _compute_cache_key_per_uf,
-    _read_cache, _read_cache_composed, _write_cache, _write_cache_per_uf,
-    _build_cache_params, _maybe_trigger_revalidation, _build_degraded_detail,
-    apply_stale_cache, set_empty_failure,
-)
-from pipeline.worker import build_default_deps, executar_busca_completa  # noqa: F401
+from pipeline.tracing import traced_stage, validate_stage_outputs
 
 logger = logging.getLogger(__name__)
 _tracer = get_tracer("search_pipeline")

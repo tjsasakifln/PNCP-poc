@@ -161,7 +161,7 @@ async def _run_first_analysis_pipeline(
         await pipeline.run(ctx)
         # A-02 AC3-AC5: Emit degraded or complete based on response_state
         if ctx.response_state in ("cached", "degraded") or (ctx.is_partial and ctx.response_state == "live"):
-            from search_pipeline import _build_degraded_detail
+            from pipeline.cache_manager import _build_degraded_detail
             if ctx.response_state == "cached":
                 reason = "timeout" if "expirou" in (ctx.degradation_reason or "") else "source_failure"
             elif ctx.is_partial and ctx.response_state == "live":

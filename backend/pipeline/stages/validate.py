@@ -8,6 +8,9 @@ import logging
 import time as sync_time_module
 from datetime import datetime, timezone as _tz
 
+import quota
+from authorization import get_admin_ids, get_master_quota_info
+from search_cache import get_from_cache as _supabase_get_cache
 from search_context import SearchContext
 from log_sanitizer import mask_user_id
 from fastapi import HTTPException
@@ -16,23 +19,11 @@ from pipeline.helpers import _maybe_send_quota_email
 logger = logging.getLogger(__name__)
 
 
-def _sp():
-    """Lazy reference to search_pipeline module (avoids circular import at load time)."""
-    import search_pipeline
-    return search_pipeline
-
-
 async def stage_validate(pipeline, ctx: SearchContext) -> None:
     """Validate request, check quota, resolve plan capabilities.
 
     May raise HTTPException (403, 429, 503) — these propagate to the wrapper.
     """
-    # Access patched symbols through search_pipeline module for test compatibility
-    sp = _sp()
-    quota = sp.quota
-    get_admin_ids = sp.get_admin_ids
-    get_master_quota_info = sp.get_master_quota_info
-    _supabase_get_cache = sp._supabase_get_cache
 
     deps = pipeline.deps
 

@@ -7,8 +7,8 @@ from types import SimpleNamespace
 from unittest.mock import patch, MagicMock, AsyncMock
 
 from search_context import SearchContext
-from search_pipeline import (
-    SearchPipeline,
+from search_pipeline import SearchPipeline
+from pipeline.helpers import (
     _build_pncp_link,
     _calcular_urgencia,
     _calcular_dias_restantes,
@@ -310,7 +310,7 @@ class TestStageGenerate:
         pipeline = SearchPipeline(deps)
         ctx = make_ctx(licitacoes_filtradas=[], licitacoes_raw=[make_licitacao()])
 
-        with patch("search_pipeline.gerar_resumo") as mock_resumo:
+        with patch("pipeline.stages.generate.gerar_resumo") as mock_resumo:
             await pipeline.stage_generate(ctx)
 
         mock_resumo.assert_not_called()
@@ -341,8 +341,8 @@ class TestStageGenerate:
             ),
         )
 
-        with patch("search_pipeline.gerar_resumo", return_value=resumo) as mock_resumo, \
-             patch("search_pipeline.upload_excel"):
+        with patch("pipeline.stages.generate.gerar_resumo", return_value=resumo) as mock_resumo, \
+             patch("pipeline.stages.generate.upload_excel"):
             await pipeline.stage_generate(ctx)
 
         mock_resumo.assert_called_once_with(lics, sector_name="Vestuario", termos_busca=None)
@@ -374,9 +374,9 @@ class TestStageGenerate:
             ),
         )
 
-        with patch("search_pipeline.gerar_resumo", side_effect=Exception("LLM timeout")), \
-             patch("search_pipeline.gerar_resumo_fallback", return_value=fallback_resumo) as mock_fb, \
-             patch("search_pipeline.upload_excel"):
+        with patch("pipeline.stages.generate.gerar_resumo", side_effect=Exception("LLM timeout")), \
+             patch("pipeline.stages.generate.gerar_resumo_fallback", return_value=fallback_resumo) as mock_fb, \
+             patch("pipeline.stages.generate.upload_excel"):
             await pipeline.stage_generate(ctx)
 
         mock_fb.assert_called_once_with(lics, sector_name="Vestuario", termos_busca=None)
@@ -406,8 +406,8 @@ class TestStageGenerate:
         signed_url = "https://storage.example.com/excel/signed"
         storage_result = {"signed_url": signed_url, "file_path": "excels/test.xlsx", "expires_in": 3600}
 
-        with patch("search_pipeline.gerar_resumo", return_value=resumo), \
-             patch("search_pipeline.upload_excel", return_value=storage_result) as mock_upload:
+        with patch("pipeline.stages.generate.gerar_resumo", return_value=resumo), \
+             patch("pipeline.stages.generate.upload_excel", return_value=storage_result) as mock_upload:
             await pipeline.stage_generate(ctx)
 
         deps.create_excel.assert_called_once_with(lics)
@@ -441,7 +441,7 @@ class TestStagePersist:
             response=response,
         )
 
-        with patch("search_pipeline.quota") as mock_quota:
+        with patch("pipeline.stages.persist.quota") as mock_quota:
             mock_quota.save_search_session = AsyncMock(return_value="session-uuid-1234")
             result = await pipeline.stage_persist(ctx)
 
@@ -478,7 +478,7 @@ class TestStagePersist:
             response=response,
         )
 
-        with patch("search_pipeline.quota") as mock_quota:
+        with patch("pipeline.stages.persist.quota") as mock_quota:
             mock_quota.save_search_session = AsyncMock(side_effect=Exception("DB connection failed"))
             result = await pipeline.stage_persist(ctx)
 
@@ -501,7 +501,7 @@ class TestStagePersist:
             response=existing_response,
         )
 
-        with patch("search_pipeline.quota") as mock_quota:
+        with patch("pipeline.stages.persist.quota") as mock_quota:
             mock_quota.save_search_session = AsyncMock(return_value="session-empty-uuid")
             result = await pipeline.stage_persist(ctx)
 

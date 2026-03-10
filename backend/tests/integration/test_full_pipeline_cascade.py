@@ -75,7 +75,7 @@ def _bypass_inmemory_cache():
     checking Supabase cache. This fixture ensures the cache is
     empty so the pipeline proceeds to the PNCP fetch stage.
     """
-    with patch("search_pipeline._read_cache", return_value=None):
+    with patch("pipeline.cache_manager._read_cache", return_value=None):
         yield
 
 

@@ -82,7 +82,7 @@ class TestAC1_BackgroundTaskTriggered:
         stale_cache = {"is_stale": True, "results": [{"id": 1}]}
 
         with patch("search_cache.trigger_background_revalidation", new_callable=AsyncMock, return_value=True) as mock_trigger:
-            from search_pipeline import _maybe_trigger_revalidation
+            from pipeline.cache_manager import _maybe_trigger_revalidation
             await _maybe_trigger_revalidation("user-1", mock_request, stale_cache)
 
             mock_trigger.assert_called_once()
@@ -93,7 +93,7 @@ class TestAC1_BackgroundTaskTriggered:
         stale_cache = {"is_stale": False, "results": []}
 
         with patch("search_cache.trigger_background_revalidation", new_callable=AsyncMock) as mock_trigger:
-            from search_pipeline import _maybe_trigger_revalidation
+            from pipeline.cache_manager import _maybe_trigger_revalidation
             await _maybe_trigger_revalidation("user-1", MagicMock(), stale_cache)
             mock_trigger.assert_not_called()
 
@@ -101,7 +101,7 @@ class TestAC1_BackgroundTaskTriggered:
     async def test_pipeline_helper_skips_none_cache(self):
         """_maybe_trigger_revalidation does nothing when no cache."""
         with patch("search_cache.trigger_background_revalidation", new_callable=AsyncMock) as mock_trigger:
-            from search_pipeline import _maybe_trigger_revalidation
+            from pipeline.cache_manager import _maybe_trigger_revalidation
             await _maybe_trigger_revalidation("user-1", MagicMock(), None)
             mock_trigger.assert_not_called()
 
@@ -612,7 +612,7 @@ class TestAC10_NoRegression:
             new_callable=AsyncMock,
             side_effect=RuntimeError("Unexpected error"),
         ):
-            from search_pipeline import _maybe_trigger_revalidation
+            from pipeline.cache_manager import _maybe_trigger_revalidation
             # Should NOT raise
             await _maybe_trigger_revalidation("user-1", mock_request, stale_cache)
 

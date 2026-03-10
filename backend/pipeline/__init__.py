@@ -1,8 +1,9 @@
 """Pipeline package — extracted from search_pipeline.py (TD-008 AC20).
 
-Re-exports all public symbols for backward compatibility:
-  from search_pipeline import _build_pncp_link  # still works
-  from pipeline.helpers import _build_pncp_link  # also works
+Public symbols available via:
+  from pipeline.helpers import _build_pncp_link
+  from pipeline.cache_manager import _read_cache
+  from pipeline.stages import stage_validate
 """
 
 from pipeline.helpers import (

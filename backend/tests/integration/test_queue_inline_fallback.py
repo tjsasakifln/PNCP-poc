@@ -36,7 +36,7 @@ def _disable_multi_source(monkeypatch):
 @pytest.fixture(autouse=True)
 def _bypass_inmemory_cache():
     """Prevent InMemoryCache from returning stale data between tests."""
-    with patch("search_pipeline._read_cache", return_value=None):
+    with patch("pipeline.cache_manager._read_cache", return_value=None):
         yield
 
 

@@ -331,7 +331,7 @@ class TestBuscarEndpointQuotaValidation:
 class TestBuscarEndpointExcelGating:
     """Test Excel export gating by plan."""
 
-    @patch("search_pipeline.upload_excel")
+    @patch("pipeline.stages.generate.upload_excel")
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_and_increment_quota_atomic")
     @patch("quota.check_quota")

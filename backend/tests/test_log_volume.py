@@ -179,7 +179,7 @@ class LogCounter:
 COMMON_PATCHES = [
     # Force PNCP-only path (avoids real adapter instantiation in multi-source)
     patch.dict("os.environ", {"ENABLE_MULTI_SOURCE": "false"}),
-    patch("search_pipeline.quota.check_quota", return_value=MagicMock(
+    patch("quota.check_quota", return_value=MagicMock(
         allowed=True,
         capabilities={
             "max_requests_per_month": 1000,
@@ -190,36 +190,43 @@ COMMON_PATCHES = [
         error_message=None,
         plan_type="smartlic_pro",
     )),
-    patch("search_pipeline.quota.check_and_increment_quota_atomic", return_value=(True, 6, 994)),
-    patch("search_pipeline.quota.save_search_session", new_callable=AsyncMock, return_value="session-uuid"),
-    patch("search_pipeline._read_cache", return_value=None),
-    patch("search_pipeline._write_cache"),
-    patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock),
-    patch("search_pipeline.upload_excel", return_value={
+    patch("quota.check_and_increment_quota_atomic", return_value=(True, 6, 994)),
+    patch("quota.save_search_session", new_callable=AsyncMock, return_value="session-uuid"),
+    patch("pipeline.cache_manager._read_cache", return_value=None),
+    patch("pipeline.cache_manager._write_cache"),
+    patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock),
+    patch("pipeline.stages.generate.upload_excel", return_value={
         "signed_url": "https://storage/excel.xlsx",
         "file_path": "search/excel.xlsx",
         "expires_in": 3600,
     }),
-    patch("search_pipeline.get_circuit_breaker", return_value=MagicMock(
+    patch("pipeline.stages.persist.get_circuit_breaker", return_value=MagicMock(
         is_degraded=False,
         try_recover=AsyncMock(),
     )),
-    patch("search_pipeline.get_admin_ids", return_value=set()),
-    patch("search_pipeline.gerar_resumo", return_value=ResumoEstrategico(
+    patch("pipeline.stages.validate.get_admin_ids", return_value=set()),
+    patch("pipeline.stages.generate.gerar_resumo", return_value=ResumoEstrategico(
         resumo_executivo="Resumo de teste para log volume",
         total_oportunidades=10,
         valor_total=1000000.0,
         destaques=["Destaque 1"],
     )),
-    patch("search_pipeline.gerar_resumo_fallback"),
-    patch("search_pipeline.enriquecer_com_status_inferido"),
-    patch("search_pipeline._convert_to_licitacao_items", return_value=[]),
-    patch("search_pipeline.mask_user_id", return_value="user***"),
+    patch("pipeline.stages.generate.gerar_resumo_fallback"),
+    patch("pipeline.stages.execute.enriquecer_com_status_inferido"),
+    patch("pipeline.stages.generate._convert_to_licitacao_items", return_value=[]),
+    patch("pipeline.stages.persist.mask_user_id", return_value="user***"),
 ]
 
 # Loggers in the hot path
 HOT_PATH_LOGGERS = [
     "search_pipeline",
+    "pipeline.stages.filter_stage",
+    "pipeline.stages.persist",
+    "pipeline.stages.validate",
+    "pipeline.stages.prepare",
+    "pipeline.stages.execute",
+    "pipeline.stages.enrich",
+    "pipeline.stages.generate",
     "pncp_client",
     "filter",
     "consolidation",

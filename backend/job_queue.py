@@ -663,7 +663,7 @@ async def search_job(
     search_id_var.set(search_id)
     request_id_var.set(kwargs.get("_trace_id", search_id))
 
-    from search_pipeline import executar_busca_completa
+    from pipeline.worker import executar_busca_completa
     from progress import get_tracker, remove_tracker
     from metrics import SEARCH_JOB_DURATION, SEARCH_QUEUE_TIME, SEARCH_TOTAL_TIME
     from datetime import datetime, timezone
