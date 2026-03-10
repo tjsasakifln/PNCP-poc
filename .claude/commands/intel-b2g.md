@@ -4,9 +4,10 @@
 
 Varredura multi-fonte para mapear TODOS os players ativos de um setor em licitacoes publicas. Cruza PNCP contratos + OpenCNPJ + Portal da Transparencia para consolidar dados cadastrais, operacionais e de contato.
 
-**Squad:** `squad-intel-b2g.yaml`
+**Squad:** `squad-intel-b2g.yaml` (v2.0)
 **Task:** `intel-b2g-leads.md`
-**Output:** `docs/intel-b2g/leads-{setor}-{data}.md`
+**Output primario:** `docs/intel-b2g/leads-{setor}-{data}.xlsx` (planilha com mensagens WhatsApp)
+**Output secundario:** `docs/intel-b2g/leads-{setor}-{data}.md` (relatorio markdown)
 
 ---
 
@@ -26,6 +27,9 @@ Varredura multi-fonte para mapear TODOS os players ativos de um setor em licitac
 3. **Decisor** — Identifica socio-administrador do QSA como ponto de contato
 4. **Contato** — Valida telefones (flag WhatsApp), busca website e email
 5. **Consolidacao** — Gera relatorio ordenado por faturamento gov mensal
+6. **WhatsApp Outreach** — Gera aba Excel com mensagem personalizada por lead, link wa.me clicavel, e colunas de tracking
+
+**Oferta padrao:** Consultoria de consolidacao de licitacoes R$1.500/mes + 3% comissao (MAYDAY Track A1)
 
 ## Output Schema (por lead)
 
@@ -54,12 +58,29 @@ When this command is invoked:
 4. Execute the 5-step pipeline (coleta → enriquecimento → decisor → contato → consolidacao)
 5. Save output to `docs/intel-b2g/`
 
+## Output Excel
+
+A planilha `.xlsx` gerada tem 5 abas:
+
+| Aba | Conteudo |
+|-----|----------|
+| **Resumo** | Totais, cobertura UF, valor agregado |
+| **Leads** | Todos os leads (41+ colunas: dados + tracking + mensagem WhatsApp) |
+| **WhatsApp Outreach** | Apenas leads com celular — mensagem pronta, link wa.me, tracking |
+| **Ref_CRM** | Legenda dos campos de tracking |
+| **Metodologia** | Fontes, periodo, filtros aplicados |
+
+**Aba "WhatsApp Outreach"** e a principal para prospeccao:
+- Link wa.me clicavel (abre conversa direto)
+- Mensagem personalizada por lead (copiar e colar)
+- Colunas de tracking: Enviada?, Resposta, Follow-up, Status, Notas
+
 ## Downstream
 
 Leads gerados aqui alimentam o `/ataque-turbo` (squad de prospeccao ativa com cold outreach).
 
 ```
-/intel-b2g leads de medicamentos    → mapeia 50-200 leads
+/intel-b2g leads de medicamentos    → mapeia 50-200 leads com planilha WhatsApp
 /ataque-turbo medicamentos          → pega top 15 e gera cadencia de emails
 ```
 

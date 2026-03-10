@@ -1,16 +1,19 @@
 bundle:
   name: "Intel B2G — Mapeamento de Leads por Setor"
   icon: "\U0001F50D"
-  version: "1.0"
+  version: "2.0"
   description: |
     Squad de inteligencia competitiva B2G. Faz varredura multi-fonte
     (PNCP contratos + OpenCNPJ + Portal da Transparencia) para mapear
     TODOS os players ativos de um setor, consolidando dados cadastrais,
-    operacionais e de contato em um relatorio estruturado de leads.
+    operacionais e de contato.
 
-    DIFERENCA DO ATAQUE TURBO: Intel B2G MAPEIA (volume, cobertura,
-    dados completos). Ataque Turbo PROSPECTA (qualifica, pontua, gera
-    emails). Intel B2G alimenta o Ataque Turbo com leads pre-mapeados.
+    SAIDA v2.0: Planilha Excel com aba "WhatsApp Outreach" — mensagens
+    personalizadas prontas para copiar/colar, links wa.me clicaveis,
+    e colunas de tracking para acompanhamento de prospeccao.
+
+    OFERTA PADRAO: Consultoria de consolidacao de licitacoes R$1.500/mes
+    + 3% comissao por exito (MAYDAY Track A1).
 
     INVOCACAO: /intel-b2g leads de {setor}
     EXEMPLO: /intel-b2g leads de medicamentos
@@ -67,12 +70,20 @@ output_schema:
 # ===================================================================
 
 output:
-  file_pattern: "docs/intel-b2g/leads-{setor}-{YYYY-MM-DD}.md"
-  sections:
-    - resumo_executivo    # Total leads, cobertura UF, valor agregado
-    - tabela_leads        # Tabela markdown com todos os campos
-    - metodologia         # Fontes, periodo, filtros aplicados
-    - proximos_passos     # Sugestao de filtros para Ataque Turbo
+  primary: "docs/intel-b2g/leads-{setor}-{YYYY-MM-DD}.xlsx"
+  secondary: "docs/intel-b2g/leads-{setor}-{YYYY-MM-DD}.md"
+  excel_sheets:
+    - Resumo              # Totais, cobertura, valor agregado
+    - Leads               # Todos os leads com 41 colunas (dados + tracking + mensagem)
+    - WhatsApp Outreach   # Apenas leads com celular — mensagem pronta, link wa.me, tracking
+    - Ref_CRM             # Legenda de campos de tracking
+    - Metodologia         # Fontes, periodo, filtros
+  whatsapp_columns:       # Colunas adicionais na aba Leads (apos Observacoes)
+    - WhatsApp Numero     # 55+DDD+numero (limpo)
+    - Link wa.me          # https://wa.me/{numero} (clicavel)
+    - Mensagem WhatsApp   # Texto personalizado pronto para copiar
+    - Mensagem Enviada?   # Tracking manual (data)
+    - Resposta WhatsApp   # Tracking manual (texto)
 
 # ===================================================================
 # APIs — REFERENCIA TECNICA
