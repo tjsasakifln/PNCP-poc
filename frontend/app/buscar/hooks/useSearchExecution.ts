@@ -691,7 +691,6 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
       setUseRealProgress(false);
       abortControllerRef.current = null;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filters, result, error, session, setResult, setRawCount, setError,
     resetRetryForNewSearch, startAutoRetry,

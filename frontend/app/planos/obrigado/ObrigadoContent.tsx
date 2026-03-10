@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../components/AuthProvider";
 import Link from "next/link";
@@ -45,6 +45,8 @@ export default function ObrigadoContent() {
   const searchParams = useSearchParams();
   const { session } = useAuth();
   const { trackEvent } = useAnalytics();
+  const trackEventRef = useRef(trackEvent);
+  trackEventRef.current = trackEvent;
   const [planId, setPlanId] = useState<string | null>(null);
   const [activationStatus, setActivationStatus] = useState<ActivationStatus>("polling");
 
@@ -55,9 +57,9 @@ export default function ObrigadoContent() {
 
   useEffect(() => {
     if (planId) {
-      trackEvent("checkout_completed", { plan_id: planId });
+      trackEventRef.current("checkout_completed", { plan_id: planId });
     }
-  }, [planId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [planId]);
 
   // GTM-FIX-016: Poll for subscription activation
   useEffect(() => {

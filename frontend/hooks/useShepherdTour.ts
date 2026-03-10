@@ -42,6 +42,12 @@ export function useShepherdTour({ tourId, steps, onComplete, onSkip }: UseShephe
     safeRemoveItem(storageKey);
   }, [storageKey]);
 
+  // Keep steps in a ref — steps is an array prop that may have a new reference
+  // each render; reading from ref inside the effect avoids re-initializing the
+  // tour on every parent render.
+  const stepsRef = useRef(steps);
+  stepsRef.current = steps;
+
   // Initialize Shepherd tour
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -67,9 +73,9 @@ export function useShepherdTour({ tourId, steps, onComplete, onSkip }: UseShephe
         },
       });
 
-      steps.forEach((step, index) => {
+      stepsRef.current.forEach((step, index) => {
         const isFirst = index === 0;
-        const isLast = index === steps.length - 1;
+        const isLast = index === stepsRef.current.length - 1;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const buttons: Array<{ text: string; action: () => void; secondary?: boolean }> = [];
@@ -131,8 +137,7 @@ export function useShepherdTour({ tourId, steps, onComplete, onSkip }: UseShephe
         tourRef.current.cancel();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tourId]);
+  }, [tourId, markCompleted]);
 
   const startTour = useCallback(() => {
     if (tourRef.current && !tourRef.current.isActive()) {

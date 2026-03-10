@@ -143,7 +143,6 @@ function LoginContent() {
         }, 1500);
       })();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, session, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {

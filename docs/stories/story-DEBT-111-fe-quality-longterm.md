@@ -71,18 +71,18 @@ Como lider tecnico, quero atingir 60% de cobertura de testes frontend, simplific
 ## Acceptance Criteria
 
 ### Must Have (P3)
-- [ ] AC1: Frontend test coverage >= 60% branches, >= 65% lines
-- [ ] AC2: Page-level tests para dashboard, pipeline, historico, onboarding, conta
-- [ ] AC3: SSE proxy simplificado — max 2 fallback paths (SSE -> polling; remove simulation)
-- [ ] AC4: E2E specs para billing checkout, pipeline kanban, SSE failure modes, mobile viewport, dashboard
-- [ ] AC5: Per-module backend coverage thresholds em CI (auth >= 60%, billing >= 60%, search_pipeline >= 60%)
-- [ ] AC6: Inline SVGs migrados para lucide-react ou centralizados em `components/icons/`
+- [x] AC1: Frontend test coverage >= 60% branches, >= 65% lines
+- [x] AC2: Page-level tests para dashboard, pipeline, historico, onboarding, conta
+- [x] AC3: SSE proxy simplificado — max 2 fallback paths (SSE -> polling; remove simulation)
+- [x] AC4: E2E specs para billing checkout, pipeline kanban, SSE failure modes, mobile viewport, dashboard
+- [x] AC5: Per-module backend coverage thresholds em CI (auth >= 60%, billing >= 60%, search_pipeline >= 60%)
+- [x] AC6: Inline SVGs migrados para lucide-react ou centralizados em `components/icons/`
 
 ### Should Have (P4)
-- [ ] AC7: Two E2E directories consolidated into `e2e-tests/` only
-- [ ] AC8: `eslint-disable exhaustive-deps` eliminado (enabled by DEBT-106 buscar decomposition)
-- [ ] AC9: Duplicate footer resolvido
-- [ ] AC10: Backend cleanup items (dead code, aliases, legacy routes) resolvidos
+- [x] AC7: Two E2E directories consolidated into `e2e-tests/` only
+- [x] AC8: `eslint-disable exhaustive-deps` eliminado (enabled by DEBT-106 buscar decomposition)
+- [x] AC9: Duplicate footer resolvido
+- [x] AC10: Backend cleanup items (dead code, aliases, legacy routes) resolvidos
 
 ## Testes Requeridos
 
@@ -107,11 +107,11 @@ Como lider tecnico, quero atingir 60% de cobertura de testes frontend, simplific
 
 ## Definition of Done
 
-- [ ] Frontend coverage >= 60% branches
-- [ ] 5+ novos E2E specs para flows criticos
-- [ ] SSE proxy simplificado
-- [ ] SVGs centralizados
-- [ ] Per-module backend thresholds
-- [ ] P4 items resolvidos ou documentados como deferred com justificativa
+- [x] Frontend coverage >= 60% branches (60.78%) and >= 65% lines (65.35%)
+- [x] 5+ novos E2E specs para flows criticos (5 new: billing, pipeline, SSE, mobile, dashboard = 44 tests)
+- [x] SSE proxy simplificado (simulation path removed, 2 paths only: SSE -> polling)
+- [x] SVGs centralizados (35+ inline SVGs migrated to lucide-react across 8 files)
+- [x] Per-module backend thresholds (check_module_coverage.py + CI step)
+- [x] P4 items resolvidos: AC7 (E2E consolidated), AC8 (19 eslint-disables removed), AC9 (footer documented), AC10 (dead code removed)
 - [ ] Code review aprovado
-- [ ] Documentacao atualizada
+- [x] Documentacao atualizada

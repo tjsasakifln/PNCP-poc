@@ -55,6 +55,14 @@ jobs:
             -v
           echo "✅ All backend tests passed with coverage ≥ 70%"
 
+      # DEBT-111 AC5: Per-module coverage thresholds
+      - name: Check per-module coverage thresholds
+        if: success()
+        run: |
+          cd backend
+          python scripts/check_module_coverage.py
+          echo "✅ Per-module coverage thresholds passed"
+
       # DEBT-007 CROSS-002: API contract validation — fail if schema drifted
       - name: Validate OpenAPI schema snapshot
         run: |

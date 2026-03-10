@@ -16,6 +16,18 @@ import FilterPanel from "./FilterPanel";
 import { UFS, UF_NAMES } from "../../../lib/constants/uf-names";
 import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
 import { Button } from "../../../components/ui/button";
+import {
+  Info,
+  AlertTriangle,
+  AlertCircle,
+  X,
+  SlidersHorizontal,
+  ChevronDown,
+  Globe,
+  Check,
+  RefreshCw,
+  Bookmark,
+} from "lucide-react";
 
 export interface SearchFormProps {
   // Sectors
@@ -175,9 +187,7 @@ export default function SearchForm({
       {/* AC3: Stale cache banner (blue/informative) */}
       {setoresUsingStaleCache && (
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-card flex items-start gap-3 animate-fade-in-up" role="status">
-          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
           <div className="flex-1">
             <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
               Usando setores em cache
@@ -193,9 +203,7 @@ export default function SearchForm({
       {/* AC3: Hardcoded fallback banner (yellow/warning) — only when no cache at all */}
       {setoresUsingFallback && !setoresUsingStaleCache && (
         <div className="mb-4 p-3 bg-[var(--warning-subtle)] border border-[var(--warning)]/20 rounded-card flex items-start gap-3 animate-fade-in-up" role="alert">
-          <svg className="w-5 h-5 text-[var(--warning)] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+          <AlertTriangle className="w-5 h-5 text-[var(--warning)] flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
           <div className="flex-1">
             <p className="text-sm font-medium text-[var(--warning)]">Usando lista offline de setores</p>
             <p className="text-xs text-ink-secondary mt-0.5">Alguns setores novos podem não aparecer.</p>
@@ -258,9 +266,7 @@ export default function SearchForm({
             ) : setoresError && !setoresUsingFallback ? (
               <div className="border border-error/20 rounded-input px-4 py-3 bg-error-subtle">
                 <div className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-error flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+                  <AlertTriangle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-error">Não foi possível carregar setores</p>
                     <p className="text-xs text-ink-secondary mt-0.5">
@@ -273,9 +279,7 @@ export default function SearchForm({
                     type="button"
                     aria-label="Tentar carregar setores novamente"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
+                    <RefreshCw className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
                     Tentar novamente
                   </button>
                 </div>
@@ -298,9 +302,7 @@ export default function SearchForm({
             {termValidation && termValidation.ignored.length > 0 && (
               <div className="mb-4 border border-warning/30 bg-warning-subtle rounded-card p-4 animate-fade-in-up">
                 <div className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+                  <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
                   <div className="flex-1">
                     <p className="font-semibold text-sm text-warning mb-2">
                       Atenção: {termValidation.ignored.length} termo{termValidation.ignored.length > 1 ? 's' : ''} não será{termValidation.ignored.length > 1 ? 'ão' : ''} utilizado{termValidation.ignored.length > 1 ? 's' : ''} na análise
@@ -340,9 +342,7 @@ export default function SearchForm({
                     className="ml-0.5 hover:text-error transition-colors"
                     aria-label={`Remover termo ${termo}`}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <X className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
                   </button>
                 </span>
               ))}
@@ -412,9 +412,7 @@ export default function SearchForm({
       {/* UX-346 AC5: First-use tip for new users */}
       {showFirstUseTip && (
         <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 flex items-start gap-3 animate-fade-in-up" data-testid="first-use-tip">
-          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" strokeWidth={2} aria-hidden="true" />
           <p className="text-sm text-blue-700 dark:text-blue-300 flex-1">
             <strong>Dica:</strong> selecione seu setor e clique Buscar. Personalize depois se quiser.
           </p>
@@ -427,9 +425,7 @@ export default function SearchForm({
             className="h-6 w-6 text-blue-400 hover:text-blue-600 dark:hover:text-blue-200 flex-shrink-0"
             data-testid="dismiss-first-use-tip"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-4 h-4" strokeWidth={2} />
           </Button>
         </div>
       )}
@@ -474,10 +470,7 @@ export default function SearchForm({
                        disabled:text-ink-muted disabled:border-ink-faint"
             title={isMaxCapacity ? "Máximo de 10 análises salvas atingido" : "Salvar esta análise"}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-            </svg>
+            <Bookmark className="w-5 h-5" strokeWidth={2} aria-hidden="true" />
             {isMaxCapacity ? "Limite de análises atingido" : "Salvar Análise"}
           </Button>
         )}
@@ -492,13 +485,9 @@ export default function SearchForm({
           data-tour="customize-toggle"
           className="w-full text-base font-semibold text-ink mb-2 flex items-center gap-2 hover:text-brand-blue transition-colors"
         >
-          <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-          </svg>
+          <SlidersHorizontal className="w-5 h-5 text-ink-muted" strokeWidth={2} aria-hidden="true" />
           Personalizar análise
-          <svg className={`w-4 h-4 ml-auto transition-transform ${customizeOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${customizeOpen ? 'rotate-180' : ''}`} strokeWidth={2} aria-hidden="true" />
         </button>
 
         {/* UX-346 AC3/AC4: Compact summary when collapsed — clickable to expand */}
@@ -509,9 +498,7 @@ export default function SearchForm({
             className="w-full flex items-center justify-center gap-2 text-sm text-ink-secondary py-2 hover:text-brand-blue transition-colors cursor-pointer animate-fade-in-up"
             data-testid="compact-summary"
           >
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Info className="w-4 h-4 flex-shrink-0" strokeWidth={2} aria-hidden="true" />
             <span>{compactSummary}</span>
           </button>
         )}
@@ -554,14 +541,10 @@ export default function SearchForm({
                       : "bg-surface-0 text-ink border-strong hover:border-accent hover:text-brand-blue hover:bg-brand-blue-subtle"
                   }`}
                 >
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 004 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <Globe className="w-4 h-4 flex-shrink-0" strokeWidth={2} aria-hidden="true" />
                   Todo o Brasil (27 estados)
                   {ufsSelecionadas.size === UFS.length && (
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="w-4 h-4 flex-shrink-0" strokeWidth={2} aria-hidden="true" />
                   )}
                 </button>
                 <button
@@ -646,9 +629,7 @@ export default function SearchForm({
                   return (
                     <div className="mt-3 p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
                       <div className="flex items-start gap-3">
-                        <svg role="img" aria-label="Aviso" className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
+                        <AlertTriangle role="img" aria-label="Aviso" className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" strokeWidth={2} />
                         <div className="flex-1">
                           <p className="text-sm font-medium text-warning mb-1">
                             Período muito longo para seu plano

@@ -28,8 +28,7 @@ export default function AuthCallbackPage() {
   const trackEventRef = useRef(trackEvent);
   trackEventRef.current = trackEvent;
 
-  // UX-336 AC3: Run callback exactly once on mount (no [status] dependency)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // UX-336 AC3: Run callback exactly once on mount — analytics funcs accessed via refs above
   useEffect(() => {
     const handleCallback = async () => {
       const startTime = Date.now();

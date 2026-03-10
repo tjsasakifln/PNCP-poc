@@ -50,7 +50,8 @@ export default function RedefinirSenhaPage() {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Mount-only: auth state subscription must register exactly once;
+    // re-registering on every render would cause duplicate handlers.
   }, []);
 
   // AC12: Validate minimum 8 characters

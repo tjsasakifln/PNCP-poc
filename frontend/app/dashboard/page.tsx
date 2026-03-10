@@ -12,6 +12,7 @@ import { TrialUpsellCTA } from "../../components/billing/TrialUpsellCTA";
 import { usePlan } from "../../hooks/usePlan";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { formatCurrencyBR } from "../../lib/format-currency";
+import { Download } from "lucide-react";
 
 import { DashboardStatCards } from "./components/DashboardStatCards";
 import { DashboardTimeSeriesChart } from "./components/DashboardTimeSeriesChart";
@@ -176,9 +177,7 @@ export default function DashboardPage() {
               className="hidden sm:flex px-3 py-1.5 text-sm border border-[var(--border)] rounded-button
                          text-[var(--ink-secondary)] hover:bg-[var(--surface-1)] transition-colors items-center gap-1.5"
             >
-              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <Download aria-hidden="true" className="w-4 h-4" strokeWidth={2} />
               CSV
             </button>
           </>

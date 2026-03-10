@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { usePlans } from "../../hooks/usePlans";
 import { useAuth } from "../components/AuthProvider";
 import LandingNavbar from "../components/landing/LandingNavbar";
@@ -85,6 +85,8 @@ export default function PlanosPage() {
   const { session, user, isAdmin, loading: authLoading } = useAuth();
   const { planInfo, loading: planLoading } = usePlan();
   const { trackEvent } = useAnalytics();
+  const trackEventRef = useRef(trackEvent);
+  trackEventRef.current = trackEvent;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [stripeRedirecting, setStripeRedirecting] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
@@ -150,9 +152,11 @@ export default function PlanosPage() {
     }
   }, []);
 
+  // Mount-only: fire page-view event exactly once via ref (trackEvent is not
+  // memoized in useAnalytics — accessing via ref avoids spurious re-fires).
   useEffect(() => {
-    trackEvent("plan_page_viewed", { source: "url" });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    trackEventRef.current("plan_page_viewed", { source: "url" });
+  }, []);
 
   // Fetch user profile
   useEffect(() => {

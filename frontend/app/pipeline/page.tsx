@@ -126,19 +126,21 @@ export default function PipelinePage() {
     },
   });
 
-  // Auto-start pipeline tour on first visit (AC9/AC10)
+  // Auto-start pipeline tour on first visit (AC9/AC10).
+  // trackEvent accessed via ref — it is not memoized in useAnalytics.
   const pipelineTourStarted = useRef(false);
+  const trackEventRef = useRef(trackEvent);
+  trackEventRef.current = trackEvent;
   useEffect(() => {
     if (!loading && !pipelineTourStarted.current && !isPipelineTourCompleted()) {
       pipelineTourStarted.current = true;
       const timer = setTimeout(() => {
         startPipelineTour();
-        trackEvent('onboarding_tour_started', { tour: 'pipeline' });
+        trackEventRef.current('onboarding_tour_started', { tour: 'pipeline' });
       }, 800);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
+  }, [loading, isPipelineTourCompleted, startPipelineTour]);
 
   const wrappedFetchItems = useCallback(async () => {
     setInitialLoadFailed(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { safeSetItem, safeGetItem } from "../../lib/storage";
@@ -173,6 +173,15 @@ export function TrialUpsellCTA({
   subscriptionStatus,
 }: TrialUpsellCTAProps) {
   const { trackEvent } = useAnalytics();
+  // Refs for unstable values accessed in effects (trackEvent is not memoized,
+  // contextData is a prop object — refs avoid spurious re-fires).
+  const trackEventRef = useRef(trackEvent);
+  trackEventRef.current = trackEvent;
+  const contextDataRef = useRef(contextData);
+  contextDataRef.current = contextData;
+  // Tracks whether the "shown" event has already been fired (replaces using
+  // `visible` state as a guard in the effect — which would cause re-show after dismiss).
+  const shownFiredRef = useRef(false);
   const [visible, setVisible] = useState(false);
 
   // AC6: Only render for active trial users (not expired — TrialConversionScreen handles that)
@@ -189,17 +198,21 @@ export function TrialUpsellCTA({
     return true;
   }, [isTrialActive, variant, isQuota]);
 
-  // Mark as shown + track
+  // Mark as shown + track — fires when shouldShow first becomes true.
+  // Uses shownFiredRef instead of `visible` state as the guard so that
+  // dismiss (setting visible=false) does not re-trigger the effect.
+  // trackEvent/contextData accessed via refs to avoid re-running on every render.
   useEffect(() => {
-    if (shouldShow && !visible) {
+    if (shouldShow && !shownFiredRef.current) {
+      shownFiredRef.current = true;
       setVisible(true);
       if (!isQuota) {
         incrementSessionCount();
       }
-      trackEvent("trial_upsell_shown", { variant, ...contextData });
+      trackEventRef.current("trial_upsell_shown", { variant, ...contextDataRef.current });
       reportCTAEvent("shown", variant);
     }
-  }, [shouldShow]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shouldShow, isQuota, variant]);
 
   const handleDismiss = useCallback(() => {
     setDismissed(variant);

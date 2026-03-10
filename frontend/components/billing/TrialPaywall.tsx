@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
@@ -36,13 +36,22 @@ export function TrialPaywall({ additionalCount, context = "search" }: TrialPaywa
   const { trackEvent } = useAnalytics();
   const [dismissed, setDismissed] = useState(false);
 
+  // Keep latest values in refs so the mount-only effect can read them
+  // without needing to re-run (trackEvent is not memoized in useAnalytics).
+  const trackEventRef = useRef(trackEvent);
+  trackEventRef.current = trackEvent;
+  const contextRef = useRef(context);
+  contextRef.current = context;
+  const additionalCountRef = useRef(additionalCount);
+  additionalCountRef.current = additionalCount;
+
   useEffect(() => {
     if (isDismissed()) {
       setDismissed(true);
     } else {
-      trackEvent("trial_paywall_shown", { context, additional: additionalCount });
+      trackEventRef.current("trial_paywall_shown", { context: contextRef.current, additional: additionalCountRef.current });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDismiss = useCallback(() => {
     if (typeof window !== "undefined") {

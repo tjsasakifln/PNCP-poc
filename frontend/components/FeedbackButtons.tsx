@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { safeSetItem, safeGetItem } from "../lib/storage";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 /**
  * GTM-RESILIENCE-D05 AC4: Feedback buttons for search result cards.
@@ -184,15 +185,12 @@ export default function FeedbackButtons({
         title={isCorrect ? "Marcado como relevante" : "Resultado relevante"}
         aria-label={isCorrect ? "Marcado como relevante" : "Marcar como relevante"}
       >
-        {isCorrect ? (
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M2 20h2V8H2v12zM7 20h11a2 2 0 002-1.7l1-6A2 2 0 0019 10h-6V4a2 2 0 00-2-2h-1L7 8v12z" />
-          </svg>
-        ) : (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-          </svg>
-        )}
+        <ThumbsUp
+          className="w-4 h-4"
+          fill={isCorrect ? "currentColor" : "none"}
+          strokeWidth={2}
+          aria-hidden="true"
+        />
       </button>
 
       {/* Thumbs Down */}
@@ -209,15 +207,12 @@ export default function FeedbackButtons({
         title={isFP ? "Marcado como irrelevante" : "Resultado irrelevante"}
         aria-label={isFP ? "Marcado como irrelevante" : "Marcar como irrelevante"}
       >
-        {isFP ? (
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M22 4h-2v12h2V4zM17 4H6a2 2 0 00-2 1.7l-1 6A2 2 0 005 14h6v6a2 2 0 002 2h1l3-6V4z" />
-          </svg>
-        ) : (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
-          </svg>
-        )}
+        <ThumbsDown
+          className="w-4 h-4"
+          fill={isFP ? "currentColor" : "none"}
+          strokeWidth={2}
+          aria-hidden="true"
+        />
       </button>
 
       {/* Category Dropdown */}

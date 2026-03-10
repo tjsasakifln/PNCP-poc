@@ -8,6 +8,25 @@ AC2: Every transition persisted to DB.
 AC5-AC6: Fire-and-forget INSERT to search_state_transitions.
 AC7: Timeline query for /v1/search/{search_id}/timeline.
 AC23: Structured logging on every transition.
+
+State Transition Table (DB-005)
+================================
+The valid state transitions are defined in models/search_state.py
+(VALID_TRANSITIONS dict). The allowed paths are:
+
+    None → CREATED → VALIDATING → FETCHING → FILTERING
+                                            → ENRICHING → GENERATING
+                                                        → PERSISTING → COMPLETED
+
+Any state can also transition to FAILED.
+VALIDATING can transition to RATE_LIMITED (quota exceeded).
+FETCHING can transition to TIMED_OUT (pipeline timeout).
+COMPLETED, FAILED, RATE_LIMITED, TIMED_OUT are terminal (no outgoing transitions).
+
+DB Tables
+----------
+- search_state_transitions: append-only audit log, one row per transition
+- search_sessions: mutable status/stage columns updated on each transition
 """
 
 from __future__ import annotations

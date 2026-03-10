@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../lib/supabase";
 
 interface MfaSetupWizardProps {
@@ -50,7 +50,7 @@ export function MfaSetupWizard({ userEmail, onComplete, onCancel }: MfaSetupWiza
   }, []);
 
   // AC10 Step 3: Verify TOTP code
-  const handleVerify = async () => {
+  const handleVerify = useCallback(async () => {
     if (verifyCode.length !== 6) return;
 
     setError("");
@@ -103,15 +103,14 @@ export function MfaSetupWizard({ userEmail, onComplete, onCancel }: MfaSetupWiza
     } finally {
       setLoading(false);
     }
-  };
+  }, [verifyCode, factorId, step]);
 
   // Auto-submit when 6 digits entered
   useEffect(() => {
     if (verifyCode.length === 6 && step === "verify") {
       handleVerify();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verifyCode]);
+  }, [verifyCode, step, handleVerify]);
 
   const handleCopyRecoveryCodes = () => {
     navigator.clipboard.writeText(recoveryCodes.join("\n"));

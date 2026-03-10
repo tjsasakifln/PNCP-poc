@@ -1067,7 +1067,7 @@ def check_quota(user_id: str) -> QuotaInfo:
 
 
 # ============================================================================
-# Legacy Functions (kept for backward compatibility during transition)
+# Exception Types
 # ============================================================================
 
 class QuotaExceededError(Exception):
@@ -1242,37 +1242,6 @@ def get_active_plan_dependency():
         return await require_active_plan(user)
 
     return _dep
-
-
-def decrement_credits(subscription_id: Optional[str], user_id: str) -> None:
-    """
-    Decrement one search credit after successful search.
-
-    DEPRECATED: Use increment_monthly_quota() instead for new pricing model.
-    Kept for backward compatibility during feature flag transition.
-    """
-    if subscription_id is None:
-        return
-
-    from supabase_client import get_supabase
-    sb = get_supabase()
-
-    result = (
-        sb.table("user_subscriptions")
-        .select("credits_remaining")
-        .eq("id", subscription_id)
-        .single()
-        .execute()
-    )
-
-    if result.data and result.data["credits_remaining"] is not None:
-        new_credits = max(0, result.data["credits_remaining"] - 1)
-        sb.table("user_subscriptions").update(
-            {"credits_remaining": new_credits}
-        ).eq("id", subscription_id).execute()
-        logger.info(
-            f"Decremented credits for subscription {subscription_id}: {new_credits} remaining"
-        )
 
 
 def _ensure_profile_exists(user_id: str, sb) -> bool:

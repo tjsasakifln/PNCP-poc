@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Menu } from "lucide-react";
 import { ThemeToggle } from "../app/components/ThemeToggle";
 import { UserMenu } from "../app/components/UserMenu";
 import { QuotaBadge } from "../app/components/QuotaBadge";
@@ -55,9 +56,7 @@ export function PageHeader({ title, extraControls, statusSlot }: PageHeaderProps
             aria-label="Abrir menu"
             data-testid="mobile-menu-button"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
+            <Menu className="w-5 h-5" strokeWidth={1.5} />
             <span className="text-sm font-medium">Menu</span>
           </button>
 

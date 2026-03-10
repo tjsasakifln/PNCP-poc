@@ -5,6 +5,7 @@ import { ModalidadeFilter } from "./ModalidadeFilter";
 import { ValorFilter } from "./ValorFilter";
 import { EsferaFilter, type Esfera } from "../../components/EsferaFilter";
 import { MunicipioFilter, type Municipio } from "../../components/MunicipioFilter";
+import { MapPin, ChevronDown, Filter } from "lucide-react";
 
 export interface FilterPanelProps {
   // Location filters
@@ -50,10 +51,7 @@ export default function FilterPanel({
           onClick={() => setLocationFiltersOpen(!locationFiltersOpen)}
           className="w-full text-base font-semibold text-ink mb-4 flex items-center gap-2 hover:text-brand-blue transition-colors"
         >
-          <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
+          <MapPin className="w-5 h-5 text-ink-muted" strokeWidth={2} aria-hidden="true" />
           Filtros avançados de localização
           {(() => {
             const activeCount = (esferas.length > 0 && esferas.length < 3 ? 1 : 0) + (municipios.length > 0 ? 1 : 0);
@@ -63,9 +61,7 @@ export default function FilterPanel({
               </span>
             ) : null;
           })()}
-          <svg className={`w-4 h-4 ml-auto transition-transform ${locationFiltersOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${locationFiltersOpen ? 'rotate-180' : ''}`} strokeWidth={2} aria-hidden="true" />
         </button>
         {locationFiltersOpen && (
           <div className="space-y-6 p-4 bg-surface-1 rounded-card border border-strong animate-fade-in-up">
@@ -92,13 +88,9 @@ export default function FilterPanel({
           aria-expanded={advancedFiltersOpen}
           className="w-full text-base font-semibold text-ink mb-4 flex items-center gap-2 hover:text-brand-blue transition-colors"
         >
-          <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
+          <Filter className="w-5 h-5 text-ink-muted" strokeWidth={2} aria-hidden="true" />
           Filtros Avançados
-          <svg className={`w-4 h-4 ml-auto transition-transform ${advancedFiltersOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${advancedFiltersOpen ? 'rotate-180' : ''}`} strokeWidth={2} aria-hidden="true" />
         </button>
         {advancedFiltersOpen && (
           <div className="space-y-6 p-4 bg-surface-1 rounded-card border border-strong animate-fade-in-up">

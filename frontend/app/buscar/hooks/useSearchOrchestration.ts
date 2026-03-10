@@ -29,6 +29,10 @@ export function useSearchOrchestration() {
   const { planInfo } = usePlan();
   const { phase: trialPhase } = useTrialPhase();
   const { trackEvent } = useAnalytics();
+  // Ref for trackEvent — it is not memoized in useAnalytics, so effects that
+  // should run only once access it via this ref instead of adding it to deps.
+  const trackEventRef = useRef(trackEvent);
+  trackEventRef.current = trackEvent;
   const router = useRouter();
 
   // ── Trial / Plan State ──────────────────────────────────────────────
@@ -223,12 +227,12 @@ export function useSearchOrchestration() {
     if (welcomeDone && !isSearchTourCompleted()) {
       const timer = setTimeout(() => {
         startSearchTour();
-        trackEvent('onboarding_tour_started', { tour: 'search' });
+        trackEventRef.current('onboarding_tour_started', { tour: 'search' });
       }, 500);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Mount-only: start tour once after onboarding; stable fns accessed via ref.
+  }, [isSearchTourCompleted, startSearchTour]);
 
   // ── Search Core ─────────────────────────────────────────────────────
   const progressAreaRef = useRef<HTMLDivElement>(null);
@@ -244,8 +248,7 @@ export function useSearchOrchestration() {
         search.setResult(result);
         toast.info("Resultados atualizados de outra aba.");
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search.loading]),
+    }, [search.loading, search.setResult]),
   });
 
   const prevLoadingRef = useRef(false);
@@ -270,8 +273,7 @@ export function useSearchOrchestration() {
       search.setResult(cached.result as BuscaResult);
       toast.success("Resultados da ultima analise restaurados.");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [search.setResult]);
 
   useEffect(() => {
     if (!search.loading) {

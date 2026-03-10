@@ -303,8 +303,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     if (typeof ufIndex === 'number' && ufIndex > 0) {
       execution.setStatesProcessed(prev => Math.max(prev, ufIndex));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveEvent?.detail?.uf_index]);
+  }, [effectiveEvent?.detail?.uf_index, execution.setStatesProcessed]);
 
   // SAB-005 AC1: Reset skeleton timeout whenever SSE event arrives (data update)
   useEffect(() => {
@@ -317,8 +316,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         execution.setSkeletonTimeoutReached(true);
       }, 30_000);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [execution.loading, effectiveEvent]);
+  }, [execution.loading, effectiveEvent, execution.skeletonTimeoutTimerRef, execution.setSkeletonTimeoutReached]);
 
   // STAB-006 AC4: Clean up expired partials on mount
   useEffect(() => {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../app/components/AuthProvider";
 import Link from "next/link";
+import { Bell } from "lucide-react";
 
 /**
  * STORY-315 AC18+AC19: Notification bell icon with badge count and dropdown.
@@ -77,13 +78,7 @@ export function AlertNotificationBell() {
         aria-label={`Notificacoes${unreadCount > 0 ? ` (${unreadCount} alertas ativos)` : ""}`}
         data-testid="notification-bell"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
-          />
-        </svg>
+        <Bell className="w-5 h-5" strokeWidth={1.5} />
 
         {/* AC18: Badge with count */}
         {unreadCount > 0 && (

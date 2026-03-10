@@ -1,14 +1,14 @@
 /**
  * EnhancedLoadingProgress Component
  * Educational carousel loading with:
- * - SSE real-time progress (Phase 2) with fallback to time-based simulation
- * - Asymptotic progress cap at 95% to avoid false "100%" display
+ * - SSE real-time progress (primary) or polling progress (fallback)
  * - B2G educational carousel replacing technical stage indicators
  * - Honest overtime messaging when search takes longer than expected
  * - Cancel button for user control
  *
  * UX-411: Replaced 5-stage technical indicators and countdown with
  * educational B2G carousel that reduces perceived wait time.
+ * DEBT-111: Removed time-based simulation path — only SSE/polling progress used.
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -25,7 +25,7 @@ export interface EnhancedLoadingProgressProps {
   onCancel?: () => void;
   /** SSE real-time progress event */
   sseEvent?: SearchProgressEvent | null;
-  /** Whether to use real SSE data vs simulated progress */
+  /** @deprecated DEBT-111: Simulation removed. Prop kept for API compatibility but ignored. */
   useRealProgress?: boolean;
   /** GTM-FIX-033 AC3: SSE disconnected — show informative message */
   sseDisconnected?: boolean;
@@ -118,7 +118,9 @@ export function EnhancedLoadingProgress({
   statesProcessed = 0,
   onCancel,
   sseEvent,
-  useRealProgress = false,
+  // useRealProgress is deprecated (DEBT-111) — simulation removed, prop ignored
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  useRealProgress: _useRealProgress,
   sseDisconnected = false,
   ufAllComplete = false,
   isDegraded = false,
@@ -126,7 +128,6 @@ export function EnhancedLoadingProgress({
   showTimeoutOverlay = false,
   isReconnecting = false,
 }: EnhancedLoadingProgressProps) {
-  const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(1);
   const [elapsedTime, setElapsedTime] = useState(0);
 
@@ -135,9 +136,6 @@ export function EnhancedLoadingProgress({
   const [isFading, setIsFading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const carouselIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Track last SSE progress for smooth fallback
-  const lastSseProgressRef = useRef(0);
 
   // Refs to avoid resetting interval on stage/callback changes
   const currentStageRef = useRef(currentStage);
@@ -151,32 +149,16 @@ export function EnhancedLoadingProgress({
     onStageChangeRef.current = onStageChange;
   }, [onStageChange]);
 
-  // Track SSE progress in ref for fallback smoothing.
-  useEffect(() => {
-    if (sseEvent && sseEvent.progress >= 0) {
-      lastSseProgressRef.current = sseEvent.progress;
-    }
-  }, [sseEvent]);
-
-  // Calculate simulated progress based on time elapsed
+  // Track elapsed time for overtime messaging (independent of progress source)
   useEffect(() => {
     const startTime = Date.now();
-    const safeEstimatedTime = Math.max(2, estimatedTime);
-
     const interval = setInterval(() => {
       const elapsed = (Date.now() - startTime) / 1000;
       setElapsedTime(Math.floor(elapsed));
-
-      // Asymptotic progress: approaches 95% but never reaches 100% until actually done
-      const rawProgress = (elapsed / safeEstimatedTime) * 100;
-      const asymptotic = rawProgress <= 90
-        ? rawProgress
-        : 90 + (5 * (1 - Math.exp(-(rawProgress - 90) / 30)));
-      setSimulatedProgress(Math.min(95, asymptotic));
-    }, 500);
+    }, 1000);
 
     return () => clearInterval(interval);
-  }, [estimatedTime]);
+  }, []);
 
   // UX-411 AC5: Carousel auto-rotation with hover pause (AC11)
   const advanceTip = useCallback(() => {
@@ -207,29 +189,30 @@ export function EnhancedLoadingProgress({
     };
   }, [isHovered, advanceTip]);
 
-  // GTM-FIX-035 AC3: Compute UF-aware progress
+  // GTM-FIX-035 AC3: Compute UF-aware progress from real SSE/polling data only
   // STORY-329 AC6: Fetch stage caps at 60%
+  // DEBT-111: No simulation fallback — progress is 0 until SSE/polling provides data.
   const ufBasedProgress = (() => {
-    if (stateCount <= 0) return simulatedProgress;
+    if (stateCount <= 0) return 0;
     const sseUfIndex = sseEvent?.detail?.uf_index;
     const effectiveStatesProcessed = (typeof sseUfIndex === 'number' && sseUfIndex > 0)
       ? sseUfIndex
       : statesProcessed;
-    if (effectiveStatesProcessed <= 0 && !ufAllComplete) return Math.min(simulatedProgress, 10);
+    if (effectiveStatesProcessed <= 0 && !ufAllComplete) return 0;
     const ufRatio = ufAllComplete ? 1 : Math.min(effectiveStatesProcessed / stateCount, 1);
     return 10 + (ufRatio * 50);
   })();
 
-  // Determine effective progress from SSE or simulation
+  // Determine effective progress from SSE or polling data only
   let effectiveProgress: number;
   if (sseEvent && sseEvent.progress >= 0) {
     if (sseEvent.stage === 'fetching' || (!sseEvent.stage && sseEvent.progress < 60)) {
       effectiveProgress = Math.max(sseEvent.progress, ufBasedProgress);
     } else {
-      effectiveProgress = Math.max(sseEvent.progress, lastSseProgressRef.current);
+      effectiveProgress = sseEvent.progress;
     }
   } else {
-    effectiveProgress = Math.max(ufBasedProgress, lastSseProgressRef.current);
+    effectiveProgress = ufBasedProgress;
   }
 
   // Determine stage from SSE or from effective progress (internal logic only)

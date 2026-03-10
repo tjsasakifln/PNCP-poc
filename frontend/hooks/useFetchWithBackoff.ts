@@ -98,6 +98,38 @@ export function useFetchWithBackoff<T>(
     }
   }, []);
 
+  // doFetch and handleFailure call each other — break the circular dependency
+  // by routing the cross-calls through a stable ref.
+  const doFetchRef = useRef<(attempt: number, generation: number) => void>(() => {});
+
+  /** Handle a failed attempt — schedule retry or give up */
+  const handleFailure = useCallback(
+    (msg: string, attempt: number, generation: number) => {
+      if (!mountedRef.current || generation !== generationRef.current) return;
+
+      const nextAttempt = attempt + 1;
+      setRetryCount(nextAttempt);
+      retryCountRef.current = nextAttempt;
+      setError(msg);
+
+      if (nextAttempt >= maxRetries) {
+        // Exhausted retries — stop
+        setLoading(false);
+        setHasExhaustedRetries(true);
+        return;
+      }
+
+      // Schedule next retry with backoff
+      const delay = getBackoffDelay(attempt);
+      retryTimerRef.current = setTimeout(() => {
+        if (mountedRef.current && generation === generationRef.current) {
+          doFetchRef.current(nextAttempt, generation);
+        }
+      }, delay);
+    },
+    [maxRetries, getBackoffDelay]
+  );
+
   /** Core fetch logic — executes one attempt, schedules retry on failure */
   const doFetch = useCallback(
     (attempt: number, generation: number) => {
@@ -163,37 +195,11 @@ export function useFetchWithBackoff<T>(
           handleFailure(msg, attempt, generation);
         });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [timeoutMs, maxRetries, getBackoffDelay]
+    [timeoutMs, handleFailure]
   );
 
-  /** Handle a failed attempt — schedule retry or give up */
-  const handleFailure = useCallback(
-    (msg: string, attempt: number, generation: number) => {
-      if (!mountedRef.current || generation !== generationRef.current) return;
-
-      const nextAttempt = attempt + 1;
-      setRetryCount(nextAttempt);
-      retryCountRef.current = nextAttempt;
-      setError(msg);
-
-      if (nextAttempt >= maxRetries) {
-        // Exhausted retries — stop
-        setLoading(false);
-        setHasExhaustedRetries(true);
-        return;
-      }
-
-      // Schedule next retry with backoff
-      const delay = getBackoffDelay(attempt);
-      retryTimerRef.current = setTimeout(() => {
-        if (mountedRef.current && generation === generationRef.current) {
-          doFetch(nextAttempt, generation);
-        }
-      }, delay);
-    },
-    [maxRetries, getBackoffDelay, doFetch]
-  );
+  // Keep doFetchRef in sync so handleFailure can call the latest doFetch
+  doFetchRef.current = doFetch;
 
   /** Manual retry — resets everything and starts fresh */
   const manualRetry = useCallback(() => {
@@ -232,8 +238,7 @@ export function useFetchWithBackoff<T>(
       mountedRef.current = false;
       cancelPending();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, fetchFn]);
+  }, [enabled, fetchFn, doFetch, cancelPending]);
 
   return {
     data,

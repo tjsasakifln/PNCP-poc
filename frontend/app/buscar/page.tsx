@@ -180,7 +180,7 @@ function HomePageContent() {
         </PullToRefresh>
       </main>
 
-      {/* Footer */}
+      {/* DEBT-111 AC9: Feature-rich search footer — intentional dual-footer with NavigationShell minimal footer (SAB-013 AC7, DEBT-105 AC8) */}
       <footer className="bg-surface-1 text-ink border-t border-[var(--border)] mt-12" aria-label="Links uteis da busca">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
