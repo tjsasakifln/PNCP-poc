@@ -235,12 +235,12 @@ class TestAC3CreateTask:
         )
         request.search_id = "test-292-003"
 
-        with patch("routes.search.SearchPipeline") as mock_pipeline_cls, \
-             patch("routes.search.store_background_results") as mock_store, \
-             patch("routes.search._persist_results_to_redis", new_callable=AsyncMock), \
-             patch("routes.search._update_session_on_complete", new_callable=AsyncMock), \
-             patch("routes.search.remove_tracker", new_callable=AsyncMock), \
-             patch("routes.search.remove_state_machine"):
+        with patch("routes.search_state.SearchPipeline") as mock_pipeline_cls, \
+             patch("routes.search_state.store_background_results") as mock_store, \
+             patch("routes.search_state._persist_results_to_redis", new_callable=AsyncMock), \
+             patch("routes.search_state._update_session_on_complete", new_callable=AsyncMock), \
+             patch("routes.search_state.remove_tracker", new_callable=AsyncMock), \
+             patch("routes.search_state.remove_state_machine"):
 
             mock_pipeline = AsyncMock()
             mock_pipeline.run = AsyncMock(return_value=mock_pipeline_response)
@@ -300,10 +300,10 @@ class TestAC7TaskFailure:
 
         mock_state_machine = AsyncMock()
 
-        with patch("routes.search.SearchPipeline") as mock_pipeline_cls, \
-             patch("routes.search.remove_tracker", new_callable=AsyncMock), \
-             patch("routes.search.remove_state_machine"), \
-             patch("sentry_sdk.capture_exception"):
+        with patch("routes.search_state.SearchPipeline") as mock_pipeline_cls, \
+             patch("routes.search_state.remove_tracker", new_callable=AsyncMock), \
+             patch("routes.search_state.remove_state_machine"), \
+             patch("routes.search_state.sentry_sdk.capture_exception"):
 
             mock_pipeline = AsyncMock()
             mock_pipeline.run = AsyncMock(side_effect=RuntimeError("Pipeline exploded"))
@@ -354,10 +354,10 @@ class TestAC9Timeout:
 
         mock_state_machine = AsyncMock()
 
-        with patch("routes.search.SearchPipeline") as mock_pipeline_cls, \
-             patch("routes.search.remove_tracker", new_callable=AsyncMock), \
-             patch("routes.search.remove_state_machine"), \
-             patch("sentry_sdk.capture_message"):
+        with patch("routes.search_state.SearchPipeline") as mock_pipeline_cls, \
+             patch("routes.search_state.remove_tracker", new_callable=AsyncMock), \
+             patch("routes.search_state.remove_state_machine"), \
+             patch("routes.search_state.sentry_sdk.capture_message"):
 
             mock_pipeline = AsyncMock()
             mock_pipeline.run = AsyncMock(side_effect=asyncio.TimeoutError())

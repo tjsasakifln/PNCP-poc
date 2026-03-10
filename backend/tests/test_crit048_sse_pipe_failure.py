@@ -26,8 +26,8 @@ def mock_auth():
 @pytest.fixture
 def mock_sse_limits():
     """Mock SSE connection limiter."""
-    with patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-         patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+    with patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+         patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
         yield
 
 
@@ -53,12 +53,12 @@ class TestRedisTimeoutGraceful:
         # First XREAD succeeds, second raises TimeoutError
         mock_redis.xread = AsyncMock(side_effect=TimeoutError("Timeout reading from redis"))
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value={
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_sse.get_search_status", new_callable=AsyncMock, return_value={
                  "status": "completed", "progress": 100, "stage": "complete",
              }), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -93,12 +93,12 @@ class TestRedisTimeoutGraceful:
         mock_redis = AsyncMock()
         mock_redis.xread = AsyncMock(side_effect=ConnectionError("Connection refused"))
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value={
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_sse.get_search_status", new_callable=AsyncMock, return_value={
                  "status": "completed", "progress": 100,
              }), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -126,13 +126,13 @@ class TestRedisTimeoutGraceful:
 
         mock_metric = MagicMock()
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value={
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_sse.get_search_status", new_callable=AsyncMock, return_value={
                  "status": "completed", "progress": 100,
              }), \
              patch("metrics.SSE_CONNECTION_ERRORS", mock_metric), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -164,13 +164,13 @@ class TestSupabasePollingFallback:
         mock_redis = AsyncMock()
         mock_redis.xread = AsyncMock(side_effect=TimeoutError("Timeout"))
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value={
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_sse.get_search_status", new_callable=AsyncMock, return_value={
                  "status": "completed", "progress": 100,
                  "search_id": "test-sb-fallback", "stage": "complete",
              }), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -199,12 +199,12 @@ class TestSupabasePollingFallback:
         mock_redis = AsyncMock()
         mock_redis.xread = AsyncMock(side_effect=TimeoutError("Timeout"))
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value={
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_sse.get_search_status", new_callable=AsyncMock, return_value={
                  "status": "failed", "progress": 0,
              }), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -240,10 +240,10 @@ class TestSupabasePollingFallback:
                 return {"status": "searching", "progress": 30}
             return {"status": "completed", "progress": 100}
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_search_status", side_effect=mock_get_status), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01), \
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_sse.get_search_status", side_effect=mock_get_status), \
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01), \
              patch("asyncio.sleep", new_callable=AsyncMock):  # Skip actual sleep
 
             transport = ASGITransport(app=app)
@@ -316,12 +316,12 @@ class TestCircuitBreakerSupabaseFallback:
         # Generic error (not TimeoutError) — triggers existing circuit breaker
         mock_redis.xread = AsyncMock(side_effect=RuntimeError("Redis WRONGTYPE"))
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value={
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_sse.get_search_status", new_callable=AsyncMock, return_value={
                  "status": "completed", "progress": 100,
              }), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01), \
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01), \
              patch("asyncio.sleep", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)

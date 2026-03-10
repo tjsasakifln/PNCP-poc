@@ -63,8 +63,8 @@ def mock_auth():
 @pytest.fixture
 def mock_sse_limits():
     """Mock SSE connection limiter to always allow."""
-    with patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-         patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+    with patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+         patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
         yield
 
 
@@ -134,8 +134,8 @@ class TestEventsHaveIdField:
             ProgressEvent(stage="complete", progress=100, message="Done")
         )
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get("/v1/buscar-progress/test-id-field")
@@ -282,10 +282,10 @@ class TestReplayAfterLastEventId:
 
         # Mock get_tracker to return our tracker
         # Since search is complete (terminal event in history), AC4 path kicks in
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -316,10 +316,10 @@ class TestReplayAfterLastEventId:
             await tracker.emit("connecting", 5, "Start")   # id=1
             await tracker.emit_complete()                   # id=2
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -346,10 +346,10 @@ class TestReplayAfterLastEventId:
             ProgressEvent(stage="complete", progress=100, message="Done")
         )
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -385,10 +385,10 @@ class TestCompletedSearchImmediateTerminal:
             await tracker.emit("fetching", 30, "Fetching")
             await tracker.emit_complete()  # id=3, terminal
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -421,10 +421,10 @@ class TestCompletedSearchImmediateTerminal:
 
         # Client says it saw up to id=2 (the complete event) — but we still send
         # the terminal confirmation per AC4
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -454,10 +454,10 @@ class TestCompletedSearchImmediateTerminal:
             await tracker.emit("connecting", 5, "Start")
             await tracker.emit_degraded("partial", {"coverage_pct": 60})  # terminal
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -761,10 +761,10 @@ class TestReconnectDuringActiveSearch:
         )
 
         # Reconnect with Last-Event-ID=2 (client saw events 1,2, missed 3,4,complete)
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -800,10 +800,10 @@ class TestReconnectDuringActiveSearch:
             await tracker.emit("fetching", 30, "Fetching")     # id=2
             await tracker.emit_complete()                       # id=3 (terminal)
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -841,10 +841,10 @@ class TestReconnectAfterComplete:
             await tracker.emit("fetching", 30, "Data")
             await tracker.emit_complete()  # id=3
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -872,10 +872,10 @@ class TestReconnectAfterComplete:
             await tracker.emit("connecting", 5, "Start")
             await tracker.emit_error("Timeout")  # id=2, terminal
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -900,10 +900,10 @@ class TestReconnectAfterComplete:
             await tracker.emit("connecting", 5, "Start")
             await tracker.emit_search_complete("post-search-complete", 42)  # terminal
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-             patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+             patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -942,8 +942,8 @@ class TestNormalStreamingNoReplay:
             ProgressEvent(stage="complete", progress=100, message="Done")
         )
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get("/v1/buscar-progress/normal-stream")
@@ -967,9 +967,9 @@ class TestNormalStreamingNoReplay:
             ProgressEvent(stage="complete", progress=100, message="Done")
         )
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_replay_events", new_callable=AsyncMock) as mock_replay:
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_replay_events", new_callable=AsyncMock) as mock_replay:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get("/v1/buscar-progress/no-replay")

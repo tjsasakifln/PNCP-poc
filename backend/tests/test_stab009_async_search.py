@@ -349,9 +349,9 @@ class TestSearchStatusEndpoint:
             "error_code": None,
         }
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_state_machine", return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=mock_status):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_state_machine", return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
             response = client.get(f"/v1/search/{search_id}/status")
 
         assert response.status_code == 200
@@ -364,9 +364,9 @@ class TestSearchStatusEndpoint:
 
     def test_search_status_endpoint_not_found(self, client):
         """AC3: Returns 404 when search_id unknown."""
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_state_machine", return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=None):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_state_machine", return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=None):
             response = client.get("/v1/search/nonexistent-id/status")
 
         assert response.status_code == 404
@@ -390,9 +390,9 @@ class TestSearchStatusEndpoint:
             "error_code": None,
         }
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_state_machine", return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=mock_status):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_state_machine", return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
             response = client.get(f"/v1/search/{search_id}/status")
 
         assert response.status_code == 200
@@ -439,7 +439,7 @@ class TestSearchResultsReady:
             },
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=mock_result):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=mock_result):
             response = client.get("/v1/search/test-search-id/results")
 
         assert response.status_code == 200
@@ -451,7 +451,7 @@ class TestSearchResultsReady:
         """AC4: 200 response includes Cache-Control: max-age=300."""
         mock_result = {"total_filtrado": 5, "licitacoes": []}
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=mock_result):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=mock_result):
             response = client.get("/v1/search/test-search-id/results")
 
         assert response.status_code == 200
@@ -461,8 +461,8 @@ class TestSearchResultsReady:
 
     def test_search_results_404_when_expired(self, client):
         """AC4: Returns 404 when search_id not found or expired."""
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=None):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=None):
 
             response = client.get("/v1/search/expired-id/results")
 
@@ -488,8 +488,8 @@ class TestSearchResultsStillProcessing:
             "progress": 30,
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=mock_status):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
 
             response = client.get(f"/v1/search/{search_id}/results")
 
@@ -504,8 +504,8 @@ class TestSearchResultsStillProcessing:
         """AC4: 202 response includes a user-facing message."""
         mock_status = {"search_id": "abc", "status": "filtering", "progress": 60}
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=mock_status):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
 
             response = client.get("/v1/search/abc/results")
 
@@ -523,8 +523,8 @@ class TestSearchResultsStillProcessing:
                 "progress": expected_progress,
             }
 
-            with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=None), \
-                 patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=mock_status):
+            with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=None), \
+                 patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
 
                 response = client.get("/v1/search/check-state/results")
 

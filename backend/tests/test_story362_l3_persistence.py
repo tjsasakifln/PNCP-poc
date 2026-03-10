@@ -134,7 +134,7 @@ class TestAC2RedisTTL:
         mock_redis = AsyncMock()
         mock_redis.setex = AsyncMock(return_value=True)
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis):
             await _persist_results_to_redis("test-ac2", _make_response())
 
             call_args = mock_redis.setex.call_args
@@ -222,10 +222,10 @@ class TestAC6L3Fallback:
         mock_redis.get = AsyncMock(return_value=None)
         l3_data = {"resumo": "From L3", "licitacoes": [], "total_filtrado": 3}
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_background_results", return_value=None), \
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_state.get_background_results", return_value=None), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search._get_results_from_supabase", new_callable=AsyncMock, return_value=l3_data):
+             patch("routes.search_state._get_results_from_supabase", new_callable=AsyncMock, return_value=l3_data):
             result = await get_background_results_async("search-l3-fallback")
 
             assert result is not None
@@ -241,9 +241,9 @@ class TestAC6L3Fallback:
         redis_data = json.dumps({"resumo": "From L2", "licitacoes": [], "total_filtrado": 7})
         mock_redis.get = AsyncMock(return_value=redis_data)
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_background_results", return_value=None), \
-             patch("routes.search._get_results_from_supabase", new_callable=AsyncMock) as mock_l3:
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_state.get_background_results", return_value=None), \
+             patch("routes.search_state._get_results_from_supabase", new_callable=AsyncMock) as mock_l3:
             result = await get_background_results_async("search-l2-priority")
 
             assert result is not None
@@ -258,10 +258,10 @@ class TestAC6L3Fallback:
         mock_redis = AsyncMock()
         mock_redis.get = AsyncMock(return_value=None)
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_background_results", return_value=None), \
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_state.get_background_results", return_value=None), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search._get_results_from_supabase", new_callable=AsyncMock, return_value=None):
+             patch("routes.search_state._get_results_from_supabase", new_callable=AsyncMock, return_value=None):
             result = await get_background_results_async("search-all-miss")
             assert result is None
 
@@ -385,7 +385,7 @@ class TestAC8AC9AC10Integration:
         mock_redis = AsyncMock()
         mock_redis.get = AsyncMock(return_value=redis_data)
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis):
             result = await get_background_results_async("ac8-2h")
             assert result is not None
             assert result["total_filtrado"] == 15
@@ -401,10 +401,10 @@ class TestAC8AC9AC10Integration:
 
         l3_data = {"resumo": "L3 active", "licitacoes": [], "total_filtrado": 15}
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_background_results", return_value=None), \
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_state.get_background_results", return_value=None), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search._get_results_from_supabase", new_callable=AsyncMock, return_value=l3_data):
+             patch("routes.search_state._get_results_from_supabase", new_callable=AsyncMock, return_value=l3_data):
             result = await get_background_results_async("ac9-6h")
             assert result is not None
             assert result["total_filtrado"] == 15
@@ -419,8 +419,8 @@ class TestAC8AC9AC10Integration:
         redis_data = json.dumps({"resumo": "Post-restart", "licitacoes": [], "total_filtrado": 8})
         mock_redis.get = AsyncMock(return_value=redis_data)
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-             patch("routes.search.get_background_results", return_value=None):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_state.get_background_results", return_value=None):
             result = await get_background_results_async("ac10-restart")
             assert result is not None
             assert result["total_filtrado"] == 8

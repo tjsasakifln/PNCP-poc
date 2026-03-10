@@ -325,11 +325,11 @@ class TestCrossWorkerE2E:
         app.dependency_overrides[require_auth] = lambda: {"id": "test-user", "email": "t@t.com"}
 
         try:
-            with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-                 patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-                 patch("routes.search.release_sse_connection", new_callable=AsyncMock), \
-                 patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+            with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+                 patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+                 patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock), \
+                 patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
                     response = await client.get("/v1/buscar-progress/cross-worker-1")
@@ -393,11 +393,11 @@ class TestCrossWorkerE2E:
         app.dependency_overrides[require_auth] = lambda: {"id": "test-user", "email": "t@t.com"}
 
         try:
-            with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-                 patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-                 patch("routes.search.release_sse_connection", new_callable=AsyncMock), \
-                 patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+            with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+                 patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+                 patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock), \
+                 patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
                     response = await client.get("/v1/buscar-progress/incremental-1")
@@ -461,11 +461,11 @@ class TestCrossWorkerE2E:
         app.dependency_overrides[require_auth] = lambda: {"id": "test-user", "email": "t@t.com"}
 
         try:
-            with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-                 patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-                 patch("routes.search.release_sse_connection", new_callable=AsyncMock), \
-                 patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+            with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+                 patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+                 patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock), \
+                 patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
                     response = await client.get("/v1/buscar-progress/detail-test")
@@ -495,10 +495,10 @@ class TestCrossWorkerE2E:
         app.dependency_overrides[require_auth] = lambda: {"id": "test-user", "email": "t@t.com"}
 
         try:
-            with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-                 patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-                 patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+            with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+                 patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+                 patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
                     response = await client.get("/v1/buscar-progress/fallback-sse")
@@ -546,12 +546,12 @@ class TestCrossWorkerE2E:
         app.dependency_overrides[require_auth] = lambda: {"id": "test-user", "email": "t@t.com"}
 
         try:
-            with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
-                 patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-                 patch("routes.search.release_sse_connection", new_callable=AsyncMock), \
-                 patch("routes.search._SSE_POLLS_PER_HEARTBEAT", 1), \
-                 patch("routes.search._SSE_POLL_INTERVAL", 0.01):
+            with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+                 patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+                 patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock), \
+                 patch("routes.search_sse._SSE_POLLS_PER_HEARTBEAT", 1), \
+                 patch("routes.search_sse._SSE_POLL_INTERVAL", 0.01):
                 transport = ASGITransport(app=app)
                 async with AsyncClient(transport=transport, base_url="http://test") as client:
                     response = await client.get("/v1/buscar-progress/heartbeat-mix")

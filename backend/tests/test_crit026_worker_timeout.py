@@ -25,8 +25,8 @@ def mock_auth():
 @pytest.fixture
 def mock_sse_limits():
     """Mock SSE connection limiter."""
-    with patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-         patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+    with patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+         patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
         yield
 
 
@@ -76,10 +76,10 @@ class TestSSEGeneratorAbruptLogging:
         mock_queue.get = AsyncMock(side_effect=RuntimeError("Simulated crash"))
         mock_tracker.queue = mock_queue
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01), \
-             caplog.at_level(logging.ERROR, logger="routes.search"):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01), \
+             caplog.at_level(logging.ERROR, logger="routes.search_sse"):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -105,10 +105,10 @@ class TestSSEGeneratorAbruptLogging:
             ProgressEvent(stage="complete", progress=100, message="Done")
         )
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01), \
-             caplog.at_level(logging.DEBUG, logger="routes.search"):
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
+             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01), \
+             caplog.at_level(logging.DEBUG, logger="routes.search_sse"):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -126,11 +126,11 @@ class TestSSEGeneratorAbruptLogging:
         """AC8: When tracker not found, error event is emitted and generator finishes cleanly."""
         from main import app
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_current_state", new_callable=AsyncMock, return_value=None), \
+        with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_current_state", new_callable=AsyncMock, return_value=None), \
              patch("asyncio.sleep", new_callable=AsyncMock), \
-             patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01), \
-             caplog.at_level(logging.DEBUG, logger="routes.search"):
+             patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01), \
+             caplog.at_level(logging.DEBUG, logger="routes.search_sse"):
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:

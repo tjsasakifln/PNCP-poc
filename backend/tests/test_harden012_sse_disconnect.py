@@ -49,9 +49,9 @@ async def _collect_sse_events(gen, max_events=50):
 def _base_patches():
     """Return common patches needed by all tests."""
     return [
-        patch("routes.search.is_search_terminal", new_callable=AsyncMock, return_value=None),
-        patch("routes.search.get_replay_events", new_callable=AsyncMock, return_value=[]),
-        patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True),
+        patch("routes.search_sse.is_search_terminal", new_callable=AsyncMock, return_value=None),
+        patch("routes.search_sse.get_replay_events", new_callable=AsyncMock, return_value=[]),
+        patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True),
         patch("metrics.SSE_CONNECTIONS_TOTAL", MagicMock()),
         patch("metrics.SSE_DISCONNECTS_TOTAL", MagicMock()),
         patch("metrics.SSE_CONNECTION_ERRORS", MagicMock()),
@@ -68,8 +68,8 @@ async def test_disconnect_during_wait_phase():
     request = _make_request(disconnected_after=0)  # Immediate disconnect
 
     patches = _base_patches() + [
-        patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None),
-        patch("routes.search.release_sse_connection", new_callable=AsyncMock),
+        patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=None),
+        patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock),
     ]
 
     for p in patches:
@@ -81,10 +81,10 @@ async def test_disconnect_during_wait_phase():
         mock_release = None
 
         # Get the mock_release from the active patches
-        import routes.search as search_mod
+        import routes.search_sse as search_mod
         mock_release = search_mod.release_sse_connection
 
-        from routes.search import buscar_progress_stream
+        from routes.search_sse import buscar_progress_stream
         response = await buscar_progress_stream(
             search_id="test-disconnect-wait",
             request=request,
@@ -124,9 +124,9 @@ async def test_disconnect_during_redis_streaming():
     mock_redis.xread = AsyncMock(return_value=[])
 
     patches = _base_patches() + [
-        patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
-        patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis),
-        patch("routes.search.release_sse_connection", new_callable=AsyncMock),
+        patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
+        patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis),
+        patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock),
     ]
 
     for p in patches:
@@ -135,10 +135,10 @@ async def test_disconnect_during_redis_streaming():
     try:
         import metrics
         mock_metric = metrics.SSE_DISCONNECTS_TOTAL
-        import routes.search as search_mod
+        import routes.search_sse as search_mod
         mock_release = search_mod.release_sse_connection
 
-        from routes.search import buscar_progress_stream
+        from routes.search_sse import buscar_progress_stream
         response = await buscar_progress_stream(
             search_id="test-disconnect-redis",
             request=request,
@@ -171,9 +171,9 @@ async def test_disconnect_during_inmemory_queue():
     mock_tracker.queue = asyncio.Queue()
 
     patches = _base_patches() + [
-        patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
-        patch("routes.search.release_sse_connection", new_callable=AsyncMock),
-        patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01),
+        patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
+        patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock),
+        patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01),
     ]
 
     for p in patches:
@@ -182,10 +182,10 @@ async def test_disconnect_during_inmemory_queue():
     try:
         import metrics
         mock_metric = metrics.SSE_DISCONNECTS_TOTAL
-        import routes.search as search_mod
+        import routes.search_sse as search_mod
         mock_release = search_mod.release_sse_connection
 
-        from routes.search import buscar_progress_stream
+        from routes.search_sse import buscar_progress_stream
         response = await buscar_progress_stream(
             search_id="test-disconnect-queue",
             request=request,
@@ -221,10 +221,10 @@ async def test_disconnect_during_supabase_fallback():
     mock_redis.xread = AsyncMock(side_effect=TimeoutError("redis timeout"))
 
     patches = _base_patches() + [
-        patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
-        patch("routes.search.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis),
-        patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=None),
-        patch("routes.search.release_sse_connection", new_callable=AsyncMock),
+        patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
+        patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis),
+        patch("routes.search_sse.get_search_status", new_callable=AsyncMock, return_value=None),
+        patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock),
     ]
 
     for p in patches:
@@ -233,10 +233,10 @@ async def test_disconnect_during_supabase_fallback():
     try:
         import metrics
         mock_metric = metrics.SSE_DISCONNECTS_TOTAL
-        import routes.search as search_mod
+        import routes.search_sse as search_mod
         mock_release = search_mod.release_sse_connection
 
-        from routes.search import buscar_progress_stream
+        from routes.search_sse import buscar_progress_stream
         response = await buscar_progress_stream(
             search_id="test-disconnect-supabase",
             request=request,
@@ -271,9 +271,9 @@ async def test_no_disconnect_normal_flow():
     await mock_tracker.queue.put(mock_event)
 
     patches = _base_patches() + [
-        patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
-        patch("routes.search.release_sse_connection", new_callable=AsyncMock),
-        patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01),
+        patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
+        patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock),
+        patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01),
     ]
 
     for p in patches:
@@ -282,10 +282,10 @@ async def test_no_disconnect_normal_flow():
     try:
         import metrics
         mock_metric = metrics.SSE_DISCONNECTS_TOTAL
-        import routes.search as search_mod
+        import routes.search_sse as search_mod
         mock_release = search_mod.release_sse_connection
 
-        from routes.search import buscar_progress_stream
+        from routes.search_sse import buscar_progress_stream
         response = await buscar_progress_stream(
             search_id="test-no-disconnect",
             request=request,

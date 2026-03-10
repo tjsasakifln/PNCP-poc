@@ -120,7 +120,7 @@ class TestBackgroundResultsRedis:
         """AC2: store_background_results + _persist_results_to_redis writes to Redis."""
         from routes.search import _persist_results_to_redis
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async):
             resp = _make_response(total_filtrado=42)
             await _persist_results_to_redis("search-001", resp)
 
@@ -142,8 +142,8 @@ class TestBackgroundResultsRedis:
         })
         mock_redis_async.get = AsyncMock(return_value=stored_data)
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async), \
-             patch("routes.search.get_background_results", return_value=None):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async), \
+             patch("routes.search_state.get_background_results", return_value=None):
             result = await get_background_results_async("search-cross-001")
 
             assert result is not None
@@ -157,7 +157,7 @@ class TestBackgroundResultsRedis:
         resp = _make_response(total_filtrado=99)
         store_background_results("search-l1", resp)
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async):
             result = await get_background_results_async("search-l1")
 
             # Should find in L1, never hit Redis
@@ -170,7 +170,7 @@ class TestBackgroundResultsRedis:
         """AC6: When Redis unavailable, persist silently fails (no crash)."""
         from routes.search import _persist_results_to_redis
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=None):
             resp = _make_response()
             # Should not raise
             await _persist_results_to_redis("search-fallback", resp)
@@ -182,7 +182,7 @@ class TestBackgroundResultsRedis:
 
         mock_redis_async.setex = AsyncMock(side_effect=Exception("Redis write error"))
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async), \
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async), \
              patch("metrics.STATE_STORE_ERRORS") as mock_metric:
             mock_metric.labels = MagicMock(return_value=MagicMock())
 
@@ -197,7 +197,7 @@ class TestBackgroundResultsRedis:
 
         mock_redis_async.get = AsyncMock(side_effect=Exception("Redis read error"))
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async), \
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async), \
              patch("metrics.STATE_STORE_ERRORS") as mock_metric:
             mock_metric.labels = MagicMock(return_value=MagicMock())
 
@@ -443,7 +443,7 @@ class TestTTLCleanup:
         """AC8: Background results stored with 4h TTL (STORY-362 AC2)."""
         from routes.search import _persist_results_to_redis
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async):
             await _persist_results_to_redis("ttl-001", _make_response())
 
             call_args = mock_redis_async.setex.call_args
@@ -503,7 +503,7 @@ class TestConcurrentSearches:
         mock_redis_async.setex = AsyncMock(side_effect=mock_setex)
         mock_redis_async.get = AsyncMock(side_effect=mock_get)
 
-        with patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async):
+        with patch("routes.search_state.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis_async):
             # Store 10 searches in parallel
             tasks = []
             for i in range(10):

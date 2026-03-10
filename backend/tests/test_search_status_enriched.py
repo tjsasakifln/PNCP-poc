@@ -78,8 +78,8 @@ class TestStatusAllFieldsRunning:
         tracker = _make_tracker(uf_count=5, ufs_completed=2)
         sm = _make_state_machine("fetching")
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm):
 
             response = client.get(f"/v1/search/{search_id}/status")
 
@@ -103,8 +103,8 @@ class TestStatusAllFieldsRunning:
         tracker = _make_tracker(uf_count=3, ufs_completed=1)
         sm = _make_state_machine("filtering")
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm):
 
             response = client.get(f"/v1/search/{search_id}/status")
 
@@ -130,9 +130,9 @@ class TestStatusCompletedResults:
         mock_bg_result = Mock()
         mock_bg_result.total_filtrado = 23
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg_result):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg_result):
 
             response = client.get(f"/v1/search/{search_id}/status")
 
@@ -149,9 +149,9 @@ class TestStatusCompletedResults:
         mock_bg = Mock()
         mock_bg.total_filtrado = 5
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg):
 
             response = client.get(f"/v1/search/{search_id}/status")
 
@@ -173,14 +173,14 @@ class TestStatusProgressPct:
 
         # 0/5 UFs complete → ~10% (baseline)
         tracker_0 = _make_tracker(uf_count=5, ufs_completed=0)
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker_0), \
-             patch("routes.search.get_state_machine", return_value=sm):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker_0), \
+             patch("routes.search_status.get_state_machine", return_value=sm):
             resp_0 = client.get(f"/v1/search/{search_id}/status")
 
         # 3/5 UFs complete → higher
         tracker_3 = _make_tracker(uf_count=5, ufs_completed=3)
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker_3), \
-             patch("routes.search.get_state_machine", return_value=sm):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker_3), \
+             patch("routes.search_status.get_state_machine", return_value=sm):
             resp_3 = client.get(f"/v1/search/{search_id}/status")
 
         assert resp_3.json()["progress_pct"] > resp_0.json()["progress_pct"]
@@ -194,9 +194,9 @@ class TestStatusProgressPct:
         mock_bg = Mock()
         mock_bg.total_filtrado = 0
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg):
 
             response = client.get(f"/v1/search/{search_id}/status")
 
@@ -216,9 +216,9 @@ class TestStatusLightweight:
         tracker = _make_tracker()
         sm = _make_state_machine("fetching")
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock) as mock_db:
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock) as mock_db:
 
             response = client.get(f"/v1/search/{search_id}/status")
 
@@ -232,8 +232,8 @@ class TestStatusLightweight:
         tracker = _make_tracker()
         sm = _make_state_machine("fetching")
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm):
 
             start = time.monotonic()
             response = client.get(f"/v1/search/{search_id}/status")
@@ -254,7 +254,7 @@ class TestResultsCacheControlCompleted:
     def test_results_ready_has_cache_control_300(self, client):
         mock_result = {"total_filtrado": 10, "licitacoes": []}
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=mock_result):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=mock_result):
             response = client.get("/v1/search/test-id/results")
 
         assert response.status_code == 200
@@ -276,8 +276,8 @@ class TestResultsCacheControlRunning:
             "progress": 30,
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=mock_status):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
 
             response = client.get("/v1/search/proc-id/results")
 
@@ -299,8 +299,8 @@ class TestStatusTimeout:
         tracker = _make_tracker(uf_count=5, ufs_completed=2, is_complete=True)
         sm = _make_state_machine("timed_out")
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm):
 
             response = client.get(f"/v1/search/{search_id}/status")
 
@@ -318,9 +318,9 @@ class TestStatusTimeout:
             "elapsed_ms": 120000,
         }
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_state_machine", return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=mock_db_status):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_state_machine", return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_db_status):
 
             response = client.get(f"/v1/search/{search_id}/status")
 
@@ -338,9 +338,9 @@ class TestStatusNotFound:
 
     def test_unknown_search_id_404(self, client):
         """No in-memory state AND no DB record → 404."""
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_state_machine", return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=None):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_state_machine", return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=None):
 
             response = client.get("/v1/search/nonexistent-id/status")
 
@@ -348,9 +348,9 @@ class TestStatusNotFound:
 
     def test_404_has_detail_message(self, client):
         """404 response includes a detail message."""
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_state_machine", return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=None):
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_state_machine", return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=None):
 
             response = client.get("/v1/search/unknown-xyz/status")
 

@@ -9,7 +9,7 @@ Tests cover:
 Follows project test conventions:
   - auth: app.dependency_overrides[require_auth]
   - job_queue: mock at job_queue.get_job_result (imported locally in routes)
-  - status endpoint mocks: routes.search.get_tracker, routes.search.get_state_machine
+  - status endpoint mocks: routes.search_status.get_tracker, routes.search_status.get_state_machine
   - redis direct tests: mock redis_pool.get_redis_pool (job_queue imports from redis_pool)
 """
 
@@ -83,11 +83,11 @@ def _status_fast_path_mocks(tracker, sm, bg_result=None, excel_job_result=None):
     does `from job_queue import get_job_result` at call time.
     """
     mocks = {
-        "tracker": patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker),
-        "state_machine": patch("routes.search.get_state_machine", return_value=sm),
+        "tracker": patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker),
+        "state_machine": patch("routes.search_status.get_state_machine", return_value=sm),
     }
     if bg_result is not None:
-        mocks["bg_results"] = patch("routes.search.get_background_results", return_value=bg_result)
+        mocks["bg_results"] = patch("routes.search_status.get_background_results", return_value=bg_result)
     mocks["get_job_result"] = patch(
         "job_queue.get_job_result",
         new_callable=AsyncMock,
@@ -116,9 +116,9 @@ class TestStatusExcelUrlReady:
         mock_bg = Mock()
         mock_bg.total_filtrado = 10
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=excel_result):
 
             response = client.get(f"/v1/search/{sid}/status")
@@ -143,9 +143,9 @@ class TestStatusExcelUrlReady:
             "excel_status": "ready",
         }
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-             patch("routes.search.get_state_machine", return_value=None), \
-             patch("routes.search.get_search_status", new_callable=AsyncMock, return_value=db_status), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_status.get_state_machine", return_value=None), \
+             patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=db_status), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=excel_result):
 
             response = client.get(f"/v1/search/{sid}/status")
@@ -175,9 +175,9 @@ class TestStatusExcelProcessing:
         mock_bg = Mock()
         mock_bg.total_filtrado = 5
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=excel_result):
 
             response = client.get(f"/v1/search/{sid}/status")
@@ -203,9 +203,9 @@ class TestStatusNoExcelResult:
         mock_bg = Mock()
         mock_bg.total_filtrado = 3
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None):
 
             response = client.get(f"/v1/search/{sid}/status")
@@ -223,9 +223,9 @@ class TestStatusNoExcelResult:
         mock_bg = Mock()
         mock_bg.total_filtrado = 2
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None):
 
             response = client.get(f"/v1/search/{sid}/status")
@@ -240,8 +240,8 @@ class TestStatusNoExcelResult:
         tracker = _make_tracker(uf_count=5, ufs_completed=2, is_complete=False)
         sm = _make_state_machine("fetching")
 
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None):
 
             response = client.get(f"/v1/search/{sid}/status")
@@ -326,7 +326,7 @@ class TestRegenerateExcel202:
             ],
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=True), \
              patch("job_queue.enqueue_job", new_callable=AsyncMock) as mock_enqueue:
 
@@ -350,7 +350,7 @@ class TestRegenerateExcel202:
             "licitacoes": [{"objetoCompra": "Test bid", "uf": "MG"}],
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=True), \
              patch("job_queue.enqueue_job", new_callable=AsyncMock) as mock_enqueue:
 
@@ -366,7 +366,7 @@ class TestRegenerateExcel202:
             "licitacoes": [{"objetoCompra": "Test", "uf": "SP"}],
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=True), \
              patch("job_queue.enqueue_job", new_callable=AsyncMock):
 
@@ -387,7 +387,7 @@ class TestRegenerateExcel404:
         """Results expired or not found -> 404."""
         sid = _search_id()
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=None):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=None):
             response = client.post(f"/v1/search/{sid}/regenerate-excel")
 
         assert response.status_code == 404
@@ -401,7 +401,7 @@ class TestRegenerateExcel404:
             "licitacoes": [],
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result):
             response = client.post(f"/v1/search/{sid}/regenerate-excel")
 
         assert response.status_code == 404
@@ -415,7 +415,7 @@ class TestRegenerateExcel404:
         sid = _search_id()
         stored_result = {"total_filtrado": 0}
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result):
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result):
             response = client.post(f"/v1/search/{sid}/regenerate-excel")
 
         assert response.status_code == 404
@@ -436,9 +436,9 @@ class TestRegenerateExcelInlineFallback:
         }
         mock_buffer = io.BytesIO(b"PK\x03\x04fake-xlsx-content")
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=False), \
-             patch("routes.search.create_excel", return_value=mock_buffer), \
+             patch("routes.search_status.create_excel", return_value=mock_buffer), \
              patch("storage.upload_excel", return_value={"signed_url": "https://storage.example.com/inline.xlsx"}), \
              patch("job_queue.persist_job_result", new_callable=AsyncMock):
 
@@ -458,9 +458,9 @@ class TestRegenerateExcelInlineFallback:
         }
         mock_buffer = io.BytesIO(b"PK\x03\x04fake-xlsx-content")
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=False), \
-             patch("routes.search.create_excel", return_value=mock_buffer), \
+             patch("routes.search_status.create_excel", return_value=mock_buffer), \
              patch("storage.upload_excel", return_value={"signed_url": "https://storage.example.com/persisted.xlsx"}), \
              patch("job_queue.persist_job_result", new_callable=AsyncMock) as mock_persist:
 
@@ -481,9 +481,9 @@ class TestRegenerateExcelInlineFallback:
             "licitacoes": [{"objetoCompra": "Test bid", "uf": "SP"}],
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=False), \
-             patch("routes.search.create_excel", side_effect=Exception("Excel generation error")):
+             patch("routes.search_status.create_excel", side_effect=Exception("Excel generation error")):
 
             response = client.post(f"/v1/search/{sid}/regenerate-excel")
 
@@ -498,9 +498,9 @@ class TestRegenerateExcelInlineFallback:
         }
         mock_buffer = io.BytesIO(b"PK\x03\x04fake-xlsx-content")
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=False), \
-             patch("routes.search.create_excel", return_value=mock_buffer), \
+             patch("routes.search_status.create_excel", return_value=mock_buffer), \
              patch("storage.upload_excel", return_value=None):
 
             response = client.post(f"/v1/search/{sid}/regenerate-excel")
@@ -547,10 +547,10 @@ class TestResultsMergeExcel:
             "excel_status": "ready",
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=excel_job_result):
 
-            response = client.get(f"/search/{sid}/results")
+            response = client.get(f"/v1/search/{sid}/results")
 
         assert response.status_code == 200
         data = response.json()
@@ -570,10 +570,10 @@ class TestResultsMergeExcel:
             "excel_status": "ready",
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=excel_job_result):
 
-            response = client.get(f"/search/{sid}/results")
+            response = client.get(f"/v1/search/{sid}/results")
 
         assert response.status_code == 200
         data = response.json()
@@ -588,10 +588,10 @@ class TestResultsMergeExcel:
             "licitacoes": [{"objetoCompra": "Test", "uf": "MG"}],
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None):
 
-            response = client.get(f"/search/{sid}/results")
+            response = client.get(f"/v1/search/{sid}/results")
 
         assert response.status_code == 200
         data = response.json()
@@ -605,10 +605,10 @@ class TestResultsMergeExcel:
             "licitacoes": [{"objetoCompra": "Test", "uf": "SP"}],
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None):
 
-            response = client.get(f"/search/{sid}/results")
+            response = client.get(f"/v1/search/{sid}/results")
 
         assert response.status_code == 200
         cache_header = response.headers.get("cache-control", "")
@@ -626,10 +626,10 @@ class TestResultsMergeExcel:
             # No excel_status key
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=excel_job_result):
 
-            response = client.get(f"/search/{sid}/results")
+            response = client.get(f"/v1/search/{sid}/results")
 
         assert response.status_code == 200
         data = response.json()
@@ -841,18 +841,18 @@ class TestExcelResilienceFullFlow:
         }
 
         # Check status endpoint
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=excel_data):
 
             status_resp = client.get(f"/v1/search/{sid}/status")
 
         # Check results endpoint
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=excel_data):
 
-            results_resp = client.get(f"/search/{sid}/results")
+            results_resp = client.get(f"/v1/search/{sid}/results")
 
         # Both should report the same Excel URL
         assert status_resp.json()["excel_url"] == results_resp.json()["download_url"]
@@ -866,7 +866,7 @@ class TestExcelResilienceFullFlow:
             "licitacoes": [{"objetoCompra": "Test bid", "uf": "SP"}],
         }
 
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=True), \
              patch("job_queue.enqueue_job", new_callable=AsyncMock):
 
@@ -884,9 +884,9 @@ class TestExcelResilienceFullFlow:
         mock_bg.total_filtrado = 3
 
         # Step 1: Status with no Excel result
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None):
 
             status1 = client.get(f"/v1/search/{sid}/status")
@@ -898,7 +898,7 @@ class TestExcelResilienceFullFlow:
         stored_result = {
             "licitacoes": [{"objetoCompra": "Test", "uf": "SP"}],
         }
-        with patch("routes.search.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
+        with patch("routes.search_status.get_background_results_async", new_callable=AsyncMock, return_value=stored_result), \
              patch("job_queue.is_queue_available", new_callable=AsyncMock, return_value=True), \
              patch("job_queue.enqueue_job", new_callable=AsyncMock):
 
@@ -908,9 +908,9 @@ class TestExcelResilienceFullFlow:
         assert regen.json()["excel_status"] == "processing"
 
         # Step 3: Status now shows Excel processing
-        with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search.get_state_machine", return_value=sm), \
-             patch("routes.search.get_background_results", return_value=mock_bg), \
+        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+             patch("routes.search_status.get_state_machine", return_value=sm), \
+             patch("routes.search_status.get_background_results", return_value=mock_bg), \
              patch("job_queue.get_job_result", new_callable=AsyncMock, return_value={"excel_status": "processing"}):
 
             status2 = client.get(f"/v1/search/{sid}/status")

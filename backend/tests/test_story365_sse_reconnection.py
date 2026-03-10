@@ -38,8 +38,8 @@ def mock_auth():
 @pytest.fixture
 def mock_sse_limits():
     """Mock SSE connection limiter."""
-    with patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-         patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+    with patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+         patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
         yield
 
 
@@ -105,10 +105,10 @@ async def test_last_event_id_replays_only_later_events(mock_auth, mock_sse_limit
     await _emit_events(tracker, 5, terminal=True)
 
     # Mock Redis as unavailable — use local tracker replay
-    with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-         patch("routes.search.is_search_terminal", new_callable=AsyncMock) as mock_terminal, \
-         patch("routes.search.get_replay_events", new_callable=AsyncMock) as mock_replay, \
-         patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+    with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=None), \
+         patch("routes.search_sse.is_search_terminal", new_callable=AsyncMock) as mock_terminal, \
+         patch("routes.search_sse.get_replay_events", new_callable=AsyncMock) as mock_replay, \
+         patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
 
         # Simulate: search is terminal, replay events after ID 3
         terminal_event = {"stage": "complete", "progress": 100, "message": "Done"}
@@ -152,8 +152,8 @@ async def test_last_event_id_zero_replays_nothing_extra(mock_auth, mock_sse_limi
     # Put a complete event in queue for immediate consumption
     await tracker.queue.put(ProgressEvent(stage="complete", progress=100, message="Done"))
 
-    with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-         patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+    with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+         patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
@@ -175,10 +175,10 @@ async def test_last_event_id_query_param_fallback(mock_auth, mock_sse_limits):
 
     await tracker.queue.put(ProgressEvent(stage="complete", progress=100, message="Done"))
 
-    with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-         patch("routes.search.is_search_terminal", new_callable=AsyncMock) as mock_terminal, \
-         patch("routes.search.get_replay_events", new_callable=AsyncMock) as mock_replay, \
-         patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+    with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=None), \
+         patch("routes.search_sse.is_search_terminal", new_callable=AsyncMock) as mock_terminal, \
+         patch("routes.search_sse.get_replay_events", new_callable=AsyncMock) as mock_replay, \
+         patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
 
         mock_terminal.return_value = {"stage": "complete", "progress": 100, "message": "Done"}
         mock_replay.return_value = []
@@ -281,8 +281,8 @@ async def test_sse_cache_control_no_store(mock_auth, mock_sse_limits):
     tracker = _make_tracker(search_id)
     await tracker.queue.put(ProgressEvent(stage="complete", progress=100, message="Done"))
 
-    with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-         patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+    with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+         patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(f"/buscar-progress/{search_id}")
@@ -300,8 +300,8 @@ async def test_sse_x_accel_buffering_header(mock_auth, mock_sse_limits):
     tracker = _make_tracker(search_id)
     await tracker.queue.put(ProgressEvent(stage="complete", progress=100, message="Done"))
 
-    with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-         patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+    with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+         patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(f"/buscar-progress/{search_id}")
@@ -314,7 +314,7 @@ async def test_sse_x_accel_buffering_header(mock_auth, mock_sse_limits):
 
 def test_heartbeat_interval_default():
     """AC5: Default heartbeat interval is 15s."""
-    from routes.search import _SSE_HEARTBEAT_INTERVAL
+    from routes.search_sse import _SSE_HEARTBEAT_INTERVAL
     # Note: test may see patched value from other tests, check env-based logic
     import os
     default_val = float(os.environ.get("SSE_HEARTBEAT_INTERVAL_S", "15"))
@@ -350,10 +350,10 @@ async def test_reconnection_flow_replays_missed_events(mock_auth, mock_sse_limit
     assert tracker._event_counter == 5
 
     # Reconnection should replay events 3, 4, 5 (after ID 2)
-    with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=None), \
-         patch("routes.search.is_search_terminal", new_callable=AsyncMock) as mock_terminal, \
-         patch("routes.search.get_replay_events", new_callable=AsyncMock) as mock_replay, \
-         patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+    with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=None), \
+         patch("routes.search_sse.is_search_terminal", new_callable=AsyncMock) as mock_terminal, \
+         patch("routes.search_sse.get_replay_events", new_callable=AsyncMock) as mock_replay, \
+         patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
 
         mock_terminal.return_value = {"stage": "complete", "progress": 100, "message": "Done"}
         mock_replay.return_value = [
@@ -390,8 +390,8 @@ async def test_sse_event_ids_are_monotonic(mock_auth, mock_sse_limits):
     await tracker.queue.put(ProgressEvent(stage="fetching", progress=40, message="UF 2"))
     await tracker.queue.put(ProgressEvent(stage="complete", progress=100, message="Done"))
 
-    with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-         patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
+    with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
+         patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(f"/buscar-progress/{search_id}")

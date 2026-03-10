@@ -12,7 +12,7 @@ async def test_safe_persist_succeeds_first_attempt():
     from routes.search import _safe_persist_results
 
     with patch(
-        "routes.search._persist_results_to_supabase", new_callable=AsyncMock
+        "routes.search_state._persist_results_to_supabase", new_callable=AsyncMock
     ) as mock_persist:
         await _safe_persist_results("sid-1", "uid-1", {"data": 1})
 
@@ -29,9 +29,9 @@ async def test_safe_persist_retries_on_failure():
     )
 
     with (
-        patch("routes.search._persist_results_to_supabase", mock_persist),
-        patch("routes.search.asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
-        patch("routes.search.sentry_sdk") as mock_sentry,
+        patch("routes.search_state._persist_results_to_supabase", mock_persist),
+        patch("routes.search_state.asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+        patch("routes.search_state.sentry_sdk") as mock_sentry,
     ):
         await _safe_persist_results("sid-2", "uid-2", {"data": 2})
 
@@ -53,10 +53,10 @@ async def test_safe_persist_sentry_on_final_failure():
     )
 
     with (
-        patch("routes.search._persist_results_to_supabase", mock_persist),
-        patch("routes.search.asyncio.sleep", new_callable=AsyncMock),
-        patch("routes.search.sentry_sdk") as mock_sentry,
-        patch("routes.search.PERSIST_FAILURES", create=True) as mock_metric,
+        patch("routes.search_state._persist_results_to_supabase", mock_persist),
+        patch("routes.search_state.asyncio.sleep", new_callable=AsyncMock),
+        patch("routes.search_state.sentry_sdk") as mock_sentry,
+        patch("routes.search_state.PERSIST_FAILURES", create=True) as mock_metric,
     ):
         # Need to patch the import inside the function
         with patch("metrics.PERSIST_FAILURES", mock_metric):
@@ -76,9 +76,9 @@ async def test_safe_persist_metric_on_final_failure():
     mock_metric.labels.return_value = mock_labels
 
     with (
-        patch("routes.search._persist_results_to_supabase", mock_persist),
-        patch("routes.search.asyncio.sleep", new_callable=AsyncMock),
-        patch("routes.search.sentry_sdk"),
+        patch("routes.search_state._persist_results_to_supabase", mock_persist),
+        patch("routes.search_state.asyncio.sleep", new_callable=AsyncMock),
+        patch("routes.search_state.sentry_sdk"),
         patch("metrics.PERSIST_FAILURES", mock_metric),
     ):
         await _safe_persist_results("sid-4", "uid-4", {"data": 4})
@@ -96,7 +96,7 @@ def test_persist_done_callback_captures_exception():
     mock_task.cancelled.return_value = False
     mock_task.exception.return_value = exc
 
-    with patch("routes.search.sentry_sdk") as mock_sentry:
+    with patch("routes.search_state.sentry_sdk") as mock_sentry:
         _persist_done_callback(mock_task)
 
     mock_sentry.capture_exception.assert_called_once_with(exc)
@@ -109,7 +109,7 @@ def test_persist_done_callback_ignores_cancelled():
     mock_task = MagicMock(spec=asyncio.Task)
     mock_task.cancelled.return_value = True
 
-    with patch("routes.search.sentry_sdk") as mock_sentry:
+    with patch("routes.search_state.sentry_sdk") as mock_sentry:
         _persist_done_callback(mock_task)
 
     mock_sentry.capture_exception.assert_not_called()
@@ -123,7 +123,7 @@ def test_persist_done_callback_no_exception():
     mock_task.cancelled.return_value = False
     mock_task.exception.return_value = None
 
-    with patch("routes.search.sentry_sdk") as mock_sentry:
+    with patch("routes.search_state.sentry_sdk") as mock_sentry:
         _persist_done_callback(mock_task)
 
     mock_sentry.capture_exception.assert_not_called()
@@ -136,9 +136,9 @@ async def test_safe_persist_no_retry_on_first_success():
 
     with (
         patch(
-            "routes.search._persist_results_to_supabase", new_callable=AsyncMock
+            "routes.search_state._persist_results_to_supabase", new_callable=AsyncMock
         ) as mock_persist,
-        patch("routes.search.asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+        patch("routes.search_state.asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
     ):
         await _safe_persist_results("sid-5", "uid-5", {"data": 5})
 

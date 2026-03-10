@@ -508,7 +508,7 @@ class TestT8AsyncSearchExecution:
     @pytest.mark.asyncio
     async def test_run_async_search_pipeline_and_emit(self, mock_tracker, mock_busca_response):
         """_run_async_search runs pipeline, stores result, emits search_complete."""
-        from routes.search import _run_async_search
+        from routes.search_state import _run_async_search
         from schemas import BuscaRequest
 
         request = BuscaRequest(
@@ -519,12 +519,12 @@ class TestT8AsyncSearchExecution:
         )
         request.search_id = "test-search-008"
 
-        with patch("routes.search.SearchPipeline") as mock_pipeline_cls, \
-             patch("routes.search.store_background_results") as mock_store, \
-             patch("routes.search._persist_results_to_redis", new_callable=AsyncMock), \
-             patch("routes.search._update_session_on_complete", new_callable=AsyncMock), \
-             patch("routes.search.remove_tracker", new_callable=AsyncMock), \
-             patch("routes.search.remove_state_machine"):
+        with patch("routes.search_state.SearchPipeline") as mock_pipeline_cls, \
+             patch("routes.search_state.store_background_results") as mock_store, \
+             patch("routes.search_state._persist_results_to_redis", new_callable=AsyncMock), \
+             patch("routes.search_state._update_session_on_complete", new_callable=AsyncMock), \
+             patch("routes.search_state.remove_tracker", new_callable=AsyncMock), \
+             patch("routes.search_state.remove_state_machine"):
 
             mock_pipeline = AsyncMock()
             mock_pipeline.run = AsyncMock(return_value=mock_busca_response)
@@ -546,7 +546,7 @@ class TestT8AsyncSearchExecution:
     @pytest.mark.asyncio
     async def test_run_async_search_error_handling(self, mock_tracker):
         """_run_async_search emits error on pipeline failure."""
-        from routes.search import _run_async_search
+        from routes.search_state import _run_async_search
         from schemas import BuscaRequest
 
         request = BuscaRequest(
@@ -557,9 +557,9 @@ class TestT8AsyncSearchExecution:
         )
         request.search_id = "test-search-008b"
 
-        with patch("routes.search.SearchPipeline") as mock_pipeline_cls, \
-             patch("routes.search.remove_tracker", new_callable=AsyncMock), \
-             patch("routes.search.remove_state_machine"), \
+        with patch("routes.search_state.SearchPipeline") as mock_pipeline_cls, \
+             patch("routes.search_state.remove_tracker", new_callable=AsyncMock), \
+             patch("routes.search_state.remove_state_machine"), \
              patch("sentry_sdk.capture_exception"):
 
             mock_pipeline = AsyncMock()
