@@ -905,8 +905,8 @@ def build_pdf(data, output_path, pacote_recomendado="semanal"):
         ["Mapa competitivo", "Sim"],
         ["Plano de ação", "Sim"],
         ["Suporte WhatsApp", "Horário comercial (seg-sex)"],
-        ["Valor mensal", "R$ 2.500/mês"],
-        ["Valor anual (pague 10, leve 12)", "R$ 25.000/ano (= R$ 2.083/mês)"],
+        ["Valor mensal", "R$ 997/mês"],
+        ["Valor anual (pague 10, leve 12)", "R$ 9.970/ano (= R$ 831/mês)"],
     ]
     mensal_table = make_table(["Item", "Detalhe"], mensal_items, cw_pkg)
     mensal_elements = [Paragraph("Pacote Mensal", S['H2'])]
@@ -947,8 +947,8 @@ def build_pdf(data, output_path, pacote_recomendado="semanal"):
         ["Mapa competitivo semanal", "Sim"],
         ["Alertas de prazo crítico", "WhatsApp quando edital encerra em < 7 dias"],
         ["Suporte WhatsApp", "Horário estendido (8h-20h, seg-sáb)"],
-        ["Valor mensal", "R$ 5.000/mês"],
-        ["Valor anual (pague 10, leve 12)", "R$ 50.000/ano (= R$ 4.166/mês)"],
+        ["Valor mensal", "R$ 1.500/mês"],
+        ["Valor anual (pague 10, leve 12)", "R$ 15.000/ano (= R$ 1.250/mês)"],
     ]
     semanal_table = make_table(["Item", "Detalhe"], semanal_items, cw_pkg)
 
@@ -999,8 +999,8 @@ def build_pdf(data, output_path, pacote_recomendado="semanal"):
         ["Monitoramento de concorrentes", "Sim"],
         ["Estratégia de precificação", "Sugestão de desconto por edital"],
         ["Suporte dedicado", "WhatsApp + Tel (8h-22h, seg-dom)"],
-        ["Valor mensal", "R$ 10.000/mês"],
-        ["Valor anual (pague 10, leve 12)", "R$ 100.000/ano (= R$ 8.333/mês)"],
+        ["Valor mensal", "R$ 2.997/mês"],
+        ["Valor anual (pague 10, leve 12)", "R$ 29.970/ano (= R$ 2.498/mês)"],
     ]
     diario_table = make_table(["Item", "Detalhe"], diario_items, cw_pkg)
 
@@ -1044,8 +1044,8 @@ def build_pdf(data, output_path, pacote_recomendado="semanal"):
             ["UFs monitoradas", uf_sede, f"{uf_sede}+PR+RS", "5 estados"],
             ["Alerta prazo crítico", "—", "Sim", "Imediato"],
             ["Monit. concorrentes", "—", "—", "Sim"],
-            ["Valor mensal", "R$ 2.500", "R$ 5.000", "R$ 10.000"],
-            ["Valor anual (10 meses)", "R$ 25.000", "R$ 50.000", "R$ 100.000"],
+            ["Valor mensal", "R$ 997", "R$ 1.500", "R$ 2.997"],
+            ["Valor anual (10 meses)", "R$ 9.970", "R$ 15.000", "R$ 29.970"],
         ], cw_cmp
     ))
     story.append(PageBreak())
@@ -1057,7 +1057,7 @@ def build_pdf(data, output_path, pacote_recomendado="semanal"):
     story.append(hr())
 
     # Package values for ROI calculation
-    pkg_values = {"mensal": 2500, "semanal": 5000, "diario": 10000}
+    pkg_values = {"mensal": 997, "semanal": 1500, "diario": 2997}
     pkg_names = {"mensal": "Mensal", "semanal": "Semanal", "diario": "Diário"}
     investimento = pkg_values.get(pacote_recomendado, 5000)
     pkg_name = pkg_names.get(pacote_recomendado, "Semanal")

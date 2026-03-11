@@ -23,9 +23,9 @@ Gera um PDF de proposta comercial personalizada e profissional para um lead espe
 
 | Pacote | Preco | Report freq | PDF analysis | UFs | Suporte |
 |--------|-------|-------------|-------------|-----|---------|
-| **Mensal** | R$2.500/mes | 1x/mes | Ate 3 editais | SC | Comercial |
-| **Semanal (Rec.)** | R$5.000/mes | 4x semanal + 1x mensal | Ate 8 editais | SC+PR+RS | Estendido |
-| **Diario** | R$10.000/mes | Diario + semanal + mensal | Ilimitada | 5 estados | Dedicado |
+| **Mensal** | R$997/mes | 1x/mes | Ate 3 editais | SC | Comercial |
+| **Semanal (Rec.)** | R$1.500/mes | 4x semanal + 1x mensal | Ate 8 editais | SC+PR+RS | Estendido |
+| **Diario** | R$2.997/mes | Diario + semanal + mensal | Ilimitada | 5 estados | Dedicado |
 
 Todos os pacotes tem desconto anual: pague 10, leve 12.
 
@@ -164,7 +164,7 @@ O coracao da proposta. Demonstrar matematicamente o retorno do investimento.
 - Demonstra que a proposta EM SI e o produto
 
 #### 9. Pacotes de Monitoramento
-- 3 tiers: Mensal R$2.500 | Semanal R$5.000 (RECOMENDADO) | Diario R$10.000
+- 3 tiers: Mensal R$997 | Semanal R$1.500 (RECOMENDADO) | Diario R$2.997
 - Comparativo rapido entre pacotes
 - Desconto anual destacado: pague 10, leve 12
 
