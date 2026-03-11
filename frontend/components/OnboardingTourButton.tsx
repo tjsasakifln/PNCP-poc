@@ -95,7 +95,7 @@ export function OnboardingTourButton({ availableTours = {} }: OnboardingTourButt
       {/* Floating button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-12 h-12 rounded-full bg-[#1e3a5f] text-white shadow-lg hover:bg-[#2a4d7a] transition-all hover:scale-105 flex items-center justify-center text-lg font-bold"
+        className="w-12 h-12 rounded-full bg-[var(--brand-navy)] text-white shadow-lg hover:bg-[var(--brand-blue-hover)] transition-all hover:scale-105 flex items-center justify-center text-lg font-bold"
         aria-label="Guia interativo"
         aria-expanded={isOpen}
         data-testid="tour-trigger-button"

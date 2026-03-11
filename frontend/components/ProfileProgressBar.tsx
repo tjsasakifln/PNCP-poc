@@ -31,15 +31,15 @@ export default function ProfileProgressBar({
   let ariaLabel: string;
 
   if (pct >= 70) {
-    strokeColor = "#10b981"; // emerald-500
+    strokeColor = "var(--success)";
     textColor = "text-emerald-600 dark:text-emerald-400";
     ariaLabel = `Perfil ${pct}% completo — excelente`;
   } else if (pct >= 40) {
-    strokeColor = "#f59e0b"; // amber-500
+    strokeColor = "var(--warning)";
     textColor = "text-amber-600 dark:text-amber-400";
     ariaLabel = `Perfil ${pct}% completo — em progresso`;
   } else {
-    strokeColor = "#ef4444"; // red-500
+    strokeColor = "var(--error)";
     textColor = "text-red-600 dark:text-red-400";
     ariaLabel = `Perfil ${pct}% completo — incompleto`;
   }

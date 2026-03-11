@@ -12,7 +12,7 @@ import { UFS } from "../../../lib/constants/uf-names";
 import { STOPWORDS_PT, stripAccents, isStopword } from "../../../lib/constants/stopwords";
 import { useAuth } from "../../components/AuthProvider";
 import { getBrtDate, addDays } from "../utils/dates";
-import { safeSetItem } from "../../../lib/storage";
+import { safeGetItem, safeSetItem } from "../../../lib/storage";
 
 /** Default search window in days — used for date calculation and user-facing copy */
 export const DEFAULT_SEARCH_DAYS = 10;
@@ -201,18 +201,18 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   // Collapsible states
   const [locationFiltersOpen, setLocationFiltersOpen] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('smartlic-location-filters') === 'open';
+    return safeGetItem('smartlic-location-filters') === 'open';
   });
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('smartlic-advanced-filters') === 'open';
+    return safeGetItem('smartlic-advanced-filters') === 'open';
   });
 
   // UFs and dates — smart default: profile context UFs → SP → all 27
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem('smartlic-profile-context');
+        const cached = safeGetItem('smartlic-profile-context');
         if (cached) {
           const ctx = JSON.parse(cached);
           if (ctx.ufs_atuacao && Array.isArray(ctx.ufs_atuacao) && ctx.ufs_atuacao.length > 0) {
@@ -299,7 +299,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     if (searchParams.get('ufs') || searchParams.get('setor')) return;
 
     const cachedContext = typeof window !== 'undefined'
-      ? localStorage.getItem('smartlic-profile-context')
+      ? safeGetItem('smartlic-profile-context')
       : null;
     if (!cachedContext) return;
 
@@ -341,7 +341,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   const getCachedSectors = (): Setor[] | null => {
     if (typeof window === 'undefined') return null;
     try {
-      const cached = localStorage.getItem(SECTOR_CACHE_KEY);
+      const cached = safeGetItem(SECTOR_CACHE_KEY);
       if (!cached) return null;
 
       const { data, timestamp }: SectorCache = JSON.parse(cached);
@@ -362,7 +362,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   const getStaleCachedSectors = (): { data: Setor[]; ageMs: number } | null => {
     if (typeof window === 'undefined') return null;
     try {
-      const cached = localStorage.getItem(SECTOR_CACHE_KEY);
+      const cached = safeGetItem(SECTOR_CACHE_KEY);
       if (!cached) return null;
       const { data, timestamp }: SectorCache = JSON.parse(cached);
       if (!data || data.length === 0) return null;

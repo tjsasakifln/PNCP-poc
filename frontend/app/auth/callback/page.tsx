@@ -231,7 +231,7 @@ export default function AuthCallbackPage() {
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <div className="text-center">
+        <div className="text-center" role="status">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-blue mx-auto mb-4"></div>
           <p className="text-ink/70">Processando autenticação...</p>
         </div>

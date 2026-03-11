@@ -305,7 +305,7 @@ export default function PlanosPage() {
       {/* Stripe redirect overlay */}
       {stripeRedirecting && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--canvas)]/80 backdrop-blur-sm">
-          <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/60 border border-white/20 dark:border-white/10 rounded-card p-8 text-center shadow-glass max-w-sm mx-4">
+          <div role="status" className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/60 border border-white/20 dark:border-white/10 rounded-card p-8 text-center shadow-glass max-w-sm mx-4">
             <div className="w-12 h-12 mx-auto mb-4 border-4 border-[var(--brand-blue)] border-t-transparent rounded-full animate-spin" />
             <h2 className="text-lg font-semibold text-[var(--ink)] mb-2">
               Redirecionando para o checkout
@@ -647,6 +647,7 @@ export default function PlanosPage() {
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    aria-hidden="true"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>

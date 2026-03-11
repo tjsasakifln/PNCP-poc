@@ -45,7 +45,7 @@ function categorizeLoginError(rawMessage: string): string {
 function LoginLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
-      <div className="text-center">
+      <div className="text-center" role="status">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-blue)] mx-auto mb-4"></div>
         <p className="text-[var(--ink-secondary)]">Carregando...</p>
       </div>
@@ -217,7 +217,7 @@ function LoginContent() {
   if (showMfaVerification) {
     const redirectTo = searchParams.get("redirect") || "/buscar";
     return (
-      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]"><div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" /></div>}>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]"><div role="status" className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" /></div>}>
         <TotpVerificationScreen
           onVerified={() => {
             toast.success("Verificação MFA bem-sucedida!");
@@ -238,7 +238,7 @@ function LoginContent() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
-        <div className="text-center">
+        <div className="text-center" role="status">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-blue)] mx-auto mb-4"></div>
           <p className="text-[var(--ink-secondary)]">Verificando autenticação...</p>
         </div>

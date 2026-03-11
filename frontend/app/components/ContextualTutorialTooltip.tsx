@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { safeSetItem } from '../../lib/storage';
+import { safeGetItem, safeSetItem } from '../../lib/storage';
 
 interface ContextualTooltipProps {
   /**
@@ -165,7 +165,7 @@ export function useContextualTutorial() {
 
   // Load onboarding progress from localStorage
   useEffect(() => {
-    const step = parseInt(localStorage.getItem('onboarding_step') || '0', 10);
+    const step = parseInt(safeGetItem('onboarding_step') ?? '0', 10);
     setOnboardingStep(step);
   }, []);
 

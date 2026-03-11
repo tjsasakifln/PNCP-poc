@@ -33,7 +33,7 @@ import { deriveSearchPhase } from "../types/searchPhase";
 import { TrialUpsellCTA } from "../../../components/billing/TrialUpsellCTA";
 import { SearchEmptyState } from "./SearchEmptyState";
 import { EmptyResults } from "./EmptyResults";
-import { safeSetItem } from "../../../lib/storage";
+import { safeGetItem, safeSetItem } from "../../../lib/storage";
 import { Button } from "../../../components/ui/button";
 
 // TD-007: Decomposed sub-components
@@ -100,7 +100,7 @@ export default function SearchResults(props: SearchResultsProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(() => {
     if (typeof window === "undefined") return 20;
-    const s = localStorage.getItem("smartlic_page_size");
+    const s = safeGetItem("smartlic_page_size");
     return s && [10, 20, 50].includes(Number(s)) ? Number(s) as 10 | 20 | 50 : 20;
   });
   const [showGrid, setShowGrid] = useState(false);
@@ -116,7 +116,7 @@ export default function SearchResults(props: SearchResultsProps) {
   useEffect(() => { if (loading && ufStatuses && ufStatuses.size > 0) { setShowGrid(true); setGridFading(false); } else if (!loading && showGrid) { setGridFading(true); const t = setTimeout(() => { setShowGrid(false); setGridFading(false); }, 400); return () => clearTimeout(t); } }, [loading, ufStatuses?.size]);
   useEffect(() => { if (result?.excel_status === 'processing' && !result?.download_url && !result?.download_id) { setExcelTimedOut(false); const t = setTimeout(() => setExcelTimedOut(true), 60_000); return () => clearTimeout(t); } setExcelTimedOut(false); }, [result?.excel_status, result?.download_url, result?.download_id]);
   useEffect(() => { if (prevDownloadLoading && !downloadLoading && !downloadError) setDownloadCompleted(true); setPrevDownloadLoading(downloadLoading); }, [downloadLoading, downloadError, prevDownloadLoading]);
-  useEffect(() => { const d = localStorage.getItem('profile_banner_dismissed'); if (d && (Date.now() - parseInt(d)) / 86400000 < 3) setBannerDismissed(true); }, []);
+  useEffect(() => { const d = safeGetItem('profile_banner_dismissed'); if (d && (Date.now() - parseInt(d)) / 86400000 < 3) setBannerDismissed(true); }, []);
   const handleDismissBanner = () => { safeSetItem('profile_banner_dismissed', String(Date.now())); setBannerDismissed(true); };
 
   // --- Derived ---

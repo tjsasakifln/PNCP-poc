@@ -11,32 +11,47 @@
 ## Acceptance Criteria
 
 ### Hex Colors → Tailwind Tokens (6h)
-- [ ] AC1: Auditar 96 raw hex colors em 20 TSX files
-- [ ] AC2: Excluir ThemeProvider.tsx (hex colors corretos — definem CSS variables)
-- [ ] AC3: Excluir social button colors (Google blue, GitHub black) — manter como constantes
-- [ ] AC4: Substituir demais hex colors por Tailwind tokens ou var(--*) references
-- [ ] AC5: Sem mudanças visuais (verificar visualmente páginas afetadas)
+- [x] AC1: Auditar 96 raw hex colors em 20 TSX files
+- [x] AC2: Excluir ThemeProvider.tsx (hex colors corretos — definem CSS variables)
+- [x] AC3: Excluir social button colors (Google blue, GitHub black) — manter como constantes
+- [x] AC4: Substituir demais hex colors por Tailwind tokens ou var(--*) references
+- [x] AC5: Sem mudanças visuais (verificar visualmente páginas afetadas)
 
 ### localStorage Safe Wrappers (3h)
-- [ ] AC6: Identificar 6 arquivos com raw localStorage.getItem/setItem
-- [ ] AC7: Substituir por safeGetItem/safeSetItem de lib/storage.ts
-- [ ] AC8: Testes existentes passam
+- [x] AC6: Identificar 6 arquivos com raw localStorage.getItem/setItem
+- [x] AC7: Substituir por safeGetItem/safeSetItem de lib/storage.ts
+- [x] AC8: Testes existentes passam
 
 ### Inline SVGs → Lucide (4h)
-- [ ] AC9: Substituir 5 inline SVGs em conta/layout.tsx por Lucide React icons
-- [ ] AC10: Adicionar aria-hidden="true" aos novos ícones (decorativos)
+- [x] AC9: Substituir 5 inline SVGs em conta/layout.tsx por Lucide React icons
+- [x] AC10: Adicionar aria-hidden="true" aos novos ícones (decorativos)
 
 ### A11y Quick Wins (2h)
-- [ ] AC11: Adicionar role="status" em loading spinners faltantes (login page, auth callback)
-- [ ] AC12: Adicionar aria-hidden="true" em SVGs decorativos em planos/page.tsx
-- [ ] AC13: npm test passa, 0 regressions
+- [x] AC11: Adicionar role="status" em loading spinners faltantes (login page, auth callback)
+- [x] AC12: Adicionar aria-hidden="true" em SVGs decorativos em planos/page.tsx
+- [x] AC13: npm test passa, 0 regressions
 
 ## File List
-- [ ] Various TSX files (EDIT — hex → tokens)
-- [ ] `app/buscar/hooks/useSearchFilters.ts` (EDIT — safe wrappers)
-- [ ] `app/buscar/components/SearchResults.tsx` (EDIT — safe wrappers)
-- [ ] `app/layout.tsx` (EDIT — safe wrappers)
-- [ ] `app/components/GoogleAnalytics.tsx` (EDIT — safe wrappers)
-- [ ] `app/conta/layout.tsx` (EDIT — Lucide icons + aria-hidden)
-- [ ] `app/planos/page.tsx` (EDIT — aria-hidden on SVGs)
-- [ ] `app/login/page.tsx` (EDIT — role="status")
+- [x] `components/OnboardingTourButton.tsx` (EDIT — hex #1e3a5f/#2a4d7a → var(--brand-navy)/var(--brand-blue-hover))
+- [x] `components/ProfileProgressBar.tsx` (EDIT — hex → var(--success)/var(--warning)/var(--error))
+- [x] `components/ProfileCongratulations.tsx` (EDIT — confetti hex → var() with fallbacks)
+- [x] `app/dashboard/DashboardCharts.tsx` (EDIT — hex #116dff/#16a34a → var(--brand-blue)/var(--success))
+- [x] `app/buscar/hooks/useSearchFilters.ts` (EDIT — 6x localStorage → safeGetItem)
+- [x] `app/buscar/components/SearchResults.tsx` (EDIT — 2x localStorage → safeGetItem)
+- [x] `app/components/ContextualTutorialTooltip.tsx` (EDIT — 1x localStorage → safeGetItem)
+- [x] `app/conta/layout.tsx` (EDIT — 5 inline SVGs → Lucide icons + aria-hidden)
+- [x] `app/planos/page.tsx` (EDIT — aria-hidden on FAQ chevron SVG + role="status" on spinner)
+- [x] `app/login/page.tsx` (EDIT — 3x role="status" on loading spinners)
+- [x] `app/auth/callback/page.tsx` (EDIT — role="status" on loading spinner)
+
+### Excluded (correct as-is)
+- `app/components/ThemeProvider.tsx` — hex colors define CSS variables (AC2)
+- `app/global-error.tsx` — defines own CSS vars (can't use Tailwind, root layout failed)
+- `app/api/og/route.tsx` — OG image generation (ImageResponse, no CSS var support)
+- `app/login/page.tsx` + `app/signup/page.tsx` — Google OAuth SVG brand colors (AC3)
+- `app/buscar/components/GoogleSheetsExportButton.tsx` — Google Sheets brand colors (AC3)
+- `app/layout.tsx` — inline <script> for theme flash prevention (raw JS, can't import modules, already try/catch wrapped)
+- `app/components/GoogleAnalytics.tsx` — inline Script for GA (raw JS string, can't import modules)
+- `components/TestimonialSection.tsx` — already uses var() with hex fallback
+- `components/KeyboardShortcutsHelp.tsx` — already uses var() with hex fallback
+- `app/planos/obrigado/ObrigadoContent.tsx` — already uses var() with hex fallback

@@ -87,18 +87,18 @@ export function TimeSeriesChart({
         <Line
           type="monotone"
           dataKey="searches"
-          stroke="#116dff"
+          stroke="var(--brand-blue)"
           strokeWidth={2}
-          dot={{ fill: "#116dff", r: isMobile ? 6 : 4 }}
+          dot={{ fill: "var(--brand-blue)", r: isMobile ? 6 : 4 }}
           activeDot={{ r: isMobile ? 10 : 8 }}
           name="Análises"
         />
         <Line
           type="monotone"
           dataKey="opportunities"
-          stroke="#16a34a"
+          stroke="var(--success)"
           strokeWidth={2}
-          dot={{ fill: "#16a34a", r: isMobile ? 6 : 4 }}
+          dot={{ fill: "var(--success)", r: isMobile ? 6 : 4 }}
           activeDot={{ r: isMobile ? 10 : 8 }}
           name="Oportunidades"
         />
@@ -179,7 +179,7 @@ export function SectorBarChart({
             }}
           />
           <Tooltip content={<ChartTooltip />} />
-          <Bar dataKey="count" fill="#116dff" radius={[0, 4, 4, 0]} name="Análises" />
+          <Bar dataKey="count" fill="var(--brand-blue)" radius={[0, 4, 4, 0]} name="Análises" />
         </BarChart>
       </ResponsiveContainer>
     </div>
