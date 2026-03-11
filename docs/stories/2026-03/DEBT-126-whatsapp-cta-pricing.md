@@ -10,14 +10,14 @@ B2G buyers with budget authority often need to speak with a human before committ
 
 ## Acceptance Criteria
 
-- [ ] AC1: Contact row visible below FAQ section on `/planos`
-- [ ] AC2: Row contains WhatsApp link with icon and "Fale conosco" label
-- [ ] AC3: Row contains email link with icon showing `contato@smartlic.tech`
-- [ ] AC4: WhatsApp number sourced from env var `NEXT_PUBLIC_WHATSAPP_NUMBER` (not hardcoded)
-- [ ] AC5: WhatsApp link uses `https://wa.me/{number}?text=...` format with pre-filled message
-- [ ] AC6: Mobile-responsive layout (horizontal on desktop, stacked on mobile)
-- [ ] AC7: Visual dividers above and below the contact row
-- [ ] AC8: Links open in new tab (`target="_blank"` with `rel="noopener noreferrer"`)
+- [x] AC1: Contact row visible below FAQ section on `/planos`
+- [x] AC2: Row contains WhatsApp link with icon and "Fale conosco" label
+- [x] AC3: Row contains email link with icon showing `contato@smartlic.tech`
+- [x] AC4: WhatsApp number sourced from env var `NEXT_PUBLIC_WHATSAPP_NUMBER` (not hardcoded)
+- [x] AC5: WhatsApp link uses `https://wa.me/{number}?text=...` format with pre-filled message
+- [x] AC6: Mobile-responsive layout (horizontal on desktop, stacked on mobile)
+- [x] AC7: Visual dividers above and below the contact row
+- [x] AC8: Links open in new tab (`target="_blank"` with `rel="noopener noreferrer"`)
 
 ## Technical Notes
 
@@ -44,11 +44,11 @@ B2G buyers with budget authority often need to speak with a human before committ
 
 ## Test Requirements
 
-- [ ] Component renders WhatsApp and email links
-- [ ] WhatsApp link uses correct `wa.me` format
-- [ ] Email link has correct `mailto:` href
-- [ ] Links have `target="_blank"` and `rel="noopener noreferrer"`
-- [ ] Existing pricing page tests pass
+- [x] Component renders WhatsApp and email links
+- [x] WhatsApp link uses correct `wa.me` format
+- [x] Email link has correct `mailto:` href
+- [x] Links have `target="_blank"` and `rel="noopener noreferrer"`
+- [x] Existing pricing page tests pass
 
 ## Files to Modify
 
@@ -57,7 +57,7 @@ B2G buyers with budget authority often need to speak with a human before committ
 
 ## Definition of Done
 
-- [ ] All ACs pass
-- [ ] Tests pass (existing + new)
+- [x] All ACs pass
+- [x] Tests pass (existing + new)
 - [ ] No regressions in CI
-- [ ] Code reviewed
+- [x] Code reviewed

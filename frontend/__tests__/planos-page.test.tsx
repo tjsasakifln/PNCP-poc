@@ -23,6 +23,12 @@ jest.mock("../hooks/useAnalytics", () => ({
   useAnalytics: () => ({ trackEvent: jest.fn() }),
 }));
 
+// Mock lucide-react icons
+jest.mock("lucide-react", () => ({
+  MessageCircle: (props: Record<string, unknown>) => <svg data-testid="icon-message-circle" {...props} />,
+  Mail: (props: Record<string, unknown>) => <svg data-testid="icon-mail" {...props} />,
+}));
+
 // Mock LandingNavbar
 jest.mock("../app/components/landing/LandingNavbar", () => {
   return function MockLandingNavbar() {
@@ -507,5 +513,88 @@ describe("STORY-280 AC4: FAQ includes payment methods question", () => {
     const faqBtn = screen.getByText("Quais formas de pagamento são aceitas?");
     await user.click(faqBtn);
     expect(screen.getByText(/cartão de crédito e Boleto Bancário/)).toBeInTheDocument();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+// DEBT-126: WhatsApp CTA — Contact row below FAQ
+// ──────────────────────────────────────────────────────────────
+
+describe("DEBT-126: Contact row (WhatsApp + Email)", () => {
+  it("AC1: contact row visible below FAQ", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    expect(screen.getByTestId("contact-row")).toBeInTheDocument();
+    expect(screen.getByText("Precisa de mais informações?")).toBeInTheDocument();
+  });
+
+  it("AC2: WhatsApp link with icon and 'Fale conosco' label", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const link = screen.getByTestId("whatsapp-link");
+    expect(link).toBeInTheDocument();
+    expect(link.textContent).toContain("Fale conosco");
+    expect(screen.getByTestId("icon-message-circle")).toBeInTheDocument();
+  });
+
+  it("AC3: Email link with icon showing contato@smartlic.tech", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const link = screen.getByTestId("email-link");
+    expect(link).toBeInTheDocument();
+    expect(link.textContent).toContain("contato@smartlic.tech");
+    expect(screen.getByTestId("icon-mail")).toBeInTheDocument();
+  });
+
+  it("AC5: WhatsApp link uses wa.me format with pre-filled message", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const link = screen.getByTestId("whatsapp-link") as HTMLAnchorElement;
+    expect(link.href).toMatch(/https:\/\/wa\.me\//);
+    expect(link.href).toContain("text=");
+    expect(decodeURIComponent(link.href)).toContain("SmartLic Pro");
+  });
+
+  it("AC3: Email link has correct mailto href", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const link = screen.getByTestId("email-link") as HTMLAnchorElement;
+    expect(link.href).toBe("mailto:contato@smartlic.tech");
+  });
+
+  it("AC8: WhatsApp link opens in new tab with security attrs", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const link = screen.getByTestId("whatsapp-link");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("AC8: Email link opens in new tab with security attrs", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const link = screen.getByTestId("email-link");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("AC7: Visual dividers above and below contact row", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const contactRow = screen.getByTestId("contact-row");
+    // Two divider elements (border-t) inside the contact row container
+    const dividers = contactRow.querySelectorAll(".border-t");
+    expect(dividers.length).toBe(2);
+  });
+
+  it("contact row visible for logged-in users too", async () => {
+    setupMocks({
+      session: true,
+      planInfo: makePlanInfo({ plan_id: "smartlic_pro", subscription_status: "active" }),
+    });
+    render(<PlanosPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId("contact-row")).toBeInTheDocument();
+    });
   });
 });

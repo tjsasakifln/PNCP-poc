@@ -11,6 +11,7 @@ import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanTo
 import { formatCurrency, ROI_DISCLAIMER } from '@/lib/copy/roi';
 import { usePlan } from "../../hooks/usePlan";
 import { toast } from "sonner";
+import { MessageCircle, Mail } from "lucide-react";
 import TestimonialSection, { TESTIMONIALS } from "../../components/TestimonialSection";
 import { Button } from "../../components/ui/button";
 import { safeSetItem, safeGetItem } from "../../lib/storage";
@@ -663,6 +664,39 @@ export default function PlanosPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* DEBT-126: Contact row — WhatsApp + Email */}
+        <div className="mt-16 max-w-2xl mx-auto" data-testid="contact-row">
+          <div className="border-t border-gray-200 dark:border-gray-700" />
+          <div className="py-8 text-center">
+            <p className="text-lg font-semibold text-[var(--ink)] mb-4">
+              Precisa de mais informações?
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+              <a
+                href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || ""}?text=${encodeURIComponent("Olá! Gostaria de saber mais sobre o SmartLic Pro.")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-[var(--ink-secondary)] hover:text-[var(--brand-blue)] transition-colors"
+                data-testid="whatsapp-link"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="font-medium">Fale conosco</span>
+              </a>
+              <a
+                href="mailto:contato@smartlic.tech"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-[var(--ink-secondary)] hover:text-[var(--brand-blue)] transition-colors"
+                data-testid="email-link"
+              >
+                <Mail className="w-5 h-5" />
+                <span className="font-medium">contato@smartlic.tech</span>
+              </a>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700" />
         </div>
 
         {/* Bottom CTA */}
