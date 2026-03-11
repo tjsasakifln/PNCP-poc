@@ -192,6 +192,7 @@ async def create_pipeline_item(
                 "link_pncp": item.link_pncp,
                 "stage": item.stage or "descoberta",
                 "notes": item.notes,
+                "search_id": item.search_id,
             })
         )
 

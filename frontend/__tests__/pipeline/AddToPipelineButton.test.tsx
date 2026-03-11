@@ -183,6 +183,7 @@ describe('AddToPipelineButton', () => {
           link_pncp: "https://pncp.gov.br/app/editais/12345", // link → link_pncp
           stage: "descoberta",
           notes: null,
+          search_id: null,
         });
       });
     });

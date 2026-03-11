@@ -10,6 +10,7 @@ export interface PipelineItem {
   link_pncp: string | null;
   stage: PipelineStage;
   notes: string | null;
+  search_id: string | null;
   created_at: string;
   updated_at: string;
   version: number; // STORY-307 AC12: Optimistic locking version

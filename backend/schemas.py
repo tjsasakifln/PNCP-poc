@@ -1927,6 +1927,7 @@ class PipelineItemCreate(BaseModel):
     link_pncp: Optional[str] = Field(default=None, max_length=500, description="Direct PNCP link")
     stage: Optional[str] = Field(default="descoberta", description="Initial pipeline stage")
     notes: Optional[str] = Field(default=None, max_length=5000, description="User notes")
+    search_id: Optional[str] = Field(default=None, max_length=100, description="Search session that discovered this item (DEBT-120)")
 
     @field_validator('stage')
     @classmethod
@@ -1963,6 +1964,7 @@ class PipelineItemResponse(BaseModel):
     link_pncp: Optional[str] = None
     stage: str
     notes: Optional[str] = None
+    search_id: Optional[str] = None
     created_at: str
     updated_at: str
     version: int = 1  # STORY-307 AC12: Optimistic locking version

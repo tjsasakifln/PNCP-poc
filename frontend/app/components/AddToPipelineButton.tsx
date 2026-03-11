@@ -32,6 +32,7 @@ export function AddToPipelineButton({ licitacao, className = "" }: AddToPipeline
         link_pncp: licitacao.link,
         stage: "descoberta",
         notes: null,
+        search_id: null,
       });
       setStatus("saved");
       setTimeout(() => setStatus("idle"), 3000);
