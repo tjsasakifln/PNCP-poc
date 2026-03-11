@@ -4,7 +4,7 @@
 
 Gera um PDF executivo e institucional com TODAS as oportunidades abertas relevantes para um CNPJ específico, incluindo análise estratégica por edital e recomendações de ação.
 
-**Output:** `docs/reports/report-{CNPJ}-{YYYY-MM-DD}.pdf`
+**Output:** `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.pdf`
 **Rodapé:** "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
 
 ---
@@ -54,6 +54,14 @@ curl -s "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao\
 - Filtrar `objetoCompra` por keywords do setor mapeado na Phase 1
 - Paginar até esgotar ou timeout (max 10 páginas por modalidade)
 - Extrair: objeto, órgão, UF, município, valor estimado, modalidade, data abertura/encerramento, link PNCP
+- **LINK PNCP (CRÍTICO):** Cada resultado da API PNCP retorna os campos `cnpjCompra` (ou `cnpjOrgao`), `anoCompra` e `sequencialCompra`. O link correto é:
+  ```
+  https://pncp.gov.br/app/editais/{cnpjCompra}/{anoCompra}/{sequencialCompra}
+  ```
+  Exemplo: `https://pncp.gov.br/app/editais/27142058000126/2026/85`
+  **NUNCA use hyphens** (errado: `27142058000126-2026-85`). **NUNCA fabrique URLs de busca** (errado: `?q=reforma+obra`).
+  Se o campo `linkSistemaOrigem` estiver presente no resultado da API, usar ele diretamente.
+  Se nenhum campo de link estiver disponível, usar o `numeroControlePNCP` no formato: `https://pncp.gov.br/app/editais/{numeroControlePNCP}` (onde numeroControlePNCP já contém cnpj/ano/seq separados por `-`, mas o link usa o valor como path único).
 
 **2b. PCP v2 (obrigatório)**
 ```bash
@@ -63,6 +71,7 @@ curl -s "https://compras.api.portaldecompraspublicas.com.br/v2/licitacao/process
 - Filtrar client-side por keywords do setor
 - PCP v2 não tem campo UF no servidor — filtrar client-side
 - valor_estimado sempre 0.0 (PCP v2 não tem dados de valor)
+- **LINK PCP v2:** Cada resultado tem campo `url` ou pode ser construído a partir de `id`. Se não tiver URL direta, usar `https://www.portaldecompraspublicas.com.br/processos/{id}`. Se o edital também tem `numeroControlePNCP`, construir o link PNCP: `https://pncp.gov.br/app/editais/{cnpj}/{ano}/{seq}`
 
 **2c. Querido Diário (complementar — diários oficiais municipais)**
 ```bash
@@ -409,8 +418,8 @@ Quando invocado:
 6. **Phase 4:** Inteligência de mercado (panorama, tendências, nichos)
 7. **Phase 5:** Geração do PDF final
 8. Dados intermediários salvos em `docs/reports/data-{CNPJ}-{data}.json`
-9. PDF final gerado em `docs/reports/report-{CNPJ}-{data}.pdf`
-10. Relatório Markdown resumido em `docs/reports/report-{CNPJ}-{data}.md`
+9. PDF final gerado em `docs/reports/report-{CNPJ}-{nome-slug}-{data}.pdf` (nome fantasia ou razão social slugificado, max 40 chars)
+10. Relatório Markdown resumido em `docs/reports/report-{CNPJ}-{nome-slug}-{data}.md`
 
 **Tempo estimado:** 5-15 minutos dependendo do número de editais encontrados e tamanho dos PDFs.
 

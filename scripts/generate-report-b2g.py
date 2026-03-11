@@ -69,6 +69,16 @@ MARGIN = 2 * cm
 
 ILLEGAL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 
+# Regex to detect broken PNCP links using hyphens instead of slashes
+# e.g. https://pncp.gov.br/app/editais/27142058000126-2026-85
+_PNCP_HYPHEN_LINK_RE = re.compile(
+    r"https://pncp\.gov\.br/app/editais/(\d{14})-(\d{4})-(\d+)$"
+)
+# Regex to detect fabricated search query links
+_PNCP_SEARCH_LINK_RE = re.compile(
+    r"https://pncp\.gov\.br/app/editais\?q="
+)
+
 # Recommendation colors/labels
 REC_COLORS = {
     "PARTICIPAR": GREEN,
@@ -82,6 +92,30 @@ REC_COLORS = {
 # ============================================================
 # HELPERS
 # ============================================================
+
+def _fix_pncp_link(link: str | None) -> str:
+    """Fix common PNCP link format errors.
+
+    Corrects:
+    - Hyphens instead of slashes: .../27142058000126-2026-85 -> .../27142058000126/2026/85
+    - Fabricated search query links: ...?q=reforma+obra -> removed (returns empty)
+    """
+    if not link:
+        return ""
+    link = str(link).strip()
+
+    # Fix hyphen-separated format -> slash-separated
+    m = _PNCP_HYPHEN_LINK_RE.match(link)
+    if m:
+        cnpj, ano, seq = m.groups()
+        return f"https://pncp.gov.br/app/editais/{cnpj}/{ano}/{seq}"
+
+    # Remove fabricated search query links (they don't work on PNCP)
+    if _PNCP_SEARCH_LINK_RE.match(link):
+        return ""
+
+    return link
+
 
 def _s(value: Any) -> str:
     if value is None:
@@ -760,8 +794,24 @@ def _build_next_steps(data: dict, styles: dict) -> list:
 # MAIN
 # ============================================================
 
+def _sanitize_links(data: dict) -> dict:
+    """Fix broken PNCP links in all editais before rendering."""
+    editais = data.get("editais", [])
+    fixed = 0
+    for ed in editais:
+        original = ed.get("link", "")
+        corrected = _fix_pncp_link(original)
+        if corrected != original:
+            ed["link"] = corrected
+            fixed += 1
+    if fixed:
+        print(f"Links corrected: {fixed}/{len(editais)}")
+    return data
+
+
 def generate_report_b2g(data: dict) -> BytesIO:
     """Generate the full B2G report PDF from structured data."""
+    data = _sanitize_links(data)
     gen_date = _today()
     styles = _build_styles()
     buffer = BytesIO()
@@ -815,8 +865,14 @@ def main():
         output_path = Path(args.output)
     else:
         cnpj = data.get("empresa", {}).get("cnpj", "unknown").replace("/", "").replace(".", "").replace("-", "")
+        nome = data.get("empresa", {}).get("nome_fantasia") or data.get("empresa", {}).get("razao_social", "")
+        # Slugify: lowercase, replace spaces/special chars with hyphens, strip
+        nome_slug = re.sub(r"[^a-z0-9]+", "-", nome.lower().strip()).strip("-")[:40] if nome else ""
         date_str = datetime.now().strftime("%Y-%m-%d")
-        output_path = input_path.parent / f"report-{cnpj}-{date_str}.pdf"
+        if nome_slug:
+            output_path = input_path.parent / f"report-{cnpj}-{nome_slug}-{date_str}.pdf"
+        else:
+            output_path = input_path.parent / f"report-{cnpj}-{date_str}.pdf"
 
     buffer = generate_report_b2g(data)
 
