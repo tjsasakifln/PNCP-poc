@@ -152,10 +152,11 @@ describe('STORY-273 + SAB-006: Landing Page Social Proof Integration', () => {
       expect(screen.queryByTestId('data-sources')).not.toBeInTheDocument();
       expect(screen.queryByTestId('sectors-grid')).not.toBeInTheDocument();
       expect(screen.queryByTestId('trust-criteria')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('testimonial-section')).not.toBeInTheDocument();
+      // DEBT-122 AC1: TestimonialSection re-added to landing page
+      expect(screen.queryByTestId('testimonial-section')).toBeInTheDocument();
     });
 
-    it('should maintain correct section order: Hero → Problema → Solução → Como Funciona → Stats → CTA', () => {
+    it('should maintain correct section order: Hero → Problema → Solução → Como Funciona → Stats → Testimonials → CTA', () => {
       const main = screen.getByRole('main');
       const html = main.innerHTML;
 
@@ -164,13 +165,15 @@ describe('STORY-273 + SAB-006: Landing Page Social Proof Integration', () => {
       const solucaoIdx = html.indexOf('data-testid="before-after"');
       const comoIdx = html.indexOf('data-testid="how-it-works"');
       const statsIdx = html.indexOf('data-testid="stats-section"');
+      const testimonialIdx = html.indexOf('data-testid="testimonial-section"');
       const ctaIdx = html.indexOf('data-testid="final-cta"');
 
       expect(heroIdx).toBeLessThan(problemaIdx);
       expect(problemaIdx).toBeLessThan(solucaoIdx);
       expect(solucaoIdx).toBeLessThan(comoIdx);
       expect(comoIdx).toBeLessThan(statsIdx);
-      expect(statsIdx).toBeLessThan(ctaIdx);
+      expect(statsIdx).toBeLessThan(testimonialIdx);
+      expect(testimonialIdx).toBeLessThan(ctaIdx);
     });
   });
 });

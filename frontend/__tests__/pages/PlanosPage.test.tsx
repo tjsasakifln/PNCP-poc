@@ -149,35 +149,33 @@ describe('PlanosPage Component', () => {
       expect(screen.getByRole('radio', { name: /Anual.*Economize 25%/i })).toBeInTheDocument();
     });
 
-    it('should default to monthly billing period', async () => {
+    it('should default to annual billing period', async () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const monthlyRadio = screen.getByRole('radio', { name: /Mensal/i });
-        expect(monthlyRadio).toHaveAttribute('aria-checked', 'true');
+        const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 25%/i });
+        expect(annualRadio).toHaveAttribute('aria-checked', 'true');
       });
 
-      // Default price should be monthly R$ 397
-      expect(screen.getByText(/R\$\s*397/)).toBeInTheDocument();
+      // Default price should be annual R$ 297
+      expect(screen.getByText(/R\$\s*297/)).toBeInTheDocument();
     });
 
     it('should change price when billing period changes', async () => {
       render(<PlanosPage />);
 
+      // Default is annual (R$ 297)
       await waitFor(() => {
-        expect(screen.getByText(/R\$\s*397/)).toBeInTheDocument();
+        expect(screen.getByText(/R\$\s*297/)).toBeInTheDocument();
       });
 
-      // Click semiannual toggle
-      const semiannualRadio = screen.getByRole('radio', { name: /Semestral.*Economize 10%/i });
-      fireEvent.click(semiannualRadio);
+      // Click monthly toggle
+      const monthlyRadio = screen.getByRole('radio', { name: /Mensal/i });
+      fireEvent.click(monthlyRadio);
 
       await waitFor(() => {
-        // Semiannual price should be R$ 357/mês
-        expect(screen.getByText(/R\$\s*357/)).toBeInTheDocument();
-        // Check for multiple "Economize 10%" elements (toggle + badge)
-        const saveElements = screen.getAllByText(/Economize 10%/);
-        expect(saveElements.length).toBeGreaterThan(0);
+        // Monthly price should be R$ 397/mês
+        expect(screen.getByText(/R\$\s*397/)).toBeInTheDocument();
       });
     });
 
@@ -356,7 +354,7 @@ describe('PlanosPage Component', () => {
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining('/checkout?plan_id=smartlic_pro&billing_period=monthly'),
+          expect.stringContaining('/checkout?plan_id=smartlic_pro&billing_period=annual'),
           expect.objectContaining({
             method: 'POST',
             headers: expect.objectContaining({
@@ -862,7 +860,7 @@ describe('PlanosPage Component', () => {
       await waitFor(() => {
         expect(mockTrackEvent).toHaveBeenCalledWith('checkout_initiated', {
           plan_id: 'smartlic_pro',
-          billing_period: 'monthly',
+          billing_period: 'annual',
           source: 'planos_page',
         });
       });
@@ -907,7 +905,7 @@ describe('PlanosPage Component', () => {
       await waitFor(() => {
         expect(mockTrackEvent).toHaveBeenCalledWith('checkout_failed', {
           plan_id: 'smartlic_pro',
-          billing_period: 'monthly',
+          billing_period: 'annual',
           error: 'Checkout error',
         });
       });

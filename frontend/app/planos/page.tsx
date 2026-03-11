@@ -89,7 +89,7 @@ export default function PlanosPage() {
   trackEventRef.current = trackEvent;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [stripeRedirecting, setStripeRedirecting] = useState(false);
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("annual");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -141,7 +141,7 @@ export default function PlanosPage() {
     if (params.get("cancelled")) setStatusMsg("Processo cancelado.");
     // Pre-select billing period from URL
     const billing = params.get("billing");
-    if (billing === "semiannual" || billing === "annual") setBillingPeriod(billing);
+    if (billing === "monthly" || billing === "semiannual" || billing === "annual") setBillingPeriod(billing);
 
     // STORY-323 AC17: Detect partner from URL or cookie/localStorage
     const partnerSlug = params.get("partner") || safeGetItem("smartlic_partner");
@@ -600,17 +600,20 @@ export default function PlanosPage() {
                 </li>
               ))}
             </ul>
-            {/* CTA */}
-            <button
+            {/* CTA — DEBT-122 AC8-AC10: Use Button component with loading state */}
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full text-lg font-bold bg-amber-600 hover:bg-amber-700 hover:shadow-lg"
               onClick={() => {
                 if (!session) { window.location.href = "/login"; return; }
                 handleConsultoriaCheckout();
               }}
               disabled={checkoutLoading}
-              className="w-full py-4 rounded-button text-lg font-bold transition-all bg-amber-600 text-white hover:bg-amber-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={checkoutLoading}
             >
               {checkoutLoading ? "Processando..." : "Começar com Consultoria"}
-            </button>
+            </Button>
             <p className="mt-3 text-center text-xs text-[var(--ink-muted)]">
               Ideal para consultorias com 3-5 colaboradores
             </p>

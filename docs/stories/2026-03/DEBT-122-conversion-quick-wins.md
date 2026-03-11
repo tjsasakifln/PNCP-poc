@@ -12,22 +12,22 @@ Three low-effort, high-impact conversion improvements were identified in the GTM
 
 ### Testimonials on Landing Page (P1-006)
 
-- [ ] AC1: `TestimonialSection` component imported and rendered on the landing page between existing sections
-- [ ] AC2: Section is visible on both desktop and mobile
-- [ ] AC3: No layout shift or CLS regression (section has fixed height or skeleton)
+- [x] AC1: `TestimonialSection` component imported and rendered on the landing page between existing sections
+- [x] AC2: Section is visible on both desktop and mobile
+- [x] AC3: No layout shift or CLS regression (section has fixed height or skeleton)
 
 ### Annual Billing Default (P1-012)
 
-- [ ] AC4: `/planos` loads with annual billing selected by default (not monthly)
-- [ ] AC5: `?billing=monthly` URL param overrides the default to monthly
-- [ ] AC6: `?billing=semiannual` URL param overrides the default to semiannual
-- [ ] AC7: Existing pricing page tests pass without modification
+- [x] AC4: `/planos` loads with annual billing selected by default (not monthly)
+- [x] AC5: `?billing=monthly` URL param overrides the default to monthly
+- [x] AC6: `?billing=semiannual` URL param overrides the default to semiannual
+- [x] AC7: Existing pricing page tests pass without modification
 
 ### Consultoria CTA Button (P2-016)
 
-- [ ] AC8: Consultoria plan CTA uses `<Button>` component (not raw `<button>`)
-- [ ] AC9: Button shows loading spinner during checkout redirect
-- [ ] AC10: Consistent styling with SmartLic Pro CTA button
+- [x] AC8: Consultoria plan CTA uses `<Button>` component (not raw `<button>`)
+- [x] AC9: Button shows loading spinner during checkout redirect
+- [x] AC10: Consistent styling with SmartLic Pro CTA button
 
 ## Technical Notes
 
@@ -48,8 +48,8 @@ Three low-effort, high-impact conversion improvements were identified in the GTM
 
 ## Test Requirements
 
-- [ ] Existing landing page tests pass
-- [ ] Existing pricing page tests pass
+- [x] Existing landing page tests pass
+- [x] Existing pricing page tests pass
 - [ ] Manual verification: `/planos` shows annual prices on load
 - [ ] Manual verification: `/planos?billing=monthly` shows monthly prices
 
@@ -60,7 +60,7 @@ Three low-effort, high-impact conversion improvements were identified in the GTM
 
 ## Definition of Done
 
-- [ ] All ACs pass
-- [ ] Tests pass (existing + new)
+- [x] All ACs pass
+- [x] Tests pass (existing + new)
 - [ ] No regressions in CI
-- [ ] Code reviewed
+- [x] Code reviewed
