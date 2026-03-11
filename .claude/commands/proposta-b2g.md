@@ -21,13 +21,24 @@ Gera um PDF de proposta comercial personalizada e profissional para um lead espe
 
 ## Pacotes Disponiveis
 
-| Pacote | Preco | Entregaveis | ICP |
-|--------|-------|-------------|-----|
-| **Basico** | R$1.500/mes | Monitoramento + Alertas + 1 report/mes | PME com 1-5 contratos/ano |
-| **Premium** | R$3.000/mes | Basico + Analise estrategica + Suporte a propostas + 4 reports/mes | Medio porte, 5-20 contratos/ano |
-| **Enterprise** | R$5.000+/mes | Premium + Dedicado + Gestao completa do pipeline | Grande porte, 20+ contratos/ano |
+| Pacote | Preco | Report freq | PDF analysis | UFs | Suporte |
+|--------|-------|-------------|-------------|-----|---------|
+| **Mensal** | R$2.500/mes | 1x/mes | Ate 3 editais | SC | Comercial |
+| **Semanal (Rec.)** | R$5.000/mes | 4x semanal + 1x mensal | Ate 8 editais | SC+PR+RS | Estendido |
+| **Diario** | R$10.000/mes | Diario + semanal + mensal | Ilimitada | 5 estados | Dedicado |
+
+Todos os pacotes tem desconto anual: pague 10, leve 12.
 
 Se `--pacote` nao for informado, o command seleciona automaticamente baseado no tier/score do `/qualify-b2g`.
+
+## Principios de Conversao
+
+- **Autoridade**: Tiago Sasaki e servidor efetivo da SIE/SC ha 7 anos. Conhece a maquina por dentro. Ja analisou 500+ propostas de habilitacao. Sabe onde 80% das inabilitacoes acontecem.
+- **Escassez temporal**: Editais tem prazo. Cada dia sem monitoramento = edital perdido. O CTA usa o edital mais proximo de encerrar como ancora.
+- **Prova de valor**: A proposta em si E o produto. Mostra exatamente o que o relatorio /report-b2g entrega.
+- **Reciprocidade**: Primeiro mes de cortesia para contratacoes na vigencia da proposta.
+- **Contraste**: Tabela "COM vs SEM monitoramento" e "Consultoria Tradicional vs Esta Consultoria".
+- **Dados reais, nao promessas**: Todo numero vem de fonte publica verificavel (PNCP, Portal da Transparencia, OpenCNPJ).
 
 ## What It Does
 
@@ -107,101 +118,98 @@ O coracao da proposta. Demonstrar matematicamente o retorno do investimento.
 **Estrutura do PDF (12 secoes):**
 
 #### 1. Capa
+- Dinamica: data=hoje, validade=hoje+15dias, CNPJ/nome do JSON
 - Titulo: "Proposta de Consultoria em Licitacoes Publicas"
 - Subtitulo: "Preparada exclusivamente para {Nome_Fantasia}"
-- CNPJ, Data, Consultor
 - Visual limpo e profissional
 
 #### 2. Carta ao Decisor
-- Enderecada ao socio-administrador pelo nome (do QSA)
+- Personalizada com deteccao de genero (Sr./Sra.) a partir do QSA
+- Template-driven, referencia dados reais do edital prioritario
 - Tom: consultivo, direto, sem floreios
-- 3 paragrafos max:
-  1. "Identifiquei que sua empresa {fato_especifico}..."
-  2. "Existem {N} oportunidades abertas que voce pode estar perdendo..."
-  3. "Esta proposta detalha como posso ajudar..."
 
 #### 3. Diagnostico da Empresa
+- Dinamico do JSON: pontos fortes/atencao derivados dos dados coletados
 - Dados cadastrais (razao, fantasia, CNAE, porte, capital, cidade)
 - Historico gov: {N} contratos em 12 meses, R${valor} faturamento gov
-- UFs de atuacao
-- Orgaos mais frequentes
+- UFs de atuacao, orgaos mais frequentes
 - Analise de concentracao: "{X}% da receita gov vem de {orgao_top}" — risco ou oportunidade
 
 #### 4. Radiografia do Mercado
-- Total de editais abertos no setor: {N}
-- Valor total em disputa: R${valor}
-- Distribuicao por UF (tabela)
-- Distribuicao por modalidade
-- Tendencia: crescendo/estavel/caindo vs mesmo periodo ano anterior (se dados disponiveis)
+- Dinamica: distribuicao municipal computada de editais via groupby
+- Tendencias extraidas de `inteligencia_mercado` do JSON
+- Total de editais abertos no setor: {N}, valor total em disputa: R${valor}
+- Distribuicao por UF (tabela computada dos editais)
 
-#### 5. Oportunidades Identificadas (TOP 10)
-- Tabela com os 10 melhores editais abertos para este CNPJ
-- Colunas: Orgao | UF | Objeto (resumido) | Valor | Modalidade | Encerramento | Aderencia
-- Ordenados por aderencia ao perfil × valor
+#### 5. Top Oportunidades
+- Dinamica: ordenadas por (prioridade de recomendacao, valor desc), sem truncamento
+- Datas no formato DD/MM/YYYY (nunca ISO)
+- Separador travessao (—) no objeto/orgao
+- Todos os editais listados, nao apenas top 10
 
-#### 6. O que Voce Esta Perdendo (seção de dor)
-- Numero de editais que passaram nos ultimos 6 meses sem participacao
-- Valor acumulado desses editais
-- "Empresas do seu porte no setor participam em media de {X} editais/mes. Voce participa de {Y}."
-- Grafico simples: Potencial vs Realizado
+#### 6. Analise Detalhada — Edital Prioritario
+- Primeiro edital com recomendacao PARTICIPAR
+- Analise de habilitacao (requisitos do edital)
+- Analise estrategica com 6 fatores
+- Perguntas e respostas para o decisor (Q&A)
 
-#### 7. ROI da Consultoria
-- Tabela clara:
-  | Metrica | Valor |
-  |---------|-------|
-  | Investimento mensal | R${preco_pacote} |
-  | Oportunidades mapeadas/mes | {N} |
-  | Receita incremental projetada/mes | R${valor} |
-  | ROI em 12 meses | {X}% |
-  | Payback | {N} meses |
+#### 7. Dimensionamento da Oportunidade
+- ROI computado a partir de contagens/valores reais dos editais
+- Tabela comparativa COM vs SEM monitoramento
+- Tabela de projecao anual
 - Disclaimer: "Projecoes baseadas em dados publicos. Resultados dependem da execucao."
 
-#### 8. Pacote Proposto
-- Detalhamento do pacote selecionado
-- Entregaveis com frequencia (semanal/mensal)
-- O que esta INCLUIDO (lista clara)
-- O que NAO esta incluido (evitar expectativas erradas)
+#### 8. O Que Cada Relatorio Entrega
+- Showcase da qualidade do /report-b2g (10 secoes + 6 fontes)
+- Demonstra que a proposta EM SI e o produto
 
-#### 9. Metodologia de Trabalho
-- Como funciona o monitoramento (fontes: PNCP, PCP, ComprasGov)
-- Frequencia de reports
-- Canal de comunicacao (WhatsApp + Email)
-- Tempo de resposta para alertas de editais urgentes
+#### 9. Pacotes de Monitoramento
+- 3 tiers: Mensal R$2.500 | Semanal R$5.000 (RECOMENDADO) | Diario R$10.000
+- Comparativo rapido entre pacotes
+- Desconto anual destacado: pague 10, leve 12
 
-#### 10. Sobre o Consultor
-- Mini-bio profissional de Tiago Sasaki
-- Experiencia em licitacoes
-- Tecnologia proprietaria (SmartLic — sem detalhar demais)
-- Diferenciais vs consultorias tradicionais
+#### 10. Quem Analisa Seus Editais
+- Secao de AUTORIDADE
+- 7 anos como servidor efetivo da SIE/SC
+- 500+ propostas de habilitacao analisadas pelo lado do orgao
+- Exemplos concretos de red flags detectadas (clausulas restritivas disfarcadas, indices eliminatorios)
+- Conhecimento dos criterios nao escritos das comissoes
+- Historico de pagamento dos orgaos
+- SmartLic como tecnologia proprietaria
 
 #### 11. Condicoes Comerciais
-- Preco: R${valor}/mes
+- Preco dinamico baseado em `--pacote`
+- Condicao especial com destaque visual e prazo (hoje+15dias)
 - Desconto (se `--desconto` informado): "Condicao especial: {X}% — valida ate {data+15dias}"
 - Forma de pagamento: Boleto, PIX, Cartao
-- Prazo de contrato: Minimo 3 meses
-- Cancelamento: 30 dias de antecedencia
-- Inicio: Imediato apos aceite
+- Prazo de contrato: Minimo 3 meses; Cancelamento: 30 dias de antecedencia
 
 #### 12. Proximos Passos
+- Calendario de prazo dos editais (ancora de urgencia)
+- CTA de ALTA CONVERSAO com urgencia baseada no edital mais proximo de encerrar
 - CTA claro: "Para iniciar, responda este WhatsApp ou ligue para (48)9 8834-4559"
-- Timeline:
-  1. Aceite da proposta → Dia 0
-  2. Onboarding (perfil + preferencias) → Dia 1-2
-  3. Primeiro report de oportunidades → Dia 3-5
-  4. Monitoramento continuo → Dia 6+
 
 **Rodape em todas as paginas:** "Tiago Sasaki - Consultor de Licitacoes (48)9 8834-4559"
 
 ### Phase 4: Geracao do PDF (@dev)
 
 ```bash
-cd C:/Users/tiagosasaki/Desktop/PNCP-poc
-python scripts/generate-proposta-b2g.py \
+python scripts/generate-proposta-pdf.py \
   --input docs/propostas/data-{CNPJ}-{data}.json \
-  --output docs/propostas/proposta-{CNPJ}-{data}.pdf
+  --output docs/propostas/proposta-{CNPJ}-{nome-slug}-{data}.pdf \
+  --pacote semanal
 ```
 
 Se o script nao existir, gerar o JSON de dados e criar o PDF via reportlab/weasyprint ou equivalente disponivel.
+
+## Regras de Formatacao do PDF
+
+- Acentuacao PT-BR automatica (fix_accents) aplicada a todos os textos do JSON
+- Datas sempre no formato DD/MM/YYYY (nunca ISO)
+- Travessao (—) no lugar de meia-risca (–) em todo o documento
+- Tabelas usam KeepTogether para evitar quebra entre paginas
+- Colunas dimensionadas para word-wrap (Paragraph), nunca truncamento de texto
+- Todo conteudo e dinamico do JSON — nenhum valor hardcoded no script
 
 ## APIs Reference
 
