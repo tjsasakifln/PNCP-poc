@@ -277,38 +277,63 @@ async def lifespan(app_instance: FastAPI):
 
     def _sigterm_handler(signum, frame):
         logger.info("SIGTERM received — starting graceful shutdown")
+        # DEBT-124 AC1: Set shutting_down flag immediately on SIGTERM
+        _state.shutting_down = True
 
     signal.signal(signal.SIGTERM, _sigterm_handler)
 
     yield
 
     # === SHUTDOWN ===
-    logger.info("HARDEN-022: Graceful shutdown initiated")
+    from config import GRACEFUL_SHUTDOWN_TIMEOUT
+    logger.info("DEBT-124: Graceful shutdown initiated (drain_timeout=%ds)", GRACEFUL_SHUTDOWN_TIMEOUT)
 
-    await _mark_inflight_sessions_timed_out()
+    # DEBT-124 AC1: Set flag (also set by SIGTERM handler, but ensure it's set for lifespan shutdown)
+    _state.shutting_down = True
 
+    # DEBT-124 AC5: Emit shutdown event to all active SSE connections
+    from progress import _active_trackers
+    if _active_trackers:
+        logger.info("DEBT-124 AC5: Emitting shutdown event to %d active SSE connections", len(_active_trackers))
+        for sid, tracker in list(_active_trackers.items()):
+            try:
+                await tracker.emit(
+                    stage="shutdown",
+                    progress=-1,
+                    message="Servidor em manutenção. Sua busca será retomada automaticamente.",
+                )
+            except Exception as e:
+                logger.debug("DEBT-124: Failed to emit shutdown to tracker %s: %s", sid, e)
+
+    # DEBT-124 AC2+AC3: Wait for in-flight requests to complete (up to drain timeout)
     from routes.search import _active_background_tasks
     if _active_background_tasks:
         bg_count = len(_active_background_tasks)
-        logger.info("HARDEN-022: Cancelling %d active background tasks", bg_count)
-        for sid, task in _active_background_tasks.items():
-            if not task.done():
-                task.cancel()
+        drain_timeout = min(GRACEFUL_SHUTDOWN_TIMEOUT, 30)
+        logger.info("DEBT-124 AC2: Draining %d in-flight searches (timeout=%ds)", bg_count, drain_timeout)
         try:
             await asyncio.wait_for(
                 asyncio.gather(*_active_background_tasks.values(), return_exceptions=True),
-                timeout=10.0,
+                timeout=drain_timeout,
             )
-            logger.info("HARDEN-022: All %d background tasks drained", bg_count)
+            logger.info("DEBT-124: All %d background tasks drained successfully", bg_count)
         except asyncio.TimeoutError:
-            logger.warning("HARDEN-022: Background task drain timed out after 10s")
+            logger.warning("DEBT-124 AC2: Drain timeout after %ds — cancelling remaining %d tasks",
+                           drain_timeout, sum(1 for t in _active_background_tasks.values() if not t.done()))
+            for sid, task in _active_background_tasks.items():
+                if not task.done():
+                    task.cancel()
+            # Brief wait for cancellation to propagate
+            await asyncio.gather(*_active_background_tasks.values(), return_exceptions=True)
         _active_background_tasks.clear()
     else:
-        logger.info("HARDEN-022: No active background tasks to drain")
+        logger.info("DEBT-124: No active background tasks to drain")
+
+    await _mark_inflight_sessions_timed_out()
 
     from task_registry import task_registry
     stop_results = await task_registry.stop_all(timeout=10.0)
-    logger.info("HARDEN-022: TaskRegistry stopped %d tasks: %s",
+    logger.info("DEBT-124: TaskRegistry stopped %d tasks: %s",
                 len(stop_results), {k: v for k, v in stop_results.items() if v != "cancelled"})
 
     from job_queue import close_arq_pool
@@ -321,4 +346,4 @@ async def lifespan(app_instance: FastAPI):
 
     await shutdown_redis()
 
-    logger.info("HARDEN-022: Graceful shutdown complete")
+    logger.info("DEBT-124: Graceful shutdown complete")

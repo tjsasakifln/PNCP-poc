@@ -29,6 +29,12 @@ _ALLOWED_ROOT_PATHS = frozenset({
 DOCS_ACCESS_TOKEN = os.getenv("DOCS_ACCESS_TOKEN", "")
 
 
+# DEBT-124: Paths exempt from shutdown drain (health probes must respond for LB to stop routing)
+_SHUTDOWN_EXEMPT_PATHS = frozenset({
+    "/health/live", "/health/ready", "/health", "/metrics",
+})
+
+
 def setup_middleware(app: FastAPI) -> None:
     """Attach all middleware to *app* (order matters — last added = outermost)."""
     cors_origins = get_cors_origins()
@@ -44,6 +50,22 @@ def setup_middleware(app: FastAPI) -> None:
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(DeprecationMiddleware)
     app.add_middleware(RateLimitMiddleware)
+
+    # DEBT-124: Graceful shutdown drain — reject new requests with 503 during shutdown
+    @app.middleware("http")
+    async def shutdown_drain_middleware(request: Request, call_next):
+        """DEBT-124 AC1: Return 503 for new requests when shutting down."""
+        import startup.state as _state
+        if _state.shutting_down and request.url.path not in _SHUTDOWN_EXEMPT_PATHS:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "detail": "Servidor em manutenção. Tente novamente em alguns segundos.",
+                    "shutting_down": True,
+                },
+                headers={"Retry-After": "10"},
+            )
+        return await call_next(request)
 
     # SYS-036: Protect /docs and /redoc with DOCS_ACCESS_TOKEN in production
     @app.middleware("http")

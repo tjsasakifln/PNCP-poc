@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 # STORY-276: Terminal stages that trigger stream EXPIRE
 _TERMINAL_STAGES = frozenset({
     "complete", "error", "degraded", "refresh_available", "search_complete",
+    "shutdown",  # DEBT-124 AC5: Graceful shutdown terminates SSE connections
 })
 # STORY-276 AC1: TTL for stream key after terminal event (5 minutes)
 _STREAM_EXPIRE_TTL = 300

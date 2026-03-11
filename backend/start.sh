@@ -51,7 +51,9 @@ case "$PROCESS_TYPE" in
     # --max-requests 1000 + jitter 50: recycle workers to prevent memory leaks.
     # GTM-INFRA-001 AC7/AC8: timeout=120s default (Railway hard timeout ~300s, keep-alive 75s > Railway proxy 60s).
     # CRIT-034 AC5+AC7: -c gunicorn_conf.py for worker lifecycle hooks.
-    echo "  timeout=${GUNICORN_TIMEOUT:-120}s, workers=${WEB_CONCURRENCY:-2}, graceful=${GUNICORN_GRACEFUL_TIMEOUT:-30}s, keep-alive=${GUNICORN_KEEP_ALIVE:-75}s"
+    # DEBT-124: Align gunicorn graceful_timeout with GRACEFUL_SHUTDOWN_TIMEOUT (default 30s)
+    GUNICORN_GRACEFUL_TIMEOUT="${GUNICORN_GRACEFUL_TIMEOUT:-${GRACEFUL_SHUTDOWN_TIMEOUT:-30}}"
+    echo "  timeout=${GUNICORN_TIMEOUT:-120}s, workers=${WEB_CONCURRENCY:-2}, graceful=${GUNICORN_GRACEFUL_TIMEOUT}s, keep-alive=${GUNICORN_KEEP_ALIVE:-75}s"
     echo "  max-requests=${GUNICORN_MAX_REQUESTS:-1000}, jitter=${GUNICORN_MAX_REQUESTS_JITTER:-50}"
 
     exec gunicorn main:app \
@@ -59,7 +61,7 @@ case "$PROCESS_TYPE" in
       -w "${WEB_CONCURRENCY:-2}" \
       --bind "0.0.0.0:${PORT:-8000}" \
       --timeout "${GUNICORN_TIMEOUT:-120}" \
-      --graceful-timeout "${GUNICORN_GRACEFUL_TIMEOUT:-30}" \
+      --graceful-timeout "${GUNICORN_GRACEFUL_TIMEOUT}" \
       --keep-alive "${GUNICORN_KEEP_ALIVE:-75}" \
       --max-requests "${GUNICORN_MAX_REQUESTS:-1000}" \
       --max-requests-jitter "${GUNICORN_MAX_REQUESTS_JITTER:-50}" \

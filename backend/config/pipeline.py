@@ -119,3 +119,8 @@ BUSINESS_HOURS_START: int = int(os.getenv("BUSINESS_HOURS_START", "8"))
 BUSINESS_HOURS_END: int = int(os.getenv("BUSINESS_HOURS_END", "18"))
 SUPPORT_SLA_CHECK_INTERVAL_SECONDS: int = 4 * 60 * 60
 SUPPORT_SLA_ALERT_THRESHOLD_HOURS: int = 20
+
+# ============================================
+# DEBT-124: Graceful Shutdown
+# ============================================
+GRACEFUL_SHUTDOWN_TIMEOUT: int = int(os.getenv("GRACEFUL_SHUTDOWN_TIMEOUT", "30"))

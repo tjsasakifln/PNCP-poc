@@ -163,7 +163,7 @@ async def buscar_progress_stream(
                     )
                     # Check if replay included terminal event
                     if replay_events[-1][1].get("stage") in (
-                        "complete", "degraded", "error", "refresh_available", "search_complete",
+                        "complete", "degraded", "error", "refresh_available", "search_complete", "shutdown",
                     ):
                         return
 
@@ -296,7 +296,7 @@ async def buscar_progress_stream(
 
                                 if fields["stage"] in (
                                     "complete", "degraded", "error",
-                                    "refresh_available", "search_complete",
+                                    "refresh_available", "search_complete", "shutdown",
                                 ):
                                     return
 
@@ -380,7 +380,7 @@ async def buscar_progress_stream(
                                 )
                                 if _stage in (
                                     "complete", "error", "degraded",
-                                    "refresh_available", "search_complete",
+                                    "refresh_available", "search_complete", "shutdown",
                                 ):
                                     return
                     except Exception as _sb_err:
@@ -420,7 +420,7 @@ async def buscar_progress_stream(
 
                         if event.stage in (
                             "complete", "degraded", "error",
-                            "refresh_available", "search_complete",
+                            "refresh_available", "search_complete", "shutdown",
                         ):
                             break
 

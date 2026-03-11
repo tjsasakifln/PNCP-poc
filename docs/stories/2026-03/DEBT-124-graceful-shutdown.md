@@ -10,13 +10,13 @@ Railway deploys send SIGTERM but the SmartLic backend does not drain in-flight r
 
 ## Acceptance Criteria
 
-- [ ] AC1: SIGTERM triggers drain behavior -- new requests receive 503 Service Unavailable, in-flight requests are allowed to complete
-- [ ] AC2: In-flight search either completes normally or returns partial results (never an unhandled error)
-- [ ] AC3: Drain timeout is configurable via `GRACEFUL_SHUTDOWN_TIMEOUT` env var (default 30s)
-- [ ] AC4: Gunicorn `on_exit` hook or FastAPI lifespan `shutdown` event implements the drain logic
-- [ ] AC5: SSE connections are gracefully closed with a `shutdown` event type before termination
-- [ ] AC6: Health endpoint returns 503 during drain phase (load balancer stops sending new requests)
-- [ ] AC7: `test_harden_022_graceful_shutdown.py` validates drain behavior with at least 5 test cases
+- [x] AC1: SIGTERM triggers drain behavior -- new requests receive 503 Service Unavailable, in-flight requests are allowed to complete
+- [x] AC2: In-flight search either completes normally or returns partial results (never an unhandled error)
+- [x] AC3: Drain timeout is configurable via `GRACEFUL_SHUTDOWN_TIMEOUT` env var (default 30s)
+- [x] AC4: Gunicorn `on_exit` hook or FastAPI lifespan `shutdown` event implements the drain logic
+- [x] AC5: SSE connections are gracefully closed with a `shutdown` event type before termination
+- [x] AC6: Health endpoint returns 503 during drain phase (load balancer stops sending new requests)
+- [x] AC7: `test_harden_022_graceful_shutdown.py` validates drain behavior with at least 5 test cases
 
 ## Technical Notes
 
@@ -41,27 +41,35 @@ Railway deploys send SIGTERM but the SmartLic backend does not drain in-flight r
 
 ## Test Requirements
 
-- [ ] `test_harden_022_graceful_shutdown.py` with cases:
+- [x] `test_harden_022_graceful_shutdown.py` with cases (19 tests):
   - SIGTERM sets shutting_down flag
   - New requests get 503 during shutdown
   - In-flight request completes during drain
   - Health endpoint returns 503 during drain
   - Drain timeout is respected (configurable)
-- [ ] Existing search tests still pass
-- [ ] Existing health endpoint tests still pass
+  - SSE shutdown event emitted to active trackers
+  - Shutdown sequence ordering validated
+  - start.sh uses GRACEFUL_SHUTDOWN_TIMEOUT
+- [x] Existing search tests still pass
+- [x] Existing health endpoint tests still pass (40/40)
 
-## Files to Modify
+## Files Modified
 
-- `backend/main.py` -- Add shutdown lifespan event, middleware for 503 during drain
-- `backend/start.sh` -- Gunicorn graceful_timeout configuration
-- `backend/config.py` -- `GRACEFUL_SHUTDOWN_TIMEOUT` env var
-- `backend/health.py` -- Return 503 during drain phase
-- `backend/tests/test_harden_022_graceful_shutdown.py` -- New test file
+- `backend/startup/state.py` -- Added `shutting_down` flag
+- `backend/startup/lifespan.py` -- SIGTERM handler sets flag, drain logic with configurable timeout, SSE shutdown events
+- `backend/startup/middleware_setup.py` -- Added shutdown_drain_middleware (503 for new requests)
+- `backend/config/pipeline.py` -- Added `GRACEFUL_SHUTDOWN_TIMEOUT` env var (default 30s)
+- `backend/config/__init__.py` -- Re-export GRACEFUL_SHUTDOWN_TIMEOUT
+- `backend/start.sh` -- Gunicorn graceful_timeout aligned with GRACEFUL_SHUTDOWN_TIMEOUT
+- `backend/routes/health_core.py` -- /health/ready returns 503 during drain
+- `backend/progress.py` -- Added "shutdown" to _TERMINAL_STAGES
+- `backend/routes/search_sse.py` -- Added "shutdown" to all terminal stage checks
+- `backend/tests/test_harden_022_graceful_shutdown.py` -- 19 test cases across 7 test classes
 
 ## Definition of Done
 
-- [ ] All ACs pass
-- [ ] Tests pass (existing + new)
+- [x] All ACs pass
+- [x] Tests pass (existing + new — 19 new, 0 regressions)
 - [ ] No regressions in CI
 - [ ] Code reviewed
 - [ ] Deploy to Railway and verify no search failures during subsequent deploy

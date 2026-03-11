@@ -38,7 +38,15 @@ async def health_live():
 
 @router.get("/health/ready")
 async def health_ready(response: Response):
-    """HARDEN-016 AC2: Readiness probe — checks Redis + Supabase."""
+    """HARDEN-016 AC2: Readiness probe — checks Redis + Supabase.
+
+    DEBT-124 AC6: Returns 503 during graceful shutdown drain phase.
+    """
+    # DEBT-124 AC6: Health returns 503 during drain so LB stops sending new requests
+    if _state.shutting_down:
+        response.status_code = 503
+        return {"ready": False, "checks": {}, "uptime_seconds": 0.0, "shutting_down": True}
+
     checks: dict[str, dict] = {}
     all_ok = True
 
