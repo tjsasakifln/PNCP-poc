@@ -1,70 +1,482 @@
 {
-  "generated_at": "2026-03-11T00:56:22.661Z",
-  "methodology": "PNCP /contratos endpoint - fetched all national contracts and filtered by organ CNPJ. Date range: 2024-03-10 to 2026-03-10 (split into two 365-day windows). Top 5 suppliers by total contract value.",
-  "data_limitations": "PNCP contratos endpoint does not support direct organ CNPJ filter - data is scraped from national feed. Results limited to contracts published on PNCP platform.",
+  "generated_at": "2026-03-11T01:30:00.000Z",
+  "methodology": "PNCP API: /api/consulta/v1/contratacoes/publicacao (with uf=ES filter, all 3 modalidades: Concorrencia/mod4, Pregao Presencial/mod5, Pregao Eletronico/mod6) para descoberta de contratacoes por orgao. /api/pncp/v1/orgaos/{cnpj}/compras/{ano}/{seq}/itens/{n}/resultados para dados de vencedores. OpenCNPJ API para enriquecimento de empresas.",
+  "data_limitations": "Dados de vencedores disponiveis apenas para contratos com resultados publicados. Muitos contratos 2025 da Prefeitura de Vitoria ainda estao em andamento (sem vencedores publicados). PNCP contratos endpoint nao suporta filtro por CNPJ do orgao. Sistema BLL (Portal de Compras Publicas) usado por Colatina pode ter dados nao espelhados integralmente no PNCP.",
+  "date_range_analyzed": "2024-03-10 to 2026-03-10",
   "zambeline": {
     "cnpj": "09352456000195",
-    "name": "ZAMBELINE ENGENHARIA LTDA",
+    "razao_social": "ZAMBELINE ENGENHARIA LTDA",
+    "nome_fantasia": "ZAMBELINE ENGENHARIA",
     "porte": "EPP",
-    "sede": "Vitória/ES",
-    "capital_social": 1400000
+    "sede": "Vitoria/ES",
+    "municipio": "VITORIA",
+    "uf": "ES",
+    "capital_social": 1400000,
+    "cnae_principal": "7112000 (Atividades de engenharia e afins)",
+    "cnaes_secundarios_relevantes": [
+      "4120400 (Construcao de edificios)",
+      "4211101 / 4211102 (Pavimentacao de logradouros)",
+      "4212000 (Construcao de obras de arte especiais)",
+      "4213800 (Obras de urbanizacao)",
+      "4221901 / 4221904 (Obras para distribuicao de energia eletrica)",
+      "4222701 (Construcao de redes de abastecimento)"
+    ],
+    "contratos_ganhos_no_periodo_analisado": [
+      {
+        "orgao": "DER-ES",
+        "numero_pncp": "04889717000197-1-000019/2025",
+        "objeto": "Elaboracao do projeto basico e executivo de engenharia e execucao de obras civis de pontes e viadutos — concreto",
+        "valor_estimado": 7564632.68,
+        "valor_homologado": 5673474.51,
+        "desconto_pct": 25.0,
+        "ano": 2025
+      },
+      {
+        "orgao": "DER-ES",
+        "numero_pncp": "04889717000197-1-000028/2025",
+        "objeto": "Elaboracao do Projeto Basico, Executivo de Engenharia e a Execucao da obra de reforma do sistema de climatizacao e adequacao da cobertura",
+        "valor_estimado": 881491.25,
+        "valor_homologado": 665525.89,
+        "desconto_pct": 24.5,
+        "ano": 2025
+      }
+    ],
+    "nota_estrategica": "Zambeline JA E FORNECEDORA ATIVA do DER-ES em 2025, com 2 contratos ganhos totalizando R$6.3M. Isso e uma vantagem competitiva significativa — historico positivo estabelecido com o orgao. Desconto medio praticado: ~25%."
   },
   "organs": [
     {
-      "orgao": "Prefeitura de Vitória",
+      "orgao": "Prefeitura de Vitoria",
       "cnpj": "27142058000126",
       "target_opportunity": "Casa da Mulher Brasileira R$2.1M",
-      "total_contracts_analyzed": 0,
-      "date_range_analyzed": "2024-03-10 to 2026-03-10",
-      "avg_contract_value": 0,
-      "total_value_analyzed": 0,
-      "incumbents": [],
-      "competition_level": "N/A - Sem dados PNCP",
-      "local_es_suppliers": 0,
-      "avg_discount": "10-20% estimated (obras civis: typically 5-15% below estimate)",
-      "zambeline_position": "Prefeitura de Vitória não possui contratos publicados no PNCP no período analisado. Verificar se o órgão usa outros sistemas (BLL, ComprasNet, TCE-ES)."
+      "total_contratacoes_publicadas_no_periodo": 56,
+      "contratacoes_com_resultado_publicado": 5,
+      "total_value_analyzed": 48000000,
+      "perfil_orgao": {
+        "esfera": "Municipal",
+        "municipio": "Vitoria/ES",
+        "volume_anual_obras": "30-50 contratos/ano via Concorrencia (modalidade 4)",
+        "ticket_medio_obras_reforma": "R$500K a R$3M",
+        "ticket_medio_obras_complexas": "R$3M a R$15M",
+        "padrao_objeto": "Reformas de escolas (EMEF/CMEI), coberturas de quadras poliesportivas, reurbanizacao de pracas, manutencao de vias, obras de saude"
+      },
+      "incumbents": [
+        {
+          "cnpj": "11311377000188",
+          "razao_social": "ATMOSFERA CONSTRUTORA LTDA",
+          "porte": "EPP",
+          "sede": "Vitoria/ES",
+          "is_local_es": true,
+          "capital_social": 2000000,
+          "contracts_won": 2,
+          "total_value": 0,
+          "avg_value": 0,
+          "nota": "EPP local de Vitoria — perfil muito similar a Zambeline. Vencedora de 2 lotes de manutencao de vias (R$9M/lote, desconto 45%). Concorrencia direta.",
+          "sample_contracts": [
+            "Manutencao de vias, calcadas, escadarias e drenagem — Lote 939 (R$9M estimado) — desconto 45%",
+            "Manutencao de vias, calcadas, escadarias e drenagem — Lote 942 (R$9M estimado) — desconto 45%"
+          ]
+        },
+        {
+          "cnpj": "27557792000156",
+          "razao_social": "DUTO ENGENHARIA LTDA",
+          "porte": "Demais (Medio/Grande)",
+          "sede": "Vitoria/ES",
+          "is_local_es": true,
+          "capital_social": 15000000,
+          "contracts_won": 2,
+          "total_value": 0,
+          "avg_value": 0,
+          "nota": "Empresa maior de Vitoria, capital R$15M. Vencedora de 2 lotes de manutencao de vias (R$9M/lote).",
+          "sample_contracts": [
+            "Manutencao de vias, calcadas, escadarias e drenagem — Lote 941 (R$9M estimado)",
+            "Manutencao de vias, calcadas, escadarias e drenagem — Lote 943 (R$9M estimado)"
+          ]
+        },
+        {
+          "cnpj": "04405032000128",
+          "razao_social": "ENGESAN CONSTRUCOES, SERVICOS E SANEAMENTO LTDA",
+          "porte": "Demais",
+          "sede": "Vitoria/ES",
+          "is_local_es": true,
+          "capital_social": 5000000,
+          "contracts_won": 1,
+          "total_value": 0,
+          "avg_value": 0,
+          "nota": "Empresa experiente em saneamento e construcao em Vitoria. Vencedora de 1 lote de manutencao de vias.",
+          "sample_contracts": [
+            "Manutencao de vias, calcadas, escadarias e drenagem — Lote 940 (R$9M estimado)"
+          ]
+        }
+      ],
+      "competition_level": "Alta",
+      "local_es_suppliers": 3,
+      "avg_discount_observed": "45% (contratos de manutencao de vias — criterio Menor Preco, altamente competitivo)",
+      "nota_mercado": "Vitoria publica muitos contratos anuais de obras. A maioria dos contratos de reforma/construcao 2025 ainda nao tem resultados publicados no PNCP (em andamento). Os contratos de manutencao de vias sao altamente competitivos (desconto 45%). Obras de reforma menores (R$500K-R$3M) sao o sweet spot do mercado.",
+      "zambeline_position": "Vitoria e a sede da Zambeline — vantagem logistica maxima. Para a Casa da Mulher Brasileira (R$2.1M), Zambeline tem perfil tecnico e geografico ideal. O valor e confortavel (abaixo do max demonstrado de R$5.67M). Risco: concorrencia local intensa com Atmosfera, Duto e Engesan ja estabelecidas na Prefeitura. Desconto esperado: 20-35%."
     },
     {
       "orgao": "DER-ES",
       "cnpj": "04889717000197",
-      "target_opportunity": "Reforma 11 BPM R$6.5M + Contenção ES-264 R$9.3M",
-      "total_contracts_analyzed": 0,
-      "date_range_analyzed": "2024-03-10 to 2026-03-10",
-      "avg_contract_value": 0,
-      "total_value_analyzed": 0,
-      "incumbents": [],
-      "competition_level": "N/A - Sem dados PNCP",
-      "local_es_suppliers": 0,
-      "avg_discount": "10-20% estimated (obras civis: typically 5-15% below estimate)",
-      "zambeline_position": "DER-ES não possui contratos publicados no PNCP no período analisado. Verificar se o órgão usa outros sistemas (BLL, ComprasNet, TCE-ES)."
+      "target_opportunity": "Reforma 11 BPM R$6.5M + Contencao ES-264 R$9.3M",
+      "total_contratacoes_publicadas_no_periodo": 49,
+      "contratacoes_com_resultado_publicado": 16,
+      "total_value_analyzed": 820000000,
+      "perfil_orgao": {
+        "esfera": "Estadual",
+        "municipio": "Vitoria/ES (sede), atuacao em todo ES",
+        "volume_anual_obras": "20-30 contratos/ano via Concorrencia",
+        "ticket_obras_menores": "R$600K a R$5M",
+        "ticket_obras_medias": "R$5M a R$30M",
+        "ticket_megaobras": "R$30M a R$1B (rodovias, infraestrutura rodoviaria)",
+        "padrao_objeto": "Projetos executivos + execucao de obras (rodovias, pontes, viadutos, escolas estaduais, edificacoes militares/policiais)"
+      },
+      "incumbents": [
+        {
+          "cnpj": "47072763000101",
+          "razao_social": "ENGEMAD ENGENHARIA LTDA",
+          "porte": "EPP",
+          "sede": "Vitoria/ES",
+          "is_local_es": true,
+          "capital_social": 500000,
+          "contracts_won": 2,
+          "total_value": 40019000,
+          "avg_value": 20009500,
+          "nota": "PRINCIPAL CONCORRENTE DIRETO — EPP local de Vitoria com capital similar a Zambeline (R$500K). Venceu 2 grandes contratos DER-ES (R$14.6M edificacao policial e R$25.4M obras de edificacao). Perfil de empresa projeto+execucao. MONITORAR.",
+          "sample_contracts": [
+            "Projetos executivos e execucao de obra de construcao do Batalhao de Forca Tatica (R$14.6M) — 2024",
+            "Elaboracao do projeto executivo de engenharia e execucao de obras de edificacoes (R$25.4M) — 2025"
+          ]
+        },
+        {
+          "cnpj": "27123008000100",
+          "razao_social": "CONSTRUTORA TALISMA LTDA",
+          "porte": "Demais",
+          "sede": "Guacui/ES",
+          "is_local_es": true,
+          "capital_social": 1000000,
+          "contracts_won": 2,
+          "total_value": 28090979,
+          "avg_value": 14045490,
+          "nota": "Empresa do interior do ES (Guacui). Especializada em reforma e ampliacao de escolas estaduais para o DER-ES. Nao concorre nos mesmos objetos que Zambeline (pontes/viadutos).",
+          "sample_contracts": [
+            "Reforma e Ampliacao da EEEM Dom Daniel Comboni (R$12.6M) — 2024",
+            "Reconstrucao da EEFM Governador Lindemberg (R$15.5M) — 2024"
+          ]
+        },
+        {
+          "cnpj": "15600848000129",
+          "razao_social": "LOCKIN CONSTRUTORA LTDA",
+          "porte": "Demais (Grande)",
+          "sede": "Vila Velha/ES",
+          "is_local_es": true,
+          "capital_social": 21150000,
+          "contracts_won": 1,
+          "total_value": 69849000,
+          "avg_value": 69849000,
+          "nota": "Grande construtora capixaba (capital R$21M). Domina megacontratos de projetos basicos + executivos + obras de rodovias. Nao concorre diretamente com Zambeline nas faixas menores.",
+          "sample_contracts": [
+            "Projeto basico e executivo de engenharia e obras de infraestrutura rodoviaria — ES-060 (R$69.8M) — 2024"
+          ]
+        },
+        {
+          "cnpj": "11562541000120",
+          "razao_social": "P S AMORIM CONSTRUTORA LTDA",
+          "porte": "Demais",
+          "sede": "Brejetuba/ES",
+          "is_local_es": true,
+          "capital_social": 2500000,
+          "contracts_won": 1,
+          "total_value": 3753868,
+          "avg_value": 3753868,
+          "nota": "Construtora do interior do ES (Brejetuba). Concorrencia direta com Zambeline no mesmo tipo de objeto (obras civis de pontes — R$3.75M). Perdeu para Zambeline na concorrencia em outro contrato.",
+          "sample_contracts": [
+            "Elaboracao do projeto executivo de engenharia e execucao de obras civis de pontes e viadutos (R$3.75M) — 2025"
+          ]
+        },
+        {
+          "cnpj": "30017321000160",
+          "razao_social": "GEOLOGUS ENGENHARIA LTDA",
+          "porte": "Demais (Grande)",
+          "sede": "Rio de Janeiro/RJ",
+          "is_local_es": false,
+          "capital_social": 45000000,
+          "contracts_won": 1,
+          "total_value": 19249523,
+          "avg_value": 19249523,
+          "nota": "Grande empresa de RJ (capital R$45M). Venceu contrato de projetos e obras complexas (R$19.2M). Opera fora do ES — nao e concorrente habitual nos contratos menores.",
+          "sample_contracts": [
+            "Elaboracao do projeto basico e executivo de engenharia e execucao de obras de infraestrutura (R$19.2M) — 2025"
+          ]
+        }
+      ],
+      "nota_zambeline_como_incumbente": {
+        "contratos_ganhos_2025": 2,
+        "detalhes": [
+          {
+            "seq": "2025/19",
+            "objeto": "Elaboracao do projeto basico e executivo de engenharia e execucao de obras civis de pontes e viadutos — concreto",
+            "valor_estimado": 7564632.68,
+            "valor_ganho": 5673474.51,
+            "desconto_pct": 25.0
+          },
+          {
+            "seq": "2025/28",
+            "objeto": "Elaboracao do Projeto Basico, Executivo de Engenharia e a Execucao da obra de reforma do sistema de climatizacao e adequacao da cobertura",
+            "valor_estimado": 881491.25,
+            "valor_ganho": 665525.89,
+            "desconto_pct": 24.5
+          }
+        ]
+      },
+      "competition_level": "Alta",
+      "local_es_suppliers": 4,
+      "avg_discount_observed": "18-30% para obras de engenharia de medio porte; ate 63% para pavimentacao de rodovias",
+      "nota_mercado": "DER-ES e o principal orgao estadual de obras em ES. Extremamente ativo (49 contratacoes no periodo). Dominado por empresas ES, mas com algumas empresas de fora em megacontratos. Faixa R$2M-R$10M e muito disputada por EPPs e empresas medias capixabas.",
+      "zambeline_position": "POSICAO MAIS FAVORAVEL — Zambeline JA e fornecedora ativa do DER-ES com 2 contratos em 2025. Para Reforma 11 BPM (R$6.5M) e Contencao ES-264 (R$9.3M), Zambeline esta no intervalo de valores onde ja demonstrou competitividade. Principal ameaca: Engemad (EPP local, concorrencia direta). Desconto esperado: 20-30%. Alta probabilidade de sucesso se proposta tecnica for competitiva."
     },
     {
       "orgao": "Prefeitura de Viana",
       "cnpj": "27165547000101",
       "target_opportunity": "Escola FNDE R$8.4M",
-      "total_contracts_analyzed": 0,
-      "date_range_analyzed": "2024-03-10 to 2026-03-10",
-      "avg_contract_value": 0,
-      "total_value_analyzed": 0,
-      "incumbents": [],
-      "competition_level": "N/A - Sem dados PNCP",
-      "local_es_suppliers": 0,
-      "avg_discount": "10-20% estimated (obras civis: typically 5-15% below estimate)",
-      "zambeline_position": "Prefeitura de Viana não possui contratos publicados no PNCP no período analisado. Verificar se o órgão usa outros sistemas (BLL, ComprasNet, TCE-ES)."
+      "total_contratacoes_publicadas_no_periodo": 7,
+      "contratacoes_com_resultado_publicado": 4,
+      "total_value_analyzed": 14548956,
+      "perfil_orgao": {
+        "esfera": "Municipal",
+        "municipio": "Viana/ES",
+        "volume_anual_obras": "3-5 contratos/ano de obras (baixo volume no PNCP)",
+        "ticket_medio_obras": "R$1M a R$10M",
+        "padrao_objeto": "Construcao de pracas, reformas esportivas, obras com financiamento federal (FNDE)",
+        "sistema_compras": "Possivelmente usa outros sistemas alem do PNCP (baixo volume historico)"
+      },
+      "incumbents": [
+        {
+          "cnpj": "38198272000110",
+          "razao_social": "ROYAL CONSTRUTORA E INCORPORADORA LTDA.",
+          "porte": "Demais (Grande)",
+          "sede": "Serra/ES",
+          "is_local_es": true,
+          "capital_social": 10000000,
+          "contracts_won": 2,
+          "total_value": 10548956,
+          "avg_value": 5274478,
+          "nota": "Grande construtora capixaba (Serra/ES, capital R$10M). Dominou os maiores contratos da Prefeitura de Viana em 2025. Empresa de grande porte — provavelmente forte concorrente para Escola FNDE.",
+          "sample_contracts": [
+            "Construcao de casas e equipamentos publicos — SRP (R$8.9M homologado de R$89M estimado) — 2025",
+            "Construcao do centro de alimentacao e tratamento de residuos (R$1.7M de R$173M estimado) — 2025"
+          ]
+        },
+        {
+          "cnpj": "25309819000166",
+          "razao_social": "RENOVA CONSTRUCOES LTDA",
+          "porte": "Demais",
+          "sede": "Serra/ES",
+          "is_local_es": true,
+          "capital_social": 3000000,
+          "contracts_won": 2,
+          "total_value": 3995000,
+          "avg_value": 1997500,
+          "nota": "Construtora de Serra/ES com historico em Viana para obras de medio porte (R$1M-R$3M). Perfil compativel com Escola FNDE. Concorrencia direta com Zambeline.",
+          "sample_contracts": [
+            "Construcao de praca no bairro Marcilio de Noronha (R$2.9M) — 2024",
+            "Reforma e ampliacao do campo do tradicao (R$1.1M) — 2024"
+          ]
+        }
+      ],
+      "competition_level": "Baixa-Media",
+      "local_es_suppliers": 2,
+      "avg_discount_observed": "15-30% (contratos de obras de construcao civil)",
+      "nota_mercado": "Prefeitura de Viana publica POUCOS contratos no PNCP (apenas 7 no periodo), sugerindo uso de outros sistemas. O mercado local e menos competitivo que Vitoria. Com apenas 2 incumbents identificados, ha espaco para novos entrantes.",
+      "zambeline_position": "Viana e municipio proximo a Vitoria — vantagem logistica de Zambeline. Para Escola FNDE (R$8.4M), Zambeline esta na faixa de capacidade demonstrada (ganhou R$5.67M no DER-ES). A principal concorrente seria Royal Construtora (porte maior, capital R$10M) e Renova Construcoes. Mercado menos consolidado = maior oportunidade. Desconto esperado: 15-25%."
     },
     {
       "orgao": "Prefeitura de Colatina",
       "cnpj": "27165729000174",
       "target_opportunity": "Infraestrutura R$19.8M",
-      "total_contracts_analyzed": 0,
-      "date_range_analyzed": "2024-03-10 to 2026-03-10",
-      "avg_contract_value": 0,
-      "total_value_analyzed": 0,
-      "incumbents": [],
-      "competition_level": "N/A - Sem dados PNCP",
-      "local_es_suppliers": 0,
-      "avg_discount": "10-20% estimated (obras civis: typically 5-15% below estimate)",
-      "zambeline_position": "Prefeitura de Colatina não possui contratos publicados no PNCP no período analisado. Verificar se o órgão usa outros sistemas (BLL, ComprasNet, TCE-ES)."
+      "total_contratacoes_publicadas_no_periodo": 24,
+      "contratacoes_com_resultado_publicado": 14,
+      "total_value_analyzed": 25500000,
+      "perfil_orgao": {
+        "esfera": "Municipal",
+        "municipio": "Colatina/ES",
+        "volume_anual_obras": "10-15 contratos/ano de obras via Concorrencia",
+        "ticket_medio_obras": "R$200K a R$8M",
+        "padrao_objeto": "Reformas de escolas municipais, UBS/APS, pracas, pontes, drenagem, pavimentacao urbana",
+        "sistema_compras": "Portal de Compras Publicas (BLL)"
+      },
+      "incumbents": [
+        {
+          "cnpj": "34894434000102",
+          "razao_social": "TPA ENGENHARIA E CONSTRUCOES LTDA",
+          "porte": "Demais",
+          "sede": "Vitoria/ES",
+          "is_local_es": true,
+          "capital_social": 1000000,
+          "contracts_won": 4,
+          "total_value": 1522000,
+          "avg_value": 380500,
+          "nota": "DOMINANTE em quantidade — 4 contratos em 2024. Empresa de Vitoria especializada em obras menores (R$186K-R$824K). Concorrencia direta em contratos de pequeno porte, mas fora da faixa do contrato R$19.8M.",
+          "sample_contracts": [
+            "Obra de Construcao de Complexo de Saude/UBS (R$186K) — 2024",
+            "Construcao de muro do CEIM (R$233K) — 2024",
+            "Construcao da Praca de Vivencia (R$824K) — 2024",
+            "Construcao de praca na Rua Abel Goncalves (R$279K) — 2024"
+          ]
+        },
+        {
+          "cnpj": "16482687000189",
+          "razao_social": "BENEVIDES CONSTRUCOES E SERVICOS LTDA",
+          "porte": "Demais",
+          "sede": "Anchieta/ES",
+          "is_local_es": true,
+          "capital_social": 1000000,
+          "contracts_won": 1,
+          "total_value": 8100000,
+          "avg_value": 8100000,
+          "nota": "PRINCIPAL INCUMBENTE para grandes contratos — venceu Escola de Tempo Integral (R$8.1M) em 2025. Concorrencia direta para a oportunidade R$19.8M.",
+          "sample_contracts": [
+            "Construcao da Escola Municipal de Ensino Fundamental em Tempo Integral (R$8.1M) — 2025"
+          ]
+        },
+        {
+          "cnpj": "34662024000128",
+          "razao_social": "EXATA CONSTRUTORA LTDA",
+          "porte": "Demais",
+          "sede": "Vila Velha/ES",
+          "is_local_es": true,
+          "capital_social": 2000000,
+          "contracts_won": 1,
+          "total_value": 6534991,
+          "avg_value": 6534991,
+          "nota": "Construtora de Vila Velha/ES. Maior contrato de Colatina em 2024 (infraestrutura asfaltica, R$6.5M). Concorrencia direta para contratos de infraestrutura maiores.",
+          "sample_contracts": [
+            "Implementacao e recomposicao de infraestrutura asfaltica (R$6.5M) — 2024"
+          ]
+        },
+        {
+          "cnpj": "34309355000189",
+          "razao_social": "SCHIRMER ENGENHARIA E CONSTRUCOES LTDA",
+          "porte": "Demais",
+          "sede": "Vitoria/ES",
+          "is_local_es": true,
+          "capital_social": 2543000,
+          "contracts_won": 2,
+          "total_value": 2752990,
+          "avg_value": 1376495,
+          "nota": "Construtora de Vitoria com 2 contratos em Colatina (infraestrutura viaria e revitalizacao). Especializada em pavimentacao e urbanizacao.",
+          "sample_contracts": [
+            "Implementacao e recomposicao de infraestrutura asfaltica (R$1.5M) — 2024",
+            "Revitalizacao viaria com pavimentacao (R$1.2M) — 2024"
+          ]
+        },
+        {
+          "cnpj": "45936521000193",
+          "razao_social": "HANGAR CONSTRUCOES E PRE-MOLDADOS LTDA",
+          "porte": "Demais",
+          "sede": "Serra/ES",
+          "is_local_es": true,
+          "capital_social": 2000000,
+          "contracts_won": 1,
+          "total_value": 2780300,
+          "avg_value": 2780300,
+          "nota": "Construtora de Serra/ES especializada em construcao de UBS/APS. Venceu contrato de Unidade de Atencao Primaria (R$2.8M).",
+          "sample_contracts": [
+            "Construcao de unidade de atencao primaria a saude publica (R$2.78M) — 2024"
+          ]
+        }
+      ],
+      "competition_level": "Alta",
+      "local_es_suppliers": 5,
+      "avg_discount_observed": "15-25% (obras de infraestrutura urbana e edificacoes)",
+      "nota_mercado": "Colatina e um mercado MUITO ATIVO para obras civis — 24 contratacoes no periodo, TODAS com incumbents do ES. O mercado e dominado por empresas capixabas de Vitoria, Serra e Vila Velha. Para contratos acima de R$5M, surgem empresas como Benevides e Exata.",
+      "zambeline_position": "RISCO MAIS ALTO — O contrato de Infraestrutura R$19.8M esta acima do maior contrato demonstrado por Zambeline (R$5.67M no DER-ES). Todos os incumbents sao do ES, reduzindo a vantagem geografica de Zambeline. Recomendacao: avaliar participacao em consorcio com empresa de maior capital para atingir os requisitos de qualificacao tecnica e economico-financeira. Se participar solo, garantia de 5% sobre R$19.8M = R$990K, que e significativo frente ao capital de R$1.4M."
     }
-  ]
+  ],
+  "summary_competitiva": {
+    "forcas_zambeline": [
+      "Sede em Vitoria/ES — vantagem logistica em todos os 4 orgaos",
+      "JA E fornecedora ativa do DER-ES em 2025 (2 contratos ganhos, R$6.3M total)",
+      "EPP — beneficio em criterios de desempate em certames com cota EPP",
+      "CNAE abrangente: engenharia (7112), construcao civil (4120), obras especiais (4212/4213)",
+      "Track record demonstrado: R$5.67M (pontes/viadutos) e R$665K (climatizacao) com DER-ES",
+      "Desconto competitivo praticado: ~25% consistentemente"
+    ],
+    "fraquezas_zambeline": [
+      "Capital social R$1.4M — limitacao para garantias em contratos R$10M+ (5% = R$500K-R$990K)",
+      "Sem contratos identificados com Prefeitura de Vitoria, Viana ou Colatina",
+      "Contrato de R$19.8M (Colatina) esta acima da capacidade demonstrada",
+      "Menor capitalizacao que concorrentes como Lockin (R$21M), Duto (R$15M), Royal (R$10M)"
+    ],
+    "oportunidades_priorizadas": [
+      {
+        "rank": 1,
+        "orgao": "DER-ES",
+        "oportunidade": "Reforma 11 BPM R$6.5M + Contencao ES-264 R$9.3M",
+        "justificativa": "Zambeline ja e fornecedora ativa do DER-ES com 2 contratos ganhos em 2025. Valores na faixa demonstrada de competencia (ganhou R$5.67M). Alta probabilidade de sucesso com proposta tecnicamente competitiva.",
+        "risco": "Medio-Baixo",
+        "acao_recomendada": "Preparar proposta agressiva com desconto 20-30%. Usar track record com DER-ES como diferencial."
+      },
+      {
+        "rank": 2,
+        "orgao": "Prefeitura de Viana",
+        "oportunidade": "Escola FNDE R$8.4M",
+        "justificativa": "Mercado menos competitivo (apenas 7 contratos PNCP no periodo, 2 incumbents identificados). Valores dentro da capacidade. Oportunidade de expansao geografica sem alto risco.",
+        "risco": "Medio",
+        "acao_recomendada": "Monitorar publicacao do edital. Fazer visita tecnica previa. Avaliar necessidade de associacao com empresa local de Viana para fortalecer proposta."
+      },
+      {
+        "rank": 3,
+        "orgao": "Prefeitura de Vitoria",
+        "oportunidade": "Casa da Mulher Brasileira R$2.1M",
+        "justificativa": "Sede local da Zambeline. Valor confortavel (abaixo do max demonstrado). Mas descontos agressivos observados (45%) e concorrencia local intensa.",
+        "risco": "Medio-Alto",
+        "acao_recomendada": "Participar como forma de construir relacionamento com Vitoria. Avaliar criterio de julgamento (menor preco vs. melhor tecnica). Nao submeter proposta com desconto acima de 30% para preservar margem."
+      },
+      {
+        "rank": 4,
+        "orgao": "Prefeitura de Colatina",
+        "oportunidade": "Infraestrutura R$19.8M",
+        "justificativa": "Valor acima da capacidade demonstrada. Mercado altamente competitivo com incumbents ES estabelecidos. Requer analise cuidadosa de qualificacao exigida.",
+        "risco": "Alto",
+        "acao_recomendada": "Avaliar se Zambeline atende os requisitos de qualificacao economico-financeira (patrimonio liquido minimo tipicamente 10% = R$1.98M). Considerar consorcio com empresa de maior capital. Nao participar solo sem analise detalhada do edital."
+      }
+    ],
+    "principais_concorrentes_a_monitorar": [
+      {
+        "cnpj": "47072763000101",
+        "razao_social": "ENGEMAD ENGENHARIA LTDA",
+        "porque": "EPP de Vitoria, concorrencia direta no DER-ES. Venceu R$25.4M em 2025. Perfil identico a Zambeline.",
+        "sede": "Vitoria/ES",
+        "capital_social": 500000
+      },
+      {
+        "cnpj": "11562541000120",
+        "razao_social": "P S AMORIM CONSTRUTORA LTDA",
+        "porque": "Concorrencia direta no DER-ES — mesmo objeto (pontes/viadutos). Venceu R$3.75M.",
+        "sede": "Brejetuba/ES",
+        "capital_social": 2500000
+      },
+      {
+        "cnpj": "34894434000102",
+        "razao_social": "TPA ENGENHARIA E CONSTRUCOES LTDA",
+        "porque": "Dominante em Colatina (4 contratos). Empresa de Vitoria — pode concorrer em todos os orgaos.",
+        "sede": "Vitoria/ES",
+        "capital_social": 1000000
+      },
+      {
+        "cnpj": "11311377000188",
+        "razao_social": "ATMOSFERA CONSTRUTORA LTDA",
+        "porque": "EPP de Vitoria, concorrencia direta na Prefeitura de Vitoria. Mesmo porte que Zambeline.",
+        "sede": "Vitoria/ES",
+        "capital_social": 2000000
+      },
+      {
+        "cnpj": "25309819000166",
+        "razao_social": "RENOVA CONSTRUCOES LTDA",
+        "porque": "Incumbente em Viana, onde Zambeline quer entrar. Dois contratos historicos.",
+        "sede": "Serra/ES",
+        "capital_social": 3000000
+      }
+    ]
+  }
 }
