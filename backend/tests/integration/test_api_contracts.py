@@ -585,7 +585,7 @@ class TestPncpContractSnapshot:
 
     def test_convert_to_licitacao_items_handles_pncp_shape(self):
         """Our pipeline's _convert_to_licitacao_items must handle PNCP record shape."""
-        from search_pipeline import _convert_to_licitacao_items
+        from pipeline.helpers import _convert_to_licitacao_items
 
         records = self.PNCP_SAMPLE_RESPONSE["data"]
         items = _convert_to_licitacao_items(records)

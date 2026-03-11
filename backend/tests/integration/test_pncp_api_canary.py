@@ -77,7 +77,7 @@ class TestPncpApiCanary:
         }
 
         # Verify our pipeline can handle these fields
-        from search_pipeline import _convert_to_licitacao_items
+        from pipeline.helpers import _convert_to_licitacao_items
 
         # Create a minimal licitacao with all expected PNCP fields
         test_lic = {field: "test" for field in expected_pncp_fields}

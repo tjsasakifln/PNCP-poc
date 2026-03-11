@@ -78,16 +78,16 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 461733,
+    "codigoLicitacao": 463160,
     "numeroLicitacao": null,
-    "identificacao": "003/26",
-    "numero": "003/2026",
-    "resumo": "Adesão para Aquisição de estação de hidratação tipo bebedouro com água quente, gelada, água para pets e aspersor refrescante, com instalação inclusa para atender a CÂMARA MUNICIPAL DE COLNIZA – MT",
-    "razaoSocial": "Câmara Municipal de Colniza",
-    "nomeUnidade": "Câmara Municipal de Colniza",
+    "identificacao": "302/2025",
+    "numero": "065/2025",
+    "resumo": "Aquisição emergencial de cestas básicas destinadas à assistência humanitária e ao atendimento imediato de famílias em situação de vulnerabilidade social e insegurança alimentar, em decorrência dos efeitos da estiagem no Município de Eirunepé/AM, como...",
+    "razaoSocial": "Prefeitura Municipal de Eirunepé",
+    "nomeUnidade": "Prefeitura Municipal de Eirunepé",
     "status": {
-      "codigo": 1,
-      "descricao": "Recebendo Propostas"
+      "codigo": 7,
+      "descricao": "Processo Finalizado"
     },
     "situacao": {
       "codigo": 0,
@@ -102,32 +102,32 @@
       "tipoRealizacao": "Presencial",
       "tipoJulgamento": "Menor Preço"
     },
-    "codigoSituacaoEdital": 5,
+    "codigoSituacaoEdital": 6,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-03-10T02:59:00Z",
-    "dataHoraInicioPropostas": "2026-03-05T15:30:00Z",
-    "dataHoraFinalPropostas": "2026-03-10T02:59:00Z",
+    "dataHoraInicioLances": "2026-03-10T20:44:00Z",
+    "dataHoraInicioPropostas": "2026-03-10T20:43:00Z",
+    "dataHoraFinalPropostas": "2026-03-10T20:44:00Z",
     "dataHoraFinalLances": null,
-    "dataHoraPublicacao": "2026-03-05T15:11:00Z",
+    "dataHoraPublicacao": "2026-03-10T20:41:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 8040,
-      "nomeUnidadeCompradora": "Câmara Municipal de Colniza",
-      "codigoComprador": 4654,
+      "codigoUnidadeCompradora": 8649,
+      "nomeUnidadeCompradora": "Prefeitura Municipal de Eirunepé",
+      "codigoComprador": 4973,
       "nomeComprador": null,
-      "cidade": "Colniza",
+      "cidade": "Eirunepé",
       "codigoMunicipioIbge": null,
-      "uf": "MT"
+      "uf": "AM"
     },
     "comprador": null,
-    "urlReferencia": "/mt/camara-municipal-de-colniza-4654/dp-003-2026-2026-461733",
+    "urlReferencia": "/am/prefeitura-municipal-de-eirunepe-4973/dp-065-2025-2026-463160",
     "statusProcessoPublico": {
-      "codigo": 1,
-      "descricao": "Recebendo Propostas"
+      "codigo": 7,
+      "descricao": "Processo Finalizado"
     },
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-03-09T22:49:32.100053+00:00"
+  "captured_at": "2026-03-10T23:49:28.438964+00:00"
 }
