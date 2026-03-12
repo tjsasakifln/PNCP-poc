@@ -45,7 +45,7 @@ except ImportError:
 # BRAND & CONSTANTS
 # ============================================================
 
-FOOTER_TEXT = "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
+FOOTER_TEXT = "Tiago Sasaki - Consultor de Inteligência em Licitações (48)9 8834-4559"
 FOOTER_LINE2 = "Relatório confidencial preparado exclusivamente para o destinatário"
 
 BRAND_DARK = colors.HexColor("#1a2332")
@@ -84,14 +84,72 @@ REC_COLORS = {
     "PARTICIPAR": GREEN,
     "AVALIAR": YELLOW,
     "AVALIAR COM CAUTELA": YELLOW,
-    "NAO RECOMENDADO": RED,
     "NÃO RECOMENDADO": RED,
+}
+
+# Source status → confidence badge
+SOURCE_BADGES = {
+    "API": ("✓", GREEN, "Confirmado via API"),
+    "CALCULATED": ("✓", GREEN, "Calculado"),
+    "API_PARTIAL": ("~", YELLOW, "Dados parciais"),
+    "ESTIMATED": ("~", YELLOW, "Estimado"),
+    "API_FAILED": ("✗", RED, "API indisponível"),
+    "UNAVAILABLE": ("—", colors.HexColor("#94A3B8"), "Não disponível"),
 }
 
 
 # ============================================================
 # HELPERS
 # ============================================================
+
+def _normalize_recommendation(rec: str) -> str:
+    """Normalize recommendation text: fix accents, casing."""
+    rec = rec.strip().upper()
+    # Fix missing accents
+    rec = rec.replace("NAO RECOMENDADO", "NÃO RECOMENDADO")
+    rec = rec.replace("NAO ", "NÃO ")
+    # Normalize variants
+    if "PARTICIPAR" in rec:
+        return "PARTICIPAR"
+    if "CAUTELA" in rec or "AVALIAR" in rec:
+        return "AVALIAR COM CAUTELA"
+    if "NÃO" in rec or "RECOMENDADO" in rec:
+        return "NÃO RECOMENDADO"
+    return rec
+
+
+def _validate_json(data: dict) -> list[str]:
+    """Validate the input JSON and return list of warnings."""
+    warnings = []
+    if "empresa" not in data:
+        warnings.append("Campo 'empresa' ausente")
+    else:
+        emp = data["empresa"]
+        for field in ["cnpj", "razao_social"]:
+            if not emp.get(field):
+                warnings.append(f"empresa.{field} ausente")
+    if "editais" not in data:
+        warnings.append("Campo 'editais' ausente")
+    for i, ed in enumerate(data.get("editais", [])):
+        if not ed.get("objeto"):
+            warnings.append(f"edital[{i}].objeto ausente")
+        if not ed.get("orgao"):
+            warnings.append(f"edital[{i}].orgao ausente")
+    if warnings:
+        print(f"⚠ Validação JSON: {len(warnings)} avisos")
+        for w in warnings[:5]:
+            print(f"  - {w}")
+    return warnings
+
+
+def _get_source_badge(source: dict | str | None) -> tuple[str, Any, str]:
+    """Extract confidence badge from _source field."""
+    if not source:
+        return SOURCE_BADGES["UNAVAILABLE"]
+    if isinstance(source, str):
+        return SOURCE_BADGES.get(source, SOURCE_BADGES["UNAVAILABLE"])
+    status = source.get("status", "UNAVAILABLE") if isinstance(source, dict) else "UNAVAILABLE"
+    return SOURCE_BADGES.get(status, SOURCE_BADGES["UNAVAILABLE"])
 
 def _fix_pncp_link(link: str | None) -> str:
     """Fix common PNCP link format errors.
@@ -536,14 +594,8 @@ def _build_opportunities_overview(data: dict, styles: dict) -> list:
     rows = [header]
 
     for idx, ed in enumerate(editais, 1):
-        rec = _s(ed.get("recomendacao", ""))
-        rec_upper = rec.upper()
-        if "PARTICIPAR" in rec_upper:
-            rec_color = GREEN
-        elif "CAUTELA" in rec_upper or "AVALIAR" in rec_upper:
-            rec_color = YELLOW
-        else:
-            rec_color = RED
+        rec = _normalize_recommendation(_s(ed.get("recomendacao", "")))
+        rec_color = REC_COLORS.get(rec, RED)
 
         rec_style = ParagraphStyle(
             f"rec_{idx}", parent=styles["cell_center"],
@@ -553,6 +605,16 @@ def _build_opportunities_overview(data: dict, styles: dict) -> list:
         dias = ed.get("dias_restantes")
         prazo = f"{_safe_int(dias)}d" if dias is not None else _date(ed.get("data_encerramento"))
 
+        # Show ENCERRADO status
+        status = ed.get("status_edital", "")
+        if status == "ENCERRADO":
+            rec = "ENCERRADO"
+            rec_color = colors.HexColor("#94A3B8")
+            rec_style = ParagraphStyle(
+                f"rec_enc_{idx}", parent=styles["cell_center"],
+                fontName="Helvetica-Bold", textColor=rec_color,
+            )
+
         rows.append([
             Paragraph(str(idx), styles["cell_center"]),
             Paragraph(_trunc(ed.get("objeto", ""), 80), styles["cell"]),
@@ -561,7 +623,7 @@ def _build_opportunities_overview(data: dict, styles: dict) -> list:
             Paragraph(_currency(_safe_float(ed.get("valor_estimado"))), styles["cell_right"]),
             Paragraph(_trunc(ed.get("modalidade", ""), 25), styles["cell"]),
             Paragraph(str(prazo), styles["cell_center"]),
-            Paragraph(rec.upper(), rec_style),
+            Paragraph(rec, rec_style),
         ])
 
     t = Table(rows, colWidths=col_widths, repeatRows=1)
@@ -632,22 +694,33 @@ def _build_detailed_analysis(data: dict, styles: dict) -> list:
             section.append(info_t)
             section.append(Spacer(1, 3 * mm))
 
+        # Distance (from collect-report-data.py)
+        distancia = ed.get("distancia", {})
+        if isinstance(distancia, dict) and distancia.get("km"):
+            km = distancia["km"]
+            hrs = distancia.get("duracao_horas", "")
+            badge_char, badge_color_d, badge_text = _get_source_badge(distancia.get("_source"))
+            dist_text = f"<b>Distância da sede:</b> {km} km"
+            if hrs:
+                dist_text += f" (~{hrs}h de carro)"
+            dist_text += f" <font color='{'#16A34A' if badge_char == '✓' else '#CA8A04'}'>[{badge_char} {badge_text}]</font>"
+            section.append(Paragraph(dist_text, styles["body"]))
+
         # Recommendation badge
-        rec = _s(ed.get("recomendacao", ""))
+        rec = _normalize_recommendation(_s(ed.get("recomendacao", "")))
         if rec:
-            rec_upper = rec.upper()
-            if "PARTICIPAR" in rec_upper:
-                badge_color = GREEN
-            elif "CAUTELA" in rec_upper or "AVALIAR" in rec_upper:
-                badge_color = YELLOW
-            else:
-                badge_color = RED
+            badge_color = REC_COLORS.get(rec, RED)
+
+            # Override for ENCERRADO
+            if ed.get("status_edital") == "ENCERRADO":
+                rec = "ENCERRADO"
+                badge_color = colors.HexColor("#94A3B8")
 
             badge_style = ParagraphStyle(
                 f"badge_{idx}", parent=styles["body"],
                 fontName="Helvetica-Bold", fontSize=11, textColor=badge_color,
             )
-            section.append(Paragraph(f"Recomendação: {rec.upper()}", badge_style))
+            section.append(Paragraph(f"Recomendação: {rec}", badge_style))
             section.append(Spacer(1, 2 * mm))
 
         # Analysis sections
@@ -791,6 +864,194 @@ def _build_next_steps(data: dict, styles: dict) -> list:
 
 
 # ============================================================
+# SICAF & SOURCE CONFIDENCE
+# ============================================================
+
+def _build_sicaf_section(data: dict, styles: dict) -> list:
+    el = []
+    sicaf = data.get("sicaf", {})
+    if not sicaf:
+        return el
+
+    # Dynamic section number
+    has_qd = bool(data.get("querido_diario"))
+    section_num = "8" if has_qd else "7"
+
+    el.append(Paragraph(f"{section_num}. Verificação SICAF", styles["h1"]))
+
+    badge_char, badge_color, badge_text = _get_source_badge(sicaf.get("_source"))
+
+    # New format: collect-sicaf.py output with crc + restricao
+    crc = sicaf.get("crc", {})
+    restricao = sicaf.get("restricao", {})
+
+    if crc or restricao:
+        # CRC section
+        if crc:
+            status_cad = _s(crc.get("status_cadastral", ""))
+            color = "#16A34A" if status_cad == "CADASTRADO" else "#DC2626" if "NÃO" in status_cad else "#CA8A04"
+            el.append(Paragraph(
+                f"<b>Status Cadastral (CRC):</b> <font color='{color}'><b>{status_cad}</b></font>",
+                styles["body"],
+            ))
+            # Show parsed CRC fields
+            for label, key in [
+                ("Razão Social", "razao_social"),
+                ("CNAE", "atividade_principal"),
+                ("Endereço", "endereco"),
+                ("Emissão CRC", "data_emissao"),
+            ]:
+                val = crc.get(key)
+                if val:
+                    el.append(Paragraph(f"<b>{label}:</b> {_s(val)}", styles["body"]))
+
+            # Habilitação details
+            hab = crc.get("habilitacao", {})
+            if hab:
+                el.append(Spacer(1, 2 * mm))
+                el.append(Paragraph("<b>Habilitações SICAF:</b>", styles["body"]))
+                for label, key in [
+                    ("Habilitação Jurídica", "habilitacao_juridica"),
+                    ("Fiscal Federal", "regularidade_fiscal_federal"),
+                    ("Fiscal Estadual", "regularidade_fiscal_estadual"),
+                    ("Fiscal Municipal", "regularidade_fiscal_municipal"),
+                    ("Trabalhista", "regularidade_trabalhista"),
+                    ("Qualificação Econômica", "qualificacao_economica"),
+                ]:
+                    val = hab.get(key)
+                    if val:
+                        hcolor = "#16A34A" if val.lower() == "regular" else "#DC2626"
+                        el.append(Paragraph(
+                            f"  • {label}: <font color='{hcolor}'><b>{_s(val)}</b></font>",
+                            styles["body_small"],
+                        ))
+
+            detalhe = crc.get("detalhe")
+            if detalhe and status_cad != "CADASTRADO":
+                el.append(Paragraph(f"<i>{_s(detalhe)}</i>", styles["body_small"]))
+
+        el.append(Spacer(1, 3 * mm))
+
+        # Restrição section
+        if restricao:
+            possui = restricao.get("possui_restricao", False)
+            if possui:
+                el.append(Paragraph(
+                    "<b>Restrições:</b> <font color='#DC2626'><b>SIM — Verificar detalhes</b></font>",
+                    styles["body"],
+                ))
+                for r in restricao.get("restricoes", []):
+                    el.append(Paragraph(
+                        f"  • {_s(r.get('tipo', ''))} — {_s(r.get('detalhe', ''))}",
+                        styles["body_small"],
+                    ))
+            else:
+                el.append(Paragraph(
+                    "<b>Restrições:</b> <font color='#16A34A'><b>Nenhuma</b></font>",
+                    styles["body"],
+                ))
+    else:
+        # Legacy format: simple status + instrucao
+        status = _s(sicaf.get("status", ""))
+        instrucao = _s(sicaf.get("instrucao", ""))
+        url = sicaf.get("url", "")
+
+        el.append(Paragraph(
+            f"<font color='#CA8A04'><b>{status}</b></font>",
+            styles["body"],
+        ))
+        if instrucao:
+            el.append(Paragraph(instrucao, styles["body"]))
+        if url:
+            el.append(Paragraph(f"<b>Portal:</b> {url}", styles["body"]))
+
+    el.append(Spacer(1, 3 * mm))
+    el.append(Paragraph(
+        f"<font color='#94A3B8'>[{badge_char} {badge_text}]</font>",
+        styles["body_small"],
+    ))
+
+    el.append(Spacer(1, 6 * mm))
+    return el
+
+
+def _build_data_sources_section(data: dict, styles: dict) -> list:
+    """Render data provenance section showing source status for each data category."""
+    el = []
+    metadata = data.get("_metadata", {})
+    sources = metadata.get("sources", {})
+    if not sources:
+        return el
+
+    has_qd = bool(data.get("querido_diario"))
+    has_sicaf = bool(data.get("sicaf"))
+    section_num = 7 + (1 if has_qd else 0) + (1 if has_sicaf else 0)
+
+    el.append(Paragraph(f"{section_num}. Fontes de Dados e Confiabilidade", styles["h1"]))
+    el.append(Paragraph(
+        "Cada dado neste relatório foi obtido de forma determinística via APIs públicas. "
+        "A tabela abaixo indica o status de cada fonte no momento da coleta.",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 3 * mm))
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+    header = [
+        Paragraph("<b>Fonte</b>", styles["cell_header"]),
+        Paragraph("<b>Status</b>", styles["cell_header"]),
+        Paragraph("<b>Detalhe</b>", styles["cell_header"]),
+    ]
+    rows = [header]
+
+    source_labels = {
+        "opencnpj": "OpenCNPJ (perfil da empresa)",
+        "portal_transparencia_sancoes": "Portal Transparência (sanções)",
+        "portal_transparencia_contratos": "Portal Transparência (contratos)",
+        "pncp": "PNCP (editais)",
+        "pcp_v2": "PCP v2 (editais complementares)",
+        "querido_diario": "Querido Diário (diários oficiais)",
+        "sicaf": "SICAF (cadastro fornecedores)",
+    }
+
+    for key, label in source_labels.items():
+        src = sources.get(key, {})
+        badge_char, badge_color, badge_text = _get_source_badge(src)
+        detail = src.get("detail", "") if isinstance(src, dict) else ""
+
+        status_style = ParagraphStyle(
+            f"src_{key}", parent=styles["cell"],
+            fontName="Helvetica-Bold", textColor=badge_color,
+        )
+        rows.append([
+            Paragraph(label, styles["cell"]),
+            Paragraph(f"{badge_char} {badge_text}", status_style),
+            Paragraph(_s(detail)[:80], styles["cell"]),
+        ])
+
+    t = Table(rows, colWidths=[avail * 0.35, avail * 0.25, avail * 0.40])
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
+        ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ] + [("BACKGROUND", (0, i), (-1, i), TABLE_ALT_ROW) for i in range(2, len(rows), 2)]))
+    el.append(t)
+
+    el.append(Spacer(1, 4 * mm))
+    gen_at = metadata.get("generated_at", "")
+    gen_by = metadata.get("generator", "")
+    if gen_at or gen_by:
+        el.append(Paragraph(
+            f"<font color='#94A3B8'>Dados coletados em {gen_at} por {gen_by}</font>",
+            styles["body_small"],
+        ))
+
+    el.append(PageBreak())
+    return el
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -811,6 +1072,9 @@ def _sanitize_links(data: dict) -> dict:
 
 def generate_report_b2g(data: dict) -> BytesIO:
     """Generate the full B2G report PDF from structured data."""
+    # Validate input data and warn about issues
+    _validate_json(data)
+
     data = _sanitize_links(data)
     gen_date = _today()
     styles = _build_styles()
@@ -841,6 +1105,8 @@ def generate_report_b2g(data: dict) -> BytesIO:
     elements.extend(_build_market_intelligence(data, styles))
     elements.extend(_build_querido_diario(data, styles))
     elements.extend(_build_next_steps(data, styles))
+    elements.extend(_build_sicaf_section(data, styles))
+    elements.extend(_build_data_sources_section(data, styles))
 
     doc.build(elements, onFirstPage=_draw_footer, onLaterPages=_draw_footer)
     buffer.seek(0)

@@ -16,437 +16,274 @@ Gera um PDF executivo e institucional com TODAS as oportunidades abertas relevan
 /report-b2g 12345678000190
 ```
 
+## GUARDRAILS — REGRAS INVIOLÁVEIS
+
+1. **NUNCA fabricar dados.** Todo dado factual (editais, valores, datas, CNPJs, órgãos, distâncias) DEVE vir de API ou do JSON coletado. Se uma API falhar, registrar `"status": "API_FAILED"` — NUNCA inventar valores plausíveis.
+2. **NUNCA estimar distâncias.** Usar apenas o campo `distancia_km` do JSON (calculado via OSRM). Se `null`, escrever "Distância não calculada".
+3. **NUNCA fabricar links.** Usar apenas `link` do JSON. Se vazio, omitir.
+4. **Acentuação obrigatória.** Todo texto em português DEVE usar acentos corretos: "NÃO RECOMENDADO" (nunca "NAO"), "Concorrência" (nunca "Concorrencia"), etc.
+5. **Transparência de fontes.** Cada seção do relatório deve indicar a fonte dos dados (API, documento, análise Claude).
+6. **Se dados insuficientes, dizer.** "Dados insuficientes para análise" é preferível a qualquer estimativa sem fonte.
+
+---
+
 ## What It Does
 
-### Phase 1: Perfil da Empresa (@data-engineer)
+### Phase 1: Coleta Determinística de Dados (script automatizado)
 
-1. **OpenCNPJ** — Buscar dados cadastrais completos
-   ```bash
-   CNPJ_LIMPO=$(echo "{CNPJ}" | tr -d './-')
-   curl -s "https://api.opencnpj.org/${CNPJ_LIMPO}"
-   ```
-   Extrair: razão social, nome fantasia, CNAE principal + secundários, porte, capital social, cidade/UF, email, telefones, QSA, situação cadastral.
+Executar o script de coleta que faz TODAS as chamadas de API de forma determinística e rastreável:
 
-2. **Mapear setor** — Cruzar CNAE principal com `backend/sectors_data.yaml` para identificar o setor de atuação e keywords relevantes. Se CNAE não tem match direto, usar CNAEs secundários. Se nenhum match, usar descrição do CNAE como keyword.
-
-3. **Portal da Transparência** — Check de sanções + histórico de contratos federais
-   ```bash
-   PT_KEY=$(grep PORTAL_TRANSPARENCIA_API_KEY backend/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
-   curl -s -H "chave-api-dados: ${PT_KEY}" \
-     "https://api.portaldatransparencia.gov.br/api-de-dados/pessoa-juridica?cnpj=${CNPJ_LIMPO}"
-   curl -s -H "chave-api-dados: ${PT_KEY}" \
-     "https://api.portaldatransparencia.gov.br/api-de-dados/contratos/cpf-cnpj?cpfCnpj=${CNPJ_LIMPO}&pagina=1"
-   ```
-   Verificar sanções (CEIS, CNEP, CEPIM, CEAF) e extrair histórico de contratos federais.
-
-### Phase 2: Varredura de Editais Abertos (@data-engineer)
-
-**2a. PNCP (obrigatório)**
 ```bash
-# Buscar publicações abertas (últimos 30 dias)
-curl -s "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao\
-  ?dataInicial={30_dias_atras_YYYYMMDD}\
-  &dataFinal={hoje_YYYYMMDD}\
-  &codigoModalidadeContratacao=5\
-  &pagina=1&tamanhoPagina=50"
+cd D:/pncp-poc
+python scripts/collect-report-data.py \
+  --cnpj {CNPJ} \
+  --dias 30 \
+  --ufs {UF_DA_EMPRESA} \
+  --output docs/reports/data-{CNPJ}-{YYYY-MM-DD}.json
 ```
-- Buscar com TODAS as modalidades relevantes: 4 (Concorrência), 5 (Pregão Eletrônico), 6 (Pregão Presencial), 8 (Inexigibilidade)
-- Filtrar `objetoCompra` por keywords do setor mapeado na Phase 1
-- Paginar até esgotar ou timeout (max 10 páginas por modalidade)
-- Extrair: objeto, órgão, UF, município, valor estimado, modalidade, data abertura/encerramento, link PNCP
-- **LINK PNCP (CRÍTICO):** Cada resultado da API PNCP retorna os campos `cnpjCompra` (ou `cnpjOrgao`), `anoCompra` e `sequencialCompra`. O link correto é:
-  ```
-  https://pncp.gov.br/app/editais/{cnpjCompra}/{anoCompra}/{sequencialCompra}
-  ```
-  Exemplo: `https://pncp.gov.br/app/editais/27142058000126/2026/85`
-  **NUNCA use hyphens** (errado: `27142058000126-2026-85`). **NUNCA fabrique URLs de busca** (errado: `?q=reforma+obra`).
-  Se o campo `linkSistemaOrigem` estiver presente no resultado da API, usar ele diretamente.
-  Se nenhum campo de link estiver disponível, usar o `numeroControlePNCP` no formato: `https://pncp.gov.br/app/editais/{numeroControlePNCP}` (onde numeroControlePNCP já contém cnpj/ano/seq separados por `-`, mas o link usa o valor como path único).
 
-**2b. PCP v2 (obrigatório — editais complementares)**
-```bash
-# IMPORTANTE: usar dataInicial/dataFinal/tipoData=1 para filtrar por data (reduz de 364K para ~2K resultados)
-# Usar `pagina` (NÃO `page`) para paginação. Fixo em 10 resultados/página.
-curl -s "https://compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos\
-  ?pagina=1\
-  &dataInicial={30_dias_atras_DDMMYYYY}\
-  &dataFinal={hoje_DDMMYYYY}\
-  &tipoData=1"
+**O que o script coleta automaticamente:**
+- **OpenCNPJ** — Perfil completo (razão social, CNAEs, capital social, QSA, telefones)
+- **Portal da Transparência** — Sanções (CEIS/CNEP/CEPIM/CEAF) + histórico de contratos federais
+- **Mapeamento de setor** — CNAE → setor via `sectors_data.yaml` (keywords automáticas)
+- **PNCP** — Editais abertos em 4 modalidades (Concorrência, Pregão Eletrônico/Presencial, Inexigibilidade), filtrados por keywords do setor + UFs
+- **PCP v2** — Editais complementares com filtro client-side
+- **Querido Diário** — Menções em diários oficiais municipais
+- **Distâncias** — Geocoding (Nominatim) + rota real (OSRM) para cada edital
+- **Validação de links** — HEAD requests para verificar URLs dos editais
+
+**Cada dado é tagueado com `_source`:**
+```json
+{
+  "_source": {
+    "status": "API",          // API | API_PARTIAL | API_FAILED | CALCULATED | UNAVAILABLE
+    "timestamp": "2026-03-12T10:30:00",
+    "detail": "OpenCNPJ 200 OK"
+  }
+}
 ```
-- **Paginação:** Usar campo `pagina` (incrementar de 1 em 1). Response tem `total` e `pageCount`. Max 20 páginas (200 resultados) para não sobrecarregar.
-- **Filtro server-side:** APENAS data (`dataInicial`/`dataFinal` formato DD/MM/YYYY + `tipoData=1`). Sem filtro de keyword/UF no servidor.
-- **Filtro client-side (obrigatório):** Filtrar `resumo` por keywords do setor + `unidadeCompradora.uf` pela UF da empresa.
-- valor_estimado sempre 0.0 (PCP v2 não tem dados de valor)
-- **Campos úteis do response:** `resumo` (objeto), `razaoSocial` (órgão), `unidadeCompradora.uf`, `unidadeCompradora.cidade`, `dataHoraInicioPropostas`, `dataHoraFinalPropostas`, `tipoLicitacao.modalidadeLicitacao`, `urlReferencia`, `codigoLicitacao`
-- **LINK PCP v2:** Construir a partir de `urlReferencia`: `https://www.portaldecompraspublicas.com.br{urlReferencia}`. Se o edital também tem `numeroControlePNCP`, construir o link PNCP: `https://pncp.gov.br/app/editais/{cnpj}/{ano}/{seq}`
 
-**2c. Querido Diário (complementar — diários oficiais municipais)**
+**Flags opcionais:**
+- `--skip-distances` — Pular cálculo de distâncias (mais rápido)
+- `--skip-docs` — Pular listagem de documentos PNCP
+- `--skip-links` — Pular validação de links
+- `--skip-pcp` — Pular PCP v2
+- `--skip-qd` — Pular Querido Diário
+
+**IMPORTANTE:** Após execução, VERIFICAR o output do script:
+- Quantos editais foram encontrados?
+- Alguma API falhou? (verificar `_metadata.sources`)
+- Se PNCP retornou 0 editais, considerar ampliar `--dias` ou `--ufs`
+
+### Phase 1b: Verificação SICAF (Playwright semi-automático)
+
+Executar o coletor SICAF que abre o navegador para o usuário resolver o captcha:
+
 ```bash
-# Buscar por keywords do setor nos diários oficiais (últimos 30 dias)
-# Suporta: published_since, published_until, territory_ids (IBGE 7 dígitos), querystring (OpenSearch syntax)
-curl -s "https://api.queridodiario.ok.org.br/gazettes\
-  ?querystring={keywords_setor_url_encoded}\
-  &published_since={30_dias_atras_YYYY-MM-DD}\
-  &published_until={hoje_YYYY-MM-DD}\
-  &excerpt_size=500\
-  &number_of_excerpts=3\
-  &size=20\
-  &sort_by=descending_date"
+python scripts/collect-sicaf.py \
+  --cnpj {CNPJ} \
+  --output docs/reports/sicaf-{CNPJ}-{YYYY-MM-DD}.json \
+  --skip-linhas
 ```
-- **Filtros disponíveis:** `querystring` (full-text, suporta `+` AND, `|` OR, `-` NOT, `"frase"`), `published_since`/`published_until` (YYYY-MM-DD), `territory_ids` (código IBGE 7 dígitos — buscar na API `/cities` se necessário)
-- Buscar com 2 queries: (1) keywords do setor, (2) nome fantasia/razão social da empresa
-- **Response:** `territory_name`, `state_code`, `date`, `excerpts[]`, `url` (PDF do diário), `txt_url` (texto plano)
-- Paginação via `offset` + `size` (não page-based). `total_gazettes` dá o total.
-- Rate limit: ~60 req/min (self-imposed). Lag de ~1 dia (diário de ontem já está disponível)
-- IMPORTANTE: Texto OCR não estruturado — usar como fonte complementar para menções, não para dados de editais
 
-**Dedup:** Se mesmo edital aparece em PNCP + PCP, priorizar dados PNCP (mais completos).
+**O que coleta:**
+- **CRC (Certificado de Registro Cadastral)** — Status cadastral, CNAE, endereço, habilitações (PDF baixado e parseado)
+- **Restrição Contratar Administração Pública** — Verifica impedimentos/sanções no SICAF
+- **Linhas de Fornecimento** — (opcional, com `--skip-linhas` para pular)
 
-**Fontes descartadas (testadas em 2026-03-10, não funcionais):**
-- ComprasGov v3 (`dadosabertos.compras.gov.br`) — FORA DO AR desde fev/2026, todos endpoints 404
-- Comprasnet Contratos (`contratos.comprasnet.gov.br/api/`) — API retorna HTTP 500/404
-- Portal Transparência `/licitacoes` — Retorna 0 resultados para qualquer órgão/período
-- TCE-PE (`sistemas.tce.pe.gov.br/DadosAbertos/`) — HTTP 500 "ERRO"
-- TCE-RJ (`dados.tcerj.tc.br/api/v1/`) — Retorna HTML portal, não JSON API
+**Fluxo:**
+1. Navegador abre automaticamente no portal SICAF
+2. Usuário resolve o hCaptcha (~5 segundos por consulta)
+3. Script extrai dados automaticamente após captcha
+4. Cookies salvos em `.sicaf-cookies.json` para reuso entre consultas
 
-### Phase 2b: Download e Análise Documental dos Editais (Claude direto)
+**Modo batch:** Para múltiplos CNPJs (prospecção), separar por vírgula:
+```bash
+python scripts/collect-sicaf.py --cnpj CNPJ1,CNPJ2,CNPJ3 --output sicaf-batch.json
+```
 
-**OBJETIVO:** Baixar os PDFs reais dos editais encontrados na Phase 2 e extrair insights factuais concretos — em vez de recomendações genéricas como "vale conferir o edital", entregar fatos extraídos do documento.
+**Após execução:** Incorporar dados SICAF no JSON do relatório:
+- `data.sicaf.status_cadastral` — CADASTRADO / NÃO CADASTRADO
+- `data.sicaf.crc` — Dados completos do CRC (razão social, CNAE, endereço, habilitações)
+- `data.sicaf.restricao` — Possui restrição? Detalhes
+- `data.sicaf._source.status` — API (sucesso) / API_PARTIAL / API_FAILED
 
-**IMPORTANTE:** Esta análise é feita pelo próprio Claude (execução local do command), sem chamada a APIs de LLM externas.
+### Phase 2: Download e Análise Documental dos Editais (Claude direto)
 
-#### 2b.1. Descobrir documentos disponíveis
+**OBJETIVO:** Baixar os PDFs reais dos editais encontrados na Phase 1 e extrair insights factuais concretos.
 
-Para cada edital PNCP encontrado na Phase 2a, buscar os documentos publicados:
+**IMPORTANTE:** Esta análise é feita pelo próprio Claude (execução local), sem chamada a APIs de LLM externas.
+
+#### 2.1. Descobrir documentos disponíveis
+
+Para cada edital PNCP do JSON (campo `docs_url` se disponível, ou construir):
 
 ```bash
-# Endpoint descoberto: API interna PNCP de arquivos
-# Padrão: /api/pncp/v1/orgaos/{cnpj_orgao}/compras/{ano}/{sequencial}/arquivos
 curl -s "https://pncp.gov.br/api/pncp/v1/orgaos/{cnpj_orgao}/compras/{anoCompra}/{sequencialCompra}/arquivos"
 ```
 
-**Response esperada (JSON array):**
-```json
-[
-  {
-    "uri": "https://pncp.gov.br/pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/1",
-    "url": "https://pncp.gov.br/pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/1",
-    "tipoDocumentoNome": "Edital",
-    "tipoDocumentoId": 2,
-    "tipoDocumentoDescricao": "Edital",
-    "titulo": "EDITAL PREGAO ELETRONICO 012026",
-    "sequencialDocumento": 1,
-    "statusAtivo": true
-  },
-  {
-    "tipoDocumentoNome": "Outros Documentos",
-    "titulo": "Termo de Referência",
-    "sequencialDocumento": 2
-  }
-]
-```
+Response: JSON array com `tipoDocumentoNome`, `tipoDocumentoId`, `titulo`, `sequencialDocumento`, `url`.
 
-**Tipos de documento relevantes (prioridade de download):**
-1. `tipoDocumentoId: 2` — **Edital** (obrigatório — documento principal)
-2. `tipoDocumentoNome: "Termo de Referência"` ou `"TR"` (altamente relevante — detalha o escopo)
-3. `tipoDocumentoNome: "Outros Documentos"` cujo `titulo` contenha: "anexo", "planilha", "projeto basico" (quando disponível)
+**Prioridade de download:**
+1. `tipoDocumentoId: 2` — Edital (obrigatório)
+2. Termo de Referência (altamente relevante)
+3. 1 anexo relevante (planilha, projeto básico)
 
-**Regra de download:** Baixar no máximo 3 documentos por edital (Edital + TR + 1 anexo relevante) para não sobrecarregar a análise.
+**Máximo 3 documentos por edital.**
 
-#### 2b.2. Download dos PDFs
+#### 2.2. Download e leitura dos PDFs
 
 ```bash
-# Download direto — sem autenticação, CORS aberto
-# O endpoint retorna o PDF com header: content-disposition: attachment; filename="nome.pdf"
-curl -s -o /tmp/edital_{cnpj}_{ano}_{seq}.pdf \
+curl -s -o /tmp/edital_{id}.pdf \
   "https://pncp.gov.br/pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/{sequencialDocumento}"
 ```
 
-**Constraints:**
-- Arquivos tipicamente entre 200KB-5MB (editais de pregão)
-- Alguns podem ser >10MB (editais de obras com projetos)
-- Se download falhar ou arquivo >10MB, pular e registrar "Documento indisponível para análise"
-- Rate limit self-imposed: max 2 downloads simultâneos, 1s entre requests
+Ler com `Read(file_path="/tmp/edital_{id}.pdf", pages="1-20")`. Para editais longos, ler em blocos de 20 páginas.
 
-#### 2b.3. Extração de texto do PDF
+Se PDF >10MB ou download falhar → registrar "Documento indisponível para análise".
 
-**Opção 1 (preferida):** Usar a ferramenta `Read` do Claude Code que suporta leitura de PDFs nativamente.
-```
-Read(file_path="/tmp/edital_{cnpj}_{ano}_{seq}.pdf", pages="1-20")
-```
-- Claude Code lê PDFs diretamente (multimodal)
-- Limitar a 20 páginas por request (limite da ferramenta)
-- Para editais longos (>20 páginas), ler em blocos: pages="1-20", depois "21-40", etc.
+#### 2.3. Extração factual do edital
 
-**Opção 2 (fallback):** Se o PDF não for legível (scan/imagem), registrar "PDF não-textual — análise visual limitada" e tentar ler as primeiras 10 páginas que frequentemente contêm o resumo.
+Para CADA edital lido, extrair:
 
-#### 2b.4. Análise documental pelo Claude
+**A. Ficha Técnica** — Número, modalidade, critério de julgamento, modo de disputa, datas (abertura, impugnação, esclarecimentos), prazo de execução, prazo de vigência, local de execução, valor estimado (ou "sigiloso"), dotação orçamentária.
 
-Para CADA edital cujo PDF foi lido com sucesso, Claude deve extrair e analisar:
+**B. Requisitos de Habilitação (checklist)** — Jurídica, fiscal federal/estadual/municipal, qualificação técnica (atestados, equipe, visita), econômico-financeira (índices, patrimônio líquido, capital mínimo), garantias, amostra, certidões de sanções.
 
-**A. Ficha Técnica do Edital (fatos puros — sem interpretação)**
+**C. Condições Comerciais** — Subcontratação, consórcio, ME/EPP, margem de preferência, prazo de pagamento, reajuste, penalidades.
 
-| Campo | Onde encontrar no edital |
-|-------|------------------------|
-| Número do edital | Cabeçalho / primeira página |
-| Modalidade e tipo | Preâmbulo |
-| Critério de julgamento | "menor preço" / "técnica e preço" / "maior desconto" |
-| Modo de disputa | Aberto / Fechado / Aberto-Fechado |
-| Data e hora de abertura | Seção de prazos |
-| Data limite para impugnação | Seção de prazos |
-| Data limite para esclarecimentos | Seção de prazos |
-| Prazo de execução/entrega | Cláusula contratual ou Termo de Referência |
-| Prazo de vigência do contrato | Cláusula contratual |
-| Local de execução/entrega | Termo de Referência ou cláusula específica |
-| Valor estimado (se divulgado) | Pode ser sigiloso — registrar "sigiloso" se não informado |
-| Fonte de recursos / dotação orçamentária | Seção financeira |
+**D. Red Flags** — Prazo apertado, exigências restritivas, valor desalinhado, cláusulas incomuns, direcionamento suspeito, impugnação viável.
 
-**B. Requisitos de Habilitação (checklist factual)**
+**E. Resumo Executivo** — 2-3 parágrafos: escopo real, requisitos-chave, principal risco/oportunidade.
 
-| Requisito | Presente? | Detalhe extraído |
-|-----------|-----------|-----------------|
-| Habilitação jurídica | Sim/Não | Quais documentos específicos |
-| Regularidade fiscal federal | Sim/Não | CND, FGTS, Trabalhista |
-| Regularidade fiscal estadual/municipal | Sim/Não | Quais certidões |
-| Qualificação técnica — atestados | Sim/Não | Quantidade mínima, percentuais, objetos similares exigidos |
-| Qualificação técnica — equipe | Sim/Não | Profissionais exigidos (engenheiro, etc.) |
-| Qualificação técnica — visita técnica | Sim/Não/Facultativa | Prazo e local da visita |
-| Qualificação econômico-financeira | Sim/Não | Índices contábeis, patrimônio líquido mínimo, capital social mínimo |
-| Garantia de proposta | Sim/Não | % do valor estimado |
-| Garantia contratual | Sim/Não | % e tipo (caução, seguro, fiança) |
-| Amostra/demonstração | Sim/Não | Prazo e condições |
-| Certidões negativas de sanções | Sim/Não | CEIS, CNEP, TCU |
+#### 2.4. Editais PCP v2
 
-**C. Condições Comerciais Relevantes**
+Para editais sem endpoint PNCP de arquivos:
+- Se `numero_controle_pncp` disponível, tentar construir URL PNCP
+- Se não disponível → "Análise documental não realizada — edital disponível apenas no portal PCP"
 
-| Item | Extraído do edital |
-|------|-------------------|
-| Subcontratação permitida? | Sim/Não + % limite |
-| Consórcio permitido? | Sim/Não + regras |
-| Participação de ME/EPP | Exclusiva / Cota reservada / Aberta |
-| Margem de preferência | Sim/Não + % |
-| Prazo de pagamento | X dias após aceite/atesto |
-| Reajuste previsto? | Índice (IPCA, INPC, etc.) |
-| Penalidades relevantes | Multa diária, % máximo, suspensão |
-| Dotação orçamentária confirmada? | Sim/Não |
+### Phase 3: Análise Estratégica por Edital (Claude)
 
-**D. Red Flags e Alertas (interpretação do Claude)**
+Para CADA edital, cruzar dados do JSON (Phase 1) + análise documental (Phase 2) + perfil da empresa:
 
-Identificar automaticamente:
-- **Prazo de entrega apertado** — prazo irreal para o escopo descrito
-- **Exigências restritivas** — atestados com quantitativos muito específicos que limitam competição
-- **Valor estimado desalinhado** — muito acima ou abaixo do mercado para o objeto
-- **Cláusulas incomuns** — garantia excessiva, penalidades desproporcionais, prazos de pagamento longos
-- **Direcionamento suspeito** — especificações que apontam para marca/fornecedor específico
-- **Impugnação viável** — cláusulas que podem ser impugnadas por restringir competitividade
+1. **Aderência ao perfil** — CNAEs vs objeto real. (Alta/Média/Baixa)
+2. **Análise de valor** — Valor estimado vs capital social e histórico da empresa.
+3. **Análise geográfica** — Usar `distancia_km` do JSON (OSRM). Se `null`, escrever "Distância não calculada". **NUNCA estimar.**
+4. **Análise de prazo** — Dias até encerramento. Tempo para preparar proposta?
+5. **Análise de modalidade** — Pregão (preço) vs Concorrência (técnica+preço).
+6. **Análise de habilitação** — Empresa atende requisitos? Cruzar checklist da Phase 2 com perfil:
+   - Capital mínimo vs capital real
+   - Atestados exigidos vs histórico de contratos
+   - Se NÃO atende requisito crítico → NÃO RECOMENDADO com motivo
+7. **Recomendação** — PARTICIPAR / AVALIAR COM CAUTELA / NÃO RECOMENDADO (com motivo factual)
 
-**E. Resumo Executivo do Edital (2-3 parágrafos)**
+### Phase 4: Inteligência Competitiva (Claude + API)
 
-Em linguagem acessível para o decisor:
-- O que está sendo comprado (escopo real, não apenas o título)
-- O que é preciso para participar (resumo dos requisitos mais relevantes)
-- Qual o principal risco/oportunidade
+Para editais com recomendação PARTICIPAR ou AVALIAR COM CAUTELA:
 
-#### 2b.5. Tratamento de editais PCP v2
-
-Para editais encontrados via PCP v2 (que não têm endpoint PNCP de arquivos):
-- Tentar construir URL PNCP equivalente se `numeroControlePNCP` disponível
-- Se não disponível, registrar "Edital disponível apenas no portal PCP — análise documental não realizada"
-- Incluir link direto para o portal PCP para acesso manual
-
-#### 2b.6. Output da Phase 2b
-
-Para cada edital analisado, gerar um bloco estruturado:
-
-```
-## Edital {numero} — {orgao} — {UF}
-### Análise Documental
-**Status:** Analisado / PDF indisponível / PDF não-textual
-**Documentos lidos:** Edital (42 pág.) + TR (18 pág.)
-
-**Ficha Técnica:**
-[tabela A preenchida]
-
-**Habilitação:**
-[checklist B preenchido]
-
-**Condições Comerciais:**
-[tabela C preenchida]
-
-**Red Flags:** [lista D]
-**Resumo:** [texto E]
-```
-
-### Phase 3: Análise Estratégica por Edital (@analyst + dados da Phase 2b)
-
-Para CADA edital encontrado, o agente deve analisar cruzando METADADOS (Phase 2a) + ANÁLISE DOCUMENTAL (Phase 2b) + PERFIL DA EMPRESA (Phase 1):
-
-1. **Aderência ao perfil** — O objeto do edital é compatível com os CNAEs da empresa? Cruzar com escopo real extraído do documento (não apenas título). (Alta/Média/Baixa)
-2. **Análise de valor** — O valor estimado está dentro da faixa operacional da empresa (baseado em capital social e histórico)? Se sigiloso, estimar baseado em contratos similares.
-3. **Análise geográfica** — Distância da sede ao local de execução (extraído da Phase 2b). A empresa já atua naquela UF?
-4. **Análise de prazo** — Dias restantes até encerramento. Tempo suficiente para preparar proposta E atender requisitos de habilitação identificados na Phase 2b?
-5. **Análise de modalidade** — Pregão (preço) vs Concorrência (técnica+preço). Critério de julgamento extraído do edital.
-6. **Competitividade** — Baseado no histórico do órgão, qual o padrão de desconto? Existem incumbentes?
-7. **Análise de habilitação** — A empresa CONSEGUE atender os requisitos? Cruzar checklist da Phase 2b com perfil da empresa:
-   - Capital social mínimo vs capital social real da empresa
-   - Atestados exigidos vs histórico de contratos da empresa
-   - Equipe técnica vs porte da empresa
-   - Se NÃO atende algum requisito crítico → recomendação automática NÃO RECOMENDADO com motivo
-8. **Riscos e alertas** — Red flags da Phase 2b + prazos apertados + valores atípicos
-9. **Recomendação** — PARTICIPAR / AVALIAR COM CAUTELA / NÃO RECOMENDADO (com motivo factual)
-10. **Perguntas do decisor respondidas com FATOS do edital:**
-    - "Vale a pena participar?" → Resposta baseada em aderência + habilitação + valor
-    - "Quanto eu deveria ofertar?" → Baseado em valor estimado (se público) + histórico de descontos do órgão
-    - "Quem são os concorrentes prováveis?" → Da Phase 3b (incumbentes)
-    - "Quais documentos preciso preparar?" → **Lista EXATA extraída da seção de habilitação do edital**
-    - "Qual o risco de não conseguir executar?" → Baseado em prazo de execução + local + escopo real
-    - "Esse órgão paga em dia?" → Prazo de pagamento extraído do edital + histórico (se disponível)
-    - "Existe alguma restrição que me impeça?" → Checklist de habilitação cruzado com perfil real da empresa
-
-### Phase 3b: Inteligência Competitiva por Edital (@data-engineer + @analyst)
-
-Para CADA edital com recomendação PARTICIPAR ou AVALIAR COM CAUTELA, mapear o cenário competitivo:
-
-**3b.1. Identificar incumbentes do órgão comprador**
+**4.1. Incumbentes do órgão**
 ```bash
-# Buscar contratos anteriores do mesmo órgão no PNCP (últimos 24 meses)
 curl -s "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao\
   ?dataInicial={24_meses_atras_YYYYMMDD}\
   &dataFinal={hoje_YYYYMMDD}\
   &codigoUnidadeAdministrativa={codigo_orgao}\
   &pagina=1&tamanhoPagina=50"
 ```
-- Extrair CNPJs vencedores de contratos anteriores do MESMO órgão
-- Filtrar por objeto similar (mesmo setor/keywords)
-- Identificar: quem ganhou, quantas vezes, valores praticados
 
-**3b.2. Enriquecer perfil dos concorrentes**
+**4.2. Perfil dos concorrentes (top 5)**
 ```bash
-# Para cada CNPJ concorrente (top 5 por frequência)
 curl -s "https://api.opencnpj.org/${CNPJ_CONCORRENTE}"
 ```
-- Extrair: razão social, porte, capital social, cidade sede, CNAEs
-- Calcular: faturamento gov mensal estimado (baseado em contratos PNCP)
 
-**3b.3. Análise competitiva por edital**
+**4.3. Análise por edital** — Concorrentes prováveis, incumbente principal, preço médio praticado, desconto médio, porte dos concorrentes, vantagem/vulnerabilidade, estratégia sugerida.
 
-Para cada edital, gerar:
+**4.4. Mapa de calor competitivo** — Baixa (<3 fornecedores) / Média (3-5) / Alta (5-10) / Muito Alta (>10 ou incumbente >60%).
 
-| Campo | Fonte | Descrição |
-|-------|-------|-----------|
-| Concorrentes prováveis | PNCP histórico do órgão | Top 3-5 empresas que já forneceram para este órgão |
-| Incumbente principal | PNCP | Empresa com mais contratos recentes neste órgão/objeto |
-| Preço médio praticado | PNCP contratos anteriores | Média dos valores de contratos similares |
-| Desconto médio | Valor estimado vs valor contratado | % de desconto típico neste órgão |
-| Porte dos concorrentes | OpenCNPJ | Micro/Pequeno/Médio/Grande |
-| Vantagem competitiva do cliente | Análise cruzada | Onde o cliente é mais forte que os concorrentes |
-| Vulnerabilidade | Análise cruzada | Onde o cliente é mais fraco |
-| Estratégia sugerida | Síntese | Preço agressivo / Diferenciação técnica / Evitar |
+### Phase 5: Inteligência de Mercado (Claude)
 
-**3b.4. Mapa de calor competitivo (consolidado)**
-- Tabela resumo: para cada edital, nível de competição (Baixa/Média/Alta/Muito Alta)
-- Critérios:
-  - **Baixa:** <3 fornecedores históricos, sem incumbente dominante
-  - **Média:** 3-5 fornecedores, incumbente com <40% dos contratos
-  - **Alta:** 5-10 fornecedores, incumbente com 40-60% dos contratos
-  - **Muito Alta:** >10 fornecedores OU incumbente com >60% dos contratos
-- Recomendação ajustada: editais com competição Baixa/Média sobem na priorização
+1. **Panorama setorial** — Editais abertos, valor total, concentração por UF
+2. **Tendências** — Modalidades comuns, valores médios, órgãos mais ativos
+3. **Vantagens competitivas** — Baseado em perfil (porte, localização, CNAEs)
+4. **Oportunidades de nicho** — Órgãos/UFs com pouca competição
+5. **Recomendação geral** — Priorização por potencial vs esforço vs competição
 
-### Phase 4: Inteligência de Mercado (@analyst)
+### Phase 6: Montagem do JSON e Geração do PDF
 
-1. **Panorama setorial** — Quantos editais abertos no setor, valor total em jogo, concentração por UF
-2. **Tendências** — Modalidades mais comuns, valores médios, órgãos mais ativos
-3. **Vantagens competitivas da empresa** — Baseado no perfil (porte, localização, CNAEs, histórico)
-4. **Ranking competitivo** — Posição do cliente vs concorrentes no setor (por volume de contratos, valor, diversificação geográfica)
-5. **Oportunidades de nicho** — Órgãos/UFs onde poucos concorrentes atuam mas há demanda
-6. **Recomendação geral** — Priorização dos editais por potencial de retorno vs esforço vs competição
+**6.1. Montar/enriquecer o JSON de dados**
 
-### Phase 5: Geração do PDF (@dev)
+O JSON da Phase 1 deve ser enriquecido com as análises das Phases 2-5:
+- `resumo_executivo` — Métricas consolidadas
+- `editais[].analise_documental` — Ficha técnica, habilitação, red flags (Phase 2)
+- `editais[].recomendacao` — PARTICIPAR/AVALIAR COM CAUTELA/NÃO RECOMENDADO
+- `editais[].justificativa` — Motivo factual da recomendação
+- `editais[].analise_detalhada` — Texto analítico completo (Phases 3-4)
+- `inteligencia_mercado` — Panorama, tendências, nichos (Phase 5)
+- `proximos_passos` — Lista de ações priorizadas
 
-Executar o script de geração:
+**6.2. Gerar o PDF**
 ```bash
-cd C:/Users/tiagosasaki/Desktop/PNCP-poc
-python scripts/generate-report-b2g.py --input docs/reports/data-{CNPJ}-{data}.json --output docs/reports/report-{CNPJ}-{data}.pdf
+cd D:/pncp-poc
+python scripts/generate-report-b2g.py \
+  --input docs/reports/data-{CNPJ}-{YYYY-MM-DD}.json \
+  --output docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.pdf
 ```
 
-O JSON de input deve ser criado pelo agente com toda a informação coletada nas fases anteriores.
+**6.3. Gerar markdown resumido**
 
-**Estrutura do PDF:**
-1. **Capa** — Título, nome da empresa, CNPJ, setor, data
+Salvar versão markdown em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.md`.
+
+---
+
+## Estrutura do PDF Final
+
+1. **Capa** — Título, empresa, CNPJ, setor, data
 2. **Perfil da Empresa** — Dados cadastrais, QSA, histórico gov, sanções
-3. **Resumo Executivo** — Métricas chave, destaques, recomendação geral
-4. **Panorama de Oportunidades** — Tabela resumo, distribuição por UF/modalidade/valor
-5. **Análise Detalhada por Edital** — Uma seção por edital com:
-   - Ficha técnica factual (dados extraídos do PDF do edital)
-   - Checklist de habilitação (requisitos reais vs perfil da empresa)
-   - Condições comerciais (subcontratação, consórcio, pagamento, penalidades)
-   - Red flags e alertas (cláusulas restritivas, prazos irreais, direcionamento)
-   - Resumo executivo do edital (escopo real em linguagem acessível)
-   - Análise estratégica completa (aderência + valor + geografia + prazo + habilitação)
-   - Recomendação com motivo factual
-   - Respostas às perguntas do decisor baseadas em fatos do documento
-6. **Mapa Competitivo** — Para cada edital recomendado: incumbentes, concorrentes prováveis, preços praticados, nível de competição, estratégia sugerida. Inclui mapa de calor consolidado (Baixa/Média/Alta/Muito Alta competição por edital)
-7. **Inteligência de Mercado** — Tendências, ranking competitivo do cliente vs concorrentes, oportunidades de nicho, vantagens competitivas
-8. **Menções em Diários Oficiais** — Resultados do Querido Diário (se houver)
-9. **Próximos Passos** — Ações recomendadas com prioridade e prazo, priorizando editais com menor competição e maior aderência. Para cada edital PARTICIPAR: lista exata de documentos a preparar (extraída do edital)
-10. **Rodapé em todas as páginas:** "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
+3. **Resumo Executivo** — Métricas-chave, destaques, recomendação geral
+4. **Panorama de Oportunidades** — Tabela resumo com badges de confiança (✓ API / ~ Parcial / ✗ Falhou)
+5. **Análise Detalhada por Edital** — Ficha técnica factual, checklist de habilitação, condições comerciais, red flags, resumo, recomendação
+6. **Mapa Competitivo** — Incumbentes, concorrentes, preços, nível de competição
+7. **Inteligência de Mercado** — Panorama, tendências, nichos, ranking
+8. **Menções em Diários Oficiais** — Querido Diário (se houver)
+9. **Próximos Passos** — Ações priorizadas com prazos
+10. **Verificação SICAF** — Status cadastral (CRC), restrições, habilitações (dados reais via Playwright)
+11. **Fontes de Dados e Confiabilidade** — Tabela com status de cada API consultada
+12. **Rodapé em todas as páginas:** "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
 
 ---
 
 ## APIs Reference
 
-| API | Endpoint | Auth | Rate Limit | Uso | Tipo |
-|-----|----------|------|------------|-----|------|
-| OpenCNPJ | `api.opencnpj.org/{CNPJ}` | Nenhuma | 50 req/s | Perfil da empresa | Perfil |
-| Portal Transparência | `api.portaldatransparencia.gov.br/api-de-dados/` | `chave-api-dados` header | 90 req/min | Sanções + contratos + licitações federais | Perfil + Editais |
-| PNCP Consulta | `pncp.gov.br/api/consulta/v1/contratacoes/publicacao` | Nenhuma | ~100 req/min | Busca de editais (primária) | **Editais** |
-| PNCP Arquivos | `pncp.gov.br/api/pncp/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos` | Nenhuma | ~60 req/min | Lista de documentos do edital | Docs |
-| PNCP Download | `pncp.gov.br/pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/{n}` | Nenhuma | ~30 req/min | Download direto do PDF | Docs |
-| PCP v2 | `compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos` | Nenhuma | ~60 req/min | Editais complementares (filtro client-side) | **Editais** |
-| Querido Diário | `api.queridodiario.ok.org.br/gazettes` | Nenhuma | ~60 req/min | Diários oficiais municipais (full-text) | **Menções** |
+| API | Endpoint | Auth | Rate Limit | Uso |
+|-----|----------|------|------------|-----|
+| OpenCNPJ | `api.opencnpj.org/{CNPJ}` | Nenhuma | 50 req/s | Perfil da empresa |
+| Portal Transparência | `api.portaldatransparencia.gov.br/api-de-dados/` | `chave-api-dados` header | 90 req/min | Sanções + contratos |
+| PNCP Consulta | `pncp.gov.br/api/consulta/v1/contratacoes/publicacao` | Nenhuma | ~100 req/min | Editais (primário) |
+| PNCP Arquivos | `pncp.gov.br/api/pncp/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos` | Nenhuma | ~60 req/min | Documentos do edital |
+| PNCP Download | `pncp.gov.br/pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/{n}` | Nenhuma | ~30 req/min | Download PDF |
+| PCP v2 | `compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos` | Nenhuma | ~60 req/min | Editais complementares |
+| Querido Diário | `api.queridodiario.ok.org.br/gazettes` | Nenhuma | ~60 req/min | Diários oficiais |
+| Nominatim | `nominatim.openstreetmap.org/search` | Nenhuma | 1 req/s | Geocoding |
+| OSRM | `router.project-osrm.org/route/v1/driving/` | Nenhuma | ~60 req/min | Distância rodoviária |
 
-**Fontes testadas e descartadas (2026-03-10):** ComprasGov v3 (404), Comprasnet Contratos (500), Portal Transparência /licitacoes (0 resultados), TCE-PE (500), TCE-RJ (HTML não JSON).
+**Fontes testadas e descartadas (2026-03-10):** ComprasGov v3 (404), Comprasnet Contratos (500), Portal Transparência /licitacoes (0 resultados), TCE-PE (500), TCE-RJ (HTML não JSON). SICAF não possui API pública.
 
-### PNCP Arquivos — Detalhes Técnicos
-
-**Endpoint de listagem:**
-```
-GET /api/pncp/v1/orgaos/{cnpj_orgao}/compras/{anoCompra}/{sequencialCompra}/arquivos
-```
-- Retorna JSON array com todos os documentos publicados
-- Campos úteis: `tipoDocumentoNome`, `tipoDocumentoId`, `titulo`, `sequencialDocumento`, `url`
-- `tipoDocumentoId: 2` = Edital (documento principal)
-
-**Endpoint de download:**
-```
-GET /pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/{sequencialDocumento}
-```
-- Retorna PDF direto (binary)
-- Header: `content-disposition: attachment; filename="nome.pdf"`
-- Sem autenticação, CORS aberto (`access-control-allow-origin: *`)
-- Arquivos tipicamente 200KB-5MB
+---
 
 ## Execution
 
 Quando invocado:
-1. **Phase 1:** Perfil da empresa (OpenCNPJ + Portal Transparência sanções/contratos)
-2. **Phase 2a:** Varredura multi-fonte de editais abertos:
-   - PNCP (primário — server-side filtering)
-   - PCP v2 (complementar — client-side filtering com filtro de data)
-   - Portal Transparência /licitações (federal — para órgãos já conhecidos)
-   - Querido Diário (menções em diários oficiais — full-text search com filtro de data/território)
-3. **Phase 2b:** Download dos PDFs dos editais PNCP + análise documental pelo Claude
+1. **Phase 1:** Executar `collect-report-data.py` (coleta todas as APIs deterministicamente)
+2. **Phase 1b:** Executar `collect-sicaf.py` (SICAF via Playwright, captcha manual)
+3. **Phase 2:** Download + análise documental dos PDFs dos editais (Claude direto)
 4. **Phase 3:** Análise estratégica cruzando perfil + edital + documento real
-5. **Phase 3b:** Inteligência competitiva:
-   - PNCP histórico (incumbentes, contratos anteriores, valores praticados)
-   - OpenCNPJ (perfil dos concorrentes)
-6. **Phase 4:** Inteligência de mercado (panorama, tendências, nichos)
-7. **Phase 5:** Geração do PDF final
-8. Dados intermediários salvos em `docs/reports/data-{CNPJ}-{data}.json`
-9. PDF final gerado em `docs/reports/report-{CNPJ}-{nome-slug}-{data}.pdf` (nome fantasia ou razão social slugificado, max 40 chars)
-10. Relatório Markdown resumido em `docs/reports/report-{CNPJ}-{nome-slug}-{data}.md`
+5. **Phase 4:** Inteligência competitiva (PNCP histórico + OpenCNPJ concorrentes)
+6. **Phase 5:** Inteligência de mercado (panorama, tendências, nichos)
+7. **Phase 6:** Enriquecer JSON (merge SICAF data) + gerar PDF + gerar markdown
+7. JSON final salvo em `docs/reports/data-{CNPJ}-{YYYY-MM-DD}.json`
+8. PDF gerado em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.pdf`
+9. Markdown em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.md`
 
-**Tempo estimado:** 5-15 minutos dependendo do número de editais encontrados e tamanho dos PDFs.
+**Tempo estimado:** 5-15 minutos dependendo do número de editais e PDFs.
 
 ## Params
 
