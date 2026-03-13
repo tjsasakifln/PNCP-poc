@@ -1,0 +1,4030 @@
+{
+  "_metadata": {
+    "generated_at": "2026-03-13",
+    "generator": "collect-report-data.py v1.0",
+    "sources": {
+      "opencnpj": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "portal_transparencia_sancoes": {
+        "status": "API_FAILED",
+        "timestamp": "2026-03-13",
+        "detail": "Consulta de sanções falhou"
+      },
+      "portal_transparencia_contratos": {
+        "status": "UNAVAILABLE",
+        "timestamp": "2026-03-13",
+        "detail": "Sem chave API"
+      },
+      "pncp": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1870 raw, 86 filtered, 38 pages, 0 errors"
+      },
+      "pcp_v2": {
+        "status": "API_PARTIAL",
+        "timestamp": "2026-03-13",
+        "detail": "0 raw, 0 filtered"
+      },
+      "querido_diario": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "10 menções encontradas"
+      },
+      "sicaf": {
+        "status": "UNAVAILABLE",
+        "timestamp": "2026-03-13",
+        "detail": "Skipped via --skip-sicaf"
+      }
+    }
+  },
+  "empresa": {
+    "_source": {
+      "status": "API",
+      "timestamp": "2026-03-13"
+    },
+    "cnpj": "27.232.335/0001-91",
+    "razao_social": "LIDER OBRAS DE INFRAESTRUTURA LTDA",
+    "nome_fantasia": "LIDER OBRAS DE INFRAESTRUTURA",
+    "cnae_principal": "4313400",
+    "cnaes_secundarios": "0810007, 0810008, 0810099, 0899199, 0990403, 2399199, 3811400, 4120400, 4211102, 4212000, 4213800, 4222701, 4299599, 4321500, 4322301, 4322303, 4391600, 4399103, 4399199, 4744099",
+    "porte": "",
+    "capital_social": 5000000.0,
+    "cidade_sede": "BLUMENAU",
+    "uf_sede": "SC",
+    "situacao_cadastral": "Ativa",
+    "data_inicio_atividade": "2017-03-03",
+    "natureza_juridica": "Sociedade Empresária Limitada",
+    "email": "CONTATO.EMPREITEIRALIDER@GMAIL.COM",
+    "telefones": [
+      "(47) 91742249"
+    ],
+    "qsa": [
+      {
+        "nome": "ANGELA ROBERTA BOING DE SOUZA",
+        "qualificacao": "Sócio-Administrador"
+      }
+    ],
+    "sancoes": {
+      "ceis": false,
+      "cnep": false,
+      "cepim": false,
+      "ceaf": false
+    },
+    "sancoes_source": {
+      "status": "API_FAILED",
+      "timestamp": "2026-03-13",
+      "detail": "Consulta de sanções falhou"
+    },
+    "historico_contratos": [],
+    "historico_source": {
+      "status": "UNAVAILABLE",
+      "timestamp": "2026-03-13",
+      "detail": "Sem chave API"
+    }
+  },
+  "setor": "Engenharia, Projetos e Obras",
+  "keywords": [
+    "construção civil",
+    "construcao civil",
+    "pavimentação",
+    "pavimentacao",
+    "recapeamento",
+    "recapeamento asfaltico",
+    "recapeamento asfáltico",
+    "impermeabilização",
+    "impermeabilizacao",
+    "pintura predial",
+    "pintura de fachada",
+    "instalação elétrica",
+    "instalacao eletrica",
+    "instalação hidráulica",
+    "instalacao hidraulica",
+    "saneamento básico",
+    "saneamento basico",
+    "terraplanagem",
+    "projeto arquitetônico",
+    "projeto arquitetonico",
+    "laudo técnico",
+    "laudo tecnico",
+    "obra de engenharia",
+    "serviço de engenharia",
+    "servico de engenharia",
+    "alvenaria",
+    "concreto armado",
+    "concreto",
+    "asfalto",
+    "asfaltamento",
+    "drenagem",
+    "reforma",
+    "reformas",
+    "engenharia",
+    "construção",
+    "construcao",
+    "edificação",
+    "edificacao",
+    "ampliação",
+    "ampliacao",
+    "demolição",
+    "demolicao",
+    "cimento",
+    "aço",
+    "aco",
+    "ferro",
+    "madeira",
+    "tijolo",
+    "tijolos",
+    "areia",
+    "brita",
+    "cascalho",
+    "telhado",
+    "piso",
+    "revestimento",
+    "elevador",
+    "elevadores",
+    "obra civil",
+    "obras civis",
+    "obra pública",
+    "obra publica",
+    "obra de reforma",
+    "fiscalização de obra",
+    "fiscalizacao de obra",
+    "supervisão de obra",
+    "supervisao de obra",
+    "gerenciamento de obra",
+    "contratação de obra",
+    "contratacao de obra",
+    "material e mão de obra",
+    "material e mao de obra",
+    "cobertura metálica",
+    "cobertura metalica",
+    "cobertura de telhado",
+    "cobertura de quadra",
+    "restauração de edifício",
+    "restauracao de edificio",
+    "restauração de fachada",
+    "restauracao de fachada",
+    "restauração de patrimônio",
+    "restauracao de patrimonio",
+    "sondagem geotécnica",
+    "sondagem geotecnica",
+    "sondagem de solo",
+    "sondagem spt",
+    "revitalização urbana",
+    "revitalizacao urbana",
+    "material de construção",
+    "material de construcao",
+    "materiais de construção",
+    "materiais de construcao",
+    "obra de construção civil",
+    "obra de construcao civil",
+    "reforma de prédio",
+    "reforma de predio",
+    "construção de prédio",
+    "construcao de predio",
+    "pavimentação asfáltica",
+    "pavimentacao asfaltica",
+    "recuperação de pavimento",
+    "recuperacao de pavimento",
+    "obra de infraestrutura",
+    "serviços de construção",
+    "servicos de construcao",
+    "execução de obra",
+    "execucao de obra"
+  ],
+  "editais": [
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA NO RAMO DE ENGENHARIA CIVIL PARA A CONSTRUÇÃO DE UNIDADES HABITACIONAIS DE INTERESSE SOCIAL, NO ÂMBITO DO PROGRAMA CASA CATARINA",
+      "orgao": "MUNICIPIO DE SERRA ALTA",
+      "uf": "SC",
+      "municipio": "Serra Alta",
+      "valor_estimado": 1313352.53,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-02",
+      "data_encerramento": "2026-03-16",
+      "dias_restantes": 2,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/80622319000198/2026/16",
+      "cnpj_orgao": "80622319000198",
+      "ano_compra": "2026",
+      "sequencial_compra": "16",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "edital_15_2026_2114_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/80622319000198/compras/2026/16/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 628.1,
+        "duracao_horas": 9.0,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 52,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 10,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 54635,
+        "roi_max": 102441,
+        "probability": 0.52,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-16",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 2,
+          "status": "URGENTE"
+        },
+        {
+          "data": "2026-03-15",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 1,
+          "status": "URGENTE"
+        },
+        {
+          "data": "2026-03-14",
+          "marco": "Decisão URGENTE go/no-go",
+          "dias_ate_marco": 0,
+          "status": "URGENTE"
+        }
+      ],
+      "recomendacao": "NÃO RECOMENDADO",
+      "justificativa": "Prazo insuficiente (2 dias) para preparação de proposta.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$1,313,352.53 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 628km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: URGENTE — 2 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA DO RAMO DE ENGENHARIA OU CONSTRUÇÃO CIVIL PARA EXECUÇÃO DA PAVIMENTAÇÃO EM PAVER E DRENAGEM PLUVIAL NAS RUAS GERMÂNIA L. BIONDO, FIORAVANTE MARIANI E \"B\", LOTEAMENTO MORADA DOS SONHOS, BAIRRO BELA VISTA, DO MUNICÍPIO DE SEARA/SC.",
+      "orgao": "MUNICIPIO DE SEARA",
+      "uf": "SC",
+      "municipio": "Seara",
+      "valor_estimado": 104014.8,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-03",
+      "data_encerramento": "2026-03-18",
+      "dias_restantes": 4,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83024505000113/2026/61",
+      "cnpj_orgao": "83024505000113",
+      "ano_compra": "2026",
+      "sequencial_compra": "61",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "edital_74_2026_2197_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024505000113/compras/2026/61/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 426.2,
+        "duracao_horas": 7.4,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 58,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 10,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 4826,
+        "roi_max": 9049,
+        "probability": 0.58,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-18",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 4,
+          "status": "ATENÇÃO"
+        },
+        {
+          "data": "2026-03-17",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 3,
+          "status": "URGENTE"
+        },
+        {
+          "data": "2026-03-16",
+          "marco": "Decisão URGENTE go/no-go",
+          "dias_ate_marco": 2,
+          "status": "URGENTE"
+        }
+      ],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Risk score moderado (58/100). Avaliar habilitação detalhadamente.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$104,014.80 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 426km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: ATENÇÃO — 4 dias. Viável com mobilização imediata.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA EXECUÇÃO DE OBRA DE MOVIMENTAÇÃO DE TERRA E DRENAGEM DA ÁREA EMPRESARIAL NO MUNICÍPIO DE DIONÍSIO CERQUEIRA– COMPLEMENTAÇÃO, CONFORME PROJETOS, MEMORIAL DESCRITIVO E PLANILHA ORÇAMENTÁRIA",
+      "orgao": "MUNICIPIO DE DIONISIO CERQUEIRA",
+      "uf": "SC",
+      "municipio": "Dionísio Cerqueira",
+      "valor_estimado": 608702.69,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-20",
+      "data_encerramento": "2026-03-20",
+      "dias_restantes": 6,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83026773000174/2026/12",
+      "cnpj_orgao": "83026773000174",
+      "ano_compra": "2026",
+      "sequencial_compra": "12",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "Edital Concorrencia 162026 1",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/12/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "ETP  DRENAGEM E MOVIMENTACAO DE TERRA",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/12/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta do Contrato",
+          "tipo_id": 3,
+          "titulo": "extrato de contrato",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/12/arquivos/3",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "3 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 636.9,
+        "duracao_horas": 8.9,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 52,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 10,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 25322,
+        "roi_max": 47479,
+        "probability": 0.52,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-20",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 6,
+          "status": "ATENÇÃO"
+        },
+        {
+          "data": "2026-03-19",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 5,
+          "status": "ATENÇÃO"
+        },
+        {
+          "data": "2026-03-18",
+          "marco": "Decisão URGENTE go/no-go",
+          "dias_ate_marco": 4,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Distância de 637km implica custos logísticos elevados.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$608,702.69 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 637km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: ATENÇÃO — 6 dias. Viável com mobilização imediata.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA EXECUÇÃO DE OBRA REFERENTE AO PROJETO DE ENTRADA DE ENERGIA EM MÉDIA TENSÃO ATÉ 300 KVA PARA O CENTRO DE EVENTOS MUNICIPAL DE DIONÍSIO CERQUEIRA – SC",
+      "orgao": "MUNICIPIO DE DIONISIO CERQUEIRA",
+      "uf": "SC",
+      "municipio": "Dionísio Cerqueira",
+      "valor_estimado": 183005.41,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-23",
+      "data_encerramento": "2026-03-23",
+      "dias_restantes": 9,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83026773000174/2026/13",
+      "cnpj_orgao": "83026773000174",
+      "ano_compra": "2026",
+      "sequencial_compra": "13",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "Edital Concorrencia 172026",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/13/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "ETP  Transformador Centro de Eventos",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/13/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta do Contrato",
+          "tipo_id": 3,
+          "titulo": "extrato de contrato",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/13/arquivos/3",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "3 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 636.9,
+        "duracao_horas": 8.9,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 56,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 40,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 8199,
+        "roi_max": 15372,
+        "probability": 0.56,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-23",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 9,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-21",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 7,
+          "status": "ATENÇÃO"
+        },
+        {
+          "data": "2026-03-19",
+          "marco": "Finalizar proposta",
+          "dias_ate_marco": 5,
+          "status": "ATENÇÃO"
+        },
+        {
+          "data": "2026-03-17",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 3,
+          "status": "URGENTE"
+        }
+      ],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Distância de 637km implica custos logísticos elevados.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$183,005.41 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 637km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: CONFORTÁVEL — 9 dias para preparação.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA EXECUÇÃO DE OBRA DE ENTRADA DE ENERGIA EM MÉDIA TENSÃO ATÉ 300 KVA, COM FORNECIMENTO DE MATERIAIS E MÃO DE OBRA, PARA A EDIFICAÇÃO ESCOLA 12 SALAS - LUIZ SAVOLDI.",
+      "orgao": "MUNICIPIO DE DIONISIO CERQUEIRA",
+      "uf": "SC",
+      "municipio": "Dionísio Cerqueira",
+      "valor_estimado": 190835.05,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-23",
+      "data_encerramento": "2026-03-23",
+      "dias_restantes": 9,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83026773000174/2026/14",
+      "cnpj_orgao": "83026773000174",
+      "ano_compra": "2026",
+      "sequencial_compra": "14",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "Edital Concorrencia 182026",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/14/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "ETP  Entrada de energia 12 salas",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/14/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta do Contrato",
+          "tipo_id": 3,
+          "titulo": "extrato de contrato",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83026773000174/compras/2026/14/arquivos/3",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "3 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 636.9,
+        "duracao_horas": 8.9,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 56,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 40,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 8549,
+        "roi_max": 16030,
+        "probability": 0.56,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-23",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 9,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-21",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 7,
+          "status": "ATENÇÃO"
+        },
+        {
+          "data": "2026-03-19",
+          "marco": "Finalizar proposta",
+          "dias_ate_marco": 5,
+          "status": "ATENÇÃO"
+        },
+        {
+          "data": "2026-03-17",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 3,
+          "status": "URGENTE"
+        }
+      ],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Distância de 637km implica custos logísticos elevados.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$190,835.05 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 637km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: CONFORTÁVEL — 9 dias para preparação.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Seleção e contratação de empresa do ramo de engenharia e/ou construção civil, para a escolha da proposta mais vantajosa, em regime de empreitada global (material e mão-de-obra especializada) para a Execução da Pavimentação Asfáltica, com CBUQ, em parte da Avenida Beira Mar.",
+      "orgao": "MUNICIPIO DE BALNEARIO ARROIO DO SILVA",
+      "uf": "SC",
+      "municipio": "Balneário Arroio do Silva",
+      "valor_estimado": 452389.58,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-02-18",
+      "data_encerramento": "2026-03-25",
+      "dias_restantes": 11,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/01605479000152/2026/19",
+      "cnpj_orgao": "01605479000152",
+      "ano_compra": "2026",
+      "sequencial_compra": "19",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "edital_19_2026_2154_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01605479000152/compras/2026/19/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 351.6,
+        "duracao_horas": 4.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 62,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 40,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 22439,
+        "roi_max": 42072,
+        "probability": 0.62,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-25",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 11,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-23",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 9,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-21",
+          "marco": "Finalizar proposta",
+          "dias_ate_marco": 7,
+          "status": "ATENÇÃO"
+        },
+        {
+          "data": "2026-03-19",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 5,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 62/100, prazo 11 dias, valor R$452,389.58.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$452,389.58 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 352km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: CONFORTÁVEL — 11 dias para preparação.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Seleção e contratação de empresa do ramo de engenharia e/ou construção civil, para a escolha da proposta mais vantajosa, em regime de empreitada global (material e mão-de-obra especializada) para a Execução da Pavimentação Intertravada com blocos sextavados de concretos em parte das Ruas Durval de Oliveira Souza e Gonçalves Tertuliano Pereira.",
+      "orgao": "MUNICIPIO DE BALNEARIO ARROIO DO SILVA",
+      "uf": "SC",
+      "municipio": "Balneário Arroio do Silva",
+      "valor_estimado": 273803.22,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-02-18",
+      "data_encerramento": "2026-03-26",
+      "dias_restantes": 12,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/01605479000152/2026/18",
+      "cnpj_orgao": "01605479000152",
+      "ano_compra": "2026",
+      "sequencial_compra": "18",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "edital_20_2026_2154_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01605479000152/compras/2026/18/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 351.6,
+        "duracao_horas": 4.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 62,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 40,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 13581,
+        "roi_max": 25464,
+        "probability": 0.62,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-26",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 12,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-24",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 10,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-22",
+          "marco": "Finalizar proposta",
+          "dias_ate_marco": 8,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-20",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 6,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 62/100, prazo 12 dias, valor R$273,803.22.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$273,803.22 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 352km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: CONFORTÁVEL — 12 dias para preparação.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "contratação de empresa especializada para execução da infraestrutura de pavimentação em CBUQ e pintura de sinalização viária horizontal da Estrada João Afonso Copetti (Estrada do Vacariano), no bairro Vacariano, interior do Município de Urubici/SC, compreendendo dois trechos com extensão total de 1.050 metros e área global de 6.734,67 m², incluindo serviços de regularização e compactação do subleito, execução de sub-base e base, implantação do sistema de drenagem pluvial e demais serviços necessários à preparação da via para recebimento do revestimento asfáltico, sendo o fornecimento e a aplicação do CBUQ realizados por meio do CISAMA, com recursos oriundos das emendas parlamentares federais Emenda Federal nº 39800001/2025 e Emenda Federal nº 39800001/2026.",
+      "orgao": "MUNICIPIO DE URUBICI",
+      "uf": "SC",
+      "municipio": "Urubici",
+      "valor_estimado": 1098407.05,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-12",
+      "data_encerramento": "2026-03-26",
+      "dias_restantes": 12,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82843582000132/2026/34",
+      "cnpj_orgao": "82843582000132",
+      "ano_compra": "2026",
+      "sequencial_compra": "34",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "ETPPAVIMENTACAOVACARIANOdocx2",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82843582000132/compras/2026/34/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Termo de Referência",
+          "tipo_id": 4,
+          "titulo": "TRPAVIMENTACAOVACARIANO correto assinado",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82843582000132/compras/2026/34/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "Edital0282026 ESTRADAJOAOAFONSOCOPETTI1 as",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82843582000132/compras/2026/34/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta do Contrato",
+          "tipo_id": 3,
+          "titulo": "texto de contrato ou aditivo ao contrato",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82843582000132/compras/2026/34/arquivos/4",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "4 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 222.5,
+        "duracao_horas": 4.1,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 62,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 40,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 54481,
+        "roi_max": 102152,
+        "probability": 0.62,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-26",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 12,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-24",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 10,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-22",
+          "marco": "Finalizar proposta",
+          "dias_ate_marco": 8,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-20",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 6,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 62/100, prazo 12 dias, valor R$1,098,407.05.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$1,098,407.05 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 222km — Distância moderada. Considerar custos de deslocamento.\n\nAnálise de prazo: CONFORTÁVEL — 12 dias para preparação.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Contratação de empresa especializada em engenharia para execução da obra de construção de ponte em concreto armado com vigas protendidas pré-moldadas, com área total de 280,80 m², incluindo todos os serviços necessários à implantação completa da infraestrutura e superestrutura, contemplando levantamento topográfico, execução de fundações, cabeceiras, estruturas de apoio, fornecimento e instalação das vigas, execução do tabuleiro, drenagem, proteção contra erosão, acessos, acabamentos e demais intervenções indispensáveis à plena funcionalidade da estrutura, a ser implantada na Estrada Geral da Consolação, no município de Urubici, conforme projetos, especificações técnicas, normas vigentes e condições estabelecidas no instrumento convocatório, referente ao Convênio Simplificado celebrado junto ao Governo do Estado de Santa Catarina, sob nº 2025TE001993.",
+      "orgao": "MUNICIPIO DE URUBICI",
+      "uf": "SC",
+      "municipio": "Urubici",
+      "valor_estimado": 1637714.22,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-12",
+      "data_encerramento": "2026-03-26",
+      "dias_restantes": 12,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82843582000132/2026/35",
+      "cnpj_orgao": "82843582000132",
+      "ano_compra": "2026",
+      "sequencial_compra": "35",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "ETPPONTEDACONSOLACAOdocx1",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82843582000132/compras/2026/35/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Termo de Referência",
+          "tipo_id": 4,
+          "titulo": "TR  PONTE CONSOLACAO assinado",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82843582000132/compras/2026/35/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "Edital 0302026  CONST DE PONTE CONSOLACAO assina",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82843582000132/compras/2026/35/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta do Contrato",
+          "tipo_id": 3,
+          "titulo": "texto de contrato ou aditivo ao contrato",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82843582000132/compras/2026/35/arquivos/4",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "4 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 222.5,
+        "duracao_horas": 4.1,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 62,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 40,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 81231,
+        "roi_max": 152307,
+        "probability": 0.62,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-26",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 12,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-24",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 10,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-22",
+          "marco": "Finalizar proposta",
+          "dias_ate_marco": 8,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-20",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 6,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 62/100, prazo 12 dias, valor R$1,637,714.22.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$1,637,714.22 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 222km — Distância moderada. Considerar custos de deslocamento.\n\nAnálise de prazo: CONFORTÁVEL — 12 dias para preparação.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA PARA EXECUÇÃO DE DRENAGEM PARA OBRAS DE PAVIMENTAÇÃO ASFÁLTICA RURAL DA ESTRADA DE LAJEADO GRANDE A XANXERÊ – TRECHO 01, COM RECURSOS ORIUNDOS DO PROCESSO SIE 44493/2025 - PROGRAMA ESTRADA BOA RURAL DO GOVERNO DO ESTADO DE SANTA CATARINA, CONFORME PROJETO, MEMORIAL DESCRITIVO, PLANILHA DE ORÇAMENTO E CRONOGRAMA FÍSICO-FINANCEIRO.",
+      "orgao": "MUNICIPIO DE LAJEADO GRANDE",
+      "uf": "SC",
+      "municipio": "Lajeado Grande",
+      "valor_estimado": 802806.36,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-13",
+      "data_encerramento": "2026-03-30",
+      "dias_restantes": 16,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/95993077000116/2026/32",
+      "cnpj_orgao": "95993077000116",
+      "ano_compra": "2026",
+      "sequencial_compra": "32",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Texto de contrato",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95993077000116/compras/2026/32/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "Edital Proc 033 2026 CC 003 2026  Drenagem",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95993077000116/compras/2026/32/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Estudo Tecnico Preliminar",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95993077000116/compras/2026/32/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Termo de Referencia",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95993077000116/compras/2026/32/arquivos/4",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "4 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 529.3,
+        "duracao_horas": 7.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 60,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 38535,
+        "roi_max": 72253,
+        "probability": 0.6,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-30",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 16,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-27",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 13,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-23",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 9,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-20",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 6,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 60/100, prazo 16 dias, valor R$802,806.36.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$802,806.36 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 529km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: AMPLO — 16 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA PARA EXECUÇÃO DE MOVIMENTAÇÃO DE TERRA PARA OBRAS DE PAVIMENTAÇÃO ASFÁLTICA RURAL DA ESTRADA DE LAJEADO GRANDE A XANXERÊ – TRECHO 01, COM RECURSOS ORIUNDOS DO PROCESSO SIE 44493/2025 - PROGRAMA ESTRADA BOA RURAL DO GOVERNO DO ESTADO DE SANTA CATARINA, CONFORME PROJETO, MEMORIAL DESCRITIVO, PLANILHA DE ORÇAMENTO E CRONOGRAMA FÍSICO-FINANCEIRO.",
+      "orgao": "MUNICIPIO DE LAJEADO GRANDE",
+      "uf": "SC",
+      "municipio": "Lajeado Grande",
+      "valor_estimado": 574376.28,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-13",
+      "data_encerramento": "2026-03-30",
+      "dias_restantes": 16,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/95993077000116/2026/33",
+      "cnpj_orgao": "95993077000116",
+      "ano_compra": "2026",
+      "sequencial_compra": "33",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "Edital Proc 034 2026 CC 004 2026  Escavacao",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95993077000116/compras/2026/33/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Estudo Tecnico Preliminar",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95993077000116/compras/2026/33/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Termo de Referencia",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95993077000116/compras/2026/33/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Texto de contrato",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95993077000116/compras/2026/33/arquivos/4",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "4 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 529.3,
+        "duracao_horas": 7.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 60,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 27570,
+        "roi_max": 51694,
+        "probability": 0.6,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-30",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 16,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-27",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 13,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-23",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 9,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-20",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 6,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 60/100, prazo 16 dias, valor R$574,376.28.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$574,376.28 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 529km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: AMPLO — 16 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Contratação de empresa especializada para Construção de clínica de reabilitação integrada, no bairro Capistrano.",
+      "orgao": "MUNICIPIO DE BOM RETIRO",
+      "uf": "SC",
+      "municipio": "Bom Retiro",
+      "valor_estimado": 2563913.71,
+      "modalidade": "Concorrência - Eletrônica",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "2026-03-31",
+      "dias_restantes": 17,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82777343000121/2026/50",
+      "cnpj_orgao": "82777343000121",
+      "ano_compra": "2026",
+      "sequencial_compra": "50",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "98804903900032026001",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82777343000121/compras/2026/50/arquivos/2",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 203.5,
+        "duracao_horas": 3.5,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 66,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 135375,
+        "roi_max": 253827,
+        "probability": 0.66,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-31",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 17,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-28",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 14,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-24",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 10,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-21",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 7,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 66/100, prazo 17 dias, valor R$2,563,913.71.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$2,563,913.71 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 204km — Distância moderada. Considerar custos de deslocamento.\n\nAnálise de prazo: AMPLO — 17 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Eletrônica — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Seleção e contratação de empresa do ramo de engenharia e/ou construção civil, para a escolha da proposta mais vantajosa, em regime de empreitada global (material e mão-de-obra especializada) para a Execução da Pavimentação Intertravada com blocos sextavados de concretos em parte das Ruas Araranguá, Ermo, João Rubens de Souza e Manoel Quintiliano da Silva.",
+      "orgao": "MUNICIPIO DE BALNEARIO ARROIO DO SILVA",
+      "uf": "SC",
+      "municipio": "Balneário Arroio do Silva",
+      "valor_estimado": 993727.19,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-02-23",
+      "data_encerramento": "2026-03-31",
+      "dias_restantes": 17,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/01605479000152/2026/21",
+      "cnpj_orgao": "01605479000152",
+      "ano_compra": "2026",
+      "sequencial_compra": "21",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "edital_22_2026_2154_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01605479000152/compras/2026/21/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 351.6,
+        "duracao_horas": 4.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 66,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 52469,
+        "roi_max": 98379,
+        "probability": 0.66,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-31",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 17,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-28",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 14,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-24",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 10,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-21",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 7,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Alta aderência, risk score 66/100, prazo de 17 dias, valor R$993,727.19.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$993,727.19 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 352km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: AMPLO — 17 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Execução de obra destinada à construção de edificação pública para abrigar a Casa da Cidadania no Município de Maravilha, SC.",
+      "orgao": "MUNICIPIO DE MARAVILHA",
+      "uf": "SC",
+      "municipio": "Maravilha",
+      "valor_estimado": 2861623.1,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-16",
+      "data_encerramento": "2026-03-31",
+      "dias_restantes": 17,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82821190000172/2026/290",
+      "cnpj_orgao": "82821190000172",
+      "ano_compra": "2026",
+      "sequencial_compra": "290",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "1  EDITAL",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82821190000172/compras/2026/290/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Termo de Referência",
+          "tipo_id": 4,
+          "titulo": "2  TERMO DE REFERENCIA",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82821190000172/compras/2026/290/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta de Ata de Registro de Preços",
+          "tipo_id": 19,
+          "titulo": "3  CONTRATO OU ADITIVO AO CONTRATO",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82821190000172/compras/2026/290/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "4  EXTRATO PUBLICACAO EDITAL",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82821190000172/compras/2026/290/arquivos/4",
+          "ativo": true
+        },
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "Estudo Tecnico Preliminar",
+          "sequencial": 5,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82821190000172/compras/2026/290/arquivos/5",
+          "ativo": true
+        },
+        {
+          "tipo": "Projeto Básico",
+          "tipo_id": 6,
+          "titulo": "PROJETOS",
+          "sequencial": 6,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82821190000172/compras/2026/290/arquivos/6",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "6 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 612.9,
+        "duracao_horas": 9.1,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 60,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 137358,
+        "roi_max": 257546,
+        "probability": 0.6,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-03-31",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 17,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-28",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 14,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-24",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 10,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-21",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 7,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Distância de 613km implica custos logísticos elevados.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$2,861,623.10 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 613km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: AMPLO — 17 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "[Portal de Compras Públicas] - Contratação de empresa especializada no ramo de engenharia, sob o regime de empreitada por preço global (incluindo fornecimento de materiais e mão de obra), para a execução de obras de infraestrutura viária na Rua Izabete Grisa, localizada no Bairro Distrito Industrial I, no Município de Irani/SC.",
+      "orgao": "MUNICIPIO DE IRANI",
+      "uf": "SC",
+      "municipio": "Irani",
+      "valor_estimado": 1860573.88,
+      "modalidade": "Concorrência - Eletrônica",
+      "data_abertura": "2026-02-13",
+      "data_encerramento": "2026-04-07",
+      "dias_restantes": 24,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82939455000131/2026/27",
+      "cnpj_orgao": "82939455000131",
+      "ano_compra": "2026",
+      "sequencial_compra": "27",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "PL027.2026- CC2.2026 - - Pavimentacao Rua Izabete Grisa.ass.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82939455000131/compras/2026/27/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 449.6,
+        "duracao_horas": 6.2,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 66,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 98238,
+        "roi_max": 184197,
+        "probability": 0.66,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-04-07",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 24,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-04",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 21,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-31",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 17,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-28",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 14,
+          "status": "NO PRAZO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Alta aderência, risk score 66/100, prazo de 24 dias, valor R$1,860,573.88.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$1,860,573.88 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 450km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: AMPLO — 24 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Eletrônica — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Contratação de Empresa Especializada para a Construção de 30 Unidades Habitacionais no Município de Urussanga/SC – Programa Casa Catarina. Transferência de recursos financeiros através de processo de convênio simplificado, provenientes de recursos do Governo do Estado, sob número do processo SGPe SCC 12049/2025, conforme planilha orçamentária, cronograma físico-financeiro e projeto básico anexos ao Edital.",
+      "orgao": "FUNDO MUNICIPAL DE ASSISTENCIA SOCIAL DE URUSSANGA - FMASU",
+      "uf": "SC",
+      "municipio": "Urussanga",
+      "valor_estimado": 3721903.04,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-12",
+      "data_encerramento": "2026-04-07",
+      "dias_restantes": 24,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/01294821000140/2026/1",
+      "cnpj_orgao": "01294821000140",
+      "ano_compra": "2026",
+      "sequencial_compra": "1",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "EDITAL CASA CATARINAok",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01294821000140/compras/2026/1/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta do Contrato",
+          "tipo_id": 3,
+          "titulo": "TEXTO DO CONTRATO CASA CATARINAOK",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01294821000140/compras/2026/1/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "ART 103691084 Subst ART Casa Catarinaorc e fisc",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01294821000140/compras/2026/1/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "PROJETO CASA CATARINA ARQUITETONICO",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01294821000140/compras/2026/1/arquivos/4",
+          "ativo": true
+        },
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "ESTUDO TECNICO PRELIMINAR CASA CATARINAOK",
+          "sequencial": 5,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01294821000140/compras/2026/1/arquivos/5",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "ORCAMENTO GLOBAL 30 CASAS",
+          "sequencial": 6,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01294821000140/compras/2026/1/arquivos/6",
+          "ativo": true
+        },
+        {
+          "tipo": "Termo de Referência",
+          "tipo_id": 4,
+          "titulo": "Termo de Referencia  Licitacao  CASA CATARINApd",
+          "sequencial": 7,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01294821000140/compras/2026/1/arquivos/7",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "7 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 320.8,
+        "duracao_horas": 4.3,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 66,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 196516,
+        "roi_max": 368468,
+        "probability": 0.66,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-04-07",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 24,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-04",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 21,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-31",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 17,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-28",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 14,
+          "status": "NO PRAZO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 66/100, prazo 24 dias, valor R$3,721,903.04.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$3,721,903.04 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 321km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: AMPLO — 24 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Contratação de empresa de engenharia/arquitetura para elaboração de anteprojeto, projeto executivo e complementares, com planilhas e documentos para licitar a reforma e ampliação da unidade Grupo Escolar Municipal Nelly Muller de Lima.",
+      "orgao": "MUNICIPIO DE CONCORDIA",
+      "uf": "SC",
+      "municipio": "Concórdia",
+      "valor_estimado": 133700.38,
+      "modalidade": "Concorrência - Eletrônica",
+      "data_abertura": "2026-04-08",
+      "data_encerramento": "2026-04-08",
+      "dias_restantes": 25,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83024257000100/2026/18",
+      "cnpj_orgao": "83024257000100",
+      "ano_compra": "2026",
+      "sequencial_compra": "18",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "edital_17_2026_2186_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta do Contrato",
+          "tipo_id": 3,
+          "titulo": "CC_22026__Anexo_B__minuta_de_contrato.pdf",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "2._ETP.pdf",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Projeto Básico",
+          "tipo_id": 6,
+          "titulo": "3._Termo_de_Referencia___GEM_Nelly_assinado.pdf",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/4",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "6._ART.pdf",
+          "sequencial": 5,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/5",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "3.6._ANEXO_C__Pontuacao_Qualificacao_Tecnica_Profissional.pdf",
+          "sequencial": 6,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/6",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "3.1._Anexo_01_Croqui.pdf",
+          "sequencial": 7,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/7",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "3.2._Anexo_02_Matricula.pdf",
+          "sequencial": 8,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/8",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "3.3._Anexo_03_GEM_PROFESSORA_NELLY_MULLER_DE_LIMA_PLANIALTIMETRICO_CADASTRAL.pdf",
+          "sequencial": 9,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/9",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "3.4._Anexo_03_MEMORIAL_TECNICO_TOPOGRAFIA.pdf",
+          "sequencial": 10,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/10",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "3.5._Anexo_03_RELATORIO_FOTOGRAFICO.pdf",
+          "sequencial": 11,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/11",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "5._Planilha_Orcamentaria_assinado.pdf",
+          "sequencial": 12,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/12",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "5.2._Cronograma_assinado.pdf",
+          "sequencial": 13,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/13",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "5.1._Composicoes.pdf",
+          "sequencial": 14,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/14",
+          "ativo": true
+        },
+        {
+          "tipo": "Mapa de Riscos",
+          "tipo_id": 9,
+          "titulo": "13.2._ANEXO_D__MATRIZ_DE_RISCOS.pdf",
+          "sequencial": 15,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/15",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "3.7._Licitacao_Lote_PROJETO_DE_REFORMA_E_AMPLIACAO_GEM_NELLY_MULLER_DE_LIMA.xls",
+          "sequencial": 16,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/16",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "3.8._Licitacao_Lote_PROJETO_DE_REFORMA_E_AMPLIACAO_GEM_NELLY_MULLER_DE_LIMA_.xls",
+          "sequencial": 17,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/17",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "PROCAD1.PDF.pdf",
+          "sequencial": 18,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83024257000100/compras/2026/18/arquivos/18",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "18 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 389.1,
+        "duracao_horas": 6.7,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 66,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 7059,
+        "roi_max": 13236,
+        "probability": 0.66,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-04-08",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 25,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-03",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 20,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-29",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 15,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-24",
+          "marco": "Visita técnica / vistoria",
+          "dias_ate_marco": 10,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-19",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 5,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Alta aderência, risk score 66/100, prazo de 25 dias, valor R$133,700.38.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$133,700.38 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 389km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: AMPLO — 25 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Eletrônica — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA PARA ELABORAÇÃO DE PROJETO EXECUTIVO DE ENGENHARIA E EXECUÇÃO DA CONSTRUÇÃO DAS OBRAS DE ARTE ESPECIAIS – OAE (viadutos) NA RODOVIA SC-401, ENTRONCAMENTO ACESSO SANTO ANTÔNIO DE LISBOA – ENTRONCAMENTO SC-404 (P/ LAGOA DA CONCEIÇÃO) KM 12+695 ATÉ O KM 19+285 ACESSO A CACUPÉ E AO CAMINHO DOS AÇORES",
+      "orgao": "SECRETARIA DE ESTADO DE INFRAESTRUTURA E MOBILIDADE (SIE)",
+      "uf": "SC",
+      "municipio": "Florianópolis",
+      "valor_estimado": 13563027.02,
+      "modalidade": "Concorrência - Eletrônica",
+      "data_abertura": "2026-02-13",
+      "data_encerramento": "2026-04-10",
+      "dias_restantes": 27,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82951344000140/2026/10",
+      "cnpj_orgao": "82951344000140",
+      "ano_compra": "2026",
+      "sequencial_compra": "10",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "Edital_CE 0011-2026.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Minuta do Contrato",
+          "tipo_id": 3,
+          "titulo": "Minuta do Contrato.pdf",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Estudo Técnico Preliminar",
+          "tipo_id": 7,
+          "titulo": "Estudo Técnico Preliminar  ETP.pdf",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "memorial descritivoTerra ArmadaViaduto 1.pdf.pdf",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/4",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "memorial descritivoTerra ArmadaViaduto 2.pdf.pdf",
+          "sequencial": 5,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/5",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "PBTerra ArmadaViaduto 2  Viaduto Acesso Saco Grande.pdf.pdf",
+          "sequencial": 6,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/6",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "PBTerra ArmadaViaduto1  Viaduto Acesso Sambaqui.pdf.pdf",
+          "sequencial": 7,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/7",
+          "ativo": true
+        },
+        {
+          "tipo": "Projeto Básico",
+          "tipo_id": 6,
+          "titulo": "Projeto OAEsSC401Tomo I.pdf.pdf",
+          "sequencial": 8,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/8",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Projeto OAEsSC401Tomo II.pdf.pdf",
+          "sequencial": 9,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/9",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Rel. Orçamento OAEsSC401.pdf.pdf",
+          "sequencial": 10,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/10",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "VIADUTOSSC401SINALIZACAO.pdf.pdf",
+          "sequencial": 11,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/11",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Anexos.pdf.pdf",
+          "sequencial": 12,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/12",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "ART orçamento.pdf",
+          "sequencial": 13,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/13",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "ComposicoesUnitarias.pdf.pdf",
+          "sequencial": 14,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/14",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "CRONOGRAMA.pdf",
+          "sequencial": 15,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/15",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "CurvaABCmateriais.pdf.pdf",
+          "sequencial": 16,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/16",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "CurvaABCservicos.pdf.pdf",
+          "sequencial": 17,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/17",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "OrcamentoSintetico.pdf.pdf",
+          "sequencial": 18,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/18",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Matriz de RiscosViadutos SC401.pdf.pdf",
+          "sequencial": 19,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/19",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Planilha dos LicitantesCE 00112026.xlsx.xlsx",
+          "sequencial": 20,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82951344000140/compras/2026/10/arquivos/20",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "20 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 147.4,
+        "duracao_horas": 2.2,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 72,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 70,
+        "prazo": 70,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 781230,
+        "roi_max": 1464807,
+        "probability": 0.72,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-04-10",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 27,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-05",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 22,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-31",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 17,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-26",
+          "marco": "Visita técnica / vistoria",
+          "dias_ate_marco": 12,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-21",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 7,
+          "status": "ATENÇÃO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Alta aderência, risk score 72/100, prazo de 27 dias, valor R$13,563,027.02.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$13,563,027.02 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 147km — Distância moderada. Considerar custos de deslocamento.\n\nAnálise de prazo: AMPLO — 27 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Eletrônica — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Seleção e contratação de empresa do ramo de engenharia e/ou construção civil, para a escolha da proposta mais vantajosa, em regime de empreitada global (material e mão-de-obra especializada) para a Execução da Pavimentação Asfáltica da Avenida Santa Catarina no trecho entre Caçamba e Arpoador e no trecho entre a divisa de Balneário Gaivota e Lagoinha, conforme especificações técnicas detalhadas no Termo de Referência (Anexo I).",
+      "orgao": "MUNICIPIO DE BALNEARIO ARROIO DO SILVA",
+      "uf": "SC",
+      "municipio": "Balneário Arroio do Silva",
+      "valor_estimado": 5309591.59,
+      "modalidade": "Concorrência - Presencial",
+      "data_abertura": "2026-03-11",
+      "data_encerramento": "2026-04-16",
+      "dias_restantes": 33,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/01605479000152/2026/24",
+      "cnpj_orgao": "01605479000152",
+      "ano_compra": "2026",
+      "sequencial_compra": "24",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "edital_25_2026_2154_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/01605479000152/compras/2026/24/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 351.6,
+        "duracao_horas": 4.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 71,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 100,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 301585,
+        "roi_max": 565472,
+        "probability": 0.71,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-04-16",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 33,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-11",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 28,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-06",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 23,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-01",
+          "marco": "Visita técnica / vistoria",
+          "dias_ate_marco": 18,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-03-27",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 13,
+          "status": "NO PRAZO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Alta aderência, risk score 71/100, prazo de 33 dias, valor R$5,309,591.59.",
+      "analise_detalhada": "Aderência ao perfil: ALTA — Objeto diretamente relacionado ao CNAE principal (4313400 - Obras de terraplanagem) e CNAEs secundários da empresa.\n\nAnálise de valor: R$5,309,591.59 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 352km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: AMPLO — 33 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Presencial — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA ELABORAÇÃO DO PROJETO BÁSICO E EXECUTIVO, BEM COMO PARA A EXECUÇÃO DOS SERVIÇOS DE AMPLIAÇÃO DA REDE DE INTERNET RURAL NO MUNICÍPIO DE PINHALZINHO/SC, CONFORME AS NORMAS TÉCNICAS APLICÁVEIS E AS ESPECIFICAÇÕES DEFINIDAS PELA ADMINISTRAÇÃO, CONFORME INFORMAÇÕES CONSTANTES NO EDITAL E SEUS ANEXOS.",
+      "orgao": "MUNICIPIO DE PINHALZINHO",
+      "uf": "SC",
+      "municipio": "Pinhalzinho",
+      "valor_estimado": 44310.0,
+      "modalidade": "Concorrência - Eletrônica",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "2026-05-20",
+      "dias_restantes": 67,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83021857000115/2026/26",
+      "cnpj_orgao": "83021857000115",
+      "ano_compra": "2026",
+      "sequencial_compra": "26",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "edital_19_2026_3205_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83021857000115/compras/2026/26/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 582.6,
+        "duracao_horas": 8.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 65,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 100,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 2304,
+        "roi_max": 4320,
+        "probability": 0.65,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-05-20",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 67,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-05-15",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 62,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-05-10",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 57,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-05-05",
+          "marco": "Visita técnica / vistoria",
+          "dias_ate_marco": 52,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-30",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 47,
+          "status": "NO PRAZO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 65/100, prazo 67 dias, valor R$44,310.00.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$44,310.00 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 583km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: AMPLO — 67 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Eletrônica — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "[Portal de Compras Públicas] - CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA ELABORAÇÃO DO PROJETO BÁSICO E EXECUTIVO, BEM COMO PARA A EXECUÇÃO DOS SERVIÇOS DE AMPLIAÇÃO DA REDE DE INTERNET RURAL NO MUNICÍPIO DE PINHALZINHO/SC, CONFORME AS NORMAS TÉCNICAS APLICÁVEIS E AS ESPECIFICAÇÕES DEFINIDAS PELA ADMINISTRAÇÃO, CONFORME INFORMAÇÕES CONSTANTES NO EDITAL E SEUS ANEXOS.",
+      "orgao": "MUNICIPIO DE PINHALZINHO",
+      "uf": "SC",
+      "municipio": "Pinhalzinho",
+      "valor_estimado": 44310.0,
+      "modalidade": "Concorrência - Eletrônica",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "2026-05-20",
+      "dias_restantes": 67,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83021857000115/2026/27",
+      "cnpj_orgao": "83021857000115",
+      "ano_compra": "2026",
+      "sequencial_compra": "27",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "EDITAL20262.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83021857000115/compras/2026/27/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Termo de Referência",
+          "tipo_id": 4,
+          "titulo": "CI 13 - Internet rural (1).pdf",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83021857000115/compras/2026/27/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "ETP - Internet rural.pdf",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83021857000115/compras/2026/27/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Linha Pio Decimo.pdf",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83021857000115/compras/2026/27/arquivos/4",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "4 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 582.6,
+        "duracao_horas": 8.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 65,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 100,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 2304,
+        "roi_max": 4320,
+        "probability": 0.65,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [
+        {
+          "data": "2026-05-20",
+          "marco": "Encerramento / Deadline",
+          "dias_ate_marco": 67,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-05-15",
+          "marco": "Entrega documentação final",
+          "dias_ate_marco": 62,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-05-10",
+          "marco": "Finalizar proposta comercial",
+          "dias_ate_marco": 57,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-05-05",
+          "marco": "Visita técnica / vistoria",
+          "dias_ate_marco": 52,
+          "status": "NO PRAZO"
+        },
+        {
+          "data": "2026-04-30",
+          "marco": "Decisão go/no-go",
+          "dias_ate_marco": 47,
+          "status": "NO PRAZO"
+        }
+      ],
+      "recomendacao": "PARTICIPAR",
+      "justificativa": "Objeto compatível, risk score 65/100, prazo 67 dias, valor R$44,310.00.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$44,310.00 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 583km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: AMPLO — 67 dias. Tempo suficiente para análise detalhada.\n\nModalidade: Concorrência - Eletrônica — Menor preço. Exige documentação completa de habilitação."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "VALOR QUE SE EMPENHA PARA A CONTRATAÇÃO DE EMPRESA PARA O FORNECIMENTO DE TINTA EPSON 574 PARA IMPRESSORA EPSON PATRIMÔNIO Nº 182443, COM RECURSOS DO CONVÊNIO DE RADIOPATRULHA COM A PMSC (OBJETIVANDO A MANUTENÇÃO DO RADIOPATRULHAMENTO DO 11º BPM/FRON), EM CONFORMIDADE COM O DISPOSTO NAS LEIS MUNICIPAIS Nº 7.150/15 E 7.178/15. CONVÊNIO DE RP - AGÊNCIA: 599-1, CONTA: 86627-X B.B,",
+      "orgao": "MUNICIPIO DE SAO MIGUEL D'OESTE",
+      "uf": "SC",
+      "municipio": "São Miguel do Oeste",
+      "valor_estimado": 860.0,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82821174000180/2026/42",
+      "cnpj_orgao": "82821174000180",
+      "ano_compra": "2026",
+      "sequencial_compra": "42",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "AF 6012026",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82821174000180/compras/2026/42/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 656.1,
+        "duracao_horas": 9.6,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 58,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 40,
+        "roi_max": 75,
+        "probability": 0.58,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "NÃO RECOMENDADO",
+      "justificativa": "Dispensa de baixo valor (R$860.00). ROI insuficiente.",
+      "analise_detalhada": "Aderência ao perfil: BAIXA — Objeto não aparenta relação direta com os CNAEs da empresa.\n\nAnálise de valor: R$860.00 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 656km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE MÃO DE OBRA ESPECIALIZADA PARA INSTALAÇÃO DE FORRO EM PVC NO ANTIGO PRÉDIO DO CEI III, VISANDO à ADEQUAÇÃO DO ESPAÇO PARA USO ADMINISTRATIVO DA NOVA CRECHE MUNICIPAL.",
+      "orgao": "MUNICIPIO DE CAIBI",
+      "uf": "SC",
+      "municipio": "Caibi",
+      "valor_estimado": 7400.0,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82940776000156/2026/94",
+      "cnpj_orgao": "82940776000156",
+      "ano_compra": "2026",
+      "sequencial_compra": "94",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "edital_88_2026_2200_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82940776000156/compras/2026/94/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 644.8,
+        "duracao_horas": 9.5,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 58,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 343,
+        "roi_max": 644,
+        "probability": 0.58,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Dispensa de R$7,400.00. Verificar aderência ao core business.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$7,400.00 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 645km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "DESPESA REFERENTE A AQUISIÇÃO POR MEIO DE DISPENSA SIMPLIFACADA DE LICITAÇÃO, DE BARRAS DE AÇO (VERGALHÃO CA-50) NOS DIÂMETROS 8 MM (5/16\") E 10 MM (3/8\"), DESTINADAS ÀS ATIVIDADES DE MANUTENÇÃO, REFORÇO ESTRUTURAL E PEQUENAS OBRAS MUNICIPAIS.",
+      "orgao": "MUNICIPIO DE ITUPORANGA",
+      "uf": "SC",
+      "municipio": "Ituporanga",
+      "valor_estimado": 821.7,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83102640000130/2026/84",
+      "cnpj_orgao": "83102640000130",
+      "ano_compra": "2026",
+      "sequencial_compra": "84",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "edital_81_2026_70_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83102640000130/compras/2026/84/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 122.4,
+        "duracao_horas": 2.2,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 70,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 70,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 46,
+        "roi_max": 86,
+        "probability": 0.7,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "NÃO RECOMENDADO",
+      "justificativa": "Dispensa de baixo valor (R$821.70). ROI insuficiente.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$821.70 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 122km — Distância moderada. Considerar custos de deslocamento.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "AQUISIÇÃO DE INVENSOR SOLDA TRIFÁSICO - MIG/MAG/TIG PARA SECRETARIA DE DESENVOLVIMENTO RURAL E ABASTECIMENTO\n\nPROCESSO SEI 1101000000.000026/2026-66",
+      "orgao": "MUNICIPIO DE JARAGUA DO SUL",
+      "uf": "SC",
+      "municipio": "Jaraguá do Sul",
+      "valor_estimado": 5690.3,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83102459000123/2026/89",
+      "cnpj_orgao": "83102459000123",
+      "ano_compra": "2026",
+      "sequencial_compra": "89",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "AF 454  COREMMA",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83102459000123/compras/2026/89/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 64.7,
+        "duracao_horas": 1.2,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 70,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 70,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 319,
+        "roi_max": 597,
+        "probability": 0.7,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Dispensa de R$5,690.30. Verificar aderência ao core business.",
+      "analise_detalhada": "Aderência ao perfil: BAIXA — Objeto não aparenta relação direta com os CNAEs da empresa.\n\nAnálise de valor: R$5,690.30 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 65km — Proximidade favorável.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA PRESTAÇÃO DE SERVIÇOS DE SEGURANÇA PRIVADA, COM DISPONIBILIZAÇÃO DE 08 (OITO) PROFISSIONAIS, PARA ATUAÇÃO NO EVENTO CARNAVAL 2026, A SER REALIZADO NO PARQUE LINEAR VIA VERDE, NO DIA 14 DE FEVEREIRO DE 2026, DAS 16H ÀS 22H.\n\nA CONTRATAÇÃO DE SERVIÇOS DE SEGURANÇA PRIVADA MOSTRA-SE NECESSÁRIA EM RAZÃO DA REALIZAÇÃO DO EVENTO GRITO DE CARNAVAL 2026, PROMOVIDO EM ESPAÇO PÚBLICO ABERTO, O QUAL PREVÊ SIGNIFICATIVA CONCENTRAÇÃO E CIRCULAÇÃO DE PESSOAS. A PRESENÇA DE PROFISSIONAIS DE SEGURANÇA PRIVADA É INDISPENSÁVEL PARA GARANTIR A INTEGRIDADE FÍSICA DO PÚBLICO, DOS TRABALHADORES ENVOLVIDOS NA ORGANIZAÇÃO DO EVENTO, DOS ARTISTAS E DEMAIS PARTICIPANTES, BEM COMO PARA ASSEGURAR A MANUTENÇÃO DA ORDEM, O CONTROLE E O ORDENAMENTO DO FLUXO DE PESSOAS E A PRESERVAÇÃO DO PATRIMÔNIO PÚBLICO E PRIVADO, CONTRIBUINDO DE FORMA PREVENTIVA PARA A MITIGAÇÃO DE RISCOS E A OCORRÊNCIA DE INCIDENTES INERENTES À REALIZAÇÃO DE EVENTOS DESSA NATUREZA.\n\nPROCESSO SEI 0802030200.000108/2026-73",
+      "orgao": "MUNICIPIO DE JARAGUA DO SUL",
+      "uf": "SC",
+      "municipio": "Jaraguá do Sul",
+      "valor_estimado": 2700.0,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/83102459000123/2026/91",
+      "cnpj_orgao": "83102459000123",
+      "ano_compra": "2026",
+      "sequencial_compra": "91",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "AF 460  ORPAN",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/83102459000123/compras/2026/91/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 64.7,
+        "duracao_horas": 1.2,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 70,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 70,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 151,
+        "roi_max": 283,
+        "probability": 0.7,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "NÃO RECOMENDADO",
+      "justificativa": "Dispensa de baixo valor (R$2,700.00). ROI insuficiente.",
+      "analise_detalhada": "Aderência ao perfil: BAIXA — Objeto não aparenta relação direta com os CNAEs da empresa.\n\nAnálise de valor: R$2,700.00 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 65km — Proximidade favorável.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA FORNECIMENTO E INSTALAÇÃO DE PAINÉIS DE NO MÍNIMO TRÊS MILÍMETRO DE ACM NA FACHADA, DESTINADOS A COMPOR A PLATIBANDA METÁLICA JÁ EXISTENTE NO QUARTEL DO CORPO DE BOMBEIROS MILITAR.",
+      "orgao": "MUNICIPIO DE TAIO",
+      "uf": "SC",
+      "municipio": "Taió",
+      "valor_estimado": 3550.0,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82765488000102/2026/20",
+      "cnpj_orgao": "82765488000102",
+      "ano_compra": "2026",
+      "sequencial_compra": "20",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "edital_25_2026_89_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82765488000102/compras/2026/20/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "Edital",
+          "tipo_id": 2,
+          "titulo": "DISPENSA_PLACAS_CBM.AS_1.pdf",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82765488000102/compras/2026/20/arquivos/2",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "2 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 148.7,
+        "duracao_horas": 2.7,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 70,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 70,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 199,
+        "roi_max": 373,
+        "probability": 0.7,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "NÃO RECOMENDADO",
+      "justificativa": "Dispensa de baixo valor (R$3,550.00). ROI insuficiente.",
+      "analise_detalhada": "Aderência ao perfil: BAIXA — Objeto não aparenta relação direta com os CNAEs da empresa.\n\nAnálise de valor: R$3,550.00 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 149km — Distância moderada. Considerar custos de deslocamento.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA MANUTENÇÃO DAS PERSIANAS DO PAÇO MUNICIPAL.",
+      "orgao": "MUNICIPIO DE FRAIBURGO",
+      "uf": "SC",
+      "municipio": "Fraiburgo",
+      "valor_estimado": 10530.28,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82947979000174/2026/25",
+      "cnpj_orgao": "82947979000174",
+      "ano_compra": "2026",
+      "sequencial_compra": "25",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "edital_26_2026_2145_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82947979000174/compras/2026/25/arquivos/1",
+          "ativo": true
+        },
+        {
+          "tipo": "DFD",
+          "tipo_id": 10,
+          "titulo": "1.pdf",
+          "sequencial": 2,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82947979000174/compras/2026/25/arquivos/2",
+          "ativo": true
+        },
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "3._JUSTIFICATIVA_DA_NA_O_UTILIZAC_A_O_DA_DISPENSA_ELETRO_NICA.pdf",
+          "sequencial": 3,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82947979000174/compras/2026/25/arquivos/3",
+          "ativo": true
+        },
+        {
+          "tipo": "Ato que autoriza a Contratação Direta",
+          "tipo_id": 20,
+          "titulo": "Autorizacao_Autoridade_Competente.pdf",
+          "sequencial": 4,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82947979000174/compras/2026/25/arquivos/4",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "Justificativa_de_escolha_do_fornecedor_assinado.pdf",
+          "sequencial": 5,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82947979000174/compras/2026/25/arquivos/5",
+          "ativo": true
+        },
+        {
+          "tipo": "Outros Documentos",
+          "tipo_id": 16,
+          "titulo": "TH21452026263.pdf",
+          "sequencial": 6,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82947979000174/compras/2026/25/arquivos/6",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "6 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 260.4,
+        "duracao_horas": 4.8,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 64,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 539,
+        "roi_max": 1011,
+        "probability": 0.64,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Dispensa de R$10,530.28. Verificar aderência ao core business.",
+      "analise_detalhada": "Aderência ao perfil: BAIXA — Objeto não aparenta relação direta com os CNAEs da empresa.\n\nAnálise de valor: R$10,530.28 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 260km — Distância moderada. Considerar custos de deslocamento.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Aquisição de produtos destinadas à manutenção do britador da Secretaria de Obras do Município de Jacinto Machado/SC.",
+      "orgao": "MUNICIPIO DE JACINTO MACHADO",
+      "uf": "SC",
+      "municipio": "Jacinto Machado",
+      "valor_estimado": 479.15,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/82960758000136/2026/23",
+      "cnpj_orgao": "82960758000136",
+      "ano_compra": "2026",
+      "sequencial_compra": "23",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "edital_23_2026_2157_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/82960758000136/compras/2026/23/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 377.8,
+        "duracao_horas": 5.0,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 64,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 40,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 25,
+        "roi_max": 46,
+        "probability": 0.64,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "NÃO RECOMENDADO",
+      "justificativa": "Dispensa de baixo valor (R$479.15). ROI insuficiente.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$479.15 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 378km — Distância significativa. Orçar mobilização cuidadosamente.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Contratação de empresa especializada para prestação de serviço de plataforma\n360° para geração de vídeos, com disponibilização de QR Code para download dos\nvídeos e fornecimento de pasta digital com todos os registros do evento alusivo ao Dia\nInternacional da Mulher, que acontecerá no dia 06/03/2026",
+      "orgao": "MUNICIPIO DE NOVA ITABERABA",
+      "uf": "SC",
+      "municipio": "Nova Itaberaba",
+      "valor_estimado": 1590.0,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/95990131000170/2026/41",
+      "cnpj_orgao": "95990131000170",
+      "ano_compra": "2026",
+      "sequencial_compra": "41",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "edital_28_2026_2107_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/95990131000170/compras/2026/41/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 561.8,
+        "duracao_horas": 8.3,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 58,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 10,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 74,
+        "roi_max": 138,
+        "probability": 0.58,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "NÃO RECOMENDADO",
+      "justificativa": "Dispensa de baixo valor (R$1,590.00). ROI insuficiente.",
+      "analise_detalhada": "Aderência ao perfil: BAIXA — Objeto não aparenta relação direta com os CNAEs da empresa.\n\nAnálise de valor: R$1,590.00 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 562km — Distância elevada. Impacto relevante nos custos.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "objeto": "Contratação de empresa especializada para  02 (duas) assinaturas do software AutoCAD - including specialized toolsets, na modalidade Single-user    destinadas ao atendimento das demandas do Setor de Engenharia do Serviço Municipal de Água e Saneamento Ambiental - SAMAE de Tijucas/SC.",
+      "orgao": "SAMAE - SERVICO AUTONOMO MUNICIPAL DE AGUA E ESGOTO",
+      "uf": "SC",
+      "municipio": "Tijucas",
+      "valor_estimado": 16416.44,
+      "modalidade": "Dispensa",
+      "data_abertura": "2026-02-11",
+      "data_encerramento": "",
+      "dias_restantes": null,
+      "fonte": "PNCP",
+      "link": "https://pncp.gov.br/app/editais/02396675000127/2026/7",
+      "cnpj_orgao": "02396675000127",
+      "ano_compra": "2026",
+      "sequencial_compra": "7",
+      "status_edital": "ABERTO",
+      "documentos": [
+        {
+          "tipo": "Aviso de Contratação Direta",
+          "tipo_id": 1,
+          "titulo": "edital_3_2026_13805_documento.pdf",
+          "sequencial": 1,
+          "download_url": "https://pncp.gov.br/pncp-api/v1/orgaos/02396675000127/compras/2026/7/arquivos/1",
+          "ativo": true
+        }
+      ],
+      "documentos_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "1 documentos encontrados"
+      },
+      "link_valid": true,
+      "competitive_intel": [],
+      "competitive_intel_source": {
+        "status": "API",
+        "timestamp": "2026-03-13",
+        "detail": "0 contratos"
+      },
+      "distancia": {
+        "km": 98.0,
+        "duracao_horas": 1.5,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13",
+          "detail": "OSRM driving distance"
+        }
+      },
+      "risk_score": {
+        "total": 70,
+        "habilitacao": 60,
+        "financeiro": 100,
+        "geografico": 70,
+        "prazo": 50,
+        "competitivo": 50,
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "roi_potential": {
+        "roi_min": 919,
+        "roi_max": 1724,
+        "probability": 0.7,
+        "margin_range": "8%-15%",
+        "_source": {
+          "status": "CALCULATED",
+          "timestamp": "2026-03-13"
+        }
+      },
+      "cronograma": [],
+      "recomendacao": "AVALIAR COM CAUTELA",
+      "justificativa": "Dispensa de R$16,416.44. Verificar aderência ao core business.",
+      "analise_detalhada": "Aderência ao perfil: MÉDIA — Objeto parcialmente relacionado às atividades da empresa. Verificar atestados de capacidade técnica.\n\nAnálise de valor: R$16,416.44 — compatível com a capacidade financeira (capital R$5,000,000.00).\n\nAnálise geográfica: 98km — Proximidade favorável.\n\nAnálise de prazo: URGENTE — 0 dias. Tempo muito apertado para proposta completa.\n\nModalidade: Dispensa — Contratação direta simplificada."
+    }
+  ],
+  "querido_diario": [
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-13",
+      "territorio": "Botucatu - SP",
+      "excerpts": [
+        {
+          "text": ".\n\nContratos\nContratos\n\nCONTRATO nº 057/2026\nProcesso  Administrat ivo  nº  29.035/2025  –\n\nConcorrência  Pública  nº  021/2025\nContratante: MUNICÍPIO DE BOTUCATU\nContratada:  SEMAM  TERRAPLENAGEM  E\n\nPAVIMENTACAO  LTDA\nObjeto:  CONTRATAÇÃO DE EMPRESA ESPECIALIZADA\n\nPARA  EXECUÇÃO  DO  RECAPEAMENTO  ASFÁLTICO  EM\nDIVERSAS  RUAS  DO  SETOR  NORTE,  NO  MUNICÍPIO  DE\nBOTUCATU/SP,  ATRAVÉS DO CONTRATO DE  REPASSE  N.\n975162/2025/MCIDADES/CAIXA\n\nValor:  R$  2.512.000,00  (dois  milhões,  quinhentos "
+        },
+        {
+          "text": "TABORDA  –  SECRETÁRIO\n\nMUNICIPAL  DE  INFRAESTRUTURA\nPREGÃO  ELETRÔNICO  nº  36/2026  PROCESSO  n°\n\n3.701/2026 – UASG 986249 Nº COMPRA 900362026\nOBJETO:  REGISTRO  DE  PREÇOS  PARA  POSSÍVEL\n\nCONTRATAÇÃO DE EMPRESA ESPECIALIZADA NA EXECUÇÃO\nDE PAVIMENTO POLIEDRICO.\n\nDATA INICIO DO PRAZO PARA ENVIO DA PROPOSTA\nELETRÔNICA: 13 DE MARÇO DE 2026\n\nDATA/HORA DA ABERTURA DA SESSÃO PÚBLICA: 31 DE\nMARÇO DE 2026 - HORÁRIO: 09:00 horas.\n\nENDEREÇO  ELETRÔNICO:  Portal  de  Compras  do\nGoverno Federal – www.compras"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-13",
+      "territorio": "Santos - SP",
+      "excerpts": [
+        {
+          "text": "convocações diversas para o mesmo interessado, \nserão anotados no máximo três processos por \nagendamento.\n\nEXPEDIENTE DESPACHADO EM 11/03/2026\nProcesso nº 6.239/2026-97 – DROGARIA SÃO \n\nPAULO S.A.: Plano de Gerenciamento de Resídu-\nos Sólidos da Construção Civil aprovado conforme \nParecer Técnico nº 0087/2026 - RSCC - SEGRESI re-\nferente à obra nova. Fica o interessado obrigado \na atender o artigo 31 (comprovar destinação am-\nbientalmente adequada dos resíduos gerados) da \nLei Complementar nº 792/2013"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-13",
+      "territorio": "São Bernardo do Campo - SP",
+      "excerpts": [
+        {
+          "text": "alterações: \n\"Art. 1º Fica o Poder Executivo autorizado a contratar operações de crédito junto à \nDesenvolve SP - Agência de Fomento do Estado de São Paulo, até o valor de R$ \n113.000.000,00 (cento e treze milhões de reais), destinadas à pavimentação de \nnovas vias, recapeamento asfáltico, drenagem, contenções, pontes e viadutos, \nobservada a legislação vigente, em especial as disposições da Lei Complementar nº \n101, de 4 de maio de 2000.” (NR) \n“Art. 2º Para pagamento do principal, juros, tarifas bancárias"
+        },
+        {
+          "text": "941/2026\n\nMARIA DYRCE NOVAES DE MATOS SB-005.585/2026\n\n\n\n13 de março de 2026   |   Edição 2621 49\n\nMARIA LÚCIA DOS SANTOS SB-006.498/2026\n\nNATALIA ALMEIDA GUIDI LAGARES SB-004.950/2026\n\nSUELI MANDELLI SB-072.119/2025\n\nDIVISÃO DE RENDAS MOBILIARIAS E CONSTRUÇÃO CIVIL - SEFAZ.51\nNos termos do artigo 25, § 3º, item 2, alínea “b”, da Lei Municipal nº.\n\n1802/69  ficam  os  contribuintes  a  seguir  relacionados,  NOTIFICADO(S)  do\nseguinte  procedimento:\n\nAssunto: Apresentação de Documentos\nEmpresa: Elevadores"
+        },
+        {
+          "text": "795-5 704-1636325/2026 R$ 693,08 14042026 536/2026/SB\n\nAMILTON JOSE\nFRANCIANO\n\n172.171-2 704-1636328/2026 R$ 693,08 14042026 536/2026/SB\n\nANDRES DANIEL MOURA\nZANZERI\n\n173.878-0 704-1636291/2026 R$ 693,08 14042026 536/2026/SB\n\nANP EMPREITEIRA PARA\nCONSTRUCAO CIVIL\nLTDA-ME\n\n100.931-1 704-1636300/2026 R$ 693,08 14042026 536/2026/SB\n\nANTONIO JOSE VIEIRA\nNICOLAU\n\n174.100-4 704-1636280/2026 R$ 693,08 14042026 536/2026/SB\n\nAUTO MOTO ESCOLA\nSANTA MARIA LTDA - ME\n\n112.278-9 704-1636336/2026 R$ 693,08 14042026"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-12",
+      "territorio": "Botucatu - SP",
+      "excerpts": [
+        {
+          "text": "especialmente\nno trecho localizado atrás da Obra Social  Madre Marina\nVidemari,  na Vila  Real,  incluindo a  instalação de placas\ninformativas proibindo o descarte irregular de lixo no local,\nbem como a inclusão do trecho ainda não pavimentado no\ncronograma municipal de pavimentação.\n\nNº. 183 - Autoria: WELINTON JAPA\n\nSecretário  de  Zeladoria  e  Serviços  -  solicita-se  que\navalie com urgência a instalação do braço de iluminação\npública na Rua Benedito Rafhal, nº 1010, no Bairro 24 de\nMaio, próximo às"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-12",
+      "territorio": "Marília - SP",
+      "excerpts": [
+        {
+          "text": "construída. \n\nO Artigo 289, § 3º da LC 889/2019 é taxativo ao estabelecer que: \n\"A área construída será obtida através da medição dos contornos externos das paredes ou pilares, computando-se também a superfície \n\ndas sacadas, cobertas ou não, de cada pavimento, e será composta pela área do corpo principal do prédio e de seus anexos, tais como garagens, \nterraços, telheiros, varandas e outros.\" \n\nDessa forma, a legislação municipal não isenta telheiros ou garagens residenciais; ao contrário, obriga sua"
+        },
+        {
+          "text": "construída. \n\nO Artigo 289, § 3º da LC 889/2019 é taxativo ao estabelecer que: \n\"A área construída será obtida através da medição dos contornos externos das paredes ou pilares, computando-se também a superfície \n\ndas sacadas, cobertas ou não, de cada pavimento, e será composta pela área do corpo principal do prédio e de seus anexos, tais como garagens, \nterraços, telheiros, varandas e outros.\" \n\nDessa forma, a legislação municipal não isenta telheiros ou garagens residenciais; ao contrário, obriga sua"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-12",
+      "territorio": "São João do Triunfo - PR",
+      "excerpts": [
+        {
+          "text": "Eletrônica, sob regime de empreitada por preço \nglobal, tipo menor preço, por lote da(s) seguinte(s) obra(s): \n\nLote Local do objeto Objeto \nQuantidade e \n\nunidade de medida \nPrazo de execução\n\n01 Sede do Município \nPavimentação \n\nem CBUQ \n10.319 m² \n\n300 dias \n\n02 Sede do Município \nPavimentação \n\nem CBUQ \n5.998,91 m² \n\n300 dias \n\n \n\nA Pasta Técnica com o inteiro teor do Edital, seus respectivos modelos, \nadendos e anexos, poderá ser obtida no Portal Nacional de Contratações \nPúblicas – PNCP, sítio eletrônico"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-12",
+      "territorio": "Campos dos Goytacazes - RJ",
+      "excerpts": [
+        {
+          "text": "25.404.758/0001-16\nObjeto.: O presente Termo é O ADITIVO DE RENOVAÇÃO CONTRATUAL PELO \nPERÍODO DE 06 (SEIS) MESES, para prestação de serviços de engenharia de natureza \ncomum, manutenção predial preventiva, corretiva e reparos de serviços da construção civil \ncom fornecimentos de materiais, mão-de-obra e equipamentos nos prédios públicos das \nUnidades de Saúde do Município dos Campos dos Goytacazes/RJ.\nValor: R$ 5.136.508,20 (cinco milhões, cento e trinta e seis mil, quinhentos e oito reais e \nvinte"
+        },
+        {
+          "text": "04.874.449/0001-30\nObjeto.: O presente Termo é O ADITIVO DE RENOVAÇÃO CONTRATUAL PELO \nPERÍODO DE 06 (SEIS) MESES, para prestação de serviços de engenharia de natureza \ncomum, manutenção predial preventiva, corretiva e reparos de serviços da construção civil \ncom fornecimentos de materiais, mão-de-obra e equipamentos nos prédios públicos das \nUnidades de Saúde do Município dos Campos dos Goytacazes/RJ.\nValor: R$6.606.185,52 (seis milhões, seiscentos e seis mil, cento e oitenta e cinco reais e \ncinquenta"
+        },
+        {
+          "text": "sua ocupação máxima e necessita de adequação de \nacessibilidade e separação de fl uxos. A equipe busca evitar impactar a fachada tombada, \npropondo trazer a nova circulação vertical para a área recuada da fachada, alinhada ao \nvolume até o quinto pavimento e se projetando como varanda a partir desse ponto. O \nobjetivo é separar os fl uxos dos clientes da agência e da área administrativa, minimizando \no impacto na volumetria da edifi cação. Questionamento sobre Demolições e Fluxo de \nClientes: João"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-12",
+      "territorio": "Arapongas - PR",
+      "excerpts": [
+        {
+          "text": "preço global, da OBRA \nDE FRESAGEM E RECAPEAMENTO ASFÁLTICO DA AVENIDA GATURAMO, conforme projetos, memoriais descritivos, \nplanilhas orçamentárias e cronograma físico-financeiro fornecidos pela Administração., ADJUDICADO à(s) \nempresa(s) abaixo: \n\n \n\n \nCONSORCIO TOTAL PAV - OUT- ENGEX INFRAESTRUTURA URBANA - 65.615.051/0001-73 \n \n\nItem Produto Marca Qtde Valor Unitário Valor Total \n\n1 EXECUÇÃO DE OBRAS DE PAVIMENTAÇÃO ASFÁLTICA PARA \nNOVAS VIAS E RECAPEAMENTO ASFÁLTICO EM VIAS URBANAS \nEXISTENTES"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-12",
+      "territorio": "Senhor do Bonfim - BA",
+      "excerpts": [
+        {
+          "text": "ADITIVO \n \n5° Termo de Aditivo ao Contrato 0116/2024– Partes: Prefeitura Municipal de Senhor do Bonfim e FC \nCONSTRUTORA E COMÉRCIO LTDA – CNPJ: 16.392.292/0001-95 ; Objeto do contrato: Contratação de empresa \n\nespecializada na área de engenharia e construção civil, para a requalificação e reforma do prédio municipal onde \n\nfuncionavam as repartições da Prefeitura Municipal, sede do Município de Senhor do Bonfim-BA, até o dia 08 de junho \nde 2026, na conformidade do disposto no artigo 57, II, da Lei de"
+        },
+        {
+          "text": "Bonfim\n\nTermo Aditivo nº 001/2026\nData/hora do envio: 12/03/2026 14:08:48\n\nNúmero/Ano:\n\n001/2026\n\nTipo de Termo de Contrato:\n\nTermo Aditivo\n\nContrato:\n\nContrato nº 0467/2025\n\nObjeto:\n\nContratação de empresa para execução da obra de recomposição de pavimentação asfáltica com concreto asfáltico em PMF (tapa\n\nburaco).\n\nPrazo Aditado em Dias:\n\n365\n\nData da Assinatura:\n\n23/01/2026\n\nData de Início da Vigência do Termo de\n\nContrato:\n\n02/02/2026\n\nData de Término da Vigência do Termo\n\nde Contrato:\n\n02/02/2027"
+        }
+      ]
+    },
+    {
+      "_source": {
+        "status": "API",
+        "timestamp": "2026-03-13"
+      },
+      "data": "2026-03-12",
+      "territorio": "Atalaia - AL",
+      "excerpts": [
+        {
+          "text": "ATALAIA/AL, CNPJ: 12.200.143/0001-26. \n\n\n\n\n \n\n \n\nwww.diariomunicipal.com.br/ama                                                                                4 \n\n \n\nCONTRATADA: CONSÓRCIO CC01/2024 – PAVIMENTAÇÃO \n\nATALAIA, CNPJ: 55.671.509/0001-76. \n\nOBJETO: contratação para execução de obra de pavimentação em \n\nparalelepípedos graníticos, drenagem e contenção de diversas ruas do \n\nMunicípio de Atalaia – AL, tendo em vista a necessária modificação \n\ndo projeto e do valor contratual, para melhor adequação"
+        }
+      ]
+    }
+  ],
+  "sicaf": {
+    "status": "NÃO CONSULTADO",
+    "_source": {
+      "status": "UNAVAILABLE",
+      "timestamp": "2026-03-13",
+      "detail": "Skipped via --skip-sicaf"
+    }
+  },
+  "resumo_executivo": {
+    "total_editais": 31,
+    "concorrencias": 21,
+    "dispensas": 10,
+    "participar": 15,
+    "avaliar_com_cautela": 9,
+    "nao_recomendado": 7,
+    "valor_total": 38386124.97,
+    "valor_participar": 33074553.52,
+    "resumo": "Foram identificados 31 editais abertos no setor de Engenharia em SC. Recomendamos participação em 15 editais (R$33,074,553.52). Outros 9 merecem avaliação detalhada."
+  },
+  "inteligencia_mercado": {
+    "panorama": "SC apresenta 21 oportunidades de engenharia abertas (R$38,336,087.10). Predominam Concorrências (21).",
+    "tendencias": "Crescimento de Concorrências Eletrônicas via Portal de Compras Públicas. Programas Casa Catarina e Novo PAC são fontes relevantes de recursos.",
+    "vantagens_competitivas": "Capital de R$5,000,000.00, sede em BLUMENAU/SC, CNAE 4313 + 20 secundários. Vantagem logística no Vale do Itajaí.",
+    "oportunidades_nicho": "Municípios menores do Oeste (Maravilha, Dionísio Cerqueira, Lajeado Grande) com menor competição em pavimentação e habitação social."
+  },
+  "proximos_passos": [
+    {
+      "acao": "MUNICIPIO DE BALNEARIO ARROIO DO SILVA — Seleção e contratação de empresa do ramo de engenharia e/ou construção civil, pa",
+      "prazo": "2026-03-25",
+      "dias_restantes": 11,
+      "prioridade": "ALTA",
+      "valor": 452389.58
+    },
+    {
+      "acao": "MUNICIPIO DE BALNEARIO ARROIO DO SILVA — Seleção e contratação de empresa do ramo de engenharia e/ou construção civil, pa",
+      "prazo": "2026-03-26",
+      "dias_restantes": 12,
+      "prioridade": "ALTA",
+      "valor": 273803.22
+    },
+    {
+      "acao": "MUNICIPIO DE URUBICI — contratação de empresa especializada para execução da infraestrutura de paviment",
+      "prazo": "2026-03-26",
+      "dias_restantes": 12,
+      "prioridade": "ALTA",
+      "valor": 1098407.05
+    },
+    {
+      "acao": "MUNICIPIO DE URUBICI — Contratação de empresa especializada em engenharia para execução da obra de cons",
+      "prazo": "2026-03-26",
+      "dias_restantes": 12,
+      "prioridade": "ALTA",
+      "valor": 1637714.22
+    },
+    {
+      "acao": "MUNICIPIO DE LAJEADO GRANDE — CONTRATAÇÃO DE EMPRESA PARA EXECUÇÃO DE DRENAGEM PARA OBRAS DE PAVIMENTAÇÃO ASFÁ",
+      "prazo": "2026-03-30",
+      "dias_restantes": 16,
+      "prioridade": "MÉDIA",
+      "valor": 802806.36
+    },
+    {
+      "acao": "MUNICIPIO DE LAJEADO GRANDE — CONTRATAÇÃO DE EMPRESA PARA EXECUÇÃO DE MOVIMENTAÇÃO DE TERRA PARA OBRAS DE PAVI",
+      "prazo": "2026-03-30",
+      "dias_restantes": 16,
+      "prioridade": "MÉDIA",
+      "valor": 574376.28
+    },
+    {
+      "acao": "MUNICIPIO DE BOM RETIRO — Contratação de empresa especializada para Construção de clínica de reabilitação ",
+      "prazo": "2026-03-31",
+      "dias_restantes": 17,
+      "prioridade": "MÉDIA",
+      "valor": 2563913.71
+    },
+    {
+      "acao": "MUNICIPIO DE BALNEARIO ARROIO DO SILVA — Seleção e contratação de empresa do ramo de engenharia e/ou construção civil, pa",
+      "prazo": "2026-03-31",
+      "dias_restantes": 17,
+      "prioridade": "MÉDIA",
+      "valor": 993727.19
+    },
+    {
+      "acao": "MUNICIPIO DE IRANI — [Portal de Compras Públicas] - Contratação de empresa especializada no ramo de e",
+      "prazo": "2026-04-07",
+      "dias_restantes": 24,
+      "prioridade": "MÉDIA",
+      "valor": 1860573.88
+    },
+    {
+      "acao": "FUNDO MUNICIPAL DE ASSISTENCIA SOCIAL DE URUSSANGA - FMASU — Contratação de Empresa Especializada para a Construção de 30 Unidades Habitacion",
+      "prazo": "2026-04-07",
+      "dias_restantes": 24,
+      "prioridade": "MÉDIA",
+      "valor": 3721903.04
+    },
+    {
+      "acao": "MUNICIPIO DE CONCORDIA — Contratação de empresa de engenharia/arquitetura para elaboração de anteprojeto,",
+      "prazo": "2026-04-08",
+      "dias_restantes": 25,
+      "prioridade": "MÉDIA",
+      "valor": 133700.38
+    },
+    {
+      "acao": "SECRETARIA DE ESTADO DE INFRAESTRUTURA E MOBILIDADE (SIE) — CONTRATAÇÃO DE EMPRESA PARA ELABORAÇÃO DE PROJETO EXECUTIVO DE ENGENHARIA E EXEC",
+      "prazo": "2026-04-10",
+      "dias_restantes": 27,
+      "prioridade": "MÉDIA",
+      "valor": 13563027.02
+    },
+    {
+      "acao": "MUNICIPIO DE BALNEARIO ARROIO DO SILVA — Seleção e contratação de empresa do ramo de engenharia e/ou construção civil, pa",
+      "prazo": "2026-04-16",
+      "dias_restantes": 33,
+      "prioridade": "MÉDIA",
+      "valor": 5309591.59
+    },
+    {
+      "acao": "MUNICIPIO DE PINHALZINHO — CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA ELABORAÇÃO DO PROJETO BÁSICO E EXECUTI",
+      "prazo": "2026-05-20",
+      "dias_restantes": 67,
+      "prioridade": "MÉDIA",
+      "valor": 44310.0
+    },
+    {
+      "acao": "MUNICIPIO DE PINHALZINHO — [Portal de Compras Públicas] - CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA ELABORA",
+      "prazo": "2026-05-20",
+      "dias_restantes": 67,
+      "prioridade": "MÉDIA",
+      "valor": 44310.0
+    }
+  ]
+}

@@ -25,6 +25,7 @@ Gera um PDF executivo e institucional com TODAS as oportunidades abertas relevan
 5. **Transparência de fontes.** Cada seção do relatório deve indicar a fonte dos dados (API, documento, análise Claude).
 6. **Se dados insuficientes, dizer.** "Dados insuficientes para análise" é preferível a qualquer estimativa sem fonte.
 7. **Toda recomendação DEVE ter justificativa.** NUNCA emitir PARTICIPAR, AVALIAR COM CAUTELA ou NÃO RECOMENDADO sem `justificativa` preenchida com motivo factual específico. Uma recomendação sem justificativa é inaceitável.
+8. **NUNCA incluir editais encerrados.** Editais com `dias_restantes <= 0` ou `status_edital == "ENCERRADO"` devem ser **descartados silenciosamente** — não aparecem no relatório, não recebem recomendação, não consomem API calls. O relatório existe para orientar AÇÃO; editais mortos são ruído.
 
 ---
 
@@ -80,10 +81,12 @@ python scripts/collect-report-data.py \
 - **Inteligência Competitiva** — Contratos históricos dos órgãos licitantes (PNCP 24 meses) em `editais[].competitive_intel`
 - **Multi-setor** — CNAE mapeado para todos os 15 setores (não apenas engenharia)
 
-**IMPORTANTE:** Após execução, VERIFICAR o output do script:
-- Quantos editais foram encontrados?
+**IMPORTANTE:** O script filtra automaticamente editais encerrados ANTES de gastar API calls com documentos, distâncias e inteligência competitiva. Apenas editais com prazo aberto entram no relatório.
+
+**Após execução, VERIFICAR o output do script:**
+- Quantos editais abertos foram encontrados?
 - Alguma API falhou? (verificar `_metadata.sources`)
-- Se PNCP retornou 0 editais, considerar ampliar `--dias` ou `--ufs`
+- Se PNCP retornou 0 editais abertos, considerar ampliar `--dias` ou `--ufs`
 
 **SICAF integrado:** O script chama automaticamente `collect-sicaf.py` via subprocess:
 - Abre navegador para o usuário resolver o hCaptcha (~5s por consulta)

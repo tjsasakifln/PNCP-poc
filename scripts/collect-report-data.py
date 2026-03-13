@@ -1538,9 +1538,8 @@ def assemble_report_data(
         if ed.get("link") not in pncp_links:
             all_editais.append(ed)
 
-    # Sort: ABERTO first, then by dias_restantes ascending
+    # Sort by dias_restantes ascending (most urgent first)
     all_editais.sort(key=lambda e: (
-        0 if e.get("status_edital") == "ABERTO" else 1,
         e.get("dias_restantes") if e.get("dias_restantes") is not None else 999,
     ))
 
@@ -1676,8 +1675,17 @@ Examples:
         nome_empresa = empresa.get("nome_fantasia") or empresa.get("razao_social") or ""
         qd_mencoes, qd_source = collect_querido_diario(api, keywords, nome_empresa, args.dias)
 
-    # ---- Phase 2b: Document Listing ----
+    # ---- Filter: remove expired editais BEFORE expensive API calls ----
     all_editais = editais_pncp + editais_pcp
+    before_filter = len(all_editais)
+    all_editais = [e for e in all_editais if e.get("status_edital") != "ENCERRADO"]
+    editais_pncp = [e for e in editais_pncp if e.get("status_edital") != "ENCERRADO"]
+    editais_pcp = [e for e in editais_pcp if e.get("status_edital") != "ENCERRADO"]
+    dropped = before_filter - len(all_editais)
+    if dropped > 0:
+        print(f"\n  ⚡ Removidos {dropped} editais já encerrados (restam {len(all_editais)} abertos)")
+
+    # ---- Phase 2b: Document Listing ----
     if not args.skip_docs:
         collect_pncp_documents(api, all_editais)
 
