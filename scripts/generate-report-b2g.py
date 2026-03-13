@@ -712,7 +712,6 @@ def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
         objeto = _s(ed.get("objeto", ""))
         valor = _currency_short(ed.get("valor_estimado"))
         prazo = _format_prazo_short(ed.get("dias_restantes"))
-        score_text = f"{score_val}/100" if score_val > 0 else ""
         justif = _s(ed.get("justificativa", ""))
 
         # Row 1: semáforo + objeto + valor + prazo
@@ -767,28 +766,34 @@ def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
     return el
 
 
-def _draw_risk_bar(score: int, styles: dict) -> Table:
-    """Build a horizontal risk score bar 0-100 as a Table with colored cells."""
+def _draw_risk_bar(score: int, styles: dict) -> list:
+    """Build viability index bar 0-100 with explanation.
+
+    Combines 4 factors: modalidade (30%), prazo (25%), valor (25%), geografia (20%).
+    Higher = more viable for this company.
+    """
     if score <= 0:
-        return Spacer(1, 0)
+        return []
 
     avail = PAGE_WIDTH - 2 * MARGIN
     bar_width = avail * 0.6
-    # Determine color
+
     if score >= 60:
         bar_color = RISK_HIGH
         label_color = "#16A34A"
+        qualif = "Alta"
     elif score >= 30:
         bar_color = RISK_MED
         label_color = "#F59E0B"
+        qualif = "Moderada"
     else:
         bar_color = RISK_LOW
         label_color = "#DC2626"
+        qualif = "Baixa"
 
     filled = bar_width * (score / 100)
     empty = bar_width - filled
 
-    # Build as nested table: [score_label | filled_bar | empty_bar | score_value]
     label_style = ParagraphStyle(
         "rbl", fontName="Helvetica-Bold", fontSize=8,
         textColor=colors.HexColor("#475569"), leading=10,
@@ -798,12 +803,12 @@ def _draw_risk_bar(score: int, styles: dict) -> Table:
         textColor=colors.HexColor(label_color), leading=14,
     )
     bar_row = [
-        Paragraph("Risk Score", label_style),
+        Paragraph("Viabilidade", label_style),
         "",  # filled portion
         "",  # empty portion
-        Paragraph(f"{score}/100", value_style),
+        Paragraph(f"{score}/100 ({qualif})", value_style),
     ]
-    t = Table([bar_row], colWidths=[avail * 0.15, filled, empty, avail * 0.15])
+    t = Table([bar_row], colWidths=[avail * 0.15, filled, empty, avail * 0.20])
     t.setStyle(TableStyle([
         ("BACKGROUND", (1, 0), (1, 0), bar_color),
         ("BACKGROUND", (2, 0), (2, 0), colors.HexColor("#E2E8F0")),
@@ -813,7 +818,15 @@ def _draw_risk_bar(score: int, styles: dict) -> Table:
         ("LINEABOVE", (1, 0), (2, 0), 0.5, TABLE_BORDER),
         ("LINEBELOW", (1, 0), (2, 0), 0.5, TABLE_BORDER),
     ]))
-    return t
+
+    el = [t]
+    # Brief explanation so the reader knows what this measures
+    el.append(Paragraph(
+        "<font size='7' color='#64748B'>Índice calculado com base em modalidade (30%), "
+        "prazo (25%), valor vs. capacidade (25%) e proximidade geográfica (20%).</font>",
+        styles["body_small"],
+    ))
+    return el
 
 
 def _build_chronogram_table(cronograma: list, styles: dict) -> list:
@@ -862,7 +875,7 @@ def _build_chronogram_table(cronograma: list, styles: dict) -> list:
 
 
 def _build_roi_card(roi: dict, styles: dict) -> list:
-    """Build an ROI potential metric card."""
+    """Build potential revenue card for an edital opportunity."""
     if not roi or not isinstance(roi, dict):
         return []
     roi_min = roi.get("roi_min", 0)
@@ -878,12 +891,12 @@ def _build_roi_card(roi: dict, styles: dict) -> list:
     prob_text = f"{probability:.0f}%" if probability else "N/I"
 
     card_data = [
-        [Paragraph(f"<b>ROI Potencial</b>", styles["cell"]),
+        [Paragraph("<b>Faturamento Potencial</b>", styles["cell"]),
          Paragraph(roi_text, ParagraphStyle(
              "roi_v", fontName="Helvetica-Bold", fontSize=11,
              textColor=BRAND_PRIMARY, alignment=TA_CENTER, leading=14,
          )),
-         Paragraph(f"Probabilidade: {prob_text}", styles["cell_center"])],
+         Paragraph(f"Chance de vitória: {prob_text}", styles["cell_center"])],
     ]
     t = Table(card_data, colWidths=[avail * 0.25, avail * 0.45, avail * 0.30])
     t.setStyle(TableStyle([
@@ -895,6 +908,11 @@ def _build_roi_card(roi: dict, styles: dict) -> list:
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
     ]))
     el.append(t)
+    el.append(Paragraph(
+        "<font size='7' color='#64748B'>Estimativa com base no valor do edital, "
+        "margem típica do setor e perfil competitivo da empresa.</font>",
+        styles["body_small"],
+    ))
     el.append(Spacer(1, 2 * mm))
     return el
 
@@ -1369,10 +1387,10 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
             dist_text += f" <font color='{'#16A34A' if badge_char == '✓' else '#CA8A04'}'>[{badge_char} {badge_text}]</font>"
             el.append(Paragraph(dist_text, styles["body"]))
 
-        # Risk Score bar
+        # Viability index bar
         risk = ed.get("risk_score", {})
         if isinstance(risk, dict) and risk.get("total"):
-            el.append(_draw_risk_bar(_safe_int(risk["total"]), styles))
+            el.extend(_draw_risk_bar(_safe_int(risk["total"]), styles))
             el.append(Spacer(1, 2 * mm))
 
         # ROI Potential card

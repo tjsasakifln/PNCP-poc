@@ -74,8 +74,8 @@ python scripts/collect-report-data.py \
 - `--skip-competitive` — Pular coleta de inteligência competitiva
 
 **O script agora calcula automaticamente (Phase 1 v2):**
-- **Risk Score** — Composto 0-100 (habilitação 30%, financeiro 25%, geográfico 20%, prazo 15%, competitivo 10%) em `editais[].risk_score`
-- **ROI Potencial** — Faixa de retorno baseado em valor × probabilidade × margem do setor em `editais[].roi_potential`
+- **Índice de Viabilidade** — Nota 0-100 que mede quão viável é participar deste edital para ESTA empresa. Combina: modalidade (30%), prazo (25%), valor vs. capacidade (25%) e proximidade geográfica (20%). Em `editais[].risk_score`
+- **Faturamento Potencial** — Estimativa de receita caso a empresa vença, baseado no valor do edital × margem típica do setor. "Chance de vitória" é uma estimativa baseada no perfil competitivo. Em `editais[].roi_potential`
 - **Cronograma Reverso** — Marcos automáticos do deadline para trás em `editais[].cronograma`
 - **Inteligência Competitiva** — Contratos históricos dos órgãos licitantes (PNCP 24 meses) em `editais[].competitive_intel`
 - **Multi-setor** — CNAE mapeado para todos os 15 setores (não apenas engenharia)
