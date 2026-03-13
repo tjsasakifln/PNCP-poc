@@ -71,6 +71,14 @@ python scripts/collect-report-data.py \
 - `--skip-pcp` — Pular PCP v2
 - `--skip-qd` — Pular Querido Diário
 - `--skip-sicaf` — Pular verificação SICAF
+- `--skip-competitive` — Pular coleta de inteligência competitiva
+
+**O script agora calcula automaticamente (Phase 1 v2):**
+- **Risk Score** — Composto 0-100 (habilitação 30%, financeiro 25%, geográfico 20%, prazo 15%, competitivo 10%) em `editais[].risk_score`
+- **ROI Potencial** — Faixa de retorno baseado em valor × probabilidade × margem do setor em `editais[].roi_potential`
+- **Cronograma Reverso** — Marcos automáticos do deadline para trás em `editais[].cronograma`
+- **Inteligência Competitiva** — Contratos históricos dos órgãos licitantes (PNCP 24 meses) em `editais[].competitive_intel`
+- **Multi-setor** — CNAE mapeado para todos os 15 setores (não apenas engenharia)
 
 **IMPORTANTE:** Após execução, VERIFICAR o output do script:
 - Quantos editais foram encontrados?
@@ -139,7 +147,15 @@ Para editais sem endpoint PNCP de arquivos:
 
 ### Phase 3: Análise Estratégica por Edital (Claude)
 
-Para CADA edital, cruzar dados do JSON (Phase 1) + análise documental (Phase 2) + perfil da empresa:
+Para CADA edital, cruzar dados do JSON (Phase 1) + análise documental (Phase 2) + perfil da empresa.
+
+**USE os campos pré-calculados pelo script:**
+- `risk_score.total` (0-100) → INFORMAR a recomendação. Score ≥60 favorece PARTICIPAR, 30-60 = AVALIAR, <30 = NÃO RECOMENDADO.
+- `roi_potential` → Citar no relatório como "ROI Potencial: R$X — R$Y"
+- `cronograma` → Usar na seção de Próximos Passos e alertas de prazo
+- `competitive_intel` → Usar na análise de competitividade por edital
+
+**Análises a produzir por edital:**
 
 1. **Aderência ao perfil** — CNAEs vs objeto real. (Alta/Média/Baixa)
 2. **Análise de valor** — Valor estimado vs capital social e histórico da empresa.
@@ -210,20 +226,23 @@ Salvar versão markdown em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.
 
 ---
 
-## Estrutura do PDF Final
+## Estrutura do PDF Final (v2 Premium)
+
+Numeração dinâmica — seções opcionais (QD, competitivo) só aparecem quando há dados.
 
 1. **Capa** — Título, empresa, CNPJ, setor, data
-2. **Perfil da Empresa** — Dados cadastrais, QSA, histórico gov, sanções
-3. **Resumo Executivo** — Métricas-chave, destaques, recomendação geral
-4. **Panorama de Oportunidades** — Tabela resumo com badges de confiança (✓ API / ~ Parcial / ✗ Falhou)
-5. **Análise Detalhada por Edital** — Ficha técnica factual, checklist de habilitação, condições comerciais, red flags, resumo, recomendação
-6. **Mapa Competitivo** — Incumbentes, concorrentes, preços, nível de competição
-7. **Inteligência de Mercado** — Panorama, tendências, nichos, ranking
-8. **Menções em Diários Oficiais** — Querido Diário (se houver)
-9. **Próximos Passos** — Ações priorizadas com prazos
-10. **Verificação SICAF** — Status cadastral (CRC), restrições, habilitações (dados reais via Playwright)
-11. **Fontes de Dados e Confiabilidade** — Tabela com status de cada API consultada
-12. **Rodapé em todas as páginas:** "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
+2. **Decisão em 30 Segundos** — Tabela semáforo (●verde/amarelo/vermelho) com objeto, valor, prazo, risk score e justificativa 1-linha
+3. **Perfil da Empresa** — Dados cadastrais, QSA, histórico gov, sanções
+4. **Resumo Executivo** — Métricas-chave, destaques, distribuição UF
+5. **Panorama de Oportunidades** — Tabela resumo com badges de confiança
+6. **Análise Detalhada por Edital** — Ficha técnica + **Risk Score bar** (0-100 visual) + **ROI Potencial card** + **Cronograma Reverso** + análise por dimensão + recomendação
+7. **Mapa Competitivo** — Contratos históricos dos órgãos, incumbentes, valores praticados (dados PNCP)
+8. **Inteligência de Mercado** — Panorama, tendências, nichos, ranking
+9. **Menções em Diários Oficiais** — Querido Diário (se houver)
+10. **Próximos Passos** — Ações priorizadas com prazos
+11. **Verificação SICAF** — Status cadastral (CRC), restrições, habilitações
+12. **Fontes de Dados e Confiabilidade** — Tabela com status de cada API consultada
+13. **Rodapé em todas as páginas:** "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
 
 ---
 

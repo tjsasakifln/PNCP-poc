@@ -409,3 +409,335 @@ class TestJsonSchemaFromFile:
                 buf = generate_report_b2g(d)
                 content = buf.read()
                 assert content[:5] == b"%PDF-", f"Failed for {p.name}"
+
+
+# ============================================================
+# V2 Premium Features — collect-report-data.py
+# ============================================================
+
+class TestMapSector:
+    """Test multi-sector CNAE mapping."""
+
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import map_sector
+            self._map = map_sector
+        except (ImportError, AttributeError):
+            pytest.skip("collect_report_data module could not be imported")
+
+    def test_returns_three_values(self):
+        setor, kw, key = self._map("4120400 - Construção de edifícios")
+        assert isinstance(setor, str)
+        assert isinstance(kw, list)
+        assert isinstance(key, str)
+
+    def test_engineering_cnae(self):
+        _, _, key = self._map("4120400 - Construção de edifícios")
+        assert key == "engenharia"
+
+    def test_software_cnae(self):
+        _, _, key = self._map("6201501 - Desenvolvimento de software")
+        assert key == "software"
+
+    def test_saude_cnae(self):
+        _, _, key = self._map("3250701 - Materiais para uso médico")
+        assert key == "saude"
+
+    def test_informatica_cnae(self):
+        _, _, key = self._map("4751201 - Comércio de computadores")
+        assert key == "informatica"
+
+    def test_unknown_cnae_returns_geral(self):
+        _, _, key = self._map("9999999 - Atividade inexistente")
+        assert key == "geral"
+
+    def test_empty_cnae(self):
+        _, _, key = self._map("")
+        assert key == "geral"
+
+
+class TestCnaeToSectorKeyCoverage:
+    """Ensure CNAE map covers all 15 sectors."""
+
+    def test_all_sectors_present(self):
+        try:
+            from collect_report_data_helpers import _CNAE_TO_SECTOR_KEY
+        except (ImportError, AttributeError):
+            pytest.skip("collect_report_data module could not be imported")
+        sector_values = set(_CNAE_TO_SECTOR_KEY.values())
+        expected_sectors = {
+            "engenharia", "software", "informatica", "saude",
+            "vestuario", "alimentos", "mobiliario", "papelaria",
+            "facilities", "vigilancia", "transporte",
+            "manutencao_predial", "engenharia_rodoviaria",
+            "materiais_eletricos", "materiais_hidraulicos",
+        }
+        missing = expected_sectors - sector_values
+        assert not missing, f"Sectors missing from CNAE map: {missing}"
+
+
+class TestComputeRiskScore:
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import compute_risk_score
+            self._compute = compute_risk_score
+        except (ImportError, AttributeError):
+            pytest.skip("collect_report_data module could not be imported")
+
+    def test_returns_dict_with_total(self):
+        edital = {
+            "valor_estimado": 1000000,
+            "dias_restantes": 15,
+            "modalidade": "Pregão Eletrônico",
+        }
+        empresa = {"capital_social": 2000000, "cidade_sede": "Florianópolis", "uf_sede": "SC"}
+        result = self._compute(edital, empresa, {})
+        assert "total" in result
+        assert 0 <= result["total"] <= 100
+
+    def test_score_components(self):
+        edital = {"valor_estimado": 500000, "dias_restantes": 20}
+        empresa = {"capital_social": 5000000}
+        result = self._compute(edital, empresa, {})
+        for key in ["habilitacao", "financeiro", "geografico", "prazo", "competitivo"]:
+            assert key in result, f"Missing component: {key}"
+
+    def test_high_capital_high_score(self):
+        edital = {"valor_estimado": 100000, "dias_restantes": 30}
+        empresa = {"capital_social": 10000000}
+        result = self._compute(edital, empresa, {})
+        assert result["financeiro"] >= 70
+
+    def test_zero_capital_low_score(self):
+        edital = {"valor_estimado": 1000000, "dias_restantes": 5}
+        empresa = {"capital_social": 0}
+        result = self._compute(edital, empresa, {})
+        assert result["financeiro"] <= 50
+
+    def test_short_deadline_low_prazo(self):
+        edital = {"valor_estimado": 100000, "dias_restantes": 2}
+        empresa = {"capital_social": 1000000}
+        result = self._compute(edital, empresa, {})
+        assert result["prazo"] <= 30
+
+
+class TestComputeRoiPotential:
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import compute_roi_potential
+            self._compute = compute_roi_potential
+        except (ImportError, AttributeError):
+            pytest.skip("collect_report_data module could not be imported")
+
+    def test_returns_dict_with_roi(self):
+        edital = {"valor_estimado": 1000000}
+        result = self._compute(edital, "engenharia", 70)
+        assert "roi_min" in result
+        assert "roi_max" in result
+        assert result["roi_max"] >= result["roi_min"]
+
+    def test_zero_value_zero_roi(self):
+        edital = {"valor_estimado": 0}
+        result = self._compute(edital, "engenharia", 50)
+        assert result["roi_max"] == 0
+
+    def test_higher_score_higher_roi(self):
+        edital = {"valor_estimado": 1000000}
+        low = self._compute(edital, "engenharia", 30)
+        high = self._compute(edital, "engenharia", 90)
+        assert high["roi_max"] >= low["roi_max"]
+
+    def test_unknown_sector_uses_default(self):
+        edital = {"valor_estimado": 1000000}
+        result = self._compute(edital, "nonexistent_sector", 50)
+        assert result["roi_max"] > 0
+
+
+class TestBuildReverseChronogram:
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import build_reverse_chronogram
+            self._build = build_reverse_chronogram
+        except (ImportError, AttributeError):
+            pytest.skip("collect_report_data module could not be imported")
+
+    def test_returns_list(self):
+        edital = {"data_encerramento": "2026-04-01", "dias_restantes": 20}
+        result = self._build(edital)
+        assert isinstance(result, list)
+        assert len(result) > 0
+
+    def test_each_entry_has_required_fields(self):
+        edital = {"data_encerramento": "2026-04-01", "dias_restantes": 20}
+        result = self._build(edital)
+        for entry in result:
+            assert "data" in entry
+            assert "marco" in entry
+            assert "status" in entry
+
+    def test_no_deadline_returns_empty(self):
+        edital = {}
+        result = self._build(edital)
+        assert result == []
+
+    def test_past_deadline_marks_atrasado(self):
+        edital = {"data_encerramento": "2020-01-01", "dias_restantes": -100}
+        result = self._build(edital)
+        assert any("atrasado" in e.get("status", "").lower() or "vencido" in e.get("status", "").lower()
+                    for e in result) or result == []
+
+
+class TestSectorMargins:
+    def test_all_sectors_have_margins(self):
+        try:
+            from collect_report_data_helpers import _SECTOR_MARGINS
+        except (ImportError, AttributeError):
+            pytest.skip("collect_report_data module could not be imported")
+        expected = {
+            "engenharia", "software", "informatica", "saude",
+            "vestuario", "alimentos", "mobiliario", "papelaria",
+            "facilities", "vigilancia", "transporte",
+            "manutencao_predial", "engenharia_rodoviaria",
+            "materiais_eletricos", "materiais_hidraulicos",
+        }
+        missing = expected - set(_SECTOR_MARGINS.keys())
+        assert not missing, f"Sectors missing margins: {missing}"
+
+
+# ============================================================
+# V2 Premium Features — generate-report-b2g.py
+# ============================================================
+
+class TestSectionCounter:
+    def test_increments(self):
+        from generate_report_b2g_helpers import _section_counter
+        sec = _section_counter()
+        assert sec["next"]() == 1
+        assert sec["next"]() == 2
+        assert sec["next"]() == 3
+
+    def test_current(self):
+        from generate_report_b2g_helpers import _section_counter
+        sec = _section_counter()
+        sec["next"]()
+        sec["next"]()
+        assert sec["current"]() == 2
+
+
+class TestDrawRiskBar:
+    def test_returns_table_for_positive_score(self):
+        from generate_report_b2g_helpers import _draw_risk_bar, _build_styles
+        styles = _build_styles()
+        result = _draw_risk_bar(72, styles)
+        # Should return a Table, not a Spacer
+        assert hasattr(result, '_cellvalues') or hasattr(result, 'width')
+
+    def test_zero_score_returns_spacer(self):
+        from generate_report_b2g_helpers import _draw_risk_bar, _build_styles
+        styles = _build_styles()
+        result = _draw_risk_bar(0, styles)
+        # Zero returns Spacer
+        assert not hasattr(result, '_cellvalues')
+
+
+class TestBuildChronogramTable:
+    def test_returns_elements(self):
+        from generate_report_b2g_helpers import _build_chronogram_table, _build_styles
+        styles = _build_styles()
+        cronograma = [
+            {"data": "2026-03-10", "marco": "Decisão", "status": "No prazo"},
+            {"data": "2026-03-20", "marco": "Proposta", "status": "Atrasado"},
+        ]
+        result = _build_chronogram_table(cronograma, styles)
+        assert len(result) > 0
+
+    def test_empty_returns_empty(self):
+        from generate_report_b2g_helpers import _build_chronogram_table, _build_styles
+        styles = _build_styles()
+        assert _build_chronogram_table([], styles) == []
+
+
+class TestBuildRoiCard:
+    def test_returns_elements(self):
+        from generate_report_b2g_helpers import _build_roi_card, _build_styles
+        styles = _build_styles()
+        roi = {"roi_min": 100000, "roi_max": 300000, "probability": 65}
+        result = _build_roi_card(roi, styles)
+        assert len(result) > 0
+
+    def test_zero_roi_returns_empty(self):
+        from generate_report_b2g_helpers import _build_roi_card, _build_styles
+        styles = _build_styles()
+        assert _build_roi_card({"roi_min": 0, "roi_max": 0}, styles) == []
+
+    def test_none_roi_returns_empty(self):
+        from generate_report_b2g_helpers import _build_roi_card, _build_styles
+        styles = _build_styles()
+        assert _build_roi_card(None, styles) == []
+
+
+class TestBuildDecisionTable:
+    def test_returns_elements_with_editais(self, minimal_data):
+        from generate_report_b2g_helpers import _build_decision_table, _build_styles, _section_counter
+        styles = _build_styles()
+        sec = _section_counter()
+        result = _build_decision_table(minimal_data, styles, sec)
+        assert len(result) > 0
+
+    def test_empty_editais_returns_empty(self, minimal_data):
+        from generate_report_b2g_helpers import _build_decision_table, _build_styles, _section_counter
+        styles = _build_styles()
+        sec = _section_counter()
+        minimal_data["editais"] = []
+        result = _build_decision_table(minimal_data, styles, sec)
+        assert result == []
+
+
+class TestBuildCompetitiveSection:
+    def test_returns_elements_with_intel(self, minimal_data):
+        from generate_report_b2g_helpers import _build_competitive_section, _build_styles, _section_counter
+        styles = _build_styles()
+        sec = _section_counter()
+        minimal_data["editais"][0]["competitive_intel"] = [
+            {"fornecedor": "ABC", "objeto": "Obra X", "valor": 1000000, "data": "2025-06-01"},
+        ]
+        result = _build_competitive_section(minimal_data, styles, sec)
+        assert len(result) > 0
+
+    def test_no_intel_returns_empty(self, minimal_data):
+        from generate_report_b2g_helpers import _build_competitive_section, _build_styles, _section_counter
+        styles = _build_styles()
+        sec = _section_counter()
+        result = _build_competitive_section(minimal_data, styles, sec)
+        assert result == []
+
+
+class TestPdfWithPremiumFields:
+    """Integration test: PDF generates with all v2 premium fields."""
+
+    def test_pdf_with_risk_score_roi_chronogram(self, minimal_data):
+        from generate_report_b2g_helpers import generate_report_b2g
+        minimal_data["editais"][0]["risk_score"] = {
+            "total": 72, "habilitacao": 85, "financeiro": 60,
+            "geografico": 90, "prazo": 55, "competitivo": 50,
+        }
+        minimal_data["editais"][0]["roi_potential"] = {
+            "roi_min": 200000, "roi_max": 450000, "probability": 72,
+        }
+        minimal_data["editais"][0]["cronograma"] = [
+            {"data": "2026-03-10", "marco": "Decisão", "status": "No prazo"},
+            {"data": "2026-03-25", "marco": "Proposta", "status": "Atenção"},
+        ]
+        minimal_data["editais"][0]["competitive_intel"] = [
+            {"fornecedor": "ABC Eng", "objeto": "Reforma", "valor": 1800000, "data": "2025-06-15"},
+        ]
+        buf = generate_report_b2g(minimal_data)
+        content = buf.read()
+        assert content[:5] == b"%PDF-"
+        assert len(content) > 2000  # Should be larger than minimal
+
+    def test_pdf_backward_compat_no_new_fields(self, minimal_data):
+        """PDF still works when risk_score/roi/cronograma are absent (backward compat)."""
+        from generate_report_b2g_helpers import generate_report_b2g
+        buf = generate_report_b2g(minimal_data)
+        assert buf.read()[:5] == b"%PDF-"

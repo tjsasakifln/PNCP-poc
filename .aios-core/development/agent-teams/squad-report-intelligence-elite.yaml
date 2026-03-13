@@ -1,0 +1,120 @@
+# Squad: Report Intelligence Elite
+# Mission: Elevar /report-b2g ao patamar de relatório de inteligência estratégica premium
+# Constraint: Interação mínima do usuário (apenas captchas SICAF)
+# Scope: Multi-setor (todos os 15 setores de sectors_data.yaml)
+
+squad:
+  name: "Report Intelligence Elite"
+  version: "2.0"
+  created: "2026-03-12"
+  story: "STORY-400"
+
+  objective: >
+    Multiplicar qualidade e percepção de valor dos relatórios /report-b2g,
+    automatizando todas as fases analíticas (Phase 2-5) que hoje dependem
+    de intervenção manual do Claude, adicionando novas dimensões de
+    inteligência e elevando o design visual para padrão premium.
+
+  constraints:
+    - "Interação do usuário limitada a: CNPJ + resolver captchas SICAF"
+    - "Multi-setor: funcionar para todos os 15 setores, não apenas engenharia"
+    - "NUNCA fabricar dados — manter guardrails existentes"
+    - "Tempo total de execução ≤ 8 minutos (incluindo captchas)"
+    - "PDF final ≤ 100 páginas"
+
+  agents:
+    lead:
+      role: "@analyst"
+      responsibilities:
+        - "Definir framework analítico multi-setor"
+        - "Projetar score de risco composto (0-100)"
+        - "Definir métricas de ROI potencial por edital"
+        - "Validar que análises são setor-agnósticas"
+
+    architect:
+      role: "@architect"
+      responsibilities:
+        - "Redesenhar pipeline para automação end-to-end"
+        - "Projetar integração com novas fontes de dados"
+        - "Definir schema JSON v2 com campos de enriquecimento"
+        - "Garantir extensibilidade para novos setores/fontes"
+
+    data_engineer:
+      role: "@data-engineer"
+      responsibilities:
+        - "Expandir _CNAE_TO_SECTOR_KEY para todos os 15 setores"
+        - "Implementar coleta de novas fontes (Painel de Preços, TCU)"
+        - "Implementar cálculo de risk score e ROI"
+        - "Automatizar Phase 2-5 no collect-report-data.py"
+
+    developer:
+      role: "@dev"
+      responsibilities:
+        - "Implementar PDF v2 com design premium"
+        - "Adicionar seções: Decisão em 30s, Risk Score, Cronograma Reverso"
+        - "Implementar gráficos/radar no PDF (reportlab)"
+        - "Implementar geração de markdown v2 enriquecido"
+
+    ux_designer:
+      role: "@ux-design-expert"
+      responsibilities:
+        - "Definir paleta premium e hierarquia visual"
+        - "Projetar layout do radar de viabilidade"
+        - "Projetar tabela Decisão em 30 Segundos"
+        - "Projetar capa institucional premium"
+
+    qa:
+      role: "@qa"
+      responsibilities:
+        - "Validar relatórios gerados para múltiplos setores"
+        - "Testar edge cases: 0 editais, 50+ editais, APIs falhando"
+        - "Verificar que guardrails não foram violados"
+        - "Regression testing do gerador PDF"
+
+  tracks:
+    - name: "T1 — Multi-Sector Foundation"
+      agents: ["@data-engineer", "@analyst"]
+      deliverables:
+        - "Expandir _CNAE_TO_SECTOR_KEY com mapeamento completo (15 setores)"
+        - "Remover hardcode de keywords de construção como fallback genérico"
+        - "Adaptar análise de habilitação para ser setor-genérica"
+        - "Adaptar modalidade/valor ranges por setor (de sectors_data.yaml)"
+
+    - name: "T2 — Automation Pipeline"
+      agents: ["@architect", "@data-engineer"]
+      deliverables:
+        - "Automatizar Phase 2-5 dentro do script (sem intervenção manual)"
+        - "GPT-4.1-nano para análise automática por edital (classificação + recomendação)"
+        - "GPT-4.1-nano para inteligência de mercado (panorama + tendências)"
+        - "GPT-4.1-nano para justificativas automáticas (factuais, baseadas em dados)"
+        - "Enriquecer JSON com análise, recomendação, justificativa automaticamente"
+
+    - name: "T3 — Intelligence Dimensions"
+      agents: ["@analyst", "@data-engineer"]
+      deliverables:
+        - "Risk Score composto 0-100 (habilitação 30%, financeiro 25%, geográfico 20%, prazo 15%, competitivo 10%)"
+        - "ROI Potencial por edital (valor × probabilidade × margem estimada)"
+        - "Cronograma reverso automático (deadline → marcos intermediários)"
+        - "Comparativo Você vs Requisitos (checklist visual)"
+        - "Mapa competitivo com heat-coding de market share"
+        - "Novas fontes: Painel de Preços (preços praticados), histórico PNCP ampliado"
+
+    - name: "T4 — Premium PDF Design"
+      agents: ["@ux-design-expert", "@dev"]
+      deliverables:
+        - "Capa institucional premium com branding"
+        - "Tabela Decisão em 30 Segundos (semáforo + métricas-chave no topo)"
+        - "Radar de Viabilidade (5 eixos) visual no PDF"
+        - "Seção Alertas Críticos com countdown de deadlines"
+        - "Design premium: paleta executiva, ícones, spacing, tipografia"
+        - "Seção Estratégia de Proposta (BDI sugerido, margem, pontos técnicos)"
+        - "Footer premium com branding"
+
+    - name: "T5 — Quality & Testing"
+      agents: ["@qa"]
+      deliverables:
+        - "Testar com CNPJs de 5+ setores diferentes"
+        - "Testar edge cases: empresa sem editais, empresa com sanção, APIs down"
+        - "Validar que guardrails são mantidos (nunca fabricar dados)"
+        - "Comparar output v1 vs v2 para relatórios existentes"
+        - "Performance: confirmar ≤ 8 min total"

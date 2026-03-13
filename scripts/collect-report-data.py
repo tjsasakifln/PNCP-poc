@@ -363,15 +363,11 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
 # SECTOR MAPPING
 # ============================================================
 
-def map_sector(cnae_principal: str, sectors_path: str | None = None) -> tuple[str, list[str]]:
-    """Map CNAE to sector and keywords from sectors_data.yaml.
+def map_sector(cnae_principal: str, sectors_path: str | None = None) -> tuple[str, list[str], str]:
+    """Map CNAE to sector name, keywords, and sector_key from sectors_data.yaml.
 
-    The YAML structure is:
-        sectors:
-          engenharia:
-            name: "Engenharia, Projetos e Obras"
-            description: "Obras, reformas, ..."
-            keywords: ["construção civil", "pavimentação", ...]
+    Returns: (sector_name, keywords_list, sector_key)
+    sector_key is the YAML key (e.g. "engenharia", "software") used for margin lookup.
     """
     if not sectors_path:
         candidates = [
@@ -386,7 +382,7 @@ def map_sector(cnae_principal: str, sectors_path: str | None = None) -> tuple[st
 
     if not sectors_path or not Path(sectors_path).exists():
         print("  !! sectors_data.yaml não encontrado — usando keywords genéricas")
-        return "Engenharia e Construção Civil", _DEFAULT_CONSTRUCTION_KW[:]
+        return "Geral", ["licitação"], "geral"
 
     with open(sectors_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -402,18 +398,19 @@ def map_sector(cnae_principal: str, sectors_path: str | None = None) -> tuple[st
     cnae_prefix = cnae_digits[:4]
 
     # Strategy 1: CNAE code → sector key via hardcoded map
-    sector_key = _CNAE_TO_SECTOR_KEY.get(cnae_prefix)
-    if sector_key and sector_key in sectors_dict:
-        sector = sectors_dict[sector_key]
+    sk = _CNAE_TO_SECTOR_KEY.get(cnae_prefix)
+    if sk and sk in sectors_dict:
+        sector = sectors_dict[sk]
         if isinstance(sector, dict):
-            name = sector.get("name") or sector_key
-            kws = sector.get("keywords") or _DEFAULT_CONSTRUCTION_KW[:]
+            name = sector.get("name") or sk
+            kws = sector.get("keywords") or [cnae_lower]
             print(f"  Match: CNAE {cnae_prefix}* → {name}")
-            return name, kws
+            return name, kws, sk
 
     # Strategy 2: Match CNAE description text against sector keywords
     best_match = None
     best_score = 0
+    best_key = "geral"
     for key, sector in sectors_dict.items():
         if not isinstance(sector, dict):
             continue
@@ -432,37 +429,48 @@ def map_sector(cnae_principal: str, sectors_path: str | None = None) -> tuple[st
         if score > best_score:
             best_score = score
             best_match = (name, kws)
+            best_key = key
 
     if best_match and best_score >= 2:
-        return best_match
+        return best_match[0], best_match[1], best_key
 
-    # Strategy 3: Fallback for construction-related CNAEs
-    if any(term in cnae_lower for term in [
-        "construç", "construc", "edifici", "obra", "engenharia",
-        "paviment", "infraestrutura", "urbaniz",
-    ]):
-        eng = sectors_dict.get("engenharia", {})
-        if eng and isinstance(eng, dict):
-            return eng.get("name", "Engenharia, Projetos e Obras"), eng.get("keywords", _DEFAULT_CONSTRUCTION_KW[:])
-        return "Engenharia e Construção Civil", _DEFAULT_CONSTRUCTION_KW[:]
+    # Strategy 3: Keyword-based sector matching from CNAE description
+    _SECTOR_HINTS: dict[str, list[str]] = {
+        "engenharia": ["construç", "construc", "edifici", "obra", "engenharia", "paviment", "infraestrutura", "urbaniz"],
+        "vestuario": ["vestuário", "vestuario", "uniforme", "confecç", "confeccao", "roupa", "têxtil", "textil"],
+        "alimentos": ["aliment", "merenda", "refeição", "refeicao", "nutriç", "nutricao", "panifica"],
+        "informatica": ["informática", "informatica", "computador", "hardware", "equipamento de ti"],
+        "software": ["software", "sistema", "desenvolvimento de programa", "tecnologia da informaç"],
+        "facilities": ["limpeza", "conservaç", "conservacao", "zeladoria", "jardinagem", "paisagis"],
+        "vigilancia": ["vigilância", "vigilancia", "segurança", "seguranca", "monitoramento"],
+        "saude": ["saúde", "saude", "farmac", "médic", "medic", "hospitalar", "laborat"],
+        "transporte": ["transporte", "veículo", "veiculo", "logística", "logistica", "frete"],
+        "mobiliario": ["móvel", "movel", "mobiliário", "mobiliario", "mobília", "mobilia"],
+        "papelaria": ["papelaria", "papel", "escritório", "escritorio", "material escolar"],
+        "manutencao_predial": ["manutenção predial", "manutencao predial", "instalações", "instalacoes"],
+        "engenharia_rodoviaria": ["rodovia", "rodoviári", "rodoviario", "estrada", "pavimentaç"],
+        "materiais_eletricos": ["elétric", "eletric", "eletroeletrônic", "eletroeletronico"],
+        "materiais_hidraulicos": ["hidráulic", "hidraulic", "saneamento", "encanamento", "tubos"],
+    }
+    for sk, hints in _SECTOR_HINTS.items():
+        if any(h in cnae_lower for h in hints):
+            sector = sectors_dict.get(sk, {})
+            if sector and isinstance(sector, dict):
+                return sector.get("name", sk), sector.get("keywords", [cnae_lower]), sk
+            break
 
-    # Strategy 4: Generic fallback
-    return "Geral", [cnae_principal.split("-")[-1].strip().lower()] if cnae_principal else ["licitação"]
+    # Strategy 4: Generic fallback — use CNAE description as keyword
+    cnae_words = [w.strip().lower() for w in cnae_principal.split("-")[-1].split("/")[-1].split(",") if w.strip()]
+    fallback_kw = [w for w in cnae_words if len(w) > 3] if cnae_words else ["licitação"]
+    return "Geral", fallback_kw, "geral"
 
 
-_DEFAULT_CONSTRUCTION_KW = [
-    "construção civil", "construcao civil", "pavimentação", "pavimentacao",
-    "obra", "reforma", "edificação", "edificacao", "engenharia",
-    "infraestrutura", "drenagem", "saneamento", "asfalto", "concreto",
-    "alvenaria", "terraplanagem", "recapeamento", "habitacional",
-]
-
-# CNAE 4-digit prefix → YAML sector key mapping (most common B2G sectors)
+# CNAE 4-digit prefix → YAML sector key mapping (all 15 B2G sectors)
 _CNAE_TO_SECTOR_KEY: dict[str, str] = {
+    # --- Engenharia, Projetos e Obras ---
     "4120": "engenharia",  # Construção de edifícios
-    "4211": "engenharia",  # Construção de rodovias
+    "4110": "engenharia",  # Incorporação de empreendimentos imobiliários
     "4212": "engenharia",  # Construção de ferrovias
-    "4213": "engenharia",  # Obras de urbanização
     "4221": "engenharia",  # Construção de redes (água, esgoto)
     "4222": "engenharia",  # Construção de redes (eletricidade, telecom)
     "4223": "engenharia",  # Construção de obras de arte especiais
@@ -473,14 +481,115 @@ _CNAE_TO_SECTOR_KEY: dict[str, str] = {
     "4312": "engenharia",  # Preparação de terreno
     "4313": "engenharia",  # Sondagem
     "4319": "engenharia",  # Outros serviços especializados
-    "4321": "engenharia",  # Instalações elétricas
-    "4322": "engenharia",  # Instalações hidráulicas/gás
-    "4329": "engenharia",  # Outras instalações
-    "4330": "engenharia",  # Obras de acabamento
     "4391": "engenharia",  # Obras de fundações
     "4399": "engenharia",  # Serviços especializados construção
     "7112": "engenharia",  # Engenharia (escritórios)
     "7119": "engenharia",  # Atividades técnicas (ensaios)
+    # --- Engenharia Rodoviária e Infraestrutura Viária ---
+    "4211": "engenharia_rodoviaria",  # Construção de rodovias e ferrovias
+    "4213": "engenharia_rodoviaria",  # Obras de urbanização — ruas e praças
+    # --- Manutenção e Conservação Predial ---
+    "4321": "manutencao_predial",  # Instalações elétricas
+    "4322": "manutencao_predial",  # Instalações hidráulicas, gás, etc.
+    "4329": "manutencao_predial",  # Outras instalações em construções
+    "4330": "manutencao_predial",  # Obras de acabamento
+    # --- Vestuário e Uniformes ---
+    "4781": "vestuario",  # Comércio varejista de artigos de vestuário
+    "4782": "vestuario",  # Comércio varejista de calçados
+    "1411": "vestuario",  # Confecção de roupas íntimas
+    "1412": "vestuario",  # Confecção de peças do vestuário (exceto roupas íntimas)
+    "1413": "vestuario",  # Confecção de roupas profissionais
+    "1414": "vestuario",  # Fabricação de acessórios do vestuário
+    "1421": "vestuario",  # Fabricação de meias
+    "1422": "vestuario",  # Fabricação de artigos do vestuário produzidos em malharias
+    "1531": "vestuario",  # Fabricação de calçados de couro
+    # --- Alimentos e Merenda ---
+    "1011": "alimentos",  # Abate de reses, exceto suínos
+    "1012": "alimentos",  # Abate de suínos, aves e outros
+    "1061": "alimentos",  # Fabricação de produtos do arroz
+    "1091": "alimentos",  # Fabricação de produtos de panificação
+    "1092": "alimentos",  # Fabricação de biscoitos e bolachas
+    "1099": "alimentos",  # Fabricação de outros produtos alimentícios
+    "5611": "alimentos",  # Restaurantes e similares
+    "5612": "alimentos",  # Serviços ambulantes de alimentação
+    "5620": "alimentos",  # Serviços de catering, bufê e outros
+    "4729": "alimentos",  # Comércio varejista de produtos alimentícios em geral
+    "4721": "alimentos",  # Padaria e confeitaria
+    # --- Hardware e Equipamentos de TI ---
+    "4751": "informatica",  # Comércio varejista de equipamentos de informática
+    "4752": "informatica",  # Comércio varejista de equipamentos de telefonia
+    "2621": "informatica",  # Fabricação de equipamentos de informática
+    "2622": "informatica",  # Fabricação de periféricos para equipamentos de informática
+    "9511": "informatica",  # Reparação e manutenção de computadores
+    "2631": "informatica",  # Fabricação de equipamentos transmissores de comunicação
+    # --- Software e Sistemas ---
+    "6201": "software",  # Desenvolvimento de programas sob encomenda
+    "6202": "software",  # Desenvolvimento e licenciamento de programas
+    "6203": "software",  # Desenvolvimento e licenciamento de programas não-customizáveis
+    "6204": "software",  # Consultoria em tecnologia da informação
+    "6209": "software",  # Suporte técnico, manutenção em TI
+    "6311": "software",  # Tratamento de dados, provedores de serviços
+    "6319": "software",  # Portais, provedores de conteúdo e outros serviços de informação
+    "6190": "software",  # Outras atividades de telecomunicações
+    # --- Facilities e Manutenção ---
+    "8111": "facilities",  # Serviços combinados para apoio a edifícios
+    "8112": "facilities",  # Condomínios prediais
+    "8121": "facilities",  # Limpeza em prédios e em domicílios
+    "8122": "facilities",  # Imunização e controle de pragas urbanas
+    "8129": "facilities",  # Atividades de limpeza não especificadas
+    "8130": "facilities",  # Atividades paisagísticas
+    # --- Vigilância e Segurança Patrimonial ---
+    "8011": "vigilancia",  # Atividades de vigilância e segurança privada
+    "8012": "vigilancia",  # Atividades de transporte de valores
+    "8020": "vigilancia",  # Atividades de monitoramento de sistemas de segurança
+    "8030": "vigilancia",  # Atividades de investigação particular
+    # --- Saúde ---
+    "2110": "saude",  # Fabricação de produtos farmoquímicos
+    "2121": "saude",  # Fabricação de medicamentos para uso humano
+    "2123": "saude",  # Fabricação de preparações farmacêuticas
+    "3250": "saude",  # Fabricação de instrumentos e materiais para uso médico
+    "4771": "saude",  # Comércio varejista de produtos farmacêuticos
+    "4773": "saude",  # Comércio varejista de artigos médicos e ortopédicos
+    "8610": "saude",  # Atividades de atendimento hospitalar
+    "8630": "saude",  # Atividades de atenção ambulatorial
+    "8640": "saude",  # Atividades de serviços de complementação diagnóstica
+    # --- Transporte e Veículos ---
+    "4511": "transporte",  # Comércio de automóveis e utilitários novos
+    "4512": "transporte",  # Comércio de automóveis e utilitários usados
+    "4912": "transporte",  # Transporte ferroviário de carga
+    "4921": "transporte",  # Transporte rodoviário coletivo de passageiros
+    "4922": "transporte",  # Transporte rodoviário de passageiros sob regime de fretamento
+    "4923": "transporte",  # Transporte rodoviário de táxi
+    "4924": "transporte",  # Transporte escolar
+    "4930": "transporte",  # Transporte rodoviário de carga
+    "7711": "transporte",  # Locação de automóveis sem condutor
+    "7719": "transporte",  # Locação de outros meios de transporte
+    # --- Mobiliário ---
+    "3101": "mobiliario",  # Fabricação de móveis com predominância de madeira
+    "3102": "mobiliario",  # Fabricação de móveis com predominância de metal
+    "3103": "mobiliario",  # Fabricação de colchões
+    "3104": "mobiliario",  # Fabricação de móveis de outros materiais
+    "4754": "mobiliario",  # Comércio varejista de móveis
+    # --- Papelaria e Material de Escritório ---
+    "4761": "papelaria",  # Comércio varejista de livros, jornais, papelaria
+    "1721": "papelaria",  # Fabricação de papel
+    "1731": "papelaria",  # Fabricação de embalagens de papel
+    "1741": "papelaria",  # Fabricação de produtos de papel para uso doméstico
+    "4647": "papelaria",  # Comércio atacadista de artigos de escritório
+    # --- Materiais Elétricos e Instalações ---
+    "2710": "materiais_eletricos",  # Fabricação de geradores, transformadores e motores
+    "2731": "materiais_eletricos",  # Fabricação de fios, cabos e condutores elétricos
+    "2732": "materiais_eletricos",  # Fabricação de dispositivos para instalação elétrica
+    "2733": "materiais_eletricos",  # Fabricação de aparelhos para distribuição de energia
+    "4742": "materiais_eletricos",  # Comércio varejista de material elétrico
+    "2740": "materiais_eletricos",  # Fabricação de lâmpadas e aparelhos de iluminação
+    # --- Materiais Hidráulicos e Saneamento ---
+    "2222": "materiais_hidraulicos",  # Fabricação de tubos e acessórios plásticos
+    "2449": "materiais_hidraulicos",  # Metalurgia de metais não-ferrosos
+    "4744": "materiais_hidraulicos",  # Comércio varejista de materiais de construção (hidráulicos)
+    "3600": "materiais_hidraulicos",  # Captação, tratamento e distribuição de água
+    "3701": "materiais_hidraulicos",  # Gestão de redes de esgoto
+    "3702": "materiais_hidraulicos",  # Atividades relacionadas a esgoto
 }
 
 
@@ -951,6 +1060,353 @@ def collect_pncp_documents(api: ApiClient, editais: list[dict]) -> None:
 
 
 # ============================================================
+# COMPETITIVE INTELLIGENCE COLLECTION
+# ============================================================
+
+def collect_competitive_intel(
+    api: ApiClient,
+    editais: list[dict],
+    meses: int = 24,
+) -> None:
+    """Fetch historical contracts for each edital's orgão to identify incumbents.
+
+    Mutates editais in place, adding `competitive_intel` field.
+    Deduplicates by orgão CNPJ to avoid redundant API calls.
+    """
+    # Collect unique orgão CNPJs
+    orgao_map: dict[str, list[dict]] = {}  # cnpj_orgao → [editais]
+    for ed in editais:
+        cnpj_orgao = ed.get("cnpj_orgao", "")
+        if cnpj_orgao and len(cnpj_orgao) == 14:
+            orgao_map.setdefault(cnpj_orgao, []).append(ed)
+
+    if not orgao_map:
+        print("  ⚠ Nenhum edital com cnpj_orgao — pulando inteligência competitiva")
+        for ed in editais:
+            ed["competitive_intel"] = []
+            ed["competitive_intel_source"] = _source_tag("UNAVAILABLE", "Sem cnpj_orgao")
+        return
+
+    print(f"\n🏢 Inteligência competitiva — {len(orgao_map)} órgãos únicos")
+
+    data_fim = _today()
+    data_ini = data_fim - timedelta(days=meses * 30)
+
+    for cnpj_orgao, orgao_editais in orgao_map.items():
+        orgao_nome = orgao_editais[0].get("orgao", cnpj_orgao)
+        contracts: list[dict] = []
+
+        for page in range(1, 3):  # Max 2 pages
+            data, status = api.get(
+                f"{PNCP_BASE}/contratacoes/publicacao",
+                params={
+                    "dataInicial": _date_compact(data_ini),
+                    "dataFinal": _date_compact(data_fim),
+                    "cnpjOrgao": cnpj_orgao,
+                    "pagina": page,
+                    "tamanhoPagina": PNCP_MAX_PAGE_SIZE,
+                },
+                label=f"Competitiva: {orgao_nome[:30]}... p{page}",
+            )
+
+            if status != "API" or not isinstance(data, list):
+                break
+
+            for item in data:
+                fornecedor = ""
+                valor_contrato = 0.0
+                # Extract from contratos array if present
+                contratos_arr = item.get("contratos") or []
+                if contratos_arr and isinstance(contratos_arr, list):
+                    for c in contratos_arr:
+                        fn = c.get("nomeRazaoSocialFornecedor", "")
+                        vl = _safe_float(c.get("valorFinal") or c.get("valorInicial"))
+                        if fn:
+                            contracts.append({
+                                "fornecedor": fn,
+                                "cnpj_fornecedor": c.get("cnpjCpfFornecedor", ""),
+                                "objeto": (item.get("objetoCompra") or "")[:150],
+                                "valor": vl,
+                                "data": c.get("dataVigenciaInicio") or item.get("dataPublicacaoPncp") or "",
+                            })
+
+            if len(data) < PNCP_MAX_PAGE_SIZE:
+                break
+            time.sleep(0.5)
+
+        # Assign to all editais of this orgão
+        source = _source_tag("API", f"{len(contracts)} contratos") if contracts else _source_tag("API", "0 contratos")
+        for ed in orgao_editais:
+            ed["competitive_intel"] = contracts[:20]  # Limit to 20 most recent
+            ed["competitive_intel_source"] = source
+
+        time.sleep(0.5)
+
+    # Mark editais without orgao data
+    for ed in editais:
+        if "competitive_intel" not in ed:
+            ed["competitive_intel"] = []
+            ed["competitive_intel_source"] = _source_tag("UNAVAILABLE", "Orgão sem CNPJ")
+
+
+# ============================================================
+# DETERMINISTIC CALCULATIONS (risk score, ROI, chronogram)
+# ============================================================
+
+# Estimated profit margins by sector (min, max) for ROI calculation
+_SECTOR_MARGINS: dict[str, tuple[float, float]] = {
+    "engenharia": (0.08, 0.15),
+    "engenharia_rodoviaria": (0.08, 0.15),
+    "software": (0.20, 0.40),
+    "informatica": (0.10, 0.25),
+    "vestuario": (0.10, 0.25),
+    "alimentos": (0.05, 0.15),
+    "facilities": (0.08, 0.20),
+    "vigilancia": (0.08, 0.18),
+    "saude": (0.10, 0.25),
+    "transporte": (0.05, 0.15),
+    "mobiliario": (0.10, 0.25),
+    "papelaria": (0.10, 0.20),
+    "manutencao_predial": (0.10, 0.20),
+    "materiais_eletricos": (0.10, 0.20),
+    "materiais_hidraulicos": (0.10, 0.20),
+}
+
+
+def compute_risk_score(edital: dict, empresa: dict, sicaf: dict) -> dict:
+    """Compute composite opportunity risk score 0-100 (higher = better opportunity).
+
+    Components:
+    - habilitacao (30%): sanctions, SICAF status, capital adequacy
+    - financeiro (25%): valor_estimado vs company capacity (capital × 10)
+    - geografico (20%): distance from sede
+    - prazo (15%): days remaining to deadline
+    - competitivo (10%): default 50 (can be overridden by Claude analysis)
+    """
+    # Habilitação (30%)
+    hab_score = 100
+    sancoes = empresa.get("sancoes", {})
+    if any(sancoes.get(k) for k in ["ceis", "cnep", "cepim", "ceaf"]):
+        hab_score = 0  # Hard block — sanctioned company
+
+    sicaf_status = sicaf.get("status", "NÃO CONSULTADO") if isinstance(sicaf, dict) else "NÃO CONSULTADO"
+    crc = sicaf.get("crc", {}) if isinstance(sicaf, dict) else {}
+    restricao = sicaf.get("restricao", {}) if isinstance(sicaf, dict) else {}
+
+    if restricao.get("possui_restricao"):
+        hab_score = min(hab_score, 30)
+    elif crc.get("status_cadastral") == "CADASTRADO":
+        hab_score = min(hab_score, 100)
+    elif sicaf_status == "NÃO CONSULTADO":
+        hab_score = min(hab_score, 60)  # Unknown = moderate risk
+
+    capital = _safe_float(empresa.get("capital_social"))
+    valor = _safe_float(edital.get("valor_estimado"))
+    if valor > 0 and capital > 0:
+        ratio = capital / valor
+        if ratio < 0.1:  # Capital < 10% of contract
+            hab_score = min(hab_score, 40)
+        elif ratio < 0.3:
+            hab_score = min(hab_score, 70)
+
+    # Financeiro (25%)
+    if valor <= 0 or capital <= 0:
+        fin_score = 50  # Unknown
+    else:
+        capacity = capital * 10
+        if valor <= capacity * 0.5:
+            fin_score = 100
+        elif valor <= capacity:
+            fin_score = 70
+        elif valor <= capacity * 2:
+            fin_score = 40
+        else:
+            fin_score = 10
+
+    # Geográfico (20%)
+    dist = edital.get("distancia", {})
+    km = dist.get("km") if isinstance(dist, dict) else None
+    if km is None:
+        geo_score = 50
+    elif km <= 50:
+        geo_score = 100
+    elif km <= 200:
+        geo_score = 70
+    elif km <= 500:
+        geo_score = 40
+    else:
+        geo_score = 10
+
+    # Prazo (15%)
+    dias = edital.get("dias_restantes")
+    if dias is None:
+        prazo_score = 50
+    elif dias > 30:
+        prazo_score = 100
+    elif dias > 15:
+        prazo_score = 70
+    elif dias > 7:
+        prazo_score = 40
+    else:
+        prazo_score = 10
+
+    # Competitivo (10%) — default, overridden by Claude later
+    comp_score = 50
+
+    total = (
+        hab_score * 0.30
+        + fin_score * 0.25
+        + geo_score * 0.20
+        + prazo_score * 0.15
+        + comp_score * 0.10
+    )
+
+    return {
+        "total": round(total),
+        "habilitacao": hab_score,
+        "financeiro": fin_score,
+        "geografico": geo_score,
+        "prazo": prazo_score,
+        "competitivo": comp_score,
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+def compute_roi_potential(edital: dict, sector_key: str, risk_score: int) -> dict:
+    """Calculate ROI potential per edital.
+
+    Formula: valor × probability × margin_range
+    - probability = risk_score / 100
+    - margin varies by sector
+    """
+    valor = _safe_float(edital.get("valor_estimado"))
+    if valor <= 0:
+        return {
+            "roi_min": 0, "roi_max": 0, "probability": 0.0,
+            "margin_range": "N/A",
+            "_source": _source_tag("CALCULATED", "Valor estimado indisponível"),
+        }
+
+    margin_min, margin_max = _SECTOR_MARGINS.get(sector_key, (0.08, 0.15))
+    probability = risk_score / 100.0
+
+    return {
+        "roi_min": round(valor * probability * margin_min),
+        "roi_max": round(valor * probability * margin_max),
+        "probability": round(probability, 2),
+        "margin_range": f"{margin_min * 100:.0f}%-{margin_max * 100:.0f}%",
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+def build_reverse_chronogram(edital: dict) -> list[dict]:
+    """Build reverse chronogram from edital deadline.
+
+    Milestones work backwards from encerramento date:
+    - D-0: Deadline (encerramento)
+    - D-5: Documentação final
+    - D-10: Proposta comercial
+    - D-15: Visita técnica (if applicable)
+    - D-20: Decisão go/no-go
+
+    Adapts spacing for tight deadlines.
+    """
+    enc_str = edital.get("data_encerramento", "")
+    if not enc_str:
+        return []
+
+    # Parse date
+    enc_date = None
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%d/%m/%Y"):
+        try:
+            enc_date = datetime.strptime(str(enc_str)[:10], fmt)
+            break
+        except ValueError:
+            continue
+    if not enc_date:
+        return []
+
+    hoje = _today().replace(tzinfo=None)
+    dias = (enc_date - hoje).days
+
+    if dias < 0:
+        return []  # Already past
+
+    # Adaptive milestone spacing
+    if dias >= 25:
+        offsets = [
+            (0, "Encerramento / Deadline"),
+            (5, "Entrega documentação final"),
+            (10, "Finalizar proposta comercial"),
+            (15, "Visita técnica / vistoria"),
+            (20, "Decisão go/no-go"),
+        ]
+    elif dias >= 15:
+        offsets = [
+            (0, "Encerramento / Deadline"),
+            (3, "Entrega documentação final"),
+            (7, "Finalizar proposta comercial"),
+            (10, "Decisão go/no-go"),
+        ]
+    elif dias >= 7:
+        offsets = [
+            (0, "Encerramento / Deadline"),
+            (2, "Entrega documentação final"),
+            (4, "Finalizar proposta"),
+            (6, "Decisão go/no-go"),
+        ]
+    else:
+        offsets = [
+            (0, "Encerramento / Deadline"),
+            (1, "Entrega documentação final"),
+            (2, "Decisão URGENTE go/no-go"),
+        ]
+
+    cronograma = []
+    for offset_days, marco in offsets:
+        target = enc_date - timedelta(days=offset_days)
+        dias_ate = (target - hoje).days
+
+        if dias_ate < 0:
+            status = "ATRASADO"
+        elif dias_ate <= 3:
+            status = "URGENTE"
+        elif dias_ate <= 7:
+            status = "ATENÇÃO"
+        else:
+            status = "NO PRAZO"
+
+        cronograma.append({
+            "data": target.strftime("%Y-%m-%d"),
+            "marco": marco,
+            "dias_ate_marco": max(dias_ate, 0),
+            "status": status,
+        })
+
+    return cronograma
+
+
+def compute_all_deterministic(
+    editais: list[dict],
+    empresa: dict,
+    sicaf: dict,
+    sector_key: str,
+) -> None:
+    """Compute risk_score, roi_potential, and cronograma for all editais. Mutates in place."""
+    print(f"\n📊 Calculando risk score, ROI e cronograma ({len(editais)} editais)")
+    for ed in editais:
+        rs = compute_risk_score(ed, empresa, sicaf)
+        ed["risk_score"] = rs
+        ed["roi_potential"] = compute_roi_potential(ed, sector_key, rs["total"])
+        ed["cronograma"] = build_reverse_chronogram(ed)
+
+    # Summary
+    scores = [ed["risk_score"]["total"] for ed in editais]
+    if scores:
+        print(f"  Risk scores: min={min(scores)}, max={max(scores)}, avg={sum(scores) / len(scores):.0f}")
+
+
+# ============================================================
 # SICAF COLLECTION (via collect-sicaf.py subprocess)
 # ============================================================
 
@@ -1096,12 +1552,10 @@ def assemble_report_data(
         if key in distancias:
             ed["distancia"] = distancias[key]
 
-    # Remove internal fields
+    # Remove internal dedup field only — keep cnpj_orgao/ano_compra/sequencial_compra
+    # for competitive intel and document download in downstream phases
     for ed in all_editais:
         ed.pop("_id", None)
-        ed.pop("cnpj_orgao", None)
-        ed.pop("ano_compra", None)
-        ed.pop("sequencial_compra", None)
 
     return {
         "_metadata": {
@@ -1152,6 +1606,7 @@ Examples:
     parser.add_argument("--skip-pcp", action="store_true", help="Pular busca PCP v2")
     parser.add_argument("--skip-qd", action="store_true", help="Pular busca Querido Diário")
     parser.add_argument("--skip-sicaf", action="store_true", help="Pular verificação SICAF (Playwright)")
+    parser.add_argument("--skip-competitive", action="store_true", help="Pular coleta de inteligência competitiva")
 
     args = parser.parse_args()
 
@@ -1192,7 +1647,7 @@ Examples:
 
     # ---- Sector Mapping ----
     print("\n📋 Mapeando setor via CNAE")
-    setor, keywords = map_sector(empresa.get("cnae_principal", ""))
+    setor, keywords, sector_key = map_sector(empresa.get("cnae_principal", ""))
     print(f"  Setor: {setor}")
     print(f"  Keywords: {', '.join(keywords[:8])}{'...' if len(keywords) > 8 else ''}")
 
@@ -1261,6 +1716,10 @@ Examples:
     else:
         sicaf = collect_sicaf(cnpj14, verbose=verbose)
 
+    # ---- Competitive Intelligence ----
+    if not args.skip_competitive:
+        collect_competitive_intel(api, all_editais)
+
     # ---- Assemble ----
     print(f"\n{'='*60}")
     print("📦 Montando JSON final")
@@ -1279,6 +1738,9 @@ Examples:
         distancias=distancias,
         sicaf=sicaf,
     )
+
+    # ---- Deterministic Calculations (risk score, ROI, chronogram) ----
+    compute_all_deterministic(data["editais"], data["empresa"], sicaf, sector_key)
 
     # ---- Output ----
     if args.output:

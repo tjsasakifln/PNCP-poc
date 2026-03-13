@@ -59,6 +59,20 @@ YELLOW = colors.HexColor("#CA8A04")
 RED = colors.HexColor("#DC2626")
 ORANGE = colors.HexColor("#EA580C")
 
+# Risk score gradient colors
+RISK_LOW = colors.HexColor("#DC2626")      # 0-30 red
+RISK_MED = colors.HexColor("#F59E0B")      # 30-60 amber
+RISK_HIGH = colors.HexColor("#16A34A")     # 60-100 green
+
+# Metric card backgrounds
+CARD_GREEN_BG = colors.HexColor("#F0FDF4")
+CARD_YELLOW_BG = colors.HexColor("#FEFCE8")
+CARD_RED_BG = colors.HexColor("#FEF2F2")
+CARD_BLUE_BG = colors.HexColor("#EFF6FF")
+
+# Section divider accent
+ACCENT_LINE_COLOR = colors.HexColor("#3B82F6")
+
 TABLE_HEADER_BG = BRAND_PRIMARY
 TABLE_HEADER_FG = colors.white
 TABLE_ALT_ROW = colors.HexColor("#F8FAFC")
@@ -343,6 +357,50 @@ def _build_styles() -> dict[str, ParagraphStyle]:
             alignment=TA_CENTER, leading=14,
         )
 
+    # Premium: decision table semaphore
+    s["semaphore_green"] = ParagraphStyle(
+        "sem_g", parent=base["Normal"],
+        fontName="Helvetica-Bold", fontSize=9, textColor=GREEN,
+        alignment=TA_CENTER, leading=11,
+    )
+    s["semaphore_yellow"] = ParagraphStyle(
+        "sem_y", parent=base["Normal"],
+        fontName="Helvetica-Bold", fontSize=9, textColor=YELLOW,
+        alignment=TA_CENTER, leading=11,
+    )
+    s["semaphore_red"] = ParagraphStyle(
+        "sem_r", parent=base["Normal"],
+        fontName="Helvetica-Bold", fontSize=9, textColor=RED,
+        alignment=TA_CENTER, leading=11,
+    )
+    # Premium: card value large
+    s["card_value_large"] = ParagraphStyle(
+        "cvl", parent=base["Normal"],
+        fontName="Helvetica-Bold", fontSize=20, textColor=BRAND_PRIMARY,
+        alignment=TA_CENTER, leading=24,
+    )
+    s["card_label_small"] = ParagraphStyle(
+        "cls", parent=base["Normal"],
+        fontName="Helvetica", fontSize=7, textColor=colors.HexColor("#64748B"),
+        alignment=TA_CENTER, leading=9,
+    )
+    # Premium: chronogram
+    s["chrono_status_ok"] = ParagraphStyle(
+        "cs_ok", parent=base["Normal"],
+        fontName="Helvetica-Bold", fontSize=8, textColor=GREEN,
+        alignment=TA_CENTER, leading=10,
+    )
+    s["chrono_status_warn"] = ParagraphStyle(
+        "cs_warn", parent=base["Normal"],
+        fontName="Helvetica-Bold", fontSize=8, textColor=ORANGE,
+        alignment=TA_CENTER, leading=10,
+    )
+    s["chrono_status_late"] = ParagraphStyle(
+        "cs_late", parent=base["Normal"],
+        fontName="Helvetica-Bold", fontSize=8, textColor=RED,
+        alignment=TA_CENTER, leading=10,
+    )
+
     return s
 
 
@@ -433,11 +491,305 @@ def _build_cover(data: dict, styles: dict, gen_date: str) -> list:
     return el
 
 
-def _build_company_profile(data: dict, styles: dict) -> list:
+def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
+    """Build 'Decisão em 30 Segundos' — traffic-light summary table on page 2."""
+    el = []
+    editais = data.get("editais", [])
+    if not editais:
+        return el
+
+    num = sec["next"]()
+    el.append(Paragraph(f"{num}. Decisão em 30 Segundos", styles["h1"]))
+    el.append(Paragraph(
+        "Visão semáforo de todas as oportunidades — verde (participar), "
+        "amarelo (avaliar), vermelho (não recomendado).",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 3 * mm))
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+    col_widths = [
+        avail * 0.04,   # #
+        avail * 0.04,   # semáforo
+        avail * 0.30,   # objeto
+        avail * 0.12,   # valor
+        avail * 0.07,   # prazo
+        avail * 0.08,   # score
+        avail * 0.35,   # justificativa 1-linha
+    ]
+
+    header = [Paragraph(f"<b>{h}</b>", styles["cell_header"]) for h in [
+        "#", "●", "Objeto", "Valor", "Prazo", "Score", "Justificativa",
+    ]]
+    rows = [header]
+
+    for idx, ed in enumerate(editais, 1):
+        rec = _normalize_recommendation(_s(ed.get("recomendacao", "")))
+        risk = ed.get("risk_score", {})
+        score_val = _safe_int(risk.get("total") if isinstance(risk, dict) else risk)
+
+        # Semaphore
+        if rec == "PARTICIPAR":
+            sem_style = styles["semaphore_green"]
+            sem_char = "●"
+        elif "CAUTELA" in rec or "AVALIAR" in rec:
+            sem_style = styles["semaphore_yellow"]
+            sem_char = "●"
+        else:
+            sem_style = styles["semaphore_red"]
+            sem_char = "●"
+
+        dias = ed.get("dias_restantes")
+        prazo = f"{_safe_int(dias)}d" if dias is not None else "N/I"
+        score_text = f"{score_val}" if score_val > 0 else "—"
+        justif = _trunc(_s(ed.get("justificativa", "")), 90)
+
+        rows.append([
+            Paragraph(str(idx), styles["cell_center"]),
+            Paragraph(sem_char, sem_style),
+            Paragraph(_trunc(_s(ed.get("objeto", "")), 70), styles["cell"]),
+            Paragraph(_currency_short(ed.get("valor_estimado")), styles["cell_right"]),
+            Paragraph(prazo, styles["cell_center"]),
+            Paragraph(score_text, styles["cell_center"]),
+            Paragraph(justif, styles["cell"]),
+        ])
+
+    t = Table(rows, colWidths=col_widths, repeatRows=1)
+    base_styles = [
+        ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
+        ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING", (0, 0), (-1, -1), 2),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+    ]
+    for i in range(2, len(rows), 2):
+        base_styles.append(("BACKGROUND", (0, i), (-1, i), TABLE_ALT_ROW))
+    t.setStyle(TableStyle(base_styles))
+    el.append(t)
+    el.append(PageBreak())
+    return el
+
+
+def _draw_risk_bar(score: int, styles: dict) -> Table:
+    """Build a horizontal risk score bar 0-100 as a Table with colored cells."""
+    if score <= 0:
+        return Spacer(1, 0)
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+    bar_width = avail * 0.6
+    # Determine color
+    if score >= 60:
+        bar_color = RISK_HIGH
+        label_color = "#16A34A"
+    elif score >= 30:
+        bar_color = RISK_MED
+        label_color = "#F59E0B"
+    else:
+        bar_color = RISK_LOW
+        label_color = "#DC2626"
+
+    filled = bar_width * (score / 100)
+    empty = bar_width - filled
+
+    # Build as nested table: [score_label | filled_bar | empty_bar | score_value]
+    label_style = ParagraphStyle(
+        "rbl", fontName="Helvetica-Bold", fontSize=8,
+        textColor=colors.HexColor("#475569"), leading=10,
+    )
+    value_style = ParagraphStyle(
+        "rbv", fontName="Helvetica-Bold", fontSize=11,
+        textColor=colors.HexColor(label_color), leading=14,
+    )
+    bar_row = [
+        Paragraph("Risk Score", label_style),
+        "",  # filled portion
+        "",  # empty portion
+        Paragraph(f"{score}/100", value_style),
+    ]
+    t = Table([bar_row], colWidths=[avail * 0.15, filled, empty, avail * 0.15])
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (1, 0), (1, 0), bar_color),
+        ("BACKGROUND", (2, 0), (2, 0), colors.HexColor("#E2E8F0")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LINEABOVE", (1, 0), (2, 0), 0.5, TABLE_BORDER),
+        ("LINEBELOW", (1, 0), (2, 0), 0.5, TABLE_BORDER),
+    ]))
+    return t
+
+
+def _build_chronogram_table(cronograma: list, styles: dict) -> list:
+    """Build a compact chronogram table for an edital."""
+    if not cronograma:
+        return []
+
+    el = []
+    el.append(Paragraph("<b>Cronograma Reverso</b>", styles["h3"]))
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+    header = [Paragraph(f"<b>{h}</b>", styles["cell_header"]) for h in [
+        "Data", "Marco", "Status",
+    ]]
+    rows = [header]
+
+    for item in cronograma:
+        data_str = _date(item.get("data", ""))
+        marco = _s(item.get("marco", ""))
+        status = _s(item.get("status", ""))
+
+        if "atrasado" in status.lower() or "vencido" in status.lower():
+            status_style = styles["chrono_status_late"]
+        elif "atenção" in status.lower() or "atencao" in status.lower() or "hoje" in status.lower():
+            status_style = styles["chrono_status_warn"]
+        else:
+            status_style = styles["chrono_status_ok"]
+
+        rows.append([
+            Paragraph(data_str, styles["cell_center"]),
+            Paragraph(marco, styles["cell"]),
+            Paragraph(status, status_style),
+        ])
+
+    t = Table(rows, colWidths=[avail * 0.20, avail * 0.50, avail * 0.30])
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
+        ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ] + [("BACKGROUND", (0, i), (-1, i), TABLE_ALT_ROW) for i in range(2, len(rows), 2)]))
+    el.append(t)
+    el.append(Spacer(1, 2 * mm))
+    return el
+
+
+def _build_roi_card(roi: dict, styles: dict) -> list:
+    """Build an ROI potential metric card."""
+    if not roi or not isinstance(roi, dict):
+        return []
+    roi_min = roi.get("roi_min", 0)
+    roi_max = roi.get("roi_max", 0)
+    probability = roi.get("probability", 0)
+    if roi_max <= 0:
+        return []
+
+    el = []
+    avail = PAGE_WIDTH - 2 * MARGIN
+
+    roi_text = f"{_currency_short(roi_min)} — {_currency_short(roi_max)}"
+    prob_text = f"{probability:.0f}%" if probability else "N/I"
+
+    card_data = [
+        [Paragraph(f"<b>ROI Potencial</b>", styles["cell"]),
+         Paragraph(roi_text, ParagraphStyle(
+             "roi_v", fontName="Helvetica-Bold", fontSize=11,
+             textColor=BRAND_PRIMARY, alignment=TA_CENTER, leading=14,
+         )),
+         Paragraph(f"Probabilidade: {prob_text}", styles["cell_center"])],
+    ]
+    t = Table(card_data, colWidths=[avail * 0.25, avail * 0.45, avail * 0.30])
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), CARD_BLUE_BG),
+        ("BOX", (0, 0), (-1, -1), 0.5, BRAND_ACCENT),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    el.append(t)
+    el.append(Spacer(1, 2 * mm))
+    return el
+
+
+def _build_competitive_section(data: dict, styles: dict, sec: dict) -> list:
+    """Build competitive intelligence section from competitive_intel in editais."""
+    # Collect all competitive intel entries across editais
+    entries = []
+    for ed in data.get("editais", []):
+        ci = ed.get("competitive_intel", [])
+        if ci:
+            orgao = _s(ed.get("orgao", ""))
+            for c in ci[:5]:  # max 5 per orgão
+                entries.append({
+                    "orgao": orgao,
+                    "fornecedor": _s(c.get("fornecedor", "")),
+                    "objeto": _trunc(_s(c.get("objeto", "")), 60),
+                    "valor": c.get("valor"),
+                    "data": c.get("data", ""),
+                })
+    if not entries:
+        return []
+
+    el = []
+    num = sec["next"]()
+    el.append(Paragraph(f"{num}. Mapa Competitivo", styles["h1"]))
+    el.append(Paragraph(
+        "Contratos históricos identificados nos órgãos licitantes — "
+        "indica incumbentes e valores praticados.",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 3 * mm))
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+    header = [Paragraph(f"<b>{h}</b>", styles["cell_header"]) for h in [
+        "Órgão", "Fornecedor", "Objeto", "Valor", "Data",
+    ]]
+    rows = [header]
+
+    # Deduplicate by fornecedor+orgao, keep most recent
+    seen = set()
+    for e in sorted(entries, key=lambda x: x["data"], reverse=True):
+        key = (e["orgao"][:30], e["fornecedor"][:30])
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append([
+            Paragraph(_trunc(e["orgao"], 35), styles["cell"]),
+            Paragraph(_trunc(e["fornecedor"], 30), styles["cell"]),
+            Paragraph(e["objeto"], styles["cell"]),
+            Paragraph(_currency_short(e["valor"]), styles["cell_right"]),
+            Paragraph(_date(e["data"]), styles["cell_center"]),
+        ])
+        if len(rows) > 20:  # Cap at 20 rows
+            break
+
+    t = Table(rows, colWidths=[
+        avail * 0.20, avail * 0.20, avail * 0.30, avail * 0.15, avail * 0.15,
+    ], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
+        ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING", (0, 0), (-1, -1), 3),
+    ] + [("BACKGROUND", (0, i), (-1, i), TABLE_ALT_ROW) for i in range(2, len(rows), 2)]))
+    el.append(t)
+
+    el.append(PageBreak())
+    return el
+
+
+def _section_counter() -> dict:
+    """Create a dynamic section counter for auto-numbering."""
+    state = {"n": 0}
+
+    def _next() -> int:
+        state["n"] += 1
+        return state["n"]
+
+    return {"next": _next, "current": lambda: state["n"]}
+
+
+def _build_company_profile(data: dict, styles: dict, sec: dict | None = None) -> list:
     el = []
     emp = data.get("empresa", {})
 
-    el.append(Paragraph("1. Perfil da Empresa", styles["h1"]))
+    num = sec["next"]() if sec else 1
+    el.append(Paragraph(f"{num}. Perfil da Empresa", styles["h1"]))
 
     fields = [
         ("Razão Social", emp.get("razao_social")),
@@ -502,12 +854,13 @@ def _build_company_profile(data: dict, styles: dict) -> list:
     return el
 
 
-def _build_executive_summary(data: dict, styles: dict) -> list:
+def _build_executive_summary(data: dict, styles: dict, sec: dict | None = None) -> list:
     el = []
     editais = data.get("editais", [])
     resumo = data.get("resumo_executivo", {})
 
-    el.append(Paragraph("2. Resumo Executivo", styles["h1"]))
+    num = sec["next"]() if sec else 2
+    el.append(Paragraph(f"{num}. Resumo Executivo", styles["h1"]))
 
     # Summary text
     texto = _s(resumo.get("texto", ""))
@@ -641,13 +994,14 @@ def _build_overview_table(editais_list: list, styles: dict, start_idx: int = 1) 
     return [t]
 
 
-def _build_opportunities_overview(data: dict, styles: dict) -> list:
+def _build_opportunities_overview(data: dict, styles: dict, sec: dict | None = None) -> list:
     el = []
     editais = data.get("editais", [])
     if not editais:
         return el
 
-    el.append(Paragraph("3. Panorama de Oportunidades", styles["h1"]))
+    num = sec["next"]() if sec else 3
+    el.append(Paragraph(f"{num}. Panorama de Oportunidades", styles["h1"]))
     el.append(Spacer(1, 2 * mm))
 
     if editais:
@@ -664,13 +1018,14 @@ def _build_opportunities_overview(data: dict, styles: dict) -> list:
     return el
 
 
-def _build_detailed_analysis(data: dict, styles: dict) -> list:
+def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) -> list:
     el = []
     editais = data.get("editais", [])
     if not editais:
         return el
 
-    el.append(Paragraph("4. Análise Detalhada por Edital", styles["h1"]))
+    num = sec["next"]() if sec else 4
+    el.append(Paragraph(f"{num}. Análise Detalhada por Edital", styles["h1"]))
     el.append(Spacer(1, 2 * mm))
 
     for idx, ed in enumerate(editais, 1):
@@ -678,7 +1033,7 @@ def _build_detailed_analysis(data: dict, styles: dict) -> list:
 
         # Edital header
         objeto = _s(ed.get("objeto", "Sem título"))
-        section.append(Paragraph(f"4.{idx}. {_trunc(objeto, 120)}", styles["h2"]))
+        section.append(Paragraph(f"{num}.{idx}. {_trunc(objeto, 120)}", styles["h2"]))
 
         # Basic info table
         avail = PAGE_WIDTH - 2 * MARGIN
@@ -742,6 +1097,20 @@ def _build_detailed_analysis(data: dict, styles: dict) -> list:
                 section.append(Paragraph(f"<b>Justificativa:</b> {justificativa}", styles["body"]))
             section.append(Spacer(1, 2 * mm))
 
+        # Risk Score bar (from collect deterministic calculations)
+        risk = ed.get("risk_score", {})
+        if isinstance(risk, dict) and risk.get("total"):
+            section.append(_draw_risk_bar(_safe_int(risk["total"]), styles))
+            section.append(Spacer(1, 2 * mm))
+
+        # ROI Potential card
+        roi = ed.get("roi_potential", {})
+        section.extend(_build_roi_card(roi, styles))
+
+        # Reverse Chronogram
+        cronograma = ed.get("cronograma", [])
+        section.extend(_build_chronogram_table(cronograma, styles))
+
         # Analysis sections
         analise = ed.get("analise", {})
 
@@ -782,13 +1151,14 @@ def _build_detailed_analysis(data: dict, styles: dict) -> list:
     return el
 
 
-def _build_market_intelligence(data: dict, styles: dict) -> list:
+def _build_market_intelligence(data: dict, styles: dict, sec: dict | None = None) -> list:
     el = []
     intel = data.get("inteligencia_mercado", {})
     if not intel:
         return el
 
-    el.append(Paragraph("5. Inteligência de Mercado", styles["h1"]))
+    num = sec["next"]() if sec else 5
+    el.append(Paragraph(f"{num}. Inteligência de Mercado", styles["h1"]))
 
     for title, key in [
         ("Panorama Setorial", "panorama"),
@@ -812,13 +1182,14 @@ def _build_market_intelligence(data: dict, styles: dict) -> list:
     return el
 
 
-def _build_querido_diario(data: dict, styles: dict) -> list:
+def _build_querido_diario(data: dict, styles: dict, sec: dict | None = None) -> list:
     el = []
     mencoes = data.get("querido_diario", [])
     if not mencoes:
         return el
 
-    el.append(Paragraph("6. Menções em Diários Oficiais", styles["h1"]))
+    num = sec["next"]() if sec else 6
+    el.append(Paragraph(f"{num}. Menções em Diários Oficiais", styles["h1"]))
     el.append(Paragraph(
         "Publicações encontradas no Querido Diário (diários oficiais municipais).",
         styles["body_small"],
@@ -837,12 +1208,12 @@ def _build_querido_diario(data: dict, styles: dict) -> list:
     return el
 
 
-def _build_next_steps(data: dict, styles: dict) -> list:
+def _build_next_steps(data: dict, styles: dict, sec: dict | None = None) -> list:
     el = []
     proximos = data.get("proximos_passos", [])
 
-    section_num = "7" if data.get("querido_diario") else "6"
-    el.append(Paragraph(f"{section_num}. Próximos Passos", styles["h1"]))
+    num = sec["next"]() if sec else 7
+    el.append(Paragraph(f"{num}. Próximos Passos", styles["h1"]))
 
     if proximos:
         for step in proximos:
@@ -886,17 +1257,14 @@ def _build_next_steps(data: dict, styles: dict) -> list:
 # SICAF & SOURCE CONFIDENCE
 # ============================================================
 
-def _build_sicaf_section(data: dict, styles: dict) -> list:
+def _build_sicaf_section(data: dict, styles: dict, sec: dict | None = None) -> list:
     el = []
     sicaf = data.get("sicaf", {})
     if not sicaf:
         return el
 
-    # Dynamic section number
-    has_qd = bool(data.get("querido_diario"))
-    section_num = "8" if has_qd else "7"
-
-    el.append(Paragraph(f"{section_num}. Verificação SICAF", styles["h1"]))
+    num = sec["next"]() if sec else 8
+    el.append(Paragraph(f"{num}. Verificação SICAF", styles["h1"]))
 
     badge_char, badge_color, badge_text = _get_source_badge(sicaf.get("_source"))
 
@@ -994,7 +1362,7 @@ def _build_sicaf_section(data: dict, styles: dict) -> list:
     return el
 
 
-def _build_data_sources_section(data: dict, styles: dict) -> list:
+def _build_data_sources_section(data: dict, styles: dict, sec: dict | None = None) -> list:
     """Render data provenance section showing source status for each data category."""
     el = []
     metadata = data.get("_metadata", {})
@@ -1002,11 +1370,8 @@ def _build_data_sources_section(data: dict, styles: dict) -> list:
     if not sources:
         return el
 
-    has_qd = bool(data.get("querido_diario"))
-    has_sicaf = bool(data.get("sicaf"))
-    section_num = 7 + (1 if has_qd else 0) + (1 if has_sicaf else 0)
-
-    el.append(Paragraph(f"{section_num}. Fontes de Dados e Confiabilidade", styles["h1"]))
+    num = sec["next"]() if sec else 9
+    el.append(Paragraph(f"{num}. Fontes de Dados e Confiabilidade", styles["h1"]))
     el.append(Paragraph(
         "Cada dado neste relatório foi obtido de forma determinística via APIs públicas. "
         "A tabela abaixo indica o status de cada fonte no momento da coleta.",
@@ -1128,17 +1493,20 @@ def generate_report_b2g(data: dict) -> BytesIO:
         creator="Report B2G Generator",
     )
 
+    sec = _section_counter()
     elements: list = []
     elements.extend(_build_cover(data, styles, gen_date))
-    elements.extend(_build_company_profile(data, styles))
-    elements.extend(_build_executive_summary(data, styles))
-    elements.extend(_build_opportunities_overview(data, styles))
-    elements.extend(_build_detailed_analysis(data, styles))
-    elements.extend(_build_market_intelligence(data, styles))
-    elements.extend(_build_querido_diario(data, styles))
-    elements.extend(_build_next_steps(data, styles))
-    elements.extend(_build_sicaf_section(data, styles))
-    elements.extend(_build_data_sources_section(data, styles))
+    elements.extend(_build_decision_table(data, styles, sec))
+    elements.extend(_build_company_profile(data, styles, sec))
+    elements.extend(_build_executive_summary(data, styles, sec))
+    elements.extend(_build_opportunities_overview(data, styles, sec))
+    elements.extend(_build_detailed_analysis(data, styles, sec))
+    elements.extend(_build_competitive_section(data, styles, sec))
+    elements.extend(_build_market_intelligence(data, styles, sec))
+    elements.extend(_build_querido_diario(data, styles, sec))
+    elements.extend(_build_next_steps(data, styles, sec))
+    elements.extend(_build_sicaf_section(data, styles, sec))
+    elements.extend(_build_data_sources_section(data, styles, sec))
 
     doc.build(elements, onFirstPage=_draw_footer, onLaterPages=_draw_footer)
     buffer.seek(0)
