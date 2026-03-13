@@ -28,6 +28,7 @@ try:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import cm, mm
+    from reportlab.pdfgen import canvas as pdfgen_canvas
     from reportlab.platypus import (
         KeepTogether,
         PageBreak,
@@ -581,10 +582,46 @@ def _build_styles() -> dict[str, ParagraphStyle]:
 
 
 # ============================================================
-# FOOTER
+# FOOTER with "Página X de Y"
 # ============================================================
 
+class _NumberedCanvas(pdfgen_canvas.Canvas):
+    """Canvas subclass that renders 'Página X de Y' on every page.
+
+    Saves each page state, then on save() replays all pages with
+    the total page count stamped on each one.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states: list = []
+
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()  # reset state WITHOUT emitting page to PDF
+
+    def save(self):
+        total = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self._draw_page_number(total)
+            pdfgen_canvas.Canvas.showPage(self)
+        pdfgen_canvas.Canvas.save(self)
+
+    def _draw_page_number(self, total: int):
+        self.saveState()
+        self.setFont("Helvetica", 7)
+        self.setFillColor(colors.HexColor("#94A3B8"))
+        self.drawRightString(
+            PAGE_WIDTH - MARGIN,
+            MARGIN - 10 * mm - 2 * mm,
+            f"Página {self._pageNumber} de {total}",
+        )
+        self.restoreState()
+
+
 def _draw_footer(canvas, doc):
+    """Draw footer — page number placeholder is overwritten by _NumberedCanvas.save()."""
     canvas.saveState()
     y = MARGIN - 10 * mm
 
@@ -599,7 +636,6 @@ def _draw_footer(canvas, doc):
     canvas.setFillColor(colors.HexColor("#94A3B8"))
     canvas.drawCentredString(PAGE_WIDTH / 2, y - 2 * mm, FOOTER_LINE2)
 
-    canvas.drawRightString(PAGE_WIDTH - MARGIN, y - 2 * mm, f"Página {doc.page}")
     canvas.restoreState()
 
 
@@ -766,12 +802,16 @@ def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
     return el
 
 
+_risk_bar_shown = False  # Track if explanation was already shown
+
+
 def _draw_risk_bar(score: int, styles: dict) -> list:
-    """Build viability index bar 0-100 with explanation.
+    """Build viability index bar 0-100 with explanation (shown once).
 
     Combines 4 factors: modalidade (30%), prazo (25%), valor (25%), geografia (20%).
     Higher = more viable for this company.
     """
+    global _risk_bar_shown
     if score <= 0:
         return []
 
@@ -820,12 +860,14 @@ def _draw_risk_bar(score: int, styles: dict) -> list:
     ]))
 
     el = [t]
-    # Brief explanation so the reader knows what this measures
-    el.append(Paragraph(
-        "<font size='7' color='#64748B'>Índice calculado com base em modalidade (30%), "
-        "prazo (25%), valor vs. capacidade (25%) e proximidade geográfica (20%).</font>",
-        styles["body_small"],
-    ))
+    # Show full explanation only on first occurrence
+    if not _risk_bar_shown:
+        el.append(Paragraph(
+            "<font size='7' color='#64748B'>Índice calculado com base em modalidade (30%), "
+            "prazo (25%), valor vs. capacidade (25%) e proximidade geográfica (20%).</font>",
+            styles["body_small"],
+        ))
+        _risk_bar_shown = True
     return el
 
 
@@ -861,7 +903,7 @@ def _build_chronogram_table(cronograma: list, styles: dict) -> list:
             Paragraph(status, status_style),
         ])
 
-    t = Table(rows, colWidths=[avail * 0.20, avail * 0.50, avail * 0.30])
+    t = Table(rows, colWidths=[avail * 0.20, avail * 0.50, avail * 0.30], repeatRows=1)
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
         ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
@@ -874,8 +916,12 @@ def _build_chronogram_table(cronograma: list, styles: dict) -> list:
     return el
 
 
+_roi_card_shown = False  # Track if explanation was already shown
+
+
 def _build_roi_card(roi: dict, styles: dict) -> list:
     """Build potential revenue card for an edital opportunity."""
+    global _roi_card_shown
     if not roi or not isinstance(roi, dict):
         return []
     roi_min = roi.get("roi_min", 0)
@@ -908,11 +954,13 @@ def _build_roi_card(roi: dict, styles: dict) -> list:
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
     ]))
     el.append(t)
-    el.append(Paragraph(
-        "<font size='7' color='#64748B'>Estimativa com base no valor do edital, "
-        "margem típica do setor e perfil competitivo da empresa.</font>",
-        styles["body_small"],
-    ))
+    if not _roi_card_shown:
+        el.append(Paragraph(
+            "<font size='7' color='#64748B'>Estimativa com base no valor do edital, "
+            "margem típica do setor e perfil competitivo da empresa.</font>",
+            styles["body_small"],
+        ))
+        _roi_card_shown = True
     el.append(Spacer(1, 2 * mm))
     return el
 
@@ -1322,10 +1370,10 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
             ("Situação", _format_dias_restantes(ed.get("dias_restantes"))),
             ("Fonte", ed.get("fonte")),
         ]
-        # Add link only if valid
-        link = ed.get("link", "")
+        # Add link only if valid — make it clickable
+        link = _fix_pncp_link(ed.get("link", ""))
         if link and link != "N/I" and link.startswith("http"):
-            raw_fields.append(("Link", link))
+            raw_fields.append(("Link", f'<a href="{link}" color="#2C5F8A">{link}</a>'))
 
         for label, value in raw_fields:
             if value and str(value).strip() and value != "N/I" and value != " - N/I" and str(value) != "None":
@@ -1387,23 +1435,26 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
             dist_text += f" <font color='{'#16A34A' if badge_char == '✓' else '#CA8A04'}'>[{badge_char} {badge_text}]</font>"
             el.append(Paragraph(dist_text, styles["body"]))
 
-        # Viability index bar
+        # Viability index bar + ROI card — keep together if both exist
+        metric_block = []
         risk = ed.get("risk_score", {})
         if isinstance(risk, dict) and risk.get("total"):
-            el.extend(_draw_risk_bar(_safe_int(risk["total"]), styles))
-            el.append(Spacer(1, 2 * mm))
+            metric_block.extend(_draw_risk_bar(_safe_int(risk["total"]), styles))
+            metric_block.append(Spacer(1, 2 * mm))
 
-        # ROI Potential card
         roi = ed.get("roi_potential", {})
-        el.extend(_build_roi_card(roi, styles))
+        metric_block.extend(_build_roi_card(roi, styles))
+
+        if metric_block:
+            el.append(KeepTogether(metric_block))
 
         # Reverse Chronogram
         cronograma = ed.get("cronograma", [])
         el.extend(_build_chronogram_table(cronograma, styles))
 
-        # Analysis sections — in a light bordered box
+        # Analysis sections — two-column key/value table
         analise = ed.get("analise", {})
-        analysis_content = []
+        analysis_rows = []
         analysis_fields = [
             ("Aderência ao Perfil", "aderencia"),
             ("Análise de Valor", "valor"),
@@ -1416,22 +1467,25 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
         for title, key in analysis_fields:
             text = _s(analise.get(key, ""))
             if text:
-                analysis_content.append(Paragraph(f"<b>{title}:</b> {text}", styles["body"]))
+                analysis_rows.append([
+                    Paragraph(f"<b>{title}</b>", styles["cell"]),
+                    Paragraph(text, styles["cell"]),
+                ])
 
-        if analysis_content:
-            # Wrap in a subtle bordered box
-            box_content = []
-            for item in analysis_content:
-                box_content.append([item])
-            box_t = Table(box_content, colWidths=[avail - 4 * mm])
-            box_t.setStyle(TableStyle([
+        if analysis_rows:
+            box_t = Table(analysis_rows, colWidths=[avail * 0.22, avail * 0.78 - 4 * mm])
+            box_styles = [
                 ("BOX", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FAFBFC")),
-                ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F1F5F9")),
+                ("BACKGROUND", (1, 0), (1, -1), colors.HexColor("#FAFBFC")),
+                ("LINEBELOW", (0, 0), (-1, -2), 0.25, TABLE_BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
                 ("LEFTPADDING", (0, 0), (-1, -1), 6),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-            ]))
+            ]
+            box_t.setStyle(TableStyle(box_styles))
             el.append(box_t)
             el.append(Spacer(1, 3 * mm))
 
@@ -1798,7 +1852,7 @@ def _build_data_sources_section(data: dict, styles: dict, sec: dict | None = Non
             Paragraph(_s(detail)[:80], styles["cell"]),
         ])
 
-    t = Table(rows, colWidths=[avail * 0.35, avail * 0.25, avail * 0.40])
+    t = Table(rows, colWidths=[avail * 0.35, avail * 0.25, avail * 0.40], repeatRows=1)
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), TABLE_HEADER_BG),
         ("GRID", (0, 0), (-1, -1), 0.5, TABLE_BORDER),
@@ -1854,6 +1908,11 @@ def generate_report_b2g(data: dict) -> BytesIO:
             + "\n".join(f"  • {e}" for e in errors)
         )
 
+    # Reset per-report state
+    global _risk_bar_shown, _roi_card_shown
+    _risk_bar_shown = False
+    _roi_card_shown = False
+
     data = _sanitize_links(data)
 
     # Drop ENCERRADO editais — they don't belong in an opportunities report
@@ -1894,7 +1953,8 @@ def generate_report_b2g(data: dict) -> BytesIO:
     elements.extend(_build_sicaf_section(data, styles, sec))
     elements.extend(_build_data_sources_section(data, styles, sec))
 
-    doc.build(elements, onFirstPage=_draw_footer, onLaterPages=_draw_footer)
+    doc.build(elements, onFirstPage=_draw_footer, onLaterPages=_draw_footer,
+              canvasmaker=_NumberedCanvas)
     buffer.seek(0)
     return buffer
 
