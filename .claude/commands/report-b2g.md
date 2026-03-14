@@ -230,27 +230,33 @@ Salvar versão markdown em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.
 
 ---
 
-## Estrutura do PDF Final (v2 Premium)
+## Estrutura do PDF Final (v3 Intelligence-First)
 
-Numeração dinâmica — seções opcionais (QD, competitivo) só aparecem quando há dados.
+Numeração dinâmica — seções opcionais só aparecem quando há dados.
 
 1. **Capa** — Título, empresa, CNPJ, setor, data
 2. **Aviso de Cobertura** (condicional) — Banner âmbar se taxa de captura < 70% (E3)
-3. **Decisão em 30 Segundos** — Tabela semáforo (●verde/amarelo/vermelho) com objeto, valor, prazo, risk score e justificativa 1-linha
-4. **Perfil da Empresa** — Dados cadastrais, QSA, histórico gov, sanções + **badge de maturidade** (E8)
-5. **Resumo Executivo** — Métricas-chave, destaques, distribuição UF
-6. **Panorama de Oportunidades** — Tabela resumo com badges de confiança
-7. **Análise Detalhada por Edital** — Ficha técnica + Risk Score (com ajuste maturidade E8) + ROI auditável (E1, reclassificação automática) + Risco do Edital (E6) + Lacunas Operacionais (E4) + Cronograma Reverso + análise por dimensão
-8. **Mapa Competitivo** — Contratos históricos + **Estatísticas de Disputas por Tipologia** (E5) + Fornecedores Recorrentes (E5)
-9. **Portfólio Estratégico** — Categorização ATACAR/AVALIAR/INVESTIMENTO/MONITORAR
+3. **Inteligência Exclusiva** — Resumo de 1 página com 4 diferenciais: mapeamento de incumbência, viabilidade calibrada ao perfil, sequência estratégica de acervo, clusters geográficos
+4. **Decisão em 30 Segundos** — Tabela com cores (PARTICIPAR verde, AVALIAR âmbar, NÃO RECOMENDADO vermelho) + coluna "Diferencial Estratégico" + justificativas
+5. **Perfil da Empresa** — Dados cadastrais, QSA, histórico gov, sanções + badge de maturidade (E8)
+6. **Resumo Executivo** — Métricas-chave, destaques, distribuição UF
+7. **Análise Detalhada por Edital** — Insight-first (recomendação + barra estratégica antes da ficha técnica) + Resultado Potencial auditável (E1) + Risco do Edital (E6) + Lacunas Operacionais (E4) + Cronograma Reverso + análise por dimensão
+8. **Mapa Competitivo** — Contratos históricos + Estatísticas de Disputas por Tipologia (E5) + Fornecedores Recorrentes com indicadores [DOMINANTE]/[FORTE] + Mercados Favoráveis à Entrada
+9. **Matriz Estratégica de Portfólio** — Quick Wins / Oportunidades / Investimentos Estratégicos (com coluna "Acervo Desbloqueado") / Inacessíveis / Baixa Prioridade
 10. **Análise Regional de Portfólio** (E7) — Clusters geográficos, mobilização compartilhada
-11. **Plano de Desenvolvimento** (E4) — Lacunas consolidadas com ações e prazos (12 meses)
-12. **Inteligência de Mercado** — Panorama, tendências, nichos, ranking
-13. **Menções em Diários Oficiais** — Querido Diário (se houver)
+11. **Plano de Desenvolvimento 12 meses** (E4) — Lacunas consolidadas com ações e prazos
+12. **Inteligência de Mercado** — Panorama, tendências, vantagens, recomendação geral
+13. **Menções em Diários Oficiais** — Publicações municipais (se houver)
 14. **Próximos Passos** — Ações priorizadas com prazos
-15. **Verificação SICAF** — Status cadastral (CRC), restrições, habilitações. Falha de coleta = alerta INCOMPLETO (E2)
-16. **Fontes de Dados e Confiabilidade** — Tabela com status de cada API consultada (datas BR)
-17. **Rodapé em todas as páginas:** "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
+15. **Verificação SICAF** — Status cadastral (CRC), restrições, habilitações. Falha = alerta INCOMPLETO (E2)
+16. **Fontes de Dados e Confiabilidade** — Tabela com nomes institucionais (Receita Federal, Portal da Transparência, Portal Nacional de Contratações Públicas, etc.), status e detalhes em português. **Zero termos técnicos ou em inglês.**
+17. **Rodapé em todas as páginas:** "Tiago Sasaki — Consultor de Inteligência em Licitações"
+
+**Regras visuais:**
+- Recomendações coloridas: PARTICIPAR (verde), AVALIAR COM CAUTELA (âmbar), NÃO RECOMENDADO (vermelho)
+- "Resultado Potencial" (não "Faturamento") — cálculo: valor × probabilidade × margem líquida setorial
+- Números em formato brasileiro: vírgula decimal, ponto milhar (12,5% não 12.5%)
+- Palavras nunca quebram no meio (wordWrap CJK)
 
 ---
 
@@ -291,17 +297,21 @@ Quando invocado:
 Critério: **"Se eu fosse o leitor, ficaria absolutamente satisfeito com o conteúdo ou teria dúvidas?"** Nada menos que "absolutamente satisfeito" é aceitável.
 
 - [ ] 1. Cada edital tem justificativa clara para sua recomendação?
-- [ ] 2. A memória de cálculo do ROI é reproduzível na mão?
+- [ ] 2. A memória de cálculo do Resultado Potencial é reproduzível na mão?
 - [ ] 3. O diagnóstico de cobertura está presente e é honesto?
-- [ ] 4. Há distinção clara entre "verificado OK" e "não verificado" em CADA fonte?
+- [ ] 4. Há distinção clara entre "Confirmado" e "Indisponível" em CADA fonte?
 - [ ] 5. Lacunas operacionais listam EXATAMENTE o que falta (não genérico)?
 - [ ] 6. Clusters regionais identificados quando aplicável?
 - [ ] 7. Risco do edital (histórico do órgão) analisado para cada oportunidade?
 - [ ] 8. Perfil de maturidade reflete a realidade da empresa?
 - [ ] 9. TODAS as datas estão em DD/MM/YYYY?
 - [ ] 10. ZERO palavras sem acento onde acento é necessário?
-- [ ] 11. Nenhum dado com fonte "UNAVAILABLE" apresentado como se fosse verificado?
+- [ ] 11. Nenhum dado com fonte "N/D" apresentado como se fosse verificado?
 - [ ] 12. O leitor consegue tomar decisão sem precisar de informação adicional?
+- [ ] 13. ZERO termos em inglês ou técnicos no PDF (nenhuma menção a API, JSON, Playwright, etc.)?
+- [ ] 14. Todos os números em formato brasileiro (vírgula decimal, ponto milhar)?
+- [ ] 15. Portal da Transparência consultado com chave (contratos + sanções)?
+- [ ] 16. Seção Inteligência Exclusiva presente com os 4 diferenciais?
 
 Se QUALQUER item = NÃO: revisar seção específica e re-gerar. Registrar `delivery_validation` no JSON.
 
