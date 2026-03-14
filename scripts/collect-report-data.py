@@ -361,6 +361,103 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
     return result
 
 
+def collect_pncp_contratos_fornecedor(api: ApiClient, cnpj14: str) -> tuple[list[dict], dict]:
+    """Fetch contract history from PNCP by supplier CNPJ.
+
+    Covers ALL spheres: federal, state, municipal, autarchies, foundations.
+    PNCP /contratos allows max 365-day window, so we query 2 consecutive years.
+    """
+    print("\n📋 Phase 1c: PNCP — Histórico de contratos do fornecedor (todas as esferas)")
+
+    all_contracts: list[dict] = []
+    errors = 0
+
+    esfera_labels = {"F": "Federal", "E": "Estadual", "M": "Municipal", "D": "Distrital"}
+
+    # Query 2 windows of 365 days each (covers ~2 years)
+    today = _today()
+    windows = [
+        (_date_compact(today - timedelta(days=365)), _date_compact(today)),
+        (_date_compact(today - timedelta(days=730)), _date_compact(today - timedelta(days=366))),
+    ]
+
+    for data_ini, data_fim in windows:
+        page = 1
+        while page <= 10:  # Max 10 pages per window
+            data, status = api.get(
+                f"{PNCP_BASE}/contratos",
+                params={
+                    "cnpjFornecedor": cnpj14,
+                    "dataInicial": data_ini,
+                    "dataFinal": data_fim,
+                    "pagina": page,
+                    "tamanhoPagina": 50,
+                },
+                label=f"PNCP contratos fornecedor p={page}",
+            )
+            if status != "API" or not data:
+                if status == "API_FAILED":
+                    errors += 1
+                break
+
+            items = data.get("data", data) if isinstance(data, dict) else data
+            if not isinstance(items, list) or not items:
+                break
+
+            for c in items:
+                orgao = c.get("orgaoEntidade", {})
+                unidade = c.get("unidadeOrgao", {})
+                esfera_id = orgao.get("esferaId", "")
+                esfera = esfera_labels.get(esfera_id, esfera_id)
+
+                all_contracts.append({
+                    "orgao": unidade.get("nomeUnidade", "") or orgao.get("razaoSocial", ""),
+                    "esfera": esfera,
+                    "uf": unidade.get("ufSigla", ""),
+                    "municipio": unidade.get("municipioNome", ""),
+                    "valor": _safe_float(c.get("valorGlobal") or c.get("valorInicial")),
+                    "data": c.get("dataAssinatura", ""),
+                    "objeto": (c.get("objetoContrato") or c.get("informacaoComplementar") or "")[:200],
+                    "numero_contrato": c.get("numeroContratoEmpenho", ""),
+                    "vigencia_fim": c.get("dataVigenciaFim", ""),
+                    "fonte": "PNCP",
+                })
+
+            # Pagination
+            total_pages = data.get("totalPaginas", 1) if isinstance(data, dict) else 1
+            if page >= total_pages:
+                break
+            page += 1
+            time.sleep(0.5)
+
+    # Dedup by (orgao, numero_contrato, data)
+    seen = set()
+    unique = []
+    for c in all_contracts:
+        key = (c["orgao"][:30], c["numero_contrato"], c["data"])
+        if key not in seen:
+            seen.add(key)
+            unique.append(c)
+    all_contracts = unique
+
+    # Stats
+    by_esfera = {}
+    for c in all_contracts:
+        e = c.get("esfera", "N/I")
+        by_esfera[e] = by_esfera.get(e, 0) + 1
+
+    n = len(all_contracts)
+    detail_parts = [f"{n} contrato(s) encontrado(s)"]
+    for esfera, count in sorted(by_esfera.items()):
+        detail_parts.append(f"{count} {esfera.lower()}")
+
+    status_tag = "API" if errors == 0 else ("API_PARTIAL" if n > 0 else "API_FAILED")
+    source = _source_tag(status_tag, ", ".join(detail_parts))
+
+    print(f"  PNCP contratos: {n} encontrados ({', '.join(f'{v} {k}' for k, v in by_esfera.items())})")
+    return all_contracts, source
+
+
 # ============================================================
 # SECTOR MAPPING
 # ============================================================
@@ -2329,48 +2426,65 @@ def detect_maturity_profile(empresa: dict) -> dict:
     - ESTABELECIDO: 10+ contracts OR 4+ UFs, diversified portfolio
     """
     historico = empresa.get("historico_contratos", [])
-    federal_count = len(historico) if isinstance(historico, list) else 0
+    total_count = len(historico) if isinstance(historico, list) else 0
 
-    # Extract unique UFs from contracts (if organ data available)
+    # Extract unique UFs, esferas, and value stats from contracts
     ufs_set: set[str] = set()
+    esferas: dict[str, int] = {}
     max_contract_value = 0.0
+    total_contract_value = 0.0
+    acervo_objetos: list[str] = []  # Contract objects = implicit technical portfolio
     for c in (historico if isinstance(historico, list) else []):
         uf = c.get("uf", "")
         if uf:
             ufs_set.add(uf)
+        esfera = c.get("esfera", "N/I")
+        esferas[esfera] = esferas.get(esfera, 0) + 1
         val = _safe_float(c.get("valor", c.get("valorInicial", 0)))
+        total_contract_value += val
         if val > max_contract_value:
             max_contract_value = val
+        obj = c.get("objeto", "")
+        if obj:
+            acervo_objetos.append(obj[:150])
 
     geo_spread = len(ufs_set)
     capital = _safe_float(empresa.get("capital_social"))
     max_ratio = max_contract_value / capital if capital > 0 else 0.0
 
-    if federal_count >= 10 or geo_spread >= 4:
+    # Classification considers ALL spheres (not just federal)
+    if total_count >= 10 or geo_spread >= 4:
         profile = "ESTABELECIDO"
+        esfera_detail = ", ".join(f"{v} {k.lower()}" for k, v in sorted(esferas.items(), key=lambda x: -x[1]))
         rationale = (
-            f"Portfólio diversificado: {federal_count} contratos federais"
-            f" em {geo_spread} UF(s)"
+            f"Portfólio diversificado: {total_count} contratos governamentais"
+            f" em {geo_spread} UF(s) ({esfera_detail})"
         )
-    elif federal_count >= 3:
+    elif total_count >= 3:
         profile = "REGIONAL"
+        esfera_detail = ", ".join(f"{v} {k.lower()}" for k, v in sorted(esferas.items(), key=lambda x: -x[1]))
         rationale = (
-            f"Experiência regional: {federal_count} contratos federais"
-            f" em {geo_spread} UF(s)"
+            f"Experiência regional: {total_count} contratos governamentais"
+            f" em {geo_spread} UF(s) ({esfera_detail})"
         )
     else:
         profile = "ENTRANTE"
         rationale = (
-            f"Novo no mercado governamental federal: {federal_count} contrato(s)"
+            f"Novo no mercado governamental: {total_count} contrato(s) identificado(s)"
         )
 
     return {
         "profile": profile,
-        "federal_contract_count": federal_count,
+        "total_contract_count": total_count,
+        "esferas": esferas,
         "geographic_spread": geo_spread,
         "max_contract_ratio": round(max_ratio, 2),
+        "total_contract_value": round(total_contract_value, 2),
+        "acervo_objetos": acervo_objetos[:20],  # Top 20 contract objects as implicit portfolio
         "rationale": rationale,
         "_source": _source_tag("CALCULATED"),
+        # Backward compat
+        "federal_contract_count": esferas.get("Federal", 0),
     }
 
 
@@ -2565,10 +2679,48 @@ def compute_qualification_gap_analysis(
             "action_required": f"Obter ou renovar {cert}",
         })
 
-    # Atestado gaps
+    # Atestado gaps — cross-reference edital object with historical contracts
     historico = empresa.get("historico_contratos", [])
-    has_similar_attestation = len(historico) > 0 if isinstance(historico, list) else False
-    if not has_similar_attestation:
+    historico_list = historico if isinstance(historico, list) else []
+
+    # Build set of keywords from historical contract objects (implicit acervo)
+    acervo_keywords: set[str] = set()
+    for c in historico_list:
+        obj_hist = (c.get("objeto", "") or "").lower()
+        for word in obj_hist.split():
+            if len(word) >= 5:  # Skip short words
+                acervo_keywords.add(word.rstrip(".,;:"))
+
+    obj_edital = (edital.get("objeto", "") or "").lower()
+    obj_edital_words = {w.rstrip(".,;:") for w in obj_edital.split() if len(w) >= 5}
+
+    # Check if any historical contract overlaps with edital object
+    acervo_overlap = acervo_keywords & obj_edital_words
+    has_similar_attestation = len(acervo_overlap) >= 2  # At least 2 matching keywords
+
+    if has_similar_attestation and historico_list:
+        # Find the most similar historical contract
+        best_match = ""
+        best_score = 0
+        for c in historico_list:
+            obj_hist = (c.get("objeto", "") or "").lower()
+            hist_words = {w.rstrip(".,;:") for w in obj_hist.split() if len(w) >= 5}
+            score = len(hist_words & obj_edital_words)
+            if score > best_score:
+                best_score = score
+                orgao = c.get("orgao", "")[:50]
+                valor_c = c.get("valor", 0)
+                esfera = c.get("esfera", "")
+                best_match = f"{orgao} ({esfera}, R$ {_safe_float(valor_c):,.0f})".replace(",", ".")
+        if best_match:
+            gaps.append({
+                "gap_type": "ACERVO_EXISTENTE",
+                "description": f"Acervo técnico inferido: contrato similar identificado em {best_match}",
+                "addressable": False,  # Not a gap — it's a strength
+                "estimated_timeline": "Já disponível",
+                "action_required": "Solicitar atestado de capacidade técnica ao órgão contratante se ainda não emitido",
+            })
+    elif not has_similar_attestation:
         for atestado in reqs.get("atestados", []):
             gaps.append({
                 "gap_type": "ATESTADO",
@@ -3486,6 +3638,31 @@ Examples:
 
     # ---- SICAF (obrigatório — E2) ----
     sicaf = collect_sicaf(cnpj14, verbose=verbose)
+
+    # ---- PNCP Contract History (all spheres) ----
+    pncp_contratos, pncp_contratos_source = collect_pncp_contratos_fornecedor(api, cnpj14)
+
+    # Merge PT federal + PNCP all-spheres into empresa.historico_contratos
+    # PNCP has broader coverage; PT may have additional federal detail
+    pt_contratos = transparencia.get("historico_contratos", [])
+    merged_contratos = list(pncp_contratos)  # PNCP as base (all spheres)
+    pncp_orgao_dates = {(c["orgao"][:30], c["data"][:10]) for c in pncp_contratos}
+    for c in pt_contratos:
+        key = (c.get("orgao", "")[:30], c.get("data", "")[:10])
+        if key not in pncp_orgao_dates:
+            c["esfera"] = "Federal"
+            c["fonte"] = "Portal da Transparência"
+            merged_contratos.append(c)
+    transparencia["historico_contratos"] = merged_contratos
+    # Update source to reflect merged data
+    n_pncp = len(pncp_contratos)
+    n_pt = len(pt_contratos)
+    n_merged = len(merged_contratos)
+    transparencia["historico_source"] = _source_tag(
+        "API",
+        f"{n_merged} contrato(s): {n_pncp} via PNCP (todas as esferas) + {n_pt} via Portal da Transparência (federal)"
+    )
+    print(f"  Histórico consolidado: {n_merged} contratos ({n_pncp} PNCP + {n_pt} PT, {n_merged - n_pncp - n_pt + len(set())} novos do PT)")
 
     # ---- Competitive Intelligence ----
     if not args.skip_competitive:
