@@ -2983,8 +2983,7 @@ def generate_report_b2g(data: dict) -> BytesIO:
     elements.extend(_build_querido_diario(data, styles, sec))
     # 12. Próximos Passos
     elements.extend(_build_next_steps(data, styles, sec))
-    # Appendix: Panorama de Oportunidades (raw table — moved to end)
-    elements.extend(_build_opportunities_overview(data, styles, sec))
+    # Panorama de Oportunidades removed — redundant with Decisão em 30 Segundos
     # SICAF
     elements.extend(_build_sicaf_section(data, styles, sec))
     # Data sources
