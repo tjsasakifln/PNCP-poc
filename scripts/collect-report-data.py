@@ -1753,66 +1753,75 @@ def collect_competitive_intel(
     data_fim = _today()
     data_ini = data_fim - timedelta(days=meses * 30)
 
+    # PNCP requires codigoModalidadeContratacao — iterate over useful modalities
+    # 4=Concorrência, 5=Pregão Eletrônico, 6=Pregão Presencial, 8=Inexigibilidade
+    _MODALIDADES_COMPETITIVAS = [5, 4, 6, 8]
+
     for cnpj_orgao, orgao_editais in orgao_map.items():
         orgao_nome = orgao_editais[0].get("orgao", cnpj_orgao)
         contracts: list[dict] = []
 
-        for page in range(1, 3):  # Max 2 pages
-            data, status = api.get(
-                f"{PNCP_BASE}/contratacoes/publicacao",
-                params={
-                    "dataInicial": _date_compact(data_ini),
-                    "dataFinal": _date_compact(data_fim),
-                    "cnpjOrgao": cnpj_orgao,
-                    "pagina": page,
-                    "tamanhoPagina": PNCP_MAX_PAGE_SIZE,
-                },
-                label=f"Competitiva: {orgao_nome[:30]}... p{page}",
-            )
+        for modalidade_cod in _MODALIDADES_COMPETITIVAS:
+            for page in range(1, 3):  # Max 2 pages per modality
+                data, status = api.get(
+                    f"{PNCP_BASE}/contratacoes/publicacao",
+                    params={
+                        "dataInicial": _date_compact(data_ini),
+                        "dataFinal": _date_compact(data_fim),
+                        "cnpjOrgao": cnpj_orgao,
+                        "codigoModalidadeContratacao": modalidade_cod,
+                        "pagina": page,
+                        "tamanhoPagina": PNCP_MAX_PAGE_SIZE,
+                    },
+                    label=f"Competitiva: {orgao_nome[:30]}... mod{modalidade_cod} p{page}",
+                )
 
-            if status != "API" or not isinstance(data, list):
-                break
+                if status != "API" or not isinstance(data, list):
+                    break
 
-            for item in data:
-                # Extract from contratos sub-array if present
-                contratos_arr = item.get("contratos") or []
-                found_contract = False
-                if contratos_arr and isinstance(contratos_arr, list):
-                    for c in contratos_arr:
-                        fn = c.get("nomeRazaoSocialFornecedor", "")
-                        vl = _safe_float(c.get("valorFinal") or c.get("valorInicial"))
-                        if fn:
+                for item in data:
+                    # Extract from contratos sub-array if present
+                    contratos_arr = item.get("contratos") or []
+                    found_contract = False
+                    if contratos_arr and isinstance(contratos_arr, list):
+                        for c in contratos_arr:
+                            fn = c.get("nomeRazaoSocialFornecedor", "")
+                            vl = _safe_float(c.get("valorFinal") or c.get("valorInicial"))
+                            if fn:
+                                contracts.append({
+                                    "fornecedor": fn,
+                                    "cnpj_fornecedor": c.get("cnpjCpfFornecedor", ""),
+                                    "objeto": (item.get("objetoCompra") or "")[:150],
+                                    "valor": vl,
+                                    "data": c.get("dataVigenciaInicio") or item.get("dataPublicacaoPncp") or "",
+                                })
+                                found_contract = True
+
+                    # Fallback: extract procurement-level data even without contratos
+                    if not found_contract:
+                        obj = (item.get("objetoCompra") or "")[:150]
+                        val_est = _safe_float(item.get("valorTotalEstimado"))
+                        val_hom = _safe_float(item.get("valorTotalHomologado"))
+                        pub_date = (item.get("dataPublicacaoPncp") or "")[:10]
+                        if obj and (val_est > 0 or val_hom > 0):
                             contracts.append({
-                                "fornecedor": fn,
-                                "cnpj_fornecedor": c.get("cnpjCpfFornecedor", ""),
-                                "objeto": (item.get("objetoCompra") or "")[:150],
-                                "valor": vl,
-                                "data": c.get("dataVigenciaInicio") or item.get("dataPublicacaoPncp") or "",
+                                "fornecedor": "",  # Unknown winner
+                                "cnpj_fornecedor": "",
+                                "objeto": obj,
+                                "valor": val_hom if val_hom > 0 else val_est,
+                                "valor_estimado": val_est,
+                                "valor_homologado": val_hom,
+                                "data": pub_date,
                             })
-                            found_contract = True
 
-                # Fallback: extract procurement-level data even without contratos
-                # This gives us at least the estimated vs homologated values for analysis
-                if not found_contract:
-                    obj = (item.get("objetoCompra") or "")[:150]
-                    val_est = _safe_float(item.get("valorTotalEstimado"))
-                    val_hom = _safe_float(item.get("valorTotalHomologado"))
-                    pub_date = (item.get("dataPublicacaoPncp") or "")[:10]
-                    orgao_ent = item.get("orgaoEntidade") or {}
-                    if obj and (val_est > 0 or val_hom > 0):
-                        contracts.append({
-                            "fornecedor": "",  # Unknown winner
-                            "cnpj_fornecedor": "",
-                            "objeto": obj,
-                            "valor": val_hom if val_hom > 0 else val_est,
-                            "valor_estimado": val_est,
-                            "valor_homologado": val_hom,
-                            "data": pub_date,
-                        })
+                if len(data) < PNCP_MAX_PAGE_SIZE:
+                    break
+                time.sleep(0.3)
 
-            if len(data) < PNCP_MAX_PAGE_SIZE:
+            # Stop iterating modalities if we already have enough data
+            if len(contracts) >= 40:
                 break
-            time.sleep(0.5)
+            time.sleep(0.3)
 
         # Assign to all editais of this orgão
         source = _source_tag("API", f"{len(contracts)} contratos") if contracts else _source_tag("API", "0 contratos")
@@ -1820,7 +1829,7 @@ def collect_competitive_intel(
             ed["competitive_intel"] = contracts[:20]  # Limit to 20 most recent
             ed["competitive_intel_source"] = source
 
-        time.sleep(0.5)
+        time.sleep(0.3)
 
     # Mark editais without orgao data
     for ed in editais:
