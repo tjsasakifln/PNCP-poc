@@ -76,7 +76,7 @@ python scripts/collect-report-data.py \
 
 **O script agora calcula automaticamente (Phase 1 v2):**
 - **Índice de Viabilidade** — Nota 0-100 que mede quão viável é participar deste edital para ESTA empresa. Combina: modalidade (30%), prazo (25%), valor vs. capacidade (25%) e proximidade geográfica (20%). Em `editais[].risk_score`
-- **Faturamento Potencial** — Estimativa de receita caso a empresa vença, baseado no valor do edital × margem típica do setor. "Chance de vitória" é uma estimativa baseada no perfil competitivo. Em `editais[].roi_potential`
+- **Resultado Potencial** — Estimativa de lucro líquido caso a empresa vença, baseado no valor do edital × probabilidade de vitória × margem líquida do setor. Em `editais[].roi_potential`
 - **Cronograma Reverso** — Marcos automáticos do deadline para trás em `editais[].cronograma`
 - **Inteligência Competitiva** — Contratos históricos dos órgãos licitantes (PNCP 24 meses) em `editais[].competitive_intel`
 - **Multi-setor** — CNAE mapeado para todos os 15 setores (não apenas engenharia)

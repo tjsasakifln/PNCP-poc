@@ -1268,7 +1268,7 @@ def _build_roi_text(roi: dict, ed: dict, styles: dict) -> list:
         conf_label = " (base setorial)"
 
     el.append(Paragraph(
-        f"<b>Faturamento Potencial:</b> {roi_text}  |  "
+        f"<b>Resultado Potencial:</b> {roi_text}  |  "
         f"Probabilidade de vitória: {prob_text}{conf_label}",
         styles["body"],
     ))
@@ -1308,7 +1308,7 @@ def _build_roi_text(roi: dict, ed: dict, styles: dict) -> list:
 
     if not _roi_shown:
         el.append(Paragraph(
-            "Faturamento potencial = valor do edital × probabilidade × margem do setor. "
+            "Resultado potencial = valor do edital × probabilidade de vitória × margem líquida do setor. "
             "Probabilidade calculada via modelo competitivo (fornecedores históricos, "
             "modalidade, incumbência) ajustado pelo índice de viabilidade.",
             styles["caption"],
@@ -1823,7 +1823,7 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
         if isinstance(wp, dict) and wp.get("probability", 0) > 0:
             strategic_bar_parts.append(f"Prob. vitória: {_pct(wp['probability'])}")
         if isinstance(roi, dict) and roi.get("roi_max", 0) > 0:
-            strategic_bar_parts.append(f"Faturamento potencial: até {_currency_short(roi['roi_max'])}")
+            strategic_bar_parts.append(f"Resultado potencial: até {_currency_short(roi['roi_max'])}")
         if ed.get("strategic_category"):
             cat_labels = {"QUICK_WIN": "Quick Win", "OPORTUNIDADE": "Oportunidade",
                           "INVESTIMENTO": "Investimento Estratégico", "INACESSÍVEL": "Inacessível",
