@@ -1335,8 +1335,8 @@ def collect_pncp(
 
     source_meta["total_filtered"] = len(all_editais)
     _source = _source_tag("API" if source_meta["errors"] == 0 else "API_PARTIAL",
-                          f"{source_meta['total_raw']} raw, {source_meta['total_filtered']} filtered, "
-                          f"{source_meta['pages_fetched']} pages, {source_meta['errors']} errors")
+                          f"{source_meta['total_raw']} obtidos, {source_meta['total_filtered']} relevantes, "
+                          f"{source_meta['pages_fetched']} páginas consultadas")
 
     print(f"\n  PNCP: {source_meta['total_raw']} raw → {source_meta['total_filtered']} filtrados")
     return all_editais, _source
@@ -1485,7 +1485,7 @@ def collect_pcp(
     source_meta["total_filtered"] = len(all_editais)
     _source = _source_tag(
         "API" if source_meta["errors"] == 0 else "API_PARTIAL",
-        f"{source_meta['total_raw']} raw, {source_meta['total_filtered']} filtered",
+        f"{source_meta['total_raw']} obtidos, {source_meta['total_filtered']} relevantes",
     )
 
     print(f"  PCP v2: {source_meta['total_raw']} raw → {source_meta['total_filtered']} filtrados")
@@ -3207,9 +3207,27 @@ def assemble_report_data(
     # Merge + dedup editais (PNCP priority)
     all_editais = list(editais_pncp)  # PNCP first (priority)
     pncp_links = {ed.get("link") for ed in editais_pncp if ed.get("link")}
+    pcp_dedup_count = 0
+    pcp_added_count = 0
     for ed in editais_pcp:
         if ed.get("link") not in pncp_links:
             all_editais.append(ed)
+            pcp_added_count += 1
+        else:
+            pcp_dedup_count += 1
+
+    # Update source details with dedup info
+    if isinstance(pncp_source, dict):
+        old = pncp_source.get("detail", "")
+        pncp_source["detail"] = f"{old}, {len(editais_pncp)} incluídos no relatório" if old else f"{len(editais_pncp)} editais incluídos"
+    if isinstance(pcp_source, dict):
+        old = pcp_source.get("detail", "")
+        if editais_pcp:
+            pcp_source["detail"] = f"{len(editais_pcp)} obtidos, {pcp_dedup_count} duplicados removidos, {pcp_added_count} complementares incluídos"
+        elif old:
+            pcp_source["detail"] = old
+        else:
+            pcp_source["detail"] = "Nenhum edital complementar encontrado"
 
     # Sort by dias_restantes ascending (most urgent first)
     all_editais.sort(key=lambda e: (
