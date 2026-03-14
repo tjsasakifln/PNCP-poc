@@ -90,3 +90,8 @@ if _mod is not None:
     _HABILITACAO_REQUIREMENTS = _mod._HABILITACAO_REQUIREMENTS
     _SECTOR_RISK_FLAGS = _mod._SECTOR_RISK_FLAGS
     _PARTICIPATION_COST = _mod._PARTICIPATION_COST
+    # E1-E8 new functions
+    detect_maturity_profile = _mod.detect_maturity_profile
+    compute_qualification_gap_analysis = _mod.compute_qualification_gap_analysis
+    compute_regional_clusters = _mod.compute_regional_clusters
+    _SECTOR_REQUIREMENTS_DETAILED = _mod._SECTOR_REQUIREMENTS_DETAILED

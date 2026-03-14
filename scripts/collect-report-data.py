@@ -931,6 +931,20 @@ def compute_habilitacao_analysis(
         })
         gaps.append("Restrição cadastral no SICAF — regularizar antes de licitar")
         dim_scores.append(10)
+    elif sicaf_status == "FALHA_COLETA":
+        # E2: SICAF failure is distinct from "not checked" — analysis is incomplete
+        attempted_at = sicaf.get("attempted_at", "")
+        error_detail = sicaf.get("error_detail", "erro desconhecido")
+        dimensions.append({
+            "dimension": "Regularidade Fiscal",
+            "status": "INCOMPLETO",
+            "detail": (
+                f"Coleta SICAF falhou em {attempted_at}: {error_detail}. "
+                "Análise de habilitação incompleta por falha de coleta, não por ausência de relevância."
+            ),
+        })
+        gaps.append(f"Regularidade fiscal não verificada — coleta SICAF falhou em {attempted_at}")
+        dim_scores.append(40)
     elif sicaf_status == "NÃO CONSULTADO":
         fiscal_reqs = ", ".join(reqs.get("fiscal", [])[:3])
         dimensions.append({
@@ -995,7 +1009,7 @@ def compute_habilitacao_analysis(
     statuses = [d["status"] for d in dimensions]
     if "CRÍTICO" in statuses:
         overall = "INAPTA"
-    elif "ATENÇÃO" in statuses:
+    elif "INCOMPLETO" in statuses or "ATENÇÃO" in statuses:
         overall = "PARCIALMENTE_APTA"
     else:
         overall = "APTA"
@@ -1209,9 +1223,15 @@ def compute_portfolio_analysis(
             "roi_max": roi_max,
         }
 
+        # E1: respect strategic reclassification from ROI engine
+        roi_reclass = ed.get("roi_potential", {}).get("strategic_reclassification")
+
         if hab_status == "INAPTA":
             ed["strategic_category"] = "INACESSÍVEL"
             inaccessible += 1
+        elif roi_reclass == "INVESTIMENTO_ESTRATEGICO_ACERVO":
+            ed["strategic_category"] = "INVESTIMENTO"
+            investments.append(summary)
         elif prob >= 0.15 and risk >= 50:
             ed["strategic_category"] = "QUICK_WIN"
             quick_wins.append(summary)
@@ -2138,6 +2158,8 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
     Formula: valor × probability × margin_range
     - probability from win_probability engine (Bayesian-inspired)
     - margin varies by sector
+    - Auto-reclassifies as "INVESTIMENTO_ESTRATEGICO_ACERVO" when ROI is
+      marginal (< R$10K) on contracts > R$100K.
     """
     valor = _safe_float(edital.get("valor_estimado"))
     if valor <= 0:
@@ -2145,18 +2167,59 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
             "roi_min": 0, "roi_max": 0, "probability": 0.0,
             "margin_range": "N/A",
             "confidence": win_prob.get("confidence", "baixa"),
+            "strategic_reclassification": None,
+            "reclassification_rationale": None,
+            "calculation_memory": {
+                "valor_edital": 0,
+                "probabilidade_vitoria": 0.0,
+                "margem_min_pct": "N/A",
+                "margem_max_pct": "N/A",
+                "formula": "valor × probabilidade × margem",
+                "roi_min_calc": "Valor estimado indisponível",
+                "roi_max_calc": "Valor estimado indisponível",
+            },
             "_source": _source_tag("CALCULATED", "Valor estimado indisponível"),
         }
 
     margin_min, margin_max = _SECTOR_MARGINS.get(sector_key, (0.08, 0.15))
     probability = win_prob.get("probability", 0.10)
 
+    roi_min = round(valor * probability * margin_min)
+    roi_max = round(valor * probability * margin_max)
+
+    # Auditable calculation memory — every factor explicit for manual reproduction
+    def _fmt_brl(v: float) -> str:
+        return f"R$ {v:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    calculation_memory = {
+        "valor_edital": valor,
+        "probabilidade_vitoria": round(probability, 4),
+        "margem_min_pct": f"{margin_min * 100:.0f}%",
+        "margem_max_pct": f"{margin_max * 100:.0f}%",
+        "formula": "valor × probabilidade × margem",
+        "roi_min_calc": f"{_fmt_brl(valor)} × {probability:.4f} × {margin_min:.2f} = {_fmt_brl(roi_min)}",
+        "roi_max_calc": f"{_fmt_brl(valor)} × {probability:.4f} × {margin_max:.2f} = {_fmt_brl(roi_max)}",
+    }
+
+    # Auto-reclassification: marginal ROI on substantial contracts
+    strategic_reclassification = None
+    reclassification_rationale = None
+    if roi_max < 10_000 and valor > 100_000:
+        strategic_reclassification = "INVESTIMENTO_ESTRATEGICO_ACERVO"
+        reclassification_rationale = (
+            f"Retorno financeiro direto marginal ({_fmt_brl(roi_max)}) em contrato de "
+            f"{_fmt_brl(valor)} — valor principal é acervo técnico e relacionamento institucional"
+        )
+
     return {
-        "roi_min": round(valor * probability * margin_min),
-        "roi_max": round(valor * probability * margin_max),
+        "roi_min": roi_min,
+        "roi_max": roi_max,
         "probability": round(probability, 3),
         "margin_range": f"{margin_min * 100:.0f}%-{margin_max * 100:.0f}%",
         "confidence": win_prob.get("confidence", "baixa"),
+        "strategic_reclassification": strategic_reclassification,
+        "reclassification_rationale": reclassification_rationale,
+        "calculation_memory": calculation_memory,
         "_source": _source_tag("CALCULATED"),
     }
 
@@ -2248,28 +2311,678 @@ def build_reverse_chronogram(edital: dict) -> list[dict]:
     return cronograma
 
 
+# ============================================================
+# E8: MATURITY PROFILE DETECTION
+# ============================================================
+
+_MATURITY_HIGH_VALUE_THRESHOLD = 500_000  # above this, ENTRANTE gets hab penalty
+
+
+def detect_maturity_profile(empresa: dict) -> dict:
+    """Detect company maturity profile from federal contract history.
+
+    Three profiles:
+    - ENTRANTE: 0-2 federal contracts, new to government market
+    - REGIONAL: 3-10 contracts, ≤3 UFs, regional experience
+    - ESTABELECIDO: 10+ contracts OR 4+ UFs, diversified portfolio
+    """
+    historico = empresa.get("historico_contratos", [])
+    federal_count = len(historico) if isinstance(historico, list) else 0
+
+    # Extract unique UFs from contracts (if organ data available)
+    ufs_set: set[str] = set()
+    max_contract_value = 0.0
+    for c in (historico if isinstance(historico, list) else []):
+        uf = c.get("uf", "")
+        if uf:
+            ufs_set.add(uf)
+        val = _safe_float(c.get("valor", c.get("valorInicial", 0)))
+        if val > max_contract_value:
+            max_contract_value = val
+
+    geo_spread = len(ufs_set)
+    capital = _safe_float(empresa.get("capital_social"))
+    max_ratio = max_contract_value / capital if capital > 0 else 0.0
+
+    if federal_count >= 10 or geo_spread >= 4:
+        profile = "ESTABELECIDO"
+        rationale = (
+            f"Portfólio diversificado: {federal_count} contratos federais"
+            f" em {geo_spread} UF(s)"
+        )
+    elif federal_count >= 3:
+        profile = "REGIONAL"
+        rationale = (
+            f"Experiência regional: {federal_count} contratos federais"
+            f" em {geo_spread} UF(s)"
+        )
+    else:
+        profile = "ENTRANTE"
+        rationale = (
+            f"Novo no mercado governamental federal: {federal_count} contrato(s)"
+        )
+
+    return {
+        "profile": profile,
+        "federal_contract_count": federal_count,
+        "geographic_spread": geo_spread,
+        "max_contract_ratio": round(max_ratio, 2),
+        "rationale": rationale,
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+# ============================================================
+# E3: COVERAGE DIAGNOSTIC
+# ============================================================
+
+def compute_coverage_diagnostic(
+    api: "ApiClient",
+    captured_editais: list[dict],
+    keywords: list[str],
+    ufs: list[str],
+    sector_key: str,
+) -> dict:
+    """Compute collection coverage diagnostic.
+
+    Queries PNCP for total matching editais in each UF for 30/60/90 day
+    windows and compares against captured count to detect under-representation.
+    """
+    captured_count = len(captured_editais)
+    per_uf: list[dict] = []
+    total_estimated = 0
+
+    for uf in ufs:
+        uf_captured = sum(1 for e in captured_editais if (e.get("uf", "") or "").upper() == uf.upper())
+        uf_estimated = 0
+
+        # Query PNCP for total count (page 1 only, read totalRegistros)
+        for mod_code in [4, 5, 6, 8]:  # Concorrência, Pregão E/P, Inexigibilidade
+            try:
+                data_fim = _today()
+                data_ini = data_fim - timedelta(days=30)
+                params = {
+                    "dataInicial": _date_compact(data_ini),
+                    "dataFinal": _date_compact(data_fim),
+                    "uf": uf,
+                    "codigoModalidadeContratacao": mod_code,
+                    "pagina": 1,
+                    "tamanhoPagina": 1,
+                }
+                resp = api.get(f"{PNCP_BASE}/contratacoes/publicacao", params=params)
+                if resp and isinstance(resp, dict):
+                    uf_estimated += resp.get("totalRegistros", 0)
+            except Exception:
+                pass
+
+        total_estimated += uf_estimated
+        rate = uf_captured / uf_estimated if uf_estimated > 0 else 1.0
+        per_uf.append({
+            "uf": uf,
+            "captured": uf_captured,
+            "estimated_total": uf_estimated,
+            "rate": round(rate, 2),
+        })
+
+    overall_rate = captured_count / total_estimated if total_estimated > 0 else 1.0
+
+    warning = None
+    low_ufs = [p for p in per_uf if p["rate"] < 0.70 and p["estimated_total"] > 0]
+    if overall_rate < 0.70:
+        warning = (
+            f"Cobertura geral abaixo de 70% ({overall_rate:.0%}). "
+            f"UFs com baixa cobertura: {', '.join(p['uf'] for p in low_ufs)}. "
+            "Possível subrepresentação de oportunidades."
+        )
+    elif low_ufs:
+        warning = (
+            "Cobertura abaixo de 70% em: " + ", ".join(p["uf"] + f" ({p['rate']:.0%})" for p in low_ufs) + "."
+        )
+
+    return {
+        "coverage_rate": round(overall_rate, 2),
+        "captured_count": captured_count,
+        "total_estimated": total_estimated,
+        "per_uf": per_uf,
+        "warning": warning,
+        "methodology": (
+            "Total estimado via contagem PNCP (todas as modalidades relevantes, "
+            "últimos 30 dias por UF). Taxa = editais capturados / total publicado."
+        ),
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+# ============================================================
+# E4: QUALIFICATION GAP ANALYSIS (sector compat vs operational gaps)
+# ============================================================
+
+# Sector-specific requirements for gap analysis
+_SECTOR_REQUIREMENTS_DETAILED: dict[str, dict] = {
+    "engenharia": {
+        "certifications": ["Registro CREA", "ISO 9001 (desejável)"],
+        "atestados": ["Atestado de obra similar (CREA/CAU)", "CAT de responsável técnico"],
+        "capital_pct": 0.10,
+    },
+    "engenharia_rodoviaria": {
+        "certifications": ["Registro CREA", "Certificação DNIT (desejável)"],
+        "atestados": ["Atestado de obra rodoviária", "CAT de engenheiro"],
+        "capital_pct": 0.15,
+    },
+    "software": {
+        "certifications": ["ISO 27001 (desejável)", "Certificação LGPD"],
+        "atestados": ["Atestado de fornecimento de software similar"],
+        "capital_pct": 0.05,
+    },
+    "informatica": {
+        "certifications": ["ISO 27001 (desejável)"],
+        "atestados": ["Atestado de fornecimento de equipamentos/serviços de TI"],
+        "capital_pct": 0.05,
+    },
+    "facilities": {
+        "certifications": ["Alvará de funcionamento", "ISO 41001 (desejável)"],
+        "atestados": ["Atestado de prestação de serviços de facilities"],
+        "capital_pct": 0.08,
+    },
+    "vigilancia": {
+        "certifications": ["Autorização PF para vigilância", "Alvará"],
+        "atestados": ["Atestado de prestação de serviço de vigilância"],
+        "capital_pct": 0.10,
+    },
+    "saude": {
+        "certifications": ["ANVISA", "CRM/CRF", "ISO 13485 (desejável)"],
+        "atestados": ["Atestado de fornecimento na área de saúde"],
+        "capital_pct": 0.10,
+    },
+    "_default": {
+        "certifications": [],
+        "atestados": ["Atestado de fornecimento similar"],
+        "capital_pct": 0.05,
+    },
+}
+
+
+def compute_qualification_gap_analysis(
+    edital: dict,
+    empresa: dict,
+    object_compat: dict,
+    sector_key: str,
+) -> dict:
+    """Separate sector incompatibility from addressable operational gaps.
+
+    Category 1: INCOMPATÍVEL_CNAE — permanent discard (object outside all company CNAEs)
+    Category 2: LACUNA_OPERACIONAL — compatible but can't participate NOW (with remediation plan)
+    """
+    compat_score = object_compat.get("score", 0.5)
+    compat_level = object_compat.get("compatibility", "DESCONHECIDA")
+
+    # Category 1: CNAE incompatibility
+    if compat_score < 0.2 and compat_level == "BAIXA":
+        obj_text = (edital.get("objeto", "") or "")[:120]
+        cnae_principal = empresa.get("cnae_principal", "N/I")
+        return {
+            "filter_result": "INCOMPATÍVEL_CNAE",
+            "incompatibility_rationale": (
+                f"Objeto \"{obj_text}\" é incompatível com o CNAE principal "
+                f"({cnae_principal}) e secundários da empresa"
+            ),
+            "operational_gaps": [],
+            "readiness_score": 0,
+            "development_plan": [],
+            "_source": _source_tag("CALCULATED"),
+        }
+
+    # Category 2: Compatible but operational gaps exist
+    reqs = _SECTOR_REQUIREMENTS_DETAILED.get(sector_key, _SECTOR_REQUIREMENTS_DETAILED["_default"])
+    valor = _safe_float(edital.get("valor_estimado"))
+    capital = _safe_float(empresa.get("capital_social"))
+    gaps: list[dict] = []
+
+    # Capital gap
+    capital_pct = reqs.get("capital_pct", 0.05)
+    min_capital = valor * capital_pct
+    if capital > 0 and valor > 0 and capital < min_capital:
+        deficit = min_capital - capital
+        def _fmt(v: float) -> str:
+            return f"R$ {v:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        gaps.append({
+            "gap_type": "CAPITAL",
+            "description": f"Capital social ({_fmt(capital)}) abaixo do mínimo estimado ({_fmt(min_capital)}) para edital de {_fmt(valor)}",
+            "addressable": True,
+            "estimated_timeline": "3-6 meses (alteração contratual)",
+            "action_required": f"Integralizar capital adicional de {_fmt(deficit)}",
+        })
+
+    # Certification gaps
+    for cert in reqs.get("certifications", []):
+        gaps.append({
+            "gap_type": "CERTIFICAÇÃO",
+            "description": f"Verificar se possui: {cert}",
+            "addressable": True,
+            "estimated_timeline": "3-12 meses" if "ISO" in cert else "1-3 meses",
+            "action_required": f"Obter ou renovar {cert}",
+        })
+
+    # Atestado gaps
+    historico = empresa.get("historico_contratos", [])
+    has_similar_attestation = len(historico) > 0 if isinstance(historico, list) else False
+    if not has_similar_attestation:
+        for atestado in reqs.get("atestados", []):
+            gaps.append({
+                "gap_type": "ATESTADO",
+                "description": f"Sem acervo comprovado: {atestado}",
+                "addressable": True,
+                "estimated_timeline": "6-12 meses (execução de contrato similar)",
+                "action_required": f"Executar obra/serviço similar e obter {atestado}",
+            })
+
+    # Readiness score: 100 if no gaps, decreases with each gap
+    readiness = max(0, 100 - len(gaps) * 20)
+
+    # Development plan: prioritized list of actions
+    development_plan = []
+    for i, g in enumerate(sorted(gaps, key=lambda x: x["gap_type"]), 1):
+        development_plan.append({
+            "priority": i,
+            "action": g["action_required"],
+            "timeline": g["estimated_timeline"],
+            "gap_type": g["gap_type"],
+        })
+
+    return {
+        "filter_result": "COMPATÍVEL",
+        "incompatibility_rationale": None,
+        "operational_gaps": gaps,
+        "readiness_score": readiness,
+        "development_plan": development_plan,
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+# ============================================================
+# E5: HISTORICAL DISPUTE STATISTICS
+# ============================================================
+
+_VALUE_BRACKETS = [
+    (0, 100_000, "0-100K"),
+    (100_000, 500_000, "100K-500K"),
+    (500_000, 2_000_000, "500K-2M"),
+    (2_000_000, float("inf"), "2M+"),
+]
+
+
+def _value_bracket(valor: float) -> str:
+    for low, high, label in _VALUE_BRACKETS:
+        if low <= valor < high:
+            return label
+    return "2M+"
+
+
+def compute_historical_dispute_stats(all_contracts: list[dict]) -> dict:
+    """Aggregate historical dispute statistics from competitive intel contracts.
+
+    Groups by modality × value bracket to produce:
+    - avg participants, avg discount, adjudication rate, desert/failed rate
+    """
+    from collections import defaultdict
+
+    stats: dict[str, dict] = defaultdict(lambda: {
+        "n_procurements": 0, "suppliers": [], "discounts": [],
+        "adjudicated": 0, "desert": 0, "failed": 0,
+    })
+
+    # Build supplier frequency for recurring detection
+    supplier_counts: dict[str, dict] = defaultdict(lambda: {"n": 0, "ufs": set()})
+
+    for c in all_contracts:
+        fornecedor = c.get("fornecedor", "") or c.get("cnpj_fornecedor", "")
+        valor_est = _safe_float(c.get("valor_estimado", 0))
+        valor_hom = _safe_float(c.get("valor", c.get("valor_homologado", 0)))
+        modalidade = (c.get("modalidade", "") or "").lower().strip()
+        bracket = _value_bracket(max(valor_est, valor_hom))
+        key = f"{modalidade}_{bracket}" if modalidade else f"outro_{bracket}"
+
+        bucket = stats[key]
+        bucket["n_procurements"] += 1
+        if fornecedor:
+            bucket["suppliers"].append(fornecedor)
+            cnpj_f = c.get("cnpj_fornecedor", fornecedor)
+            supplier_counts[cnpj_f]["n"] += 1
+            uf = c.get("uf", "")
+            if uf:
+                supplier_counts[cnpj_f]["ufs"].add(uf)
+
+        # Discount calculation
+        if valor_est > 0 and valor_hom > 0:
+            discount = (valor_est - valor_hom) / valor_est
+            if -0.5 <= discount <= 0.9:  # Sanity check
+                bucket["discounts"].append(discount)
+
+        # Outcome (simplified: if valor_hom > 0 = adjudicated)
+        if valor_hom > 0:
+            bucket["adjudicated"] += 1
+        # Note: desert/failed detection requires status field which may not be available
+
+    # Aggregate
+    stats_by_typology = {}
+    for key, bucket in stats.items():
+        n = bucket["n_procurements"]
+        if n == 0:
+            continue
+        unique_suppliers = len(set(bucket["suppliers"]))
+        stats_by_typology[key] = {
+            "avg_participants": round(unique_suppliers / max(n, 1), 1),
+            "avg_discount_pct": round(
+                sum(bucket["discounts"]) / len(bucket["discounts"]) * 100, 1
+            ) if bucket["discounts"] else None,
+            "adjudication_rate": round(bucket["adjudicated"] / n, 2),
+            "sample_size": n,
+        }
+
+    # Recurring suppliers (3+ contracts)
+    recurring = [
+        {
+            "nome_ou_cnpj": k,
+            "n_contracts": v["n"],
+            "ufs": sorted(v["ufs"]),
+        }
+        for k, v in sorted(supplier_counts.items(), key=lambda x: x[1]["n"], reverse=True)
+        if v["n"] >= 3
+    ][:10]  # Top 10
+
+    return {
+        "stats_by_typology": stats_by_typology,
+        "recurring_suppliers": recurring,
+        "total_contracts_analyzed": len(all_contracts),
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+# ============================================================
+# E6: ORGAN RISK PROFILE
+# ============================================================
+
+def compute_organ_risk_profile(
+    edital: dict,
+    organ_contracts: list[dict],
+    sector_key: str,
+) -> dict:
+    """Analyze risk from the EDITAL perspective (not company perspective).
+
+    Checks: organ track record, timeline adequacy, amendment patterns.
+    """
+    n_contracts = len(organ_contracts)
+    if n_contracts == 0:
+        return {
+            "organ_track_record": "INDETERMINADO",
+            "similar_published": 0,
+            "adjudication_rate": None,
+            "desert_rate": None,
+            "has_prior_similar": False,
+            "timeline_assessment": "INDETERMINADO",
+            "timeline_rationale": "Sem histórico do órgão para avaliar",
+            "amendment_history": None,
+            "risk_flags": [],
+            "_source": _source_tag("CALCULATED", "Sem contratos do órgão"),
+        }
+
+    # Count adjudicated (has valor > 0) vs likely desert (no valor)
+    adjudicated = sum(1 for c in organ_contracts if _safe_float(c.get("valor", 0)) > 0)
+    adj_rate = adjudicated / n_contracts if n_contracts > 0 else 0
+    desert_rate = 1.0 - adj_rate
+
+    # Check if organ has published similar object before
+    edital_obj = (edital.get("objeto", "") or "").lower()
+    obj_words = set(w for w in edital_obj.split() if len(w) > 4)
+    similar_count = 0
+    for c in organ_contracts:
+        c_obj = (c.get("objeto", "") or "").lower()
+        matches = sum(1 for w in obj_words if w in c_obj)
+        if matches >= 2:
+            similar_count += 1
+
+    has_prior_similar = similar_count > 0
+
+    # Timeline assessment
+    valor = _safe_float(edital.get("valor_estimado"))
+    dias = edital.get("dias_restantes")
+    if dias is not None and valor > 0:
+        # Simple heuristic: complex projects need more time
+        if sector_key in ("engenharia", "engenharia_rodoviaria"):
+            min_days = 30 if valor < 500_000 else (60 if valor < 2_000_000 else 90)
+        else:
+            min_days = 15 if valor < 500_000 else 30
+        if dias >= min_days:
+            timeline = "ADEQUADO"
+            timeline_rationale = f"Prazo de {dias} dias adequado para o porte/complexidade"
+        elif dias >= min_days * 0.5:
+            timeline = "APERTADO"
+            timeline_rationale = f"Prazo de {dias} dias apertado (recomendável {min_days}+ dias)"
+        else:
+            timeline = "INSUFICIENTE"
+            timeline_rationale = f"Prazo de {dias} dias insuficiente (mínimo recomendável: {min_days} dias)"
+    else:
+        timeline = "INDETERMINADO"
+        timeline_rationale = "Prazo ou valor indisponível para avaliação"
+
+    # Risk flags
+    risk_flags = []
+    if desert_rate > 0.20:
+        risk_flags.append(f"Órgão com histórico de licitações desertas ({desert_rate:.0%})")
+    if not has_prior_similar:
+        risk_flags.append("Órgão nunca publicou contratação similar — risco de especificação inadequada")
+    if timeline == "INSUFICIENTE":
+        risk_flags.append(f"Prazo insuficiente: {dias} dias para contrato de R$ {valor:,.0f}")
+
+    # Track record classification
+    if adj_rate >= 0.80 and has_prior_similar:
+        track_record = "BOM"
+    elif adj_rate >= 0.50:
+        track_record = "REGULAR"
+    else:
+        track_record = "RISCO"
+
+    return {
+        "organ_track_record": track_record,
+        "similar_published": similar_count,
+        "adjudication_rate": round(adj_rate, 2),
+        "desert_rate": round(desert_rate, 2),
+        "has_prior_similar": has_prior_similar,
+        "timeline_assessment": timeline,
+        "timeline_rationale": timeline_rationale,
+        "amendment_history": None,  # Future: extract from Portal da Transparência
+        "risk_flags": risk_flags,
+        "_source": _source_tag("CALCULATED", f"{n_contracts} contratos do órgão"),
+    }
+
+
+# ============================================================
+# E7: REGIONAL CLUSTER ANALYSIS
+# ============================================================
+
+def compute_regional_clusters(editais: list[dict]) -> dict:
+    """Cluster editais by geographic proximity for shared mobilization detection.
+
+    Uses lat/lon from distance calculations (Nominatim) and greedy 150km clustering.
+    """
+    import math
+
+    # Extract editais with coordinates
+    geo_editais = []
+    for i, ed in enumerate(editais):
+        dist = ed.get("distancia", {})
+        if isinstance(dist, dict):
+            lat = dist.get("dest_lat")
+            lon = dist.get("dest_lon")
+            if lat is not None and lon is not None:
+                geo_editais.append({"index": i, "lat": lat, "lon": lon, "ed": ed})
+
+    if len(geo_editais) < 2:
+        return {
+            "clusters": [],
+            "isolated_editais": list(range(len(editais))),
+            "clustering_method": "greedy_150km_radius",
+            "_source": _source_tag("CALCULATED", "Menos de 2 editais com coordenadas"),
+        }
+
+    def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        R = 6371.0
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    CLUSTER_RADIUS_KM = 150.0
+    used = set()
+    clusters = []
+
+    # Sort by value (highest first) to use as cluster centers
+    geo_editais.sort(key=lambda x: _safe_float(x["ed"].get("valor_estimado", 0)), reverse=True)
+
+    for ge in geo_editais:
+        if ge["index"] in used:
+            continue
+
+        # Start new cluster with this edital as center
+        cluster_members = [ge]
+        used.add(ge["index"])
+
+        for other in geo_editais:
+            if other["index"] in used:
+                continue
+            dist_km = _haversine_km(ge["lat"], ge["lon"], other["lat"], other["lon"])
+            if dist_km <= CLUSTER_RADIUS_KM:
+                cluster_members.append(other)
+                used.add(other["index"])
+
+        if len(cluster_members) >= 2:
+            # Compute cluster metrics
+            center_mun = cluster_members[0]["ed"].get("municipio", "")
+            center_uf = cluster_members[0]["ed"].get("uf", "")
+            total_valor = sum(_safe_float(m["ed"].get("valor_estimado", 0)) for m in cluster_members)
+
+            # Max radius from center
+            max_radius = max(
+                _haversine_km(ge["lat"], ge["lon"], m["lat"], m["lon"])
+                for m in cluster_members
+            )
+
+            # Timeline overlap check
+            deadlines = []
+            for m in cluster_members:
+                enc = m["ed"].get("data_encerramento")
+                if enc:
+                    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+                        try:
+                            deadlines.append(datetime.strptime(str(enc)[:10], fmt))
+                            break
+                        except ValueError:
+                            continue
+
+            timeline_overlap = False
+            if len(deadlines) >= 2:
+                deadlines.sort()
+                span_days = (deadlines[-1] - deadlines[0]).days
+                timeline_overlap = span_days <= 180  # Within 6 months
+
+            clusters.append({
+                "id": len(clusters) + 1,
+                "center_municipio": center_mun,
+                "center_uf": center_uf,
+                "radius_km": round(max_radius),
+                "editais_indices": [m["index"] for m in cluster_members],
+                "n_editais": len(cluster_members),
+                "total_valor": round(total_valor),
+                "timeline_overlap": timeline_overlap,
+                "recommendation": (
+                    f"Mobilização única para {len(cluster_members)} editais "
+                    f"na região de {center_mun}/{center_uf} "
+                    f"(raio de {max_radius:.0f}km)"
+                ),
+            })
+
+    # Isolated editais (not in any cluster)
+    all_clustered = set()
+    for cl in clusters:
+        all_clustered.update(cl["editais_indices"])
+    isolated = [i for i in range(len(editais)) if i not in all_clustered]
+
+    return {
+        "clusters": clusters,
+        "isolated_editais": isolated,
+        "clustering_method": "greedy_150km_radius",
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+# ============================================================
+# MAIN DETERMINISTIC CALCULATION CHAIN
+# ============================================================
+
 def compute_all_deterministic(
     editais: list[dict],
     empresa: dict,
     sicaf: dict,
     sector_key: str,
-) -> None:
+) -> dict:
     """Compute all deterministic intelligence for editais. Mutates in place.
 
     Chain: risk_score → win_probability → roi_potential → chronogram
            + object_compatibility, habilitacao, competitive_analysis, risk_analysis
-    Portfolio analysis runs after per-edital loop (needs aggregate view).
+           + E4 qualification gaps, E6 organ risk, E8 maturity
+    Portfolio analysis + E7 regional clusters run after per-edital loop.
+    Returns dict with portfolio, maturity, dispute_stats, regional_clusters.
     """
     print(f"\n📊 Calculando inteligência estratégica ({len(editais)} editais)")
+
+    # E8: Detect maturity profile once for the company
+    maturity = detect_maturity_profile(empresa)
+    empresa["maturity_profile"] = maturity
+    print(f"  Perfil de maturidade: {maturity['profile']} ({maturity['rationale']})")
 
     empresa_cnaes = empresa.get("cnaes_secundarios", "")
     if isinstance(empresa_cnaes, list):
         empresa_cnaes = " ".join(str(c) for c in empresa_cnaes)
     historico = empresa.get("historico_contratos", [])
 
+    # E5: Collect all competitive intel contracts for dispute stats
+    all_competitive_contracts: list[dict] = []
+
     for ed in editais:
         # --- Core scoring chain ---
         rs = compute_risk_score(ed, empresa, sicaf, sector_key)
+
+        # E8: Apply maturity adjustments
+        valor = _safe_float(ed.get("valor_estimado"))
+        mat_hab_delta = 0
+        mat_geo_delta = 0
+        if maturity["profile"] == "ENTRANTE" and valor > _MATURITY_HIGH_VALUE_THRESHOLD:
+            mat_hab_delta = -15
+            rs["habilitacao"] = max(0, rs["habilitacao"] + mat_hab_delta)
+        elif maturity["profile"] == "REGIONAL":
+            uf_sede = (empresa.get("uf", "") or "").upper()
+            uf_edital = (ed.get("uf", "") or "").upper()
+            if uf_sede and uf_edital and uf_sede == uf_edital:
+                mat_geo_delta = 10
+                rs["geografico"] = min(100, rs["geografico"] + mat_geo_delta)
+        elif maturity["profile"] == "ESTABELECIDO":
+            mat_hab_delta = 10
+            rs["habilitacao"] = min(100, rs["habilitacao"] + mat_hab_delta)
+
+        # Recompute total with maturity adjustments
+        weights = rs["weights"]
+        rs["total"] = round(
+            rs["habilitacao"] * weights["hab"]
+            + rs["financeiro"] * weights["fin"]
+            + rs["geografico"] * weights["geo"]
+            + rs["prazo"] * weights["prazo"]
+            + rs["competitivo"] * weights["comp"]
+        )
+        rs["maturity_adjustment"] = {
+            "profile": maturity["profile"],
+            "hab_delta": mat_hab_delta,
+            "geo_delta": mat_geo_delta,
+        }
         ed["risk_score"] = rs
 
         win_prob = compute_win_probability(
@@ -2291,9 +3004,18 @@ def compute_all_deterministic(
             ed, empresa, sicaf, sector_key,
         )
 
+        # --- E4: Qualification gap analysis (sector compat vs operational) ---
+        ed["qualification_gap"] = compute_qualification_gap_analysis(
+            ed, empresa, ed["object_compatibility"], sector_key,
+        )
+
         # --- Competitive analysis (per-edital) ---
         contracts = ed.get("competitive_intel", [])
         ed["competitive_analysis"] = compute_competitive_analysis(contracts)
+        all_competitive_contracts.extend(contracts)
+
+        # --- E6: Organ risk profile ---
+        ed["organ_risk"] = compute_organ_risk_profile(ed, contracts, sector_key)
 
         # --- Systemic risk flags ---
         ed["risk_analysis"] = compute_risk_analysis(
@@ -2302,6 +3024,16 @@ def compute_all_deterministic(
 
     # --- Portfolio analysis (cross-edital, sets ed["strategic_category"]) ---
     portfolio = compute_portfolio_analysis(editais, empresa, sector_key)
+
+    # --- E5: Historical dispute stats (aggregate) ---
+    dispute_stats = compute_historical_dispute_stats(all_competitive_contracts)
+
+    # --- E7: Regional cluster analysis ---
+    regional_clusters = compute_regional_clusters(editais)
+    if regional_clusters["clusters"]:
+        print(f"  Clusters regionais: {len(regional_clusters['clusters'])} identificados")
+        for cl in regional_clusters["clusters"]:
+            print(f"    → {cl['center_municipio']}/{cl['center_uf']}: {cl['n_editais']} editais, raio {cl['radius_km']}km")
 
     # Summary
     scores = [ed["risk_score"]["total"] for ed in editais]
@@ -2320,6 +3052,13 @@ def compute_all_deterministic(
         opp = len(portfolio.get("opportunities", []))
         print(f"  Portfolio:   {qw} quick wins, {inv} investimentos, {opp} oportunidades")
 
+    return {
+        "portfolio": portfolio,
+        "maturity_profile": maturity,
+        "dispute_stats": dispute_stats,
+        "regional_clusters": regional_clusters,
+    }
+
 
 # ============================================================
 # SICAF COLLECTION (via collect-sicaf.py subprocess)
@@ -2334,13 +3073,18 @@ def collect_sicaf(cnpj14: str, verbose: bool = True) -> dict:
     import subprocess
     import tempfile
 
+    attempted_at = _today().strftime("%d/%m/%Y %H:%M")
+
     sicaf_script = Path(__file__).parent / "collect-sicaf.py"
     if not sicaf_script.exists():
         if verbose:
-            print("  ⚠ collect-sicaf.py não encontrado — pulando SICAF")
+            print("  ⚠ collect-sicaf.py não encontrado")
         return {
-            "status": "NÃO CONSULTADO",
-            "_source": _source_tag("UNAVAILABLE", "collect-sicaf.py não encontrado"),
+            "status": "FALHA_COLETA",
+            "attempted_at": attempted_at,
+            "error_type": "SCRIPT_NOT_FOUND",
+            "error_detail": "Arquivo collect-sicaf.py não encontrado no diretório scripts/",
+            "_source": _source_tag("API_FAILED", "collect-sicaf.py não encontrado"),
         }
 
     # Use a temp file for output
@@ -2374,7 +3118,10 @@ def collect_sicaf(cnpj14: str, verbose: bool = True) -> dict:
             if verbose:
                 print(f"  ⚠ SICAF falhou (exit code {result.returncode})")
             return {
-                "status": "NÃO CONSULTADO",
+                "status": "FALHA_COLETA",
+                "attempted_at": attempted_at,
+                "error_type": "SUBPROCESS_FAILED",
+                "error_detail": detail,
                 "_source": _source_tag("API_FAILED", detail),
             }
 
@@ -2384,7 +3131,10 @@ def collect_sicaf(cnpj14: str, verbose: bool = True) -> dict:
             if verbose:
                 print("  ⚠ SICAF: arquivo de saída vazio")
             return {
-                "status": "NÃO CONSULTADO",
+                "status": "FALHA_COLETA",
+                "attempted_at": attempted_at,
+                "error_type": "EMPTY_OUTPUT",
+                "error_detail": "Arquivo de saída do SICAF vazio ou inexistente",
                 "_source": _source_tag("API_FAILED", "Output file empty"),
             }
 
@@ -2401,14 +3151,20 @@ def collect_sicaf(cnpj14: str, verbose: bool = True) -> dict:
         if verbose:
             print("  ⚠ SICAF: timeout (5 min) — captcha não resolvido?")
         return {
-            "status": "NÃO CONSULTADO",
+            "status": "FALHA_COLETA",
+            "attempted_at": attempted_at,
+            "error_type": "TIMEOUT",
+            "error_detail": "Captcha não resolvido em 5 minutos",
             "_source": _source_tag("API_FAILED", "Timeout — captcha não resolvido em 5 min"),
         }
     except Exception as e:
         if verbose:
             print(f"  ⚠ SICAF erro: {e}")
         return {
-            "status": "NÃO CONSULTADO",
+            "status": "FALHA_COLETA",
+            "attempted_at": attempted_at,
+            "error_type": "EXCEPTION",
+            "error_detail": str(e)[:200],
             "_source": _source_tag("API_FAILED", str(e)[:200]),
         }
     finally:
@@ -2519,7 +3275,6 @@ Examples:
     parser.add_argument("--skip-links", action="store_true", help="Pular validação de links PNCP")
     parser.add_argument("--skip-pcp", action="store_true", help="Pular busca PCP v2")
     parser.add_argument("--skip-qd", action="store_true", help="Pular busca Querido Diário")
-    parser.add_argument("--skip-sicaf", action="store_true", help="Pular verificação SICAF (Playwright)")
     parser.add_argument("--skip-competitive", action="store_true", help="Pular coleta de inteligência competitiva")
 
     args = parser.parse_args()
@@ -2630,14 +3385,8 @@ Examples:
         else:
             print("\n📍 Distâncias: cidade/UF da sede não disponível — pulando")
 
-    # ---- SICAF ----
-    if args.skip_sicaf:
-        sicaf = {
-            "status": "NÃO CONSULTADO",
-            "_source": _source_tag("UNAVAILABLE", "Skipped via --skip-sicaf"),
-        }
-    else:
-        sicaf = collect_sicaf(cnpj14, verbose=verbose)
+    # ---- SICAF (obrigatório — E2) ----
+    sicaf = collect_sicaf(cnpj14, verbose=verbose)
 
     # ---- Competitive Intelligence ----
     if not args.skip_competitive:
@@ -2662,8 +3411,24 @@ Examples:
         sicaf=sicaf,
     )
 
-    # ---- Deterministic Calculations (risk score, ROI, chronogram) ----
-    compute_all_deterministic(data["editais"], data["empresa"], sicaf, sector_key)
+    # ---- Deterministic Calculations (risk score, ROI, chronogram, E4-E8) ----
+    analysis_results = compute_all_deterministic(data["editais"], data["empresa"], sicaf, sector_key)
+
+    # Store cross-edital analysis at top level
+    data["portfolio"] = analysis_results["portfolio"]
+    data["maturity_profile"] = analysis_results["maturity_profile"]
+    data["dispute_stats"] = analysis_results["dispute_stats"]
+    data["regional_clusters"] = analysis_results["regional_clusters"]
+
+    # ---- E3: Coverage Diagnostic ----
+    print("\n📊 Diagnóstico de cobertura")
+    data["coverage_diagnostic"] = compute_coverage_diagnostic(
+        api, data["editais"], keywords, ufs, sector_key,
+    )
+    cov = data["coverage_diagnostic"]
+    print(f"  Cobertura: {cov['coverage_rate']:.0%} ({cov['captured_count']}/{cov['total_estimated']})")
+    if cov["warning"]:
+        print(f"  ⚠ {cov['warning']}")
 
     # ---- Output ----
     if args.output:

@@ -165,6 +165,67 @@ _ACCENT_MAP = {
     "termoacustico": "termoacústico",
     "logistica": "logística", "basica": "básica",
     "estrategia": "estratégia",
+    # E9 — termos faltantes (construção, licitação, jurídico)
+    "demolicao": "demolição", "demolicoes": "demolições",
+    "aprovacao": "aprovação", "aprovacoes": "aprovações",
+    "orcamentario": "orçamentário", "orcamentaria": "orçamentária",
+    "contribuicao": "contribuição", "contribuicoes": "contribuições",
+    "resolucao": "resolução", "resolucoes": "resoluções",
+    "suspensao": "suspensão", "suspensoes": "suspensões",
+    "impugnacao": "impugnação", "impugnacoes": "impugnações",
+    "rescisao": "rescisão", "rescisoes": "rescisões",
+    "homologacao": "homologação", "homologacoes": "homologações",
+    "adjudicacao": "adjudicação", "adjudicacoes": "adjudicações",
+    "revogacao": "revogação", "revogacoes": "revogações",
+    "anulacao": "anulação", "anulacoes": "anulações",
+    "inspecao": "inspeção", "inspecoes": "inspeções",
+    "isencao": "isenção", "isencoes": "isenções",
+    "aquisicao": "aquisição", "aquisicoes": "aquisições",
+    "consultorio": "consultório", "consultorios": "consultórios",
+    "obrigacao": "obrigação", "obrigacoes": "obrigações",
+    "proporcao": "proporção", "proporcoes": "proporções",
+    "alteracao": "alteração", "alteracoes": "alterações",
+    "cotacao": "cotação", "cotacoes": "cotações",
+    "publicacao": "publicação", "publicacoes": "publicações",
+    "participacao": "participação",
+    "classificacao": "classificação", "classificacoes": "classificações",
+    "dispensacao": "dispensação",
+    "desclassificacao": "desclassificação",
+    "improcedencia": "improcedência",
+    "juridico": "jurídico", "juridica": "jurídica",
+    "juridicos": "jurídicos", "juridicas": "jurídicas",
+    "relatorio": "relatório", "relatorios": "relatórios",
+    "valido": "válido", "valida": "válida",
+    "solido": "sólido", "solida": "sólida",
+    "unico": "único", "unica": "única",
+    "unicos": "únicos", "unicas": "únicas",
+    "inteligencia": "inteligência",
+    "referencia": "referência", "referencias": "referências",
+    "potencia": "potência", "potencial": "potencial",
+    "suficiencia": "suficiência", "insuficiencia": "insuficiência",
+    "eficiencia": "eficiência", "deficiencia": "deficiência",
+    "presidencia": "presidência", "gerencia": "gerência",
+    "transparencia": "transparência",
+    "denuncia": "denúncia", "denuncias": "denúncias",
+    "comercio": "comércio",
+    "patrimonio": "patrimônio",
+    "territorio": "território", "territorios": "territórios",
+    "beneficio": "benefício", "beneficios": "benefícios",
+    "edificio": "edifício", "edificios": "edifícios",
+    "exercicio": "exercício", "exercicios": "exercícios",
+    "previo": "prévio", "previa": "prévia",
+    "obice": "óbice",
+    "veiculos": "veículos", "veiculo": "veículo",
+    "residuos": "resíduos",
+    "conteudo": "conteúdo",
+    "periodo": "período", "periodos": "períodos",
+    "criterio": "critério", "criterios": "critérios",
+    "equilibrio": "equilíbrio",
+    "portfolio": "portfólio",
+    "diagnostico": "diagnóstico", "diagnosticos": "diagnósticos",
+    "cobertura": "cobertura",
+    "mobilizacao": "mobilização",
+    "regiao": "região", "regioes": "regiões",
 }
 
 _ACCENT_PATTERN = re.compile(
@@ -805,6 +866,23 @@ def _build_viability_text(risk: dict, styles: dict) -> list:
                 styles["caption"],
             ))
 
+    # E8: Maturity adjustment display
+    if isinstance(risk, dict) and risk.get("maturity_adjustment"):
+        adj = risk["maturity_adjustment"]
+        adj_parts = []
+        for comp_key, delta in adj.items():
+            if delta != 0:
+                sign = "+" if delta > 0 else ""
+                comp_label = {"hab": "Habilitação", "fin": "Financeiro", "geo": "Geográfico",
+                              "prazo": "Prazo", "comp": "Competitivo"}.get(comp_key, comp_key)
+                adj_parts.append(f"{comp_label} {sign}{delta}")
+        if adj_parts:
+            profile = risk.get("maturity_profile", "")
+            el.append(Paragraph(
+                f"<i>Ajuste por perfil de maturidade ({profile}): {', '.join(adj_parts)}</i>",
+                styles["caption"],
+            ))
+
     if not _viability_shown:
         # Dynamic explanation based on weights
         if isinstance(risk, dict) and risk.get("weights"):
@@ -877,13 +955,35 @@ _roi_shown = False
 
 
 def _build_roi_text(roi: dict, ed: dict, styles: dict) -> list:
-    """Build ROI indicator with Bayesian probability rationale."""
+    """Build ROI indicator with auditable calculation memory (E1)."""
     global _roi_shown
     if not roi or not isinstance(roi, dict):
         return []
     roi_min = roi.get("roi_min", 0)
     roi_max = roi.get("roi_max", 0)
     probability = roi.get("probability", 0)
+
+    el: list = []
+
+    # E1: Strategic reclassification — marginal ROI on substantial contracts
+    reclass = roi.get("strategic_reclassification")
+    if reclass == "INVESTIMENTO_ESTRATEGICO_ACERVO":
+        rationale = _s(roi.get("reclassification_rationale", ""))
+        el.append(Paragraph(
+            f"<b>Classificação: Investimento Estratégico em Acervo</b>",
+            styles["body"],
+        ))
+        el.append(Paragraph(rationale, styles["body_small"]))
+        # Still show calculation memory for auditability
+        calc = roi.get("calculation_memory", {})
+        if calc:
+            el.append(Paragraph(
+                f"Memória de cálculo: {_s(calc.get('roi_max_calc', ''))}",
+                styles["caption"],
+            ))
+        el.append(Spacer(1, 2 * mm))
+        return el
+
     if roi_max <= 0:
         return []
 
@@ -891,7 +991,6 @@ def _build_roi_text(roi: dict, ed: dict, styles: dict) -> list:
     prob_text = f"{probability * 100:.1f}%" if probability else "N/I"
     confidence = roi.get("confidence", "")
 
-    # Confidence indicator
     conf_label = ""
     if confidence == "alta":
         conf_label = " (confiança alta)"
@@ -900,49 +999,44 @@ def _build_roi_text(roi: dict, ed: dict, styles: dict) -> list:
     elif confidence == "baixa":
         conf_label = " (base setorial)"
 
-    el = [Paragraph(
+    el.append(Paragraph(
         f"<b>Faturamento Potencial:</b> {roi_text}  |  "
         f"Probabilidade de vitória: {prob_text}{conf_label}",
         styles["body"],
-    )]
+    ))
 
-    # Calculation rationale — now uses win_probability decomposition
-    valor_edital = _safe_float(ed.get("valor_estimado"))
-    win_prob = ed.get("win_probability", {})
-    memo_parts = []
-    if valor_edital > 0:
-        memo_parts.append(f"Valor do edital: {_currency(valor_edital)}")
-    if roi_min > 0 and valor_edital > 0:
-        margin_min = roi_min / valor_edital * 100
-        margin_max = roi_max / valor_edital * 100
-        memo_parts.append(f"Margem estimada: {margin_min:.1f}%–{margin_max:.1f}%")
-
-    # Win probability derivation
-    if win_prob:
-        n_sup = win_prob.get("n_unique_suppliers", 0)
-        n_con = win_prob.get("n_contracts_analyzed", 0)
-        if n_con > 0 and n_sup > 0:
-            memo_parts.append(
-                f"Probabilidade baseada em análise competitiva "
-                f"({n_sup} fornecedores, {n_con} contratos históricos)"
-            )
-        else:
-            base = win_prob.get("base_rate", 0)
-            memo_parts.append(
-                f"Probabilidade baseada na taxa setorial ({base * 100:.0f}% base)"
-            )
-        mod = win_prob.get("modality_multiplier", 1.0)
-        if mod != 1.0:
-            direction = "maior" if mod > 1.0 else "menor"
-            memo_parts.append(f"Modalidade ajusta competição ({direction})")
-        if win_prob.get("incumbency_bonus", 0) > 0:
-            memo_parts.append("Bônus de incumbência (+10pp por relacionamento existente)")
-
-    if memo_parts:
+    # E1: Auditable calculation memory — each factor explicit
+    calc = roi.get("calculation_memory", {})
+    if calc:
         el.append(Paragraph(
-            "Memória: " + ". ".join(memo_parts) + ".",
+            f"<b>Memória de cálculo</b> (fórmula: {_s(calc.get('formula', 'N/I'))})",
             styles["caption"],
         ))
+        el.append(Paragraph(
+            f"ROI mínimo: {_s(calc.get('roi_min_calc', 'N/I'))}",
+            styles["caption"],
+        ))
+        el.append(Paragraph(
+            f"ROI máximo: {_s(calc.get('roi_max_calc', 'N/I'))}",
+            styles["caption"],
+        ))
+    else:
+        # Fallback: reconstruct from available data (backward compat)
+        win_prob = ed.get("win_probability", {})
+        memo_parts = []
+        valor_edital = _safe_float(ed.get("valor_estimado"))
+        if valor_edital > 0:
+            memo_parts.append(f"Valor: {_currency(valor_edital)}")
+        if probability > 0:
+            memo_parts.append(f"Prob.: {probability:.4f}")
+        margin_range = roi.get("margin_range", "")
+        if margin_range:
+            memo_parts.append(f"Margem: {margin_range}")
+        if memo_parts:
+            el.append(Paragraph(
+                "Memória: " + " × ".join(memo_parts),
+                styles["caption"],
+            ))
 
     if not _roi_shown:
         el.append(Paragraph(
@@ -1014,7 +1108,65 @@ def _build_competitive_section(data: dict, styles: dict, sec: dict) -> list:
         avail * 0.20, avail * 0.20, avail * 0.30, avail * 0.15, avail * 0.15,
     ])
     el.append(t)
-    el.append(Spacer(1, 8 * mm))
+    el.append(Spacer(1, 6 * mm))
+
+    # E5: Historical dispute stats by typology
+    dispute_stats = data.get("dispute_stats", {})
+    stats_by_typ = dispute_stats.get("stats_by_typology", {})
+    if stats_by_typ:
+        el.append(Paragraph("<b>Estatísticas Históricas de Disputas</b>", styles["h3"]))
+        el.append(Paragraph(
+            "Dados agregados de contratos encerrados — participantes, descontos e taxa de adjudicação por modalidade e faixa de valor.",
+            styles["body_small"],
+        ))
+        el.append(Spacer(1, 3 * mm))
+
+        ds_header = [
+            Paragraph("Modalidade / Faixa", styles["cell_header"]),
+            Paragraph("Contratos", styles["cell_header_center"]),
+            Paragraph("Part. Médio", styles["cell_header_center"]),
+            Paragraph("Desc. Médio", styles["cell_header_center"]),
+            Paragraph("Adjudicação", styles["cell_header_center"]),
+        ]
+        ds_rows = [ds_header]
+
+        for key, stats in sorted(stats_by_typ.items()):
+            total = stats.get("total", 0)
+            if total == 0:
+                continue
+            avg_p = stats.get("avg_participants")
+            avg_d = stats.get("avg_discount")
+            adj_r = stats.get("adjudication_rate")
+            ds_rows.append([
+                Paragraph(_s(key.replace("_", " / ")), styles["cell"]),
+                Paragraph(str(total), styles["cell_center"]),
+                Paragraph(f"{avg_p:.1f}" if avg_p is not None else "—", styles["cell_center"]),
+                Paragraph(f"{avg_d:.1%}" if avg_d is not None else "—", styles["cell_center"]),
+                Paragraph(f"{adj_r:.0%}" if adj_r is not None else "—", styles["cell_center"]),
+            ])
+
+        if len(ds_rows) > 1:
+            ds_t = _three_rule_table(ds_rows, [
+                avail * 0.30, avail * 0.15, avail * 0.18, avail * 0.18, avail * 0.19,
+            ])
+            el.append(ds_t)
+            el.append(Spacer(1, 4 * mm))
+
+    # E5: Recurring suppliers
+    recurring = dispute_stats.get("recurring_suppliers", [])
+    if recurring:
+        el.append(Paragraph("<b>Fornecedores Recorrentes</b>", styles["h3"]))
+        for sup in recurring[:10]:
+            name = _s(sup.get("fornecedor", ""))
+            count = sup.get("contract_count", 0)
+            region = _s(sup.get("region", ""))
+            el.append(Paragraph(
+                f"  {name} — {count} contrato(s){f' ({region})' if region else ''}",
+                styles["body_small"],
+            ))
+        el.append(Spacer(1, 4 * mm))
+
+    el.append(Spacer(1, 4 * mm))
     return el
 
 
@@ -1083,6 +1235,25 @@ def _build_company_profile(data: dict, styles: dict, sec: dict | None = None) ->
             qual = _s(socio.get("qualificacao", "")) if isinstance(socio, dict) else ""
             line = f"— {nome}" + (f" ({qual})" if qual else "")
             el.append(Paragraph(line, styles["bullet"]))
+        el.append(Spacer(1, 2 * mm))
+
+    # E8: Maturity profile badge
+    maturity = data.get("maturity_profile") or emp.get("maturity_profile", {})
+    if maturity and maturity.get("profile"):
+        profile = maturity["profile"]
+        rationale = _s(maturity.get("rationale", ""))
+        profile_labels = {
+            "ENTRANTE": ("Entrante — Novo no mercado governamental federal", TEXT_SECONDARY),
+            "REGIONAL": ("Regional — Experiência consolidada em âmbito regional", INK),
+            "ESTABELECIDO": ("Estabelecido — Portfólio diversificado", colors.HexColor("#2D7D46")),
+        }
+        label, color = profile_labels.get(profile, (profile, TEXT_SECONDARY))
+        el.append(Paragraph(
+            f"<b>Perfil de Maturidade Licitatória:</b> <font color='{color.hexval()}'><b>{label}</b></font>",
+            styles["body"],
+        ))
+        if rationale:
+            el.append(Paragraph(rationale, styles["caption"]))
         el.append(Spacer(1, 2 * mm))
 
     # Sanctions — simple text, no colored cards
@@ -1405,6 +1576,61 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
         risk_an = ed.get("risk_analysis", {})
         el.extend(_build_risk_flags(risk_an, styles))
 
+        # E6: Organ risk profile
+        organ_risk = ed.get("organ_risk", {})
+        if organ_risk and organ_risk.get("organ_track_record") != "INDETERMINADO":
+            track = organ_risk.get("organ_track_record", "")
+            track_colors = {"BOM": colors.HexColor("#2D7D46"), "REGULAR": colors.HexColor("#B8860B"), "RISCO": SIGNAL_RED}
+            track_color = track_colors.get(track, TEXT_SECONDARY)
+            el.append(Paragraph(
+                f"<b>Risco do Edital (Histórico do Órgão):</b> "
+                f"<font color='{track_color.hexval()}'><b>{track}</b></font>",
+                styles["body"],
+            ))
+            details = []
+            if organ_risk.get("similar_published", 0) > 0:
+                details.append(f"{organ_risk['similar_published']} contratação(ões) similar(es) no histórico")
+            adj = organ_risk.get("adjudication_rate")
+            if adj is not None:
+                details.append(f"Taxa de adjudicação: {adj:.0%}")
+            timeline = organ_risk.get("timeline_assessment", "")
+            if timeline and timeline != "INDETERMINADO":
+                rationale = _s(organ_risk.get("timeline_rationale", ""))
+                details.append(f"Prazo: {timeline} — {rationale}")
+            for flag in organ_risk.get("risk_flags", []):
+                details.append(f"⚠ {_s(flag)}")
+            for d in details:
+                el.append(Paragraph(f"  {d}", styles["body_small"]))
+            el.append(Spacer(1, 2 * mm))
+
+        # E4: Qualification gap analysis
+        qual_gap = ed.get("qualification_gap", {})
+        if qual_gap:
+            filter_result = qual_gap.get("filter_result", "")
+            if filter_result == "INCOMPATÍVEL_CNAE":
+                el.append(Paragraph(
+                    f"<font color='{SIGNAL_RED.hexval()}'><b>Incompatível com CNAEs da empresa</b></font>",
+                    styles["body"],
+                ))
+                rationale = _s(qual_gap.get("incompatibility_rationale", ""))
+                if rationale:
+                    el.append(Paragraph(rationale, styles["body_small"]))
+                el.append(Spacer(1, 2 * mm))
+            elif qual_gap.get("operational_gaps"):
+                el.append(Paragraph("<b>Lacunas Operacionais (endereçáveis)</b>", styles["body"]))
+                for gap in qual_gap["operational_gaps"]:
+                    gap_type = gap.get("gap_type", "")
+                    desc = _s(gap.get("description", ""))
+                    timeline = gap.get("estimated_timeline", "")
+                    action = _s(gap.get("action_required", ""))
+                    el.append(Paragraph(
+                        f"  [{gap_type}] {desc} — <i>{timeline}</i>",
+                        styles["body_small"],
+                    ))
+                    if action:
+                        el.append(Paragraph(f"    Ação: {action}", styles["caption"]))
+                el.append(Spacer(1, 2 * mm))
+
         # Chronogram
         cronograma = ed.get("cronograma", [])
         el.extend(_build_chronogram_table(cronograma, styles))
@@ -1642,6 +1868,34 @@ def _build_sicaf_section(data: dict, styles: dict, sec: dict | None = None) -> l
 
     label, label_color = _get_source_label(sicaf.get("_source"))
 
+    # E2: Handle SICAF collection failure explicitly
+    sicaf_status = sicaf.get("status", "")
+    if sicaf_status == "FALHA_COLETA":
+        attempted_at = sicaf.get("attempted_at", "N/I")
+        error_detail = _s(sicaf.get("error_detail", "erro não especificado"))
+        amber = colors.HexColor("#D4760A")
+        el.append(Paragraph(
+            f"<font color='{amber.hexval()}'><b>ANÁLISE DE HABILITAÇÃO INCOMPLETA</b></font>",
+            styles["body"],
+        ))
+        el.append(Paragraph(
+            f"Coleta SICAF falhou em <b>{attempted_at}</b>.",
+            styles["body"],
+        ))
+        el.append(Paragraph(
+            f"Motivo: <i>{error_detail}</i>",
+            styles["body"],
+        ))
+        el.append(Spacer(1, 2 * mm))
+        el.append(Paragraph(
+            "Esta seção não foi omitida por irrelevância. A regularidade fiscal é determinante "
+            "para a recomendação final. A ausência de dados SICAF significa que não foi possível "
+            "confirmar a situação cadastral da empresa — <b>não</b> que ela foi verificada e está regular.",
+            styles["body_small"],
+        ))
+        el.append(Spacer(1, 8 * mm))
+        return el
+
     crc = sicaf.get("crc", {})
     restricao = sicaf.get("restricao", {})
 
@@ -1661,7 +1915,8 @@ def _build_sicaf_section(data: dict, styles: dict, sec: dict | None = None) -> l
             ]:
                 val = crc.get(key)
                 if val:
-                    el.append(Paragraph(f"<b>{field_label}:</b> {_s(val)}", styles["body"]))
+                    rendered = _date(val) if key == "data_emissao" else _s(val)
+                    el.append(Paragraph(f"<b>{field_label}:</b> {rendered}", styles["body"]))
 
             hab = crc.get("habilitacao", {})
             if hab:
@@ -1773,7 +2028,7 @@ def _build_data_sources_section(data: dict, styles: dict, sec: dict | None = Non
     el.append(t)
 
     el.append(Spacer(1, 4 * mm))
-    gen_at = metadata.get("generated_at", "")
+    gen_at = _date(metadata.get("generated_at", ""))
     gen_by = metadata.get("generator", "")
     if gen_at or gen_by:
         el.append(Paragraph(
@@ -1792,6 +2047,7 @@ def _build_data_sources_section(data: dict, styles: dict, sec: dict | None = Non
 _HAB_STATUS_COLORS = {
     "OK": colors.HexColor("#2D7D46"),
     "ATENÇÃO": colors.HexColor("#B8860B"),
+    "INCOMPLETO": colors.HexColor("#D4760A"),  # E2: amber for collection failure
     "CRÍTICO": colors.HexColor("#B5342A"),
     "VERIFICAR": colors.HexColor("#5A6577"),
 }
@@ -1974,6 +2230,218 @@ def _build_portfolio_section(data: dict, styles: dict, sec: dict | None = None) 
 
 
 # ============================================================
+# E3: COVERAGE WARNING
+# ============================================================
+
+def _build_coverage_warning(data: dict, styles: dict) -> list:
+    """Render coverage diagnostic warning if capture rate < 70%."""
+    cov = data.get("coverage_diagnostic", {})
+    if not cov:
+        return []
+
+    rate = cov.get("coverage_rate", 1.0)
+    warning = cov.get("warning")
+    if not warning and rate >= 0.70:
+        return []  # Coverage is acceptable, render note in data sources instead
+
+    el = []
+    amber = colors.HexColor("#D4760A")
+
+    el.append(Paragraph(
+        f"<font color='{amber.hexval()}'><b>AVISO DE COBERTURA</b></font>",
+        styles["h3"],
+    ))
+
+    captured = cov.get("captured_count", 0)
+    total = cov.get("total_estimated", 0)
+    el.append(Paragraph(
+        f"Taxa de captura: <b>{rate:.0%}</b> ({captured} de {total} editais estimados). "
+        f"Este relatório pode não representar a totalidade das oportunidades disponíveis. "
+        f"A análise abaixo deve ser interpretada com essa limitação.",
+        styles["body"],
+    ))
+
+    # Per-UF breakdown
+    per_uf = cov.get("per_uf", [])
+    low_ufs = [p for p in per_uf if p.get("rate", 1.0) < 0.70 and p.get("estimated_total", 0) > 0]
+    if low_ufs:
+        uf_detail = "; ".join(
+            f"{p['uf']}: {p['captured']}/{p['estimated_total']} ({p['rate']:.0%})"
+            for p in low_ufs
+        )
+        el.append(Paragraph(f"UFs com baixa cobertura: {uf_detail}", styles["caption"]))
+
+    el.append(Spacer(1, 6 * mm))
+    return el
+
+
+# ============================================================
+# E7: REGIONAL CLUSTER ANALYSIS
+# ============================================================
+
+def _build_regional_analysis(data: dict, styles: dict, sec: dict | None = None) -> list:
+    """Render regional portfolio analysis with geographic clusters."""
+    clusters_data = data.get("regional_clusters", {})
+    clusters = clusters_data.get("clusters", [])
+    if not clusters:
+        return []
+
+    el = []
+    num = sec["next"]() if sec else 9
+    el.extend(_section_heading(f"{num}. Análise Regional de Portfólio", styles))
+
+    el.append(Paragraph(
+        "Editais compatíveis agrupados por proximidade geográfica (raio de 150km). "
+        "Clusters identificam oportunidades de mobilização compartilhada — "
+        "uma única estrutura operacional servindo múltiplas frentes.",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 3 * mm))
+
+    editais = data.get("editais", [])
+
+    for cl in clusters:
+        center = f"{_s(cl.get('center_municipio', ''))}/{_s(cl.get('center_uf', ''))}"
+        n = cl.get("n_editais", 0)
+        radius = cl.get("radius_km", 0)
+        total_valor = cl.get("total_valor", 0)
+        timeline = "sim" if cl.get("timeline_overlap") else "não"
+
+        el.append(Paragraph(
+            f"<b>Cluster {cl.get('id', '')}: {center}</b> — "
+            f"{n} editais, raio {radius}km, valor total {_currency(total_valor)}",
+            styles["body"],
+        ))
+        el.append(Paragraph(
+            f"Sobreposição de prazos: {timeline}",
+            styles["body_small"],
+        ))
+
+        # List editais in cluster
+        indices = cl.get("editais_indices", [])
+        for idx in indices:
+            if idx < len(editais):
+                ed = editais[idx]
+                obj = _s((ed.get("objeto") or "")[:80])
+                mun = _s(ed.get("municipio", ""))
+                valor = _currency_short(_safe_float(ed.get("valor_estimado", 0)))
+                el.append(Paragraph(
+                    f"  — {obj} ({mun}) — {valor}",
+                    styles["body_small"],
+                ))
+
+        rec = _s(cl.get("recommendation", ""))
+        if rec:
+            el.append(Paragraph(f"<i>{rec}</i>", styles["caption"]))
+        el.append(Spacer(1, 3 * mm))
+
+    if len(clusters) >= 2:
+        el.append(Paragraph(
+            "A decisão não é participar de cada edital individualmente — "
+            "é decidir se vale estabelecer presença operacional em cada micro-região.",
+            styles["body_small"],
+        ))
+
+    el.append(Spacer(1, 6 * mm))
+    return el
+
+
+def _build_development_plan(data: dict, styles: dict, sec: dict | None = None) -> list:
+    """E4: Consolidated development plan aggregating operational gaps across all editais."""
+    editais = data.get("editais", [])
+    all_gaps = []
+    for ed in editais:
+        qual_gap = ed.get("qualification_gap", {})
+        for gap in qual_gap.get("operational_gaps", []):
+            gap_copy = dict(gap)
+            gap_copy["edital_objeto"] = _trunc(_s(ed.get("objeto", "")), 60)
+            all_gaps.append(gap_copy)
+
+    if not all_gaps:
+        return []
+
+    # Deduplicate by (gap_type, description) — keep first occurrence
+    seen = set()
+    unique_gaps = []
+    for g in all_gaps:
+        key = (g.get("gap_type", ""), g.get("description", ""))
+        if key not in seen:
+            seen.add(key)
+            unique_gaps.append(g)
+
+    if not unique_gaps:
+        return []
+
+    el = []
+    num = sec["next"]() if sec else 10
+    el.extend(_section_heading(f"{num}. Plano de Desenvolvimento (12 meses)", styles))
+
+    el.append(Paragraph(
+        "Consolidação das lacunas operacionais identificadas nos editais analisados. "
+        "Cada item representa uma capacidade que, uma vez construída, abre acesso a novos mercados.",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 3 * mm))
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+    header = [
+        Paragraph("Tipo", styles["cell_header"]),
+        Paragraph("Descrição", styles["cell_header"]),
+        Paragraph("Prazo", styles["cell_header_center"]),
+        Paragraph("Ação Necessária", styles["cell_header"]),
+    ]
+    rows = [header]
+
+    for g in unique_gaps:
+        rows.append([
+            Paragraph(_s(g.get("gap_type", "")), styles["cell"]),
+            Paragraph(_s(g.get("description", "")), styles["cell"]),
+            Paragraph(_s(g.get("estimated_timeline", "")), styles["cell_center"]),
+            Paragraph(_s(g.get("action_required", "")), styles["cell"]),
+        ])
+
+    t = _three_rule_table(rows, [
+        avail * 0.15, avail * 0.30, avail * 0.15, avail * 0.40,
+    ])
+    el.append(t)
+    el.append(Spacer(1, 6 * mm))
+    return el
+
+
+# ============================================================
+# E10: REPORT VALIDATION
+# ============================================================
+
+def validate_report_completeness(data: dict) -> list[str]:
+    """Validate report data completeness. Returns list of warnings."""
+    warnings = []
+
+    for i, ed in enumerate(data.get("editais", []), 1):
+        # Every edital must have recommendation + justification
+        rec = ed.get("recomendacao") or ed.get("recommendation")
+        justif = ed.get("justificativa") or ed.get("recommendation_justification")
+        if not justif:
+            warnings.append(f"Edital {i}: recomendação sem justificativa")
+
+        # ROI must have calculation memory
+        roi = ed.get("roi_potential", {})
+        if roi and not roi.get("calculation_memory"):
+            warnings.append(f"Edital {i}: ROI sem memória de cálculo")
+
+    # Coverage diagnostic must be present
+    if not data.get("coverage_diagnostic"):
+        warnings.append("Diagnóstico de cobertura ausente")
+
+    # SICAF must not be UNAVAILABLE (E2)
+    sicaf = data.get("sicaf", {})
+    src = sicaf.get("_source", {})
+    if isinstance(src, dict) and src.get("status") == "UNAVAILABLE":
+        warnings.append("SICAF marcado como UNAVAILABLE — deve ser FALHA_COLETA ou coletado")
+
+    return warnings
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -2048,6 +2516,10 @@ def generate_report_b2g(data: dict) -> BytesIO:
     sec = _section_counter()
     elements: list = []
     elements.extend(_build_cover(data, styles, gen_date))
+
+    # E3: Coverage warning (before any analysis if coverage < 70%)
+    elements.extend(_build_coverage_warning(data, styles))
+
     elements.extend(_build_decision_table(data, styles, sec))
     elements.extend(_build_company_profile(data, styles, sec))
     elements.extend(_build_executive_summary(data, styles, sec))
@@ -2055,11 +2527,25 @@ def generate_report_b2g(data: dict) -> BytesIO:
     elements.extend(_build_detailed_analysis(data, styles, sec))
     elements.extend(_build_competitive_section(data, styles, sec))
     elements.extend(_build_portfolio_section(data, styles, sec))
+
+    # E7: Regional cluster analysis (after portfolio, before market intel)
+    elements.extend(_build_regional_analysis(data, styles, sec))
+
+    # E4: Consolidated development plan (after regional, before market intel)
+    elements.extend(_build_development_plan(data, styles, sec))
+
     elements.extend(_build_market_intelligence(data, styles, sec))
     elements.extend(_build_querido_diario(data, styles, sec))
     elements.extend(_build_next_steps(data, styles, sec))
     elements.extend(_build_sicaf_section(data, styles, sec))
     elements.extend(_build_data_sources_section(data, styles, sec))
+
+    # E10: Validate report completeness
+    validation_warnings = validate_report_completeness(data)
+    if validation_warnings:
+        print(f"  ⚠ Validação: {len(validation_warnings)} item(s) requerem atenção")
+        for w in validation_warnings:
+            print(f"    — {w}")
 
     doc.build(elements, onFirstPage=_draw_footer, onLaterPages=_draw_footer,
               canvasmaker=_NumberedCanvas)

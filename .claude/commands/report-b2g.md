@@ -234,18 +234,22 @@ Salvar versão markdown em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.
 Numeração dinâmica — seções opcionais (QD, competitivo) só aparecem quando há dados.
 
 1. **Capa** — Título, empresa, CNPJ, setor, data
-2. **Decisão em 30 Segundos** — Tabela semáforo (●verde/amarelo/vermelho) com objeto, valor, prazo, risk score e justificativa 1-linha
-3. **Perfil da Empresa** — Dados cadastrais, QSA, histórico gov, sanções
-4. **Resumo Executivo** — Métricas-chave, destaques, distribuição UF
-5. **Panorama de Oportunidades** — Tabela resumo com badges de confiança
-6. **Análise Detalhada por Edital** — Ficha técnica + **Risk Score bar** (0-100 visual) + **ROI Potencial card** + **Cronograma Reverso** + análise por dimensão + recomendação
-7. **Mapa Competitivo** — Contratos históricos dos órgãos, incumbentes, valores praticados (dados PNCP)
-8. **Inteligência de Mercado** — Panorama, tendências, nichos, ranking
-9. **Menções em Diários Oficiais** — Querido Diário (se houver)
-10. **Próximos Passos** — Ações priorizadas com prazos
-11. **Verificação SICAF** — Status cadastral (CRC), restrições, habilitações
-12. **Fontes de Dados e Confiabilidade** — Tabela com status de cada API consultada
-13. **Rodapé em todas as páginas:** "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
+2. **Aviso de Cobertura** (condicional) — Banner âmbar se taxa de captura < 70% (E3)
+3. **Decisão em 30 Segundos** — Tabela semáforo (●verde/amarelo/vermelho) com objeto, valor, prazo, risk score e justificativa 1-linha
+4. **Perfil da Empresa** — Dados cadastrais, QSA, histórico gov, sanções + **badge de maturidade** (E8)
+5. **Resumo Executivo** — Métricas-chave, destaques, distribuição UF
+6. **Panorama de Oportunidades** — Tabela resumo com badges de confiança
+7. **Análise Detalhada por Edital** — Ficha técnica + Risk Score (com ajuste maturidade E8) + ROI auditável (E1, reclassificação automática) + Risco do Edital (E6) + Lacunas Operacionais (E4) + Cronograma Reverso + análise por dimensão
+8. **Mapa Competitivo** — Contratos históricos + **Estatísticas de Disputas por Tipologia** (E5) + Fornecedores Recorrentes (E5)
+9. **Portfólio Estratégico** — Categorização ATACAR/AVALIAR/INVESTIMENTO/MONITORAR
+10. **Análise Regional de Portfólio** (E7) — Clusters geográficos, mobilização compartilhada
+11. **Plano de Desenvolvimento** (E4) — Lacunas consolidadas com ações e prazos (12 meses)
+12. **Inteligência de Mercado** — Panorama, tendências, nichos, ranking
+13. **Menções em Diários Oficiais** — Querido Diário (se houver)
+14. **Próximos Passos** — Ações priorizadas com prazos
+15. **Verificação SICAF** — Status cadastral (CRC), restrições, habilitações. Falha de coleta = alerta INCOMPLETO (E2)
+16. **Fontes de Dados e Confiabilidade** — Tabela com status de cada API consultada (datas BR)
+17. **Rodapé em todas as páginas:** "Tiago Sasaki - Consultor de Licitações (48)9 8834-4559"
 
 ---
 
@@ -276,9 +280,31 @@ Quando invocado:
 5. **Phase 4:** Inteligência competitiva (PNCP histórico + OpenCNPJ concorrentes)
 6. **Phase 5:** Inteligência de mercado (panorama, tendências, nichos)
 7. **Phase 6:** Enriquecer JSON + gerar PDF + gerar markdown
-7. JSON final salvo em `docs/reports/data-{CNPJ}-{YYYY-MM-DD}.json`
-8. PDF gerado em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.pdf`
-9. Markdown em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.md`
+8. **Phase 7:** Validação de entrega — checklist abaixo. Se QUALQUER item = NÃO, revisar a seção antes de entregar.
+9. JSON final salvo em `docs/reports/data-{CNPJ}-{YYYY-MM-DD}.json`
+10. PDF gerado em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.pdf`
+11. Markdown em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.md`
+
+### Phase 7: Checklist de Validação de Entrega
+
+Critério: **"Se eu fosse o leitor, ficaria absolutamente satisfeito com o conteúdo ou teria dúvidas?"** Nada menos que "absolutamente satisfeito" é aceitável.
+
+- [ ] 1. Cada edital tem justificativa clara para sua recomendação?
+- [ ] 2. A memória de cálculo do ROI é reproduzível na mão?
+- [ ] 3. O diagnóstico de cobertura está presente e é honesto?
+- [ ] 4. Há distinção clara entre "verificado OK" e "não verificado" em CADA fonte?
+- [ ] 5. Lacunas operacionais listam EXATAMENTE o que falta (não genérico)?
+- [ ] 6. Clusters regionais identificados quando aplicável?
+- [ ] 7. Risco do edital (histórico do órgão) analisado para cada oportunidade?
+- [ ] 8. Perfil de maturidade reflete a realidade da empresa?
+- [ ] 9. TODAS as datas estão em DD/MM/YYYY?
+- [ ] 10. ZERO palavras sem acento onde acento é necessário?
+- [ ] 11. Nenhum dado com fonte "UNAVAILABLE" apresentado como se fosse verificado?
+- [ ] 12. O leitor consegue tomar decisão sem precisar de informação adicional?
+
+Se QUALQUER item = NÃO: revisar seção específica e re-gerar. Registrar `delivery_validation` no JSON.
+
+O agente DEVE reler o markdown gerado com olhar de leitor exigente. Para cada seção: "esta informação é suficiente para o decisor agir?" Se alguma seção gera dúvida: expandir, corrigir, ou adicionar nota explicativa.
 
 **Tempo estimado:** 5-15 minutos dependendo do número de editais e PDFs.
 

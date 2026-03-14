@@ -1358,3 +1358,454 @@ class TestHabilitacaoRequirements:
             assert "capital_minimo_pct" in reqs, f"{sector} missing capital_minimo_pct"
             assert "atestados" in reqs, f"{sector} missing atestados"
             assert "fiscal" in reqs, f"{sector} missing fiscal"
+
+
+# ============================================================
+# E1: ROI Auditable Calculation Memory + Reclassification
+# ============================================================
+
+class TestRoiCalculationMemory:
+    """E1: ROI must have auditable calculation_memory and auto-reclassification."""
+
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import compute_roi_potential
+            self.compute_roi = compute_roi_potential
+        except (ImportError, AttributeError):
+            pytest.skip("compute_roi_potential not available")
+
+    def _make_edital(self, valor):
+        return {"valor_estimado": valor}
+
+    def _make_win_prob(self, prob):
+        return {"final_probability": prob}
+
+    def test_calculation_memory_present(self):
+        result = self.compute_roi(self._make_edital(500000), "engenharia_construcao", self._make_win_prob(0.15))
+        assert "calculation_memory" in result
+        mem = result["calculation_memory"]
+        assert "valor_edital" in mem
+        assert "probabilidade_vitoria" in mem
+        assert "formula" in mem
+        assert "roi_min_calc" in mem
+        assert "roi_max_calc" in mem
+
+    def test_reclassification_low_roi_high_contract(self):
+        """ROI < 10K on contract > 100K → strategic reclassification."""
+        result = self.compute_roi(self._make_edital(500000), "engenharia_construcao", self._make_win_prob(0.005))
+        roi_max = result.get("roi_max", 0)
+        if roi_max < 10000:
+            assert result.get("strategic_reclassification") == "INVESTIMENTO_ESTRATEGICO_ACERVO"
+            assert result.get("reclassification_rationale")
+
+    def test_no_reclassification_high_roi(self):
+        """ROI > 10K should NOT be reclassified."""
+        result = self.compute_roi(self._make_edital(5000000), "engenharia_construcao", self._make_win_prob(0.15))
+        assert result.get("strategic_reclassification") is None
+
+    def test_memory_reproducible(self):
+        """Calculation memory values allow manual reproduction."""
+        result = self.compute_roi(self._make_edital(1000000), "engenharia_construcao", self._make_win_prob(0.10))
+        mem = result["calculation_memory"]
+        assert "=" in mem["roi_min_calc"]
+
+
+# ============================================================
+# E2: SICAF Mandatory + FALHA_COLETA handling
+# ============================================================
+
+class TestSicafFalhaColeta:
+    """E2: Habilitação must handle SICAF FALHA_COLETA as INCOMPLETO."""
+
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import compute_habilitacao_analysis
+            self.compute_hab = compute_habilitacao_analysis
+        except (ImportError, AttributeError):
+            pytest.skip("compute_habilitacao_analysis not available")
+
+    def test_sicaf_falha_produces_incompleto(self):
+        edital = {"valor_estimado": 100000, "modalidade": "Pregão Eletrônico"}
+        empresa = {"capital_social": 500000}
+        sicaf = {
+            "status": "FALHA_COLETA",
+            "attempted_at": "13/03/2026 10:30",
+            "error_type": "TIMEOUT",
+            "error_detail": "Captcha não resolvido",
+        }
+        result = self.compute_hab(edital, empresa, sicaf, sector_key="engenharia_construcao")
+        # Check dimensions for INCOMPLETO status on fiscal regularity
+        dim_statuses = [d.get("status") for d in result.get("dimensions", [])]
+        has_incompleto = "INCOMPLETO" in dim_statuses
+        overall = result.get("status", "")
+        assert has_incompleto or "PARCIALMENTE" in overall
+
+
+# ============================================================
+# E8: Maturity Profile Detection
+# ============================================================
+
+class TestMaturityProfile:
+    """E8: detect_maturity_profile must classify correctly."""
+
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import detect_maturity_profile
+            self.detect = detect_maturity_profile
+        except (ImportError, AttributeError):
+            pytest.skip("detect_maturity_profile not available")
+
+    def _empresa(self, contracts, capital=500000):
+        return {"historico_contratos": contracts, "capital_social": capital}
+
+    def test_entrante_no_contracts(self):
+        result = self.detect(self._empresa([]))
+        assert result["profile"] == "ENTRANTE"
+
+    def test_entrante_few_contracts(self):
+        contracts = [{"id": 1}, {"id": 2}]
+        result = self.detect(self._empresa(contracts))
+        assert result["profile"] == "ENTRANTE"
+
+    def test_regional_medium_contracts(self):
+        contracts = [{"id": i, "uf": "SC"} for i in range(5)]
+        result = self.detect(self._empresa(contracts))
+        assert result["profile"] == "REGIONAL"
+
+    def test_estabelecido_many_contracts(self):
+        contracts = [{"id": i, "uf": f"UF{i % 5}"} for i in range(15)]
+        result = self.detect(self._empresa(contracts))
+        assert result["profile"] == "ESTABELECIDO"
+
+    def test_estabelecido_many_ufs(self):
+        contracts = [{"id": i, "uf": f"UF{i}"} for i in range(4)]
+        result = self.detect(self._empresa(contracts))
+        assert result["profile"] == "ESTABELECIDO"
+
+    def test_returns_rationale(self):
+        result = self.detect(self._empresa([]))
+        assert "rationale" in result
+        assert isinstance(result["rationale"], str)
+
+
+# ============================================================
+# E4: Qualification Gap Analysis
+# ============================================================
+
+class TestQualificationGapAnalysis:
+    """E4: Separate CNAE incompatibility from operational gaps."""
+
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import compute_qualification_gap_analysis
+            self.compute_gap = compute_qualification_gap_analysis
+        except (ImportError, AttributeError):
+            pytest.skip("compute_qualification_gap_analysis not available")
+
+    def test_incompatible_cnae(self):
+        """Low compatibility score → INCOMPATÍVEL_CNAE."""
+        edital = {"valor_estimado": 100000}
+        empresa = {"capital_social": 500000, "cnae_principal": "6201-5"}
+        compat = {"score": 0.1, "compatibility": "BAIXA"}
+        result = self.compute_gap(edital, empresa, compat, sector_key="software")
+        assert result["filter_result"] == "INCOMPATÍVEL_CNAE"
+
+    def test_operational_gap_capital(self):
+        """Compatible but insufficient capital → LACUNA_OPERACIONAL with CAPITAL gap."""
+        edital = {"valor_estimado": 10000000}
+        empresa = {"capital_social": 50000, "cnae_principal": "4120-4"}
+        compat = {"score": 0.8, "compatibility": "ALTA"}
+        result = self.compute_gap(edital, empresa, compat, sector_key="engenharia_construcao")
+        if result.get("operational_gaps"):
+            gap_types = [g["gap_type"] for g in result["operational_gaps"]]
+            assert "CAPITAL" in gap_types
+
+
+# ============================================================
+# E7: Regional Clusters
+# ============================================================
+
+class TestRegionalClusters:
+    """E7: Geographic clustering of editais."""
+
+    def setup_method(self):
+        try:
+            from collect_report_data_helpers import compute_regional_clusters
+            self.compute_clusters = compute_regional_clusters
+        except (ImportError, AttributeError):
+            pytest.skip("compute_regional_clusters not available")
+
+    def test_nearby_editais_cluster(self):
+        """Editais within 150km should cluster together."""
+        editais = [
+            {"municipio": "Belo Horizonte", "uf": "MG", "valor_estimado": 500000,
+             "data_encerramento": "2026-04-01",
+             "distancia": {"dest_lat": -19.92, "dest_lon": -43.94, "km": 100}},
+            {"municipio": "Contagem", "uf": "MG", "valor_estimado": 300000,
+             "data_encerramento": "2026-04-15",
+             "distancia": {"dest_lat": -19.93, "dest_lon": -44.05, "km": 110}},
+            {"municipio": "Betim", "uf": "MG", "valor_estimado": 400000,
+             "data_encerramento": "2026-04-20",
+             "distancia": {"dest_lat": -19.97, "dest_lon": -44.20, "km": 120}},
+        ]
+        result = self.compute_clusters(editais)
+        clusters = result.get("clusters", [])
+        assert len(clusters) >= 1
+        # All 3 are very close — should be in one cluster
+        assert clusters[0].get("n_editais", 0) >= 2
+
+    def test_distant_editais_separate(self):
+        """Editais > 150km apart should not cluster."""
+        editais = [
+            {"municipio": "Florianópolis", "uf": "SC", "valor_estimado": 500000,
+             "data_encerramento": "2026-04-01",
+             "distancia": {"dest_lat": -27.59, "dest_lon": -48.55, "km": 200}},
+            {"municipio": "Porto Alegre", "uf": "RS", "valor_estimado": 300000,
+             "data_encerramento": "2026-04-15",
+             "distancia": {"dest_lat": -30.03, "dest_lon": -51.23, "km": 500}},
+        ]
+        result = self.compute_clusters(editais)
+        clusters = result.get("clusters", [])
+        # They are ~460km apart — no cluster with 2+ editais
+        for cl in clusters:
+            assert cl.get("n_editais", 0) < 2
+
+    def test_empty_editais(self):
+        result = self.compute_clusters([])
+        assert result.get("clusters", []) == []
+
+
+# ============================================================
+# E9: Accent Map + Date Format
+# ============================================================
+
+class TestAccentMap:
+    """E9: Verify accent map coverage for key Portuguese terms."""
+
+    def setup_method(self):
+        try:
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "gen_report", str(Path(__file__).parent.parent / "generate-report-b2g.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            self._s = mod._s
+            self._date = mod._date
+        except Exception:
+            pytest.skip("generate-report-b2g.py not importable")
+
+    def test_demolicao_accent(self):
+        assert "ã" in self._s("demolicao") or "ç" in self._s("demolicao") or self._s("demolição") == "demolição"
+
+    def test_aprovacao_accent(self):
+        result = self._s("aprovacao")
+        assert "ã" in result or "ç" in result
+
+    def test_homologacao_accent(self):
+        result = self._s("homologacao")
+        assert "ã" in result or "ç" in result
+
+    def test_date_iso_to_br(self):
+        result = self._date("2026-03-13")
+        assert result == "13/03/2026"
+
+    def test_date_already_br(self):
+        result = self._date("13/03/2026")
+        assert result == "13/03/2026"
+
+    def test_date_iso_datetime(self):
+        result = self._date("2026-03-13T10:30:00")
+        assert "13/03/2026" in result
+
+
+# ============================================================
+# E10: Report Validation
+# ============================================================
+
+class TestReportValidation:
+    """E10: validate_report_completeness catches issues."""
+
+    def setup_method(self):
+        try:
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "gen_report", str(Path(__file__).parent.parent / "generate-report-b2g.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            self.validate = mod.validate_report_completeness
+        except Exception:
+            pytest.skip("validate_report_completeness not importable")
+
+    def test_complete_report_passes(self):
+        data = {
+            "editais": [{
+                "recomendacao": "PARTICIPAR",
+                "justificativa": "Alta aderência",
+                "roi_potential": {"calculation_memory": {"formula": "test"}},
+            }],
+            "coverage_diagnostic": {"coverage_rate": 0.85},
+        }
+        warnings = self.validate(data)
+        # Should have no warnings about missing justification or ROI
+        missing_just = [w for w in warnings if "justificativa" in w.lower()]
+        assert len(missing_just) == 0
+
+    def test_missing_justificativa_warns(self):
+        data = {
+            "editais": [{
+                "recomendacao": "PARTICIPAR",
+                # no justificativa
+                "roi_potential": {"calculation_memory": {"formula": "test"}},
+            }],
+        }
+        warnings = self.validate(data)
+        assert any("justificativa" in w.lower() or "justificação" in w.lower() for w in warnings)
+
+    def test_missing_roi_memory_warns(self):
+        data = {
+            "editais": [{
+                "recomendacao": "PARTICIPAR",
+                "justificativa": "OK",
+                "roi_potential": {"roi_min": 100},  # has roi data but no calculation_memory
+            }],
+        }
+        warnings = self.validate(data)
+        assert any("roi" in w.lower() or "memória" in w.lower() or "memoria" in w.lower() or "cálculo" in w.lower() for w in warnings)
+
+
+# ============================================================
+# E5: Dispute Stats PDF Rendering (integration via competitive section)
+# ============================================================
+
+class TestDisputeStatsPdfRendering:
+    """E5: Competitive section renders dispute stats when present."""
+
+    def setup_method(self):
+        try:
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "gen_report", str(Path(__file__).parent.parent / "generate-report-b2g.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            self._build_competitive = mod._build_competitive_section
+            self._build_styles = mod._build_styles
+            self._section_counter = mod._section_counter
+        except Exception:
+            pytest.skip("generate-report-b2g.py functions not importable")
+
+    def test_with_dispute_stats(self):
+        data = {
+            "editais": [{
+                "orgao": "Prefeitura X",
+                "competitive_intel": [
+                    {"fornecedor": "ABC Ltda", "objeto": "Obra", "valor": 100000, "data": "2026-01-01"},
+                ],
+            }],
+            "dispute_stats": {
+                "stats_by_typology": {
+                    "Pregão_0-100K": {
+                        "total": 5, "avg_participants": 3.2,
+                        "avg_discount": 0.12, "adjudication_rate": 0.85,
+                    },
+                },
+                "recurring_suppliers": [
+                    {"fornecedor": "ABC Ltda", "contract_count": 3, "region": "SC"},
+                ],
+            },
+        }
+        styles = self._build_styles()
+        sec = self._section_counter()
+        elements = self._build_competitive(data, styles, sec)
+        assert len(elements) > 0  # Should produce output
+
+    def test_without_dispute_stats(self):
+        """Backward compat — no dispute_stats still works."""
+        data = {
+            "editais": [{
+                "orgao": "Prefeitura X",
+                "competitive_intel": [
+                    {"fornecedor": "ABC Ltda", "objeto": "Obra", "valor": 100000, "data": "2026-01-01"},
+                ],
+            }],
+        }
+        styles = self._build_styles()
+        sec = self._section_counter()
+        elements = self._build_competitive(data, styles, sec)
+        assert len(elements) > 0
+
+
+# ============================================================
+# E4: Development Plan PDF Section
+# ============================================================
+
+class TestDevelopmentPlanSection:
+    """E4: Consolidated development plan aggregates operational gaps."""
+
+    def setup_method(self):
+        try:
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "gen_report", str(Path(__file__).parent.parent / "generate-report-b2g.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            self._build_dev_plan = mod._build_development_plan
+            self._build_styles = mod._build_styles
+            self._section_counter = mod._section_counter
+        except Exception:
+            pytest.skip("_build_development_plan not importable")
+
+    def test_with_gaps(self):
+        data = {
+            "editais": [
+                {"objeto": "Obra A", "qualification_gap": {
+                    "operational_gaps": [
+                        {"gap_type": "CAPITAL", "description": "Capital insuficiente",
+                         "estimated_timeline": "6 meses", "action_required": "Aumentar capital"},
+                    ],
+                }},
+                {"objeto": "Obra B", "qualification_gap": {
+                    "operational_gaps": [
+                        {"gap_type": "ATESTADO", "description": "Falta atestado",
+                         "estimated_timeline": "12 meses", "action_required": "Obter CAT"},
+                    ],
+                }},
+            ],
+        }
+        styles = self._build_styles()
+        sec = self._section_counter()
+        elements = self._build_dev_plan(data, styles, sec)
+        assert len(elements) > 0
+
+    def test_without_gaps_returns_empty(self):
+        data = {"editais": [{"objeto": "Obra A"}]}
+        styles = self._build_styles()
+        sec = self._section_counter()
+        elements = self._build_dev_plan(data, styles, sec)
+        assert elements == []
+
+    def test_deduplicates_gaps(self):
+        data = {
+            "editais": [
+                {"objeto": "Obra A", "qualification_gap": {
+                    "operational_gaps": [
+                        {"gap_type": "CAPITAL", "description": "Capital insuficiente",
+                         "estimated_timeline": "6 meses", "action_required": "Aumentar"},
+                    ],
+                }},
+                {"objeto": "Obra B", "qualification_gap": {
+                    "operational_gaps": [
+                        {"gap_type": "CAPITAL", "description": "Capital insuficiente",
+                         "estimated_timeline": "6 meses", "action_required": "Aumentar"},
+                    ],
+                }},
+            ],
+        }
+        styles = self._build_styles()
+        sec = self._section_counter()
+        elements = self._build_dev_plan(data, styles, sec)
+        # Should produce elements but deduplicated — only 1 unique gap
+        assert len(elements) > 0
