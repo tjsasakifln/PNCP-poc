@@ -971,7 +971,7 @@ def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
     el.append(Spacer(1, 3 * mm))
 
     avail = PAGE_WIDTH - 2 * MARGIN
-    col_w = [avail * 0.05, avail * 0.33, avail * 0.11, avail * 0.08, avail * 0.15, avail * 0.28]
+    col_w = [avail * 0.05, avail * 0.28, avail * 0.11, avail * 0.08, avail * 0.20, avail * 0.28]
 
     # Header
     header = [
@@ -994,9 +994,13 @@ def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
         prazo = _format_prazo_short(ed.get("dias_restantes"))
 
         rec_ps = ParagraphStyle(
-            f"drec_{idx}", fontName="Helvetica-Bold", fontSize=8,
+            f"drec_{idx}", fontName="Helvetica-Bold", fontSize=7.5,
             textColor=rec_color, alignment=TA_LEFT, leading=10,
         )
+
+        # Use non-breaking spaces within each word to prevent mid-word breaks
+        # Words can wrap between them but never break inside
+        rec_display = rec.replace(" ", "\xa0")
 
         # Build strategic differential insight
         diff_parts = []
@@ -1027,7 +1031,7 @@ def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
             Paragraph(objeto, styles["cell"]),
             Paragraph(valor, styles["cell_right"]),
             Paragraph(prazo, styles["cell_center"]),
-            Paragraph(rec, rec_ps),
+            Paragraph(rec_display, rec_ps),
             Paragraph(differential, ParagraphStyle(
                 f"ddiff_{idx}", parent=styles["cell"],
                 fontName="Helvetica", fontSize=7, textColor=TEXT_SECONDARY,
@@ -1713,13 +1717,16 @@ def _build_overview_table(editais_list: list, styles: dict, start_idx: int = 1) 
             enc_date = _date(ed.get("data_encerramento"))
             prazo = enc_date if enc_date != "N/I" else "—"
 
+        # Non-breaking spaces within each word to prevent mid-word line breaks
+        rec_display = rec.replace(" ", "\xa0")
+
         rows.append([
             Paragraph(f"<b>{idx}</b>", styles["cell_center"]),
             Paragraph(objeto_orgao, styles["cell"]),
             Paragraph(_s(ed.get("uf", "")), styles["cell_center"]),
             Paragraph(_currency_short(ed.get("valor_estimado")), styles["cell_right"]),
             Paragraph(prazo, styles["cell_center"]),
-            Paragraph(rec, rec_style),
+            Paragraph(rec_display, rec_style),
         ])
 
     t = _three_rule_table(rows, col_widths)
