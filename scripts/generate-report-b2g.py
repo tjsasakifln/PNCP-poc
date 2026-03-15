@@ -2979,6 +2979,75 @@ def _build_coverage_warning(data: dict, styles: dict) -> list:
     return el
 
 
+def _build_sector_divergence_alert(data: dict, styles: dict) -> list:
+    """Render critical alert when company's CNAE diverges from its actual contract history.
+
+    This is a top-level finding: a company registered for construction but whose
+    700 contracts are all food/merchandise should see this BEFORE any edital analysis.
+    """
+    empresa = data.get("empresa", {})
+    divergence = empresa.get("_sector_divergence")
+    if not divergence:
+        return []
+
+    el = []
+    total = divergence.get("total_contracts", 0)
+    sector = divergence.get("sector_contracts", 0)
+
+    el.append(Paragraph(
+        f"<font color='{SIGNAL_RED.hexval()}'><b>ALERTA CRÍTICO — CNAE INCONSISTENTE COM HISTÓRICO</b></font>",
+        ParagraphStyle(
+            "sector_alert_title", parent=styles["h3"],
+            fontName="Helvetica-Bold", textColor=SIGNAL_RED,
+        ),
+    ))
+
+    el.append(Paragraph(
+        f"A empresa possui <b>{total} contratos governamentais</b> registrados no "
+        f"Portal Nacional de Contratações Públicas, porém "
+        f"<b>{'nenhum' if sector == 0 else f'apenas {sector}'}</b> "
+        f"está relacionado ao setor de atuação dos editais analisados neste relatório.",
+        styles["body"],
+    ))
+
+    el.append(Paragraph(
+        "O CNAE registrado indica capacidade formal para atuar no setor, mas o histórico de "
+        "contratos revela atuação predominante em segmento distinto. Isso significa que:",
+        styles["body"],
+    ))
+
+    implications = [
+        "A empresa provavelmente <b>não possui atestados de capacidade técnica</b> no setor — "
+        "requisito eliminatório na fase de habilitação da maioria das licitações",
+        "A <b>Certidão de Acervo Técnico (CAT)</b> junto ao CREA/CAU pode estar vazia para este tipo de obra",
+        "Todas as recomendações deste relatório devem ser lidas com esta ressalva: "
+        "<b>a participação efetiva depende de verificação prévia do acervo real da empresa</b>",
+    ]
+    for imp in implications:
+        el.append(Paragraph(
+            f"— {imp}",
+            ParagraphStyle(
+                "sector_imp", parent=styles["bullet"],
+                fontName="Times-Roman", textColor=TEXT_COLOR,
+            ),
+        ))
+
+    el.append(Spacer(1, 2 * mm))
+    el.append(Paragraph(
+        "<b>Ação imediata recomendada:</b> Confirmar junto à empresa se existem contratos no setor "
+        "não registrados no PNCP (contratos estaduais/municipais anteriores a 2021, contratos privados). "
+        "Se confirmada a ausência de acervo, consultar a seção \"Plano de Desenvolvimento\" para "
+        "o roteiro de construção de acervo técnico.",
+        ParagraphStyle(
+            "sector_action", parent=styles["body"],
+            fontName="Helvetica", fontSize=9, textColor=INK,
+        ),
+    ))
+
+    el.append(Spacer(1, 8 * mm))
+    return el
+
+
 # ============================================================
 # E7: REGIONAL CLUSTER ANALYSIS
 # ============================================================
@@ -3364,6 +3433,8 @@ def generate_report_b2g(data: dict) -> BytesIO:
     # === CAMADA 1: DECISÃO EXECUTIVA ===
     # Coverage warning (before any analysis if coverage < 70%)
     elements.extend(_build_coverage_warning(data, styles))
+    # Sector divergence alert (CNAE vs actual contracts — before any edital analysis)
+    elements.extend(_build_sector_divergence_alert(data, styles))
     # 1. Resumo Executivo (condensed)
     elements.extend(_build_executive_summary(data, styles, sec))
     # 2. Decisão em 30 Segundos (grouped summary table)

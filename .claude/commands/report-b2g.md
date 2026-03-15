@@ -177,8 +177,9 @@ Para CADA edital, cruzar dados do JSON (Phase 1) + análise documental (Phase 2)
    - Simples Nacional / MEI vs limites de faturamento
    - Se NÃO atende requisito crítico → NÃO RECOMENDADO com motivo
 7. **Análise de aditivos** — Se `competitive_intel` mostra contratos com `valor_aditivos > 0` ou `situacao_contrato == "3" (rescindido)`, alertar sobre padrão do órgão. Aditivos frequentes = risco de escopo mal definido. Rescisões = red flag.
-8. **Recomendação** — PARTICIPAR / AVALIAR COM CAUTELA / NÃO RECOMENDADO
-9. **Justificativa (OBRIGATÓRIA)** — Motivo factual da recomendação. TODA recomendação DEVE ter justificativa. Para NÃO RECOMENDADO, explicar o motivo específico (ex: "Capital social R$X insuficiente para exigência de R$Y", "Distância 800km inviabiliza logística", "CNAE incompatível com objeto"). Para PARTICIPAR, explicar por que é viável. Para AVALIAR COM CAUTELA, explicar o risco específico.
+8. **Divergência setorial** — Se `qualification_gap.gap_type == "ACERVO_SETOR_DIVERGENTE"`, a empresa tem CNAE no setor mas contratos históricos em segmento distinto. Neste caso: **NÃO invalidar o edital como NÃO RECOMENDADO**. Em vez disso, recomendar **AVALIAR COM CAUTELA** com justificativa "Participação depende de confirmação de acervo técnico no setor — verificar CATs e atestados reais da empresa". O alerta de divergência setorial já aparece no topo do relatório; a análise por edital deve complementar, não repetir.
+9. **Recomendação** — PARTICIPAR / AVALIAR COM CAUTELA / NÃO RECOMENDADO
+10. **Justificativa (OBRIGATÓRIA)** — Motivo factual da recomendação. TODA recomendação DEVE ter justificativa. Para NÃO RECOMENDADO, explicar o motivo específico (ex: "Capital social R$X insuficiente para exigência de R$Y", "Distância 800km inviabiliza logística", "CNAE incompatível com objeto"). Para PARTICIPAR, explicar por que é viável. Para AVALIAR COM CAUTELA, explicar o risco específico.
 
 ### Phase 4: Inteligência Competitiva (Claude + API)
 

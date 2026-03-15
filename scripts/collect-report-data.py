@@ -3377,11 +3377,23 @@ def compute_all_deterministic(
             if _sector_pattern.search(obj):
                 sector_relevant_count += 1
     empresa["_sector_relevant_contracts"] = sector_relevant_count
+    empresa["_sector_divergence"] = None  # Top-level alert for report rendering
     if historico_list:
         pct = round(100 * sector_relevant_count / len(historico_list), 1)
         print(f"  Contratos setoriais: {sector_relevant_count}/{len(historico_list)} ({pct}%)")
-        if sector_relevant_count == 0 and len(historico_list) >= 10:
-            print(f"  ⚠ ALERTA: {len(historico_list)} contratos encontrados mas ZERO no setor — acervo NÃO presume experiência no setor")
+        if sector_relevant_count < 3 and len(historico_list) >= 10:
+            empresa["_sector_divergence"] = {
+                "total_contracts": len(historico_list),
+                "sector_contracts": sector_relevant_count,
+                "pct": pct,
+                "alert": (
+                    f"CNAE inconsistente com histórico: empresa possui {len(historico_list)} "
+                    f"contratos governamentais, porém {'NENHUM' if sector_relevant_count == 0 else f'apenas {sector_relevant_count}'} "
+                    f"no setor de atuação dos editais. O histórico registrado indica atuação "
+                    f"em segmento distinto. Verificar acervo técnico antes de qualquer participação."
+                ),
+            }
+            print(f"  ⚠ ALERTA CRÍTICO: {len(historico_list)} contratos mas {'ZERO' if sector_relevant_count == 0 else f'apenas {sector_relevant_count}'} no setor — CNAE diverge do histórico")
 
     empresa_cnaes = empresa.get("cnaes_secundarios", "")
     if isinstance(empresa_cnaes, list):
