@@ -546,37 +546,64 @@ def collect_pncp_contratos_fornecedor(api: ApiClient, cnpj14: str) -> tuple[list
 # SECTOR MAPPING
 # ============================================================
 
-def extract_keywords_from_contracts(contratos: list[dict], min_freq: int = 2, max_keywords: int = 30) -> list[str]:
+def extract_keywords_from_contracts(contratos: list[dict], max_keywords: int = 30) -> list[str]:
     """Extract high-frequency keywords from historical contract descriptions.
 
     Analyzes the 'objeto' field of past contracts to identify what the company
-    ACTUALLY delivers (vs what their CNAE says). Keywords that appear in ≥min_freq
-    contracts are returned, sorted by frequency descending.
+    ACTUALLY delivers (vs what their CNAE says).
 
     This addresses the insight that companies often win bids outside their CNAE —
     their contract history is a better signal of actual competency than CNAE codes.
+
+    Designed to work well for ALL company types:
+    - Construction: "pavimentação", "drenagem", "escola municipal"
+    - Cleaning supplies: "limpeza", "higienização", "descartáveis", "hospitalar"
+    - Uniforms: "uniformes", "fardamento", "jalecos", "EPIs", "escolares"
+    - Food: "merenda escolar", "gêneros alimentícios", "hortifruti", "cestas básicas"
+    - Vehicles: "locação veículos", "ambulância", "frota", "motorista"
+
+    Adaptive min_freq: scales with contract count so that even small histories
+    produce meaningful keywords.
     """
     if not contratos:
         return []
 
-    # Portuguese stop words for government contract descriptions
+    n_contracts = len(contratos)
+
+    # Adaptive min_freq: with few contracts, even freq=1 is a signal.
+    # With many contracts, require higher frequency to filter noise.
+    if n_contracts <= 3:
+        min_freq = 1  # Accept any term that appears at least once
+    elif n_contracts <= 8:
+        min_freq = 2  # Appear in at least 2 contracts
+    else:
+        min_freq = max(2, n_contracts // 5)  # ~20% prevalence
+
+    # MINIMAL stop words — ONLY bureaucratic/procedural terms.
+    # Rule: if a word could appear in a bid search query, it is NOT a stop word.
+    # "limpeza", "uniforme", "veículo", "saúde", "escolar" etc. are KEPT.
     _STOP_WORDS = {
+        # Grammatical particles
         "para", "com", "dos", "das", "nos", "nas", "por", "uma", "num", "numa",
         "que", "como", "mais", "este", "esta", "estes", "estas", "esse", "essa",
         "aquele", "aquela", "entre", "cada", "todo", "toda", "todos", "todas",
-        "sobre", "sob", "sem", "seu", "sua", "seus", "suas", "não", "nao",
-        "muito", "mais", "menos", "bem", "mal", "sim", "mas", "porém", "porem",
-        "ainda", "também", "tambem", "então", "entao", "quando", "onde", "porque",
-        "contrato", "contratação", "contratacao", "aquisição", "aquisicao",
-        "fornecimento", "prestação", "prestacao", "serviço", "servico", "serviços",
-        "servicos", "execução", "execucao", "objeto", "referente", "relativo",
-        "conforme", "mediante", "decorrente", "processo", "pregão", "pregao",
-        "licitação", "licitacao", "dispensa", "inexigibilidade", "concorrência",
-        "concorrencia", "empresa", "ltda", "eireli", "cnpj", "cpf",
-        "valor", "prazo", "vigência", "vigencia", "pagamento", "parcela",
-        "municipal", "prefeitura", "governo", "estado", "federal", "secretaria",
-        "ministério", "ministerio", "departamento", "diretoria",
-        "janeiro", "fevereiro", "março", "marco", "abril", "maio", "junho",
+        "sobre", "sob", "sem", "seu", "sua", "seus", "suas",
+        "muito", "menos", "ainda",
+        # Procurement procedural (never differentiate what is being bought)
+        "contrato", "contratacao", "objeto", "referente", "relativo",
+        "conforme", "mediante", "decorrente", "processo",
+        # Modality names (not product descriptors)
+        "pregao", "licitacao", "dispensa", "inexigibilidade", "concorrencia",
+        # Legal entities
+        "empresa", "ltda", "eireli", "cnpj",
+        # Admin/payment
+        "valor", "prazo", "vigencia", "pagamento", "parcela",
+        # Government hierarchy
+        "prefeitura", "governo", "secretaria", "ministerio", "departamento",
+        # True filler (never useful as search keywords)
+        "tipo", "diversos", "demais", "necessidades", "atender", "outros",
+        # Dates
+        "janeiro", "fevereiro", "marco", "abril", "maio", "junho",
         "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
         "2024", "2025", "2026", "2023", "2022", "2021",
     }
@@ -604,31 +631,67 @@ def extract_keywords_from_contracts(contratos: list[dict], min_freq: int = 2, ma
                 bigram_freq[bg] = bigram_freq.get(bg, 0) + 1
                 seen_words.add(bg)
 
-    # Filter by minimum frequency and sort by relevance
-    frequent_words = [
-        (word, freq) for word, freq in word_freq.items()
-        if freq >= min_freq
-    ]
-    frequent_bigrams = [
-        (bg, freq) for bg, freq in bigram_freq.items()
-        if freq >= min_freq
-    ]
+    # Filter by adaptive minimum frequency and sort by relevance
+    frequent_words = sorted(
+        [(word, freq) for word, freq in word_freq.items() if freq >= min_freq],
+        key=lambda x: -x[1],
+    )
+    frequent_bigrams = sorted(
+        [(bg, freq) for bg, freq in bigram_freq.items() if freq >= min_freq],
+        key=lambda x: -x[1],
+    )
 
-    # Bigrams get priority (more specific), then single words
-    all_terms = sorted(frequent_bigrams, key=lambda x: -x[1]) + sorted(frequent_words, key=lambda x: -x[1])
+    # Phase 3 (commerce rescue): for supply/commerce companies, individual product
+    # names appear in only 1 contract each (e.g., "detergente" in one, "desinfetante"
+    # in another). These are valuable search terms but fail the min_freq filter.
+    # Solution: collect freq=1 words that are NOT procedural/generic — they represent
+    # the product specificity of the company.
+    _GENERIC_WORDS = {
+        "material", "materiais", "produtos", "itens", "compra", "aquisicao",
+        "fornecimento", "prestacao", "servicos", "registro", "precos",
+        "municipal", "estadual", "federal", "publica", "publico",
+    }
+    rare_but_specific = sorted(
+        [(word, freq) for word, freq in word_freq.items()
+         if freq == 1 and word not in _GENERIC_WORDS and len(word) >= 5],
+        key=lambda x: x[0],  # alphabetical for stability
+    )
 
-    # Deduplicate: if a bigram contains a word, the word is redundant
+    # Build result: bigrams first (most specific), then frequent words, then rare specifics.
     result: list[str] = []
-    used_words: set[str] = set()
-    for term, _freq in all_terms:
+    seen_terms: set[str] = set()
+
+    # Layer 1: Frequent bigrams (highest signal — e.g. "merenda escolar", "material limpeza")
+    for term, _freq in frequent_bigrams:
         if len(result) >= max_keywords:
             break
-        term_words = set(term.split())
-        # Skip single words already covered by a bigram
-        if len(term_words) == 1 and term in used_words:
-            continue
-        result.append(term)
-        used_words.update(term_words)
+        if term not in seen_terms:
+            result.append(term)
+            seen_terms.add(term)
+
+    # Layer 2: Frequent single words NOT already in a bigram
+    bigram_words = set()
+    for bg in result:
+        bigram_words.update(bg.split())
+
+    for word, _freq in frequent_words:
+        if len(result) >= max_keywords:
+            break
+        if word not in seen_terms and word not in bigram_words:
+            result.append(word)
+            seen_terms.add(word)
+
+    # Layer 3: Rare but specific product/service terms (commerce rescue layer)
+    # Only added if we have room and haven't exceeded max_keywords.
+    # Capped at 10 rare terms to avoid noise explosion.
+    rare_added = 0
+    for word, _freq in rare_but_specific:
+        if len(result) >= max_keywords or rare_added >= 10:
+            break
+        if word not in seen_terms and word not in bigram_words:
+            result.append(word)
+            seen_terms.add(word)
+            rare_added += 1
 
     return result
 
