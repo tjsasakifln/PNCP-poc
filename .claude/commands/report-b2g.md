@@ -308,49 +308,95 @@ Material de consulta, fora do fluxo principal.
 
 Quando invocado:
 1. **Phase 1:** Executar `collect-report-data.py` (coleta todas as APIs + SICAF via Playwright integrado)
-2. **Phase 2:** Download + análise documental dos PDFs dos editais (Claude direto)
+2. **Phase 1.5 — GATE DETERMINÍSTICO (OBRIGATÓRIO):** Executar `validate-report-data.py` no JSON. Se BLOCKED → PARAR, informar o motivo, NÃO prosseguir. Se WARNINGS → listar todos os alertas e endereçar CADA UM no relatório.
+3. **Phase 2:** Download + análise documental dos PDFs dos editais (Claude direto)
 4. **Phase 3:** Análise estratégica cruzando perfil + edital + documento real
 5. **Phase 4:** Inteligência competitiva (PNCP histórico + OpenCNPJ concorrentes)
 6. **Phase 5:** Inteligência de mercado (panorama, tendências, nichos)
 7. **Phase 6:** Enriquecer JSON + gerar PDF + gerar markdown
-8. **Phase 7:** Validação de entrega — checklist abaixo. Se QUALQUER item = NÃO, revisar a seção antes de entregar.
+8. **Phase 7 — GATE ADVERSARIAL (OBRIGATÓRIO):** Revisão com persona do leitor. Se QUALQUER item falhar → corrigir e re-gerar.
 9. JSON final salvo em `docs/reports/data-{CNPJ}-{YYYY-MM-DD}.json`
 10. PDF gerado em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.pdf`
 11. Markdown em `docs/reports/report-{CNPJ}-{nome-slug}-{YYYY-MM-DD}.md`
 
-### Phase 7: Checklist de Validação de Entrega
+### Phase 1.5: Gate Determinístico (script automatizado)
 
-Critério: **"Se eu fosse o leitor, ficaria absolutamente satisfeito com o conteúdo ou teria dúvidas?"** Nada menos que "absolutamente satisfeito" é aceitável.
+```bash
+python scripts/validate-report-data.py docs/reports/data-{CNPJ}-{YYYY-MM-DD}.json
+```
 
-- [ ] 1. Cada edital tem justificativa clara para sua recomendação?
-- [ ] 2. A memória de cálculo do Resultado Potencial é reproduzível na mão?
-- [ ] 3. O diagnóstico de cobertura está presente e é honesto?
-- [ ] 4. Há distinção clara entre "Confirmado" e "Indisponível" em CADA fonte?
-- [ ] 5. Lacunas operacionais listam EXATAMENTE o que falta (não genérico)?
-- [ ] 6. Clusters regionais identificados quando aplicável?
-- [ ] 7. Risco do edital (histórico do órgão) analisado para cada oportunidade?
-- [ ] 8. Perfil de maturidade reflete a realidade da empresa?
-- [ ] 9. TODAS as datas estão em DD/MM/YYYY?
-- [ ] 10. ZERO palavras sem acento onde acento é necessário?
-- [ ] 11. Nenhum dado com fonte "N/D" apresentado como se fosse verificado?
-- [ ] 12. O leitor consegue tomar decisão sem precisar de informação adicional?
-- [ ] 13. ZERO termos em inglês ou técnicos no PDF (nenhuma menção a API, JSON, Playwright, etc.)?
-- [ ] 14. Todos os números em formato brasileiro (vírgula decimal, ponto milhar)?
-- [ ] 15. Portal da Transparência consultado com chave (contratos + sanções)?
-- [ ] 16. Seção Inteligência Exclusiva presente com os 4 diferenciais?
-- [ ] 17. Editais VETADOS estão marcados como ELIMINATÓRIO com motivo explícito (veto gates)?
-- [ ] 18. Resumo Decisório presente na página 2 com "néctar" do relatório (top 3 + alertas + veredicto)?
-- [ ] 19. Editais com risco fiscal ALTO mencionam o risco fiscal na justificativa?
-- [ ] 20. Editais com `acervo_confirmado=false` incluem nota sobre verificação de atestados?
-- [ ] 21. Probabilidades de vitória mostram dispersão real (não comprimidas em 10-20%)?
-- [ ] 22. Custo de participação reflete setor × modalidade (não valor genérico)?
-- [ ] 23. Alternativa de consórcio/subcontratação avaliada quando há barreiras de capacidade?
+O script verifica coerência semântica dos dados ANTES de gerar o relatório:
 
-Se QUALQUER item = NÃO: revisar seção específica e re-gerar. Registrar `delivery_validation` no JSON.
+| Verificação | Se falhar |
+|-------------|-----------|
+| Keywords vieram do histórico ou do CNAE fallback? | BLOCK se fallback com >10 contratos |
+| Cluster dominante bate com os editais encontrados? | BLOCK se <10% de match |
+| Divergência setorial (CNAE ≠ histórico)? | BLOCK se zero contratos no setor |
+| >90% dos editais com habilitação parcial? | WARN — rebaixar recomendações |
+| Todas as probabilidades de vitória <5%? | WARN — transparência obrigatória |
+| Todos os ROIs negativos? | WARN — classificar como investimento |
+| Fontes obrigatórias falharam? | BLOCK |
 
-O agente DEVE reler o markdown gerado com olhar de leitor exigente. Para cada seção: "esta informação é suficiente para o decisor agir?" Se alguma seção gera dúvida: expandir, corrigir, ou adicionar nota explicativa.
+**Exit codes:** 0 = OK, 1 = BLOCKED (parar), 2 = WARNINGS (endereçar no relatório).
 
-**Tempo estimado:** 5-15 minutos dependendo do número de editais e PDFs.
+**Se BLOCKED:** Informar o usuário qual verificação falhou e sugerir ação corretiva. NÃO prosseguir com Phases 2-7.
+
+**Se WARNINGS:** Listar cada alerta no início da Phase 2 e garantir que o relatório final endereça TODOS.
+
+### Phase 7: Gate Adversarial — Revisão com Persona do Leitor
+
+**OBJETIVO:** O agente DEVE abandonar a perspectiva de quem gerou o relatório e assumir a persona do DONO DO CNPJ — o empresário que vai ler este documento para decidir onde investir tempo e dinheiro.
+
+**COMO EXECUTAR:**
+
+1. **Reler o markdown completo** com a seguinte persona:
+
+> "Eu sou o dono da empresa [RAZÃO SOCIAL]. Pago R$X por este relatório. Tenho 10 minutos para ler. Quero saber: em quais licitações devo investir meu tempo esta semana? Se o relatório não me disser isso de forma clara e honesta, foi dinheiro jogado fora."
+
+2. **Para CADA seção do relatório, perguntar:**
+
+| Pergunta | Se a resposta for NÃO |
+|----------|----------------------|
+| "Isso me ajuda a decidir algo CONCRETO?" | Cortar ou reescrever — texto que não gera ação é enchimento |
+| "Eu confiaria meu dinheiro nesta recomendação?" | Adicionar ressalvas ou rebaixar recomendação |
+| "Isso é informação que eu não conseguiria sozinho em 5 minutos?" | Cortar — o leitor paga por inteligência, não por compilação de dados públicos |
+| "Se eu seguir este conselho e perder, o relatório me avisou do risco?" | Adicionar alerta explícito |
+| "Tem alguma frase que eu precisaria ler duas vezes para entender?" | Reescrever mais simples |
+| "Tem algo repetido que já li em outra seção?" | Consolidar — repetição destrói credibilidade |
+| "Os números fazem sentido para uma empresa do meu porte?" | Se R$2M de capital e edital exige R$20M, a recomendação PARTICIPAR é desonesta |
+
+3. **Teste do "E daí?"** — Para cada parágrafo: se o leitor pode responder "e daí?", o parágrafo não agrega valor. Exemplos:
+
+- ❌ "O mercado de obras públicas atravessa período de alta demanda" → E daí? Isso não me diz em qual edital participar.
+- ✅ "Bofete/SP (R$3,3M) é a melhor oportunidade: 13,5% de chance, prazo de 73 dias, consórcio permitido. Decisão até 15/04." → Ação clara.
+
+4. **Teste de honestidade** — Para cada recomendação PARTICIPAR:
+
+- A empresa tem CAT/atestado para este tipo de obra? Se não confirmado → não é PARTICIPAR, é AVALIAR COM CAUTELA.
+- O ROI é positivo ou é investimento? Se investimento → dizer explicitamente "você vai gastar R$X para construir acervo, sem retorno financeiro direto".
+- A probabilidade é realista? Se 3% → dizer "em média, você precisaria participar de ~33 licitações para vencer 1".
+
+5. **Registrar resultado** — Após a revisão adversarial, incluir no JSON:
+
+```json
+"delivery_validation": {
+    "gate_deterministic": "OK|WARNINGS|BLOCKED",
+    "gate_adversarial": "PASSED|REVISED",
+    "revisions_made": ["Rebaixado São Paulo de PARTICIPAR para AVALIAR (CAT não confirmado)", ...],
+    "reader_persona": "Empresário de EPP, 10min de atenção, busca ação concreta"
+}
+```
+
+### Checklist de Formato (complementar — verificar APÓS o gate adversarial)
+
+- [ ] Datas em DD/MM/YYYY
+- [ ] Números em formato brasileiro (vírgula decimal, ponto milhar)
+- [ ] Zero termos em inglês ou técnicos no PDF
+- [ ] Rodapé presente em todas as páginas
+- [ ] Links de editais clicáveis e validados
+- [ ] Seção de Fontes com nomes institucionais (não técnicos)
+
+**Se QUALQUER revisão adversarial gerou mudança:** re-gerar PDF e markdown com as correções.
 
 ## Params
 
