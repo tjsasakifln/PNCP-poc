@@ -66,13 +66,21 @@ BRASILAPI_BASE = "https://brasilapi.com.br/api/cnpj/v1"
 IBGE_LOCALIDADES = "https://servicodados.ibge.gov.br/api/v1/localidades"
 IBGE_SIDRA = "https://apisidra.ibge.gov.br/values"
 
-# PNCP modalidades relevantes para construção
+# PNCP modalidades relevantes
 MODALIDADES = {
+    2: "Diálogo Competitivo",
+    3: "Dispensa de Licitação",
     4: "Concorrência",
     5: "Pregão Eletrônico",
     6: "Pregão Presencial",
     8: "Inexigibilidade",
+    9: "Dispensa com Disputa",
 }
+
+# Modalidades by procurement type
+MODALIDADES_OBRAS = {4, 5, 6, 8}  # Construction/services: Concorrência, Pregão, Inexigibilidade
+MODALIDADES_AQUISICAO = {3, 5, 6, 9}  # Materials/supplies: Dispensa, Pregão, Dispensa c/ Disputa
+MODALIDADES_SERVICOS = {4, 5, 6, 8}  # Services: same as obras
 
 PNCP_MAX_PAGE_SIZE = 50
 PNCP_MAX_PAGES = 10
@@ -336,6 +344,11 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
                 if val and str(val).lower() not in ("false", "0", "none", "null", "[]", "{}"):
                     result["sancoes"][key] = True
         result["sancoes_source"] = _source_tag("API")
+        sancoes_ativas = [k for k, v in result["sancoes"].items() if v]
+        if sancoes_ativas:
+            print(f"  [PT] SANCOES ENCONTRADAS: {', '.join(s.upper() for s in sancoes_ativas)}")
+        else:
+            print(f"  [PT] Nenhuma sancao encontrada (CEIS/CNEP/CEPIM/CEAF)")
     elif status == "API_FAILED":
         result["sancoes_source"] = _source_tag("API_FAILED", "Consulta de sanções falhou")
 
@@ -359,6 +372,7 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
         n = len(result["historico_contratos"])
         detail = f"{n} contrato(s) federal(is) identificado(s)" if n > 0 else "Nenhum contrato federal identificado"
         result["historico_source"] = _source_tag("API", detail)
+        print(f"  [PT] Contratos federais: {n} encontrados")
     elif status == "API_FAILED":
         result["historico_source"] = _source_tag("API_FAILED", "Consulta de contratos falhou")
 
@@ -378,6 +392,8 @@ def collect_brasilapi(api: ApiClient, cnpj14: str) -> dict:
         "data_opcao_simples": data.get("data_opcao_pelo_simples", ""),
         "data_exclusao_simples": data.get("data_exclusao_do_simples", ""),
         "porte_fallback": data.get("porte", ""),
+        "municipio": data.get("municipio", ""),
+        "uf": data.get("uf", ""),
     }
 
 
@@ -885,6 +901,62 @@ def extract_keywords_from_contracts(contratos: list[dict], max_keywords: int = 3
                 seen.add(kw_lower)
             if len(result) >= max_keywords:
                 return result
+    return result
+
+
+def _modalidades_for_cluster(cluster_label: str) -> set[int]:
+    """Select appropriate modalidades based on cluster activity type."""
+    label_lower = cluster_label.lower()
+    # Materials/supplies clusters -> include Dispensa
+    supply_indicators = [
+        "material", "medicamento", "hospitalar", "odontol", "saneante",
+        "limpeza", "higiene", "aliment", "gênero", "expediente",
+        "equipamento", "mobiliário", "vestuário", "uniforme",
+        "informática", "tecnologia", "combustível", "lubrificante",
+    ]
+    # Construction/obras clusters -> traditional modalidades
+    obras_indicators = [
+        "construção", "obra", "paviment", "edificação", "reforma",
+        "engenharia", "infraestrutura", "saneamento", "drenagem",
+    ]
+
+    if any(ind in label_lower for ind in supply_indicators):
+        return MODALIDADES_AQUISICAO
+    if any(ind in label_lower for ind in obras_indicators):
+        return MODALIDADES_OBRAS
+    # Default: all modalidades
+    return set(MODALIDADES.keys())
+
+
+def extract_keywords_per_cluster(
+    contratos: list[dict],
+    max_per_cluster: int = 15,
+    max_clusters: int = 5,
+) -> list[dict]:
+    """Extract keywords grouped by activity cluster.
+
+    Returns list of dicts: [{"label": "Saúde/Hospitalar", "share_pct": 30.4,
+                             "keywords": ["hospitalar", "medicamento", ...],
+                             "modalidades": {3, 5, 6, 9}}]
+    """
+    clusters = cluster_contract_activities(contratos)
+    if not clusters:
+        return []
+
+    result = []
+    for cluster in clusters[:max_clusters]:
+        kws = cluster.get("keywords", [])[:max_per_cluster]
+        if not kws:
+            continue
+        label = cluster.get("label", "Outros")
+        mods = _modalidades_for_cluster(label)
+        result.append({
+            "label": label,
+            "share_pct": cluster.get("share_pct", 0),
+            "keywords": kws,
+            "modalidades": mods,
+        })
+
     return result
 
 
@@ -2191,27 +2263,41 @@ def _compile_keyword_patterns(keywords: list[str]) -> list[re.Pattern]:
     return patterns
 
 
-def collect_pncp(
+def _search_pncp_single(
     api: ApiClient,
     keywords: list[str],
+    modalidades: dict[int, str] | set[int],
     ufs: list[str],
-    dias: int = 30,
+    dias: int,
+    keyword_patterns: list[re.Pattern] | None = None,
+    label_prefix: str = "",
 ) -> tuple[list[dict], dict]:
-    """Search PNCP for open editais."""
-    print(f"\n🔍 Phase 2a-1: PNCP — Varredura de editais ({dias} dias)")
+    """Core PNCP search loop for a set of keywords and modalidades.
 
+    Returns (editais, source_meta_dict). Used by both collect_pncp() and
+    collect_pncp_multi_cluster() to avoid duplicating HTTP call logic.
+    """
     data_inicial = _date_compact(_today() - timedelta(days=dias))
     data_final = _date_compact(_today())
 
-    # Pre-compile word-boundary regex patterns for keyword matching (performance)
-    keyword_patterns = _compile_keyword_patterns(keywords)
+    if keyword_patterns is None:
+        keyword_patterns = _compile_keyword_patterns(keywords)
 
-    all_editais = []
-    seen_ids = set()
+    # Normalize modalidades to {code: name} dict
+    if isinstance(modalidades, set):
+        mod_dict = {code: MODALIDADES.get(code, f"Mod {code}") for code in sorted(modalidades)}
+    else:
+        mod_dict = modalidades
+
+    all_editais: list[dict] = []
+    seen_ids: set[str] = set()
     source_meta = {"total_raw": 0, "total_filtered": 0, "pages_fetched": 0, "errors": 0}
 
-    for mod_code, mod_name in MODALIDADES.items():
-        print(f"\n  Modalidade {mod_code} ({mod_name}):")
+    for mod_code, mod_name in mod_dict.items():
+        if label_prefix:
+            print(f"    {label_prefix} Modalidade {mod_code} ({mod_name}):")
+        else:
+            print(f"\n  Modalidade {mod_code} ({mod_name}):")
         for page in range(1, PNCP_MAX_PAGES + 1):
             data, status = api.get(
                 f"{PNCP_BASE}/contratacoes/publicacao",
@@ -2243,20 +2329,127 @@ def collect_pncp(
                         seen_ids.add(eid)
                         all_editais.append(edital)
 
-            # If fewer results than page size, we've reached the end
+            # If fewer results than page size, we have reached the end
             if len(items) < PNCP_MAX_PAGE_SIZE:
                 break
 
             time.sleep(0.5)  # Rate limiting
 
     source_meta["total_filtered"] = len(all_editais)
+    return all_editais, source_meta
+
+
+def collect_pncp(
+    api: ApiClient,
+    keywords: list[str],
+    ufs: list[str],
+    dias: int = 30,
+) -> tuple[list[dict], dict]:
+    """Search PNCP for open editais (single-sector, backward compatible)."""
+    print(f"\n\U0001f50d Phase 2a-1: PNCP \u2014 Varredura de editais ({dias} dias)")
+
+    all_editais, source_meta = _search_pncp_single(
+        api, keywords, MODALIDADES, ufs, dias,
+    )
+
     _source = _source_tag("API" if source_meta["errors"] == 0 else "API_PARTIAL",
                           f"{source_meta['total_raw']} obtidos, {source_meta['total_filtered']} relevantes, "
-                          f"{source_meta['pages_fetched']} páginas consultadas")
+                          f"{source_meta['pages_fetched']} p\u00e1ginas consultadas")
 
-    print(f"\n  PNCP: {source_meta['total_raw']} raw → {source_meta['total_filtered']} filtrados")
+    print(f"\n  PNCP: {source_meta['total_raw']} raw \u2192 {source_meta['total_filtered']} filtrados")
     return all_editais, _source
 
+
+def collect_pncp_multi_cluster(
+    api: ApiClient,
+    cluster_searches: list[dict],
+    ufs: list[str],
+    dias: int,
+) -> tuple[list[dict], dict]:
+    """Search PNCP separately per activity cluster, then deduplicate.
+
+    Each cluster gets its own search with cluster-specific keywords and modalidades.
+    Results are tagged with _cluster_origin and _cluster_share_pct.
+    Dedup: if same edital appears in multiple clusters, keep the one from higher-share cluster.
+    """
+    print(f"\n\U0001f50d Phase 2a-1: PNCP \u2014 Varredura multi-cluster ({dias} dias, {len(cluster_searches)} clusters)")
+
+    all_results: list[dict] = []
+    combined_meta = {"total_raw": 0, "total_filtered": 0, "pages_fetched": 0, "errors": 0, "clusters": []}
+
+    for cluster in cluster_searches:
+        label = cluster["label"]
+        share = cluster["share_pct"]
+        kws = cluster["keywords"]
+        mods = cluster["modalidades"]
+
+        print(f"\n  [PNCP] Cluster '{label}' ({share:.0f}%) \u2014 {len(kws)} keywords, "
+              f"modalidades {{{', '.join(str(m) for m in sorted(mods))}}}")
+
+        try:
+            editais, meta = _search_pncp_single(
+                api, kws, mods, ufs, dias,
+                label_prefix=f"[{label[:15]}]",
+            )
+        except Exception as exc:
+            print(f"  [PNCP] ERRO no cluster '{label}': {exc} \u2014 continuando")
+            combined_meta["errors"] += 1
+            combined_meta["clusters"].append({
+                "label": label, "share_pct": share,
+                "raw": 0, "filtered": 0, "status": "FAILED",
+            })
+            continue
+
+        # Tag each result with cluster origin
+        for ed in editais:
+            ed["_cluster_origin"] = label
+            ed["_cluster_share_pct"] = share
+
+        all_results.extend(editais)
+        combined_meta["total_raw"] += meta["total_raw"]
+        combined_meta["total_filtered"] += meta["total_filtered"]
+        combined_meta["pages_fetched"] += meta["pages_fetched"]
+        combined_meta["errors"] += meta["errors"]
+        combined_meta["clusters"].append({
+            "label": label, "share_pct": share,
+            "raw": meta["total_raw"], "filtered": meta["total_filtered"],
+            "status": "OK" if meta["errors"] == 0 else "PARTIAL",
+        })
+
+        print(f"  [PNCP] Cluster '{label}': {meta['total_raw']} raw -> {meta['total_filtered']} filtrados")
+
+    # Deduplicate: keep edital from highest-share cluster
+    deduped: dict[str, dict] = {}  # key -> edital
+    for ed in all_results:
+        eid = ed.get("_id", "")
+        if not eid:
+            # Fallback dedup key from link
+            eid = ed.get("link", "") or f"noid-{ed.get('objeto', '')[:50]}"
+        if eid in deduped:
+            existing = deduped[eid]
+            if ed.get("_cluster_share_pct", 0) > existing.get("_cluster_share_pct", 0):
+                deduped[eid] = ed
+        else:
+            deduped[eid] = ed
+
+    deduped_list = list(deduped.values())
+    n_dupes = len(all_results) - len(deduped_list)
+
+    combined_meta["total_deduped"] = len(deduped_list)
+    combined_meta["duplicates_removed"] = n_dupes
+
+    _source = _source_tag(
+        "API" if combined_meta["errors"] == 0 else "API_PARTIAL",
+        f"{combined_meta['total_raw']} obtidos, {combined_meta['total_filtered']} pre-dedup, "
+        f"{len(deduped_list)} apos dedup ({n_dupes} duplicatas removidas), "
+        f"{combined_meta['pages_fetched']} paginas, {len(cluster_searches)} clusters",
+    )
+
+    print(f"\n  [PNCP] Multi-cluster: {combined_meta['total_raw']} raw -> "
+          f"{combined_meta['total_filtered']} filtrados -> {len(deduped_list)} apos dedup "
+          f"({n_dupes} duplicatas entre clusters)")
+
+    return deduped_list, _source
 
 def _parse_pncp_item(item: dict, keywords: list[str], ufs: list[str],
                      keyword_patterns: list[re.Pattern] | None = None) -> dict | None:
@@ -2538,10 +2731,17 @@ def collect_querido_diario(
 # DISTANCE CALCULATION (OSRM)
 # ============================================================
 
+_geocode_cache: dict[tuple[str, str], tuple[float, float] | None] = {}
+
+
 def _geocode(api: ApiClient, cidade: str, uf: str) -> tuple[float, float] | None:
     """Geocode a city using Nominatim. Returns (lat, lon) or None."""
     if not cidade or not uf:
         return None
+
+    key = (cidade.strip().lower(), uf.strip().upper())
+    if key in _geocode_cache:
+        return _geocode_cache[key]
 
     data, status = api.get(
         NOMINATIM_BASE,
@@ -2555,7 +2755,30 @@ def _geocode(api: ApiClient, cidade: str, uf: str) -> tuple[float, float] | None
         label=f"Geocode: {cidade}/{uf}",
     )
     if status == "API" and data and isinstance(data, list) and len(data) > 0:
-        return float(data[0]["lat"]), float(data[0]["lon"])
+        result = float(data[0]["lat"]), float(data[0]["lon"])
+        _geocode_cache[key] = result
+        return result
+
+    # Retry once on failure (handles 429 after ApiClient exhausts its retries)
+    if status == "API_FAILED":
+        time.sleep(2.0)
+        data, status = api.get(
+            NOMINATIM_BASE,
+            params={
+                "q": f"{cidade}, {uf}, Brasil",
+                "format": "json",
+                "limit": 1,
+                "countrycodes": "br",
+            },
+            headers={"User-Agent": "SmartLic-ReportCollector/1.0 (report@smartlic.tech)"},
+            label=f"Geocode retry: {cidade}/{uf}",
+        )
+        if status == "API" and data and isinstance(data, list) and len(data) > 0:
+            result = float(data[0]["lat"]), float(data[0]["lon"])
+            _geocode_cache[key] = result
+            return result
+
+    _geocode_cache[key] = None
     return None
 
 
@@ -3706,13 +3929,16 @@ def compute_coverage_diagnostic(
     captured_count = len(captured_editais)
     per_uf: list[dict] = []
     total_estimated = 0
+    total_api_calls = 0
+    failed_calls = 0
 
     for uf in ufs:
         uf_captured = sum(1 for e in captured_editais if (e.get("uf", "") or "").upper() == uf.upper())
         uf_estimated = 0
 
         # Query PNCP for total count (page 1 only, read totalRegistros)
-        for mod_code in [4, 5, 6, 8]:  # Concorrência, Pregão E/P, Inexigibilidade
+        for mod_code in MODALIDADES:  # All known modalidades
+            total_api_calls += 1
             try:
                 data_fim = _today()
                 data_ini = data_fim - timedelta(days=30)
@@ -3727,42 +3953,59 @@ def compute_coverage_diagnostic(
                 resp = api.get(f"{PNCP_BASE}/contratacoes/publicacao", params=params)
                 if resp and isinstance(resp, dict):
                     uf_estimated += resp.get("totalRegistros", 0)
-            except Exception:
-                pass
+                else:
+                    failed_calls += 1
+                    print(f"    [COVERAGE] {uf} mod {mod_code}: resposta vazia")
+            except Exception as e:
+                failed_calls += 1
+                print(f"    [COVERAGE] {uf} mod {mod_code}: falha ({type(e).__name__})")
 
         total_estimated += uf_estimated
-        rate = uf_captured / uf_estimated if uf_estimated > 0 else 1.0
+        rate = uf_captured / uf_estimated if uf_estimated > 0 else None
         per_uf.append({
             "uf": uf,
             "captured": uf_captured,
             "estimated_total": uf_estimated,
-            "rate": round(rate, 2),
+            "rate": round(rate, 2) if rate is not None else None,
         })
 
-    overall_rate = captured_count / total_estimated if total_estimated > 0 else 1.0
+    successful_calls = total_api_calls - failed_calls
+    verified = successful_calls > 0
+
+    if total_api_calls > 0 and failed_calls == total_api_calls:
+        # ALL API calls failed — coverage is not verifiable
+        overall_rate = None
+        print(f"    [COVERAGE] {successful_calls}/{total_api_calls} chamadas bem-sucedidas — cobertura NAO verificavel")
+    else:
+        overall_rate = captured_count / total_estimated if total_estimated > 0 else None
+        print(f"    [COVERAGE] {successful_calls}/{total_api_calls} chamadas bem-sucedidas — cobertura {'verificada' if verified else 'NAO verificavel'}")
 
     warning = None
-    low_ufs = [p for p in per_uf if p["rate"] < 0.70 and p["estimated_total"] > 0]
-    if overall_rate < 0.70:
-        warning = (
-            f"Cobertura geral abaixo de 70% ({overall_rate:.0%}). "
-            f"UFs com baixa cobertura: {', '.join(p['uf'] for p in low_ufs)}. "
-            "Possível subrepresentação de oportunidades."
-        )
-    elif low_ufs:
-        warning = (
-            "Cobertura abaixo de 70% em: " + ", ".join(p["uf"] + f" ({p['rate']:.0%})" for p in low_ufs) + "."
-        )
+    if overall_rate is not None:
+        low_ufs = [p for p in per_uf if p["rate"] is not None and p["rate"] < 0.70 and p["estimated_total"] > 0]
+        if overall_rate < 0.70:
+            warning = (
+                f"Cobertura geral abaixo de 70% ({overall_rate:.0%}). "
+                f"UFs com baixa cobertura: {', '.join(p['uf'] for p in low_ufs)}. "
+                "Possivel subrepresentacao de oportunidades."
+            )
+        elif low_ufs:
+            warning = (
+                "Cobertura abaixo de 70% em: " + ", ".join(p["uf"] + f" ({p['rate']:.0%})" for p in low_ufs) + "."
+            )
+    else:
+        warning = "Cobertura nao verificavel — todas as chamadas PNCP falharam."
 
     return {
-        "coverage_rate": round(overall_rate, 2),
+        "coverage_rate": round(overall_rate, 2) if overall_rate is not None else None,
         "captured_count": captured_count,
         "total_estimated": total_estimated,
         "per_uf": per_uf,
         "warning": warning,
+        "_verified": verified,
         "methodology": (
             "Total estimado via contagem PNCP (todas as modalidades relevantes, "
-            "últimos 30 dias por UF). Taxa = editais capturados / total publicado."
+            "ultimos 30 dias por UF). Taxa = editais capturados / total publicado."
         ),
         "_source": _source_tag("CALCULATED"),
     }
@@ -5645,6 +5888,12 @@ Examples:
         empresa["data_opcao_simples"] = brasilapi.get("data_opcao_simples", "")
         if not empresa.get("porte") and brasilapi.get("porte_fallback"):
             empresa["porte"] = brasilapi["porte_fallback"]
+        # Fallback: if OpenCNPJ didn't return cidade_sede, try BrasilAPI data
+        if not empresa.get("cidade_sede") and brasilapi:
+            empresa["cidade_sede"] = brasilapi.get("municipio", "")
+            empresa["uf_sede"] = brasilapi.get("uf", "")
+            if empresa["cidade_sede"]:
+                print(f"  [SEDE] Cidade obtida via BrasilAPI: {empresa['cidade_sede']}/{empresa['uf_sede']}")
     else:
         brasilapi = {"_source": _source_tag("UNAVAILABLE", "Skipped via --skip-brasilapi")}
 
@@ -5752,7 +6001,18 @@ Examples:
         print("  UFs: todas (sem filtro)")
 
     # ---- Phase 2a: Edital Search (using contract-enriched keywords) ----
-    editais_pncp, pncp_source = collect_pncp(api, keywords, ufs, args.dias)
+    # If company has multiple activity clusters, use per-cluster search
+    cluster_searches = extract_keywords_per_cluster(merged_contratos) if merged_contratos else []
+
+    if len(cluster_searches) >= 2:
+        # Multi-sector company: search per cluster
+        print(f"\n[SEARCH] Empresa diversificada — {len(cluster_searches)} clusters de atividade")
+        for cs in cluster_searches:
+            print(f"  • {cs['label']} ({cs['share_pct']:.0f}%) — {len(cs['keywords'])} keywords, modalidades {cs['modalidades']}")
+        editais_pncp, pncp_source = collect_pncp_multi_cluster(api, cluster_searches, ufs, args.dias)
+    else:
+        # Single-sector: use original search (backward compatible)
+        editais_pncp, pncp_source = collect_pncp(api, keywords, ufs, args.dias)
 
     editais_pcp = []
     pcp_source = _source_tag("UNAVAILABLE", "Skipped")
@@ -5798,10 +6058,15 @@ Examples:
                     destinos.add((mun, uf))
 
             print(f"\n📍 Calculando distâncias ({len(destinos)} destinos)")
-            for mun, uf in sorted(destinos):
+            # Pre-cache sede geocode (avoid repeated Nominatim calls)
+            _geocode(api, cidade_sede, uf_sede)
+            sorted_destinos = sorted(destinos)
+            for i, (mun, uf) in enumerate(sorted_destinos):
+                print(f"    {i+1}/{len(sorted_destinos)}: {mun}/{uf}", end="\r")
                 dist = calculate_distance(api, cidade_sede, uf_sede, mun, uf)
                 distancias[f"{mun}|{uf}"] = dist
-                time.sleep(1.0)  # Nominatim rate limit
+                time.sleep(1.1)  # Nominatim rate limit (strictly 1 req/s + safety margin)
+            print()  # Clear the \r line
         else:
             print("\n📍 Distâncias: cidade/UF da sede não disponível — pulando")
 

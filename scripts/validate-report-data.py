@@ -83,18 +83,36 @@ def validate(data: dict) -> dict:
                 f"Relatório deve alertar proeminentemente que acervo técnico é insuficiente."
             )
 
-    # 1c. Habilitação — se >80% dos editais são PARCIALMENTE_APTA, algo está errado
+    # 1c. Habilitação — se >90% dos editais são PARCIALMENTE_APTA, pode indicar setor errado
+    # BLOCK somente quando COMBINADO com evidência de divergência setorial (clusters).
+    # PARCIALMENTE_APTA sozinho é normal em engenharia (requisitos detalhados exigem análise do edital).
     hab_statuses = [e.get("habilitacao_analysis", {}).get("status", "") for e in editais]
     parcial = hab_statuses.count("PARCIALMENTE_APTA")
     inapta = hab_statuses.count("INAPTA")
     total_avaliados = len([h for h in hab_statuses if h])
+    has_sector_divergence = bool(empresa.get("_sector_divergence"))
     if total_avaliados > 5:
         pct_parcial = 100 * parcial / total_avaliados
-        if pct_parcial > 90:
+        historico = empresa.get("historico_contratos", [])
+        if pct_parcial >= 90 and len(historico) >= 10 and has_sector_divergence:
+            # BLOCK only when BOTH mass-partial AND sector divergence confirmed
+            blocks.append(
+                f"HABILITACAO_MASS_PARTIAL: {pct_parcial:.0f}% dos editais ({parcial}/{total_avaliados}) "
+                f"com habilitação PARCIALMENTE_APTA + divergência setorial confirmada. "
+                f"Empresa tem {len(historico)} contratos históricos em setor distinto dos editais. "
+                f"AÇÃO OBRIGATÓRIA: Re-executar coleta com keywords do setor real da empresa."
+            )
+        elif pct_parcial > 90:
             warnings.append(
                 f"HABILITACAO_UNIVERSAL_PARCIAL: {parcial}/{total_avaliados} editais "
                 f"({pct_parcial:.0f}%) com habilitação PARCIALMENTE_APTA. Isso sugere que "
-                f"a empresa não tem acervo técnico no setor buscado. Rebaixar recomendações."
+                f"a empresa não tem acervo técnico completo no setor buscado. Rebaixar recomendações "
+                f"se os editais não corresponderem ao perfil."
+            )
+        elif pct_parcial >= 70:
+            warnings.append(
+                f"HABILITACAO_HIGH_PARTIAL: {pct_parcial:.0f}% dos editais com habilitação parcial "
+                f"({parcial}/{total_avaliados}). Considerar se editais correspondem ao perfil."
             )
 
     # 1d. Win probability — se TODAS são <5%, a empresa não é competitiva neste setor
@@ -122,24 +140,40 @@ def validate(data: dict) -> dict:
 
     # 1f. Activity clusters — verificar se editais encontrados correspondem aos clusters
     if clusters and editais:
-        cluster_keys = {c.get("category_key", "") for c in clusters}
-        # Se o cluster dominante é "saude" mas editais são de "engenharia", há incoerência
-        top_cluster = clusters[0] if clusters else {}
-        top_key = top_cluster.get("category_key", "")
-        # Simple heuristic: check if any edital objects match top cluster keywords
-        top_kws = [kw.lower() for kw in top_cluster.get("keywords", [])]
-        if top_kws:
-            match_count = sum(
-                1 for e in editais
-                if any(kw in (e.get("objeto", "") or "").lower() for kw in top_kws[:3])
-            )
-            match_pct = 100 * match_count / len(editais) if editais else 0
-            if match_pct < 10 and len(editais) > 5:
+        dominant_clusters = [c for c in clusters if c.get("share_pct", 0) >= 25]
+        for dc in dominant_clusters:
+            dc_label = dc.get("label", "").lower()
+            dc_keywords = [k.lower() for k in dc.get("keywords", [])[:5]]
+
+            if not dc_keywords:
+                continue
+
+            # Count editais that match this cluster's keywords
+            matching = 0
+            for ed in editais:
+                obj = (ed.get("objeto") or "").lower()
+                if any(kw in obj for kw in dc_keywords):
+                    matching += 1
+
+            match_pct = (matching / len(editais) * 100) if editais else 0
+            share_pct = dc.get("share_pct", 0)
+
+            if match_pct < 10 and share_pct >= 25:
                 blocks.append(
-                    f"CLUSTER_EDITAL_MISMATCH: Cluster dominante é '{top_cluster.get('label', '?')}' "
-                    f"({top_cluster.get('share_pct', 0)}% dos contratos) mas apenas {match_count}/{len(editais)} "
-                    f"editais ({match_pct:.0f}%) contêm keywords deste cluster. "
-                    f"Os editais foram buscados no setor ERRADO."
+                    f"CLUSTER_EDITAL_MISMATCH: Cluster dominante '{dc.get('label')}' "
+                    f"({share_pct:.0f}% da atividade) está representado em apenas "
+                    f"{match_pct:.0f}% dos editais ({matching}/{len(editais)}). "
+                    f"Os editais buscados NÃO correspondem ao perfil real da empresa. "
+                    f"AÇÃO OBRIGATÓRIA: Re-executar collect-report-data.py — a busca "
+                    f"precisa incluir modalidades e keywords adequadas ao cluster dominante. "
+                    f"Este bloqueio é IRREVOGÁVEL — não contornar manualmente."
+                )
+            elif match_pct < 30 and share_pct >= 25:
+                warnings.append(
+                    f"CLUSTER_EDITAL_LOW_MATCH: Cluster '{dc.get('label')}' "
+                    f"({share_pct:.0f}% da atividade) sub-representado nos editais "
+                    f"({match_pct:.0f}% de match). Relatório pode estar enviesado para "
+                    f"outro setor. Considerar re-executar com busca focada."
                 )
 
     # 2b. Strategic thesis coherence
@@ -357,7 +391,9 @@ def main():
     v = result["verdict"]
     print(f"\n{'='*60}")
     if v == "BLOCKED":
-        print(f"  ❌ VERDICT: BLOCKED — NÃO gerar relatório. Corrigir dados primeiro.")
+        print(f"  🛑 VERDICT: BLOCKED — Relatório NÃO pode ser gerado.")
+        print(f"     Corrija os problemas abaixo ANTES de prosseguir.")
+        print(f"     NÃO contorne este bloqueio manualmente.")
         print(f"{'='*60}")
         sys.exit(1)
     elif v == "WARNINGS":

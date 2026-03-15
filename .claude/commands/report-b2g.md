@@ -27,6 +27,7 @@ Gera um PDF executivo e institucional com TODAS as oportunidades abertas relevan
 7. **Toda recomendação DEVE ter justificativa.** NUNCA emitir PARTICIPAR, AVALIAR COM CAUTELA ou NÃO RECOMENDADO sem `justificativa` preenchida com motivo factual específico. Uma recomendação sem justificativa é inaceitável.
 8. **ZERO termos técnicos ou em inglês no PDF final.** Nenhuma menção a tecnologias (Playwright, httpx, OpenCNPJ, API, JSON, Python, etc.) deve aparecer no relatório entregue ao cliente. Na seção "Fontes de Dados", usar nomes institucionais: "Receita Federal", "Portal da Transparência", "Portal Nacional de Contratações Públicas", "Diários Oficiais Municipais", "Sistema de Cadastro de Fornecedores". Coluna "Detalhe" não pode conter termos como "raw", "filtered", "pages", "errors", "GET", "POST", "200 OK".
 9. **NUNCA incluir editais encerrados ou descartados.** Editais com `dias_restantes <= 0`, `status_edital == "ENCERRADO"`, `recomendacao == "DESCARTADO"` ou `relevante == False` devem ser **excluídos do relatório** — não aparecem em nenhuma seção, não recebem análise, não consomem API calls. O Resumo Executivo deve citar quantas licitações foram descartadas e o motivo (ex: "5 licitações descartadas por falta de aderência aos CNAEs da empresa"). Editais com recomendação NÃO RECOMENDADO continuam no relatório — a decisão final cabe ao leitor.
+10. **NUNCA contornar um BLOCK do Gate Determinístico.** O gate existe para impedir relatórios desonestos. Se o validador emitiu BLOCK, a causa raiz DEVE ser corrigida (re-coletar dados, ajustar parâmetros) — NUNCA "ignorar e prosseguir".
 
 ---
 
@@ -344,7 +345,8 @@ O script verifica coerência semântica dos dados ANTES de gerar o relatório:
 | Keywords vieram do histórico ou do CNAE fallback? | BLOCK se fallback com >10 contratos |
 | Cluster dominante bate com os editais encontrados? | BLOCK se <10% de match |
 | Divergência setorial (CNAE ≠ histórico)? | BLOCK se zero contratos no setor |
-| >90% dos editais com habilitação parcial? | WARN — rebaixar recomendações |
+| >90% dos editais com habilitação parcial + >10 contratos? | BLOCK — editais no setor errado |
+| 70-90% dos editais com habilitação parcial? | WARN — considerar se editais correspondem ao perfil |
 | Todas as probabilidades de vitória <5%? | WARN — transparência obrigatória |
 | Todos os ROIs negativos? | WARN — classificar como investimento |
 | Fontes obrigatórias falharam? | BLOCK |
@@ -352,6 +354,16 @@ O script verifica coerência semântica dos dados ANTES de gerar o relatório:
 **Exit codes:** 0 = OK, 1 = BLOCKED (parar), 2 = WARNINGS (endereçar no relatório).
 
 **Se BLOCKED:** Informar o usuário qual verificação falhou e sugerir ação corretiva. NÃO prosseguir com Phases 2-7.
+
+**REGRA INVIOLÁVEL sobre BLOCKs:**
+- Um BLOCK significa que os dados coletados são INCOERENTES e o relatório seria DESONESTO.
+- NUNCA contornar um BLOCK manualmente ("é falso positivo", "vou ajustar depois", etc.).
+- A ÚNICA ação correta é CORRIGIR A CAUSA RAIZ:
+  - `CLUSTER_EDITAL_MISMATCH` → Re-executar collect-report-data.py (busca trouxe editais do setor errado)
+  - `HABILITACAO_MASS_PARTIAL` → Verificar se editais correspondem ao setor real da empresa
+  - `KEYWORDS_CNAE_FALLBACK` → Re-executar com versão atualizada do clustering
+  - `SECTOR_DIVERGENCE_TOTAL` → Usar clusters de atividade real para nortear a busca
+- Se o BLOCK persistir após re-execução: informar o usuário que os dados disponíveis são insuficientes para gerar um relatório confiável. Um relatório desonesto é PIOR que nenhum relatório.
 
 **Se WARNINGS:** Listar cada alerta no início da Phase 2 e garantir que o relatório final endereça TODOS.
 
@@ -376,6 +388,7 @@ O script verifica coerência semântica dos dados ANTES de gerar o relatório:
 | "Tem alguma frase que eu precisaria ler duas vezes para entender?" | Reescrever mais simples |
 | "Tem algo repetido que já li em outra seção?" | Consolidar — repetição destrói credibilidade |
 | "Os números fazem sentido para uma empresa do meu porte?" | Se R$2M de capital e edital exige R$20M, a recomendação PARTICIPAR é desonesta |
+| "Os editais correspondem ao que a empresa realmente faz?" | Se >50% dos editais não correspondem aos clusters de atividade real → PARAR e re-coletar |
 | "O leitor entende COMO cada score foi calculado?" | Adicionar referência à seção de Metodologia (Anexo C) |
 | "As recomendações são robustas ou frágeis?" | Se frágil, mencionar explicitamente no texto |
 

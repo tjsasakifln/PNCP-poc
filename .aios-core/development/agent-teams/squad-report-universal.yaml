@@ -1,0 +1,162 @@
+# Squad: Report Universal — Multi-Sector Resilience
+# Mission: Fazer /report-b2g funcionar corretamente para QUALQUER CNPJ, independente do setor
+# Root cause: Pipeline assume empresa mono-setor. Empresas diversificadas recebem relatório enviesado.
+# Constraint: Zero regressões em relatórios de empresas mono-setor (engenharia, etc.)
+
+squad:
+  name: "Report Universal — Multi-Sector Resilience"
+  version: "1.0"
+  created: "2026-03-15"
+
+  objective: >
+    Corrigir 6 falhas estruturais que causam relatórios enviesados para empresas
+    diversificadas. O pipeline atual assume mono-setor e produz relatórios com 75%
+    de editais no setor errado quando a empresa atua em múltiplos segmentos.
+
+  root_causes:
+    critical:
+      - "MODALIDADES hardcoded (4,5,6,8) — ignora Dispensa e outros tipos comuns para comércio/materiais"
+      - "Keyword search mono-query — flattena 30 keywords de clusters distintos em 1 busca ruidosa"
+      - "Sem busca per-cluster — empresa de 30% saúde + 14% limpeza faz 1 busca genérica, não 3 focadas"
+    high:
+      - "Coverage diagnostic silencia HTTP 400 — reporta 100% cobertura quando API falha"
+      - "Gate bypass manual — validador detecta problema mas é contornado em vez de refazer busca"
+    medium:
+      - "Nominatim rate limiting — 1s fixo sem backoff adaptativo para 429"
+      - "Sede/município vazio — sem fallback quando OpenCNPJ não retorna cidade"
+
+  tracks:
+
+    # ----------------------------------------------------------
+    # TRACK F — Multi-Sector Search (CRITICAL)
+    # ----------------------------------------------------------
+    - name: "F — Busca Multi-Setor por Cluster"
+      agents: ["@architect", "@data-engineer"]
+      priority: 0  # HIGHEST — root cause of the diversified company failure
+      files:
+        - "scripts/collect-report-data.py"
+
+      deliverables:
+        - name: "Expandir MODALIDADES para incluir Dispensa e Diálogo Competitivo"
+          detail: >
+            Adicionar ao dict MODALIDADES os códigos:
+            1: "Leilão - Loss" (rarely used, skip)
+            2: "Diálogo Competitivo"
+            3: "Dispensa de Licitação"  ← CRITICAL para materiais/saúde/alimentação
+            9: "Dispensa com Disputa"    ← NEW 14.133
+            Manter os existentes (4,5,6,8).
+            Criar MODALIDADES_OBRAS = {4,5,6,8} e MODALIDADES_AQUISICAO = {3,5,9}
+            para busca inteligente por tipo de cluster.
+
+        - name: "Implementar busca per-cluster"
+          detail: >
+            Refatorar collect_pncp() para aceitar lista de clusters:
+            - Se empresa tem activity_clusters, para CADA cluster:
+              - Extrair top 5-10 keywords DO cluster (não do merge)
+              - Escolher modalidades relevantes:
+                Se cluster.label contém "construção/engenharia/obra" → MODALIDADES_OBRAS
+                Se cluster.label contém "saúde/material/equipamento/alimento/limpeza" → MODALIDADES_AQUISICAO
+                Default → todas as modalidades
+              - Executar busca PNCP separada com keywords e modalidades do cluster
+              - Taguear cada edital com cluster_origin = cluster.label
+            - Dedup: se mesmo edital aparece em 2 clusters, manter com o de maior share_pct
+            - Nova função: collect_pncp_multi_cluster(api, clusters, ufs, dias)
+            - Fallback: se não há clusters, usar collect_pncp() original (backward compatible)
+
+        - name: "Aumentar keyword cap por cluster"
+          detail: >
+            extract_keywords_from_contracts() atualmente cap em 30 total.
+            Mudar para 15 keywords PER CLUSTER, max 5 clusters.
+            Total máximo: 75 keywords (mas usados em buscas separadas, não merged).
+
+        - name: "Taguear editais com cluster de origem"
+          detail: >
+            Cada edital no JSON deve ter:
+            - edital["_cluster_origin"] = label do cluster que o trouxe
+            - edital["_cluster_share_pct"] = share do cluster na empresa
+            Isso permite ao relatório mostrar "Edital de Saúde (30% da atividade)"
+            vs "Edital de Construção (12% da atividade)"
+
+    # ----------------------------------------------------------
+    # TRACK G — Resilience Fixes (HIGH)
+    # ----------------------------------------------------------
+    - name: "G — Resiliência de Coleta"
+      agents: ["@dev", "@qa"]
+      priority: 1
+      files:
+        - "scripts/collect-report-data.py"
+
+      deliverables:
+        - name: "Fix coverage diagnostic"
+          detail: >
+            compute_coverage_diagnostic():
+            - Substituir try/except pass por logging explícito
+            - Se HTTP 400 em todas as chamadas → coverage_rate = null (não 1.0)
+            - Adicionar coverage_diagnostic._verified = false quando todas falham
+            - Print warning: "[COVERAGE] Diagnóstico falhou — cobertura não verificável"
+
+        - name: "Nominatim retry com backoff adaptativo"
+          detail: >
+            _geocode() e distance calculation loop:
+            - Se 429: sleep(Retry-After header ou 2s) e retry 1x
+            - Aumentar delay base para 1.1s (Nominatim policy = 1 req/s)
+            - Cache de geocoding: dict {(cidade,uf) -> (lat,lon)}
+              para evitar chamar 2x a mesma cidade (origin reusable)
+            - Batch: geocodificar sede UMA VEZ no início, reusar para todos
+
+        - name: "Fallback para sede/município vazio"
+          detail: >
+            Se OpenCNPJ retorna cidade_sede vazia:
+            1. Tentar BrasilAPI (/cnpj/v1/{cnpj}) que já é coletado → pegar municipio
+            2. Se BrasilAPI também falha → usar QSA endereço se disponível
+            3. Se tudo falha → print WARNING e pular distâncias (como hoje, mas com log)
+
+        - name: "Portal da Transparência: log de resultado"
+          detail: >
+            collect_portal_transparencia():
+            - Print resumo: "[PT] Sanções: {CEIS/CNEP/CEPIM/CEAF} | Contratos: {N}"
+            - Se 0 resultados de sanções, confirmar explicitamente: "Nenhuma sanção encontrada"
+            - Já funciona corretamente (CNPJ filtrado server-side) — só falta o log
+
+    # ----------------------------------------------------------
+    # TRACK H — Gate Enforcement (HIGH)
+    # ----------------------------------------------------------
+    - name: "H — Gate Mais Assertivo + Auto-Retry"
+      agents: ["@architect", "@qa"]
+      priority: 1
+      files:
+        - "scripts/validate-report-data.py"
+        - "scripts/collect-report-data.py"
+        - ".claude/commands/report-b2g.md"
+
+      deliverables:
+        - name: "validate: CLUSTER_EDITAL_MISMATCH como BLOCK irrevogável"
+          detail: >
+            Se o cluster dominante da empresa (share > 25%) não está representado
+            em >30% dos editais encontrados → BLOCK.
+            Mensagem deve incluir: "Re-executar collect-report-data.py — editais
+            encontrados não correspondem ao perfil real da empresa."
+            NÃO pode ser contornado por bypass manual.
+
+        - name: "validate: Novo check HABILITACAO_MASS_PARTIAL"
+          detail: >
+            Se >90% dos editais têm habilitação PARCIALMENTE_APTA e a empresa
+            tem >10 contratos históricos → BLOCK (não WARN).
+            Motivo: indica que os editais são de um setor onde a empresa não tem qualificação.
+            Mensagem: "93% dos editais exigem qualificação que a empresa não possui.
+            Verifique se os editais correspondem ao setor real da empresa."
+
+        - name: "report-b2g.md: Proibir bypass de BLOCKs"
+          detail: >
+            Na Phase 1.5: adicionar regra explícita:
+            "Se BLOCKED → PARAR. NÃO contornar o bloqueio manualmente.
+            Corrigir a causa raiz (re-executar coleta com parâmetros corretos).
+            Bloqueios existem para evitar relatórios desonestos."
+
+        - name: "collect: Auto-retry com parâmetros ajustados"
+          detail: >
+            Se validate retorna BLOCK por CLUSTER_EDITAL_MISMATCH:
+            - Sugerir no output: "Sugestão: re-executar com --modalidades 3,5,9
+              para incluir dispensas e pregões de aquisição"
+            - Ou: "Sugestão: re-executar com --focus-cluster saude
+              para buscar apenas editais do cluster dominante"
