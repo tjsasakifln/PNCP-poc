@@ -27,6 +27,7 @@ import os
 import re
 import sys
 import time
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -543,27 +544,199 @@ def collect_pncp_contratos_fornecedor(api: ApiClient, cnpj14: str) -> tuple[list
 
 
 # ============================================================
+# ACTIVITY CLUSTERING (replaces flat keyword extraction)
+# ============================================================
+
+_ACTIVITY_CATEGORIES: dict[str, dict] = {
+    "engenharia": {
+        "label": "Engenharia e Obras",
+        "prefixes": ["construç", "construc", "edifici", "obra", "paviment", "infraestrutura",
+                      "urbaniz", "drenag", "terrapl", "reforma", "saneamento", "fundaç"],
+        "search_keywords": ["obra", "construção", "pavimentação", "reforma", "engenharia",
+                           "edificação", "drenagem", "terraplanagem", "saneamento"],
+    },
+    "saude": {
+        "label": "Saúde e Materiais Hospitalares",
+        "prefixes": ["medicament", "hospitalar", "odontol", "ambulatori", "farmac",
+                      "laborat", "cirúrg", "cirurg", "curativ", "fórmula", "formula",
+                      "insumos hospitalar", "saúde", "saude"],
+        "search_keywords": ["hospitalar", "medicamento", "odontológico", "ambulatorial",
+                           "farmacêutico", "laboratorial", "cirúrgico", "saúde"],
+    },
+    "alimentacao": {
+        "label": "Alimentação e Gêneros Alimentícios",
+        "prefixes": ["aliment", "merenda", "refeic", "refeição", "nutriç", "nutric",
+                      "gêneros", "generos", "hortifrut", "cesta", "panific", "café",
+                      "pnae", "buffet"],
+        "search_keywords": ["gêneros alimentícios", "merenda escolar", "alimentação",
+                           "refeição", "nutrição", "hortifruti", "cesta básica"],
+    },
+    "limpeza_saneantes": {
+        "label": "Saneantes e Produtos de Limpeza",
+        "prefixes": ["saneant", "limpeza", "higien", "desinfet", "detergent",
+                      "descartáv", "descartav", "álcool", "alcool"],
+        "search_keywords": ["saneantes", "limpeza", "higienização", "descartáveis",
+                           "desinfetante", "álcool"],
+    },
+    "expediente_escolar": {
+        "label": "Material de Expediente e Escolar",
+        "prefixes": ["expedient", "escolar", "caderno", "papéi", "papei", "papel",
+                      "didátic", "didatic", "artesanat"],
+        "search_keywords": ["material expediente", "material escolar", "papelaria",
+                           "material didático"],
+    },
+    "informatica": {
+        "label": "Informática e Tecnologia",
+        "prefixes": ["informátic", "informatic", "computador", "hardware", "software",
+                      "impressão", "impressao", "suprimento", "toner", "cartucho"],
+        "search_keywords": ["informática", "computador", "equipamento TI", "software"],
+    },
+    "moveis_eletro": {
+        "label": "Móveis e Eletrodomésticos",
+        "prefixes": ["móve", "move", "mobili", "eletrodoméstic", "eletrodomestic",
+                      "condicionado", "refrigerad", "fogão", "fogao"],
+        "search_keywords": ["móveis", "eletrodomésticos", "ar condicionado", "mobiliário"],
+    },
+    "veiculos": {
+        "label": "Veículos e Transporte",
+        "prefixes": ["veícul", "veicul", "automotiv", "pneu", "combustív", "combustiv",
+                      "ambulânci", "ambulanci", "transporte", "frete", "locação veícul"],
+        "search_keywords": ["veículo", "pneu", "combustível", "ambulância", "transporte"],
+    },
+    "vestuario": {
+        "label": "Vestuário e Uniformes",
+        "prefixes": ["vestuári", "vestuari", "uniforme", "fardament", "jaleco",
+                      "confecç", "confeccao", "calçado", "calcado"],
+        "search_keywords": ["uniforme", "vestuário", "fardamento", "confecção", "calçado"],
+    },
+    "vigilancia": {
+        "label": "Vigilância e Segurança",
+        "prefixes": ["vigilânci", "vigilanci", "segurança", "seguranca", "monitoramento",
+                      "alarme", "câmera", "camera", "cftv"],
+        "search_keywords": ["vigilância", "segurança", "monitoramento", "CFTV"],
+    },
+    "manutencao": {
+        "label": "Manutenção Predial e Elétrica",
+        "prefixes": ["manutenção predial", "manutencao predial", "elétr", "eletr",
+                      "hidráulic", "hidraulic", "encanamento", "instalações", "instalacoes"],
+        "search_keywords": ["manutenção predial", "instalação elétrica", "hidráulica"],
+    },
+    "consultoria": {
+        "label": "Consultoria e Assessoria",
+        "prefixes": ["consultori", "assessori", "perícia", "pericia", "laudo",
+                      "auditoria", "contábil", "contabil", "jurídic", "juridic"],
+        "search_keywords": ["consultoria", "assessoria", "auditoria", "perícia"],
+    },
+    "comunicacao": {
+        "label": "Comunicação e Publicidade",
+        "prefixes": ["publicidad", "comunicaçã", "comunicaca", "gráfic", "grafic",
+                      "impressão gráfic", "banner", "sinaliz"],
+        "search_keywords": ["publicidade", "comunicação", "sinalização", "material gráfico"],
+    },
+    "residuos": {
+        "label": "Resíduos e Meio Ambiente",
+        "prefixes": ["resíduo", "residuo", "coleta seletiv", "reciclage", "ambiental",
+                      "licenciamento ambiental", "descontaminaç"],
+        "search_keywords": ["resíduos", "coleta seletiva", "meio ambiente", "reciclagem"],
+    },
+    "eventos": {
+        "label": "Eventos e Locação",
+        "prefixes": ["evento", "locação", "locacao", "tendas", "palco", "sonorizaç",
+                      "sonorizac", "buffet", "coffee"],
+        "search_keywords": ["evento", "locação", "tendas", "sonorização"],
+    },
+    "alienacao": {
+        "label": "Alienação e Leilão",
+        "prefixes": ["alienação", "alienacao", "mercadorias apreendida", "leilão", "leilao",
+                      "arrematação", "arremataçao"],
+        "search_keywords": ["alienação", "mercadorias apreendidas", "leilão"],
+    },
+}
+
+
+def cluster_contract_activities(
+    contratos: list[dict],
+    max_clusters: int = 5,
+    min_share_pct: float = 3.0,
+) -> list[dict]:
+    """Cluster historical contracts into thematic activity groups.
+
+    Returns list of dicts, each:
+    {
+        "label": "Materiais Hospitalares",
+        "category_key": "saude",
+        "count": 266,
+        "share_pct": 26.5,
+        "keywords": ["hospitalar", "odontológico", "ambulatorial"],
+        "sample_objects": ["Medicamentos Suplementos Alimentares Correlatos", ...],
+    }
+    Sorted by count descending. Max max_clusters clusters.
+    Only clusters with >= min_share_pct% of contracts are returned.
+    """
+    if not contratos:
+        return []
+
+    n = len(contratos)
+    category_contracts: dict[str, list[dict]] = {k: [] for k in _ACTIVITY_CATEGORIES}
+    unmatched: list[dict] = []
+
+    # Phase 1: Dictionary classification via prefix matching
+    for c in contratos:
+        obj = (c.get("objeto") or "").lower()
+        matched = False
+        for cat_key, cat_def in _ACTIVITY_CATEGORIES.items():
+            if any(prefix in obj for prefix in cat_def["prefixes"]):
+                category_contracts[cat_key].append(c)
+                matched = True
+                break  # First match wins (categories ordered by specificity)
+        if not matched:
+            unmatched.append(c)
+
+    # Phase 2: Frequency extraction on unmatched (using FIXED min_freq)
+    unmatched_keywords: list[str] = []
+    if unmatched:
+        unmatched_keywords = _extract_keywords_flat(unmatched, max_keywords=15)
+        if unmatched_keywords:
+            category_contracts["_outros"] = unmatched
+
+    # Phase 3: Build clusters
+    clusters: list[dict] = []
+    for cat_key, contracts in category_contracts.items():
+        if not contracts:
+            continue
+        share = 100.0 * len(contracts) / n
+        if share < min_share_pct:
+            continue
+
+        cat_def = _ACTIVITY_CATEGORIES.get(cat_key, {})
+
+        # Extract top 3 sample objects
+        obj_counter = Counter(c.get("objeto", "")[:60] for c in contracts)
+        samples = [obj for obj, _ in obj_counter.most_common(3)]
+
+        clusters.append({
+            "label": cat_def.get("label", cat_key),
+            "category_key": cat_key,
+            "count": len(contracts),
+            "share_pct": round(share, 1),
+            "keywords": cat_def.get("search_keywords", unmatched_keywords if cat_key == "_outros" else []),
+            "sample_objects": samples,
+        })
+
+    # Sort by count descending, cap at max_clusters
+    clusters.sort(key=lambda x: -x["count"])
+    return clusters[:max_clusters]
+
+
+# ============================================================
 # SECTOR MAPPING
 # ============================================================
 
-def extract_keywords_from_contracts(contratos: list[dict], max_keywords: int = 30) -> list[str]:
-    """Extract high-frequency keywords from historical contract descriptions.
+def _extract_keywords_flat(contratos: list[dict], max_keywords: int = 30) -> list[str]:
+    """Extract high-frequency keywords from contract descriptions (internal helper).
 
-    Analyzes the 'objeto' field of past contracts to identify what the company
-    ACTUALLY delivers (vs what their CNAE says).
-
-    This addresses the insight that companies often win bids outside their CNAE —
-    their contract history is a better signal of actual competency than CNAE codes.
-
-    Designed to work well for ALL company types:
-    - Construction: "pavimentação", "drenagem", "escola municipal"
-    - Cleaning supplies: "limpeza", "higienização", "descartáveis", "hospitalar"
-    - Uniforms: "uniformes", "fardamento", "jalecos", "EPIs", "escolares"
-    - Food: "merenda escolar", "gêneros alimentícios", "hortifruti", "cestas básicas"
-    - Vehicles: "locação veículos", "ambulância", "frota", "motorista"
-
-    Adaptive min_freq: scales with contract count so that even small histories
-    produce meaningful keywords.
+    Used by cluster_contract_activities() Phase 2 for unmatched contracts,
+    and as fallback via the backward-compat extract_keywords_from_contracts() wrapper.
     """
     if not contratos:
         return []
@@ -577,7 +750,7 @@ def extract_keywords_from_contracts(contratos: list[dict], max_keywords: int = 3
     elif n_contracts <= 8:
         min_freq = 2  # Appear in at least 2 contracts
     else:
-        min_freq = max(2, n_contracts // 5)  # ~20% prevalence
+        min_freq = min(10, max(2, n_contracts // 50))  # ~2% prevalence, cap at 10
 
     # MINIMAL stop words — ONLY bureaucratic/procedural terms.
     # Rule: if a word could appear in a bid search query, it is NOT a stop word.
@@ -696,6 +869,25 @@ def extract_keywords_from_contracts(contratos: list[dict], max_keywords: int = 3
     return result
 
 
+def extract_keywords_from_contracts(contratos: list[dict], max_keywords: int = 30) -> list[str]:
+    """Backward-compatible wrapper — returns flat keyword list from clusters."""
+    clusters = cluster_contract_activities(contratos)
+    if not clusters:
+        # No clusters formed — fall back to flat extraction directly
+        return _extract_keywords_flat(contratos, max_keywords=max_keywords)
+    result: list[str] = []
+    seen: set[str] = set()
+    for cluster in clusters:
+        for kw in cluster["keywords"]:
+            kw_lower = kw.lower()
+            if kw_lower not in seen:
+                result.append(kw)
+                seen.add(kw_lower)
+            if len(result) >= max_keywords:
+                return result
+    return result
+
+
 def extract_ufs_from_contracts(
     contratos: list[dict],
     uf_sede: str = "",
@@ -735,7 +927,7 @@ def extract_ufs_from_contracts(
     elif n_total <= 20:
         effective_min = 2
     else:
-        effective_min = max(min_contracts, n_total // 20)  # ~5% prevalence
+        effective_min = min(10, max(min_contracts, n_total // 100))  # ~1% prevalence, cap at 10
 
     # Filter UFs with enough contracts, sorted by count descending
     qualified = sorted(
@@ -3620,7 +3812,7 @@ def compute_historical_dispute_stats(all_contracts: list[dict]) -> dict:
     Groups by modality × value bracket to produce:
     - avg participants, avg discount, adjudication rate, desert/failed rate
     """
-    from collections import defaultdict
+    from collections import Counter, defaultdict
 
     stats: dict[str, dict] = defaultdict(lambda: {
         "n_procurements": 0, "suppliers": [], "discounts": [],
@@ -4528,11 +4720,16 @@ Examples:
     )
     print(f"  Histórico consolidado: {n_merged} contratos ({n_pncp} PNCP + {n_pt} PT)")
 
-    # ---- Extract keywords from contract history ----
-    contract_keywords = extract_keywords_from_contracts(merged_contratos)
-    if contract_keywords:
-        print(f"  Keywords extraídas do histórico ({len(contract_keywords)}): {', '.join(contract_keywords[:10])}{'...' if len(contract_keywords) > 10 else ''}")
+    # ---- Cluster contract activities (replaces flat keyword extraction) ----
+    contract_clusters = cluster_contract_activities(merged_contratos)
+    if contract_clusters:
+        labels = [f"{c['label']}({c['count']}, {c['share_pct']}%)" for c in contract_clusters]
+        print(f"  Clusters de atividade ({len(contract_clusters)}): {', '.join(labels)}")
+        # Flatten keywords for backward-compatible search
+        contract_keywords = extract_keywords_from_contracts(merged_contratos)
+        print(f"  Keywords extraídas dos clusters ({len(contract_keywords)}): {', '.join(contract_keywords[:10])}{'...' if len(contract_keywords) > 10 else ''}")
     else:
+        contract_keywords = []
         print("  Sem histórico de contratos — keywords serão derivadas apenas do CNAE")
 
     # ---- Sector Mapping (CNAE) ----
@@ -4693,6 +4890,10 @@ Examples:
     data["maturity_profile"] = analysis_results["maturity_profile"]
     data["dispute_stats"] = analysis_results["dispute_stats"]
     data["regional_clusters"] = analysis_results["regional_clusters"]
+
+    # Store activity clusters and keyword source metadata
+    data["activity_clusters"] = contract_clusters if contract_clusters else []
+    data["_keywords_source"] = "historico" if contract_clusters else "cnae_fallback"
 
     # ---- E3: Coverage Diagnostic ----
     print("\n📊 Diagnóstico de cobertura")
