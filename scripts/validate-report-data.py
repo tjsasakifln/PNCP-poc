@@ -142,6 +142,73 @@ def validate(data: dict) -> dict:
                     f"Os editais foram buscados no setor ERRADO."
                 )
 
+    # 2b. Strategic thesis coherence
+    strategic_thesis = data.get("strategic_thesis", {})
+    if strategic_thesis:
+        thesis = strategic_thesis.get("thesis")
+        market_trend = strategic_thesis.get("signals", {}).get("trend", {})
+        growth = market_trend.get("growth_rate_pct", 0)
+        if growth < -20:
+            warnings.append(
+                f"MARKET_CONTRACTION: Mercado do setor mostra contração de {abs(growth):.0f}% "
+                f"— relatório deve alertar proeminentemente sobre cenário adverso."
+            )
+
+    # 2c. Portfolio optimization coherence
+    portfolio = data.get("portfolio", {})
+    optimal_set = portfolio.get("optimal_set", [])
+    if isinstance(optimal_set, list) and len(optimal_set) == 0:
+        editais_participar = [e for e in data.get("editais", [])
+                             if e.get("recomendacao") in ["PARTICIPAR", "AVALIAR COM CAUTELA"]]
+        if editais_participar:
+            warnings.append(
+                f"PORTFOLIO_EMPTY_OPTIMAL: {len(editais_participar)} editais com recomendação "
+                f"positiva mas portfólio ótimo está vazio — nenhum edital tem retorno esperado "
+                f"positivo após custos de participação."
+            )
+
+    # 2d. Scenario analysis
+    if editais:
+        fragile_count = sum(1 for e in editais
+                           if e.get("sensitivity", {}).get("stability") == "FRAGIL"
+                           and e.get("recomendacao") in ["PARTICIPAR", "AVALIAR COM CAUTELA"])
+        total_relevant = sum(1 for e in editais
+                            if e.get("recomendacao") in ["PARTICIPAR", "AVALIAR COM CAUTELA"])
+        if total_relevant > 0 and fragile_count / total_relevant > 0.5:
+            warnings.append(
+                f"HIGH_FRAGILITY: {fragile_count}/{total_relevant} editais relevantes têm "
+                f"recomendação FRÁGIL (sensível a perturbação de pesos). "
+                f"Relatório deve alertar sobre incerteza nas recomendações."
+            )
+
+        # Check if all optimistic scenarios are still negative ROI
+        all_optimistic_negative = all(
+            e.get("scenarios", {}).get("optimistic", {}).get("roi_max", 0) < 0
+            for e in editais
+            if e.get("recomendacao") in ["PARTICIPAR", "AVALIAR COM CAUTELA"]
+            and e.get("scenarios")
+        )
+        if all_optimistic_negative and total_relevant > 0:
+            warnings.append(
+                "ALL_OPTIMISTIC_NEGATIVE: Mesmo no cenário otimista, TODOS os editais "
+                "relevantes têm ROI negativo. Participação é investimento estratégico, "
+                "não geração de receita. Relatório DEVE comunicar isso explicitamente."
+            )
+
+    # INFO items for new fields
+    if strategic_thesis:
+        info.append(f"THESIS: Posicionamento recomendado = {strategic_thesis.get('thesis', 'N/A')}")
+
+    correlation = portfolio.get("correlation", {})
+    if correlation:
+        div_score = correlation.get("diversification_score", 0)
+        info.append(f"DIVERSIFICATION: Score de diversificação do portfólio = {div_score:.2f}")
+
+    if any(e.get("sensitivity") for e in editais):
+        robust = sum(1 for e in editais if e.get("sensitivity", {}).get("stability") == "ROBUSTA")
+        fragile = sum(1 for e in editais if e.get("sensitivity", {}).get("stability") == "FRAGIL")
+        info.append(f"SENSITIVITY: {robust} recomendações ROBUSTAS, {fragile} FRÁGEIS")
+
     # ================================================================
     # GATE 2: Completude de dados
     # ================================================================

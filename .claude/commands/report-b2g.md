@@ -189,6 +189,8 @@ Para CADA edital, cruzar dados do JSON (Phase 1) + análise documental (Phase 2)
 9. **Análise de consórcio e subcontratação** — Se o edital permite consórcio (`permite_consorcio`) e a empresa tem barreiras de capital, acervo ou capacidade operacional, sugerir consórcio como alternativa viável. Se o edital permite subcontratação (`permite_subcontratacao`), identificar componentes fora do core que podem ser subcontratados. Definir `alternativa_participacao`: "INDIVIDUAL", "CONSORCIO_RECOMENDADO" (quando há barreiras superáveis via consórcio), ou "SUBCONTRATACAO_PARCIAL" (quando componentes específicos excedem a capacidade operacional). Incluir na justificativa quando aplicável.
 10. **Recomendação** — PARTICIPAR / AVALIAR COM CAUTELA / NÃO RECOMENDADO. **Editais VETADOS pelo script (sanção, capital insuficiente, limite MEI/Simples) já vêm com `risk_score.vetoed=true` e `risk_score.veto_reasons` — estes devem ser marcados como NÃO RECOMENDADO com justificativa citando o veto específico.**
 11. **Justificativa (OBRIGATÓRIA)** — Motivo factual da recomendação. TODA recomendação DEVE ter justificativa. Para NÃO RECOMENDADO, explicar o motivo específico (ex: "Capital social R$X insuficiente para exigência de R$Y", "Distância 800km inviabiliza logística", "CNAE incompatível com objeto"). Para PARTICIPAR, explicar por que é viável. Para AVALIAR COM CAUTELA, explicar o risco específico. **Para editais com risco fiscal ALTO (`risk_score.fiscal_risk.nivel == "ALTO"`), obrigatoriamente mencionar o risco fiscal na justificativa.** Para editais com `acervo_confirmado=false`, incluir nota sobre necessidade de verificação de atestados técnicos.
+12. **Análise de cenários** — Base/Otimista/Pessimista com probabilidades e ROIs recalculados. Trigger points para monitoramento.
+13. **Sensibilidade** — A recomendação é ROBUSTA ou FRÁGIL? Se frágil, qual dimensão a torna instável?
 
 ### Phase 4: Inteligência Competitiva (Claude + API)
 
@@ -219,6 +221,7 @@ curl -s "https://api.opencnpj.org/${CNPJ_CONCORRENTE}"
 3. **Vantagens competitivas** — Baseado em perfil (porte, localização, CNAEs)
 4. **Oportunidades de nicho** — Órgãos/UFs com pouca competição
 5. **Recomendação geral** — Priorização por potencial vs esforço vs competição
+6. **Tese estratégica** — EXPANDIR / MANTER / REDUZIR exposição B2G, baseado em tendência de volume, concentração de mercado e preços praticados.
 
 ### Phase 6: Montagem do JSON e Geração do PDF
 
@@ -258,15 +261,16 @@ O decisor lê SÓ estas páginas e já sabe o que fazer.
 1. **Capa** — Título, empresa, CNPJ, setor, data. Badge Simples/MEI se aplicável.
 2. **Aviso de Cobertura** (condicional) — Banner âmbar se taxa de captura < 70% (E3)
 3. **Resumo Executivo** — Tabela de métricas-chave (editais encontrados, PARTICIPAR/AVALIAR/NR, valor total, ROI agregado, cobertura) + max 3 destaques
-4. **Decisão em 30 Segundos** — Agrupada por recomendação: PARTICIPAR primeiro, AVALIAR segundo, NÃO RECOMENDADO resumido em 1 bloco de 3 linhas (detalhe no Anexo A). Cada edital com: município (+ pop/PIB IBGE inline), objeto (clicável), valor, prazo, score, diferencial
+4. **Posicionamento Estratégico** — Tese (EXPANDIR/MANTER/REDUZIR), sinais de mercado, exposição recomendada
+5. **Decisão em 30 Segundos** — Agrupada por recomendação: PARTICIPAR primeiro, AVALIAR segundo, NÃO RECOMENDADO resumido em 1 bloco de 3 linhas (detalhe no Anexo A). Cada edital com: município (+ pop/PIB IBGE inline), objeto (clicável), valor, prazo, score, diferencial
 
 ### Camada 2 — Inteligência Estratégica (3-5 páginas)
 
 Para quem quer entender o contexto antes de agir.
 
 5. **Inteligência Exclusiva** — 4 diferenciais (incumbência, viabilidade calibrada, acervo, clusters)
-6. **Análise Detalhada** — **SÓ editais PARTICIPAR e AVALIAR COM CAUTELA.** Fichas compactas com barras visuais por dimensão (aderência/financeiro/geográfico/prazo/competitivo), alertas condicionais (⚠ IBGE pop/PIB, ⚠ Simples/MEI, ⚠ aditivos do órgão), cronograma em 1 linha. Títulos clicáveis para fonte oficial. ~20 linhas por edital (vs ~50 antes).
-7. **Portfólio + Regional** (unificado) — Quick Wins / Oportunidades / Investimentos / Inacessíveis + Clusters geográficos com PIB agregado (IBGE)
+6. **Análise Detalhada** — **SÓ editais PARTICIPAR e AVALIAR COM CAUTELA.** Fichas compactas com barras visuais por dimensão (aderência/financeiro/geográfico/prazo/competitivo), cenários (Base/Otimista/Pessimista) e indicador de sensibilidade (ROBUSTA/FRÁGIL), alertas condicionais (⚠ IBGE pop/PIB, ⚠ Simples/MEI, ⚠ aditivos do órgão), cronograma em 1 linha. Títulos clicáveis para fonte oficial. ~20 linhas por edital (vs ~50 antes).
+7. **Portfólio + Regional** (unificado) — Quick Wins / Oportunidades / Investimentos / Inacessíveis + Portfólio Recomendado (conjunto ótimo de editais por retorno esperado vs. custo) + Clusters geográficos com PIB agregado (IBGE)
 8. **Mapa Competitivo** — Fornecedores recorrentes + aditivos/rescisões (PNCP expandido) + mercados favoráveis. Condensado.
 9. **Inteligência de Mercado** — Panorama, tendências, vantagens, recomendação geral
 10. **Plano de Desenvolvimento** — Lacunas consolidadas com ações e prazos
@@ -278,7 +282,7 @@ Material de consulta, fora do fluxo principal.
 
 - **Anexo A — Editais Não Recomendados** — Tabela condensada: nº, município/objeto (clicável), valor, motivo (1 linha cada). Max 1 página.
 - **Anexo B — Perfil da Empresa** — Dados cadastrais, QSA, regime tributário (BrasilAPI: Simples/MEI/Geral), sanções, SICAF, maturidade (E8), histórico de contratos
-- **Anexo C — Fontes de Dados e Metodologia** — Tabela de fontes (nomes institucionais, status, detalhe) + Querido Diário (se houver menções)
+- **Anexo C — Fontes de Dados e Metodologia** — Tabela de fontes (nomes institucionais, status, detalhe) + Metodologia de Análise (pesos do índice de viabilidade, fórmula de ROI, calibração de probabilidade, disclaimer) + Querido Diário (se houver menções)
 
 **Rodapé em todas as páginas:** "Tiago Sasaki — Consultor de Inteligência em Licitações"
 
@@ -372,6 +376,8 @@ O script verifica coerência semântica dos dados ANTES de gerar o relatório:
 | "Tem alguma frase que eu precisaria ler duas vezes para entender?" | Reescrever mais simples |
 | "Tem algo repetido que já li em outra seção?" | Consolidar — repetição destrói credibilidade |
 | "Os números fazem sentido para uma empresa do meu porte?" | Se R$2M de capital e edital exige R$20M, a recomendação PARTICIPAR é desonesta |
+| "O leitor entende COMO cada score foi calculado?" | Adicionar referência à seção de Metodologia (Anexo C) |
+| "As recomendações são robustas ou frágeis?" | Se frágil, mencionar explicitamente no texto |
 
 3. **Teste do "E daí?"** — Para cada parágrafo: se o leitor pode responder "e daí?", o parágrafo não agrega valor. Exemplos:
 

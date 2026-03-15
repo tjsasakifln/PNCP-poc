@@ -1,0 +1,366 @@
+# Squad: Report Big Four Intelligence
+# Mission: Elevar /report-b2g de "relatório de oportunidades" para "advisory estratégico"
+# Scope: Scripts locais (collect-report-data.py, generate-report-b2g.py, validate-report-data.py, report-b2g.md)
+# Constraint: Entrega = 1 PDF. Sem mudanças no SaaS/backend/frontend.
+
+squad:
+  name: "Report Big Four Intelligence"
+  version: "1.0"
+  created: "2026-03-15"
+
+  objective: >
+    Implementar 6 eixos de melhoria inspirados no padrão Big Four de consultoria:
+    (1) Tese Estratégica, (2) Insights Proprietários via Benchmarking,
+    (3) Portfolio Strategy com otimização, (4) Decision Framework com cenários,
+    (5) Metodologia Auditável, (6) Seções Executivas no PDF.
+    Entrega: 1 PDF de máximo valor estratégico ao leitor.
+
+  baseline: >
+    O sistema ATUAL já possui (não reimplementar):
+    - win_probability com HHI, incumbency_bonus, modality_multiplier, viability_factor
+    - roi_potential com custo_participacao, custo_mobilizacao, custo_proposta, margem_range
+    - risk_score composto (habilitação 30%, financeiro 25%, geográfico 20%, prazo 15%, competitivo 10%)
+    - cronograma reverso automático
+    - competitive_intel por edital (n_suppliers, top_supplier_share, contratos analisados)
+    - portfolio com quick_wins, strategic_investments, opportunities, inaccessible
+    - maturity_profile (porte, esferas, geographic_spread, max_contract_ratio)
+    - coverage_diagnostic (taxa de captura, per_uf)
+    - activity_clusters (clustering de contratos históricos)
+    - dispute_stats (stats_by_typology, recurring_suppliers)
+    - regional_clusters
+    O foco é ADICIONAR inteligência nova e REESTRUTURAR a apresentação, não refazer o que existe.
+
+  constraints:
+    - "Escopo: APENAS scripts/ e .claude/commands/report-b2g.md — ZERO mudanças em backend/ ou frontend/"
+    - "Entrega: 1 PDF (estruturado em camadas/seções)"
+    - "Guardrails: manter TODOS os 9 guardrails existentes do report-b2g.md"
+    - "NUNCA fabricar dados — toda métrica nova DEVE vir de API ou cálculo auditável"
+    - "Formato: números brasileiros, acentuação, zero termos técnicos/inglês no PDF"
+    - "Tempo de execução: ≤ 10 minutos total (collect + generate)"
+
+  # ================================================================
+  # FRENTES PARALELAS (5 tracks simultâneos)
+  # ================================================================
+
+  tracks:
+
+    # ----------------------------------------------------------
+    # TRACK A — Strategic Thesis Engine
+    # ----------------------------------------------------------
+    # Arquivo: collect-report-data.py (nova seção)
+    # Dependência: nenhuma (paralelo puro)
+    - name: "A — Tese Estratégica de Mercado"
+      agents: ["@analyst", "@data-engineer"]
+      priority: 1
+      files:
+        - "scripts/collect-report-data.py"
+        - "scripts/generate-report-b2g.py"
+        - ".claude/commands/report-b2g.md"
+
+      rationale: >
+        Hoje o relatório começa com editais. Big Four começa com a TESE:
+        "O mercado B2G neste setor está em expansão, estagnação ou contração?
+        Esta empresa deveria expandir, manter ou reduzir exposição?"
+
+      deliverables:
+        - name: "collect: Tendência de volume setorial"
+          detail: >
+            Nova função collect_market_trend() em collect-report-data.py:
+            - PNCP: buscar editais do mesmo setor nos últimos 6, 12 e 24 meses
+            - Calcular: volume_trend (crescimento/estagnação/contração), valor_medio_trend
+            - Campos: market_trend.volume_6m, volume_12m, volume_24m, growth_rate_pct
+            - Fonte: PNCP consulta com keywords do setor, tamanhoPagina=50, 3 janelas temporais
+
+        - name: "collect: Concentração de mercado (HHI setorial)"
+          detail: >
+            Reutilizar dispute_stats.recurring_suppliers (já coletado):
+            - Calcular HHI do setor/UF: sum(share_i^2) para top N fornecedores
+            - Classificar: <0.15 = competitivo, 0.15-0.25 = moderado, >0.25 = concentrado
+            - Campo: market_trend.hhi_sectoral, market_structure (competitivo/moderado/concentrado)
+
+        - name: "collect: Preço médio de homologação"
+          detail: >
+            Nova função collect_price_benchmarks():
+            - PNCP /contratos do setor (já parcialmente em competitive_intel):
+              consolidar valores de contratos homologados dos últimos 12 meses
+            - Calcular: preco_medio_homologado, desconto_medio_sobre_estimado_pct
+            - Campo: market_trend.avg_award_price, avg_discount_pct
+            - Para cada edital: comparar valor_estimado vs preço médio → "margem para lance agressivo"
+
+        - name: "generate: Seção Tese Estratégica no PDF"
+          detail: >
+            Nova seção no PDF (Camada 1, após Resumo Executivo, antes de Decisão em 30s):
+            - Título: "Posicionamento Estratégico" (1/2 página)
+            - Conteúdo: tese (expandir/manter/reduzir) + 3 indicadores visuais
+              (volume trend, concentração, preço médio) + recomendação geral
+            - Gerar automaticamente com base nos dados (não LLM)
+
+    # ----------------------------------------------------------
+    # TRACK B — Portfolio Optimization
+    # ----------------------------------------------------------
+    # Arquivo: collect-report-data.py (enriquecer portfolio existente)
+    # Dependência: nenhuma (paralelo puro)
+    - name: "B — Otimização de Portfólio"
+      agents: ["@architect", "@data-engineer"]
+      priority: 1
+      files:
+        - "scripts/collect-report-data.py"
+        - "scripts/generate-report-b2g.py"
+
+      rationale: >
+        Hoje o portfolio categoriza em 4 quadrantes (quick_wins, strategic, opportunities,
+        inaccessible) mas não otimiza. Big Four trataria como portfólio de investimento
+        com constraint de capacidade e correlação de risco.
+
+      deliverables:
+        - name: "collect: Capacidade operacional estimada"
+          detail: >
+            Nova função estimate_operational_capacity():
+            - Inputs: capital_social, maturity_profile.total_contract_count,
+              maturity_profile.max_contract_ratio, maturity_profile.geographic_spread
+            - Output: max_simultaneous_bids (int), max_portfolio_value (float)
+            - Heurística: empresas maduras (>50 contratos, multi-UF) → até 8 simultâneos
+              empresas novas (<10 contratos, 1 UF) → até 3 simultâneos
+            - Campo: portfolio.capacity.max_bids, max_value, confidence
+
+        - name: "collect: Correlação geográfica entre editais"
+          detail: >
+            Nova função calculate_correlation():
+            - Editais no mesmo município/órgão = alta correlação (perde 1, perde todos)
+            - Editais em UFs diferentes = baixa correlação (diversificação)
+            - Score de diversificação do portfólio recomendado (0-1)
+            - Campo: portfolio.diversification_score, correlated_groups[]
+
+        - name: "collect: Portfólio ótimo"
+          detail: >
+            Nova função optimize_portfolio():
+            - Inputs: editais PARTICIPAR+AVALIAR, capacity constraints, correlações
+            - Algoritmo: greedy ranked por (roi_expected / custo_participacao),
+              com penalty para correlação e constraint de capacidade
+            - NÃO precisa scipy — ranking ordenado com constraints é suficiente
+            - Output: portfolio.optimal_set[] (editais rankeados com "Prioridade 1, 2, 3...")
+            - Campo: portfolio.optimal_set, total_expected_roi, capacity_utilization_pct
+
+        - name: "generate: Seção Portfólio Ótimo no PDF"
+          detail: >
+            Substituir/complementar tabela de portfolio atual:
+            - Tabela "Portfólio Recomendado" com editais em ordem de prioridade
+            - Coluna "Prioridade" (1, 2, 3...) + "Custo" + "Retorno Esperado" + "Acumulado"
+            - Nota de rodapé: "Baseado em capacidade estimada de N participações simultâneas"
+            - Se capacity overflow: "Atenção: vencer todos excederia a capacidade operacional"
+
+    # ----------------------------------------------------------
+    # TRACK C — Scenario Engine + Sensitivity
+    # ----------------------------------------------------------
+    # Arquivo: collect-report-data.py (enriquecer por edital)
+    # Dependência: nenhuma (paralelo puro)
+    - name: "C — Cenários e Sensibilidade"
+      agents: ["@analyst", "@dev"]
+      priority: 1
+      files:
+        - "scripts/collect-report-data.py"
+        - "scripts/generate-report-b2g.py"
+
+      rationale: >
+        Hoje: recomendação binária. Big Four: cenário base + otimista + pessimista
+        com trigger points e análise de sensibilidade dos pesos do risk_score.
+
+      deliverables:
+        - name: "collect: Cenários por edital"
+          detail: >
+            Nova função calculate_scenarios() para cada edital:
+            - Cenário Base: win_probability atual
+            - Cenário Otimista: se <3 concorrentes (win_prob × 2.5),
+              ou se incumbente (win_prob + 0.10), ou se consórcio viável
+            - Cenário Pessimista: se >10 concorrentes (win_prob × 0.4),
+              ou se incumbente forte (win_prob × 0.3)
+            - Para cada cenário: roi recalculado
+            - Campos: editais[].scenarios.{base, optimistic, pessimistic}
+              cada um com {win_prob, roi_min, roi_max, trigger}
+
+        - name: "collect: Sensibilidade do risk_score"
+          detail: >
+            Nova função sensitivity_analysis() para cada edital:
+            - Perturbar cada peso do risk_score ±10% (5 dimensões)
+            - Verificar se a recomendação (PARTICIPAR/AVALIAR/NR) muda
+            - Se muda com qualquer perturbação → "FRÁGIL"
+            - Se estável em todas → "ROBUSTA"
+            - Campo: editais[].risk_score.sensitivity (ROBUSTA/FRÁGIL)
+            - Campo: editais[].risk_score.sensitive_to (qual dimensão causa mudança)
+
+        - name: "collect: Trigger points por edital"
+          detail: >
+            Nova função identify_triggers():
+            - "Se o número de propostas registradas for <3, reavalie — chance sobe para X%"
+            - "Se publicado esclarecimento/errata, reavalie prazos"
+            - "Se impugnação apresentada, considerar que deadline pode ser prorrogado"
+            - Campos: editais[].triggers[] (list de {condition, action, impact})
+
+        - name: "generate: Mini-tabela de cenários no PDF"
+          detail: >
+            Na análise detalhada de cada edital PARTICIPAR/AVALIAR:
+            - 3 colunas: Pessimista | Base | Otimista
+            - Linhas: Probabilidade, ROI, Trigger
+            - Badge: ROBUSTA ou FRÁGIL ao lado do risk_score
+            - Nota: "Recomendação sensível a [dimensão] — monitorar"
+
+    # ----------------------------------------------------------
+    # TRACK D — Defensible Methodology
+    # ----------------------------------------------------------
+    # Arquivo: generate-report-b2g.py + validate-report-data.py
+    # Dependência: nenhuma (paralelo puro)
+    - name: "D — Metodologia Auditável"
+      agents: ["@architect", "@qa"]
+      priority: 2
+      files:
+        - "scripts/generate-report-b2g.py"
+        - "scripts/validate-report-data.py"
+        - ".claude/commands/report-b2g.md"
+
+      rationale: >
+        Big Four publica a metodologia para o leitor auditar. Hoje o leitor vê
+        recomendações mas não sabe como foram calculadas. Transparência eleva confiança.
+
+      deliverables:
+        - name: "generate: Seção Metodologia expandida"
+          detail: >
+            Expandir Anexo C (Fontes e Metodologia) com subseção "Metodologia de Análise":
+            - Tabela de pesos do risk_score com explicação de cada dimensão
+            - Fórmula do ROI: "(valor × probabilidade × margem) − custo de participação"
+            - Base de calibração: "Probabilidade calculada com base em N contratos históricos
+              do órgão licitante, com ajuste por incumbência e modalidade"
+            - Confidence intervals: "alta" (>20 contratos analisados), "média" (5-20),
+              "baixa" (<5)
+            - Disclosure: "Este relatório NÃO substitui análise jurídica do edital"
+
+        - name: "validate: Novos checks no gate determinístico"
+          detail: >
+            Adicionar ao validate-report-data.py:
+            - WARN se todos os cenários otimistas têm ROI negativo
+            - WARN se portfolio optimal_set vazio (nenhum edital vale participar)
+            - WARN se market_trend mostra contração >20%
+            - INFO: sensitivity — quantos editais têm recomendação FRÁGIL
+            - INFO: diversification_score do portfólio
+
+        - name: "report-b2g.md: Atualizar Phase 3 e Phase 7"
+          detail: >
+            Incorporar no command file:
+            - Phase 3: mencionar cenários + sensitivity na análise por edital
+            - Phase 5: mencionar tese estratégica
+            - Phase 7: adversarial inclui "O leitor entende COMO o score foi calculado?"
+
+    # ----------------------------------------------------------
+    # TRACK E — Executive Sections & PDF Upgrade
+    # ----------------------------------------------------------
+    # Arquivo: generate-report-b2g.py
+    # Dependência: Tracks A, B, C (dados novos para renderizar)
+    - name: "E — Seções Executivas + PDF Premium"
+      agents: ["@dev", "@qa"]
+      priority: 2  # Inicia paralelo, mas precisa dos dados de A/B/C para finalizar
+      files:
+        - "scripts/generate-report-b2g.py"
+        - "scripts/report-design-tokens.yaml"
+
+      rationale: >
+        O gerador PDF já tem estética Big Four (paleta, tipografia).
+        O upgrade é nas SEÇÕES — adicionar as novas inteligências ao layout.
+
+      deliverables:
+        - name: "generate: Seção 'Posicionamento Estratégico' (Track A data)"
+          detail: >
+            Após Resumo Executivo, antes de Decisão em 30s:
+            - Box com tese: "EXPANDIR / MANTER / REDUZIR exposição"
+            - 3 indicadores: volume trend (seta ↑↓→), concentração (barra), preço (vs estimado)
+            - Max 1/2 página
+
+        - name: "generate: Seção 'Portfólio Recomendado' (Track B data)"
+          detail: >
+            Substituir/complementar a tabela de portfolio existente:
+            - Tabela rankeada (Prioridade, Edital, Valor, Custo, ROI Esperado, Acumulado)
+            - Footer: "Capacidade estimada: N participações | Diversificação: X/10"
+            - Se optimal_set vazio: "Nenhum edital apresenta retorno esperado positivo neste ciclo"
+
+        - name: "generate: Mini-tabela cenários por edital (Track C data)"
+          detail: >
+            Na ficha de cada edital PARTICIPAR/AVALIAR:
+            - 3 colunas: Pessimista | Base | Otimista (compacto, ~3 linhas)
+            - Badge ROBUSTA/FRÁGIL ao lado do score
+            - Trigger points como bullet points (max 2)
+
+        - name: "generate: Seção Metodologia (Track D data)"
+          detail: >
+            Expandir Anexo C com 1/2 página de metodologia:
+            - Tabela de pesos do risk_score
+            - Fórmula do ROI
+            - Confidence bands
+            - Disclaimer legal
+
+        - name: "QA: PDF final com todos os dados novos"
+          detail: >
+            - Gerar com JSON de teste (data-01721078000168-2026-03-15.json)
+            - Verificar: seções novas renderizam sem erros
+            - Verificar: PDF ≤ 30 páginas para ~35 editais
+            - Verificar: zero termos em inglês/técnicos
+            - Verificar: links clicáveis mantidos
+
+  # ================================================================
+  # EXECUTION ORDER
+  # ================================================================
+
+  execution:
+    parallel_wave_1:
+      tracks: ["A", "B", "C", "D"]
+      description: >
+        Tracks A/B/C adicionam campos novos ao collect-report-data.py (funções independentes).
+        Track D atualiza validate + docs.
+        TODOS podem rodar simultaneamente — não há dependência entre funções.
+
+    parallel_wave_2:
+      tracks: ["E"]
+      depends_on: ["A", "B", "C", "D"]
+      description: >
+        Track E renderiza os dados novos no PDF. Precisa que A/B/C tenham definido
+        os campos JSON para saber o que renderizar. D define a seção de metodologia.
+
+    final_validation:
+      description: >
+        1. Rodar collect-report-data.py com CNPJ de teste
+        2. Rodar validate-report-data.py
+        3. Claude faz Phase 2-5 (análise documental + estratégica)
+        4. Rodar generate-report-b2g.py
+        5. Revisão adversarial (Phase 7) com foco nos dados novos
+        6. Comparar com relatório anterior do mesmo CNPJ
+
+  # ================================================================
+  # DECISÕES ARQUITETURAIS
+  # ================================================================
+
+  architecture_decisions:
+    - decision: "Greedy ranking ao invés de otimização convexa"
+      rationale: >
+        scipy/OR-tools seria over-engineering para ~30 editais.
+        Ranking por ROI/custo com constraints de capacidade é suficiente
+        e auditável pelo leitor.
+
+    - decision: "Cenários por perturbação, não Monte Carlo"
+      rationale: >
+        Monte Carlo requer distribuições calibradas que não temos.
+        Cenários discretos (base/otimista/pessimista) com triggers
+        são mais honestos e acionáveis para o leitor.
+
+    - decision: "Dados de benchmarking vêm de PNCP, não de data lake externo"
+      rationale: >
+        Não temos data lake próprio. PNCP /contratos já fornece
+        preços de homologação. É suficiente para MVP do benchmarking.
+
+    - decision: "Tese estratégica é determinística, não LLM"
+      rationale: >
+        Regras claras: volume crescendo + concentração baixa → EXPANDIR.
+        Volume caindo + concentração alta → REDUZIR.
+        Transparente e auditável.
+
+    - decision: "Sensitivity por perturbação de pesos, não resampling"
+      rationale: >
+        Com 5 dimensões e ±10%, são 10 perturbações por edital.
+        Simples, rápido, e o resultado ("ROBUSTA"/"FRÁGIL") é
+        imediatamente útil ao leitor.

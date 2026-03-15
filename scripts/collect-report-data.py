@@ -1899,6 +1899,261 @@ def compute_portfolio_analysis(
 
 
 # ============================================================
+# PORTFOLIO OPTIMIZATION (capacity, correlation, optimal set)
+# ============================================================
+
+def _fmt_brl_portfolio(v: float) -> str:
+    """Format value as R$ with Brazilian number separators."""
+    return f"R$ {v:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def estimate_operational_capacity(empresa: dict, maturity_profile: dict) -> dict:
+    """Estimate how many simultaneous bids the company can realistically handle.
+
+    Uses capital_social, contract history, and maturity profile as proxies
+    for operational bandwidth (team size, bonding capacity, cash flow).
+    """
+    capital = _safe_float(empresa.get("capital_social"))
+    total_contracts = maturity_profile.get("total_contract_count", 0)
+    geo_spread = maturity_profile.get("geographic_spread", 0)
+    profile = maturity_profile.get("profile", "ENTRANTE")
+
+    # Base capacity — any company can handle at least 3 simultaneous bids
+    base_capacity = 3
+
+    # Experience bonus
+    if total_contracts > 100:
+        base_capacity += 3  # 50+ gives +2, 100+ gives +1 more
+    elif total_contracts > 50:
+        base_capacity += 2
+
+    # Geographic reach bonus — operates in 4+ UFs
+    if geo_spread > 3:
+        base_capacity += 1
+
+    # Maturity profile bonus
+    if profile in ("ESTABELECIDO", "REGIONAL"):
+        base_capacity += 1
+
+    max_capacity = min(base_capacity, 10)
+
+    # Max portfolio value — rough heuristic: capital × 5
+    max_portfolio_value = capital * 5.0 if capital > 0 else 0.0
+
+    # Confidence based on data quality
+    if total_contracts >= 10 and capital > 0:
+        confidence = "alta"
+    elif total_contracts >= 3 or capital > 0:
+        confidence = "media"
+    else:
+        confidence = "baixa"
+
+    rationale_parts = [f"Capacidade base: 3 licitações simultâneas"]
+    if total_contracts > 100:
+        rationale_parts.append(f"+3 por histórico robusto ({total_contracts} contratos)")
+    elif total_contracts > 50:
+        rationale_parts.append(f"+2 por histórico sólido ({total_contracts} contratos)")
+    if geo_spread > 3:
+        rationale_parts.append(f"+1 por atuação em {geo_spread} UFs")
+    if profile in ("ESTABELECIDO", "REGIONAL"):
+        rationale_parts.append(f"+1 por perfil {profile.lower()}")
+    rationale_parts.append(f"Capacidade final: {max_capacity} (cap: 10)")
+    if max_portfolio_value > 0:
+        rationale_parts.append(
+            f"Valor máximo de carteira: {_fmt_brl_portfolio(max_portfolio_value)} "
+            f"(capital social {_fmt_brl_portfolio(capital)} × 5)"
+        )
+
+    return {
+        "max_simultaneous_bids": max_capacity,
+        "max_portfolio_value": round(max_portfolio_value, 2),
+        "confidence": confidence,
+        "rationale": ". ".join(rationale_parts),
+        "_source": _source_tag("CALCULATED", f"capital={capital}, contratos={total_contracts}, geo={geo_spread}"),
+    }
+
+
+def calculate_portfolio_correlation(editais: list[dict]) -> dict:
+    """Identify correlated bids (same organ/municipality = correlated risk).
+
+    Bidding for multiple editais from the same organ in the same municipality
+    concentrates risk: if that organ delays payments or cancels, all bids
+    are affected simultaneously.
+    """
+    # Group by (cnpj_orgao, municipio)
+    groups: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for i, ed in enumerate(editais):
+        orgao_cnpj = ed.get("cnpj_orgao", ed.get("orgao", "N/I"))
+        municipio = (ed.get("municipio") or ed.get("localidade") or "N/I")
+        key = (orgao_cnpj, municipio)
+        groups[key].append(i)
+
+    correlated_groups = []
+    max_group_size = 0
+    for (orgao, mun), indices in groups.items():
+        if len(indices) > 1:
+            correlated_groups.append({
+                "orgao": orgao,
+                "municipio": mun,
+                "edital_indices": indices,
+                "n_editais": len(indices),
+                "risk_note": (
+                    f"{len(indices)} editais do mesmo órgão em {mun} — "
+                    f"risco concentrado em caso de atraso de pagamento ou cancelamento"
+                ),
+            })
+        if len(indices) > max_group_size:
+            max_group_size = len(indices)
+
+    total = len(editais)
+    if total > 0:
+        diversification_score = round(1.0 - (max_group_size / total), 3)
+    else:
+        diversification_score = 1.0
+
+    n_in_groups = sum(g["n_editais"] for g in correlated_groups)
+    n_independent = total - n_in_groups
+
+    return {
+        "diversification_score": diversification_score,
+        "correlated_groups": correlated_groups,
+        "n_independent": n_independent,
+        "_source": _source_tag("CALCULATED", f"{total} editais, {len(correlated_groups)} grupos correlacionados"),
+    }
+
+
+def optimize_portfolio(
+    editais: list[dict],
+    capacity: dict,
+    correlation: dict,
+    participation_cost_per_edital: float,
+) -> dict:
+    """Select and rank the optimal set of bids under capacity constraints.
+
+    Greedy selection by efficiency (ROI / custo), with correlation penalty
+    for concentrated risk. Respects max_simultaneous_bids and max_portfolio_value.
+    """
+    # Build correlated-index lookup: edital_index -> group indices
+    correlated_indices: dict[int, set[int]] = {}
+    for group in correlation.get("correlated_groups", []):
+        idx_set = set(group["edital_indices"])
+        for idx in idx_set:
+            correlated_indices[idx] = idx_set
+
+    # Filter eligible editais (QUICK_WIN, OPORTUNIDADE, INVESTIMENTO)
+    eligible_categories = {"QUICK_WIN", "OPORTUNIDADE", "INVESTIMENTO"}
+    candidates = []
+    for i, ed in enumerate(editais):
+        cat = ed.get("strategic_category", "")
+        if cat not in eligible_categories:
+            continue
+
+        valor = _safe_float(ed.get("valor_estimado"))
+        custo = _safe_float(ed.get("roi_potential", {}).get("custo_participacao"))
+        if custo <= 0:
+            custo = participation_cost_per_edital
+
+        roi_max = _safe_float(ed.get("roi_potential", {}).get("roi_max"))
+        roi_min = _safe_float(ed.get("roi_potential", {}).get("roi_min"))
+
+        # Use roi_max for efficiency unless negative, then use roi_min
+        roi_ref = roi_max if roi_max > 0 else roi_min
+        efficiency = roi_ref / custo if custo > 0 else 0.0
+
+        objeto = (ed.get("objeto") or ed.get("objetoCompra") or "")[:80]
+        candidates.append({
+            "edital_idx": i,
+            "objeto_resumo": objeto,
+            "valor": valor,
+            "custo": custo,
+            "roi_max": roi_max,
+            "roi_min": roi_min,
+            "efficiency": efficiency,
+            "strategic_category": cat,
+        })
+
+    if not candidates:
+        return {
+            "optimal_set": [],
+            "total_expected_roi": 0.0,
+            "capacity_utilization_pct": 0.0,
+            "capacity_overflow_warning": "Nenhum edital elegível para otimização (todos inacessíveis ou baixa prioridade).",
+            "_source": _source_tag("CALCULATED", "0 candidatos elegíveis"),
+        }
+
+    # Sort by efficiency descending
+    candidates.sort(key=lambda c: c["efficiency"], reverse=True)
+
+    max_bids = capacity.get("max_simultaneous_bids", 5)
+    max_value = capacity.get("max_portfolio_value", float("inf"))
+
+    selected = []
+    selected_indices: set[int] = set()
+    cumulative_value = 0.0
+    cumulative_roi = 0.0
+    overflow_warning = None
+
+    for cand in candidates:
+        if len(selected) >= max_bids:
+            overflow_warning = (
+                f"Capacidade atingida: {max_bids} licitações simultâneas. "
+                f"{len(candidates) - len(selected)} editais elegíveis não incluídos."
+            )
+            break
+
+        new_value = cumulative_value + cand["valor"]
+        if max_value > 0 and new_value > max_value:
+            overflow_warning = (
+                f"Valor máximo de carteira atingido: "
+                f"{_fmt_brl_portfolio(max_value)}. "
+                f"Edital de {_fmt_brl_portfolio(cand['valor'])} não incluído."
+            )
+            break
+
+        # Apply correlation penalty if another edital from same group already selected
+        eff = cand["efficiency"]
+        correlation_note = None
+        edital_idx = cand["edital_idx"]
+        if edital_idx in correlated_indices:
+            overlap = correlated_indices[edital_idx] & selected_indices
+            if overlap:
+                eff *= 0.7
+                correlation_note = (
+                    f"Penalidade de correlação aplicada (×0.7) — "
+                    f"mesmo órgão/município que edital(is) {sorted(overlap)}"
+                )
+
+        # Re-check ordering is still favorable (efficiency may have dropped)
+        # But greedy keeps it simple — we just note it
+        priority = len(selected) + 1
+        roi_expected = (cand["roi_max"] + cand["roi_min"]) / 2.0 if cand["roi_min"] != 0 else cand["roi_max"]
+        cumulative_roi += roi_expected
+        cumulative_value = new_value
+
+        selected.append({
+            "edital_idx": edital_idx,
+            "priority": priority,
+            "objeto_resumo": cand["objeto_resumo"],
+            "valor": cand["valor"],
+            "custo": cand["custo"],
+            "roi_expected": round(roi_expected),
+            "roi_cumulative": round(cumulative_roi),
+            "correlation_note": correlation_note,
+        })
+        selected_indices.add(edital_idx)
+
+    utilization = round(100.0 * len(selected) / max_bids, 1) if max_bids > 0 else 0.0
+
+    return {
+        "optimal_set": selected,
+        "total_expected_roi": round(cumulative_roi),
+        "capacity_utilization_pct": utilization,
+        "capacity_overflow_warning": overflow_warning,
+        "_source": _source_tag("CALCULATED", f"{len(selected)}/{len(candidates)} selecionados, utilização {utilization}%"),
+    }
+
+
+# ============================================================
 # PHASE 2a: PNCP SEARCH
 # ============================================================
 
@@ -4106,6 +4361,337 @@ def compute_regional_clusters(editais: list[dict]) -> dict:
 
 
 # ============================================================
+# TRACK C: SCENARIOS, SENSITIVITY ANALYSIS, AND TRIGGERS
+# ============================================================
+
+def _parse_margin_range(margin_str: str) -> tuple[float, float]:
+    """Parse margin_range string like '8%-15%' into (0.08, 0.15)."""
+    if not margin_str or margin_str == "N/A":
+        return (0.08, 0.15)  # Safe default
+    try:
+        parts = margin_str.replace("%", "").split("-")
+        if len(parts) == 2:
+            return (float(parts[0]) / 100.0, float(parts[1]) / 100.0)
+    except (ValueError, IndexError):
+        pass
+    return (0.08, 0.15)
+
+
+def calculate_scenarios(edital: dict, sector_key: str = "") -> dict:
+    """Compute base/optimistic/pessimistic scenarios for an edital.
+
+    Uses existing win_probability and roi_potential data to project
+    3 deterministic scenarios with different competitive assumptions.
+    Returns dict with base, optimistic, pessimistic scenarios.
+    """
+    wp = edital.get("win_probability", {})
+    roi = edital.get("roi_potential", {})
+    prob = wp.get("probability", 0)
+    valor = _safe_float(edital.get("valor_estimado"))
+
+    # Skip if no win_probability data
+    if not wp or prob <= 0 or valor <= 0:
+        return {
+            "base": {"prob": 0, "roi_min": 0, "roi_max": 0},
+            "optimistic": {"prob": 0, "roi_min": 0, "roi_max": 0, "trigger": "Dados insuficientes"},
+            "pessimistic": {"prob": 0, "roi_min": 0, "roi_max": 0, "trigger": "Dados insuficientes"},
+            "_source": _source_tag("CALCULATED", "Dados insuficientes para cenários"),
+        }
+
+    n_suppliers = wp.get("n_unique_suppliers", 0)
+    incumbency_bonus = wp.get("incumbency_bonus", 0)
+    top_share = wp.get("top_supplier_share", 0)
+
+    # Parse margins
+    margin_str = roi.get("margin_range", "8%-15%")
+    margin_min, margin_max = _parse_margin_range(margin_str)
+
+    # Participation cost from calculation_memory
+    calc_mem = roi.get("calculation_memory", {})
+    custo = _safe_float(calc_mem.get("custo_participacao", 0))
+
+    # Base scenario — use existing values as-is
+    base = {
+        "prob": round(prob, 4),
+        "roi_min": roi.get("roi_min", 0),
+        "roi_max": roi.get("roi_max", 0),
+    }
+
+    # Optimistic scenario
+    if n_suppliers <= 3 and n_suppliers > 0:
+        prob_opt = min(prob * 2.5, 0.5)
+        trigger_opt = "Menos de 3 propostas registradas"
+    elif incumbency_bonus > 0:
+        prob_opt = min(prob + 0.10, 0.5)
+        trigger_opt = "Empresa é incumbente no órgão"
+    else:
+        prob_opt = min(prob * 1.8, 0.4)
+        trigger_opt = "Cenário favorável — competição reduzida"
+
+    roi_opt_min = round(valor * prob_opt * margin_min - custo)
+    roi_opt_max = round(valor * prob_opt * margin_max - custo)
+    optimistic = {
+        "prob": round(prob_opt, 4),
+        "roi_min": roi_opt_min,
+        "roi_max": roi_opt_max,
+        "trigger": trigger_opt,
+    }
+
+    # Pessimistic scenario
+    if n_suppliers > 10:
+        prob_pes = prob * 0.4
+        trigger_pes = "Mais de 10 concorrentes"
+    elif top_share > 0.3:
+        prob_pes = prob * 0.3
+        trigger_pes = "Incumbente forte com >30% de market share"
+    else:
+        prob_pes = prob * 0.5
+        trigger_pes = "Cenário adverso — competição intensa"
+
+    prob_pes = max(prob_pes, 0.001)  # Floor to avoid zero
+    roi_pes_min = round(valor * prob_pes * margin_min - custo)
+    roi_pes_max = round(valor * prob_pes * margin_max - custo)
+    pessimistic = {
+        "prob": round(prob_pes, 4),
+        "roi_min": roi_pes_min,
+        "roi_max": roi_pes_max,
+        "trigger": trigger_pes,
+    }
+
+    return {
+        "base": base,
+        "optimistic": optimistic,
+        "pessimistic": pessimistic,
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+def sensitivity_analysis(edital: dict) -> dict:
+    """Test if recommendation changes when risk_score weights are perturbed +/-10%.
+
+    For each of the 5 dimensions, perturbs its weight by +10% and -10%,
+    redistributing proportionally to other dimensions so they still sum to 1.0.
+    If ANY perturbation changes the recommendation category -> "FRAGIL".
+    If NONE changes -> "ROBUSTA".
+    """
+    rs = edital.get("risk_score", {})
+    if not rs or rs.get("vetoed"):
+        return {
+            "stability": "N/A",
+            "sensitive_to": None,
+            "original_score": rs.get("total", 0) if rs else 0,
+            "score_range": [0, 0],
+            "_source": _source_tag("CALCULATED", "Edital vetado ou sem risk_score"),
+        }
+
+    weights = rs.get("weights", {})
+    if not weights:
+        return {
+            "stability": "N/A",
+            "sensitive_to": None,
+            "original_score": rs.get("total", 0),
+            "score_range": [0, 0],
+            "_source": _source_tag("CALCULATED", "Sem pesos de risk_score"),
+        }
+
+    # Dimension scores
+    dim_map = {
+        "hab": rs.get("habilitacao", 50),
+        "fin": rs.get("financeiro", 50),
+        "geo": rs.get("geografico", 50),
+        "prazo": rs.get("prazo", 50),
+        "comp": rs.get("competitivo", 50),
+    }
+    original_total = rs.get("total", 0)
+
+    # Recommendation thresholds (consistent with portfolio analysis categories)
+    def _get_rec(score: float) -> str:
+        if score >= 60:
+            return "PARTICIPAR"
+        elif score >= 30:
+            return "AVALIAR"
+        else:
+            return "NAO_RECOMENDADO"
+
+    original_rec = _get_rec(original_total)
+    perturbed_scores: list[float] = []
+    sensitive_dim = None
+
+    for dim_key in dim_map:
+        w_orig = weights.get(dim_key, 0.2)
+        if w_orig <= 0:
+            continue
+
+        for delta in [0.10, -0.10]:
+            # Perturbed weight for this dimension
+            w_new = w_orig * (1 + delta)
+            # Sum of other original weights
+            other_sum = sum(weights.get(k, 0) for k in dim_map if k != dim_key)
+            if other_sum <= 0:
+                continue
+            # Redistribution factor for other weights (so total still sums to 1.0)
+            redistrib = (1.0 - w_new) / other_sum
+
+            # Recompute total with perturbed weights
+            total_perturbed = 0.0
+            for k, score_val in dim_map.items():
+                if k == dim_key:
+                    total_perturbed += score_val * w_new
+                else:
+                    total_perturbed += score_val * (weights.get(k, 0.2) * redistrib)
+
+            # Apply threshold gates (same as original)
+            threshold = rs.get("threshold_applied")
+            if threshold:
+                if "prazo" in threshold:
+                    total_perturbed = min(total_perturbed, 20)
+                if "financeiro" in threshold:
+                    total_perturbed = min(total_perturbed, 25)
+                if "habilitacao" in threshold:
+                    total_perturbed = min(total_perturbed, 30)
+
+            total_perturbed = round(total_perturbed)
+            perturbed_scores.append(total_perturbed)
+
+            # Check if recommendation changes
+            if _get_rec(total_perturbed) != original_rec and sensitive_dim is None:
+                dim_labels = {
+                    "hab": "habilitação",
+                    "fin": "financeiro",
+                    "geo": "geográfico",
+                    "prazo": "prazo",
+                    "comp": "competitivo",
+                }
+                sensitive_dim = dim_labels.get(dim_key, dim_key)
+
+    stability = "FRAGIL" if sensitive_dim else "ROBUSTA"
+    score_range = [
+        min(perturbed_scores) if perturbed_scores else original_total,
+        max(perturbed_scores) if perturbed_scores else original_total,
+    ]
+
+    return {
+        "stability": stability,
+        "sensitive_to": sensitive_dim,
+        "original_score": original_total,
+        "score_range": score_range,
+        "_source": _source_tag("CALCULATED"),
+    }
+
+
+def identify_triggers(edital: dict) -> list[dict]:
+    """Generate actionable trigger points for monitoring an edital.
+
+    Based on edital characteristics, generates 1-3 triggers that
+    represent conditions under which the opportunity assessment
+    should be revisited.
+    """
+    triggers: list[dict] = []
+
+    rs = edital.get("risk_score", {})
+    wp = edital.get("win_probability", {})
+    dias = edital.get("dias_restantes")
+    n_suppliers = wp.get("n_unique_suppliers", 0)
+    category = edital.get("strategic_category", "")
+    qual_gap = edital.get("qualification_gap", {})
+    ci = edital.get("competitive_intel", [])
+
+    # Trigger 1: Esclarecimento ou errata (applicable when there's time)
+    if dias is not None and dias > 10:
+        triggers.append({
+            "condition": "Se publicado esclarecimento ou errata",
+            "action": "Reavaliar prazos e requisitos",
+            "impact": "Prazo pode ser estendido",
+        })
+
+    # Trigger 2: Low competition day-of
+    if n_suppliers > 5:
+        triggers.append({
+            "condition": "Se menos de 3 propostas registradas no dia",
+            "action": "Reavaliar — probabilidade sobe significativamente",
+            "impact": "Chance pode triplicar",
+        })
+
+    # Trigger 3: Qualification gap can be addressed
+    gaps = qual_gap.get("operational_gaps", []) if isinstance(qual_gap, dict) else []
+    has_addressable_gap = any(g.get("addressable") for g in gaps if isinstance(g, dict))
+    if category in ("AVALIAR COM CAUTELA", "INVESTIMENTO", "OPORTUNIDADE") and has_addressable_gap:
+        triggers.append({
+            "condition": "Se a empresa obtiver atestado técnico complementar",
+            "action": "Reclassificar para PARTICIPAR",
+            "impact": "Score de habilitação sobe ~20 pontos",
+        })
+
+    # Trigger 4: Low financial score
+    fin_score = rs.get("financeiro", 50) if isinstance(rs, dict) else 50
+    if fin_score < 40:
+        triggers.append({
+            "condition": "Se o órgão publicar valor estimado revisado para baixo",
+            "action": "Reavaliar viabilidade financeira",
+            "impact": "Pode tornar-se viável",
+        })
+
+    # Trigger 5: Incumbency disruption
+    has_rescisoes = False
+    for c in (ci if isinstance(ci, list) else []):
+        sit = (c.get("situacao") or c.get("status") or "").lower()
+        if any(kw in sit for kw in ["rescisão", "rescisao", "cancelad", "anulad"]):
+            has_rescisoes = True
+            break
+    if has_rescisoes:
+        triggers.append({
+            "condition": "Se incumbente perder contrato vigente (rescisão)",
+            "action": "Oportunidade de substituição",
+            "impact": "Campo limpo para novos fornecedores",
+        })
+
+    # Sort by actionability (most actionable first) and limit to 3
+    priority_order = {
+        "Se a empresa obtiver atestado técnico complementar": 1,
+        "Se menos de 3 propostas registradas no dia": 2,
+        "Se incumbente perder contrato vigente (rescisão)": 3,
+        "Se o órgão publicar valor estimado revisado para baixo": 4,
+        "Se publicado esclarecimento ou errata": 5,
+    }
+    triggers.sort(key=lambda t: priority_order.get(t["condition"], 99))
+    return triggers[:3]
+
+
+def enrich_scenarios_and_triggers(
+    editais: list[dict],
+    sector_key: str,
+    skip_scenarios: bool = False,
+) -> None:
+    """Enrich each edital with scenarios, sensitivity analysis, and triggers.
+
+    Must be called AFTER risk_score, win_probability, roi_potential, and
+    strategic_category are all set on each edital.
+    Mutates editais in place.
+    """
+    if skip_scenarios:
+        return
+
+    n = len(editais)
+    if n == 0:
+        return
+
+    print(f"\n  [SCENARIOS] Calculando cenários e sensibilidade para {n} editais...")
+
+    n_fragil = 0
+    n_triggers = 0
+    for ed in editais:
+        ed["scenarios"] = calculate_scenarios(ed, sector_key)
+        ed["sensitivity"] = sensitivity_analysis(ed)
+        ed["triggers"] = identify_triggers(ed)
+
+        if ed["sensitivity"].get("stability") == "FRAGIL":
+            n_fragil += 1
+        n_triggers += len(ed["triggers"])
+
+    print(f"  [SCENARIOS] Concluído: {n_fragil}/{n} análises frágeis, {n_triggers} triggers gerados")
+
+
+# ============================================================
 # MAIN DETERMINISTIC CALCULATION CHAIN
 # ============================================================
 
@@ -4115,12 +4701,15 @@ def compute_all_deterministic(
     sicaf: dict,
     sector_key: str,
     sector_keywords: list[str] | None = None,
+    skip_portfolio_optimization: bool = False,
+    skip_scenarios: bool = False,
 ) -> dict:
     """Compute all deterministic intelligence for editais. Mutates in place.
 
     Chain: risk_score → win_probability → roi_potential → chronogram
            + object_compatibility, habilitacao, competitive_analysis, risk_analysis
            + E4 qualification gaps, E6 organ risk, E8 maturity
+           + Track C: scenarios, sensitivity, triggers
     Portfolio analysis + E7 regional clusters run after per-edital loop.
     Returns dict with portfolio, maturity, dispute_stats, regional_clusters.
     """
@@ -4280,6 +4869,31 @@ def compute_all_deterministic(
     # --- Portfolio analysis (cross-edital, sets ed["strategic_category"]) ---
     portfolio = compute_portfolio_analysis(editais, empresa, sector_key)
 
+    # --- Portfolio optimization (capacity → correlation → optimal set) ---
+    if not skip_portfolio_optimization:
+        print("  [PORTFOLIO] Otimizando portfólio de participações...")
+        capacity = estimate_operational_capacity(empresa, maturity)
+        print(f"    Capacidade: {capacity['max_simultaneous_bids']} simultâneas, "
+              f"valor máx: {_fmt_brl_portfolio(capacity['max_portfolio_value'])}")
+
+        correlation = calculate_portfolio_correlation(editais)
+        print(f"    Diversificação: {correlation['diversification_score']:.2f} "
+              f"({len(correlation['correlated_groups'])} grupos correlacionados, "
+              f"{correlation['n_independent']} independentes)")
+
+        part_cost = portfolio.get("participation_cost_per_edital", 3000.0)
+        optimal = optimize_portfolio(editais, capacity, correlation, part_cost)
+        n_optimal = len(optimal.get("optimal_set", []))
+        print(f"    Set ótimo: {n_optimal} editais, "
+              f"ROI esperado: {_fmt_brl_portfolio(optimal['total_expected_roi'])}, "
+              f"utilização: {optimal['capacity_utilization_pct']:.0f}%")
+        if optimal.get("capacity_overflow_warning"):
+            print(f"    ⚠ {optimal['capacity_overflow_warning']}")
+
+        portfolio["capacity"] = capacity
+        portfolio["correlation"] = correlation
+        portfolio["optimal_set"] = optimal
+
     # --- E5: Historical dispute stats (aggregate) ---
     dispute_stats = compute_historical_dispute_stats(all_competitive_contracts)
 
@@ -4289,6 +4903,9 @@ def compute_all_deterministic(
         print(f"  Clusters regionais: {len(regional_clusters['clusters'])} identificados")
         for cl in regional_clusters["clusters"]:
             print(f"    → {cl['center_municipio']}/{cl['center_uf']}: {cl['n_editais']} editais, raio {cl['radius_km']}km")
+
+    # --- Track C: Scenarios, sensitivity analysis, and triggers ---
+    enrich_scenarios_and_triggers(editais, sector_key, skip_scenarios=skip_scenarios)
 
     # Summary
     scores = [ed["risk_score"]["total"] for ed in editais]
@@ -4313,6 +4930,356 @@ def compute_all_deterministic(
         "dispute_stats": dispute_stats,
         "regional_clusters": regional_clusters,
     }
+
+
+# ============================================================
+# STRATEGIC MARKET THESIS (Track A — Big Four Intelligence)
+# ============================================================
+
+def collect_market_trend(
+    api: ApiClient,
+    keywords: list[str],
+    ufs: list[str],
+    sector_name: str,
+) -> dict:
+    """Query PNCP for edital volume in 3 time windows to detect market trend.
+
+    Uses the company's top 3 UFs and 3-5 representative keywords to measure
+    whether the sector is expanding, stable, or contracting.
+
+    Returns: {volume_6m, volume_12m, volume_24m, valor_total_6m, ..., growth_rate_pct, trend}
+    """
+    print("\n[THESIS] Coletando tendência de mercado (PNCP volume 6m/12m/24m)")
+
+    # Select representative keywords: top 3-5 (most specific first)
+    rep_keywords = keywords[:5] if len(keywords) >= 5 else keywords[:max(1, len(keywords))]
+    # Select top 3 UFs
+    rep_ufs = ufs[:3] if len(ufs) >= 3 else ufs
+
+    today = _today()
+    windows = {
+        "6m":  (_date_compact(today - timedelta(days=180)), _date_compact(today)),
+        "12m": (_date_compact(today - timedelta(days=365)), _date_compact(today)),
+        "24m": (_date_compact(today - timedelta(days=730)), _date_compact(today)),
+    }
+
+    result: dict[str, Any] = {}
+    errors = 0
+
+    for label, (dt_ini, dt_fin) in windows.items():
+        vol = 0
+        val_total = 0.0
+
+        for kw in rep_keywords:
+            for mod_code in [4, 5]:  # Concorrência + Pregão Eletrônico (highest volume)
+                params: dict[str, Any] = {
+                    "dataInicial": dt_ini,
+                    "dataFinal": dt_fin,
+                    "codigoModalidadeContratacao": mod_code,
+                    "pagina": 1,
+                    "tamanhoPagina": PNCP_MAX_PAGE_SIZE,
+                }
+
+                data, status = api.get(
+                    f"{PNCP_BASE}/contratacoes/publicacao",
+                    params=params,
+                    label=f"PNCP trend {label} kw={kw[:15]} mod={mod_code}",
+                )
+
+                if status != "API" or not data:
+                    errors += 1
+                    continue
+
+                items = data if isinstance(data, list) else data.get("data", data.get("resultado", []))
+                if not isinstance(items, list):
+                    continue
+
+                # Filter by UF + keyword presence in objeto
+                kw_lower = kw.lower()
+                for item in items:
+                    unidade = item.get("unidadeOrgao") or {}
+                    uf_item = (unidade.get("ufSigla") or "").upper()
+                    if rep_ufs and uf_item not in rep_ufs:
+                        continue
+                    objeto = (item.get("objetoCompra") or "").lower()
+                    if kw_lower not in objeto:
+                        continue
+                    vol += 1
+                    val_total += _safe_float(item.get("valorTotalEstimado"))
+
+                time.sleep(0.3)
+
+        result[f"volume_{label}"] = vol
+        result[f"valor_total_{label}"] = round(val_total, 2)
+
+    # Calculate growth rate: annualized 6m vs annualized 24m
+    vol_6m = result.get("volume_6m", 0)
+    vol_24m = result.get("volume_24m", 0)
+    vol_6m_ann = vol_6m * 2  # annualize 6-month volume
+
+    if vol_24m > 0:
+        vol_24m_ann = vol_24m / 2  # annualize 24-month volume
+        growth_rate = (vol_6m_ann - vol_24m_ann) / vol_24m_ann
+    elif vol_6m > 0:
+        growth_rate = 1.0  # New market (no 24m data but has 6m)
+    else:
+        growth_rate = 0.0
+
+    result["growth_rate_pct"] = round(growth_rate * 100, 1)
+
+    # Classify trend
+    if growth_rate > 0.15:
+        trend = "EXPANSAO"
+    elif growth_rate < -0.15:
+        trend = "CONTRACAO"
+    else:
+        trend = "ESTAVEL"
+
+    result["trend"] = trend
+    result["sector_name"] = sector_name
+    result["keywords_used"] = rep_keywords
+    result["ufs_used"] = rep_ufs
+
+    status_tag = "API" if errors == 0 else ("API_PARTIAL" if (vol_6m + vol_24m) > 0 else "API_FAILED")
+    result["_source"] = _source_tag(
+        status_tag,
+        f"6m={vol_6m}, 12m={result.get('volume_12m', 0)}, 24m={vol_24m}, trend={trend}, growth={result['growth_rate_pct']}%",
+    )
+
+    growth_br = f"{result['growth_rate_pct']:.1f}".replace(".", ",")
+    print(f"  Volumes: 6m={vol_6m}, 12m={result.get('volume_12m', 0)}, 24m={vol_24m}")
+    print(f"  Crescimento anualizado: {growth_br}% → {trend}")
+    return result
+
+
+def collect_price_benchmarks(editais: list[dict]) -> dict:
+    """Analyze price benchmarks from competitive_intel already collected per edital.
+
+    For each edital that has competitive_intel with contracts: calculate avg award price
+    and compare against valor_estimado.
+
+    Returns: {avg_discount_pct, editais_with_benchmark, price_insights}
+    """
+    print("\n[THESIS] Calculando benchmarks de preço (editais vs contratos históricos do órgão)")
+
+    insights: list[dict] = []
+    all_discounts: list[float] = []
+
+    for idx, ed in enumerate(editais):
+        valor_est = _safe_float(ed.get("valor_estimado"))
+        if valor_est <= 0:
+            continue
+
+        contracts = ed.get("competitive_intel", [])
+        if not contracts:
+            continue
+
+        # Calculate average award price from competitive intel contracts
+        valores_award = [_safe_float(c.get("valor")) for c in contracts if _safe_float(c.get("valor")) > 0]
+        if not valores_award:
+            continue
+
+        avg_award = sum(valores_award) / len(valores_award)
+        if avg_award <= 0:
+            continue
+
+        discount_pct = ((valor_est - avg_award) / valor_est) * 100
+
+        # Interpretation
+        if discount_pct > 20:
+            interpretation = "Margem ampla para lance agressivo"
+        elif discount_pct >= 10:
+            interpretation = "Desconto moderado esperado"
+        else:
+            interpretation = "Margens comprimidas"
+
+        insights.append({
+            "edital_idx": idx,
+            "objeto": (ed.get("objeto") or "")[:80],
+            "valor_estimado": valor_est,
+            "avg_award_price": round(avg_award, 2),
+            "discount_pct": round(discount_pct, 1),
+            "n_contracts_base": len(valores_award),
+            "interpretation": interpretation,
+        })
+        all_discounts.append(discount_pct)
+
+    avg_discount = round(sum(all_discounts) / len(all_discounts), 1) if all_discounts else 0.0
+
+    result = {
+        "avg_discount_pct": avg_discount,
+        "editais_with_benchmark": len(insights),
+        "price_insights": insights,
+        "_source": _source_tag(
+            "CALCULATED" if insights else "UNAVAILABLE",
+            f"{len(insights)} editais com benchmark de preço, desconto médio {f'{avg_discount:.1f}'.replace('.', ',')}%",
+        ),
+    }
+
+    avg_br = f"{avg_discount:.1f}".replace(".", ",")
+    print(f"  Editais com benchmark: {len(insights)}/{len(editais)}")
+    print(f"  Desconto médio estimado: {avg_br}%")
+    return result
+
+
+def calculate_market_hhi(dispute_stats: dict) -> dict:
+    """Calculate Herfindahl-Hirschman Index from dispute_stats.recurring_suppliers.
+
+    HHI = sum(share_i^2) for all suppliers. Measures market concentration.
+
+    Returns: {hhi, classification, n_suppliers, top_supplier_share}
+    """
+    print("\n[THESIS] Calculando HHI (concentração de mercado)")
+
+    recurring = dispute_stats.get("recurring_suppliers", [])
+    total_analyzed = dispute_stats.get("total_contracts_analyzed", 0)
+
+    if not recurring or total_analyzed == 0:
+        result = {
+            "hhi": 0.0,
+            "classification": "INDETERMINADO",
+            "n_suppliers": 0,
+            "top_supplier_share": 0.0,
+            "_source": _source_tag("UNAVAILABLE", "Sem dados de fornecedores recorrentes para calcular HHI"),
+        }
+        print("  Dados insuficientes para cálculo de HHI")
+        return result
+
+    # Calculate HHI from market shares
+    shares = [s.get("market_share", 0) for s in recurring]
+    hhi = sum(s ** 2 for s in shares)
+
+    # The shares from recurring_suppliers may not sum to 1.0 (only suppliers with 3+ contracts).
+    # Remaining market share is distributed across small players, which adds minimal HHI.
+    total_share_captured = sum(shares)
+    if total_share_captured < 1.0:
+        # Remaining share spread across many small players — negligible HHI contribution
+        pass
+
+    hhi = round(hhi, 4)
+    top_share = max(shares) if shares else 0.0
+
+    # Classification
+    if hhi < 0.15:
+        classification = "COMPETITIVO"
+    elif hhi <= 0.25:
+        classification = "MODERADO"
+    else:
+        classification = "CONCENTRADO"
+
+    result = {
+        "hhi": hhi,
+        "classification": classification,
+        "n_suppliers": len(recurring),
+        "top_supplier_share": round(top_share, 3),
+        "_source": _source_tag("CALCULATED", f"HHI={hhi}, {len(recurring)} fornecedores recorrentes"),
+    }
+
+    hhi_br = f"{hhi:.4f}".replace(".", ",")
+    top_br = f"{top_share * 100:.1f}".replace(".", ",")
+    print(f"  HHI: {hhi_br} → {classification}")
+    print(f"  Fornecedores recorrentes: {len(recurring)}, maior fatia: {top_br}%")
+    return result
+
+
+def assemble_strategic_thesis(
+    market_trend: dict,
+    price_benchmarks: dict,
+    market_hhi: dict,
+    maturity_profile: dict,
+) -> dict:
+    """Combine market signals into a deterministic strategic thesis.
+
+    Rules (no LLM):
+    - EXPANDIR: trend=EXPANSAO AND (hhi=COMPETITIVO|MODERADO) AND maturity >= INTERMEDIARIA
+    - REDUZIR: trend=CONTRACAO AND hhi=CONCENTRADO
+    - MANTER: everything else
+
+    Returns: {thesis, rationale, signals, confidence}
+    """
+    print("\n[THESIS] Montando tese estratégica")
+
+    trend = market_trend.get("trend", "ESTAVEL")
+    hhi_class = market_hhi.get("classification", "INDETERMINADO")
+    maturity = maturity_profile.get("profile", "ENTRANTE")
+    growth_pct = market_trend.get("growth_rate_pct", 0)
+    avg_discount = price_benchmarks.get("avg_discount_pct", 0)
+    hhi_val = market_hhi.get("hhi", 0)
+
+    # Deterministic rules
+    if trend == "EXPANSAO" and hhi_class in ("COMPETITIVO", "MODERADO") and maturity in ("REGIONAL", "ESTABELECIDO"):
+        thesis = "EXPANDIR"
+    elif trend == "CONTRACAO" and hhi_class == "CONCENTRADO":
+        thesis = "REDUZIR"
+    else:
+        thesis = "MANTER"
+
+    # Confidence: based on data quality
+    has_trend = market_trend.get("_source", {}).get("status") != "API_FAILED"
+    has_hhi = market_hhi.get("_source", {}).get("status") != "UNAVAILABLE"
+    has_price = price_benchmarks.get("editais_with_benchmark", 0) > 0
+
+    signals_available = sum([has_trend, has_hhi, has_price])
+    if signals_available >= 3:
+        confidence = "alta"
+    elif signals_available >= 2:
+        confidence = "media"
+    else:
+        confidence = "baixa"
+
+    # Build rationale in Portuguese with Brazilian number formatting
+    growth_br = f"{abs(growth_pct):.1f}".replace(".", ",")
+    hhi_br = f"{hhi_val:.4f}".replace(".", ",")
+    discount_br = f"{avg_discount:.1f}".replace(".", ",")
+
+    rationale_parts: list[str] = []
+    if trend == "EXPANSAO":
+        rationale_parts.append(f"Mercado em expansão (crescimento de {growth_br}% anualizado)")
+    elif trend == "CONTRACAO":
+        rationale_parts.append(f"Mercado em contração ({growth_br}% de queda anualizada)")
+    else:
+        rationale_parts.append(f"Mercado estável (variação de {growth_br}%)")
+
+    if hhi_class == "COMPETITIVO":
+        rationale_parts.append(f"ambiente competitivo (HHI {hhi_br})")
+    elif hhi_class == "MODERADO":
+        rationale_parts.append(f"concentração moderada (HHI {hhi_br})")
+    elif hhi_class == "CONCENTRADO":
+        rationale_parts.append(f"mercado concentrado (HHI {hhi_br} — poucos players dominam)")
+    else:
+        rationale_parts.append("concentração indeterminada (dados insuficientes)")
+
+    if has_price:
+        if avg_discount > 20:
+            rationale_parts.append(f"desconto médio de {discount_br}% indica margens saudáveis para competir")
+        elif avg_discount >= 10:
+            rationale_parts.append(f"desconto médio de {discount_br}% sugere competição moderada de preço")
+        else:
+            rationale_parts.append(f"desconto médio de apenas {discount_br}% — margens comprimidas")
+
+    rationale_parts.append(f"perfil de maturidade {maturity.lower()}")
+
+    rationale = ". ".join(rationale_parts) + "."
+    rationale = rationale[0].upper() + rationale[1:]  # Capitalize first letter
+
+    result = {
+        "thesis": thesis,
+        "rationale": rationale,
+        "signals": {
+            "trend": trend,
+            "growth_rate_pct": growth_pct,
+            "hhi": hhi_class,
+            "hhi_value": hhi_val,
+            "avg_discount_pct": avg_discount,
+            "maturity": maturity,
+        },
+        "confidence": confidence,
+        "_source": _source_tag("CALCULATED", f"thesis={thesis}, confidence={confidence}"),
+    }
+
+    print(f"  Tese: {thesis} (confiança: {confidence})")
+    print(f"  {rationale}")
+    return result
 
 
 # ============================================================
@@ -4557,8 +5524,11 @@ Examples:
     parser.add_argument("--skip-pcp", action="store_true", help="Pular busca PCP v2")
     parser.add_argument("--skip-qd", action="store_true", help="Pular busca Querido Diário")
     parser.add_argument("--skip-competitive", action="store_true", help="Pular coleta de inteligência competitiva")
+    parser.add_argument("--skip-thesis", action="store_true", help="Pular análise de tese estratégica de mercado")
     parser.add_argument("--skip-ibge", action="store_true", help="Skip IBGE enrichment")
     parser.add_argument("--skip-brasilapi", action="store_true", help="Skip BrasilAPI query")
+    parser.add_argument("--skip-portfolio-optimization", action="store_true", help="Pular otimização de portfólio (capacity, correlation, optimal set)")
+    parser.add_argument("--skip-scenarios", action="store_true", help="Pular cálculo de cenários, sensibilidade e triggers")
     parser.add_argument("--re-enrich", help=(
         "Re-enriquecer um JSON existente sem re-coletar APIs. "
         "Recalcula: risk_score, win_probability, roi_potential, cronograma, "
@@ -4608,7 +5578,12 @@ Examples:
         print(f"  Editais: {len(editais)}")
 
         # Run all deterministic computations
-        analysis_results = compute_all_deterministic(editais, empresa, sicaf, sector_key, sector_keywords=re_keywords)
+        skip_scen = getattr(args, "skip_scenarios", False)
+        analysis_results = compute_all_deterministic(
+            editais, empresa, sicaf, sector_key,
+            sector_keywords=re_keywords,
+            skip_scenarios=skip_scen,
+        )
 
         # Store results
         data["portfolio"] = analysis_results["portfolio"]
@@ -4638,7 +5613,8 @@ Examples:
         print(f"\n✅ JSON re-enriquecido salvo em: {output_path}")
         print(f"   Campos atualizados: risk_score, win_probability, roi_potential, portfolio,")
         print(f"   maturity_profile, dispute_stats, regional_clusters, organ_risk,")
-        print(f"   qualification_gap, habilitacao_analysis, object_compatibility, risk_analysis")
+        print(f"   qualification_gap, habilitacao_analysis, object_compatibility, risk_analysis,")
+        print(f"   scenarios, sensitivity, triggers")
         sys.exit(0)
 
     if not args.cnpj:
@@ -4883,7 +5859,14 @@ Examples:
     )
 
     # ---- Deterministic Calculations (risk score, ROI, chronogram, E4-E8) ----
-    analysis_results = compute_all_deterministic(data["editais"], data["empresa"], sicaf, sector_key, sector_keywords=keywords)
+    skip_opt = getattr(args, "skip_portfolio_optimization", False)
+    skip_scen = getattr(args, "skip_scenarios", False)
+    analysis_results = compute_all_deterministic(
+        data["editais"], data["empresa"], sicaf, sector_key,
+        sector_keywords=keywords,
+        skip_portfolio_optimization=skip_opt,
+        skip_scenarios=skip_scen,
+    )
 
     # Store cross-edital analysis at top level
     data["portfolio"] = analysis_results["portfolio"]
@@ -4894,6 +5877,36 @@ Examples:
     # Store activity clusters and keyword source metadata
     data["activity_clusters"] = contract_clusters if contract_clusters else []
     data["_keywords_source"] = "historico" if contract_clusters else "cnae_fallback"
+
+    # ---- Strategic Market Thesis ----
+    if not args.skip_thesis:
+        print(f"\n{'='*60}")
+        print("[THESIS] Analisando posicionamento estratégico...")
+
+        # 1. Market trend (PNCP volume analysis)
+        thesis_market_trend = collect_market_trend(api, keywords, ufs, setor)
+
+        # 2. Price benchmarks (from competitive_intel already on editais)
+        thesis_price_benchmarks = collect_price_benchmarks(data["editais"])
+
+        # 3. Market HHI (from dispute_stats)
+        thesis_market_hhi = calculate_market_hhi(data["dispute_stats"])
+
+        # 4. Assemble thesis
+        thesis = assemble_strategic_thesis(
+            market_trend=thesis_market_trend,
+            price_benchmarks=thesis_price_benchmarks,
+            market_hhi=thesis_market_hhi,
+            maturity_profile=data["maturity_profile"],
+        )
+
+        data["strategic_thesis"] = thesis
+
+        # Add thesis sub-sources to metadata
+        data["_metadata"]["sources"]["market_trend"] = thesis_market_trend.get("_source", {})
+        data["_metadata"]["sources"]["price_benchmarks"] = thesis_price_benchmarks.get("_source", {})
+        data["_metadata"]["sources"]["market_hhi"] = thesis_market_hhi.get("_source", {})
+        data["_metadata"]["sources"]["strategic_thesis"] = thesis.get("_source", {})
 
     # ---- E3: Coverage Diagnostic ----
     print("\n📊 Diagnóstico de cobertura")

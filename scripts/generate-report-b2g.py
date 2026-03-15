@@ -1931,6 +1931,141 @@ def _build_executive_summary(data: dict, styles: dict, sec: dict | None = None) 
     return el
 
 
+def _build_strategic_positioning(data: dict, styles: dict, sec: dict | None = None) -> list:
+    """Posicionamento Estrategico — thesis box + 3-signal summary table.
+
+    Renders strategic_thesis data: EXPANDIR/MANTER/REDUZIR thesis with
+    trend, concentration (HHI), and price signals.
+    """
+    thesis_data = data.get("strategic_thesis")
+    if not thesis_data:
+        return []
+
+    thesis = thesis_data.get("thesis", "")
+    rationale = _s(thesis_data.get("rationale", ""))
+    confidence = thesis_data.get("confidence", "")
+    signals = thesis_data.get("signals", {})
+
+    if not thesis:
+        return []
+
+    el: list = []
+    num = sec["next"]() if sec else 2
+    el.extend(_section_heading(f"{num}. Posicionamento Estratégico", styles))
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+
+    # Thesis box — color-coded single-row table with left border accent
+    thesis_colors = {
+        "EXPANDIR": (colors.HexColor("#E8F5E9"), SIGNAL_GREEN),
+        "MANTER": (colors.HexColor("#FFF8E1"), SIGNAL_AMBER),
+        "REDUZIR": (colors.HexColor("#FFEBEE"), SIGNAL_RED),
+    }
+    bg_color, border_color = thesis_colors.get(thesis, (BG_SUBTLE, INK))
+
+    confidence_labels = {"alta": "Alta", "media": "Média", "baixa": "Baixa"}
+    conf_text = confidence_labels.get(confidence, "")
+    conf_suffix = f"  (confiança: {conf_text})" if conf_text else ""
+
+    thesis_cell = Paragraph(
+        f"<font color='{border_color.hexval()}'><b>{thesis}</b></font>"
+        f"<font size='8' color='{TEXT_SECONDARY.hexval()}'>{conf_suffix}</font>"
+        f"<br/><font size='9' color='{TEXT_COLOR.hexval()}'>{rationale}</font>",
+        ParagraphStyle(
+            "thesis_cell", parent=styles["body"],
+            fontName="Times-Roman", fontSize=10, leading=14,
+            spaceBefore=0, spaceAfter=0,
+        ),
+    )
+    thesis_t = Table([[thesis_cell]], colWidths=[avail])
+    thesis_t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (0, 0), bg_color),
+        ("LINEBEFORE", (0, 0), (0, 0), 3, border_color),
+        ("TOPPADDING", (0, 0), (0, 0), 6),
+        ("BOTTOMPADDING", (0, 0), (0, 0), 6),
+        ("LEFTPADDING", (0, 0), (0, 0), 10),
+        ("RIGHTPADDING", (0, 0), (0, 0), 8),
+    ]))
+    el.append(thesis_t)
+    el.append(Spacer(1, 4 * mm))
+
+    # 3-column signal summary table
+    trend = signals.get("trend", {})
+    hhi = signals.get("hhi", {})
+    price = signals.get("price", {})
+
+    if trend or hhi or price:
+        # Row 1: labels
+        h_trend = Paragraph("<b>Tendência de Volume</b>", styles["cell_header_center"])
+        h_hhi = Paragraph("<b>Concentração</b>", styles["cell_header_center"])
+        h_price = Paragraph("<b>Preço vs Estimado</b>", styles["cell_header_center"])
+
+        # Row 2: values
+        growth = trend.get("growth_rate_pct", 0)
+        growth_sign = "+" if growth > 0 else ""
+        growth_text = f"{growth_sign}{_dec(growth)}%"
+        v_trend = Paragraph(f"<b>{growth_text}</b>", styles["cell_center"])
+
+        hhi_class = _s(hhi.get("classification", "N/I"))
+        hhi_labels = {
+            "COMPETITIVO": "Competitivo",
+            "MODERADO": "Moderado",
+            "CONCENTRADO": "Concentrado",
+        }
+        v_hhi = Paragraph(
+            f"<b>{hhi_labels.get(hhi_class.upper(), hhi_class)}</b>",
+            styles["cell_center"],
+        )
+
+        discount = price.get("avg_discount_pct", 0)
+        discount_text = f"{_dec(discount)}%" if discount else "N/I"
+        v_price = Paragraph(f"<b>{discount_text}</b>", styles["cell_center"])
+
+        # Row 3: interpretation
+        trend_label = trend.get("trend", "")
+        trend_interp = {
+            "EXPANSAO": "Mercado em expansão",
+            "ESTAVEL": "Volume estável",
+            "CONTRACAO": "Volume em contração",
+        }
+        i_trend = Paragraph(
+            trend_interp.get(trend_label, ""),
+            ParagraphStyle("i_trend", parent=styles["cell_center"],
+                           fontName="Helvetica", fontSize=7, textColor=TEXT_MUTED),
+        )
+
+        n_sup = hhi.get("n_suppliers", 0)
+        i_hhi_text = f"{n_sup} fornecedores" if n_sup else ""
+        hhi_val = hhi.get("hhi", 0)
+        if hhi_val:
+            i_hhi_text += f" (HHI {_dec(hhi_val, 2)})" if i_hhi_text else f"HHI {_dec(hhi_val, 2)}"
+        i_hhi = Paragraph(
+            i_hhi_text,
+            ParagraphStyle("i_hhi", parent=styles["cell_center"],
+                           fontName="Helvetica", fontSize=7, textColor=TEXT_MUTED),
+        )
+
+        n_bench = price.get("editais_with_benchmark", 0)
+        i_price_text = f"Base: {n_bench} editais" if n_bench else ""
+        i_price = Paragraph(
+            i_price_text,
+            ParagraphStyle("i_price", parent=styles["cell_center"],
+                           fontName="Helvetica", fontSize=7, textColor=TEXT_MUTED),
+        )
+
+        col_w = avail / 3
+        rows = [
+            [h_trend, h_hhi, h_price],
+            [v_trend, v_hhi, v_price],
+            [i_trend, i_hhi, i_price],
+        ]
+        t = _three_rule_table(rows, [col_w, col_w, col_w])
+        el.append(t)
+
+    el.append(Spacer(1, 6 * mm))
+    return el
+
+
 def _build_overview_table(editais_list: list, styles: dict, start_idx: int = 1) -> list:
     avail = PAGE_WIDTH - 2 * MARGIN
     col_widths = [
@@ -2306,6 +2441,132 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
             ]))
             el.append(box_t)
             el.append(Spacer(1, 3 * mm))
+
+        # Scenarios mini-table + sensitivity + triggers
+        scenarios = ed.get("scenarios", {})
+        if scenarios:
+            sc_base = scenarios.get("base", {})
+            sc_opt = scenarios.get("optimistic", {})
+            sc_pess = scenarios.get("pessimistic", {})
+
+            def _roi_range(sc: dict) -> str:
+                r_min = sc.get("roi_min")
+                r_max = sc.get("roi_max")
+                if r_min is None or r_max is None:
+                    return "—"
+                return f"{_currency_short(r_min)} a {_currency_short(r_max)}"
+
+            def _prob_fmt(sc: dict) -> str:
+                p = sc.get("prob")
+                return _pct(p) if p is not None else "—"
+
+            sc_header = [
+                Paragraph("<b>Cenários</b>", styles["cell_header"]),
+                Paragraph("<b>Pessimista</b>", styles["cell_header_center"]),
+                Paragraph("<b>Base</b>", styles["cell_header_center"]),
+                Paragraph("<b>Otimista</b>", styles["cell_header_center"]),
+            ]
+            sc_rows = [sc_header]
+            sc_rows.append([
+                Paragraph("Probabilidade", styles["cell"]),
+                Paragraph(_prob_fmt(sc_pess), styles["cell_center"]),
+                Paragraph(_prob_fmt(sc_base), styles["cell_center"]),
+                Paragraph(_prob_fmt(sc_opt), styles["cell_center"]),
+            ])
+            sc_rows.append([
+                Paragraph("Retorno (R$)", styles["cell"]),
+                Paragraph(
+                    _roi_range(sc_pess),
+                    ParagraphStyle(f"sc_p_{idx}", parent=styles["cell_center"],
+                                   textColor=SIGNAL_RED, fontSize=7),
+                ),
+                Paragraph(_roi_range(sc_base), styles["cell_center"]),
+                Paragraph(
+                    _roi_range(sc_opt),
+                    ParagraphStyle(f"sc_o_{idx}", parent=styles["cell_center"],
+                                   textColor=SIGNAL_GREEN, fontSize=7),
+                ),
+            ])
+            # Triggers row — only if at least one scenario has a trigger
+            pess_trigger = _s(sc_pess.get("trigger", ""))
+            opt_trigger = _s(sc_opt.get("trigger", ""))
+            if pess_trigger or opt_trigger:
+                trigger_style = ParagraphStyle(
+                    f"sc_t_{idx}", parent=styles["cell_center"],
+                    fontName="Helvetica", fontSize=6.5, textColor=TEXT_MUTED,
+                )
+                sc_rows.append([
+                    Paragraph("Gatilho", styles["cell"]),
+                    Paragraph(pess_trigger or "—", trigger_style),
+                    Paragraph("—", trigger_style),
+                    Paragraph(opt_trigger or "—", trigger_style),
+                ])
+
+            sc_col_w = avail * 0.85
+            sc_t = Table(
+                sc_rows,
+                colWidths=[sc_col_w * 0.22, sc_col_w * 0.26, sc_col_w * 0.26, sc_col_w * 0.26],
+            )
+            n_sc = len(sc_rows)
+            sc_t.setStyle(TableStyle([
+                ("LINEABOVE", (0, 0), (-1, 0), 0.6, RULE_HEAVY),
+                ("LINEBELOW", (0, 0), (-1, 0), 0.4, RULE_HEAVY),
+                ("LINEBELOW", (0, n_sc - 1), (-1, n_sc - 1), 0.4, RULE_COLOR),
+                *[("LINEBELOW", (0, i), (-1, i), 0.15, RULE_COLOR) for i in range(1, n_sc - 1)],
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            el.append(KeepTogether([sc_t]))
+            el.append(Spacer(1, 2 * mm))
+
+        # Sensitivity badge
+        sensitivity = ed.get("sensitivity", {})
+        if sensitivity:
+            stability = sensitivity.get("stability", "")
+            if stability == "ROBUSTA":
+                score_range = sensitivity.get("score_range", ["", ""])
+                el.append(Paragraph(
+                    f"<font color='{SIGNAL_GREEN.hexval()}'><b>ROBUSTA</b></font>"
+                    f"<font size='8' color='{TEXT_SECONDARY.hexval()}'>"
+                    f" — Score {sensitivity.get('original_score', '')} "
+                    f"(faixa {score_range[0]}–{score_range[1]})"
+                    f"</font>",
+                    styles["body_small"],
+                ))
+            elif stability == "FRAGIL":
+                sensitive_to = _s(sensitivity.get("sensitive_to", ""))
+                fragil_detail = f" (sensível a {sensitive_to})" if sensitive_to else ""
+                score_range = sensitivity.get("score_range", ["", ""])
+                el.append(Paragraph(
+                    f"<font color='{SIGNAL_AMBER.hexval()}'><b>FRÁGIL</b></font>"
+                    f"<font size='8' color='{TEXT_SECONDARY.hexval()}'>"
+                    f"{fragil_detail}"
+                    f" — Score {sensitivity.get('original_score', '')} "
+                    f"(faixa {score_range[0]}–{score_range[1]})"
+                    f"</font>",
+                    styles["body_small"],
+                ))
+            el.append(Spacer(1, 1 * mm))
+
+        # Triggers (decision triggers)
+        triggers = ed.get("triggers", [])
+        if triggers:
+            for trig in triggers[:2]:
+                condition = _s(trig.get("condition", ""))
+                action = _s(trig.get("action", ""))
+                if condition and action:
+                    el.append(Paragraph(
+                        f"<b>Se</b> {condition} → {action}",
+                        ParagraphStyle(
+                            f"trig_{idx}", parent=styles["body_small"],
+                            fontName="Helvetica", fontSize=7.5, textColor=TEXT_SECONDARY,
+                            leftIndent=5,
+                        ),
+                    ))
+            el.append(Spacer(1, 2 * mm))
 
         # Q&A section
         perguntas = ed.get("perguntas_decisor", {})
@@ -3124,6 +3385,100 @@ def _build_portfolio_section(data: dict, styles: dict, sec: dict | None = None) 
         el.append(t)
         el.append(Spacer(1, 3 * mm))
 
+    # --- Portfólio Recomendado (optimal set from portfolio analysis) ---
+    portfolio = data.get("portfolio", {})
+    optimal_set = portfolio.get("optimal_set", [])
+    capacity = portfolio.get("capacity", {})
+    correlation = portfolio.get("correlation", {})
+
+    if optimal_set:
+        el.append(Spacer(1, 4 * mm))
+        el.append(Paragraph("Portfólio Recomendado", styles["h3"]))
+
+        # Capacity + diversification note
+        cap_parts = []
+        max_bids = capacity.get("max_simultaneous_bids")
+        if max_bids:
+            cap_parts.append(f"Capacidade estimada: {max_bids} participações simultâneas")
+        div_score = correlation.get("diversification_score")
+        if div_score is not None:
+            cap_parts.append(f"Diversificação: {_dec(div_score)}/1,0")
+        if cap_parts:
+            el.append(Paragraph(
+                " &nbsp;|&nbsp; ".join(cap_parts),
+                ParagraphStyle(
+                    "cap_note", parent=styles["body_small"],
+                    fontName="Helvetica", fontSize=8, textColor=TEXT_SECONDARY,
+                    spaceAfter=2 * mm,
+                ),
+            ))
+
+        # Table
+        opt_header = [
+            Paragraph("<b>Prio.</b>", styles["cell_header_center"]),
+            Paragraph("<b>Edital</b>", styles["cell_header"]),
+            Paragraph("<b>Valor</b>", styles["cell_header_right"]),
+            Paragraph("<b>Custo</b>", styles["cell_header_right"]),
+            Paragraph("<b>Retorno</b>", styles["cell_header_right"]),
+            Paragraph("<b>Acumulado</b>", styles["cell_header_right"]),
+        ]
+        opt_rows = [opt_header]
+        for item in optimal_set:
+            prio = item.get("priority", "")
+            obj_resumo = _trunc(_s(item.get("objeto_resumo", "")), 50)
+            valor = item.get("valor")
+            custo = item.get("custo")
+            roi_exp = item.get("roi_expected", 0)
+            roi_cum = item.get("roi_cumulative", 0)
+
+            roi_color = SIGNAL_GREEN if roi_exp >= 0 else SIGNAL_RED
+            cum_color = SIGNAL_GREEN if roi_cum >= 0 else SIGNAL_RED
+
+            opt_rows.append([
+                Paragraph(f"<b>{prio}</b>", styles["cell_center"]),
+                Paragraph(obj_resumo, styles["cell"]),
+                Paragraph(_currency_short(valor), styles["cell_right"]),
+                Paragraph(_currency_short(custo), styles["cell_right"]),
+                Paragraph(
+                    f"<b>{_currency_short(roi_exp)}</b>",
+                    ParagraphStyle(f"roi_{prio}", parent=styles["cell_right"],
+                                   fontName="Helvetica-Bold", textColor=roi_color),
+                ),
+                Paragraph(
+                    f"<b>{_currency_short(roi_cum)}</b>",
+                    ParagraphStyle(f"cum_{prio}", parent=styles["cell_right"],
+                                   fontName="Helvetica-Bold", textColor=cum_color),
+                ),
+            ])
+
+        t = _three_rule_table(
+            opt_rows,
+            [avail * 0.07, avail * 0.33, avail * 0.14, avail * 0.12, avail * 0.17, avail * 0.17],
+        )
+        el.append(t)
+
+        # Correlation note
+        corr_note = item.get("correlation_note") if optimal_set else None
+        cap_warning = capacity.get("capacity_overflow_warning")
+        if cap_warning:
+            el.append(Paragraph(
+                f"<i>{_s(cap_warning)}</i>",
+                ParagraphStyle("cap_warn", parent=styles["caption"],
+                               textColor=SIGNAL_AMBER, fontSize=7.5),
+            ))
+        el.append(Spacer(1, 3 * mm))
+
+    elif portfolio and not optimal_set and (capacity or correlation):
+        # Portfolio data exists but no optimal set
+        el.append(Spacer(1, 4 * mm))
+        el.append(Paragraph("Portfólio Recomendado", styles["h3"]))
+        el.append(Paragraph(
+            "Nenhum edital apresenta retorno esperado positivo neste ciclo. "
+            "Participação representa investimento estratégico.",
+            styles["body_small"],
+        ))
+        el.append(Spacer(1, 3 * mm))
+
     el.append(Spacer(1, 6 * mm))
     return el
 
@@ -3586,13 +3941,114 @@ def _build_annex_company(data: dict, styles: dict, sec: dict) -> list:
     return el
 
 
+def _build_methodology_content(styles: dict) -> list:
+    """Render methodology subsection for Annex C."""
+    el = []
+    el.append(Paragraph("<b>Metodologia de Análise</b>", styles["h3"]))
+
+    el.append(Paragraph(
+        "O índice de viabilidade combina cinco dimensões com pesos calibrados "
+        "para refletir os fatores mais determinantes na decisão de participação:",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 3 * mm))
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+    header = [
+        Paragraph("Dimensão", styles["cell_header"]),
+        Paragraph("Peso", styles["cell_header_center"]),
+        Paragraph("O que avalia", styles["cell_header"]),
+    ]
+    rows = [header]
+    dimensions = [
+        ("Habilitação", "30%", "Capacidade técnica, atestados, capital mínimo, certidões"),
+        ("Financeiro", "25%", "Valor do edital vs. capacidade da empresa, regime tributário"),
+        ("Geográfico", "20%", "Distância rodoviária até o local de execução"),
+        ("Prazo", "15%", "Dias restantes para preparação da proposta"),
+        ("Competitivo", "10%", "Histórico de fornecedores do órgão, concentração de mercado"),
+    ]
+    for dim, peso, desc in dimensions:
+        rows.append([
+            Paragraph(dim, styles["cell"]),
+            Paragraph(peso, styles["cell_center"]),
+            Paragraph(desc, styles["cell"]),
+        ])
+    t = _three_rule_table(rows, [avail * 0.18, avail * 0.12, avail * 0.70])
+    el.append(t)
+    el.append(Spacer(1, 5 * mm))
+
+    # ROI Formula
+    el.append(Paragraph("<b>Resultado Potencial (ROI)</b>", styles["h3"]))
+    el.append(Paragraph(
+        "O resultado potencial de cada edital é calculado pela fórmula:",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 2 * mm))
+    roi_formula = ParagraphStyle(
+        "roi_formula", parent=styles["body"],
+        fontName="Helvetica-Bold", fontSize=9, textColor=INK,
+        alignment=TA_CENTER, spaceBefore=2 * mm, spaceAfter=2 * mm,
+    )
+    el.append(Paragraph(
+        "(Valor do edital × Probabilidade de vitória × Margem líquida setorial) "
+        "− Custo estimado de participação",
+        roi_formula,
+    ))
+    el.append(Spacer(1, 3 * mm))
+
+    # Probability calibration
+    el.append(Paragraph("<b>Calibração da Probabilidade</b>", styles["h3"]))
+    el.append(Paragraph(
+        "A probabilidade de vitória é calculada com base no histórico de contratos "
+        "do órgão licitante obtido via Portal Nacional de Contratações Públicas. "
+        "O nível de confiança da estimativa varia conforme a amostra disponível:",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 2 * mm))
+    conf_header = [
+        Paragraph("Amostra", styles["cell_header"]),
+        Paragraph("Confiança", styles["cell_header"]),
+    ]
+    conf_rows = [conf_header]
+    conf_data = [
+        ("Mais de 20 contratos", "Alta"),
+        ("5 a 20 contratos", "Média"),
+        ("Menos de 5 contratos", "Baixa"),
+    ]
+    for amostra, confianca in conf_data:
+        conf_rows.append([
+            Paragraph(amostra, styles["cell"]),
+            Paragraph(confianca, styles["cell"]),
+        ])
+    t2 = _three_rule_table(conf_rows, [avail * 0.50, avail * 0.50])
+    el.append(t2)
+    el.append(Spacer(1, 5 * mm))
+
+    # Disclaimer
+    disclaimer_style = ParagraphStyle(
+        "disclaimer_meth", parent=styles["body_small"],
+        fontName="Helvetica-Oblique", fontSize=8, textColor=TEXT_MUTED,
+        alignment=TA_JUSTIFY,
+    )
+    el.append(Paragraph(
+        "Este relatório tem caráter informativo e não substitui análise jurídica do edital. "
+        "Probabilidades são estimativas baseadas em dados históricos e não representam "
+        "garantia de resultado.",
+        disclaimer_style,
+    ))
+    return el
+
+
 def _build_annex_sources(data: dict, styles: dict, sec: dict) -> list:
-    """Annex C: Data sources + gazette mentions."""
+    """Annex C: Data sources + methodology + gazette mentions."""
     el = []
     el.append(PageBreak())
     num = sec["next"]()
     el.extend(_section_heading(f"Anexo C — Fontes de Dados e Metodologia", styles))
     el.extend(_build_data_sources_content(data, styles))
+    el.append(Spacer(1, 5 * mm))
+    # Methodology subsection
+    el.extend(_build_methodology_content(styles))
     el.append(Spacer(1, 5 * mm))
     # Querido Diário — only if there are mentions
     mencoes = data.get("querido_diario", [])
@@ -3688,7 +4144,9 @@ def generate_report_b2g(data: dict) -> BytesIO:
     elements.extend(_build_sector_divergence_alert(data, styles))
     # 1. Resumo Executivo (condensed)
     elements.extend(_build_executive_summary(data, styles, sec))
-    # 2. Decisão em 30 Segundos (grouped summary table)
+    # 2. Posicionamento Estratégico (thesis + signals)
+    elements.extend(_build_strategic_positioning(data, styles, sec))
+    # 3. Decisão em 30 Segundos (grouped summary table)
     elements.extend(_build_decision_table(data, styles, sec))
 
     # === CAMADA 2: INTELIGÊNCIA ESTRATÉGICA ===
