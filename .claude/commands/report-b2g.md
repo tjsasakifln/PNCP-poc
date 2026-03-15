@@ -41,22 +41,30 @@ cd D:/pncp-poc
 python scripts/collect-report-data.py \
   --cnpj {CNPJ} \
   --dias 30 \
-  --ufs {UF_DA_EMPRESA} \
   --output docs/reports/data-{CNPJ}-{YYYY-MM-DD}.json
 ```
 
+**IMPORTANTE — NÃO passar `--ufs` manualmente.** O script deriva as UFs automaticamente do histórico de contratos da empresa. Passar UFs manualmente ignora a inteligência geográfica e pode direcionar a busca para UFs onde a empresa não opera.
+
 **O que o script coleta automaticamente:**
 - **OpenCNPJ** — Perfil completo (razão social, CNAEs, capital social, QSA, telefones)
-- **BrasilAPI** — Simples Nacional, MEI, fallback de porte (em `empresa.simples_nacional`, `empresa.mei`)
+- **BrasilAPI** — Simples Nacional, MEI, fallback de porte
 - **Portal da Transparência** — Sanções (CEIS/CNEP/CEPIM/CEAF) + histórico de contratos federais
-- **Mapeamento de setor** — CNAE → setor via `sectors_data.yaml` (keywords automáticas)
-- **PNCP** — Editais abertos em 4 modalidades (Concorrência, Pregão Eletrônico/Presencial, Inexigibilidade), filtrados por keywords do setor + UFs
-- **PNCP /contratos expandido** — Histórico com aditivos (`valor_aditivos`), situação (`situacao_contrato`), subcontratação (`tem_subcontratacao`)
-- **PCP v2** — Editais complementares com filtro client-side
-- **IBGE SIDRA** — População + PIB municipal para cada município dos editais (em `editais[].ibge.populacao`, `editais[].ibge.pib_mil_reais`, `editais[].ibge.pib_per_capita`)
+- **PNCP /contratos** — Histórico completo do fornecedor (todas as esferas) — **ANTES do mapeamento de setor**
+- **Clustering de atividade** — Agrupa os contratos históricos em categorias temáticas (saúde, alimentação, engenharia, saneantes, etc.) para determinar o que a empresa REALMENTE faz, independente do CNAE cadastral
+- **Keywords derivadas do histórico** — Busca PNCP usa keywords extraídas dos contratos reais, não apenas do CNAE. Empresas que vendem materiais hospitalares buscam editais de materiais hospitalares, não de engenharia (mesmo que o CNAE diga construção)
+- **UFs derivadas do histórico** — Top 5 UFs onde a empresa tem mais contratos + UF da sede
+- **PNCP** — Editais abertos em 4 modalidades, filtrados por keywords do histórico + UFs derivadas
+- **PCP v2** — Editais complementares
+- **IBGE SIDRA** — População + PIB municipal
 - **Querido Diário** — Menções em diários oficiais municipais
-- **Distâncias** — Geocoding (Nominatim) + rota real (OSRM) para cada edital
-- **Validação de links** — HEAD requests para verificar URLs dos editais
+- **Distâncias** — Geocoding + rota real (OSRM)
+- **Validação de links** — HEAD requests para verificar URLs
+
+**Campos críticos no JSON de saída (verificar ANTES de prosseguir):**
+- `_keywords_source`: deve ser `"historico"` (não `"cnae_fallback"`). Se for fallback, os editais podem estar no setor errado.
+- `activity_clusters`: lista de clusters de atividade com label, count, share_pct. O cluster dominante indica o SETOR REAL da empresa.
+- `empresa._sector_divergence`: se presente, o CNAE não bate com o histórico — o relatório DEVE alertar proeminentemente.
 
 **Cada dado é tagueado com `_source`:**
 ```json
@@ -85,7 +93,7 @@ python scripts/collect-report-data.py \
 - **Resultado Potencial** — Estimativa de lucro líquido caso a empresa vença, baseado no valor do edital × probabilidade de vitória × margem líquida do setor. Em `editais[].roi_potential`
 - **Cronograma Reverso** — Marcos automáticos do deadline para trás em `editais[].cronograma`
 - **Inteligência Competitiva** — Contratos históricos dos órgãos licitantes (PNCP 24 meses) em `editais[].competitive_intel`
-- **Multi-setor** — CNAE mapeado para todos os 15 setores (não apenas engenharia)
+- **Multi-setor** — Clustering de atividade identifica os segmentos reais da empresa (funciona para qualquer CNAE: construção, alimentação, saúde, informática, vestuário, etc.)
 
 **IMPORTANTE:** O script filtra automaticamente editais encerrados ANTES de gastar API calls com documentos, distâncias e inteligência competitiva. Apenas editais com prazo aberto entram no relatório.
 
@@ -367,14 +375,16 @@ O script verifica coerência semântica dos dados ANTES de gerar o relatório:
 
 3. **Teste do "E daí?"** — Para cada parágrafo: se o leitor pode responder "e daí?", o parágrafo não agrega valor. Exemplos:
 
-- ❌ "O mercado de obras públicas atravessa período de alta demanda" → E daí? Isso não me diz em qual edital participar.
-- ✅ "Bofete/SP (R$3,3M) é a melhor oportunidade: 13,5% de chance, prazo de 73 dias, consórcio permitido. Decisão até 15/04." → Ação clara.
+- ❌ "O mercado atravessa período de alta demanda" → E daí? Isso não me diz em qual edital participar.
+- ❌ "Foram encontrados 54 editais relevantes" → E daí? Quais eu priorizo?
+- ✅ "Pregão 023/2026 Hospital Municipal de Chapecó (R$340K, medicamentos hospitalares) é a melhor oportunidade: 18% de chance, prazo de 45 dias, você já forneceu para este órgão em 2025. Decisão até 15/04." → Ação clara, personalizada, honesta.
 
 4. **Teste de honestidade** — Para cada recomendação PARTICIPAR:
 
-- A empresa tem CAT/atestado para este tipo de obra? Se não confirmado → não é PARTICIPAR, é AVALIAR COM CAUTELA.
-- O ROI é positivo ou é investimento? Se investimento → dizer explicitamente "você vai gastar R$X para construir acervo, sem retorno financeiro direto".
+- A empresa tem histórico comprovado neste tipo de fornecimento/serviço? Se o histórico de contratos (`activity_clusters`) não inclui o segmento do edital → não é PARTICIPAR, é AVALIAR COM CAUTELA no máximo.
+- O ROI é positivo ou é investimento? Se investimento → dizer explicitamente "você vai gastar R$X para participar, sem retorno financeiro direto neste edital".
 - A probabilidade é realista? Se 3% → dizer "em média, você precisaria participar de ~33 licitações para vencer 1".
+- Os editais encontrados correspondem ao que a empresa realmente vende? Se `_keywords_source == "cnae_fallback"` → os editais podem estar no setor ERRADO. Verificar `activity_clusters` antes de recomendar qualquer coisa.
 
 5. **Registrar resultado** — Após a revisão adversarial, incluir no JSON:
 
@@ -382,8 +392,8 @@ O script verifica coerência semântica dos dados ANTES de gerar o relatório:
 "delivery_validation": {
     "gate_deterministic": "OK|WARNINGS|BLOCKED",
     "gate_adversarial": "PASSED|REVISED",
-    "revisions_made": ["Rebaixado São Paulo de PARTICIPAR para AVALIAR (CAT não confirmado)", ...],
-    "reader_persona": "Empresário de EPP, 10min de atenção, busca ação concreta"
+    "revisions_made": ["Rebaixado edital X de PARTICIPAR para AVALIAR (histórico não confirma competência neste segmento)", ...],
+    "reader_persona": "Dono de [PORTE] do setor [SETOR REAL do activity_clusters], 10min de atenção, busca ação concreta"
 }
 ```
 
