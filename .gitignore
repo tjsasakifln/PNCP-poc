@@ -294,6 +294,8 @@ reports/
 *.db-shm
 *.db-wal
 data/local/
+data/geocode_cache.json
+data/distance_cache.json
 *.sql
 !**/migrations/**/*.sql
 

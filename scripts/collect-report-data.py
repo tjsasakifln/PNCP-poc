@@ -68,7 +68,14 @@ QD_BASE = "https://api.queridodiario.ok.org.br/gazettes"
 OPENCNPJ_BASE = "https://api.opencnpj.org"
 PT_BASE = "https://api.portaldatransparencia.gov.br/api-de-dados"
 OSRM_BASE = "http://router.project-osrm.org/route/v1/driving"
+OSRM_TABLE_BASE = "http://router.project-osrm.org/table/v1/driving"
+OSRM_TABLE_BATCH_SIZE = 80  # Public OSRM limit ~100 coords; 80 is safe
 NOMINATIM_BASE = "https://nominatim.openstreetmap.org/search"
+
+# Persistent cache paths (relative to project root)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+GEOCODE_CACHE_FILE = str(_PROJECT_ROOT / "data" / "geocode_cache.json")
+DISTANCE_CACHE_FILE = str(_PROJECT_ROOT / "data" / "distance_cache.json")
 BRASILAPI_BASE = "https://brasilapi.com.br/api/cnpj/v1"
 IBGE_LOCALIDADES = "https://servicodados.ibge.gov.br/api/v1/localidades"
 IBGE_SIDRA = "https://apisidra.ibge.gov.br/values"
@@ -3418,21 +3425,69 @@ def collect_querido_diario(
 
 
 # ============================================================
-# DISTANCE CALCULATION (OSRM)
+# DISTANCE CALCULATION (OSRM) — with persistent cache + Table API
 # ============================================================
 
-_geocode_cache: dict[tuple[str, str], tuple[float, float] | None] = {}
+# --- Persistent JSON cache helpers ---
+
+def _load_json_cache(path: str) -> dict:
+    """Load a JSON cache file. Returns empty dict if missing/corrupt."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_json_cache(path: str, data: dict) -> None:
+    """Save data to a JSON cache file atomically."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    os.replace(tmp, path)
+
+
+# --- Geocode with persistent disk cache ---
+
+_geocode_mem: dict[tuple[str, str], tuple[float, float] | None] = {}
+_geocode_disk: dict | None = None  # lazy-loaded
+
+
+def _geocode_disk_load() -> dict:
+    global _geocode_disk
+    if _geocode_disk is None:
+        _geocode_disk = _load_json_cache(GEOCODE_CACHE_FILE)
+    return _geocode_disk
+
+
+def _geocode_disk_save() -> None:
+    if _geocode_disk is not None:
+        _save_json_cache(GEOCODE_CACHE_FILE, _geocode_disk)
 
 
 def _geocode(api: ApiClient, cidade: str, uf: str) -> tuple[float, float] | None:
-    """Geocode a city using Nominatim. Returns (lat, lon) or None."""
+    """Geocode a city. Checks: memory → disk cache → Nominatim API."""
     if not cidade or not uf:
         return None
 
     key = (cidade.strip().lower(), uf.strip().upper())
-    if key in _geocode_cache:
-        return _geocode_cache[key]
 
+    # 1. Memory cache
+    if key in _geocode_mem:
+        return _geocode_mem[key]
+
+    # 2. Disk cache
+    disk = _geocode_disk_load()
+    disk_key = f"{key[0]}|{key[1]}"
+    if disk_key in disk:
+        val = disk[disk_key]
+        result = (val[0], val[1]) if val is not None else None
+        _geocode_mem[key] = result
+        return result
+
+    # 3. Nominatim API (rate-limited: 1 req/s)
+    time.sleep(1.1)
     data, status = api.get(
         NOMINATIM_BASE,
         params={
@@ -3446,10 +3501,11 @@ def _geocode(api: ApiClient, cidade: str, uf: str) -> tuple[float, float] | None
     )
     if status == "API" and data and isinstance(data, list) and len(data) > 0:
         result = float(data[0]["lat"]), float(data[0]["lon"])
-        _geocode_cache[key] = result
+        _geocode_mem[key] = result
+        disk[disk_key] = [result[0], result[1]]
         return result
 
-    # Retry once on failure (handles 429 after ApiClient exhausts its retries)
+    # Retry once on failure
     if status == "API_FAILED":
         time.sleep(2.0)
         data, status = api.get(
@@ -3465,12 +3521,93 @@ def _geocode(api: ApiClient, cidade: str, uf: str) -> tuple[float, float] | None
         )
         if status == "API" and data and isinstance(data, list) and len(data) > 0:
             result = float(data[0]["lat"]), float(data[0]["lon"])
-            _geocode_cache[key] = result
+            _geocode_mem[key] = result
+            disk[disk_key] = [result[0], result[1]]
             return result
 
-    _geocode_cache[key] = None
+    _geocode_mem[key] = None
+    disk[disk_key] = None
     return None
 
+
+# --- OSRM Table API (batch distances) ---
+
+def _calculate_distances_table(
+    api: ApiClient,
+    origin: tuple[float, float],
+    destinations: dict[str, tuple[float, float]],
+) -> dict[str, dict]:
+    """Calculate distances from origin to all destinations using OSRM Table API.
+
+    Returns dict[destination_key, {km, duracao_horas, _source}].
+    Falls back to serial /route calls if Table API fails.
+    """
+    results: dict[str, dict] = {}
+    dest_items = list(destinations.items())
+
+    for batch_start in range(0, len(dest_items), OSRM_TABLE_BATCH_SIZE):
+        batch = dest_items[batch_start:batch_start + OSRM_TABLE_BATCH_SIZE]
+
+        # Build coords: origin (index 0) + destinations — OSRM expects lon,lat
+        parts = [f"{origin[1]},{origin[0]}"]
+        for _key, (lat, lon) in batch:
+            parts.append(f"{lon},{lat}")
+
+        coords_str = ";".join(parts)
+        data, status = api.get(
+            f"{OSRM_TABLE_BASE}/{coords_str}",
+            params={"sources": "0", "annotations": "distance,duration"},
+            label=f"OSRM Table batch ({len(batch)} destinos)",
+        )
+
+        if status == "API" and data and data.get("distances") and data.get("durations"):
+            dists_row = data["distances"][0]
+            durs_row = data["durations"][0]
+
+            for i, (dest_key, _) in enumerate(batch):
+                idx = i + 1  # index 0 is the origin itself
+                d = dists_row[idx] if idx < len(dists_row) else None
+                t = durs_row[idx] if idx < len(durs_row) else None
+                if d is not None and t is not None:
+                    results[dest_key] = {
+                        "km": round(d / 1000, 1),
+                        "duracao_horas": round(t / 3600, 1),
+                        "_source": _source_tag("CALCULATED", "OSRM Table API"),
+                    }
+                else:
+                    results[dest_key] = {
+                        "km": None,
+                        "duracao_horas": None,
+                        "_source": _source_tag("API_FAILED", "OSRM Table null route"),
+                    }
+        else:
+            # Table API failed for this batch — fall back to serial /route
+            print(f"  ⚠ OSRM Table falhou — fallback serial para {len(batch)} destinos")
+            for dest_key, (lat, lon) in batch:
+                coords = f"{origin[1]},{origin[0]};{lon},{lat}"
+                rdata, rstatus = api.get(
+                    f"{OSRM_BASE}/{coords}",
+                    params={"overview": "false"},
+                    label=f"OSRM: →{dest_key}",
+                )
+                if rstatus == "API" and rdata and rdata.get("routes"):
+                    route = rdata["routes"][0]
+                    results[dest_key] = {
+                        "km": round(route["distance"] / 1000, 1),
+                        "duracao_horas": round(route["duration"] / 3600, 1),
+                        "_source": _source_tag("CALCULATED", "OSRM route fallback"),
+                    }
+                else:
+                    results[dest_key] = {
+                        "km": None,
+                        "duracao_horas": None,
+                        "_source": _source_tag("API_FAILED", "OSRM routing falhou"),
+                    }
+
+    return results
+
+
+# --- Legacy serial function (kept for backward compat) ---
 
 def calculate_distance(
     api: ApiClient,
@@ -3479,7 +3616,7 @@ def calculate_distance(
     cidade_destino: str,
     uf_destino: str,
 ) -> dict:
-    """Calculate driving distance between two cities using OSRM."""
+    """Calculate driving distance between two cities using OSRM (serial, legacy)."""
     origin = _geocode(api, cidade_sede, uf_sede)
     if not origin:
         return {
@@ -6853,7 +6990,7 @@ Examples:
     if not args.skip_links:
         validate_pncp_links(api, all_editais)
 
-    # ---- Distance Calculation ----
+    # ---- Distance Calculation (persistent cache + OSRM Table API) ----
     distancias: dict[str, dict] = {}
     if not args.skip_distances:
         cidade_sede = empresa.get("cidade_sede", "")
@@ -6868,15 +7005,74 @@ Examples:
                     destinos.add((mun, uf))
 
             print(f"\n📍 Calculando distâncias ({len(destinos)} destinos)")
-            # Pre-cache sede geocode (avoid repeated Nominatim calls)
-            _geocode(api, cidade_sede, uf_sede)
-            sorted_destinos = sorted(destinos)
-            for i, (mun, uf) in enumerate(sorted_destinos):
-                print(f"    {i+1}/{len(sorted_destinos)}: {mun}/{uf}", end="\r")
-                dist = calculate_distance(api, cidade_sede, uf_sede, mun, uf)
-                distancias[f"{mun}|{uf}"] = dist
-                time.sleep(1.1)  # Nominatim rate limit (strictly 1 req/s + safety margin)
-            print()  # Clear the \r line
+
+            # Step 1: Load persistent distance cache
+            dist_cache = _load_json_cache(DISTANCE_CACHE_FILE)
+            origin_cache_key = f"{cidade_sede.strip().lower()}|{uf_sede.strip().upper()}"
+            cached_count = 0
+            uncached_destinos: list[tuple[str, str]] = []
+
+            for mun, uf in sorted(destinos):
+                dest_cache_key = f"{mun.strip().lower()}|{uf.strip().upper()}"
+                full_key = f"{origin_cache_key}→{dest_cache_key}"
+                if full_key in dist_cache:
+                    distancias[f"{mun}|{uf}"] = dist_cache[full_key]
+                    cached_count += 1
+                else:
+                    uncached_destinos.append((mun, uf))
+
+            if cached_count:
+                print(f"  ✓ {cached_count} distâncias do cache persistente")
+
+            if uncached_destinos:
+                print(f"  → {len(uncached_destinos)} novas distâncias a calcular")
+
+                # Step 2: Geocode origin + all uncached destinations
+                origin_coords = _geocode(api, cidade_sede, uf_sede)
+                if origin_coords:
+                    dest_coords: dict[str, tuple[float, float]] = {}
+                    geocode_failed = 0
+                    for mun, uf in uncached_destinos:
+                        coords = _geocode(api, mun, uf)
+                        key = f"{mun}|{uf}"
+                        if coords:
+                            dest_coords[key] = coords
+                        else:
+                            geocode_failed += 1
+                            distancias[key] = {
+                                "km": None,
+                                "duracao_horas": None,
+                                "_source": _source_tag("API_FAILED", f"Geocode falhou para {mun}/{uf}"),
+                            }
+                    if geocode_failed:
+                        print(f"  ⚠ Geocode falhou para {geocode_failed} destinos")
+
+                    # Step 3: Batch OSRM Table API
+                    if dest_coords:
+                        print(f"  → OSRM Table API: {len(dest_coords)} rotas em {(len(dest_coords) - 1) // OSRM_TABLE_BATCH_SIZE + 1} batch(es)")
+                        batch_results = _calculate_distances_table(api, origin_coords, dest_coords)
+
+                        # Merge results + update persistent cache
+                        for key, result in batch_results.items():
+                            distancias[key] = result
+                            dest_cache_key = key.strip().lower() if "|" in key else key
+                            # Normalize key for cache
+                            parts = key.split("|")
+                            if len(parts) == 2:
+                                norm_dest = f"{parts[0].strip().lower()}|{parts[1].strip().upper()}"
+                            else:
+                                norm_dest = key
+                            full_key = f"{origin_cache_key}→{norm_dest}"
+                            dist_cache[full_key] = result
+
+                    # Step 4: Persist both caches
+                    _geocode_disk_save()
+                    _save_json_cache(DISTANCE_CACHE_FILE, dist_cache)
+                    print(f"  ✓ Caches persistidos ({len(_geocode_disk_load())} geocodes, {len(dist_cache)} distâncias)")
+                else:
+                    print(f"  ⚠ Geocode da sede falhou — pulando distâncias")
+            else:
+                print(f"  ✓ Todas as {cached_count} distâncias servidas do cache")
         else:
             print("\n📍 Distâncias: cidade/UF da sede não disponível — pulando")
 
