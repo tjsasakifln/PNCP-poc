@@ -1544,6 +1544,115 @@ _CNAE_TO_SECTOR_KEY: dict[str, str] = {
 }
 
 
+def classify_edital_object_type(edital: dict) -> str:
+    """Classify an edital's OBJECT into a sector key for habilitação/risk/cost.
+
+    This determines what the EDITAL is about (not the company's CNAE).
+    A construction company bidding on a materials supply pregão should get
+    materials supply habilitação requirements, not construction requirements.
+
+    Returns sector_key string to use for habilitação, risk flags, and cost profiles.
+    """
+    raw_objeto = (edital.get("objeto") or edital.get("objetoCompra") or "").lower()
+    # Match both accented and unaccented text
+    objeto = _strip_accents(raw_objeto)
+    modalidade = (edital.get("modalidade") or "").lower()
+
+    # NOTE: All keywords below are accent-stripped since `objeto` was processed by _strip_accents()
+
+    # --- Credenciamento / Inexigibilidade for professional services ---
+    if "inexigibilidade" in modalidade:
+        if any(kw in objeto for kw in [
+            "credenciamento de pessoa", "prestacao de servicos medic",
+            "contratacao de medic", "atendimento fisiotera",
+            "servico de saude", "profissionais de saude",
+        ]):
+            return "servicos_profissionais"
+
+    # --- Fornecimento de materiais (non-construction supply) ---
+    # These keywords indicate SUPPLY of goods, not execution of services/works.
+    # Ordered: specific terms FIRST, generic terms ("fornecimento de", "aquisicao de",
+    # "registro de precos") LAST with guard clause to avoid misclassifying services/obras.
+    _SUPPLY_SPECIFIC = [
+        "material medico", "material hospitalar", "materiais medico",
+        "materiais hospitalar", "insumo hospitalar", "insumos hospitalar",
+        "medicamento", "farmaco", "farmaceutic",
+        "material de consumo", "materiais de consumo",
+        "material de expediente", "material escolar", "material didatico",
+        "genero alimentic", "alimento", "merenda",
+        "material de limpeza", "saneante", "produto de limpeza",
+        "equipamento ambulat", "equipamento hospitalar",
+        "mobiliario", " movel", "estofamento",
+        "eletrodomestic",
+        "uniforme", "vestuario", "fardamento",
+        "combustivel", "abastecimento",
+        "material eletric",
+        "material hidraulic",
+        "papel", "toner", "cartucho",
+    ]
+    # Generic supply terms — only match if the object does NOT also contain service/obra words
+    _SERVICE_GUARD = ["servico", "obra", "construcao", "reforma", "manutencao",
+                      "consultoria", "assessoria", "treinamento", "capacitacao"]
+    _SUPPLY_GENERIC = ["fornecimento de", "aquisicao de", "registro de precos"]
+    _is_specific = any(kw in objeto for kw in _SUPPLY_SPECIFIC)
+    _is_generic = (
+        any(kw in objeto for kw in _SUPPLY_GENERIC)
+        and not any(kw in objeto for kw in _SERVICE_GUARD)
+    )
+    if _is_specific or _is_generic:
+        # Further classify supply type.
+        # ORDER MATTERS: more specific categories first, catch-all last.
+        # "merenda escolar" should match alimentos (not papelaria via "escolar").
+        if any(kw in objeto for kw in ["hospitalar", "medico", "ambulat",
+                                        "enfermagem", "medicamento", "farmac"]):
+            return "fornecimento_saude"
+        if any(kw in objeto for kw in ["limpeza", "saneante", "higieniza"]):
+            return "fornecimento_limpeza"
+        # Alimentos BEFORE papelaria — "merenda escolar" is food, not stationery
+        if any(kw in objeto for kw in ["aliment", "merenda", "refeicao",
+                                        "hortifruti", "cesta", "carne"]):
+            return "fornecimento_alimentos"
+        if any(kw in objeto for kw in ["expediente", "escolar", "didatic",
+                                        "papel", "toner", "cartucho"]):
+            return "fornecimento_papelaria"
+        # Use " movel" (with space prefix) to avoid matching "imovel"
+        if any(kw in objeto for kw in [" movel", "mobiliario", "estofamento",
+                                        "eletrodomestic"]):
+            return "fornecimento_mobiliario"
+        return "fornecimento_geral"
+
+    # --- Construction / engineering works ---
+    if any(kw in objeto for kw in [
+        "obra", "construcao", "edificac",
+        "reforma", "ampliacao", "pavimentac",
+        "drenagem", "terraplanagem", "terraplenagem", "fundacao",
+        "instalacao eletric",
+    ]):
+        return "engenharia"
+
+    # --- Services ---
+    if any(kw in objeto for kw in [
+        "prestacao de servico",
+        "contratacao de empresa para",
+        "manutencao", "limpeza e conserv",
+        "consultoria", "assessoria",
+    ]):
+        return "servicos_gerais"
+
+    # --- Software / IT ---
+    if any(kw in objeto for kw in [
+        "sistema", "software", "desenvolvimento", "tecnologia da informac",
+    ]):
+        return "software"
+
+    # --- Concessão ---
+    if any(kw in objeto for kw in ["concessao", "permissao"]):
+        return "concessao"
+
+    # Fallback: return empty to indicate "use company sector_key"
+    return ""
+
+
 # Subcategories per sector for spectral object compatibility (P2)
 _SECTOR_SUBCATEGORIES: dict[str, dict[str, list[str]]] = {
     "engenharia": {
@@ -1629,6 +1738,47 @@ _SECTOR_SUBCATEGORIES: dict[str, dict[str, list[str]]] = {
         "tubulacao": ["tubo", "conexão", "registro", "válvula", "flange"],
         "equipamentos_hidraulicos": ["bomba d'água", "hidrômetro", "filtro", "pressurizador"],
     },
+    # --- Fornecimento (supply) sectors ---
+    "fornecimento_saude": {
+        "materiais_hospitalares": ["material hospitalar", "descartável", "epi hospitalar", "luva", "seringa", "gaze", "soro fisiológico"],
+        "medicamentos": ["medicamento", "fármaco", "insumo farmacêutico", "vacina"],
+        "equipamentos_medicos": ["equipamento hospitalar", "equipamento médico", "ambulatorial", "maca", "cama hospitalar"],
+    },
+    "fornecimento_limpeza": {
+        "saneantes": ["saneante", "desinfetante", "detergente", "alvejante", "produto de limpeza"],
+        "higiene": ["papel higiênico", "sabonete", "álcool", "higienização"],
+    },
+    "fornecimento_papelaria": {
+        "escritorio": ["papel", "caneta", "toner", "cartucho", "material de escritório", "envelope"],
+        "escolar": ["material escolar", "caderno", "lápis", "borracha", "material didático"],
+    },
+    "fornecimento_mobiliario": {
+        "moveis_escritorio": ["mesa", "cadeira", "armário", "estante", "gaveteiro"],
+        "moveis_hospitalares": ["cama hospitalar", "maca", "mesa cirúrgica"],
+        "eletrodomesticos": ["geladeira", "fogão", "micro-ondas", "ar condicionado"],
+        "estofamento": ["estofamento", "reforma de móvel", "tapeçaria"],
+    },
+    "fornecimento_alimentos": {
+        "generos": ["gênero alimentício", "cesta básica", "hortifrúti", "alimento"],
+        "refeicao": ["refeição", "merenda", "alimentação escolar"],
+    },
+    "fornecimento_geral": {
+        "materiais_diversos": ["material de consumo", "registro de preços", "fornecimento"],
+    },
+    "servicos_profissionais": {
+        "medicos": ["serviço médico", "atendimento médico", "consulta", "plantão"],
+        "enfermagem": ["enfermeiro", "técnico de enfermagem", "cuidador"],
+        "outros_profissionais": ["fisioterapia", "psicologia", "nutrição", "odontologia"],
+    },
+    "servicos_gerais": {
+        "manutencao": ["manutenção", "reparo", "conserto", "assistência técnica"],
+        "consultoria": ["consultoria", "assessoria", "treinamento"],
+        "eventos": ["evento", "organização", "cerimonial"],
+    },
+    "concessao": {
+        "uso_espaco": ["concessão de uso", "cessão de espaço", "permissão de uso"],
+        "exploracao": ["exploração comercial", "cantina", "bar", "restaurante"],
+    },
 }
 
 # Typical habilitação requirements per sector (P3)
@@ -1675,6 +1825,61 @@ _HABILITACAO_REQUIREMENTS: dict[str, dict] = {
         "certifications": ["Autorização de Funcionamento (Polícia Federal)", "Alvará de Funcionamento"],
         "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
     },
+    # --- Fornecimento de materiais (supply sectors) ---
+    "fornecimento_saude": {
+        "capital_minimo_pct": 0.05,
+        "atestados": ["Atestado de fornecimento de materiais hospitalares ou similares"],
+        "certifications": ["AFE/ANVISA (se medicamentos ou correlatos)", "Alvará Sanitário (se aplicável)"],
+        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
+    "fornecimento_limpeza": {
+        "capital_minimo_pct": 0.05,
+        "atestados": ["Atestado de fornecimento de produtos de limpeza ou similares"],
+        "certifications": ["AFE/ANVISA (se saneantes domissanitários)"],
+        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
+    "fornecimento_papelaria": {
+        "capital_minimo_pct": 0.05,
+        "atestados": ["Atestado de fornecimento de material de expediente ou similares"],
+        "certifications": [],
+        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
+    "fornecimento_mobiliario": {
+        "capital_minimo_pct": 0.05,
+        "atestados": ["Atestado de fornecimento de mobiliário ou similares"],
+        "certifications": [],
+        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
+    "fornecimento_alimentos": {
+        "capital_minimo_pct": 0.05,
+        "atestados": ["Atestado de fornecimento de gêneros alimentícios ou similares"],
+        "certifications": ["Alvará Sanitário", "Licença da Vigilância Sanitária"],
+        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
+    "fornecimento_geral": {
+        "capital_minimo_pct": 0.05,
+        "atestados": ["Atestado de fornecimento de materiais similares"],
+        "certifications": [],
+        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
+    "servicos_profissionais": {
+        "capital_minimo_pct": 0.05,
+        "atestados": ["Registro profissional ativo no conselho de classe (CRM, CRF, COREN, etc.)"],
+        "certifications": ["Conselho profissional (CRM/CRF/COREN)", "Alvará Sanitário (se aplicável)"],
+        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
+    "servicos_gerais": {
+        "capital_minimo_pct": 0.05,
+        "atestados": ["Atestado de prestação de serviço similar"],
+        "certifications": [],
+        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
+    "concessao": {
+        "capital_minimo_pct": 0.10,
+        "atestados": ["Atestado de capacidade técnica para exploração de atividade similar"],
+        "certifications": [],
+        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
+    },
     "_default": {
         "capital_minimo_pct": 0.10,
         "atestados": ["Atestado técnico de execução de serviço similar"],
@@ -1684,6 +1889,8 @@ _HABILITACAO_REQUIREMENTS: dict[str, dict] = {
 }
 
 # Sector-specific systemic risk warnings (P5)
+# NOTE: These flags are applied per-edital based on the EDITAL's effective sector,
+# not the company's CNAE. A materials supply pregão should NOT get "aditivos em obras".
 _SECTOR_RISK_FLAGS: dict[str, list[str]] = {
     "facilities": ["Subprecificação crônica em contratos de limpeza — margem real pode ser menor que estimada"],
     "engenharia": ["Aditivos contratuais frequentes (25-50%) em obras públicas — considerar margem de segurança"],
@@ -1692,6 +1899,13 @@ _SECTOR_RISK_FLAGS: dict[str, list[str]] = {
     "saude": ["Regulamentação ANVISA pode atrasar execução — verificar licenças necessárias"],
     "software": ["Editais de TI frequentemente exigem quadro técnico com certificações proprietárias específicas"],
     "alimentos": ["Contratos de alimentação têm reajuste atrelado a índices de preço — verificar cláusula de reequilíbrio"],
+    "fornecimento_saude": ["Produtos hospitalares podem exigir registro ANVISA individual — verificar exigências do edital"],
+    "fornecimento_limpeza": ["Saneantes domissanitários exigem AFE/ANVISA — verificar se edital lista produtos com registro obrigatório"],
+    "fornecimento_papelaria": ["Mercado altamente commoditizado — margem comprimida por volume de concorrentes"],
+    "fornecimento_alimentos": ["Contratos de alimentação têm reajuste atrelado a índices de preço — verificar cláusula de reequilíbrio"],
+    "fornecimento_mobiliario": ["Mobiliário hospitalar pode exigir certificação INMETRO — verificar normas técnicas no edital"],
+    "servicos_profissionais": ["Credenciamento exige registro profissional ativo (CRM, CRF, COREN) — verificar se empresa tem profissionais habilitados no quadro"],
+    "concessao": ["Contratos de concessão têm cláusulas de desempenho e penalidades — analisar indicadores exigidos"],
 }
 
 # Estimated participation cost per sector (P6)
@@ -1711,6 +1925,16 @@ _PARTICIPATION_COST: dict[str, float] = {
     "manutencao_predial": 3000.0,
     "materiais_eletricos": 1500.0,
     "materiais_hidraulicos": 1500.0,
+    # Fornecimento (supply) — lower costs (electronic, no site visits)
+    "fornecimento_saude": 800.0,
+    "fornecimento_limpeza": 500.0,
+    "fornecimento_papelaria": 500.0,
+    "fornecimento_mobiliario": 800.0,
+    "fornecimento_alimentos": 500.0,
+    "fornecimento_geral": 600.0,
+    "servicos_profissionais": 1000.0,
+    "servicos_gerais": 1500.0,
+    "concessao": 3000.0,
     "_default": 3000.0,
 }
 
@@ -3328,6 +3552,16 @@ _SECTOR_MARGINS: dict[str, tuple[float, float]] = {
     "manutencao_predial": (0.10, 0.20),
     "materiais_eletricos": (0.10, 0.20),
     "materiais_hidraulicos": (0.10, 0.20),
+    # Fornecimento (supply) sectors — margins are higher than construction
+    "fornecimento_saude": (0.15, 0.30),       # Hospital materials — commodity but regulated
+    "fornecimento_limpeza": (0.15, 0.30),     # Cleaning products
+    "fornecimento_papelaria": (0.15, 0.25),   # Office/school supplies
+    "fornecimento_mobiliario": (0.15, 0.30),  # Furniture supply
+    "fornecimento_alimentos": (0.05, 0.15),   # Food — low margin, high volume
+    "fornecimento_geral": (0.12, 0.25),       # Generic materials
+    "servicos_profissionais": (0.20, 0.40),   # Professional services (credenciamento)
+    "servicos_gerais": (0.10, 0.25),          # General services
+    "concessao": (0.10, 0.25),                # Concession
 }
 
 # Sector-specific viability weight profiles (must sum to 1.0)
@@ -3356,6 +3590,16 @@ _SECTOR_WEIGHT_PROFILES: dict[str, dict[str, float]] = {
     # Materials: supply chain, moderate geography importance
     "materiais_eletricos": {"hab": 0.20, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.20},
     "materiais_hidraulicos": {"hab": 0.20, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.20},
+    # Fornecimento (supply): low qualification barriers, price-driven competition
+    "fornecimento_saude": {"hab": 0.10, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.30},
+    "fornecimento_limpeza": {"hab": 0.10, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.30},
+    "fornecimento_papelaria": {"hab": 0.10, "fin": 0.25, "geo": 0.10, "prazo": 0.20, "comp": 0.35},
+    "fornecimento_mobiliario": {"hab": 0.10, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.30},
+    "fornecimento_alimentos": {"hab": 0.15, "fin": 0.25, "geo": 0.20, "prazo": 0.20, "comp": 0.20},
+    "fornecimento_geral": {"hab": 0.10, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.30},
+    "servicos_profissionais": {"hab": 0.35, "fin": 0.15, "geo": 0.15, "prazo": 0.15, "comp": 0.20},
+    "servicos_gerais": {"hab": 0.20, "fin": 0.20, "geo": 0.20, "prazo": 0.20, "comp": 0.20},
+    "concessao": {"hab": 0.20, "fin": 0.30, "geo": 0.25, "prazo": 0.15, "comp": 0.10},
     # Default fallback — preserves original behavior
     "_default": {"hab": 0.30, "fin": 0.25, "geo": 0.20, "prazo": 0.15, "comp": 0.10},
 }
@@ -3377,6 +3621,16 @@ _SECTOR_BASE_WIN_RATES: dict[str, float] = {
     "manutencao_predial": 0.12,      # ~8 bidders
     "materiais_eletricos": 0.10,     # ~10 bidders
     "materiais_hidraulicos": 0.10,   # ~10 bidders
+    # Fornecimento (supply) sectors
+    "fornecimento_saude": 0.08,      # ~12 bidders, commoditized hospital materials
+    "fornecimento_limpeza": 0.08,    # ~12 bidders
+    "fornecimento_papelaria": 0.06,  # ~15+ bidders, very commoditized
+    "fornecimento_mobiliario": 0.10, # ~10 bidders
+    "fornecimento_alimentos": 0.08,  # ~12 bidders
+    "fornecimento_geral": 0.08,     # ~12 bidders
+    "servicos_profissionais": 0.15, # ~7 professionals per credenciamento
+    "servicos_gerais": 0.10,        # ~10 bidders
+    "concessao": 0.15,              # ~7 bidders, barriers to entry
     "_default": 0.10,
 }
 
@@ -3420,6 +3674,24 @@ _SECTOR_COMPETITION_KEYWORDS: dict[str, list[str]] = {
                    "gênero alimentício", "cesta básica", "nutrição"],
     "transporte": ["transporte", "veículo", "veiculo", "locação de veículo", "frete",
                     "combustível", "combustivel", "ônibus", "onibus"],
+    # Fornecimento (supply) sectors
+    "fornecimento_saude": ["hospitalar", "material hospitalar", "material médico", "insumo",
+                            "descartável", "luva", "seringa", "gaze", "soro", "medicamento",
+                            "ambulatorial", "equipamento médico", "enfermagem"],
+    "fornecimento_limpeza": ["limpeza", "saneante", "produto de limpeza", "higienização",
+                              "desinfetante", "detergente", "alvejante"],
+    "fornecimento_papelaria": ["papel", "caneta", "toner", "cartucho", "material de escritório",
+                                "material escolar", "expediente"],
+    "fornecimento_mobiliario": ["móvel", "movel", "cadeira", "mesa", "armário", "estante",
+                                 "eletrodoméstic", "eletrodomestic"],
+    "fornecimento_alimentos": ["alimentação", "alimentacao", "gênero alimentício", "merenda",
+                                "cesta básica", "hortifrúti"],
+    "fornecimento_geral": ["fornecimento", "material", "aquisição", "registro de preços"],
+    "servicos_profissionais": ["credenciamento", "serviço médico", "atendimento", "consulta",
+                                "plantão", "profissional de saúde", "enfermeiro", "fisioterapia"],
+    "servicos_gerais": ["serviço", "manutenção", "reparo", "conserto", "consultoria",
+                         "assessoria", "treinamento", "evento"],
+    "concessao": ["concessão", "cessão", "permissão", "exploração", "cantina", "restaurante"],
 }
 
 
@@ -3920,6 +4192,15 @@ _PARTICIPATION_COST_PROFILES: dict[tuple[str, str], dict] = {
     ("vigilancia", "pregão eletrônico"): {"base": 2500, "km_rate": 3, "value_pct": 0.005, "cap": 12000, "label": "vigilância/pregão_eletrônico"},
     # Health — regulatory overhead
     ("saude", "pregão eletrônico"): {"base": 2500, "km_rate": 2, "value_pct": 0.005, "cap": 12000, "label": "saúde/pregão_eletrônico"},
+    # Fornecimento (supply) — low cost, mostly electronic, no site visits
+    ("fornecimento_saude", "pregão eletrônico"): {"base": 800, "km_rate": 0, "value_pct": 0.002, "cap": 5000, "label": "fornec_saúde/pregão_eletrônico"},
+    ("fornecimento_saude", "concorrência"): {"base": 1500, "km_rate": 0, "value_pct": 0.003, "cap": 8000, "label": "fornec_saúde/concorrência"},
+    ("fornecimento_limpeza", "pregão eletrônico"): {"base": 500, "km_rate": 0, "value_pct": 0.002, "cap": 3000, "label": "fornec_limpeza/pregão_eletrônico"},
+    ("fornecimento_papelaria", "pregão eletrônico"): {"base": 500, "km_rate": 0, "value_pct": 0.002, "cap": 3000, "label": "fornec_papelaria/pregão_eletrônico"},
+    ("fornecimento_mobiliario", "pregão eletrônico"): {"base": 800, "km_rate": 0, "value_pct": 0.003, "cap": 5000, "label": "fornec_mobiliário/pregão_eletrônico"},
+    ("fornecimento_alimentos", "pregão eletrônico"): {"base": 500, "km_rate": 0, "value_pct": 0.002, "cap": 3000, "label": "fornec_alimentos/pregão_eletrônico"},
+    ("fornecimento_geral", "pregão eletrônico"): {"base": 600, "km_rate": 0, "value_pct": 0.002, "cap": 4000, "label": "fornec_geral/pregão_eletrônico"},
+    ("fornecimento_geral", "concorrência"): {"base": 1000, "km_rate": 0, "value_pct": 0.003, "cap": 6000, "label": "fornec_geral/concorrência"},
 }
 
 _DEFAULT_COST_PROFILE = {"base": 2000, "km_rate": 3, "value_pct": 0.005, "cap": 15000, "label": "default"}
@@ -4353,6 +4634,52 @@ _SECTOR_REQUIREMENTS_DETAILED: dict[str, dict] = {
     "saude": {
         "certifications": ["ANVISA", "CRM/CRF", "ISO 13485 (desejável)"],
         "atestados": ["Atestado de fornecimento na área de saúde"],
+        "capital_pct": 0.10,
+    },
+    # Fornecimento (supply) sectors
+    "fornecimento_saude": {
+        "certifications": ["AFE/ANVISA (se medicamentos/correlatos)", "Alvará Sanitário"],
+        "atestados": ["Atestado de fornecimento de materiais hospitalares"],
+        "capital_pct": 0.05,
+    },
+    "fornecimento_limpeza": {
+        "certifications": ["AFE/ANVISA (se saneantes domissanitários)"],
+        "atestados": ["Atestado de fornecimento de produtos de limpeza"],
+        "capital_pct": 0.05,
+    },
+    "fornecimento_papelaria": {
+        "certifications": [],
+        "atestados": ["Atestado de fornecimento de material de expediente"],
+        "capital_pct": 0.05,
+    },
+    "fornecimento_mobiliario": {
+        "certifications": [],
+        "atestados": ["Atestado de fornecimento de mobiliário"],
+        "capital_pct": 0.05,
+    },
+    "fornecimento_alimentos": {
+        "certifications": ["Alvará Sanitário", "Licença Vigilância Sanitária"],
+        "atestados": ["Atestado de fornecimento de gêneros alimentícios"],
+        "capital_pct": 0.05,
+    },
+    "fornecimento_geral": {
+        "certifications": [],
+        "atestados": ["Atestado de fornecimento de materiais similares"],
+        "capital_pct": 0.05,
+    },
+    "servicos_profissionais": {
+        "certifications": ["Registro no conselho profissional (CRM/CRF/COREN)"],
+        "atestados": ["Atestado de prestação de serviço profissional"],
+        "capital_pct": 0.05,
+    },
+    "servicos_gerais": {
+        "certifications": [],
+        "atestados": ["Atestado de prestação de serviço similar"],
+        "capital_pct": 0.05,
+    },
+    "concessao": {
+        "certifications": [],
+        "atestados": ["Atestado de exploração de atividade similar"],
         "capital_pct": 0.10,
     },
     "_default": {
@@ -5309,8 +5636,15 @@ def compute_all_deterministic(
     all_competitive_contracts: list[dict] = []
 
     for ed in editais:
+        # --- Classify edital object type for per-edital sector override ---
+        edital_object_type = classify_edital_object_type(ed)
+        # Use edital's object type for habilitação/risk/cost when available,
+        # fall back to company's CNAE-based sector_key when classification is empty
+        effective_sk = edital_object_type if edital_object_type else sector_key
+        ed["_effective_sector_key"] = effective_sk
+
         # --- Core scoring chain ---
-        rs = compute_risk_score(ed, empresa, sicaf, sector_key)
+        rs = compute_risk_score(ed, empresa, sicaf, effective_sk)
 
         # CRÍTICA 2: If vetoed, skip maturity adjustments and set minimal outputs
         if rs.get("vetoed"):
@@ -5376,11 +5710,11 @@ def compute_all_deterministic(
             ed["risk_score"] = rs
 
             win_prob = compute_win_probability(
-                ed, empresa, ed.get("competitive_intel", []), sector_key, rs["total"],
+                ed, empresa, ed.get("competitive_intel", []), effective_sk, rs["total"],
             )
             ed["win_probability"] = win_prob
 
-            ed["roi_potential"] = compute_roi_potential(ed, sector_key, win_prob)
+            ed["roi_potential"] = compute_roi_potential(ed, effective_sk, win_prob)
             ed["cronograma"] = build_reverse_chronogram(ed)
 
         # --- Object compatibility (spectral) ---
@@ -5389,14 +5723,14 @@ def compute_all_deterministic(
             objeto, empresa_cnaes, sector_key, historico,
         )
 
-        # --- Habilitação gap analysis ---
+        # --- Habilitação gap analysis (uses EDITAL's effective sector, not company's) ---
         ed["habilitacao_analysis"] = compute_habilitacao_analysis(
-            ed, empresa, sicaf, sector_key,
+            ed, empresa, sicaf, effective_sk,
         )
 
         # --- E4: Qualification gap analysis (sector compat vs operational) ---
         ed["qualification_gap"] = compute_qualification_gap_analysis(
-            ed, empresa, ed["object_compatibility"], sector_key,
+            ed, empresa, ed["object_compatibility"], effective_sk,
         )
 
         # --- Competitive analysis (per-edital) ---
@@ -5405,11 +5739,11 @@ def compute_all_deterministic(
         all_competitive_contracts.extend(contracts)
 
         # --- E6: Organ risk profile ---
-        ed["organ_risk"] = compute_organ_risk_profile(ed, contracts, sector_key)
+        ed["organ_risk"] = compute_organ_risk_profile(ed, contracts, effective_sk)
 
-        # --- Systemic risk flags ---
+        # --- Systemic risk flags (uses EDITAL's effective sector) ---
         ed["risk_analysis"] = compute_risk_analysis(
-            ed, ed["competitive_analysis"], sector_key,
+            ed, ed["competitive_analysis"], effective_sk,
         )
 
     # --- Portfolio analysis (cross-edital, sets ed["strategic_category"]) ---

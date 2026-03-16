@@ -1990,9 +1990,19 @@ def _build_strategic_positioning(data: dict, styles: dict, sec: dict | None = No
     el.append(Spacer(1, 4 * mm))
 
     # 3-column signal summary table
+    # Handle both nested-dict and flat-key signal formats
     trend = signals.get("trend", {})
     hhi = signals.get("hhi", {})
     price = signals.get("price", {})
+    # Flat-key fallback (collect-report-data.py outputs flat keys)
+    if isinstance(trend, str):
+        trend = {"growth_rate_pct": signals.get("growth_rate_pct", 0), "label": trend}
+    if isinstance(hhi, str):
+        hhi = {"classification": hhi, "value": signals.get("hhi_value", 0)}
+    if isinstance(price, (int, float)):
+        price = {"avg_discount_pct": price}
+    if not price and "avg_discount_pct" in signals:
+        price = {"avg_discount_pct": signals["avg_discount_pct"]}
 
     if trend or hhi or price:
         # Row 1: labels
@@ -3387,7 +3397,12 @@ def _build_portfolio_section(data: dict, styles: dict, sec: dict | None = None) 
 
     # --- Portfólio Recomendado (optimal set from portfolio analysis) ---
     portfolio = data.get("portfolio", {})
-    optimal_set = portfolio.get("optimal_set", [])
+    optimal_set_raw = portfolio.get("optimal_set", [])
+    # Handle nested dict format: {"optimal_set": {"optimal_set": [...], ...}}
+    if isinstance(optimal_set_raw, dict):
+        optimal_set = optimal_set_raw.get("optimal_set", [])
+    else:
+        optimal_set = optimal_set_raw if isinstance(optimal_set_raw, list) else []
     capacity = portfolio.get("capacity", {})
     correlation = portfolio.get("correlation", {})
 
@@ -3517,7 +3532,7 @@ def _build_coverage_warning(data: dict, styles: dict) -> list:
 
     # Per-UF breakdown
     per_uf = cov.get("per_uf", [])
-    low_ufs = [p for p in per_uf if p.get("rate", 1.0) < 0.70 and p.get("estimated_total", 0) > 0]
+    low_ufs = [p for p in per_uf if (p.get("rate") or 1.0) < 0.70 and (p.get("estimated_total") or 0) > 0]
     if low_ufs:
         uf_detail = "; ".join(
             f"{p['uf']}: {p['captured']}/{p['estimated_total']} ({_pct(p['rate'])})"
