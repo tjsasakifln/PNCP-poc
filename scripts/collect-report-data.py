@@ -1259,8 +1259,20 @@ def cluster_contract_activities(
         }
         dominant_nature = max(cluster_nature_counts, key=cluster_nature_counts.get) if cluster_nature_counts else "INDEFINIDO"
 
+        # Build user-facing label — sanitize internal "_outros" key
+        if cat_key == "_outros":
+            _top_kws = unmatched_keywords[:3]
+            if _top_kws:
+                _cluster_label = " / ".join(kw.title() for kw in _top_kws[:2])
+                if len(_top_kws) > 2:
+                    _cluster_label += " e outros"
+            else:
+                _cluster_label = "Atividade Diversificada"
+        else:
+            _cluster_label = cat_def.get("label", cat_key)
+
         clusters.append({
-            "label": cat_def.get("label", cat_key),
+            "label": _cluster_label,
             "category_key": cat_key,
             "count": len(contracts),
             "share_pct": round(share, 1),
@@ -4855,8 +4867,36 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
     # ================================================================
     # CRÍTICA 5: ACERVO CONFIRMATION FLAG
     # Historical contract volume ≠ proven technical capacity.
+    # Derive from historico_contratos: if >=2 contracts match the edital's
+    # sector/cluster, infer acervo técnico.
     # ================================================================
     acervo_confirmado = False  # Default: NOT confirmed (requires manual verification)
+
+    # Derive acervo from historical contracts matching this edital's sector
+    historico_for_acervo = empresa.get("historico_contratos", [])
+    if historico_for_acervo and sector_key:
+        edital_obj_lower = (edital.get("objeto") or "").lower()
+        # Count contracts whose objeto shares keywords with edital or sector
+        sector_prefixes = []
+        _cat_def = _ACTIVITY_CATEGORIES.get(sector_key, {})
+        if _cat_def:
+            sector_prefixes = _cat_def.get("prefixes", [])
+        similar_count = 0
+        for hc in historico_for_acervo:
+            hc_obj = (hc.get("objeto") or "").lower()
+            if not hc_obj:
+                continue
+            # Match via category prefixes (same method as cluster classification)
+            if sector_prefixes and any(pfx in hc_obj for pfx in sector_prefixes):
+                similar_count += 1
+            elif edital_obj_lower:
+                # Fallback: check if >=3 words overlap between edital and contract
+                edital_words = set(w for w in edital_obj_lower.split() if len(w) > 4)
+                hc_words = set(w for w in hc_obj.split() if len(w) > 4)
+                if len(edital_words & hc_words) >= 3:
+                    similar_count += 1
+        if similar_count >= 2:
+            acervo_confirmado = True
 
     return {
         "total": round(total),
@@ -6529,8 +6569,13 @@ def assign_recommendations(editais: list, empresa: dict) -> None:
             parts.append("risco fiscal elevado do município")
 
         # Acervo
-        if not rs.get("acervo_confirmado", True):
-            parts.append("acervo técnico não confirmado")
+        if rs.get("acervo_confirmado"):
+            # Count similar contracts for the message
+            _hist = empresa.get("historico_contratos", [])
+            _n_similar = len(_hist) if _hist else 0  # Approximation; actual count computed in risk_score
+            parts.append(f"acervo técnico inferido: {_n_similar} contratos similares no histórico")
+        elif not rs.get("acervo_confirmado", True):
+            parts.append("sem acervo comprovado")
 
         ed["justificativa"] = ". ".join(p.capitalize() for p in parts) + "." if parts else "Análise baseada em scoring multifatorial."
 
@@ -6868,18 +6913,23 @@ def collect_market_trend(
     vol_24m = result.get("volume_24m", 0)
     vol_6m_ann = vol_6m * 2  # annualize 6-month volume
 
+    vol_12m = result.get("volume_12m", 0)
     if vol_24m > 0:
         vol_24m_ann = vol_24m / 2  # annualize 24-month volume
         growth_rate = (vol_6m_ann - vol_24m_ann) / vol_24m_ann
     elif vol_6m > 0:
         growth_rate = 1.0  # New market (no 24m data but has 6m)
+    elif vol_6m == 0 and vol_12m < 3 and vol_24m < 3:
+        growth_rate = None  # No data — not stability, just absence of data
     else:
         growth_rate = 0.0
 
-    result["growth_rate_pct"] = round(growth_rate * 100, 1)
+    result["growth_rate_pct"] = round(growth_rate * 100, 1) if growth_rate is not None else 0.0
 
     # Classify trend
-    if growth_rate > 0.15:
+    if growth_rate is None:
+        trend = "DADOS_INSUFICIENTES"
+    elif growth_rate > 0.15:
         trend = "EXPANSAO"
     elif growth_rate < -0.15:
         trend = "CONTRACAO"
@@ -7091,7 +7141,9 @@ def assemble_strategic_thesis(
     discount_br = f"{avg_discount:.1f}".replace(".", ",")
 
     rationale_parts: list[str] = []
-    if trend == "EXPANSAO":
+    if trend == "DADOS_INSUFICIENTES":
+        rationale_parts.append("Dados insuficientes para análise de tendência de mercado")
+    elif trend == "EXPANSAO":
         rationale_parts.append(f"Mercado em expansão (crescimento de {growth_br}% anualizado)")
     elif trend == "CONTRACAO":
         rationale_parts.append(f"Mercado em contração ({growth_br}% de queda anualizada)")
