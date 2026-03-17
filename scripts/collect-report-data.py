@@ -2048,6 +2048,7 @@ _SECTOR_SUBCATEGORIES: dict[str, dict[str, list[str]]] = {
     },
     "fornecimento_geral": {
         "materiais_diversos": ["material de consumo", "registro de preços", "fornecimento"],
+        "suprimentos": ["suprimento", "insumo", "material de expediente", "material de limpeza"],
     },
     "servicos_profissionais": {
         "medicos": ["serviço médico", "atendimento médico", "consulta", "plantão"],

@@ -4035,18 +4035,16 @@ def validate_report_completeness(data: dict) -> tuple[list[str], list[str]]:
         if not justif and rec:
             errors.append(f"Edital {idx} ({obj}): recomendação '{rec}' sem justificativa")
 
-        # BLOCKING: risk_score required for viability section
+        # WARNING: computed fields — sections degrade gracefully without them
         rs = ed.get("risk_score", {})
         if not rs:
-            errors.append(f"Edital {idx} ({obj}): risk_score ausente — execute --re-enrich")
+            warnings.append(f"Edital {idx} ({obj}): risk_score ausente — seção de viabilidade degradada")
 
-        # BLOCKING: win_probability required for incumbency/competitive sections
         if not ed.get("win_probability"):
-            errors.append(f"Edital {idx} ({obj}): win_probability ausente — execute --re-enrich")
+            warnings.append(f"Edital {idx} ({obj}): win_probability ausente — seção competitiva degradada")
 
-        # BLOCKING: strategic_category required for portfolio matrix
         if not ed.get("strategic_category"):
-            errors.append(f"Edital {i} ({obj}): strategic_category ausente — execute --re-enrich")
+            warnings.append(f"Edital {idx} ({obj}): strategic_category ausente — portfolio degradado")
 
         # CRÍTICA 10A: Consistency checks — recommendation vs score
         rec_upper = (rec or "").upper()
@@ -4088,12 +4086,12 @@ def validate_report_completeness(data: dict) -> tuple[list[str], list[str]]:
                     f"Edital {i}: risco fiscal ALTO identificado mas não mencionado na justificativa"
                 )
 
-    # BLOCKING: top-level computed fields
+    # WARNING: top-level computed fields (degraded sections, not blocking)
     if not data.get("maturity_profile") and not data.get("empresa", {}).get("maturity_profile"):
-        errors.append("maturity_profile ausente — execute --re-enrich no JSON")
+        warnings.append("maturity_profile ausente — seção de maturidade será omitida")
 
     if not data.get("dispute_stats"):
-        errors.append("dispute_stats ausente — execute --re-enrich no JSON")
+        warnings.append("dispute_stats ausente — seção de disputas será omitida")
 
     # WARNING: coverage_diagnostic (desirable)
     if not data.get("coverage_diagnostic"):

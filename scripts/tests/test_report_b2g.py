@@ -49,6 +49,9 @@ def minimal_data():
                 "justificativa": "Alta aderência ao perfil da empresa",
                 "distancia_km": 180.5,
                 "_source": {"status": "API", "timestamp": "2026-03-12"},
+                "risk_score": {"total": 65, "vetoed": False},
+                "win_probability": {"probability": 0.12},
+                "strategic_category": "OPORTUNIDADE",
             }
         ],
         "resumo_executivo": {
@@ -333,6 +336,9 @@ class TestPdfGeneration:
             "recomendacao": "PARTICIPAR",
             "justificativa": "Perfil compatível",
             "_source": {"status": "API"},
+            "risk_score": {"total": 55, "vetoed": False},
+            "win_probability": {"probability": 0.10},
+            "strategic_category": "OPORTUNIDADE",
         })
         from generate_report_b2g_helpers import generate_report_b2g
         buf = generate_report_b2g(minimal_data)
@@ -1644,12 +1650,15 @@ class TestReportValidation:
                 "recomendacao": "PARTICIPAR",
                 "justificativa": "Alta aderência",
                 "roi_potential": {"calculation_memory": {"formula": "test"}},
+                "risk_score": {"total": 65},
+                "win_probability": {"probability": 0.12},
+                "strategic_category": "OPORTUNIDADE",
             }],
             "coverage_diagnostic": {"coverage_rate": 0.85},
         }
-        warnings = self.validate(data)
-        # Should have no warnings about missing justification or ROI
-        missing_just = [w for w in warnings if "justificativa" in w.lower()]
+        errors, warnings = self.validate(data)
+        # Should have no errors about missing justification
+        missing_just = [e for e in errors if "justificativa" in e.lower()]
         assert len(missing_just) == 0
 
     def test_missing_justificativa_warns(self):
@@ -1658,10 +1667,14 @@ class TestReportValidation:
                 "recomendacao": "PARTICIPAR",
                 # no justificativa
                 "roi_potential": {"calculation_memory": {"formula": "test"}},
+                "risk_score": {"total": 65},
+                "win_probability": {"probability": 0.12},
+                "strategic_category": "OPORTUNIDADE",
             }],
         }
-        warnings = self.validate(data)
-        assert any("justificativa" in w.lower() or "justificação" in w.lower() for w in warnings)
+        errors, warnings = self.validate(data)
+        all_messages = errors + warnings
+        assert any("justificativa" in w.lower() or "justificação" in w.lower() for w in all_messages)
 
     def test_missing_roi_memory_warns(self):
         data = {
@@ -1669,9 +1682,12 @@ class TestReportValidation:
                 "recomendacao": "PARTICIPAR",
                 "justificativa": "OK",
                 "roi_potential": {"roi_min": 100},  # has roi data but no calculation_memory
+                "risk_score": {"total": 65},
+                "win_probability": {"probability": 0.12},
+                "strategic_category": "OPORTUNIDADE",
             }],
         }
-        warnings = self.validate(data)
+        errors, warnings = self.validate(data)
         assert any("roi" in w.lower() or "memória" in w.lower() or "memoria" in w.lower() or "cálculo" in w.lower() for w in warnings)
 
 
