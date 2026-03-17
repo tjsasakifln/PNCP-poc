@@ -21,11 +21,13 @@ Requires:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import io
 import json
 import os
 import re
 import sys
+import threading
 import time
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
@@ -76,6 +78,28 @@ NOMINATIM_BASE = "https://nominatim.openstreetmap.org/search"
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 GEOCODE_CACHE_FILE = str(_PROJECT_ROOT / "data" / "geocode_cache.json")
 DISTANCE_CACHE_FILE = str(_PROJECT_ROOT / "data" / "distance_cache.json")
+IBGE_CACHE_FILE = str(_PROJECT_ROOT / "data" / "ibge_cache.json")
+COMPETITIVE_CACHE_FILE = str(_PROJECT_ROOT / "data" / "competitive_cache.json")
+COMPETITIVE_CACHE_TTL_DAYS = 7
+DOCS_CACHE_FILE = str(_PROJECT_ROOT / "data" / "docs_cache.json")
+# No TTL for docs — document listings are immutable once published
+
+# Static municipality coordinates (eliminates Nominatim dependency for known cities)
+_MUNICIPIOS_COORDS: dict = {}
+_MUNICIPIOS_COORDS_FILE = str(_PROJECT_ROOT / "data" / "municipios_coords.json")
+
+
+def _load_municipios_coords() -> None:
+    """Lazy-load static municipality coordinates from data/municipios_coords.json."""
+    global _MUNICIPIOS_COORDS
+    if _MUNICIPIOS_COORDS:
+        return
+    try:
+        with open(_MUNICIPIOS_COORDS_FILE, "r", encoding="utf-8") as f:
+            _MUNICIPIOS_COORDS = json.load(f)
+    except FileNotFoundError:
+        print("  [geocode] data/municipios_coords.json not found — falling back to Nominatim")
+IBGE_CACHE_TTL_DAYS = 90  # Population/GDP data changes annually
 BRASILAPI_BASE = "https://brasilapi.com.br/api/cnpj/v1"
 IBGE_LOCALIDADES = "https://servicodados.ibge.gov.br/api/v1/localidades"
 IBGE_SIDRA = "https://apisidra.ibge.gov.br/values"
@@ -163,7 +187,7 @@ def _source_tag(status: str, detail: str = "") -> dict:
 # ============================================================
 
 class ApiClient:
-    """Simple HTTP client with retry and logging."""
+    """Simple HTTP client with retry and logging. Thread-safe."""
 
     def __init__(self, verbose: bool = True):
         self.client = httpx.Client(
@@ -173,6 +197,12 @@ class ApiClient:
         )
         self.verbose = verbose
         self.stats = {"calls": 0, "success": 0, "failed": 0, "retries": 0}
+        self._stats_lock = threading.Lock()
+        self._print_lock = threading.Lock()
+
+    def _inc_stat(self, key: str) -> None:
+        with self._stats_lock:
+            self.stats[key] += 1
 
     def get(
         self,
@@ -185,51 +215,57 @@ class ApiClient:
         GET request with retry. Returns (data, source_status).
         source_status is "API" on success, "API_FAILED" on failure.
         """
-        self.stats["calls"] += 1
+        self._inc_stat("calls")
         display = label or url[:80]
 
         for attempt in range(MAX_RETRIES):
             try:
                 if self.verbose and attempt == 0:
-                    print(f"  → {display}", end="", flush=True)
+                    with self._print_lock:
+                        print(f"  → {display}", end="", flush=True)
 
                 resp = self.client.get(url, params=params, headers=headers)
 
                 if resp.status_code == 200:
-                    self.stats["success"] += 1
+                    self._inc_stat("success")
                     if self.verbose:
-                        print(f" ✓ ({resp.status_code})")
+                        with self._print_lock:
+                            print(f" ✓ ({resp.status_code})")
                     try:
                         return resp.json(), "API"
                     except Exception:
                         return None, "API_FAILED"
 
                 if resp.status_code in (429, 500, 502, 503, 504, 422):
-                    self.stats["retries"] += 1
+                    self._inc_stat("retries")
                     wait = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)]
                     if self.verbose:
-                        print(f" ⟳ {resp.status_code}, retry in {wait}s", end="", flush=True)
+                        with self._print_lock:
+                            print(f" ⟳ {resp.status_code}, retry in {wait}s", end="", flush=True)
                     time.sleep(wait)
                     continue
 
                 # Non-retryable error
-                self.stats["failed"] += 1
+                self._inc_stat("failed")
                 if self.verbose:
-                    print(f" ✗ ({resp.status_code})")
+                    with self._print_lock:
+                        print(f" ✗ ({resp.status_code})")
                 return None, "API_FAILED"
 
             except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
-                self.stats["retries"] += 1
+                self._inc_stat("retries")
                 wait = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)]
                 if self.verbose:
                     err_type = type(e).__name__
-                    print(f" ⟳ {err_type}, retry in {wait}s", end="", flush=True)
+                    with self._print_lock:
+                        print(f" ⟳ {err_type}, retry in {wait}s", end="", flush=True)
                 time.sleep(wait)
                 continue
 
-        self.stats["failed"] += 1
+        self._inc_stat("failed")
         if self.verbose:
-            print(f" ✗ (max retries)")
+            with self._print_lock:
+                print(f" ✗ (max retries)")
         return None, "API_FAILED"
 
     def head(self, url: str, label: str = "") -> int | None:
@@ -452,6 +488,7 @@ def collect_brasilapi(api: ApiClient, cnpj14: str) -> dict:
 
 
 _ibge_cache: dict = {}  # UF -> {nome_normalizado: cod_ibge}
+_ibge_data_cache: dict = {}  # "{municipio}/{uf}" -> enriched data dict (persistent)
 
 
 def _normalize_municipio(nome: str) -> str:
@@ -509,6 +546,149 @@ def collect_ibge_municipio(api: ApiClient, municipio: str, uf: str) -> dict:
 
     has_any = result.get("populacao") or result.get("pib_mil_reais")
     result["_source"] = _source_tag("API" if has_any else "API_FAILED", f"pop={'OK' if result.get('populacao') else 'N/A'}, pib={'OK' if result.get('pib_mil_reais') else 'N/A'}")
+    return result
+
+
+
+def _load_ibge_cache() -> None:
+    """Load persistent IBGE data cache from disk, pruning expired entries."""
+    global _ibge_data_cache
+    try:
+        with open(IBGE_CACHE_FILE, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        now = datetime.now(timezone.utc)
+        _ibge_data_cache = {
+            k: v for k, v in raw.items()
+            if (now - datetime.fromisoformat(v.get("_cached_at", "2000-01-01T00:00:00+00:00"))).days < IBGE_CACHE_TTL_DAYS
+        }
+    except (FileNotFoundError, json.JSONDecodeError):
+        _ibge_data_cache = {}
+
+
+def _save_ibge_cache() -> None:
+    """Persist IBGE data cache to disk."""
+    os.makedirs(os.path.dirname(IBGE_CACHE_FILE), exist_ok=True)
+    with open(IBGE_CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(_ibge_data_cache, f, ensure_ascii=False, indent=2)
+
+
+def collect_ibge_batch(api: ApiClient, municipios: list[tuple[str, str]]) -> dict[str, dict]:
+    """Fetch population + GDP for multiple municipalities via batch SIDRA requests.
+
+    Args:
+        api: ApiClient instance
+        municipios: list of (municipio, uf) tuples
+
+    Returns:
+        dict mapping "{municipio}|{uf}" -> {"populacao": int, "pib_mil_reais": float, ...}
+    """
+    _load_ibge_cache()
+
+    result: dict[str, dict] = {}
+    missing: list[tuple[str, str, int]] = []  # (municipio, uf, cod_ibge)
+
+    # Split cached vs missing
+    cached_count = 0
+    for mun, uf in municipios:
+        key = f"{mun}|{uf}"
+        if key in _ibge_data_cache:
+            result[key] = _ibge_data_cache[key]
+            cached_count += 1
+        else:
+            cod = _get_cod_ibge(api, mun, uf)
+            if cod:
+                missing.append((mun, uf, cod))
+            else:
+                result[key] = {
+                    "_source": _source_tag("API_FAILED", f"Codigo IBGE nao encontrado: {mun}/{uf}"),
+                    "populacao": None,
+                    "pib_mil_reais": None,
+                    "pib_per_capita": None,
+                }
+
+    print(f"  -> IBGE: {cached_count} do cache, {len(missing)} novos")
+
+    if not missing:
+        return result
+
+    # Build comma-separated codes for batch requests
+    codes_str = ",".join(str(cod) for _, _, cod in missing)
+    cod_to_key: dict[str, str] = {str(cod): f"{mun}|{uf}" for mun, uf, cod in missing}
+
+    # --- Batch population request ---
+    pop_values: dict[str, int | None] = {}
+    pop_data, pop_status = api.get(
+        f"{IBGE_SIDRA}/t/6579/n6/{codes_str}/v/9324/p/last",
+        label=f"IBGE batch pop ({len(missing)} municipios)",
+    )
+    if pop_status == "API" and isinstance(pop_data, list):
+        for item in pop_data:
+            cod_key = str(item.get("D1C", ""))
+            if cod_key in cod_to_key:
+                try:
+                    pop_values[cod_key] = int(item.get("V", 0))
+                except (ValueError, TypeError):
+                    pop_values[cod_key] = None
+        print(f"  -> IBGE batch: {len(missing)} municipios (pop) OK")
+    else:
+        print(f"  IBGE batch pop falhou (status={pop_status}) -- usando fallback individual")
+
+    time.sleep(0.3)
+
+    # --- Batch GDP request ---
+    pib_values: dict[str, float | None] = {}
+    pib_data, pib_status = api.get(
+        f"{IBGE_SIDRA}/t/5938/n6/{codes_str}/v/37/p/last",
+        label=f"IBGE batch PIB ({len(missing)} municipios)",
+    )
+    if pib_status == "API" and isinstance(pib_data, list):
+        for item in pib_data:
+            cod_key = str(item.get("D1C", ""))
+            if cod_key in cod_to_key:
+                try:
+                    pib_values[cod_key] = float(item.get("V", 0))
+                except (ValueError, TypeError):
+                    pib_values[cod_key] = None
+        print(f"  -> IBGE batch: {len(missing)} municipios (PIB) OK")
+    else:
+        print(f"  IBGE batch PIB falhou (status={pib_status}) -- usando fallback individual")
+
+    # --- Assemble results; fall back to individual calls on batch failure ---
+    now_iso = datetime.now(timezone.utc).isoformat()
+    for mun, uf, cod in missing:
+        key = f"{mun}|{uf}"
+        cod_str_k = str(cod)
+
+        pop: int | None = pop_values.get(cod_str_k)
+        pib: float | None = pib_values.get(cod_str_k)
+
+        # If batch failed entirely, attempt individual fallback
+        if pop is None and pop_status != "API":
+            indiv = collect_ibge_municipio(api, mun, uf)
+            pop = indiv.get("populacao")
+            pib = indiv.get("pib_mil_reais")
+        elif pib is None and pib_status != "API":
+            indiv = collect_ibge_municipio(api, mun, uf)
+            pop = indiv.get("populacao") if pop is None else pop
+            pib = indiv.get("pib_mil_reais")
+
+        pib_per_capita: float | None = None
+        if pop and pib:
+            pib_per_capita = round((pib * 1000) / pop, 2)
+
+        has_any = pop or pib
+        entry: dict = {
+            "cod_ibge": cod,
+            "populacao": pop,
+            "pib_mil_reais": pib,
+            "pib_per_capita": pib_per_capita,
+            "_source": _source_tag("API" if has_any else "API_FAILED", f"pop={'OK' if pop else 'N/A'}, pib={'OK' if pib else 'N/A'}"),
+            "_cached_at": now_iso,
+        }
+        result[key] = entry
+        _ibge_data_cache[key] = entry
+
+    _save_ibge_cache()
     return result
 
 
@@ -3453,6 +3633,14 @@ def _save_json_cache(path: str, data: dict) -> None:
 _geocode_mem: dict[tuple[str, str], tuple[float, float] | None] = {}
 _geocode_disk: dict | None = None  # lazy-loaded
 
+# --- Competitive intel cache (7-day TTL) ---
+_competitive_cache: dict = {}
+_competitive_cache_lock = threading.Lock()
+
+# --- Docs cache (permanent — immutable once published) ---
+_docs_cache: dict = {}
+_docs_cache_lock = threading.Lock()
+
 
 def _geocode_disk_load() -> dict:
     global _geocode_disk
@@ -3466,18 +3654,88 @@ def _geocode_disk_save() -> None:
         _save_json_cache(GEOCODE_CACHE_FILE, _geocode_disk)
 
 
+# --- Competitive intel cache helpers ---
+
+def _load_competitive_cache() -> None:
+    """Load competitive intel cache from disk, discarding entries older than TTL."""
+    global _competitive_cache
+    with _competitive_cache_lock:
+        try:
+            raw = _load_json_cache(COMPETITIVE_CACHE_FILE)
+            now = datetime.now(timezone.utc)
+            fresh: dict = {}
+            for k, v in raw.items():
+                cached_at = v.get("_cached_at", "2000-01-01")
+                try:
+                    age = (now - datetime.fromisoformat(cached_at)).days
+                except (ValueError, TypeError):
+                    age = 999
+                if age < COMPETITIVE_CACHE_TTL_DAYS:
+                    fresh[k] = v
+            _competitive_cache = fresh
+            if fresh:
+                print(f"  ✓ Competitive cache: {len(fresh)} órgãos carregados do disco")
+        except Exception:
+            _competitive_cache = {}
+
+
+def _save_competitive_cache() -> None:
+    """Persist competitive intel cache to disk."""
+    with _competitive_cache_lock:
+        _save_json_cache(COMPETITIVE_CACHE_FILE, _competitive_cache)
+
+
+# --- Docs cache helpers ---
+
+def _load_docs_cache() -> None:
+    """Load docs cache from disk (permanent — no TTL)."""
+    global _docs_cache
+    with _docs_cache_lock:
+        try:
+            _docs_cache = _load_json_cache(DOCS_CACHE_FILE)
+            if _docs_cache:
+                print(f"  ✓ Docs cache: {len(_docs_cache)} editais carregados do disco")
+        except Exception:
+            _docs_cache = {}
+
+
+def _save_docs_cache() -> None:
+    """Persist docs cache to disk."""
+    with _docs_cache_lock:
+        _save_json_cache(DOCS_CACHE_FILE, _docs_cache)
+
+
 def _geocode(api: ApiClient, cidade: str, uf: str) -> tuple[float, float] | None:
-    """Geocode a city. Checks: memory → disk cache → Nominatim API."""
+    """Geocode a city.
+
+    Lookup priority:
+      1. Memory cache (fastest, in-process)
+      2. Static JSON (data/municipios_coords.json -- no API call, no sleep)
+      3. Persistent disk cache (data/geocode_cache.json -- previous Nominatim results)
+      4. Nominatim API (rate-limited: 1 req/s, last resort)
+    """
     if not cidade or not uf:
         return None
 
-    key = (cidade.strip().lower(), uf.strip().upper())
+    uf_upper = uf.strip().upper()
+    key = (cidade.strip().lower(), uf_upper)
 
     # 1. Memory cache
     if key in _geocode_mem:
         return _geocode_mem[key]
 
-    # 2. Disk cache
+    # 2. Static JSON lookup (covers all ~5571 IBGE municipalities -- no API call)
+    _load_municipios_coords()
+    if _MUNICIPIOS_COORDS:
+        static_key = f"{_strip_accents(cidade).upper().strip()}/{uf_upper}"
+        entry = _MUNICIPIOS_COORDS.get("by_name", {}).get(static_key)
+        if entry:
+            result: tuple[float, float] | None = (entry["lat"], entry["lon"])
+            _geocode_mem[key] = result
+            print(f"  Geocode: {cidade}/{uf_upper} (static)")
+            return result
+
+    # 3. Persistent disk cache (results from previous Nominatim calls)
     disk = _geocode_disk_load()
     disk_key = f"{key[0]}|{key[1]}"
     if disk_key in disk:
@@ -3486,7 +3744,7 @@ def _geocode(api: ApiClient, cidade: str, uf: str) -> tuple[float, float] | None
         _geocode_mem[key] = result
         return result
 
-    # 3. Nominatim API (rate-limited: 1 req/s)
+    # 4. Nominatim API (rate-limited: 1 req/s)
     time.sleep(1.1)
     data, status = api.get(
         NOMINATIM_BASE,
@@ -3528,9 +3786,6 @@ def _geocode(api: ApiClient, cidade: str, uf: str) -> tuple[float, float] | None
     _geocode_mem[key] = None
     disk[disk_key] = None
     return None
-
-
-# --- OSRM Table API (batch distances) ---
 
 def _calculate_distances_table(
     api: ApiClient,
@@ -3662,18 +3917,22 @@ def calculate_distance(
 # ============================================================
 
 def validate_pncp_links(api: ApiClient, editais: list[dict]) -> None:
-    """Validate PNCP links with HEAD requests. Mutates editais in place."""
+    """Validate PNCP links with HEAD requests. Mutates editais in place — parallel."""
     print(f"\n🔗 Validando links PNCP ({len(editais)} editais)")
-    for ed in editais:
+
+    def _validate_single(ed: dict) -> None:
         link = ed.get("link", "")
         if not link or "pncp.gov.br" not in link:
             ed["link_valid"] = None
-            continue
+            return
         status_code = api.head(link, label=f"HEAD {link[-40:]}")
         ed["link_valid"] = status_code == 200 if status_code else None
         if status_code and status_code != 200:
-            print(f"  ⚠ Link HTTP {status_code}: {link}")
-        time.sleep(0.3)
+            with api._print_lock:
+                print(f"  ⚠ Link HTTP {status_code}: {link}")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as pool:
+        list(pool.map(_validate_single, editais))
 
 
 # ============================================================
@@ -3681,13 +3940,19 @@ def validate_pncp_links(api: ApiClient, editais: list[dict]) -> None:
 # ============================================================
 
 def collect_pncp_documents(api: ApiClient, editais: list[dict]) -> None:
-    """List available documents for each PNCP edital. Mutates editais in place."""
-    print(f"\n📄 Phase 2b: Listando documentos PNCP")
-    for ed in editais:
+    """List available documents for each PNCP edital. Mutates editais in place — parallel.
+
+    Document listings are immutable once published — results are cached permanently.
+    """
+    print(f"\n📄 Phase 2b: Listando documentos PNCP ({len(editais)} editais)")
+    _counter_lock = threading.Lock()
+    counters = {"cached": 0, "fetched": 0}
+
+    def _fetch_docs_single(ed: dict) -> None:
         if ed.get("fonte") != "PNCP":
             ed["documentos"] = []
             ed["documentos_source"] = _source_tag("UNAVAILABLE", "Apenas PNCP tem API de documentos")
-            continue
+            return
 
         cnpj_orgao = ed.get("cnpj_orgao", "")
         ano = ed.get("ano_compra", "")
@@ -3696,7 +3961,20 @@ def collect_pncp_documents(api: ApiClient, editais: list[dict]) -> None:
         if not (cnpj_orgao and ano and seq):
             ed["documentos"] = []
             ed["documentos_source"] = _source_tag("UNAVAILABLE", "Dados insuficientes para buscar docs")
-            continue
+            return
+
+        cache_key = f"{cnpj_orgao}/{ano}/{seq}"
+
+        # Check cache first (document listings are immutable)
+        with _docs_cache_lock:
+            cached = _docs_cache.get(cache_key)
+
+        if cached is not None:
+            ed["documentos"] = cached
+            ed["documentos_source"] = _source_tag("API", f"{len(cached)} documentos (cache)")
+            with _counter_lock:
+                counters["cached"] += 1
+            return
 
         data, status = api.get(
             f"{PNCP_FILES_BASE}/orgaos/{cnpj_orgao}/compras/{ano}/{seq}/arquivos",
@@ -3719,11 +3997,23 @@ def collect_pncp_documents(api: ApiClient, editais: list[dict]) -> None:
                 })
             ed["documentos"] = docs
             ed["documentos_source"] = _source_tag("API", f"{len(docs)} documentos encontrados")
+            # Cache permanently (immutable)
+            with _docs_cache_lock:
+                _docs_cache[cache_key] = docs
+            with _counter_lock:
+                counters["fetched"] += 1
         else:
             ed["documentos"] = []
             ed["documentos_source"] = _source_tag("API_FAILED")
+            # Do NOT cache failed responses
 
-        time.sleep(0.5)
+        time.sleep(0.05)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as pool:
+        list(pool.map(_fetch_docs_single, editais))
+
+    print(f"  Documentos: {counters['cached']} do cache, {counters['fetched']} da API")
+    _save_docs_cache()
 
 
 # ============================================================
@@ -3738,7 +4028,8 @@ def collect_competitive_intel(
     """Fetch historical contracts for each edital's orgão to identify incumbents.
 
     Mutates editais in place, adding `competitive_intel` field.
-    Deduplicates by orgão CNPJ to avoid redundant API calls.
+    Deduplicates by orgão CNPJ to avoid redundant API calls. Parallel across orgãos.
+    Results cached with 7-day TTL (data changes slowly).
     """
     # Collect unique orgão CNPJs
     orgao_map: dict[str, list[dict]] = {}  # cnpj_orgao → [editais]
@@ -3767,8 +4058,30 @@ def collect_competitive_intel(
         w_start = today - timedelta(days=days_start)
         _windows.append((_date_compact(w_start), _date_compact(w_end)))
 
-    for cnpj_orgao, orgao_editais in orgao_map.items():
+    # Per-organ counters (thread-safe via list)
+    _n_cached = [0]
+    _n_fetched = [0]
+    _counter_lock = threading.Lock()
+
+    def _fetch_organ_intel(item: tuple) -> None:
+        cnpj_orgao, orgao_editais = item
         orgao_nome = orgao_editais[0].get("orgao", cnpj_orgao)
+
+        # Check cache first (7-day TTL)
+        with _competitive_cache_lock:
+            cached_entry = _competitive_cache.get(cnpj_orgao)
+
+        if cached_entry is not None:
+            contracts = cached_entry["contracts"]
+            print(f"  → Competitiva: {orgao_nome[:40]}... ✓ (cache)")
+            source = _source_tag("API", f"{len(contracts)} contratos (cache)")
+            for ed in orgao_editais:
+                ed["competitive_intel"] = contracts[:20]
+                ed["competitive_intel_source"] = source
+            with _counter_lock:
+                _n_cached[0] += 1
+            return
+
         contracts: list[dict] = []
 
         for data_ini_str, data_fim_str in _windows:
@@ -3809,12 +4122,22 @@ def collect_competitive_intel(
 
                 if len(items) < PNCP_MAX_PAGE_SIZE:
                     break
-                time.sleep(0.3)
+                time.sleep(0.1)
 
             # Stop if we already have enough data
             if len(contracts) >= 40:
                 break
-            time.sleep(0.3)
+            time.sleep(0.1)
+
+        # Store in cache (only on successful fetch -- do NOT cache API_FAILED)
+        with _competitive_cache_lock:
+            _competitive_cache[cnpj_orgao] = {
+                "contracts": contracts,
+                "_cached_at": datetime.now(timezone.utc).isoformat(),
+            }
+
+        with _counter_lock:
+            _n_fetched[0] += 1
 
         # Assign to all editais of this orgão
         source = _source_tag("API", f"{len(contracts)} contratos") if contracts else _source_tag("API", "0 contratos")
@@ -3822,14 +4145,17 @@ def collect_competitive_intel(
             ed["competitive_intel"] = contracts[:20]  # Limit to 20 most recent
             ed["competitive_intel_source"] = source
 
-        time.sleep(0.3)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(_fetch_organ_intel, orgao_map.items()))
+
+    print(f"  Competitiva: {_n_cached[0]} do cache, {_n_fetched[0]} da API")
+    _save_competitive_cache()
 
     # Mark editais without orgao data
     for ed in editais:
         if "competitive_intel" not in ed:
             ed["competitive_intel"] = []
             ed["competitive_intel_source"] = _source_tag("UNAVAILABLE", "Orgão sem CNPJ")
-
 
 # ============================================================
 # DETERMINISTIC CALCULATIONS (risk score, ROI, chronogram)
@@ -6982,103 +7308,112 @@ Examples:
     if dropped > 0:
         print(f"\n  ⚡ Removidos {dropped} editais já encerrados (restam {len(all_editais)} abertos)")
 
-    # ---- Phase 2b: Document Listing ----
+    # ---- Phase 2b: Enrichment (parallel) ----
+    print("\n" + "=" * 60)
+    print("⚡ Phase 2b: Enriquecimento paralelo")
+    print("=" * 60)
+
+    # Pre-load caches before entering pool (cache I/O is not thread-safe on its own)
     if not args.skip_docs:
-        collect_pncp_documents(api, all_editais)
+        _load_docs_cache()
+    if not args.skip_competitive:
+        _load_competitive_cache()
 
-    # ---- Link Validation ----
-    if not args.skip_links:
-        validate_pncp_links(api, all_editais)
-
-    # ---- Distance Calculation (persistent cache + OSRM Table API) ----
+    # --- Distance calculation wrapped as a local function ---
     distancias: dict[str, dict] = {}
-    if not args.skip_distances:
+
+    def _run_distances() -> None:
+        if args.skip_distances:
+            return
         cidade_sede = empresa.get("cidade_sede", "")
         uf_sede = empresa.get("uf_sede", "")
-        if cidade_sede and uf_sede:
-            # Unique destinations
-            destinos = set()
-            for ed in all_editais:
-                mun = ed.get("municipio", "")
-                uf = ed.get("uf", "")
-                if mun and uf:
-                    destinos.add((mun, uf))
-
-            print(f"\n📍 Calculando distâncias ({len(destinos)} destinos)")
-
-            # Step 1: Load persistent distance cache
-            dist_cache = _load_json_cache(DISTANCE_CACHE_FILE)
-            origin_cache_key = f"{cidade_sede.strip().lower()}|{uf_sede.strip().upper()}"
-            cached_count = 0
-            uncached_destinos: list[tuple[str, str]] = []
-
-            for mun, uf in sorted(destinos):
-                dest_cache_key = f"{mun.strip().lower()}|{uf.strip().upper()}"
-                full_key = f"{origin_cache_key}→{dest_cache_key}"
-                if full_key in dist_cache:
-                    distancias[f"{mun}|{uf}"] = dist_cache[full_key]
-                    cached_count += 1
-                else:
-                    uncached_destinos.append((mun, uf))
-
-            if cached_count:
-                print(f"  ✓ {cached_count} distâncias do cache persistente")
-
-            if uncached_destinos:
-                print(f"  → {len(uncached_destinos)} novas distâncias a calcular")
-
-                # Step 2: Geocode origin + all uncached destinations
-                origin_coords = _geocode(api, cidade_sede, uf_sede)
-                if origin_coords:
-                    dest_coords: dict[str, tuple[float, float]] = {}
-                    geocode_failed = 0
-                    for mun, uf in uncached_destinos:
-                        coords = _geocode(api, mun, uf)
-                        key = f"{mun}|{uf}"
-                        if coords:
-                            dest_coords[key] = coords
-                        else:
-                            geocode_failed += 1
-                            distancias[key] = {
-                                "km": None,
-                                "duracao_horas": None,
-                                "_source": _source_tag("API_FAILED", f"Geocode falhou para {mun}/{uf}"),
-                            }
-                    if geocode_failed:
-                        print(f"  ⚠ Geocode falhou para {geocode_failed} destinos")
-
-                    # Step 3: Batch OSRM Table API
-                    if dest_coords:
-                        print(f"  → OSRM Table API: {len(dest_coords)} rotas em {(len(dest_coords) - 1) // OSRM_TABLE_BATCH_SIZE + 1} batch(es)")
-                        batch_results = _calculate_distances_table(api, origin_coords, dest_coords)
-
-                        # Merge results + update persistent cache
-                        for key, result in batch_results.items():
-                            distancias[key] = result
-                            dest_cache_key = key.strip().lower() if "|" in key else key
-                            # Normalize key for cache
-                            parts = key.split("|")
-                            if len(parts) == 2:
-                                norm_dest = f"{parts[0].strip().lower()}|{parts[1].strip().upper()}"
-                            else:
-                                norm_dest = key
-                            full_key = f"{origin_cache_key}→{norm_dest}"
-                            dist_cache[full_key] = result
-
-                    # Step 4: Persist both caches
-                    _geocode_disk_save()
-                    _save_json_cache(DISTANCE_CACHE_FILE, dist_cache)
-                    print(f"  ✓ Caches persistidos ({len(_geocode_disk_load())} geocodes, {len(dist_cache)} distâncias)")
-                else:
-                    print(f"  ⚠ Geocode da sede falhou — pulando distâncias")
-            else:
-                print(f"  ✓ Todas as {cached_count} distâncias servidas do cache")
-        else:
+        if not (cidade_sede and uf_sede):
             print("\n📍 Distâncias: cidade/UF da sede não disponível — pulando")
+            return
 
-    # ---- IBGE Municipal Data ----
+        destinos: set = set()
+        for ed in all_editais:
+            mun = ed.get("municipio", "")
+            uf = ed.get("uf", "")
+            if mun and uf:
+                destinos.add((mun, uf))
+
+        print(f"\n📍 Calculando distâncias ({len(destinos)} destinos)")
+
+        # Step 1: Load persistent distance cache
+        dist_cache = _load_json_cache(DISTANCE_CACHE_FILE)
+        origin_cache_key = f"{cidade_sede.strip().lower()}|{uf_sede.strip().upper()}"
+        cached_count = 0
+        uncached_destinos: list[tuple[str, str]] = []
+
+        for mun, uf in sorted(destinos):
+            dest_cache_key = f"{mun.strip().lower()}|{uf.strip().upper()}"
+            full_key = f"{origin_cache_key}→{dest_cache_key}"
+            if full_key in dist_cache:
+                distancias[f"{mun}|{uf}"] = dist_cache[full_key]
+                cached_count += 1
+            else:
+                uncached_destinos.append((mun, uf))
+
+        if cached_count:
+            print(f"  ✓ {cached_count} distâncias do cache persistente")
+
+        if uncached_destinos:
+            print(f"  → {len(uncached_destinos)} novas distâncias a calcular")
+
+            # Step 2: Geocode origin + all uncached destinations
+            origin_coords = _geocode(api, cidade_sede, uf_sede)
+            if origin_coords:
+                dest_coords: dict[str, tuple[float, float]] = {}
+                geocode_failed = 0
+                for mun, uf in uncached_destinos:
+                    coords = _geocode(api, mun, uf)
+                    key = f"{mun}|{uf}"
+                    if coords:
+                        dest_coords[key] = coords
+                    else:
+                        geocode_failed += 1
+                        distancias[key] = {
+                            "km": None,
+                            "duracao_horas": None,
+                            "_source": _source_tag("API_FAILED", f"Geocode falhou para {mun}/{uf}"),
+                        }
+                if geocode_failed:
+                    print(f"  ⚠ Geocode falhou para {geocode_failed} destinos")
+
+                # Step 3: Batch OSRM Table API
+                if dest_coords:
+                    print(f"  → OSRM Table API: {len(dest_coords)} rotas em {(len(dest_coords) - 1) // OSRM_TABLE_BATCH_SIZE + 1} batch(es)")
+                    batch_results = _calculate_distances_table(api, origin_coords, dest_coords)
+
+                    # Merge results + update persistent cache
+                    for key, result in batch_results.items():
+                        distancias[key] = result
+                        # Normalize key for cache
+                        parts = key.split("|")
+                        if len(parts) == 2:
+                            norm_dest = f"{parts[0].strip().lower()}|{parts[1].strip().upper()}"
+                        else:
+                            norm_dest = key
+                        full_key = f"{origin_cache_key}→{norm_dest}"
+                        dist_cache[full_key] = result
+
+                # Step 4: Persist both caches
+                _geocode_disk_save()
+                _save_json_cache(DISTANCE_CACHE_FILE, dist_cache)
+                print(f"  ✓ Caches persistidos ({len(_geocode_disk_load())} geocodes, {len(dist_cache)} distâncias)")
+            else:
+                print(f"  ⚠ Geocode da sede falhou — pulando distâncias")
+        else:
+            print(f"  ✓ Todas as {cached_count} distâncias servidas do cache")
+
+    # --- IBGE wrapped as a local function ---
     ibge_data: dict = {}
-    if not (hasattr(args, 'skip_ibge') and args.skip_ibge):
+
+    def _run_ibge() -> None:
+        if getattr(args, "skip_ibge", False):
+            return
+        nonlocal ibge_data
         print(f"\n  IBGE — Enriquecendo municipios")
         municipios_unicos: set = set()
         for ed in all_editais:
@@ -7086,14 +7421,22 @@ Examples:
             uf_ed = ed.get("uf", "")
             if mun and uf_ed:
                 municipios_unicos.add((mun, uf_ed))
-        for mun, uf_ed in sorted(municipios_unicos):
-            key = f"{mun}|{uf_ed}"
-            try:
-                ibge_data[key] = collect_ibge_municipio(api, mun, uf_ed)
-            except Exception as e:
-                print(f"  ⚠ IBGE falhou para {mun}/{uf_ed}: {e}")
-                ibge_data[key] = {"_source": _source_tag("API_FAILED", f"Exception: {e}"), "populacao": None, "pib_mil_reais": None}
-            time.sleep(0.5)
+        try:
+            ibge_data = collect_ibge_batch(api, sorted(municipios_unicos))
+        except Exception as e:
+            print(f"  ⚠ IBGE batch falhou completamente: {e} — usando fallback individual")
+            for mun, uf_ed in sorted(municipios_unicos):
+                key = f"{mun}|{uf_ed}"
+                try:
+                    ibge_data[key] = collect_ibge_municipio(api, mun, uf_ed)
+                except Exception as e2:
+                    print(f"  ⚠ IBGE falhou para {mun}/{uf_ed}: {e2}")
+                    ibge_data[key] = {
+                        "_source": _source_tag("API_FAILED", f"Exception: {e2}"),
+                        "populacao": None,
+                        "pib_mil_reais": None,
+                    }
+                time.sleep(0.5)
         for ed in all_editais:
             mun = ed.get("municipio", "")
             uf_ed = ed.get("uf", "")
@@ -7101,15 +7444,40 @@ Examples:
             if key in ibge_data:
                 ed["ibge"] = ibge_data[key]
 
-    # ---- SICAF (obrigatório — E2) ----
+    # --- Dispatch all enrichment phases concurrently ---
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as phase_pool:
+        futures: dict[str, concurrent.futures.Future] = {}
+
+        if not args.skip_docs:
+            futures["docs"] = phase_pool.submit(collect_pncp_documents, api, all_editais)
+
+        if not args.skip_links:
+            futures["links"] = phase_pool.submit(validate_pncp_links, api, all_editais)
+
+        if not args.skip_distances:
+            futures["distances"] = phase_pool.submit(_run_distances)
+
+        if not getattr(args, "skip_ibge", False):
+            futures["ibge"] = phase_pool.submit(_run_ibge)
+
+        if not args.skip_competitive:
+            futures["competitive"] = phase_pool.submit(collect_competitive_intel, api, all_editais)
+
+        # SICAF runs separately (uses subprocess/browser) — submitted after pool
+
+        # Wait for all and report
+        for name, fut in futures.items():
+            try:
+                fut.result()
+                print(f"  ✅ {name} concluído")
+            except Exception as e:
+                print(f"  ❌ {name} falhou: {e}")
+
+    # ---- SICAF (obrigatório — E2, runs after pool) ----
     sicaf = collect_sicaf(cnpj14, verbose=verbose)
 
     # NOTE: Contract history (PNCP + PT) already collected in Phase 1b (before edital search)
     # and merged into transparencia["historico_contratos"]. No need to repeat here.
-
-    # ---- Competitive Intelligence ----
-    if not args.skip_competitive:
-        collect_competitive_intel(api, all_editais)
 
     # ---- Assemble ----
     print(f"\n{'='*60}")
