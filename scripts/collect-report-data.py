@@ -4382,11 +4382,21 @@ def collect_competitive_intel(
         with _counter_lock:
             _n_fetched[0] += 1
 
-        # Assign to all editais of this orgão
+        # Assign to all editais of this orgão (raw + sector-filtered)
         source = _source_tag("API", f"{len(contracts)} contratos") if contracts else _source_tag("API", "0 contratos")
         for ed in orgao_editais:
             ed["competitive_intel"] = contracts[:20]  # Limit to 20 most recent
             ed["competitive_intel_source"] = source
+            # Pre-filter by sector keywords for downstream analysis
+            sector_key = ed.get("_sector_key", "")
+            sector_kws = _SECTOR_COMPETITION_KEYWORDS.get(sector_key, []) if sector_key else []
+            if sector_kws:
+                ed["competitive_intel_filtered"] = [
+                    c for c in contracts[:20]
+                    if any(kw in (c.get("objeto", "") or "").lower() for kw in sector_kws)
+                ]
+            else:
+                ed["competitive_intel_filtered"] = contracts[:20]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(_fetch_organ_intel, orgao_map.items()))
@@ -4952,10 +4962,9 @@ def compute_win_probability(
             c for c in competitive_intel
             if any(kw in (c.get("objeto", "") or "").lower() for kw in sector_kw_list)
         ]
-        # Use filtered set if we retain at least 20% of data (else too noisy to filter)
-        if len(relevant) >= max(1, len(competitive_intel) * 0.2):
-            filtered_intel = relevant
-            sector_filtered = True
+        # Always use sector-filtered contracts to avoid cross-sector noise
+        filtered_intel = relevant if relevant else competitive_intel[:5]
+        sector_filtered = len(relevant) > 0
 
     # Analyze competitive landscape from sector-filtered historical contracts
     unique_suppliers: set[str] = set()
@@ -5205,11 +5214,15 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
     # F42: Clamp fiscal risk discount to [0.0, 1.0]
     fiscal_discount = max(0.0, min(1.0, float(fiscal_risk.get("roi_discount", 1.0)))) if isinstance(fiscal_risk, dict) else 1.0
 
-    gross_min = round(valor * probability * margin_min)
-    gross_max = round(valor * probability * margin_max)
-    # Net ROI = (gross ROI × fiscal discount) - participation cost (always incurred)
-    roi_min = round(gross_min * fiscal_discount - participation_cost)
-    roi_max = round(gross_max * fiscal_discount - participation_cost)
+    # Dual ROI: roi_if_win (lucro se vencer) and roi_expected (esperança matemática)
+    roi_if_win_min = round(valor * margin_min * fiscal_discount - participation_cost)
+    roi_if_win_max = round(valor * margin_max * fiscal_discount - participation_cost)
+    roi_expected_min = round(roi_if_win_min * probability)
+    roi_expected_max = round(roi_if_win_max * probability)
+
+    # Backward-compat: roi_min/roi_max now show if-win (not expected)
+    roi_min = roi_if_win_min
+    roi_max = roi_if_win_max
 
     # Auditable calculation memory — every factor explicit for manual reproduction
     def _fmt_brl(v: float) -> str:
@@ -5226,18 +5239,28 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
         "custo_proposta": round(proposal_cost),
         "cost_profile_used": cost_profile.get("label", "default"),
         "fiscal_risk_discount": fiscal_discount,
-        "formula": f"(valor × probabilidade × margem{fiscal_note}) − custo de participação",
-        "roi_min_calc": (
-            f"({_fmt_brl(valor)} × {probability:.4f} × {margin_min:.2f}"
+        "formula": f"(valor × margem{fiscal_note}) − custo de participação = ROI se vencer; × probabilidade = ROI esperado",
+        "roi_if_win_min_calc": (
+            f"({_fmt_brl(valor)} × {margin_min:.2f}"
             f"{f' × {fiscal_discount:.2f}' if fiscal_discount < 1.0 else ''}"
-            f") − {_fmt_brl(participation_cost)} = {_fmt_brl(roi_min)}"
+            f") − {_fmt_brl(participation_cost)} = {_fmt_brl(roi_if_win_min)}"
         ),
-        "roi_max_calc": (
-            f"({_fmt_brl(valor)} × {probability:.4f} × {margin_max:.2f}"
+        "roi_if_win_max_calc": (
+            f"({_fmt_brl(valor)} × {margin_max:.2f}"
             f"{f' × {fiscal_discount:.2f}' if fiscal_discount < 1.0 else ''}"
-            f") − {_fmt_brl(participation_cost)} = {_fmt_brl(roi_max)}"
+            f") − {_fmt_brl(participation_cost)} = {_fmt_brl(roi_if_win_max)}"
         ),
+        "roi_expected_min_calc": f"{_fmt_brl(roi_if_win_min)} × {probability:.4f} = {_fmt_brl(roi_expected_min)}",
+        "roi_expected_max_calc": f"{_fmt_brl(roi_if_win_max)} × {probability:.4f} = {_fmt_brl(roi_expected_max)}",
     }
+
+    # Strategic classification based on dual ROI
+    if roi_if_win_max > 0 and roi_expected_max < 0:
+        strategic_classification = "INVESTIMENTO_ESTRATEGICO"
+    elif roi_if_win_max > 0 and roi_expected_max > 0:
+        strategic_classification = "OPORTUNIDADE"
+    else:
+        strategic_classification = "INVIAVEL"
 
     # F10: ROI reclassification gradient (not cliff at R$10k)
     strategic_reclassification = None
@@ -5253,12 +5276,17 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
         )
 
     return {
-        "roi_min": roi_min,
+        "roi_if_win_min": roi_if_win_min,
+        "roi_if_win_max": roi_if_win_max,
+        "roi_expected_min": roi_expected_min,
+        "roi_expected_max": roi_expected_max,
+        "roi_min": roi_min,  # Backward compat: now shows if-win, not expected
         "roi_max": roi_max,
         "probability": round(probability, 3),
         "margin_range": f"{margin_min * 100:.0f}%-{margin_max * 100:.0f}%",
         "margin_source": "ESTIMATED" if margin_is_fallback else "SECTOR_SPECIFIC",
         "confidence": win_prob.get("confidence", "baixa"),
+        "strategic_classification": strategic_classification,
         "strategic_reclassification": strategic_reclassification,
         "reclassification_rationale": reclassification_rationale,
         "calculation_memory": calculation_memory,
@@ -6991,8 +7019,14 @@ def collect_price_benchmarks(editais: list[dict]) -> dict:
         if abs(discount_pct) > 200:
             continue
 
+        # Outlier rejection: >60% or <-10% likely means comparing different object types
+        if discount_pct > 60 or discount_pct < -10:
+            discount_pct = None
+
         # Interpretation
-        if discount_pct > 20:
+        if discount_pct is None:
+            interpretation = "Benchmark não disponível (dados incomparáveis)"
+        elif discount_pct > 20:
             interpretation = "Margem ampla para lance agressivo"
         elif discount_pct >= 10:
             interpretation = "Desconto moderado esperado"
@@ -7004,11 +7038,12 @@ def collect_price_benchmarks(editais: list[dict]) -> dict:
             "objeto": (ed.get("objeto") or "")[:80],
             "valor_estimado": valor_est,
             "avg_award_price": round(avg_award, 2),
-            "discount_pct": round(discount_pct, 1),
+            "discount_pct": round(discount_pct, 1) if discount_pct is not None else None,
             "n_contracts_base": len(valores_award),
             "interpretation": interpretation,
         })
-        all_discounts.append(discount_pct)
+        if discount_pct is not None:
+            all_discounts.append(discount_pct)
 
     # Clamp final average to [-100, 100] to guard against any residual outliers
     raw_avg = sum(all_discounts) / len(all_discounts) if all_discounts else 0.0
@@ -7160,7 +7195,9 @@ def assemble_strategic_thesis(
         rationale_parts.append("concentração indeterminada (dados insuficientes)")
 
     if has_price:
-        if avg_discount > 20:
+        if avg_discount is None or avg_discount > 60 or avg_discount < -10:
+            rationale_parts.append("benchmark de preço não disponível (poucos contratos comparáveis)")
+        elif avg_discount > 20:
             rationale_parts.append(f"desconto médio de {discount_br}% indica margens saudáveis para competir")
         elif avg_discount >= 10:
             rationale_parts.append(f"desconto médio de {discount_br}% sugere competição moderada de preço")
