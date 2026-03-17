@@ -262,6 +262,15 @@ _PNCP_SEARCH_LINK_RE = re.compile(
 
 
 # ============================================================
+# CONSTANTS
+# ============================================================
+
+# Hard cap: only Top N editais get full detailed rendering; the rest get a condensed row
+MAX_DETAILED_EDITAIS = 15
+# Hard cap: overview table rows before truncating to Excel companion
+MAX_OVERVIEW_ROWS = 30
+
+# ============================================================
 # HELPERS
 # ============================================================
 
@@ -828,7 +837,7 @@ def _build_resumo_decisorio(data: dict, styles: dict) -> list:
         for idx, e in enumerate(top_eds, 1):
             mun = _s(e.get("municipio", ""))
             uf = _s(e.get("uf", ""))
-            obj_text = _trunc(_s(e.get("objeto", "")), 60)
+            obj_text = _trunc(_s(e.get("objeto", "")), 120)
             roi = e.get("roi_potential", {})
             roi_max = roi.get("roi_max", 0)
             prob = (e.get("win_probability") or {}).get("probability", 0)
@@ -851,13 +860,13 @@ def _build_resumo_decisorio(data: dict, styles: dict) -> list:
     for e in vetados:
         reasons = (e.get("risk_score") or {}).get("veto_reasons", [])
         if reasons:
-            alerts.append(f"ELIMINADO: {_trunc(_s(e.get('objeto', '')), 40)} — {reasons[0]}")
+            alerts.append(f"ELIMINADO: {_trunc(_s(e.get('objeto', '')), 120)} — {reasons[0]}")
     # Tight deadline alerts
     for e in participar + avaliar:
         dias = e.get("dias_restantes")
         if dias is not None and dias <= 7:
             alerts.append(
-                f"URGENTE: {_trunc(_s(e.get('objeto', '')), 40)} encerra em {dias} dia(s)"
+                f"URGENTE: {_trunc(_s(e.get('objeto', '')), 120)} encerra em {dias} dia(s)"
             )
     # Fiscal risk alerts
     for e in participar + avaliar:
@@ -866,8 +875,14 @@ def _build_resumo_decisorio(data: dict, styles: dict) -> list:
             fiscal_alerts = fiscal.get("alertas", [])
             if fiscal_alerts:
                 alerts.append(
-                    f"RISCO FISCAL: {_trunc(_s(e.get('objeto', '')), 40)} — {fiscal_alerts[0]}"
+                    f"RISCO FISCAL: {_trunc(_s(e.get('objeto', '')), 120)} — {fiscal_alerts[0]}"
                 )
+    # Sanctions inconclusive alert
+    emp_sancoes = data.get("empresa", {}).get("sancoes", {})
+    if emp_sancoes.get("inconclusive"):
+        alerts.append(
+            "Situação de sanções não confirmada — verificar Portal da Transparência antes de submeter propostas"
+        )
 
     if alerts:
         alert_text = "<br/>".join(f"• {a}" for a in alerts[:5])
@@ -964,7 +979,7 @@ def _build_exclusive_intelligence(data: dict, styles: dict, sec: dict) -> list:
         wp = ed.get("win_probability", {})
         if not ci and not wp:
             continue
-        orgao = _s(ed.get("orgao", ""))[:60]
+        orgao = _s(ed.get("orgao", ""))[:120]
         hhi = wp.get("hhi", 0)
         top_share = wp.get("top_supplier_share", 0)
         unique = wp.get("n_unique_suppliers", wp.get("unique_suppliers", 0))
@@ -1057,7 +1072,7 @@ def _build_exclusive_intelligence(data: dict, styles: dict, sec: dict) -> list:
             factor = f"Forte: {strongest} ({_safe_int(components[strongest])}) | Fraco: {weakest} ({_safe_int(components[weakest])})"
 
             score_color = SIGNAL_GREEN if score >= 60 else (SIGNAL_AMBER if score >= 30 else SIGNAL_RED)
-            obj_text = _trunc(_s(ed.get("objeto", "")), 80)
+            obj_text = _trunc(_s(ed.get("objeto", "")), 150)
             via_link = _fix_pncp_link(ed.get("link", ""))
             if via_link and via_link.startswith("http"):
                 obj_text = f'<a href="{via_link}" color="{INK.hexval()}">{obj_text}</a>'
@@ -1096,9 +1111,9 @@ def _build_exclusive_intelligence(data: dict, styles: dict, sec: dict) -> list:
             styles["body"],
         ))
         for idx, ed in acervo_items:
-            obj = _trunc(_s(ed.get("objeto", "")), 100)
+            obj = _trunc(_s(ed.get("objeto", "")), 150)
             valor = _currency_short(ed.get("valor_estimado"))
-            orgao = _s(ed.get("orgao", ""))[:50]
+            orgao = _s(ed.get("orgao", ""))[:120]
             el.append(Paragraph(
                 f"  <b>{idx}.</b> {obj} ({orgao}) — {valor}",
                 styles["body_small"],
@@ -1172,7 +1187,19 @@ def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
     ]
     rows = [header]
 
-    for idx, ed in enumerate(editais, 1):
+    # Sort: PARTICIPAR first, then AVALIAR, then NÃO RECOMENDADO; within each by score desc
+    _rec_order = {"PARTICIPAR": 0, "AVALIAR COM CAUTELA": 1, "NÃO RECOMENDADO": 2}
+    editais_sorted = sorted(
+        editais,
+        key=lambda e: (
+            _rec_order.get(_normalize_recommendation(_s(e.get("recomendacao", ""))), 9),
+            -(e.get("risk_score", {}).get("total", 0)),
+        ),
+    )
+    # Cap to 30 rows (rest goes to Excel)
+    editais_display = editais_sorted[:MAX_OVERVIEW_ROWS]
+
+    for idx, ed in enumerate(editais_display, 1):
         rec = _normalize_recommendation(_s(ed.get("recomendacao", "")))
         risk = ed.get("risk_score", {}) or {}
         vetoed = risk.get("vetoed", False)
@@ -1187,7 +1214,7 @@ def _build_decision_table(data: dict, styles: dict, sec: dict) -> list:
             rec_color = rec_style_info["color"]
             rec_display = rec
 
-        objeto = _trunc(_s(ed.get("objeto", "")), 90)
+        objeto = _trunc(_s(ed.get("objeto", "")), 150)
         link = _fix_pncp_link(ed.get("link", ""))
         if link and link.startswith("http"):
             objeto = f'<a href="{link}" color="{INK.hexval()}">{objeto}</a>'
@@ -1787,8 +1814,14 @@ def _build_company_profile_content(data: dict, styles: dict) -> list:
     # Sanctions — simple text, no colored cards
     sancoes = emp.get("sancoes", {})
     if sancoes:
+        is_inconclusive = sancoes.get("inconclusive", False)
         has_sanction = any(sancoes.get(k) for k in ["ceis", "cnep", "cepim", "ceaf"])
-        if has_sanction:
+        if is_inconclusive:
+            sanc_text = (
+                f"<b><font color='{SIGNAL_AMBER.hexval()}'>Verificação pendente</font></b> — "
+                "recomendamos consulta direta ao Portal da Transparência antes de submeter propostas."
+            )
+        elif has_sanction:
             sanc_text = f"<b><font color='{SIGNAL_RED.hexval()}'>Atenção:</font></b> Empresa possui sanção ativa — "
             details = []
             for k, label in [("ceis", "CEIS"), ("cnep", "CNEP"), ("cepim", "CEPIM"), ("ceaf", "CEAF")]:
@@ -1943,6 +1976,10 @@ def _build_strategic_positioning(data: dict, styles: dict, sec: dict | None = No
 
     thesis = thesis_data.get("thesis", "")
     rationale = _s(thesis_data.get("rationale", ""))
+    # Sanitize: remove nonsensical discount mentions from pre-generated rationale
+    import re
+    rationale = re.sub(r'desconto médio de apenas -?\d{3,}[,.]?\d*%\s*—\s*margens comprimidas\.?\s*', '', rationale)
+    rationale = re.sub(r'desconto médio de apenas N/I%?\s*—\s*margens comprimidas\.?\s*', '', rationale)
     confidence = thesis_data.get("confidence", "")
     signals = thesis_data.get("signals", {})
 
@@ -2028,6 +2065,9 @@ def _build_strategic_positioning(data: dict, styles: dict, sec: dict | None = No
         )
 
         discount = price.get("avg_discount_pct", 0)
+        # Clamp nonsensical discount values (e.g. -44778%)
+        if abs(discount) > 100:
+            discount = 0
         discount_text = f"{_dec(discount)}%" if discount else "N/I"
         v_price = Paragraph(f"<b>{discount_text}</b>", styles["cell_center"])
 
@@ -2097,7 +2137,11 @@ def _build_overview_table(editais_list: list, styles: dict, start_idx: int = 1) 
     ]
     rows = [header]
 
-    for idx, ed in enumerate(editais_list, start_idx):
+    # Cap overview table to MAX_OVERVIEW_ROWS to prevent page explosion
+    display_list = editais_list[:MAX_OVERVIEW_ROWS]
+    overflow_count = len(editais_list) - len(display_list)
+
+    for idx, ed in enumerate(display_list, start_idx):
         rec = _normalize_recommendation(_s(ed.get("recomendacao", "")))
         rec_info = REC_STYLES.get(rec, REC_STYLES["NÃO RECOMENDADO"])
 
@@ -2106,9 +2150,16 @@ def _build_overview_table(editais_list: list, styles: dict, start_idx: int = 1) 
             fontName="Helvetica-Bold", textColor=rec_info["color"], fontSize=7,
         )
 
-        objeto = _s(ed.get("objeto", ""))
-        orgao = _s(ed.get("orgao", ""))
-        objeto_orgao = f"<b>{objeto}</b><br/><font size='7' color='{TEXT_MUTED.hexval()}'>{orgao}</font>"
+        objeto = _trunc(_s(ed.get("objeto", "")), 150)
+        orgao = _trunc(_s(ed.get("orgao", "")), 80)
+        ov_link = _fix_pncp_link(ed.get("link", ""))
+        if ov_link and ov_link.startswith("http"):
+            objeto_orgao = (
+                f'<a href="{ov_link}" color="{INK.hexval()}"><b>{objeto}</b></a>'
+                f'<br/><font size=\'7\' color=\'{TEXT_MUTED.hexval()}\'>{orgao}</font>'
+            )
+        else:
+            objeto_orgao = f"<b>{objeto}</b><br/><font size='7' color='{TEXT_MUTED.hexval()}'>{orgao}</font>"
 
         prazo = _format_prazo_short(ed.get("dias_restantes"))
         if prazo == "—":
@@ -2126,8 +2177,17 @@ def _build_overview_table(editais_list: list, styles: dict, start_idx: int = 1) 
             )),
         ])
 
-    t = _three_rule_table(rows, col_widths)
-    return [t]
+    result = [_three_rule_table(rows, col_widths)]
+    if overflow_count > 0:
+        result.append(Paragraph(
+            f"+ {overflow_count} edital(is) adicionais disponíveis na planilha Excel em anexo",
+            ParagraphStyle(
+                "ov_overflow_note", parent=styles["caption"],
+                fontName="Helvetica-Oblique", textColor=TEXT_MUTED,
+                spaceBefore=2 * mm,
+            ),
+        ))
+    return result
 
 
 def _build_opportunities_overview(data: dict, styles: dict, sec: dict | None = None) -> list:
@@ -2140,7 +2200,16 @@ def _build_opportunities_overview(data: dict, styles: dict, sec: dict | None = N
     el.extend(_section_heading(f"{num}. Panorama de Oportunidades", styles))
     el.append(Spacer(1, 2 * mm))
 
-    el.extend(_build_overview_table(editais, styles, start_idx=1))
+    # Sort: PARTICIPAR first, then AVALIAR, then NÃO RECOMENDADO; within each, by score desc
+    rec_order = {"PARTICIPAR": 0, "AVALIAR COM CAUTELA": 1, "NÃO RECOMENDADO": 2}
+    editais_sorted = sorted(
+        editais,
+        key=lambda e: (
+            rec_order.get(_normalize_recommendation(_s(e.get("recomendacao", ""))), 9),
+            -(e.get("risk_score", {}).get("total", 0)),
+        ),
+    )
+    el.extend(_build_overview_table(editais_sorted, styles, start_idx=1))
     el.append(Spacer(1, 8 * mm))
     return el
 
@@ -2157,14 +2226,26 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
 
     avail = PAGE_WIDTH - 2 * MARGIN
 
+    # Collect PARTICIPAR + AVALIAR editais (NÃO RECOMENDADO / VETOED go to Annex A)
+    _detailed_candidates = []
     for idx, ed in enumerate(editais, 1):
         rec = _normalize_recommendation(_s(ed.get("recomendacao", "")))
         risk = ed.get("risk_score", {}) or {}
         vetoed = risk.get("vetoed", False)
-
-        # Skip NÃO RECOMENDADO and VETOED — they go to Annex A
         if rec == "NÃO RECOMENDADO" or vetoed:
             continue
+        score = _safe_int((ed.get("risk_score") or {}).get("total", 0))
+        _detailed_candidates.append((idx, ed, score))
+
+    # Sort by risk_score.total descending and apply hard cap
+    _detailed_candidates.sort(key=lambda x: x[2], reverse=True)
+    detailed_top = _detailed_candidates[:MAX_DETAILED_EDITAIS]
+    detailed_overflow = _detailed_candidates[MAX_DETAILED_EDITAIS:]
+
+    for idx, ed, _score in detailed_top:
+        rec = _normalize_recommendation(_s(ed.get("recomendacao", "")))
+        risk = ed.get("risk_score", {}) or {}
+        vetoed = risk.get("vetoed", False)
 
         header_block = []
 
@@ -2603,6 +2684,55 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None) 
 
         el.append(Spacer(1, 10 * mm))
 
+    # Condensed overflow table for editais beyond MAX_DETAILED_EDITAIS
+    if detailed_overflow:
+        el.append(Paragraph(
+            f"Demais {len(detailed_overflow)} edital(is) analisado(s) — ver planilha Excel em anexo para detalhamento completo",
+            ParagraphStyle(
+                "overflow_note", parent=styles["body_small"],
+                fontName="Helvetica-Oblique", textColor=TEXT_SECONDARY,
+                spaceBefore=4 * mm, spaceAfter=2 * mm,
+            ),
+        ))
+        ov_header = [
+            Paragraph("#", styles["cell_header_center"]),
+            Paragraph("Objeto / Órgão", styles["cell_header"]),
+            Paragraph("UF", styles["cell_header_center"]),
+            Paragraph("Valor", styles["cell_header_right"]),
+            Paragraph("Score", styles["cell_header_center"]),
+            Paragraph("Recomendação", styles["cell_header"]),
+        ]
+        ov_rows = [ov_header]
+        for idx, ed, score in detailed_overflow:
+            rec_ov = _normalize_recommendation(_s(ed.get("recomendacao", "")))
+            rec_info_ov = REC_STYLES.get(rec_ov, REC_STYLES["NÃO RECOMENDADO"])
+            objeto_ov = _s(ed.get("objeto", ""))
+            orgao_ov = _s(ed.get("orgao", ""))
+            objeto_orgao_ov = f"<b>{_trunc(objeto_ov, 120)}</b><br/><font size='7' color='{TEXT_MUTED.hexval()}'>{_trunc(orgao_ov, 60)}</font>"
+            link_ov = _fix_pncp_link(ed.get("link", ""))
+            if link_ov and link_ov.startswith("http"):
+                objeto_orgao_ov = f'<a href="{link_ov}" color="{INK.hexval()}"><b>{_trunc(objeto_ov, 120)}</b></a><br/><font size=\'7\' color=\'{TEXT_MUTED.hexval()}\'>{_trunc(orgao_ov, 60)}</font>'
+            score_color = SIGNAL_GREEN if score >= 60 else (SIGNAL_AMBER if score >= 30 else SIGNAL_RED)
+            ov_rows.append([
+                Paragraph(f"<b>{idx}</b>", styles["cell_center"]),
+                Paragraph(objeto_orgao_ov, styles["cell"]),
+                Paragraph(_s(ed.get("uf", "")), styles["cell_center"]),
+                Paragraph(_currency_short(ed.get("valor_estimado")), styles["cell_right"]),
+                Paragraph(
+                    f"<b>{score}</b>",
+                    ParagraphStyle(f"ov_sc_{idx}", parent=styles["cell_center"],
+                                   fontName="Helvetica-Bold", textColor=score_color),
+                ),
+                Paragraph(rec_ov, ParagraphStyle(
+                    f"ov_rec_{idx}", parent=styles["cell"],
+                    fontName="Helvetica-Bold", fontSize=7,
+                    textColor=rec_info_ov["color"], wordWrap="CJK",
+                )),
+            ])
+        ov_col_w = [avail * 0.05, avail * 0.38, avail * 0.05, avail * 0.13, avail * 0.09, avail * 0.30]
+        el.append(_three_rule_table(ov_rows, ov_col_w))
+        el.append(Spacer(1, 6 * mm))
+
     return el
 
 
@@ -2763,7 +2893,7 @@ def _build_prioritization(data: dict, styles: dict, sec: dict | None = None) -> 
     rows = [header]
 
     for rank, (idx, ed, score, roi_max, prob, _) in enumerate(participar, 1):
-        obj = _trunc(_s(ed.get("objeto", "")), 60)
+        obj = _trunc(_s(ed.get("objeto", "")), 150)
         pri_link = _fix_pncp_link(ed.get("link", ""))
         if pri_link and pri_link.startswith("http"):
             obj = f'<a href="{pri_link}" color="{INK.hexval()}">{obj}</a>'
@@ -2827,7 +2957,7 @@ def _build_development_path(data: dict, styles: dict, sec: dict | None = None) -
     avail = PAGE_WIDTH - 2 * MARGIN
 
     for idx, ed in nao_rec[:8]:  # Top 8
-        obj = _trunc(_s(ed.get("objeto", "")), 80)
+        obj = _trunc(_s(ed.get("objeto", "")), 150)
         dev_link = _fix_pncp_link(ed.get("link", ""))
         if dev_link and dev_link.startswith("http"):
             obj = f'<a href="{dev_link}" color="{INK.hexval()}">{obj}</a>'
@@ -3141,7 +3271,7 @@ def _build_data_sources_content(data: dict, styles: dict) -> list:
         rows.append([
             Paragraph(src_label, styles["cell"]),
             Paragraph(label, status_style),
-            Paragraph(_s(detail)[:80], styles["cell"]),
+            Paragraph(_trunc(_s(detail), 120), styles["cell"]),
         ])
 
     t = _three_rule_table(rows, [avail * 0.35, avail * 0.20, avail * 0.45])
@@ -3508,8 +3638,21 @@ def _build_coverage_warning(data: dict, styles: dict) -> list:
     if not cov:
         return []
 
-    rate = cov.get("coverage_rate", 1.0)
+    rate_raw = cov.get("coverage_rate")
+    total = cov.get("total_estimated", 0)
+    captured = cov.get("captured_count", 0)
     warning = cov.get("warning")
+
+    # Suppress entirely when coverage data is invalid/missing/zero — avoid "258 de 0" display
+    if rate_raw is None or total is None or total == 0:
+        return []
+    try:
+        rate = float(rate_raw)
+    except (ValueError, TypeError):
+        return []
+    if rate <= 0:
+        return []
+
     if not warning and rate >= 0.70:
         return []  # Coverage is acceptable, render note in data sources instead
 
@@ -3521,8 +3664,6 @@ def _build_coverage_warning(data: dict, styles: dict) -> list:
         styles["h3"],
     ))
 
-    captured = cov.get("captured_count", 0)
-    total = cov.get("total_estimated", 0)
     el.append(Paragraph(
         f"Taxa de captura: <b>{_pct(rate)}</b> ({captured} de {total} editais estimados). "
         f"Este relatório pode não representar a totalidade das oportunidades disponíveis. "
@@ -3664,7 +3805,7 @@ def _build_regional_analysis(data: dict, styles: dict, sec: dict | None = None) 
             if idx < len(editais):
                 ed = editais[idx]
                 cluster_editais.append(ed)
-                obj = _s((ed.get("objeto") or "")[:80])
+                obj = _trunc(_s(ed.get("objeto") or ""), 150)
                 mun = _s(ed.get("municipio", ""))
                 valor = _currency_short(_safe_float(ed.get("valor_estimado", 0)))
                 roi = ed.get("roi_potential", {})
@@ -3913,7 +4054,7 @@ def _build_annex_nao_recomendado(data: dict, styles: dict, sec: dict) -> list:
     for idx, ed in nr_editais:
         mun = _s(ed.get("municipio", ""))
         uf = _s(ed.get("uf", ""))
-        obj = _trunc(_s(ed.get("objeto", "")), 50)
+        obj = _trunc(_s(ed.get("objeto", "")), 120)
         valor = _currency_short(ed.get("valor_estimado"))
         link = _fix_pncp_link(ed.get("link", ""))
 
@@ -4091,6 +4232,63 @@ def _sanitize_links(data: dict) -> dict:
     return data
 
 
+def _backfill_recommendations(data: dict) -> None:
+    """Derive recomendacao/justificativa from risk_score if missing.
+
+    Supports JSONs generated by older collector versions that didn't
+    populate these fields.
+    """
+    editais = data.get("editais", [])
+    backfilled = 0
+    for ed in editais:
+        if ed.get("recomendacao"):
+            continue  # already set
+        rs = ed.get("risk_score", {})
+        total = rs.get("total", 0)
+        vetoed = rs.get("vetoed", False)
+        veto_reasons = rs.get("veto_reasons", [])
+
+        if vetoed:
+            ed["recomendacao"] = "NÃO RECOMENDADO"
+            ed["justificativa"] = "; ".join(veto_reasons) if veto_reasons else "Edital vetado por impedimento legal."
+        elif total >= 70:
+            ed["recomendacao"] = "PARTICIPAR"
+        elif total >= 40:
+            ed["recomendacao"] = "AVALIAR COM CAUTELA"
+        else:
+            ed["recomendacao"] = "NÃO RECOMENDADO"
+
+        # Build justificativa from score components
+        if not ed.get("justificativa"):
+            parts = []
+            hab = rs.get("habilitacao", 0)
+            fin = rs.get("financeiro", 0)
+            geo = rs.get("geografico", 0)
+            prazo = rs.get("prazo", 0)
+            if hab >= 80:
+                parts.append("Habilitação compatível")
+            elif hab < 40:
+                parts.append("Risco de inabilitação")
+            if fin >= 80:
+                parts.append("valor adequado ao porte")
+            elif fin < 40:
+                parts.append("valor acima da capacidade financeira")
+            if geo >= 60:
+                parts.append("proximidade geográfica favorável")
+            elif geo < 20:
+                parts.append("distância geográfica desfavorável")
+            if prazo >= 80:
+                parts.append("prazo confortável")
+            elif prazo < 30:
+                parts.append("prazo insuficiente")
+            ed["justificativa"] = ". ".join(parts) + "." if parts else "Análise baseada em scoring multifatorial."
+
+        backfilled += 1
+
+    if backfilled:
+        print(f"  Backfill: {backfilled} editais sem recomendação — derivadas de risk_score")
+
+
 def generate_report_b2g(data: dict) -> BytesIO:
     """Generate the full B2G report PDF from structured data.
 
@@ -4111,6 +4309,9 @@ def generate_report_b2g(data: dict) -> BytesIO:
     _roi_shown = False
 
     data = _sanitize_links(data)
+
+    # Backfill recommendations if missing (for JSONs generated by older collector)
+    _backfill_recommendations(data)
 
     # Drop ENCERRADO editais
     data["editais"] = [e for e in data.get("editais", []) if e.get("status_edital") != "ENCERRADO"]
@@ -4217,6 +4418,104 @@ def generate_report_b2g(data: dict) -> BytesIO:
     return buffer
 
 
+
+def _clean_excel_str(s: str) -> str:
+    """Remove illegal XML characters that openpyxl rejects."""
+    import re
+    if not isinstance(s, str):
+        return str(s) if s is not None else ""
+    # Remove control chars except tab, newline, carriage return
+    return re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', s)
+
+
+def generate_excel_companion(data: dict, output_path: str) -> None:
+    """Generate Excel with all editais for filtering/sorting."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Oportunidades"
+
+    # Headers
+    headers = ["#", "Recomendação", "Score", "Município", "UF", "Objeto",
+               "Valor Estimado", "Modalidade", "Prazo (dias)", "Probabilidade (%)",
+               "ROI Mín (R$)", "ROI Máx (R$)", "Distância (km)", "Cluster",
+               "Justificativa", "Link PNCP"]
+
+    # Header style
+    header_font = Font(bold=True, color="FFFFFF", size=10)
+    header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", wrap_text=True)
+
+    # Color fills for recommendations
+    fills = {
+        "PARTICIPAR": PatternFill(start_color="D5F5E3", fill_type="solid"),          # green
+        "AVALIAR COM CAUTELA": PatternFill(start_color="FEF9E7", fill_type="solid"),  # amber
+        "NÃO RECOMENDADO": PatternFill(start_color="FADBD8", fill_type="solid"),      # red
+    }
+
+    editais = data.get("editais", [])
+    # Sort by risk_score.total descending
+    editais_sorted = sorted(editais, key=lambda e: e.get("risk_score", {}).get("total", 0), reverse=True)
+
+    for idx, ed in enumerate(editais_sorted, 1):
+        row = idx + 1
+        rs = ed.get("risk_score", {})
+        roi = ed.get("roi_potential", {})
+        dist = ed.get("distancia", {})
+        dist_km = dist.get("distancia_km") if isinstance(dist, dict) else None
+        wp = ed.get("win_probability", {})
+        prob = wp.get("probabilidade") if isinstance(wp, dict) else None
+        rec = ed.get("recomendacao", "")
+
+        values = [
+            idx,
+            _clean_excel_str(rec or "N/A"),
+            rs.get("total", 0),
+            _clean_excel_str(ed.get("municipio", "")),
+            _clean_excel_str(ed.get("uf", "")),
+            _clean_excel_str(ed.get("objeto", "")),
+            ed.get("valor_estimado", 0),
+            _clean_excel_str(ed.get("modalidade", "")),
+            ed.get("dias_restantes", ""),
+            round(prob * 100, 1) if prob else "",
+            roi.get("roi_min", "") if isinstance(roi, dict) else "",
+            roi.get("roi_max", "") if isinstance(roi, dict) else "",
+            round(dist_km, 0) if dist_km else "",
+            _clean_excel_str(ed.get("_cluster_origin", "")),
+            _clean_excel_str(ed.get("justificativa", "")),
+            _clean_excel_str(ed.get("link", "")),
+        ]
+
+        for col, val in enumerate(values, 1):
+            cell = ws.cell(row=row, column=col, value=val)
+            # Apply recommendation color
+            if rec in fills:
+                cell.fill = fills[rec]
+
+        # Format currency column (7 = Valor Estimado)
+        ws.cell(row=row, column=7).number_format = '#,##0.00'
+
+    # Column widths
+    widths = [5, 22, 8, 20, 5, 60, 15, 25, 10, 12, 12, 12, 10, 25, 50, 50]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    # Freeze header row
+    ws.freeze_panes = "A2"
+
+    # Auto-filter
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(editais_sorted) + 1}"
+
+    wb.save(output_path)
+
 def main():
     parser = argparse.ArgumentParser(description="Generate B2G Report PDF from JSON data")
     parser.add_argument("--input", required=True, help="Path to JSON data file")
@@ -4251,6 +4550,10 @@ def main():
 
     print(f"PDF generated: {output_path}")
     print(f"Size: {output_path.stat().st_size / 1024:.1f} KB")
+
+    excel_path = str(output_path).replace(".pdf", ".xlsx")
+    generate_excel_companion(data, excel_path)
+    print(f"Excel generated: {excel_path}")
 
 
 if __name__ == "__main__":

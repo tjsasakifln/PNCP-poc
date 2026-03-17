@@ -182,6 +182,16 @@ def _source_tag(status: str, detail: str = "") -> dict:
     return tag
 
 
+def _fmt_brl(v: float, decimals: int = 0) -> str:
+    """Format number in Brazilian style: R$ 1.234.567,89"""
+    if decimals == 0:
+        formatted = f"{v:,.0f}"
+    else:
+        formatted = f"{v:,.{decimals}f}"
+    # Swap: comma->X, dot->comma, X->dot
+    return "R$ " + formatted.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 # ============================================================
 # HTTP CLIENT WITH RETRY
 # ============================================================
@@ -441,6 +451,7 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
             print(f"  [PT] Nenhuma sancao encontrada para CNPJ {cnpj14} (CEIS/CNEP/CEPIM/CEAF)")
     elif status == "API_FAILED":
         result["sancoes_source"] = _source_tag("API_FAILED", "Consulta de sanções falhou")
+        result["sancoes"]["inconclusive"] = True
 
     # Contratos
     data, status = api.get(
@@ -2253,24 +2264,24 @@ def compute_habilitacao_analysis(
             dimensions.append({
                 "dimension": "Capital Mínimo",
                 "status": "OK",
-                "detail": f"Capital R$ {capital:,.0f} >= {min_pct * 100:.0f}% do valor R$ {valor:,.0f}",
+                "detail": f"Capital {_fmt_brl(capital)} >= {min_pct * 100:.0f}% do valor {_fmt_brl(valor)}",
             })
             dim_scores.append(100)
         elif capital >= threshold * 0.5:
             dimensions.append({
                 "dimension": "Capital Mínimo",
                 "status": "ATENÇÃO",
-                "detail": f"Capital R$ {capital:,.0f} abaixo do mínimo típico R$ {threshold:,.0f} mas acima de 50%",
+                "detail": f"Capital {_fmt_brl(capital)} abaixo do mínimo típico {_fmt_brl(threshold)} mas acima de 50%",
             })
-            gaps.append(f"Capital social pode ser insuficiente (R$ {capital:,.0f} vs mínimo R$ {threshold:,.0f})")
+            gaps.append(f"Capital social pode ser insuficiente ({_fmt_brl(capital)} vs mínimo {_fmt_brl(threshold)})")
             dim_scores.append(50)
         else:
             dimensions.append({
                 "dimension": "Capital Mínimo",
                 "status": "CRÍTICO",
-                "detail": f"Capital R$ {capital:,.0f} muito abaixo do mínimo típico R$ {threshold:,.0f}",
+                "detail": f"Capital {_fmt_brl(capital)} muito abaixo do mínimo típico {_fmt_brl(threshold)}",
             })
-            gaps.append(f"Capital social insuficiente (R$ {capital:,.0f} vs mínimo R$ {threshold:,.0f})")
+            gaps.append(f"Capital social insuficiente ({_fmt_brl(capital)} vs mínimo {_fmt_brl(threshold)})")
             dim_scores.append(10)
     else:
         dimensions.append({
@@ -2465,7 +2476,7 @@ def compute_risk_analysis(
             flags.append({
                 "flag": (
                     f"Licitação presencial a {km:.0f}km — custo estimado de deslocamento "
-                    f"R$ {travel_cost:,.0f} por sessão".replace(",", ".")
+                    + _fmt_brl(travel_cost) + " por sessão"
                 ),
                 "severity": "MEDIA",
                 "category": "logistica",
@@ -3943,8 +3954,21 @@ def collect_pncp_documents(api: ApiClient, editais: list[dict]) -> None:
     """List available documents for each PNCP edital. Mutates editais in place — parallel.
 
     Document listings are immutable once published — results are cached permanently.
+    Capped to Top 50 editais by valor_estimado to limit API calls.
     """
-    print(f"\n📄 Phase 2b: Listando documentos PNCP ({len(editais)} editais)")
+    # Cap to Top 50 by valor_estimado — mark excluded editais immediately
+    DOCS_TOP_N = 50
+    pncp_editais = [ed for ed in editais if ed.get("fonte") == "PNCP"]
+    pncp_sorted = sorted(pncp_editais, key=lambda e: _safe_float(e.get("valor_estimado")), reverse=True)
+    top_pncp_ids = {id(ed) for ed in pncp_sorted[:DOCS_TOP_N]}
+
+    for ed in editais:
+        if ed.get("fonte") == "PNCP" and id(ed) not in top_pncp_ids:
+            ed["documentos"] = []
+            ed["documentos_source"] = _source_tag("UNAVAILABLE", "Edital fora do Top 50 por valor estimado")
+
+    n_excluded = len(pncp_editais) - min(len(pncp_editais), DOCS_TOP_N)
+    print(f"\n📄 Phase 2b: Listando documentos PNCP ({len(editais)} editais, top {DOCS_TOP_N} por valor, {n_excluded} excluídos)")
     _counter_lock = threading.Lock()
     counters = {"cached": 0, "fetched": 0}
 
@@ -3952,6 +3976,9 @@ def collect_pncp_documents(api: ApiClient, editais: list[dict]) -> None:
         if ed.get("fonte") != "PNCP":
             ed["documentos"] = []
             ed["documentos_source"] = _source_tag("UNAVAILABLE", "Apenas PNCP tem API de documentos")
+            return
+        # Skip editais outside Top 50 (already marked above)
+        if id(ed) not in top_pncp_ids:
             return
 
         cnpj_orgao = ed.get("cnpj_orgao", "")
@@ -4045,7 +4072,24 @@ def collect_competitive_intel(
             ed["competitive_intel_source"] = _source_tag("UNAVAILABLE", "Sem cnpj_orgao")
         return
 
-    print(f"\n🏢 Inteligência competitiva — {len(orgao_map)} órgãos únicos")
+    # Cap to Top 15 organs by number of editais they serve (performance win)
+    TOP_ORGANS_LIMIT = 15
+    sorted_organs = sorted(orgao_map.items(), key=lambda kv: len(kv[1]), reverse=True)
+    top_organs: dict[str, list[dict]] = dict(sorted_organs[:TOP_ORGANS_LIMIT])
+    excluded_organs: dict[str, list[dict]] = dict(sorted_organs[TOP_ORGANS_LIMIT:])
+
+    # Mark excluded organs immediately so they don't block processing
+    for _exc_editais in excluded_organs.values():
+        for ed in _exc_editais:
+            ed["competitive_intel"] = []
+            ed["competitive_intel_source"] = _source_tag(
+                "UNAVAILABLE", "Órgão fora do Top 15 de inteligência competitiva"
+            )
+
+    # Replace orgao_map with capped version
+    orgao_map = top_organs
+
+    print(f"\n🏢 Inteligência competitiva — {len(orgao_map)} órgãos (top {TOP_ORGANS_LIMIT} de {len(sorted_organs)} únicos)")
 
     # Use /contratos endpoint with cnpjOrgao (more reliable than /contratacoes/publicacao)
     # Max period: 365 days — split into yearly chunks for 24-month coverage
@@ -4353,14 +4397,14 @@ def _compute_fiscal_risk(edital: dict, competitive_intel: list[dict]) -> dict:
     if 0 < pop < 10_000 and valor > 5_000_000:
         risk_level = "ALTO"
         alertas.append(
-            f"Município de {pop:,.0f} habitantes licitando R$ {valor:,.0f} "
+            f"Município de {pop:,.0f} habitantes licitando {_fmt_brl(valor)} "
             f"— capacidade operacional e fiscal limitada"
         )
     elif 0 < pop < 20_000 and valor > 10_000_000:
         if risk_level != "ALTO":
             risk_level = "MEDIO"
         alertas.append(
-            f"Município de {pop:,.0f} habitantes com edital de R$ {valor:,.0f} "
+            f"Município de {pop:,.0f} habitantes com edital de {_fmt_brl(valor)} "
             f"— atenção à capacidade fiscal"
         )
 
@@ -4420,7 +4464,7 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
     # Gate 3: Capital < 10% of contract value — insuficiente para habilitação econômico-financeira
     if capital > 0 and valor > 0 and (capital / valor) < 0.10:
         veto_gates.append(
-            f"Capital social insuficiente: R$ {capital:,.0f} = {capital/valor:.0%} do valor do edital "
+            f"Capital social insuficiente: {_fmt_brl(capital)} = {capital/valor:.0%} do valor do edital "
             f"(mínimo usual: 10%)"
         )
 
@@ -4428,15 +4472,35 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
     is_mei = empresa.get("mei") or empresa.get("opcao_pelo_mei")
     if is_mei and valor > 81_000:
         veto_gates.append(
-            f"Limite MEI excedido: edital R$ {valor:,.0f} > R$ 81.000 (teto MEI)"
+            f"Limite MEI excedido: edital {_fmt_brl(valor)} > R$ 81.000 (teto MEI)"
         )
 
     # Gate 5: Simples Nacional + valor > R$4.8M — legal limit
     is_simples = empresa.get("simples_nacional") or empresa.get("opcao_pelo_simples")
     if is_simples and valor > 4_800_000:
         veto_gates.append(
-            f"Limite Simples Nacional excedido: edital R$ {valor:,.0f} > R$ 4.800.000"
+            f"Limite Simples Nacional excedido: edital {_fmt_brl(valor)} > R$ 4.800.000"
         )
+
+    # Gate 6: Presencial > 500km — logística inviável
+    modalidade_raw = (edital.get("modalidade") or "")
+    dist_raw = edital.get("distancia", {})
+    dist_km_raw = dist_raw.get("km") if isinstance(dist_raw, dict) else None
+    if "Presencial" in modalidade_raw and dist_km_raw is not None and dist_km_raw > 500:
+        veto_gates.append(
+            f"Licitação presencial a {dist_km_raw:.0f}km da sede — logística inviável"
+        )
+
+    # Gate 7: Concessão de longo prazo — incompatível com porte EPP
+    import re as _re
+    objeto_raw = (edital.get("objeto") or "").lower()
+    if "concessão" in objeto_raw or "concessao" in objeto_raw:
+        anos_match = _re.search(r'(\d{1,2})\s*anos?', objeto_raw)
+        if anos_match and int(anos_match.group(1)) > 5:
+            anos_val = int(anos_match.group(1))
+            veto_gates.append(
+                f"Concessão de longo prazo ({anos_val} anos) — incompatível com porte EPP"
+            )
 
     if veto_gates:
         weights = _SECTOR_WEIGHT_PROFILES.get(sector_key, _SECTOR_WEIGHT_PROFILES["_default"])
@@ -4593,6 +4657,11 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
         # Severe qualification risk (SICAF restriction survived veto check = possible resolution)
         total = min(total, 30)
         threshold_applied = threshold_applied or "habilitacao_critica"
+
+    # Improvement D: Inexigibilidade penalty — reduces inflated PARTICIPAR count
+    # Not a veto — just a 20-point penalty to reflect higher qualification barriers.
+    if "Inexigibilidade" in modalidade_raw:
+        total = max(0, total - 20)
 
     # ================================================================
     # CRÍTICA 5: ACERVO CONFIRMATION FLAG
@@ -5454,7 +5523,7 @@ def compute_qualification_gap_analysis(
 
     if best_match_info:
         # Semantic match found — cite the specific contract
-        val_fmt = f"R$ {_safe_float(best_match_info['valor']):,.0f}".replace(",", ".")
+        val_fmt = _fmt_brl(_safe_float(best_match_info['valor']))
         gaps.append({
             "gap_type": "ACERVO_EXISTENTE",
             "description": (
@@ -5716,7 +5785,7 @@ def compute_organ_risk_profile(
     if not has_prior_similar:
         risk_flags.append("Órgão nunca publicou contratação similar — risco de especificação inadequada")
     if timeline == "INSUFICIENTE":
-        risk_flags.append(f"Prazo insuficiente: {dias} dias para contrato de R$ {valor:,.0f}")
+        risk_flags.append(f"Prazo insuficiente: {dias} dias para contrato de {_fmt_brl(valor)}")
 
     # Track record classification
     if adj_rate >= 0.80 and has_prior_similar:
@@ -6191,6 +6260,80 @@ def enrich_scenarios_and_triggers(
 
 
 # ============================================================
+# RECOMMENDATION ASSIGNMENT
+# ============================================================
+
+def assign_recommendations(editais: list, empresa: dict) -> None:
+    """Assign recomendacao + justificativa to each edital based on risk_score.
+
+    Must be called AFTER compute_all_deterministic() so that risk_score.total
+    is fully computed (including threshold gates and Inexigibilidade penalty).
+    Mutates editais in place.
+    """
+    for ed in editais:
+        rs = ed.get("risk_score", {})
+        total = rs.get("total", 0)
+        vetoed = rs.get("vetoed", False)
+        veto_reasons = rs.get("veto_reasons", [])
+
+        if vetoed:
+            ed["recomendacao"] = "NÃO RECOMENDADO"
+            ed["justificativa"] = "; ".join(veto_reasons) if veto_reasons else "Edital vetado por impedimento legal."
+            continue
+
+        if total >= 70:
+            ed["recomendacao"] = "PARTICIPAR"
+        elif total >= 40:
+            ed["recomendacao"] = "AVALIAR COM CAUTELA"
+        else:
+            ed["recomendacao"] = "NÃO RECOMENDADO"
+
+        # Build justificativa from score components
+        parts = []
+        hab = rs.get("habilitacao", 0)
+        fin = rs.get("financeiro", 0)
+        geo = rs.get("geografico", 0)
+        prazo = rs.get("prazo", 0)
+        comp = rs.get("competitivo", 0)
+
+        if hab >= 80:
+            parts.append("habilitação compatível")
+        elif hab < 40:
+            parts.append("risco de inabilitação")
+
+        if fin >= 80:
+            parts.append("valor adequado ao porte")
+        elif fin < 40:
+            parts.append("valor acima da capacidade financeira")
+
+        if geo >= 60:
+            parts.append("proximidade geográfica favorável")
+        elif geo < 20:
+            parts.append("distância geográfica desfavorável")
+
+        if prazo >= 80:
+            parts.append("prazo confortável")
+        elif prazo < 30:
+            parts.append("prazo insuficiente")
+
+        if comp >= 70:
+            parts.append("baixa concorrência")
+        elif comp < 30:
+            parts.append("alta concorrência")
+
+        # Fiscal risk
+        fiscal = rs.get("fiscal_risk", {})
+        if isinstance(fiscal, dict) and fiscal.get("nivel") == "ALTO":
+            parts.append("risco fiscal elevado do município")
+
+        # Acervo
+        if not rs.get("acervo_confirmado", True):
+            parts.append("acervo técnico não confirmado")
+
+        ed["justificativa"] = ". ".join(p.capitalize() for p in parts) + "." if parts else "Análise baseada em scoring multifatorial."
+
+
+# ============================================================
 # MAIN DETERMINISTIC CALCULATION CHAIN
 # ============================================================
 
@@ -6591,6 +6734,11 @@ def collect_price_benchmarks(editais: list[dict]) -> dict:
 
         discount_pct = ((valor_est - avg_award) / valor_est) * 100
 
+        # Bounds check: discard outliers where competitive intel is for a different scope
+        # (e.g., org awarded R$50M contract vs. R$50k edital produces nonsensical %)
+        if abs(discount_pct) > 200:
+            continue
+
         # Interpretation
         if discount_pct > 20:
             interpretation = "Margem ampla para lance agressivo"
@@ -6610,7 +6758,9 @@ def collect_price_benchmarks(editais: list[dict]) -> dict:
         })
         all_discounts.append(discount_pct)
 
-    avg_discount = round(sum(all_discounts) / len(all_discounts), 1) if all_discounts else 0.0
+    # Clamp final average to [-100, 100] to guard against any residual outliers
+    raw_avg = sum(all_discounts) / len(all_discounts) if all_discounts else 0.0
+    avg_discount = round(max(-100.0, min(100.0, raw_avg)), 1)
 
     result = {
         "avg_discount_pct": avg_discount,
@@ -7035,6 +7185,7 @@ Examples:
     parser.add_argument("--skip-brasilapi", action="store_true", help="Skip BrasilAPI query")
     parser.add_argument("--skip-portfolio-optimization", action="store_true", help="Pular otimização de portfólio (capacity, correlation, optimal set)")
     parser.add_argument("--skip-scenarios", action="store_true", help="Pular cálculo de cenários, sensibilidade e triggers")
+    parser.add_argument("--coverage", action="store_true", help="Habilitar diagnóstico de cobertura PNCP (112 chamadas extras — desativado por padrão)")
     parser.add_argument("--re-enrich", help=(
         "Re-enriquecer um JSON existente sem re-coletar APIs. "
         "Recalcula: risk_score, win_probability, roi_potential, cronograma, "
@@ -7090,6 +7241,9 @@ Examples:
             sector_keywords=re_keywords,
             skip_scenarios=skip_scen,
         )
+
+        # Assign recomendacao + justificativa after all scores are computed
+        assign_recommendations(editais, empresa)
 
         # Store results
         data["portfolio"] = analysis_results["portfolio"]
@@ -7511,6 +7665,9 @@ Examples:
         skip_scenarios=skip_scen,
     )
 
+    # Assign recomendacao + justificativa after all scores are computed
+    assign_recommendations(data["editais"], data["empresa"])
+
     # Store cross-edital analysis at top level
     data["portfolio"] = analysis_results["portfolio"]
     data["maturity_profile"] = analysis_results["maturity_profile"]
@@ -7552,18 +7709,26 @@ Examples:
         data["_metadata"]["sources"]["market_hhi"] = thesis_market_hhi.get("_source", {})
         data["_metadata"]["sources"]["strategic_thesis"] = thesis.get("_source", {})
 
-    # ---- E3: Coverage Diagnostic ----
-    print("\n📊 Diagnóstico de cobertura")
-    data["coverage_diagnostic"] = compute_coverage_diagnostic(
-        api, data["editais"], keywords, ufs, sector_key,
-    )
-    cov = data["coverage_diagnostic"]
-    if cov.get("coverage_rate") is not None:
-        print(f"  Cobertura: {cov['coverage_rate']:.0%} ({cov['captured_count']}/{cov['total_estimated']})")
+    # ---- E3: Coverage Diagnostic (opt-in via --coverage flag) ----
+    if getattr(args, "coverage", False):
+        print("\n📊 Diagnóstico de cobertura")
+        data["coverage_diagnostic"] = compute_coverage_diagnostic(
+            api, data["editais"], keywords, ufs, sector_key,
+        )
+        cov = data["coverage_diagnostic"]
+        if cov.get("coverage_rate") is not None:
+            print(f"  Cobertura: {cov['coverage_rate']:.0%} ({cov['captured_count']}/{cov['total_estimated']})")
+        else:
+            print("  Cobertura: não verificável (APIs de cobertura indisponíveis)")
+        if cov.get("warning"):
+            print(f"  ⚠ {cov['warning']}")
     else:
-        print("  Cobertura: não verificável (APIs de cobertura indisponíveis)")
-    if cov.get("warning"):
-        print(f"  ⚠ {cov['warning']}")
+        print("\n📊 Diagnóstico de cobertura: desativado (use --coverage para habilitar)")
+        data["coverage_diagnostic"] = {
+            "coverage_rate": None,
+            "note": "Diagnóstico de cobertura desativado",
+            "_source": _source_tag("UNAVAILABLE", "Use --coverage para habilitar"),
+        }
 
     # ---- Output ----
     if args.output:

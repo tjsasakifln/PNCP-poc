@@ -402,9 +402,9 @@ def validate(data: dict) -> dict:
         if "Dispensa" not in e.get("modalidade", "")
         and not e.get("risk_score", {}).get("vetoed", False)
     ]
-    participar = [e for e in non_disp_non_vetoed if e.get("risk_score", {}).get("total", 0) >= 60]
-    avaliar = [e for e in non_disp_non_vetoed if 30 <= e.get("risk_score", {}).get("total", 0) < 60]
-    nr = [e for e in non_disp_non_vetoed if e.get("risk_score", {}).get("total", 0) < 30]
+    participar = [e for e in non_disp_non_vetoed if e.get("risk_score", {}).get("total", 0) >= 70]
+    avaliar = [e for e in non_disp_non_vetoed if 40 <= e.get("risk_score", {}).get("total", 0) < 70]
+    nr = [e for e in non_disp_non_vetoed if e.get("risk_score", {}).get("total", 0) < 40]
     vetoed = [e for e in editais if e.get("risk_score", {}).get("vetoed", False)]
 
     summary = {
