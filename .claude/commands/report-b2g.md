@@ -132,16 +132,49 @@ Response: JSON array com `tipoDocumentoNome`, `tipoDocumentoId`, `titulo`, `sequ
 
 **Máximo 3 documentos por edital.**
 
-#### 2.2. Download e leitura dos PDFs
+#### 2.2. Download e leitura dos documentos
+
+**IMPORTANTE:** O PNCP frequentemente empacota editais dentro de arquivos `.zip` (não PDF direto). O header `content-disposition` indica o formato real.
+
+**Passo 1 — Download com detecção de formato:**
 
 ```bash
-curl -s -o /tmp/edital_{id}.pdf \
-  "https://pncp.gov.br/pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/{sequencialDocumento}"
+# Primeiro verificar o formato via HEAD request
+curl -sI "https://pncp.gov.br/pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/{seq_doc}" \
+  | grep -i content-disposition
+# Resultado: filename="EDITAL.PDF" ou filename="98430503900032026000.zip"
+
+# Download para /tmp
+curl -s -o /tmp/edital_{id}_raw \
+  "https://pncp.gov.br/pncp-api/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos/{seq_doc}"
 ```
 
-Ler com `Read(file_path="/tmp/edital_{id}.pdf", pages="1-20")`. Para editais longos, ler em blocos de 20 páginas.
+**Passo 2 — Se `.zip`, extrair antes de ler:**
 
-Se PDF >10MB ou download falhar → registrar "Documento indisponível para análise".
+```bash
+# Verificar se é ZIP (magic bytes PK)
+file /tmp/edital_{id}_raw
+
+# Se ZIP: extrair PDFs do arquivo
+mkdir -p /tmp/edital_{id}_extracted
+cd /tmp/edital_{id}_extracted && unzip -o /tmp/edital_{id}_raw "*.pdf" "*.PDF" 2>/dev/null
+ls -la /tmp/edital_{id}_extracted/
+# Ler o PDF principal (geralmente o maior ou o que contém "edital" no nome)
+```
+
+**Passo 3 — Leitura:**
+
+```
+Read(file_path="/tmp/edital_{id}.pdf", pages="1-20")
+```
+
+Para editais longos, ler em blocos de 20 páginas.
+
+**Regras de fallback:**
+- Se ZIP contém múltiplos PDFs → priorizar: (1) arquivo com "edital" no nome, (2) maior arquivo, (3) primeiro arquivo
+- Se ZIP contém apenas `.doc`/`.docx` → registrar "Documento em formato Word — análise parcial via texto extraído"
+- Se arquivo >10MB, download falhar, ou formato não reconhecido → registrar "Documento indisponível para análise"
+- Se ZIP vazio ou corrompido → registrar "Arquivo compactado corrompido"
 
 #### 2.3. Extração factual do edital
 
