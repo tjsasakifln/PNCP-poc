@@ -7,6 +7,7 @@ explícito de falhas. Cada dado recebe um campo `_source`:
   - "API"          → dado obtido com sucesso via API
   - "API_PARTIAL"  → resposta parcial (timeout, paginação incompleta)
   - "API_FAILED"   → chamada falhou após retries
+  - "API_CORRUPT"  → resposta 200 mas corpo não é JSON válido (após 1 retry)
   - "CALCULATED"   → dado calculado localmente (ex: distância OSRM)
   - "UNAVAILABLE"  → fonte não disponível / não implementada
 
@@ -24,11 +25,14 @@ import argparse
 import concurrent.futures
 import io
 import json
+import hashlib
 import os
+import random
 import re
 import sys
 import threading
 import time
+import uuid
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -163,7 +167,13 @@ def _date_compact(dt: datetime) -> str:
     return dt.strftime("%Y%m%d")
 
 
-def _safe_float(v: Any, default: float = 0.0) -> float:
+def _safe_float(v: Any, default: float | None = None) -> float | None:
+    """Convert value to float. Returns None (not 0.0) for invalid/missing values.
+
+    F02: Changed default from 0.0 to None so callers can distinguish
+    'missing data' from 'zero value'. valor_estimado=None enables
+    downstream VALOR_SIGILOSO handling.
+    """
     if v is None:
         return default
     try:
@@ -172,6 +182,18 @@ def _safe_float(v: Any, default: float = 0.0) -> float:
         return float(v)
     except (ValueError, TypeError):
         return default
+
+
+def _parse_date_flexible(raw: str | None) -> str | None:
+    """Parse date trying multiple formats. Returns YYYY-MM-DD or None. (F04)"""
+    if not raw:
+        return None
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%d/%m/%Y", "%Y%m%d"):
+        try:
+            return datetime.strptime(raw[:max(10, len(raw))].strip(), fmt).strftime("%Y-%m-%d")
+        except (ValueError, TypeError):
+            continue
+    return None
 
 
 def _source_tag(status: str, detail: str = "") -> dict:
@@ -243,15 +265,25 @@ class ApiClient:
                             print(f" ✓ ({resp.status_code})")
                     try:
                         return resp.json(), "API"
-                    except Exception:
-                        return None, "API_FAILED"
+                    except (json.JSONDecodeError, Exception):
+                        # F01: Retry once on corrupt JSON, then return API_CORRUPT
+                        if attempt < MAX_RETRIES - 1:
+                            self._inc_stat("retries")
+                            wait = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)] * (0.5 + random.random())
+                            if self.verbose:
+                                with self._print_lock:
+                                    print(f" ⟳ JSON parse error, retry in {wait:.1f}s", end="", flush=True)
+                            time.sleep(wait)
+                            continue
+                        return None, "API_CORRUPT"
 
                 if resp.status_code in (429, 500, 502, 503, 504, 422):
                     self._inc_stat("retries")
-                    wait = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)]
+                    # F26: Add jitter to retry backoff (AWS recommended pattern)
+                    wait = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)] * (0.5 + random.random())
                     if self.verbose:
                         with self._print_lock:
-                            print(f" ⟳ {resp.status_code}, retry in {wait}s", end="", flush=True)
+                            print(f" ⟳ {resp.status_code}, retry in {wait:.1f}s", end="", flush=True)
                     time.sleep(wait)
                     continue
 
@@ -264,11 +296,12 @@ class ApiClient:
 
             except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
                 self._inc_stat("retries")
-                wait = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)]
+                # F26: Add jitter to retry backoff
+                wait = RETRY_BACKOFF[min(attempt, len(RETRY_BACKOFF) - 1)] * (0.5 + random.random())
                 if self.verbose:
                     err_type = type(e).__name__
                     with self._print_lock:
-                        print(f" ⟳ {err_type}, retry in {wait}s", end="", flush=True)
+                        print(f" ⟳ {err_type}, retry in {wait:.1f}s", end="", flush=True)
                 time.sleep(wait)
                 continue
 
@@ -279,9 +312,9 @@ class ApiClient:
         return None, "API_FAILED"
 
     def head(self, url: str, label: str = "") -> int | None:
-        """HEAD request, returns status code or None."""
+        """HEAD request, returns status code or None. F29: 5s timeout."""
         try:
-            resp = self.client.head(url, timeout=10.0)
+            resp = self.client.head(url, timeout=5.0, follow_redirects=True)
             return resp.status_code
         except Exception:
             return None
@@ -313,7 +346,7 @@ def collect_opencnpj(api: ApiClient, cnpj14: str) -> dict:
         }
 
     # Parse capital_social (string with comma: "1232000,00")
-    capital = _safe_float(data.get("capital_social"))
+    capital = _safe_float(data.get("capital_social")) or 0.0
 
     # Parse QSA
     qsa_raw = data.get("QSA") or data.get("qsa") or []
@@ -466,7 +499,7 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
             for c in items[:20]:
                 result["historico_contratos"].append({
                     "orgao": c.get("orgaoVinculado", {}).get("nome", "") or c.get("orgao", ""),
-                    "valor": _safe_float(c.get("valorFinal") or c.get("valor") or c.get("valorInicial")),
+                    "valor": _safe_float(c.get("valorFinal") or c.get("valor") or c.get("valorInicial")) or 0.0,
                     "data": c.get("dataInicioVigencia") or c.get("dataAssinatura") or "",
                     "objeto": c.get("objeto", "")[:200],
                 })
@@ -500,6 +533,7 @@ def collect_brasilapi(api: ApiClient, cnpj14: str) -> dict:
 
 _ibge_cache: dict = {}  # UF -> {nome_normalizado: cod_ibge}
 _ibge_data_cache: dict = {}  # "{municipio}/{uf}" -> enriched data dict (persistent)
+_ibge_cache_lock = threading.Lock()  # F27: Thread safety for IBGE caches
 
 
 def _normalize_municipio(nome: str) -> str:
@@ -564,23 +598,25 @@ def collect_ibge_municipio(api: ApiClient, municipio: str, uf: str) -> dict:
 def _load_ibge_cache() -> None:
     """Load persistent IBGE data cache from disk, pruning expired entries."""
     global _ibge_data_cache
-    try:
-        with open(IBGE_CACHE_FILE, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-        now = datetime.now(timezone.utc)
-        _ibge_data_cache = {
-            k: v for k, v in raw.items()
-            if (now - datetime.fromisoformat(v.get("_cached_at", "2000-01-01T00:00:00+00:00"))).days < IBGE_CACHE_TTL_DAYS
-        }
-    except (FileNotFoundError, json.JSONDecodeError):
-        _ibge_data_cache = {}
+    with _ibge_cache_lock:
+        try:
+            with open(IBGE_CACHE_FILE, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            now = datetime.now(timezone.utc)
+            _ibge_data_cache = {
+                k: v for k, v in raw.items()
+                if (now - datetime.fromisoformat(v.get("_cached_at", "2000-01-01T00:00:00+00:00"))).days < IBGE_CACHE_TTL_DAYS
+            }
+        except (FileNotFoundError, json.JSONDecodeError):
+            _ibge_data_cache = {}
 
 
 def _save_ibge_cache() -> None:
     """Persist IBGE data cache to disk."""
-    os.makedirs(os.path.dirname(IBGE_CACHE_FILE), exist_ok=True)
-    with open(IBGE_CACHE_FILE, "w", encoding="utf-8") as f:
-        json.dump(_ibge_data_cache, f, ensure_ascii=False, indent=2)
+    with _ibge_cache_lock:
+        os.makedirs(os.path.dirname(IBGE_CACHE_FILE), exist_ok=True)
+        with open(IBGE_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(_ibge_data_cache, f, ensure_ascii=False, indent=2)
 
 
 def collect_ibge_batch(api: ApiClient, municipios: list[tuple[str, str]]) -> dict[str, dict]:
@@ -665,6 +701,9 @@ def collect_ibge_batch(api: ApiClient, municipios: list[tuple[str, str]]) -> dic
         print(f"  IBGE batch PIB falhou (status={pib_status}) -- usando fallback individual")
 
     # --- Assemble results; fall back to individual calls on batch failure ---
+    # F28: Cap individual fallback at 20 to prevent API abuse
+    MAX_IBGE_INDIVIDUAL_FALLBACK = 20
+    _individual_fallback_count = 0
     now_iso = datetime.now(timezone.utc).isoformat()
     for mun, uf, cod in missing:
         key = f"{mun}|{uf}"
@@ -673,15 +712,20 @@ def collect_ibge_batch(api: ApiClient, municipios: list[tuple[str, str]]) -> dic
         pop: int | None = pop_values.get(cod_str_k)
         pib: float | None = pib_values.get(cod_str_k)
 
-        # If batch failed entirely, attempt individual fallback
+        # If batch failed entirely, attempt individual fallback (F28: capped at 20)
         if pop is None and pop_status != "API":
-            indiv = collect_ibge_municipio(api, mun, uf)
-            pop = indiv.get("populacao")
-            pib = indiv.get("pib_mil_reais")
+            if _individual_fallback_count < MAX_IBGE_INDIVIDUAL_FALLBACK:
+                indiv = collect_ibge_municipio(api, mun, uf)
+                pop = indiv.get("populacao")
+                pib = indiv.get("pib_mil_reais")
+                _individual_fallback_count += 1
+            # else: leave pop/pib as None (API_PARTIAL)
         elif pib is None and pib_status != "API":
-            indiv = collect_ibge_municipio(api, mun, uf)
-            pop = indiv.get("populacao") if pop is None else pop
-            pib = indiv.get("pib_mil_reais")
+            if _individual_fallback_count < MAX_IBGE_INDIVIDUAL_FALLBACK:
+                indiv = collect_ibge_municipio(api, mun, uf)
+                pop = indiv.get("populacao") if pop is None else pop
+                pib = indiv.get("pib_mil_reais")
+                _individual_fallback_count += 1
 
         pib_per_capita: float | None = None
         if pop and pib:
@@ -757,13 +801,13 @@ def collect_pncp_contratos_fornecedor(api: ApiClient, cnpj14: str) -> tuple[list
                     "esfera": esfera,
                     "uf": unidade.get("ufSigla", ""),
                     "municipio": unidade.get("municipioNome", ""),
-                    "valor": _safe_float(c.get("valorGlobal") or c.get("valorInicial")),
+                    "valor": _safe_float(c.get("valorGlobal") or c.get("valorInicial")) or 0.0,
                     "data": c.get("dataAssinatura", ""),
                     "objeto": (c.get("objetoContrato") or c.get("informacaoComplementar") or "")[:300],
                     "numero_contrato": c.get("numeroContratoEmpenho", ""),
                     "vigencia_fim": c.get("dataVigenciaFim", ""),
                     "fonte": "PNCP",
-                    "valor_aditivos": _safe_float(c.get("valorAcumuladoAditivos")),
+                    "valor_aditivos": _safe_float(c.get("valorAcumuladoAditivos")) or 0.0,
                     "tipo_contrato": c.get("tipoContratoNome", ""),
                     "situacao_contrato": c.get("situacaoContratoCodigo", ""),
                     "tem_subcontratacao": c.get("subcontratacao", False),
@@ -776,11 +820,15 @@ def collect_pncp_contratos_fornecedor(api: ApiClient, cnpj14: str) -> tuple[list
             page += 1
             time.sleep(0.5)
 
-    # Dedup by (orgao, numero_contrato, data)
+    # F03: Dedup by SHA-256 hash of structural fields (not truncated strings)
+    def _contract_key(c: dict) -> str:
+        raw = f"{c.get('orgao','')}\x00{c.get('numero_contrato','')}\x00{c.get('data','')}\x00{c.get('valor_contrato', c.get('valor',''))}"
+        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
     seen = set()
     unique = []
     for c in all_contracts:
-        key = (c["orgao"][:30], c["numero_contrato"], c["data"])
+        key = _contract_key(c)
         if key not in seen:
             seen.add(key)
             unique.append(c)
@@ -1010,19 +1058,24 @@ _NATURE_SIGNALS: list[tuple[str, list[str]]] = [
 NATURE_ACCEPTANCE_THRESHOLD_PCT = 5.0
 
 
+def _matches_nature(signal: str, text: str) -> bool:
+    """F25: Word-boundary matching for nature signals."""
+    return bool(re.search(r'\b' + re.escape(signal.lower()) + r'\b', text.lower()))
+
+
 def classify_object_nature(objeto: str, cluster_key: str = "") -> str:
     """Classify the nature of a procurement object (contract or edital).
 
-    Layer 1: Explicit signals in the first 150 chars of the text.
+    Layer 1: Explicit signals with word-boundary matching (F25).
     Layer 2: Default nature from the activity cluster (if no explicit signal).
 
     Returns: AQUISICAO, OBRA, SERVICO, LOCACAO, ALIENACAO, or INDEFINIDO.
     """
     obj_lower = (objeto or "").lower().strip()[:350]
 
-    # Layer 1: Explicit signals (order matters — first match wins)
+    # Layer 1: Explicit signals with word boundary (order matters — first match wins)
     for nature, signals in _NATURE_SIGNALS:
-        if any(sig in obj_lower for sig in signals):
+        if any(_matches_nature(sig, obj_lower) for sig in signals):
             return nature
 
     # Layer 2: Cluster default
@@ -1089,11 +1142,14 @@ def cluster_contract_activities(
     category_contracts: dict[str, list[dict]] = {k: [] for k in _ACTIVITY_CATEGORIES}
     unmatched: list[dict] = []
 
+    # F22: Sort categories by longest prefix first for accurate matching
+    sorted_categories = sorted(_ACTIVITY_CATEGORIES.items(), key=lambda x: -max(len(p) for p in x[1]["prefixes"]))
+
     # Phase 1: Dictionary classification via prefix matching
     for c in contratos:
         obj = (c.get("objeto") or "").lower()
         matched = False
-        for cat_key, cat_def in _ACTIVITY_CATEGORIES.items():
+        for cat_key, cat_def in sorted_categories:
             if any(prefix in obj for prefix in cat_def["prefixes"]):
                 category_contracts[cat_key].append(c)
                 c["_cluster_key"] = cat_key  # Tag for nature classification
@@ -1341,6 +1397,8 @@ def extract_keywords_from_contracts(contratos: list[dict], max_keywords: int = 3
         return _extract_keywords_flat(contratos, max_keywords=max_keywords)
     result: list[str] = []
     seen: set[str] = set()
+
+    # Primary: keywords from dominant cluster
     for cluster in clusters:
         for kw in cluster["keywords"]:
             kw_lower = kw.lower()
@@ -1349,6 +1407,17 @@ def extract_keywords_from_contracts(contratos: list[dict], max_keywords: int = 3
                 seen.add(kw_lower)
             if len(result) >= max_keywords:
                 return result
+
+    # F23: Ensure at least top-2 keywords from each non-dominant (secondary) cluster
+    if len(clusters) > 1:
+        for cluster in clusters[1:]:
+            cluster_kws = [kw for kw in cluster.get("keywords", [])[:2]]
+            for kw in cluster_kws:
+                kw_lower = kw.lower()
+                if kw_lower not in seen:
+                    result.append(kw)
+                    seen.add(kw_lower)
+
     return result
 
 
@@ -2255,8 +2324,8 @@ def compute_habilitacao_analysis(
     dim_scores: list[int] = []
 
     # 1. Capital mínimo
-    capital = _safe_float(empresa.get("capital_social"))
-    valor = _safe_float(edital.get("valor_estimado"))
+    capital = _safe_float(empresa.get("capital_social")) or 0.0
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
     min_pct = reqs["capital_minimo_pct"]
     if valor > 0 and capital > 0:
         threshold = valor * min_pct
@@ -2424,7 +2493,7 @@ def compute_risk_analysis(
     flags: list[dict] = []
 
     # 1. Valor sigiloso
-    valor = _safe_float(edital.get("valor_estimado"))
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
     if valor <= 0:
         flags.append({
             "flag": "Valor estimado sigiloso ou não informado — impossível avaliar adequação financeira",
@@ -2559,7 +2628,7 @@ def compute_competitive_analysis(contracts: list[dict]) -> dict:
         if not key:
             continue
         supplier_counts[key] = supplier_counts.get(key, 0) + 1
-        supplier_values[key] = supplier_values.get(key, 0) + _safe_float(c.get("valor"))
+        supplier_values[key] = supplier_values.get(key, 0) + (_safe_float(c.get("valor")) or 0.0)
         if name:
             supplier_names[key] = name
 
@@ -2625,7 +2694,7 @@ def compute_portfolio_analysis(
     sector_key: str,
 ) -> dict:
     """Portfolio-level strategic analysis across all editais."""
-    capital = _safe_float(empresa.get("capital_social"))
+    capital = _safe_float(empresa.get("capital_social")) or 0.0
     quick_wins = []
     investments = []
     opportunities = []
@@ -2714,7 +2783,7 @@ def estimate_operational_capacity(empresa: dict, maturity_profile: dict) -> dict
     Uses capital_social, contract history, and maturity profile as proxies
     for operational bandwidth (team size, bonding capacity, cash flow).
     """
-    capital = _safe_float(empresa.get("capital_social"))
+    capital = _safe_float(empresa.get("capital_social")) or 0.0
     total_contracts = maturity_profile.get("total_contract_count", 0)
     geo_spread = maturity_profile.get("geographic_spread", 0)
     profile = maturity_profile.get("profile", "ENTRANTE")
@@ -2849,13 +2918,13 @@ def optimize_portfolio(
         if cat not in eligible_categories:
             continue
 
-        valor = _safe_float(ed.get("valor_estimado"))
-        custo = _safe_float(ed.get("roi_potential", {}).get("custo_participacao"))
+        valor = _safe_float(ed.get("valor_estimado")) or 0.0
+        custo = _safe_float(ed.get("roi_potential", {}).get("custo_participacao")) or 0.0
         if custo <= 0:
             custo = participation_cost_per_edital
 
-        roi_max = _safe_float(ed.get("roi_potential", {}).get("roi_max"))
-        roi_min = _safe_float(ed.get("roi_potential", {}).get("roi_min"))
+        roi_max = _safe_float(ed.get("roi_potential", {}).get("roi_max")) or 0.0
+        roi_min = _safe_float(ed.get("roi_potential", {}).get("roi_min")) or 0.0
 
         # Use roi_max for efficiency unless negative, then use roi_min
         roi_ref = roi_max if roi_max > 0 else roi_min
@@ -3122,13 +3191,25 @@ def _fetch_pncp_pages_cached(
         if cache_key in raw_cache:
             cached = raw_cache[cache_key]
             if cached is None:
-                # Previously fetched and got error/empty — stop pagination
+                # Genuinely empty — stop pagination
                 break
-            all_items.extend(cached)
-            # Reproduce early-termination: if cached page was partial, stop
-            if len(cached) < PNCP_MAX_PAGE_SIZE:
-                break
-            continue
+            # F13: Distinguish error from empty — retry errors after 1 hour
+            if isinstance(cached, dict) and cached.get("_status") == "error":
+                cached_ts = cached.get("_ts", "")
+                try:
+                    age_s = (datetime.now(timezone.utc) - datetime.fromisoformat(cached_ts)).total_seconds()
+                except (ValueError, TypeError):
+                    age_s = 99999
+                if age_s < 3600:
+                    break  # Still within error TTL — don't retry
+                # Expired error — fall through to retry
+                del raw_cache[cache_key]
+            else:
+                all_items.extend(cached)
+                # Reproduce early-termination: if cached page was partial, stop
+                if len(cached) < PNCP_MAX_PAGE_SIZE:
+                    break
+                continue
 
         # Cache miss — call API
         data, status = api.get(
@@ -3144,12 +3225,13 @@ def _fetch_pncp_pages_cached(
         )
         if status != "API" or not data:
             errors += 1
-            raw_cache[cache_key] = None  # Sentinel: don't retry
+            # F13: Mark as error (not empty) — will be retried after 1 hour
+            raw_cache[cache_key] = {"_status": "error", "_ts": datetime.now(timezone.utc).isoformat()}
             break
 
         items = data if isinstance(data, list) else data.get("data", data.get("resultado", []))
         if not isinstance(items, list) or not items:
-            raw_cache[cache_key] = None
+            raw_cache[cache_key] = None  # Genuinely empty
             break
 
         raw_cache[cache_key] = items
@@ -3386,9 +3468,9 @@ def _parse_pncp_item(item: dict, keywords: list[str], ufs: list[str],
     else:
         link = ""
 
-    # Parse dates
-    data_abertura = (item.get("dataAberturaProposta") or item.get("dataPublicacaoPncp") or "")[:10]
-    data_encerramento = (item.get("dataEncerramentoProposta") or "")[:10]
+    # F04: Parse dates with flexible format fallback
+    data_abertura = _parse_date_flexible(item.get("dataAberturaProposta") or item.get("dataPublicacaoPncp")) or ""
+    data_encerramento = _parse_date_flexible(item.get("dataEncerramentoProposta")) or ""
 
     # Calculate dias_restantes
     dias_restantes = None
@@ -3407,9 +3489,9 @@ def _parse_pncp_item(item: dict, keywords: list[str], ufs: list[str],
              item.get("nomeOrgao") or "")
     municipio = unidade.get("municipioNome") or ""
 
-    # Unique ID for dedup
+    # F05: Unique ID from structural fields (never free text)
     cnpj_clean = re.sub(r"[^0-9]", "", str(cnpj_compra)) if cnpj_compra else ""
-    _id = f"PNCP-{cnpj_clean}-{ano}-{seq}" if cnpj_clean else f"PNCP-{objeto[:50]}"
+    _id = f"PNCP-{cnpj_clean}-{ano}-{seq}" if (cnpj_clean and ano and seq) else f"PNCP-{uuid.uuid4().hex[:12]}"
 
     return {
         "_id": _id,
@@ -3539,7 +3621,8 @@ def _parse_pcp_item(item: dict, keywords: list[str], ufs: list[str],
         "orgao": item.get("razaoSocial") or uc.get("nome") or "",
         "uf": uf,
         "municipio": uc.get("cidade") or "",
-        "valor_estimado": 0.0,  # PCP v2 has no value data
+        "valor_estimado": None,  # PCP v2 does not provide estimated values (F02/F12)
+        "_valor_source": "PCP_SEM_VALOR",
         "modalidade": modalidade,
         "data_abertura": data_abertura,
         "data_encerramento": data_encerramento,
@@ -3584,29 +3667,41 @@ def collect_querido_diario(
             "size": 20,
             "sort_by": "descending_date",
         }
-        # Filter by UFs to reduce noise from unrelated municipalities
+        # F14: Separate query per UF (QD API only accepts one state_code at a time)
         if ufs:
-            # QD API accepts state_code (2-letter UF)
-            for uf in ufs[:3]:  # Max 3 UFs per query
-                params["state_code"] = uf.upper()
-        data, status = api.get(
-            QD_BASE,
-            params=params,
-            label=f"Querido Diário: {q[:40]}",
-        )
-        if status == "API" and data:
-            gazettes = data.get("gazettes", data) if isinstance(data, dict) else data
-            if isinstance(gazettes, list):
-                for g in gazettes[:10]:
-                    mencoes.append({
-                        "_source": _source_tag("API"),
-                        "data": g.get("date", ""),
-                        "territorio": f"{g.get('territory_name', '')} - {g.get('state_code', '')}",
-                        "excerpts": [
-                            {"text": e} if isinstance(e, str) else e
-                            for e in (g.get("excerpts") or [])[:3]
-                        ],
-                    })
+            all_gazettes: list[dict] = []
+            for uf in ufs[:3]:
+                params_uf = dict(params)
+                params_uf["state_code"] = uf.upper()
+                data, status = api.get(
+                    QD_BASE,
+                    params=params_uf,
+                    label=f"Querido Diário: {q[:30]} UF={uf}",
+                )
+                if data and isinstance(data, dict):
+                    all_gazettes.extend(data.get("gazettes", []))
+                time.sleep(0.5)
+            gazettes = all_gazettes
+        else:
+            data, status = api.get(
+                QD_BASE,
+                params=params,
+                label=f"Querido Diário: {q[:40]}",
+            )
+            gazettes = data.get("gazettes", data) if isinstance(data, dict) and status == "API" else []
+            if not isinstance(gazettes, list):
+                gazettes = []
+
+        for g in gazettes[:10]:
+            mencoes.append({
+                "_source": _source_tag("API"),
+                "data": g.get("date", ""),
+                "territorio": f"{g.get('territory_name', '')} - {g.get('state_code', '')}",
+                "excerpts": [
+                    {"text": e} if isinstance(e, str) else e
+                    for e in (g.get("excerpts") or [])[:3]
+                ],
+            })
 
         time.sleep(1.0)  # Rate limit
 
@@ -3928,22 +4023,38 @@ def calculate_distance(
 # ============================================================
 
 def validate_pncp_links(api: ApiClient, editais: list[dict]) -> None:
-    """Validate PNCP links with HEAD requests. Mutates editais in place — parallel."""
+    """Validate PNCP links with HEAD requests. Mutates editais in place — parallel (F29)."""
     print(f"\n🔗 Validando links PNCP ({len(editais)} editais)")
+
+    _fail_count = [0]
+    _total_count = [0]
+    _counter_lock = threading.Lock()
 
     def _validate_single(ed: dict) -> None:
         link = ed.get("link", "")
         if not link or "pncp.gov.br" not in link:
             ed["link_valid"] = None
             return
+        with _counter_lock:
+            _total_count[0] += 1
         status_code = api.head(link, label=f"HEAD {link[-40:]}")
         ed["link_valid"] = status_code == 200 if status_code else None
-        if status_code and status_code != 200:
-            with api._print_lock:
-                print(f"  ⚠ Link HTTP {status_code}: {link}")
+        if not status_code or status_code != 200:
+            with _counter_lock:
+                _fail_count[0] += 1
+            if status_code and status_code != 200:
+                with api._print_lock:
+                    print(f"  ⚠ Link HTTP {status_code}: {link}")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as pool:
+    # F29: parallel with ThreadPoolExecutor(max_workers=10)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:
         list(pool.map(_validate_single, editais))
+
+    # F29: If >50% fail, mark all as unvalidated
+    if _total_count[0] > 0 and _fail_count[0] > _total_count[0] * 0.5:
+        for ed in editais:
+            ed["links_unvalidated"] = True
+        print(f"  ⚠ >50% links falharam ({_fail_count[0]}/{_total_count[0]}) — marcando como não validados")
 
 
 # ============================================================
@@ -3959,7 +4070,7 @@ def collect_pncp_documents(api: ApiClient, editais: list[dict]) -> None:
     # Cap to Top 50 by valor_estimado — mark excluded editais immediately
     DOCS_TOP_N = 50
     pncp_editais = [ed for ed in editais if ed.get("fonte") == "PNCP"]
-    pncp_sorted = sorted(pncp_editais, key=lambda e: _safe_float(e.get("valor_estimado")), reverse=True)
+    pncp_sorted = sorted(pncp_editais, key=lambda e: _safe_float(e.get("valor_estimado")) or 0.0, reverse=True)
     top_pncp_ids = {id(ed) for ed in pncp_sorted[:DOCS_TOP_N]}
 
     for ed in editais:
@@ -4153,7 +4264,7 @@ def collect_competitive_intel(
 
                 for c in items:
                     fn = c.get("nomeRazaoSocialFornecedor", "")
-                    vl = _safe_float(c.get("valorGlobal") or c.get("valorInicial"))
+                    vl = _safe_float(c.get("valorGlobal") or c.get("valorInicial")) or 0.0
                     obj = (c.get("objetoContrato") or "")[:150]
                     if fn or obj:
                         contracts.append({
@@ -4380,7 +4491,7 @@ def _compute_fiscal_risk(edital: dict, competitive_intel: list[dict]) -> dict:
     ibge = edital.get("ibge", {}) or {}
     pop = ibge.get("populacao", 0) or 0
     pib = ibge.get("pib_mil_reais", 0) or 0
-    valor = _safe_float(edital.get("valor_estimado"))
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
 
     alertas: list[str] = []
     risk_level = "BAIXO"
@@ -4439,8 +4550,8 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
                geographic scoring for infrastructure adequacy.
     CRÍTICA 8: Fiscal risk — municipality financial health discount.
     """
-    capital = _safe_float(empresa.get("capital_social"))
-    valor = _safe_float(edital.get("valor_estimado"))
+    capital = _safe_float(empresa.get("capital_social")) or 0.0
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
 
     # ================================================================
     # CRÍTICA 2: VETO GATES — binary elimination before any scoring
@@ -4532,9 +4643,10 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
 
     if valor > 0 and capital > 0:
         ratio = capital / valor
-        # Already passed veto (ratio >= 0.10), apply graduated penalty
-        if ratio < 0.3:
-            hab_score = min(hab_score, 70)
+        # F08: Linear graduation instead of cliff at 0.3
+        threshold_ratio = 0.3
+        if ratio < threshold_ratio:
+            hab_score = max(10, min(100, int(100 * ratio / threshold_ratio)))
 
     # ================================================================
     # FINANCEIRO (25%)
@@ -4570,10 +4682,10 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
     else:
         geo_score = max(5, 10 - (km - 800) * 0.005)  # Slow decay below 10, floor at 5
 
-    # Presencial penalty: presencial editais far away get extra penalty
+    # F06: Single presencial multiplier (replaces double -15 fixed penalty)
     modalidade = (edital.get("modalidade") or "").lower()
-    if "presencial" in modalidade and km is not None and km > 200:
-        geo_score = max(5, geo_score - 15)  # -15 penalty for presencial >200km
+    is_presencial = "presencial" in modalidade
+    presencial_multiplier = 0.85 if is_presencial else 1.0
 
     # CRÍTICA 7: IBGE operational viability — municipality infrastructure adequacy
     ibge = edital.get("ibge", {}) or {}
@@ -4586,6 +4698,8 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
     if pib_pc > 0 and pib_pc < 15_000 and valor > 500_000:
         geo_score *= 0.85  # Capacidade fiscal/infraestrutura frágil
 
+    # F06: Apply presencial multiplier ONCE after all decay/IBGE adjustments
+    geo_score = int(geo_score * presencial_multiplier)
     geo_score = round(max(5, min(100, geo_score)))
 
     # ================================================================
@@ -4642,21 +4756,20 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
         + comp_score * weights["comp"]
     )
 
-    # CRÍTICA 4: Threshold gates — dimensions below critical values impose hard ceilings.
-    # A linear model allows geo=100 to compensate prazo=10. These gates prevent that.
+    # F07: Threshold gates — single min(caps) operation instead of sequential min()
     threshold_applied = None
+    triggered_caps: list[int] = []
     if prazo_score <= 10:
-        # <7 days: impossible to prepare quality proposal regardless of other factors
-        total = min(total, 20)
+        triggered_caps.append(20)
         threshold_applied = "prazo_critico"
     if fin_score <= 10:
-        # Valor >2x capacity: financial disqualification likely
-        total = min(total, 25)
+        triggered_caps.append(25)
         threshold_applied = threshold_applied or "financeiro_critico"
     if hab_score <= 30:
-        # Severe qualification risk (SICAF restriction survived veto check = possible resolution)
-        total = min(total, 30)
+        triggered_caps.append(30)
         threshold_applied = threshold_applied or "habilitacao_critica"
+    if triggered_caps:
+        total = min(total, min(triggered_caps))
 
     # Improvement D: Inexigibilidade penalty — reduces inflated PARTICIPAR count
     # Not a veto — just a 20-point penalty to reflect higher qualification barriers.
@@ -4783,9 +4896,11 @@ def compute_win_probability(
         competition_prob = 1.0 / (n_suppliers + 2)  # Harder with many competitors
         confidence = "alta"
 
-    # Lower confidence when using unfiltered (noisy) data
+    # F09: Force confidence="baixa" on unfiltered fallback + tag reason
+    confidence_reason = None
     if not sector_filtered and n_contracts_raw > 0:
         confidence = "baixa"
+        confidence_reason = "dados insuficientes no setor específico — análise usa base geral"
 
     # Top supplier dominance penalty
     if top_share > 0.60:
@@ -4827,8 +4942,8 @@ def compute_win_probability(
         contextual_mult *= 0.75  # <15 days: reduced chance
 
     # Contract value >> company capacity = lower probability (financial disqualification risk)
-    capital = _safe_float(empresa.get("capital_social"))
-    valor = _safe_float(edital.get("valor_estimado"))
+    capital = _safe_float(empresa.get("capital_social")) or 0.0
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
     if capital > 0 and valor > 0:
         cap_ratio = valor / (capital * 10)  # value vs capacity
         if cap_ratio > 5:
@@ -4848,7 +4963,7 @@ def compute_win_probability(
     final_prob = raw_prob * viability_factor * contextual_mult
     final_prob = max(0.01, min(0.90, final_prob))  # Widened clamp [1%, 90%]
 
-    return {
+    result = {
         "probability": round(final_prob, 3),
         "confidence": confidence,
         "base_rate": base_rate,
@@ -4864,6 +4979,10 @@ def compute_win_probability(
         "contextual_multiplier": round(contextual_mult, 2),
         "_source": _source_tag("CALCULATED", f"{n_contracts} contratos{'(filtrados)' if sector_filtered else ''}, {n_suppliers} fornecedores"),
     }
+    # F09: Include confidence_reason when unfiltered fallback was used
+    if confidence_reason:
+        result["confidence_reason"] = confidence_reason
+    return result
 
 
 # CRÍTICA 3: Participation cost profiles by (sector × modality).
@@ -4928,7 +5047,7 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
                presencial for construction has 5-8x the cost of a pregão eletrônico for software.
     CRÍTICA 8: Fiscal risk discount applied to final ROI (municipality health).
     """
-    valor = _safe_float(edital.get("valor_estimado"))
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
     if valor <= 0:
         return {
             "roi_min": 0, "roi_max": 0, "probability": 0.0,
@@ -4949,6 +5068,8 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
         }
 
     margin_min, margin_max = _SECTOR_MARGINS.get(sector_key, (0.08, 0.15))
+    # F11: Mark margin source as ESTIMATED when using fallback
+    margin_is_fallback = sector_key not in _SECTOR_MARGINS
     probability = win_prob.get("probability", 0.10)
 
     # CRÍTICA 3: Sector × modality participation cost profiles.
@@ -4965,7 +5086,8 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
 
     # CRÍTICA 8: Fiscal risk discount from risk_score output
     fiscal_risk = edital.get("risk_score", {}).get("fiscal_risk", {})
-    fiscal_discount = fiscal_risk.get("roi_discount", 1.0) if isinstance(fiscal_risk, dict) else 1.0
+    # F42: Clamp fiscal risk discount to [0.0, 1.0]
+    fiscal_discount = max(0.0, min(1.0, float(fiscal_risk.get("roi_discount", 1.0)))) if isinstance(fiscal_risk, dict) else 1.0
 
     gross_min = round(valor * probability * margin_min)
     gross_max = round(valor * probability * margin_max)
@@ -5001,14 +5123,17 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
         ),
     }
 
-    # Auto-reclassification: marginal ROI on substantial contracts
+    # F10: ROI reclassification gradient (not cliff at R$10k)
     strategic_reclassification = None
     reclassification_rationale = None
-    if roi_max < 10_000 and valor > 100_000:
+    acervo_weight = max(0.0, 1.0 - roi_max / 50000.0)
+    has_acervo_potential = valor > 100_000
+    if acervo_weight > 0.5 and has_acervo_potential:
         strategic_reclassification = "INVESTIMENTO_ESTRATEGICO_ACERVO"
         reclassification_rationale = (
             f"Retorno financeiro direto marginal ({_fmt_brl(roi_max)}) em contrato de "
-            f"{_fmt_brl(valor)} — valor principal é acervo técnico e relacionamento institucional"
+            f"{_fmt_brl(valor)} — valor principal é acervo técnico e relacionamento institucional "
+            f"(peso acervo: {acervo_weight:.0%})"
         )
 
     return {
@@ -5016,6 +5141,7 @@ def compute_roi_potential(edital: dict, sector_key: str, win_prob: dict) -> dict
         "roi_max": roi_max,
         "probability": round(probability, 3),
         "margin_range": f"{margin_min * 100:.0f}%-{margin_max * 100:.0f}%",
+        "margin_source": "ESTIMATED" if margin_is_fallback else "SECTOR_SPECIFIC",
         "confidence": win_prob.get("confidence", "baixa"),
         "strategic_reclassification": strategic_reclassification,
         "reclassification_rationale": reclassification_rationale,
@@ -5141,7 +5267,7 @@ def detect_maturity_profile(empresa: dict) -> dict:
             ufs_set.add(uf)
         esfera = c.get("esfera", "N/I")
         esferas[esfera] = esferas.get(esfera, 0) + 1
-        val = _safe_float(c.get("valor", c.get("valorInicial", 0)))
+        val = _safe_float(c.get("valor", c.get("valorInicial", 0))) or 0.0
         total_contract_value += val
         if val > max_contract_value:
             max_contract_value = val
@@ -5150,7 +5276,7 @@ def detect_maturity_profile(empresa: dict) -> dict:
             acervo_objetos.append(obj[:150])
 
     geo_spread = len(ufs_set)
-    capital = _safe_float(empresa.get("capital_social"))
+    capital = _safe_float(empresa.get("capital_social")) or 0.0
     max_ratio = max_contract_value / capital if capital > 0 else 0.0
 
     # Classification considers ALL spheres (not just federal)
@@ -5417,8 +5543,8 @@ def compute_qualification_gap_analysis(
 
     # Category 2: Compatible but operational gaps exist
     reqs = _SECTOR_REQUIREMENTS_DETAILED.get(sector_key, _SECTOR_REQUIREMENTS_DETAILED["_default"])
-    valor = _safe_float(edital.get("valor_estimado"))
-    capital = _safe_float(empresa.get("capital_social"))
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
+    capital = _safe_float(empresa.get("capital_social")) or 0.0
     gaps: list[dict] = []
 
     # Capital gap
@@ -5523,7 +5649,7 @@ def compute_qualification_gap_analysis(
 
     if best_match_info:
         # Semantic match found — cite the specific contract
-        val_fmt = _fmt_brl(_safe_float(best_match_info['valor']))
+        val_fmt = _fmt_brl(_safe_float(best_match_info['valor']) or 0.0)
         gaps.append({
             "gap_type": "ACERVO_EXISTENTE",
             "description": (
@@ -5647,8 +5773,8 @@ def compute_historical_dispute_stats(all_contracts: list[dict]) -> dict:
 
     for c in all_contracts:
         fornecedor = c.get("fornecedor", "") or c.get("cnpj_fornecedor", "")
-        valor_est = _safe_float(c.get("valor_estimado", 0))
-        valor_hom = _safe_float(c.get("valor", c.get("valor_homologado", 0)))
+        valor_est = _safe_float(c.get("valor_estimado", 0)) or 0.0
+        valor_hom = _safe_float(c.get("valor", c.get("valor_homologado", 0))) or 0.0
         modalidade = (c.get("modalidade", "") or "").lower().strip()
         bracket = _value_bracket(max(valor_est, valor_hom))
         key = f"{modalidade}_{bracket}" if modalidade else f"outro_{bracket}"
@@ -5740,7 +5866,7 @@ def compute_organ_risk_profile(
         }
 
     # Count adjudicated (has valor > 0) vs likely desert (no valor)
-    adjudicated = sum(1 for c in organ_contracts if _safe_float(c.get("valor", 0)) > 0)
+    adjudicated = sum(1 for c in organ_contracts if (_safe_float(c.get("valor", 0)) or 0.0) > 0)
     adj_rate = adjudicated / n_contracts if n_contracts > 0 else 0
     desert_rate = 1.0 - adj_rate
 
@@ -5757,7 +5883,7 @@ def compute_organ_risk_profile(
     has_prior_similar = similar_count > 0
 
     # Timeline assessment
-    valor = _safe_float(edital.get("valor_estimado"))
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
     dias = edital.get("dias_restantes")
     if dias is not None and valor > 0:
         # Simple heuristic: complex projects need more time
@@ -5850,7 +5976,7 @@ def compute_regional_clusters(editais: list[dict]) -> dict:
     clusters = []
 
     # Sort by value (highest first) to use as cluster centers
-    geo_editais.sort(key=lambda x: _safe_float(x["ed"].get("valor_estimado", 0)), reverse=True)
+    geo_editais.sort(key=lambda x: _safe_float(x["ed"].get("valor_estimado", 0)) or 0.0, reverse=True)
 
     for ge in geo_editais:
         if ge["index"] in used:
@@ -5872,7 +5998,7 @@ def compute_regional_clusters(editais: list[dict]) -> dict:
             # Compute cluster metrics
             center_mun = cluster_members[0]["ed"].get("municipio", "")
             center_uf = cluster_members[0]["ed"].get("uf", "")
-            total_valor = sum(_safe_float(m["ed"].get("valor_estimado", 0)) for m in cluster_members)
+            total_valor = sum((_safe_float(m["ed"].get("valor_estimado", 0)) or 0.0) for m in cluster_members)
 
             # Max radius from center
             max_radius = max(
@@ -5955,7 +6081,7 @@ def calculate_scenarios(edital: dict, sector_key: str = "") -> dict:
     wp = edital.get("win_probability", {})
     roi = edital.get("roi_potential", {})
     prob = wp.get("probability", 0)
-    valor = _safe_float(edital.get("valor_estimado"))
+    valor = _safe_float(edital.get("valor_estimado")) or 0.0
 
     # Skip if no win_probability data
     if not wp or prob <= 0 or valor <= 0:
@@ -5976,7 +6102,7 @@ def calculate_scenarios(edital: dict, sector_key: str = "") -> dict:
 
     # Participation cost from calculation_memory
     calc_mem = roi.get("calculation_memory", {})
-    custo = _safe_float(calc_mem.get("custo_participacao", 0))
+    custo = _safe_float(calc_mem.get("custo_participacao", 0)) or 0.0
 
     # Base scenario — use existing values as-is
     base = {
@@ -6654,7 +6780,7 @@ def collect_market_trend(
                     if kw_lower not in objeto:
                         continue
                     vol += 1
-                    val_total += _safe_float(item.get("valorTotalEstimado"))
+                    val_total += _safe_float(item.get("valorTotalEstimado")) or 0.0
 
                 time.sleep(0.3)
 
@@ -6715,7 +6841,7 @@ def collect_price_benchmarks(editais: list[dict]) -> dict:
     all_discounts: list[float] = []
 
     for idx, ed in enumerate(editais):
-        valor_est = _safe_float(ed.get("valor_estimado"))
+        valor_est = _safe_float(ed.get("valor_estimado")) or 0.0
         if valor_est <= 0:
             continue
 
@@ -6724,7 +6850,7 @@ def collect_price_benchmarks(editais: list[dict]) -> dict:
             continue
 
         # Calculate average award price from competitive intel contracts
-        valores_award = [_safe_float(c.get("valor")) for c in contracts if _safe_float(c.get("valor")) > 0]
+        valores_award = [(_safe_float(c.get("valor")) or 0.0) for c in contracts if (_safe_float(c.get("valor")) or 0.0) > 0]
         if not valores_award:
             continue
 
@@ -7158,7 +7284,11 @@ def assemble_report_data(
 # MAIN
 # ============================================================
 
+_TIMEOUT_REACHED = False  # F40: Global timeout flag
+
+
 def main():
+    global _TIMEOUT_REACHED
     parser = argparse.ArgumentParser(
         description="Coleta determinística de dados para relatório B2G",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -7294,6 +7424,18 @@ Examples:
     print(f"   Período: {args.dias} dias | Data: {_date_iso(_today())}")
     print(f"{'='*60}")
 
+    # F40: Global timeout for collection pipeline (300s = 5 minutes)
+    GLOBAL_TIMEOUT_S = 300
+
+    def _timeout_handler():
+        global _TIMEOUT_REACHED
+        print(f"\n⚠ Global timeout ({GLOBAL_TIMEOUT_S}s) reached. Saving partial data...")
+        _TIMEOUT_REACHED = True
+
+    _global_timer = threading.Timer(GLOBAL_TIMEOUT_S, _timeout_handler)
+    _global_timer.daemon = True
+    _global_timer.start()
+
     # ---- Phase 1: Company Profile ----
     empresa = collect_opencnpj(api, cnpj14)
 
@@ -7362,16 +7504,23 @@ Examples:
     )
     print(f"  Histórico consolidado: {n_merged} contratos ({n_pncp} PNCP + {n_pt} PT)")
 
+    # F39: Filter cancelled contracts before clustering (keep all for risk flags)
+    EXCLUDED_CONTRACT_STATUSES = {"CANCELADO", "RESCINDIDO", "ANULADO"}
+    active_contracts = [c for c in merged_contratos if c.get("situacao_contrato", "").upper() not in EXCLUDED_CONTRACT_STATUSES]
+    n_excluded_contracts = len(merged_contratos) - len(active_contracts)
+    if n_excluded_contracts > 0:
+        print(f"  F39: {n_excluded_contracts} contratos cancelados/rescindidos filtrados para clustering")
+
     # ---- Cluster contract activities (replaces flat keyword extraction) ----
-    contract_clusters = cluster_contract_activities(merged_contratos)
+    contract_clusters = cluster_contract_activities(active_contracts)
     if contract_clusters:
         labels = [f"{c['label']}({c['count']}, {c['share_pct']}%)" for c in contract_clusters]
         print(f"  Clusters de atividade ({len(contract_clusters)}): {', '.join(labels)}")
         # Flatten keywords for backward-compatible search
-        contract_keywords = extract_keywords_from_contracts(merged_contratos)
+        contract_keywords = extract_keywords_from_contracts(active_contracts)
         print(f"  Keywords extraídas dos clusters ({len(contract_keywords)}): {', '.join(contract_keywords[:10])}{'...' if len(contract_keywords) > 10 else ''}")
-        # Build company nature profile from classified contracts
-        company_nature_profile = build_company_nature_profile(contract_clusters, merged_contratos)
+        # Build company nature profile from classified contracts (F39: uses active only)
+        company_nature_profile = build_company_nature_profile(contract_clusters, active_contracts)
         if company_nature_profile:
             accepted = [f"{k}({v:.0f}%)" for k, v in company_nature_profile.items()
                         if v >= NATURE_ACCEPTANCE_THRESHOLD_PCT]
@@ -7425,9 +7574,19 @@ Examples:
     if not ufs:
         print("  UFs: todas (sem filtro)")
 
+    # F40: Check global timeout before expensive phases
+    if _TIMEOUT_REACHED:
+        print("  ⚠ TIMEOUT: Pulando busca de editais")
+        editais_pncp, pncp_source = [], _source_tag("UNAVAILABLE", "Global timeout reached")
+        editais_pcp, pcp_source = [], _source_tag("UNAVAILABLE", "Global timeout reached")
+        qd_mencoes, qd_source = [], _source_tag("UNAVAILABLE", "Global timeout reached")
+        # Jump to assembly
+    else:
+        pass  # Continue with search
+
     # ---- Phase 2a: Edital Search (using contract-enriched keywords) ----
     # If company has multiple activity clusters, use per-cluster search
-    cluster_searches = extract_keywords_per_cluster(merged_contratos, nature_profile=company_nature_profile) if merged_contratos else []
+    cluster_searches = extract_keywords_per_cluster(active_contracts, nature_profile=company_nature_profile) if active_contracts else []
 
     if len(cluster_searches) >= 2:
         # Multi-sector company: search per cluster
@@ -7461,6 +7620,10 @@ Examples:
     dropped = before_filter - len(all_editais)
     if dropped > 0:
         print(f"\n  ⚡ Removidos {dropped} editais já encerrados (restam {len(all_editais)} abertos)")
+
+    # F40: Check timeout before enrichment
+    if _TIMEOUT_REACHED:
+        print("\n  ⚠ TIMEOUT: Pulando enriquecimento paralelo")
 
     # ---- Phase 2b: Enrichment (parallel) ----
     print("\n" + "=" * 60)
@@ -7741,10 +7904,15 @@ Examples:
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+    # F40: Cancel global timer
+    _global_timer.cancel()
+
     print(f"\n✅ Dados salvos em: {output_path}")
     print(f"   Editais: {len(data['editais'])} ({len(editais_pncp)} PNCP + {len(editais_pcp)} PCP)")
     print(f"   Menções QD: {len(qd_mencoes)}")
     print(f"   Distâncias: {len(distancias)}")
+    if _TIMEOUT_REACHED:
+        print("   ⚠ PARTIAL DATA: Global timeout was reached — some phases were skipped")
     api.print_stats()
     api.close()
 
