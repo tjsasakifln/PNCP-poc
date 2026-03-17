@@ -178,7 +178,9 @@ def validate(data: dict) -> dict:
             dc_label = dc.get("label", "").lower()
             dc_keywords = [k.lower() for k in dc.get("keywords", [])[:5]]
 
-            if not dc_keywords:
+            # Skip catch-all cluster — it contains miscellaneous items that
+            # by definition don't match specific edital keywords.
+            if dc_label == "_outros" or not dc_keywords:
                 continue
 
             # Count editais that match this cluster — by origin tag OR by keyword in objeto
