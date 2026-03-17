@@ -108,21 +108,37 @@ BRASILAPI_BASE = "https://brasilapi.com.br/api/cnpj/v1"
 IBGE_LOCALIDADES = "https://servicodados.ibge.gov.br/api/v1/localidades"
 IBGE_SIDRA = "https://apisidra.ibge.gov.br/values"
 
-# PNCP modalidades relevantes
+# PNCP modalidade codes — aligned with /api/pncp/v1/modalidades (verified 2026-03-17)
 MODALIDADES = {
     2: "Diálogo Competitivo",
-    3: "Dispensa de Licitação",
-    4: "Concorrência",
-    5: "Pregão Eletrônico",
-    6: "Pregão Presencial",
-    8: "Inexigibilidade",
-    9: "Dispensa com Disputa",
+    3: "Concurso",
+    4: "Concorrência - Eletrônica",
+    5: "Concorrência - Presencial",
+    6: "Pregão - Eletrônico",
+    7: "Pregão - Presencial",
+    8: "Dispensa de Licitação",
+    9: "Inexigibilidade",
+    12: "Credenciamento",
+    15: "Chamada Pública",
+    16: "Concorrência - Eletrônica Internacional",
+    17: "Concorrência - Presencial Internacional",
+    18: "Pregão - Eletrônico Internacional",
+    19: "Pregão - Presencial Internacional",
 }
 
-# Modalidades by procurement type
-MODALIDADES_OBRAS = {4, 5, 6, 8}  # Construction/services: Concorrência, Pregão, Inexigibilidade
-MODALIDADES_AQUISICAO = {3, 5, 6, 9}  # Materials/supplies: Dispensa, Pregão, Dispensa c/ Disputa
-MODALIDADES_SERVICOS = {4, 5, 6, 8}  # Services: same as obras
+# Competitive modalidades — where OTHER companies can actually bid
+MODALIDADES_COMPETITIVAS = {4, 5, 6, 7, 16, 17, 18, 19}  # Concorrências + Pregões
+
+# Extended competitive — includes less common but still open processes
+MODALIDADES_COMPETITIVAS_EXTENDED = {2, 3, 4, 5, 6, 7, 12, 15, 16, 17, 18, 19}
+
+# NON-competitive — pre-determined winner or no bidding
+MODALIDADES_EXCLUIDAS = {9, 14}  # Inexigibilidade + Inaplicabilidade
+
+# By procurement nature (ONLY competitive modalidades)
+MODALIDADES_OBRAS = {4, 5, 6, 7}               # Concorrências + Pregões (removed 8!)
+MODALIDADES_AQUISICAO = {6, 7, 8}              # Pregões + Dispensa (dispensa COM disputa can be competitive for low-value purchases)
+MODALIDADES_SERVICOS = {4, 5, 6, 7}            # Concorrências + Pregões (removed 8!)
 
 PNCP_MAX_PAGE_SIZE = 50
 PNCP_MAX_PAGES = 10
@@ -1488,8 +1504,8 @@ def _modalidades_for_cluster(cluster_label: str,
         if dominant_nature in _NATURE_TO_MODALIDADES:
             return _NATURE_TO_MODALIDADES[dominant_nature]
 
-    # Default: all modalidades
-    return set(MODALIDADES.keys())
+    # Default: competitive modalidades only (never include non-competitive by default)
+    return MODALIDADES_COMPETITIVAS
 
 
 def extract_keywords_per_cluster(
@@ -2730,7 +2746,7 @@ def compute_portfolio_analysis(
         elif prob >= 0.15 and risk >= 50:
             ed["strategic_category"] = "QUICK_WIN"
             quick_wins.append(summary)
-        elif prob < 0.10 and valor > 0:
+        elif prob < 0.10 and (valor or 0) > 0:
             ed["strategic_category"] = "INVESTIMENTO"
             investments.append(summary)
         elif prob >= 0.08 and risk >= 30:
@@ -3511,7 +3527,11 @@ def _parse_pncp_item(item: dict, keywords: list[str], ufs: list[str],
         "cnpj_orgao": cnpj_clean,
         "ano_compra": str(ano),
         "sequencial_compra": str(seq),
-        "status_edital": "ENCERRADO" if (dias_restantes is not None and dias_restantes < 0) else "ABERTO",
+        "status_edital": (
+            "ENCERRADO" if (dias_restantes is not None and dias_restantes < 0)
+            else "ABERTO" if (dias_restantes is not None and dias_restantes >= 0)
+            else "PRAZO_INDEFINIDO"
+        ),
         "_nature": edital_nature,
     }
 
@@ -3630,7 +3650,11 @@ def _parse_pcp_item(item: dict, keywords: list[str], ufs: list[str],
         "dias_restantes": dias_restantes,
         "fonte": "PCP",
         "link": link,
-        "status_edital": "ENCERRADO" if (dias_restantes is not None and dias_restantes < 0) else "ABERTO",
+        "status_edital": (
+            "ENCERRADO" if (dias_restantes is not None and dias_restantes < 0)
+            else "ABERTO" if (dias_restantes is not None and dias_restantes >= 0)
+            else "PRAZO_INDEFINIDO"
+        ),
     }
 
 
@@ -7619,8 +7643,26 @@ Examples:
     editais_pncp = [e for e in editais_pncp if e.get("status_edital") != "ENCERRADO"]
     editais_pcp = [e for e in editais_pcp if e.get("status_edital") != "ENCERRADO"]
     dropped = before_filter - len(all_editais)
-    if dropped > 0:
-        print(f"\n  ⚡ Removidos {dropped} editais já encerrados (restam {len(all_editais)} abertos)")
+
+    # Also remove PRAZO_INDEFINIDO unless it's a credenciamento/chamada publica (continuous opportunities)
+    _PRAZO_INDEF_ALLOWED = {"Credenciamento", "Chamada Pública", "Chamada Publica"}
+    before_indef = len(all_editais)
+    all_editais = [e for e in all_editais if e.get("status_edital") != "PRAZO_INDEFINIDO" or e.get("modalidade", "") in _PRAZO_INDEF_ALLOWED]
+    editais_pncp = [e for e in editais_pncp if e.get("status_edital") != "PRAZO_INDEFINIDO" or e.get("modalidade", "") in _PRAZO_INDEF_ALLOWED]
+    editais_pcp = [e for e in editais_pcp if e.get("status_edital") != "PRAZO_INDEFINIDO" or e.get("modalidade", "") in _PRAZO_INDEF_ALLOWED]
+    dropped_indef = before_indef - len(all_editais)
+
+    print(f"\n  ⚡ Removidos {dropped} encerrados + {dropped_indef} sem prazo definido (restam {len(all_editais)} abertos)")
+
+    # Defense in depth: remove non-competitive modalidades regardless of how they entered
+    _MODALIDADES_BLOQUEADAS = {"Inexigibilidade", "Inaplicabilidade da Licitação", "Inaplicabilidade"}
+    before_modal = len(all_editais)
+    all_editais = [e for e in all_editais if e.get("modalidade", "") not in _MODALIDADES_BLOQUEADAS]
+    editais_pncp = [e for e in editais_pncp if e.get("modalidade", "") not in _MODALIDADES_BLOQUEADAS]
+    editais_pcp = [e for e in editais_pcp if e.get("modalidade", "") not in _MODALIDADES_BLOQUEADAS]
+    dropped_modal = before_modal - len(all_editais)
+    if dropped_modal:
+        print(f"  ⚡ Removidos {dropped_modal} editais não competitivos (inexigibilidade/inaplicabilidade)")
 
     # F40: Check timeout before enrichment
     if _TIMEOUT_REACHED:
