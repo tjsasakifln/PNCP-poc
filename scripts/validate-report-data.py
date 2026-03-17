@@ -229,6 +229,7 @@ def validate(data: dict) -> dict:
         )
 
     # 1f. Activity clusters — verificar se editais encontrados correspondem aos clusters
+    n_contracts = len(historico)
     if clusters and editais:
         dominant_clusters = [c for c in clusters if c.get("share_pct", 0) >= 25]
         for dc in dominant_clusters:
@@ -257,15 +258,27 @@ def validate(data: dict) -> dict:
             share_pct = dc.get("share_pct", 0)
 
             if match_pct < 10 and share_pct >= 25:
-                blocks.append(
-                    f"CLUSTER_EDITAL_MISMATCH: Cluster dominante '{dc.get('label')}' "
-                    f"({share_pct:.0f}% da atividade) está representado em apenas "
-                    f"{match_pct:.0f}% dos editais ({matching}/{len(editais)}). "
-                    f"Os editais buscados NÃO correspondem ao perfil real da empresa. "
-                    f"AÇÃO OBRIGATÓRIA: Re-executar collect-report-data.py — a busca "
-                    f"precisa incluir modalidades e keywords adequadas ao cluster dominante. "
-                    f"Este bloqueio é IRREVOGÁVEL — não contornar manualmente."
-                )
+                if n_contracts < 10:
+                    # Small sample: clustering is statistically unreliable.
+                    # With < 10 contracts, a 50/50 split is noise, not signal.
+                    # Downgrade BLOCK → WARN to avoid false positives.
+                    warnings.append(
+                        f"CLUSTER_EDITAL_MISMATCH_LOW_CONFIDENCE: Cluster '{dc.get('label')}' "
+                        f"({share_pct:.0f}% da atividade) sub-representado nos editais "
+                        f"({match_pct:.0f}% de match), mas amostra de apenas {n_contracts} "
+                        f"contrato(s) é insuficiente para bloqueio. Verificar manualmente "
+                        f"se editais correspondem ao perfil real da empresa."
+                    )
+                else:
+                    blocks.append(
+                        f"CLUSTER_EDITAL_MISMATCH: Cluster dominante '{dc.get('label')}' "
+                        f"({share_pct:.0f}% da atividade) está representado em apenas "
+                        f"{match_pct:.0f}% dos editais ({matching}/{len(editais)}). "
+                        f"Os editais buscados NÃO correspondem ao perfil real da empresa. "
+                        f"AÇÃO OBRIGATÓRIA: Re-executar collect-report-data.py — a busca "
+                        f"precisa incluir modalidades e keywords adequadas ao cluster dominante. "
+                        f"Este bloqueio é IRREVOGÁVEL — não contornar manualmente."
+                    )
             elif match_pct < 30 and share_pct >= 25:
                 warnings.append(
                     f"CLUSTER_EDITAL_LOW_MATCH: Cluster '{dc.get('label')}' "
