@@ -3821,18 +3821,53 @@ def _build_regional_analysis(data: dict, styles: dict, sec: dict | None = None) 
 
         # Joint viability analysis
         if cluster_editais:
-            # Shared mobilization savings: only 1 trip, not N
+            # Check if cluster is primarily strategic (acervo) investments
             n_cluster = len(cluster_editais)
+            n_acervo = sum(
+                1 for ed in cluster_editais
+                if (ed.get("roi_potential") or {}).get("strategic_reclassification")
+                == "INVESTIMENTO_ESTRATEGICO_ACERVO"
+            )
+
+            # Shared mobilization savings: only 1 trip, not N
             shared_savings = cluster_mobilization_cost * (1 - 1.0 / max(n_cluster, 1))
             net_roi_cluster = cluster_roi_sum + shared_savings
-            viability = "VIÁVEL" if net_roi_cluster > 0 else "INVIÁVEL"
-            viab_color = SIGNAL_GREEN if net_roi_cluster > 0 else SIGNAL_RED
-            el.append(Paragraph(
-                f"<b>Viabilidade conjunta:</b> <font color='{viab_color.hexval()}'><b>{viability}</b></font>"
-                f" — Resultado conjunto: {_currency_short(net_roi_cluster)}"
-                f" (economia de mobilização compartilhada: {_currency_short(shared_savings)})",
-                styles["body_small"],
-            ))
+
+            if n_acervo == n_cluster:
+                # ALL editais are strategic acervo → financial ROI is irrelevant
+                viability = "ESTRATÉGICO"
+                viab_color = ACCENT  # Bronze — neither green nor red
+                el.append(Paragraph(
+                    f"<b>Viabilidade conjunta:</b> <font color='{viab_color.hexval()}'>"
+                    f"<b>{viability}</b></font>"
+                    f" — Cluster de investimento em acervo técnico"
+                    f" ({n_cluster} editais, mobilização compartilhada: {_currency_short(shared_savings)})",
+                    styles["body_small"],
+                ))
+            elif n_acervo > 0:
+                # Mixed: some acervo, some financial
+                n_financial = n_cluster - n_acervo
+                viability = "VIÁVEL" if net_roi_cluster > 0 else "MISTO"
+                viab_color = SIGNAL_GREEN if net_roi_cluster > 0 else SIGNAL_AMBER
+                el.append(Paragraph(
+                    f"<b>Viabilidade conjunta:</b> <font color='{viab_color.hexval()}'>"
+                    f"<b>{viability}</b></font>"
+                    f" — {n_financial} edital(is) com retorno financeiro"
+                    f" + {n_acervo} investimento(s) em acervo"
+                    f" (economia de mobilização: {_currency_short(shared_savings)})",
+                    styles["body_small"],
+                ))
+            else:
+                # Pure financial analysis
+                viability = "VIÁVEL" if net_roi_cluster > 0 else "INVIÁVEL"
+                viab_color = SIGNAL_GREEN if net_roi_cluster > 0 else SIGNAL_RED
+                el.append(Paragraph(
+                    f"<b>Viabilidade conjunta:</b> <font color='{viab_color.hexval()}'>"
+                    f"<b>{viability}</b></font>"
+                    f" — Resultado conjunto: {_currency_short(net_roi_cluster)}"
+                    f" (economia de mobilização compartilhada: {_currency_short(shared_savings)})",
+                    styles["body_small"],
+                ))
 
         rec = _s(cl.get("recommendation", ""))
         if rec:
