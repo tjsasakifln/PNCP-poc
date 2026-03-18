@@ -117,8 +117,10 @@ class AlertaCritico(BaseModel):
 
     tipo: str
     severidade: str  # CRITICO, ALTO, MEDIO
-    mensagem: str
+    mensagem: str | None = None
+    descricao: str | None = None
     acao_requerida: str | None = None
+    prazo_sugerido: str | None = None
 
 
 # ---------------------------------------------------------------------------

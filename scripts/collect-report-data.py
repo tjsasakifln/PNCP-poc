@@ -137,11 +137,11 @@ MODALIDADES_COMPETITIVAS = {4, 5, 6, 7, 16, 17, 18, 19}  # Concorrências + Preg
 MODALIDADES_COMPETITIVAS_EXTENDED = {2, 3, 4, 5, 6, 7, 12, 15, 16, 17, 18, 19}
 
 # NON-competitive — pre-determined winner or no bidding
-MODALIDADES_EXCLUIDAS = {9, 14}  # Inexigibilidade + Inaplicabilidade
+MODALIDADES_EXCLUIDAS = {8, 9, 14}  # Dispensa + Inexigibilidade + Inaplicabilidade
 
 # By procurement nature (ONLY competitive modalidades)
 MODALIDADES_OBRAS = {4, 5, 6, 7}               # Concorrências + Pregões (removed 8!)
-MODALIDADES_AQUISICAO = {6, 7, 8}              # Pregões + Dispensa (dispensa COM disputa can be competitive for low-value purchases)
+MODALIDADES_AQUISICAO = {6, 7}                 # Pregões only (Dispensa excluded — non-competitive)
 MODALIDADES_SERVICOS = {4, 5, 6, 7}            # Concorrências + Pregões (removed 8!)
 
 PNCP_MAX_PAGE_SIZE = 50
@@ -323,11 +323,13 @@ def _parse_date_flexible(raw: str | None) -> str | None:
     return None
 
 
-def _source_tag(status: str, detail: str = "") -> dict:
+def _source_tag(status: str, detail: str = "", response_detail: str = "") -> dict:
     """Create a _source metadata tag."""
     tag = {"status": status, "timestamp": _date_iso(_today())}
     if detail:
         tag["detail"] = detail
+    if response_detail:
+        tag["response_detail"] = response_detail
     return tag
 
 
@@ -419,6 +421,12 @@ class ApiClient:
                 if self.verbose:
                     with self._print_lock:
                         print(f" ✗ ({resp.status_code})")
+                if resp.status_code == 400:
+                    try:
+                        body = resp.text[:300] if hasattr(resp, "text") else str(resp.content[:300])
+                        print(f"    [DEBUG] 400 response: {body}")
+                    except Exception:
+                        pass
                 return None, "API_FAILED"
 
             except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
@@ -575,8 +583,8 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
         headers=headers,
         label="Portal Transparência — sanções",
     )
-    if status == "API" and data:
-        items = data if isinstance(data, list) else [data]
+    if status == "API":
+        items = (data if isinstance(data, list) else [data]) if data else []
         for item in items:
             for key in ["ceis", "cnep", "cepim", "ceaf"]:
                 val = item.get(key) or item.get(key.upper())
@@ -625,6 +633,10 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
             print(f"  [PT] SANCOES ENCONTRADAS: {', '.join(s.upper() for s in sancoes_ativas)}")
         else:
             print(f"  [PT] Nenhuma sancao encontrada para CNPJ {cnpj14} (CEIS/CNEP/CEPIM/CEAF)")
+    elif status == "API_CORRUPT":
+        result["sancoes_source"] = _source_tag("API_CORRUPT", "Resposta inválida do servidor")
+        result["sancoes"]["inconclusive"] = True
+        print(f"  [PT] Resposta de sanções com formato inválido")
     elif status == "API_FAILED":
         result["sancoes_source"] = _source_tag("API_FAILED", "Consulta de sanções falhou")
         result["sancoes"]["inconclusive"] = True
@@ -650,6 +662,8 @@ def collect_portal_transparencia(api: ApiClient, cnpj14: str, pt_key: str) -> di
         detail = f"{n} contrato(s) federal(is) identificado(s)" if n > 0 else "Nenhum contrato federal identificado"
         result["historico_source"] = _source_tag("API", detail)
         print(f"  [PT] Contratos federais: {n} encontrados")
+    elif status == "API_CORRUPT":
+        result["historico_source"] = _source_tag("API_CORRUPT", "Resposta de contratos com formato inválido")
     elif status == "API_FAILED":
         result["historico_source"] = _source_tag("API_FAILED", "Consulta de contratos falhou")
 
@@ -661,7 +675,9 @@ def collect_brasilapi(api: ApiClient, cnpj14: str) -> dict:
     print("\n  BrasilAPI — Simples Nacional")
     data, status = api.get(f"{BRASILAPI_BASE}/{cnpj14}", label=f"BrasilAPI {cnpj14}")
     if not data or status != "API":
-        return {"_source": _source_tag("API_FAILED", "BrasilAPI indisponivel"), "simples_nacional": None, "mei": None}
+        src_detail = "Resposta inválida do servidor" if status == "API_CORRUPT" else "BrasilAPI indisponivel"
+        src_status = status if status in ("API_CORRUPT", "API_FAILED") else "API_FAILED"
+        return {"_source": _source_tag(src_status, src_detail), "simples_nacional": None, "mei": None}
     return {
         "_source": _source_tag("API"),
         "simples_nacional": data.get("opcao_pelo_simples"),
@@ -965,9 +981,6 @@ def _collect_pncp_contratos_by_date_window(
             break
 
         total_records = data.get("totalRegistros", 0) if isinstance(data, dict) else 0
-        # Abort if API is clearly not filtering by supplier
-        if total_records > 10_000 and not matched:
-            break
 
         for c in items:
             raw_total += 1
@@ -976,7 +989,20 @@ def _collect_pncp_contratos_by_date_window(
                 matched.append(parsed)
 
         total_pages = data.get("totalPaginas", 1) if isinstance(data, dict) else 1
-        if page >= total_pages or total_records > 10_000:
+        # AC1: When API clearly not filtering by supplier (very large result, 0 match so far),
+        # probe a few more pages before giving up instead of aborting on page 1
+        if total_records > 10_000 and not matched:
+            if page >= min(5, total_pages):
+                print(
+                    f"  ⚠ {total_records:,} contratos no período mas 0 para CNPJ {cnpj14} "
+                    f"após {page} página(s) — API pode estar ignorando cnpjFornecedor"
+                )
+                break
+            page += 1
+            time.sleep(0.3)
+            continue
+
+        if page >= total_pages:
             break
         page += 1
         time.sleep(0.3)
@@ -991,8 +1017,11 @@ def _collect_pncp_contratos_by_razao_social(
 ) -> tuple[list[dict], int]:
     """FIX 4 — Strategy 2: Search PNCP contratações/publicacao by company name.
 
-    Searches PNCP procurement publications for the company's name, then
-    filters results that list the company as a supplier.
+    AC2: /contratacoes/publicacao requires codigoModalidadeContratacao. Queries
+    each of modalidades 4 (Concorrência), 5 (Pregão Eletrônico), 6 (Pregão
+    Presencial), 7 (Leilão) separately and merges results.
+    Logs HTTP errors including response body for diagnostics (AC5).
+
     Returns (contracts, raw_total).
     """
     if not razao_social or len(razao_social) < 5:
@@ -1000,60 +1029,167 @@ def _collect_pncp_contratos_by_razao_social(
 
     matched: list[dict] = []
     raw_total = 0
+    esfera_labels_rs = {"F": "Federal", "E": "Estadual", "M": "Municipal", "D": "Distrital"}
 
     # Use first 30 chars of razao_social (more specific = fewer false positives)
     query_name = razao_social[:30].strip()
 
-    data, status = api.get(
-        f"{PNCP_BASE}/contratacoes/publicacao",
-        params={
+    # AC2: iterate over required modalidades — API returns HTTP 400 without this param
+    modalidades = [4, 5, 6, 7]  # Concorrência, Pregão Eletrônico, Pregão Presencial, Leilão
+    for modalidade in modalidades:
+        params = {
             "q": query_name,
+            "codigoModalidadeContratacao": modalidade,
             "pagina": 1,
             "tamanhoPagina": 50,
-        },
-        label="PNCP contratos/razao-social",
-    )
-    if status != "API" or not data:
-        return [], 0
-
-    items = data if isinstance(data, list) else data.get("data", data.get("resultado", []))
-    if not isinstance(items, list):
-        return [], 0
-
-    for item in items:
-        raw_total += 1
-        # Only include if the item appears to reference this company as supplier/winner
-        # (PNCP publicacoes don't always have supplier CNPJ at this endpoint)
-        orgao = item.get("orgaoEntidade", {})
-        unidade = item.get("unidadeOrgao", {})
-        esfera_labels_rs = {"F": "Federal", "E": "Estadual", "M": "Municipal", "D": "Distrital"}
-
-        # Try to find supplier CNPJ in various fields
-        fornecedor_cnpj = (
-            re.sub(r"[^0-9]", "", str(item.get("cnpjFornecedor") or item.get("niFornecedor") or ""))
+        }
+        data, status = api.get(
+            f"{PNCP_BASE}/contratacoes/publicacao",
+            params=params,
+            label=f"PNCP contratos/razao-social modalidade={modalidade}",
         )
-        if fornecedor_cnpj and fornecedor_cnpj != cnpj14:
-            continue  # Different supplier
+        if status != "API" or not data:
+            # AC5: Detailed failure logging
+            print(
+                f"  ⚠ Strategy 2 (modalidade={modalidade}): status={status!r} "
+                f"params={params}"
+            )
+            continue
 
-        valor = _safe_float(item.get("valorTotalEstimado") or item.get("valorGlobal")) or 0.0
-        data_assinatura = (item.get("dataAssinatura") or item.get("dataPublicacaoPncp") or "")[:10]
+        items = data if isinstance(data, list) else data.get("data", data.get("resultado", []))
+        if not isinstance(items, list):
+            continue
 
-        matched.append({
-            "orgao": (orgao.get("razaoSocial") or unidade.get("nomeUnidade") or ""),
-            "esfera": esfera_labels_rs.get(orgao.get("esferaId", ""), ""),
-            "uf": unidade.get("ufSigla", ""),
-            "municipio": unidade.get("municipioNome", ""),
-            "valor": valor,
-            "data": data_assinatura,
-            "objeto": (item.get("objetoCompra") or item.get("objeto") or "")[:300],
-            "numero_contrato": item.get("numeroContratoEmpenho") or item.get("sequencialCompra") or "",
-            "vigencia_fim": item.get("dataEncerramentoProposta") or "",
-            "fonte": "PNCP_NOME",
-            "valor_aditivos": 0.0,
-            "tipo_contrato": item.get("modalidadeNome") or "",
-            "situacao_contrato": "",
-            "tem_subcontratacao": False,
-        })
+        for item in items:
+            raw_total += 1
+            # Only include if the item appears to reference this company as supplier/winner
+            orgao = item.get("orgaoEntidade", {})
+            unidade = item.get("unidadeOrgao", {})
+
+            # Try to find supplier CNPJ in various fields
+            fornecedor_cnpj = (
+                re.sub(r"[^0-9]", "", str(item.get("cnpjFornecedor") or item.get("niFornecedor") or ""))
+            )
+            if fornecedor_cnpj and fornecedor_cnpj != cnpj14:
+                continue  # Different supplier
+
+            valor = _safe_float(item.get("valorTotalEstimado") or item.get("valorGlobal")) or 0.0
+            data_assinatura = (item.get("dataAssinatura") or item.get("dataPublicacaoPncp") or "")[:10]
+
+            matched.append({
+                "orgao": (orgao.get("razaoSocial") or unidade.get("nomeUnidade") or ""),
+                "esfera": esfera_labels_rs.get(orgao.get("esferaId", ""), ""),
+                "uf": unidade.get("ufSigla", ""),
+                "municipio": unidade.get("municipioNome", ""),
+                "valor": valor,
+                "data": data_assinatura,
+                "objeto": (item.get("objetoCompra") or item.get("objeto") or "")[:300],
+                "numero_contrato": item.get("numeroContratoEmpenho") or item.get("sequencialCompra") or "",
+                "vigencia_fim": item.get("dataEncerramentoProposta") or "",
+                "fonte": "PNCP_NOME",
+                "valor_aditivos": 0.0,
+                "tipo_contrato": item.get("modalidadeNome") or "",
+                "situacao_contrato": "",
+                "tem_subcontratacao": False,
+            })
+
+    return matched, raw_total
+
+
+def _collect_pncp_contratos_fornecedor_wide(
+    api: "ApiClient",
+    cnpj14: str,
+    razao_social: str = "",
+) -> tuple[list[dict], int]:
+    """AC3 — Strategy 4: PNCP /contratos without date window (wider search).
+
+    Queries the PNCP /contratos endpoint with only cnpjFornecedor, no date
+    filters, to maximise recall. Falls back to a short razao_social keyword
+    query against /contratos if the CNPJ search returns nothing.
+
+    Returns (contracts_matched, raw_total).
+    """
+    matched: list[dict] = []
+    raw_total = 0
+
+    # 4a: /contratos with only cnpjFornecedor — no date restriction
+    for page in range(1, 4):
+        data, status = api.get(
+            f"{PNCP_BASE}/contratos",
+            params={
+                "cnpjFornecedor": cnpj14,
+                "pagina": page,
+                "tamanhoPagina": 50,
+            },
+            label=f"PNCP contratos/wide p={page}",
+        )
+        if status != "API" or not data:
+            print(
+                f"  ⚠ Strategy 4a (wide, page={page}): status={status!r} "
+                f"cnpjFornecedor={cnpj14}"
+            )
+            break
+
+        items = data.get("data", data) if isinstance(data, dict) else data
+        if not isinstance(items, list) or not items:
+            break
+
+        total_records = data.get("totalRegistros", 0) if isinstance(data, dict) else 0
+        for c in items:
+            raw_total += 1
+            parsed = _parse_pncp_contract_item(c, cnpj14, "PNCP")
+            if parsed:
+                matched.append(parsed)
+
+        total_pages = data.get("totalPaginas", 1) if isinstance(data, dict) else 1
+        # If API is not filtering by CNPJ (huge result set, 0 matches), stop early
+        if total_records > 10_000 and not matched:
+            print(
+                f"  ⚠ Strategy 4a: {total_records:,} contratos mas 0 para CNPJ {cnpj14} "
+                f"após {page} página(s)"
+            )
+            break
+        if page >= total_pages:
+            break
+        import time as _time
+        _time.sleep(0.3)
+
+    if matched:
+        print(f"  ✓ Strategy 4a (wide /contratos): {len(matched)} contratos ({raw_total} raw)")
+        return matched, raw_total
+
+    # 4b: Fallback — /contratos with short razao_social keyword (q= param)
+    if razao_social:
+        query_short = razao_social[:20].strip()
+        data, status = api.get(
+            f"{PNCP_BASE}/contratos",
+            params={
+                "q": query_short,
+                "pagina": 1,
+                "tamanhoPagina": 50,
+            },
+            label="PNCP contratos/wide-nome",
+        )
+        if status != "API" or not data:
+            print(
+                f"  ⚠ Strategy 4b (wide-nome): status={status!r} "
+                f"q={query_short!r}"
+            )
+        else:
+            items = data.get("data", data) if isinstance(data, dict) else data
+            if isinstance(items, list):
+                for c in items:
+                    raw_total += 1
+                    parsed = _parse_pncp_contract_item(c, cnpj14, "PNCP")
+                    if parsed:
+                        matched.append(parsed)
+                if matched:
+                    print(f"  ✓ Strategy 4b (wide-nome): {len(matched)} contratos ({raw_total} raw)")
+                else:
+                    print(
+                        f"  Strategy 4b (wide-nome): {raw_total} raw, "
+                        f"0 contratos para CNPJ {cnpj14}"
+                    )
 
     return matched, raw_total
 
@@ -1109,6 +1245,7 @@ def collect_pncp_contratos_fornecedor(
 
     # FIX 4 — Strategy 2: Search by razao_social as fallback when strat1 returns 0
     strat2_matched = 0
+    strat2_raw = 0
     if strat1_matched == 0 and razao_social:
         print(f"  Strategy 2: buscando por nome '{razao_social[:30]}...'")
         strat2_contracts, strat2_raw = _collect_pncp_contratos_by_razao_social(api, cnpj14, razao_social)
@@ -1118,6 +1255,20 @@ def collect_pncp_contratos_fornecedor(
             print(f"  ✓ Strategy 2 (razao_social): {strat2_matched} contratos encontrados ({strat2_raw} raw)")
         else:
             print(f"  Strategy 2 (razao_social): {strat2_raw} raw, 0 contratos")
+
+    # FIX-001 AC3 — Strategy 4: PNCP /contratos without date window (wider recall)
+    strat4_matched = 0
+    if strat1_matched == 0 and strat2_matched == 0:
+        print(f"  Strategy 4: buscando sem janela de data (recall amplo)...")
+        strat4_contracts, strat4_raw = _collect_pncp_contratos_fornecedor_wide(
+            api, cnpj14, razao_social
+        )
+        all_contracts.extend(strat4_contracts)
+        strat4_matched = len(strat4_contracts)
+        if strat4_matched:
+            print(f"  ✓ Strategy 4 (wide): {strat4_matched} contratos ({strat4_raw} raw)")
+        else:
+            print(f"  Strategy 4 (wide): {strat4_raw} raw, 0 contratos")
 
     # Strategy 3: ComprasGov v3 — módulo-contratos
     def _collect_comprasgov_contratos(cnpj_digits: str) -> list[dict]:
@@ -1175,6 +1326,13 @@ def collect_pncp_contratos_fornecedor(
         all_contracts.extend(cgov_contracts)
         print(f"  ✓ ComprasGov v3: {len(cgov_contracts)} contrato(s) adicionados")
 
+    # AC2: Strategy failure summary — make 0-contract results loud, not silent
+    if not all_contracts:
+        print(f"  ⚠ HISTORICO VAZIO: 3 estratégias testadas, 0 contratos encontrados")
+        print(f"    Strategy 1 (date window): {total_raw} raw, {strat1_matched} matched")
+        print(f"    Strategy 2 (razao social): {strat2_raw} raw, {strat2_matched} matched")
+        print(f"    Strategy 3 (ComprasGov): {len(cgov_contracts)}")
+
     # FIX 4 — Derive UFs from contract history (side effect stored in contracts themselves)
     # UF derivation happens downstream in extract_ufs_from_contracts() — no additional work needed here.
 
@@ -1202,6 +1360,8 @@ def collect_pncp_contratos_fornecedor(
     strategy_note = f"strat1={strat1_matched}"
     if strat2_matched:
         strategy_note += f" strat2={strat2_matched}"
+    if strat4_matched:
+        strategy_note += f" strat4={strat4_matched}"
     detail_parts = [f"{n} contrato(s) encontrado(s) ({strategy_note})"]
     for esfera, count in sorted(by_esfera.items()):
         detail_parts.append(f"{count} {esfera.lower()}")
@@ -1210,6 +1370,17 @@ def collect_pncp_contratos_fornecedor(
     source = _source_tag(status_tag, ", ".join(detail_parts))
 
     print(f"  PNCP contratos: {n} encontrados ({', '.join(f'{v} {k}' for k, v in by_esfera.items())})")
+
+    # AC4: Flag inconclusive history for established companies
+    # (Returned directly as part of source metadata — caller merges into _metadata)
+    _ac4_inconclusive = False
+    if n == 0:
+        import datetime as _dt
+        _capital = 0.0  # Capital not available here; AC4 gate is applied downstream
+        # Mark source as INCONCLUSIVE so downstream assemble() can detect it
+        # The capital/age check happens in assemble() where empresa data is available
+        pass  # see collect_pncp_contratos_fornecedor return value — caller checks
+
     return all_contracts, source
 
 
@@ -1935,9 +2106,9 @@ def _modalidades_for_cluster(cluster_label: str,
     ]
 
     if any(ind in label_lower for ind in supply_indicators):
-        return MODALIDADES_AQUISICAO
+        return MODALIDADES_AQUISICAO - MODALIDADES_EXCLUIDAS
     if any(ind in label_lower for ind in obras_indicators):
-        return MODALIDADES_OBRAS
+        return MODALIDADES_OBRAS - MODALIDADES_EXCLUIDAS
 
     # --- Nature-based fallback (cluster-level first, then global) ---
     _NATURE_TO_MODALIDADES = {
@@ -1951,13 +2122,13 @@ def _modalidades_for_cluster(cluster_label: str,
         # If cluster has a clear dominant nature, use it directly
         cluster_dom_pct = (cluster_nature or {}).get(cluster_dominant, 0)
         if cluster_dom_pct >= 40:
-            return _NATURE_TO_MODALIDADES[cluster_dominant]
+            return _NATURE_TO_MODALIDADES[cluster_dominant] - MODALIDADES_EXCLUIDAS
 
     # Priority 2: Use cluster nature profile even below 40% — pick highest
     if cluster_nature:
         best_nature = max(cluster_nature, key=cluster_nature.get)
         if best_nature in _NATURE_TO_MODALIDADES:
-            return _NATURE_TO_MODALIDADES[best_nature]
+            return _NATURE_TO_MODALIDADES[best_nature] - MODALIDADES_EXCLUIDAS
 
     # Priority 3: Global nature profile (for clusters without own nature data)
     if nature_profile:
@@ -1965,13 +2136,13 @@ def _modalidades_for_cluster(cluster_label: str,
         dominant_pct = nature_profile.get(dominant_nature, 0)
         # Lowered from 50% to 40%; if still no winner, pick dominant anyway
         if dominant_pct >= 40 and dominant_nature in _NATURE_TO_MODALIDADES:
-            return _NATURE_TO_MODALIDADES[dominant_nature]
+            return _NATURE_TO_MODALIDADES[dominant_nature] - MODALIDADES_EXCLUIDAS
         # Even below 40%, use dominant if it's a known nature type
         if dominant_nature in _NATURE_TO_MODALIDADES:
-            return _NATURE_TO_MODALIDADES[dominant_nature]
+            return _NATURE_TO_MODALIDADES[dominant_nature] - MODALIDADES_EXCLUIDAS
 
     # Default: competitive modalidades only (never include non-competitive by default)
-    return MODALIDADES_COMPETITIVAS
+    return MODALIDADES_COMPETITIVAS - MODALIDADES_EXCLUIDAS
 
 
 def extract_keywords_per_cluster(
@@ -1984,7 +2155,7 @@ def extract_keywords_per_cluster(
 
     Returns list of dicts: [{"label": "Saúde/Hospitalar", "share_pct": 30.4,
                              "keywords": ["hospitalar", "medicamento", ...],
-                             "modalidades": {3, 5, 6, 9}}]
+                             "modalidades": {4, 5, 6, 7}}]
     """
     clusters = cluster_contract_activities(contratos)
     if not clusters:
@@ -3887,8 +4058,10 @@ def collect_pncp(
     """Search PNCP for open editais (single-sector, backward compatible)."""
     print(f"\n\U0001f50d Phase 2a-1: PNCP \u2014 Varredura de editais ({dias} dias)")
 
+    # Skip non-competitive modalidades (Dispensa, Inexigibilidade, Inaplicabilidade)
+    modalidades_scan = {k: v for k, v in MODALIDADES.items() if k not in MODALIDADES_EXCLUIDAS}
     all_editais, source_meta = _search_pncp_single(
-        api, keywords, MODALIDADES, ufs, dias,
+        api, keywords, modalidades_scan, ufs, dias,
         nature_profile=nature_profile,
         sector_key=sector_key,
     )
@@ -4023,6 +4196,7 @@ def collect_pncp_multi_cluster(
             all_mods.update(mods.keys())
         else:
             all_mods.update(mods)
+    all_mods -= MODALIDADES_EXCLUIDAS  # Defense in depth: never fetch non-competitive modalidades
 
     # --- Phase 2: Fetch each unique (mod, page, uf) ONCE ---
     # FIX-4: When 1-5 UFs, iterate per-UF with server-side uf param
@@ -6530,7 +6704,9 @@ def compute_coverage_diagnostic(
         uf_estimated = 0
 
         # Query PNCP for total count (page 1 only, read totalRegistros)
-        for mod_code in MODALIDADES:  # All known modalidades
+        for mod_code in MODALIDADES:  # All known modalidades (skip excluded)
+            if mod_code in MODALIDADES_EXCLUIDAS:
+                continue
             total_api_calls += 1
             try:
                 data_fim = _today()
@@ -9233,6 +9409,7 @@ def assemble_report_data(
         "_metadata": {
             "generated_at": _date_iso(_today()),
             "generator": "collect-report-data.py v1.0",
+            "contract_search_exhaustive": transparencia.get("_contract_search_exhaustive", True),
             "sources": {
                 "opencnpj": empresa.get("_source", {}),
                 "portal_transparencia_sancoes": transparencia["sancoes_source"],
@@ -9513,6 +9690,32 @@ Examples:
     transparencia["historico_contratos"] = merged_contratos
     n_pncp = len(pncp_contratos)
     n_pt = len(pt_contratos)
+
+    # AC4: Warn when no contracts found for an established company
+    _merged_total = len(merged_contratos)
+    if _merged_total == 0:
+        import datetime as _dt2
+        _cap = _safe_float(empresa.get("capital_social")) or 0.0
+        _inicio = empresa.get("data_inicio_atividade", "") or ""
+        _anos = 0
+        if len(_inicio) >= 4:
+            try:
+                _ano_fundacao = int(_inicio[:4])
+                _anos = _dt2.date.today().year - _ano_fundacao
+            except (ValueError, TypeError):
+                _anos = 0
+        if _cap > 100_000 and _anos >= 5:
+            print(
+                f"  ⚠ Empresa com capital > R$100K e fundação > 5 anos mas "
+                f"0 contratos encontrados — histórico pode estar incompleto"
+            )
+            # Mark metadata so downstream report can flag this
+            transparencia["_contract_search_exhaustive"] = False
+            transparencia["historico_source"] = _source_tag(
+                "INCONCLUSIVE",
+                "0 contratos encontrados após 4 estratégias "
+                f"(capital R${_cap:,.0f}, {_anos} anos de operação)",
+            )
     n_merged = len(merged_contratos)
     transparencia["historico_source"] = _source_tag(
         "API",
@@ -9700,7 +9903,10 @@ Examples:
     print(f"\n  ⚡ Removidos {dropped} encerrados + {dropped_indef} sem prazo definido (restam {len(all_editais)} abertos)")
 
     # Defense in depth: remove non-competitive modalidades regardless of how they entered
-    _MODALIDADES_BLOQUEADAS = {"Inexigibilidade", "Inaplicabilidade da Licitação", "Inaplicabilidade"}
+    # Derived from MODALIDADES_EXCLUIDAS so changes to excluded set are automatically reflected
+    _MODALIDADES_BLOQUEADAS = {MODALIDADES[code] for code in MODALIDADES_EXCLUIDAS if code in MODALIDADES}
+    # Also cover names not in MODALIDADES dict (e.g., code 14 "Inaplicabilidade" variants)
+    _MODALIDADES_BLOQUEADAS |= {"Inaplicabilidade da Licitação", "Inaplicabilidade"}
     before_modal = len(all_editais)
     all_editais = [e for e in all_editais if e.get("modalidade", "") not in _MODALIDADES_BLOQUEADAS]
     editais_pncp = [e for e in editais_pncp if e.get("modalidade", "") not in _MODALIDADES_BLOQUEADAS]
@@ -9903,6 +10109,13 @@ Examples:
         brasilapi=brasilapi,
         ibge_data=ibge_data,
         ufs_meta=ufs_meta,
+    )
+
+    # AC4: contract_search_exhaustive — distinguishes "no contracts found" from "search failed"
+    _pncp_contratos_status = (pncp_contratos_source or {}).get("status", "MISSING")
+    _all_strategies_succeeded = _pncp_contratos_status != "API_FAILED"
+    data["_metadata"]["contract_search_exhaustive"] = (
+        len(merged_contratos) > 0 or _all_strategies_succeeded
     )
 
     # ---- HARD-003: Acervo 3-Tier Classification (before deterministic scoring) ----

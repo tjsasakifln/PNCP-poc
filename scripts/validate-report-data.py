@@ -96,6 +96,27 @@ def validate(data: dict) -> dict:
             f"Se a API retornou contratos de terceiros, re-coletar com versão corrigida."
         )
 
+    # 0c. AC3: Inconclusive contract history — established company with 0 contracts may
+    # indicate a silent API failure rather than genuinely no government contracts.
+    if n_contratos == 0 and capital > 100_000:
+        _data_inicio = (empresa.get("data_inicio_atividade") or "").strip()
+        _company_age_years = 0
+        if _data_inicio:
+            try:
+                import datetime as _dt
+                _year_inicio = int(_data_inicio[:4])
+                _company_age_years = _dt.date.today().year - _year_inicio
+            except Exception:
+                pass
+        if _company_age_years > 5:
+            warnings.append(
+                f"HISTORICO_INCONCLUSIVE: Empresa com capital > R${capital:,.0f} e "
+                f"{_company_age_years} anos de atividade mas 0 contratos encontrados — "
+                f"histórico pode estar incompleto. Verificar se collect-report-data.py "
+                f"encontrou erros nas APIs (PNCP /contratos, ComprasGov) ou se a empresa "
+                f"genuinamente não tem histórico de contratos públicos."
+            )
+
     # ================================================================
     # GATE 1: Coerência semântica (dados fazem sentido?)
     # ================================================================
