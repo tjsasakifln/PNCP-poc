@@ -30,6 +30,41 @@ python scripts/collect-report-data.py --cnpj {CNPJ} --dias 30 --output {DATA_JSO
 
 Verificar output: quantos editais abertos? Alguma API falhou (`_metadata.sources`)?
 
+### Step 2.5 — Investigação e Correção de Falhas de API (OBRIGATÓRIO)
+
+**Ler `_metadata.sources` no JSON.** Para CADA fonte com `status != "API"`:
+
+**NÃO ACEITAR API_FAILED.** O relatório DEVE ter dados completos. Se uma API falhou:
+
+1. **Investigar a causa** usando WebSearch:
+   - Buscar: `"{nome_da_api}" status 2026` ou `"{endpoint}" documentation`
+   - Verificar se a API mudou URL, autenticação, formato ou rate limit
+   - Ler documentação oficial da API
+
+2. **Diagnosticar** — Executar a chamada manualmente via curl/httpx:
+   ```bash
+   curl -s "https://api.endpoint/..." | head -c 500
+   ```
+   Verificar: resposta vazia? JSON inválido? Mudou o schema? Rate limited?
+
+3. **Corrigir** — Se a chamada está errada no script:
+   - Corrigir `collect-report-data.py` (URL, headers, parâmetros)
+   - Se API mudou autenticação, atualizar
+
+4. **Re-executar coleta** da fonte específica ou completa:
+   ```bash
+   python scripts/collect-report-data.py --cnpj {CNPJ} --dias 30 --output {DATA_JSON}
+   ```
+
+5. **Se API genuinamente offline** (confirmado que não é erro nosso):
+   - Buscar fonte alternativa para o mesmo dado
+   - OpenCNPJ offline → usar BrasilAPI (já implementado como fallback)
+   - Portal Transparência offline → consultar via browser Playwright no portal web
+   - PNCP offline → usar PCP v2 como fonte primária
+   - **SÓ APÓS esgotar TODAS alternativas**, registrar e informar ao usuário
+
+**Filosofia:** O relatório é um produto premium. "Indisponível" NÃO EXISTE no vocabulário. Dados faltantes são BUGS a serem corrigidos, não estados aceitáveis.
+
 ### Step 3 — Phase 1.5: Gate Determinístico
 
 ```bash
@@ -38,7 +73,7 @@ python scripts/validate-report-data.py {DATA_JSON}
 
 - **Exit 0 (OK):** Prosseguir.
 - **Exit 2 (WARNINGS):** Anotar os alertas — o Analyst deve endereçar CADA UM.
-- **Exit 1 (BLOCKED):** **PARAR.** Informar o usuário qual verificação falhou e sugerir ação corretiva. NÃO prosseguir.
+- **Exit 1 (BLOCKED):** Executar Step 2.5 (investigar e corrigir). Re-executar validação. NÃO prosseguir enquanto houver BLOCK.
 
 ### Step 4 — Launch ANALYST Agent (Phases 2-5)
 

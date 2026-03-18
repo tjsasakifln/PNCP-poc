@@ -32,11 +32,11 @@ from typing import Any
 def format_brl(value: float | None) -> str:
     """Format as Brazilian Real: R$ 1.500.000,00 (or 'N/D' if None/invalid)."""
     if value is None:
-        return "N/D"
+        return "Não informado"
     try:
         v = float(value)
     except (ValueError, TypeError):
-        return "N/D"
+        return "Não informado"
     if v == 0:
         return "R$ 0,00"
     formatted = f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -46,11 +46,11 @@ def format_brl(value: float | None) -> str:
 def format_brl_short(value: float | None) -> str:
     """Compact BRL: R$ 1,5M / R$ 800K / R$ 1.200,00."""
     if value is None:
-        return "N/D"
+        return "Não informado"
     try:
         v = float(value)
     except (ValueError, TypeError):
-        return "N/D"
+        return "Não informado"
     if v >= 1_000_000:
         return f"R$ {v / 1_000_000:,.1f}M".replace(",", "X").replace(".", ",").replace("X", ".")
     if v >= 1_000:
@@ -61,7 +61,7 @@ def format_brl_short(value: float | None) -> str:
 def format_date_br(date_str: str | None) -> str:
     """Convert YYYY-MM-DD (or variants) to DD/MM/YYYY. Returns 'N/D' if None/invalid."""
     if not date_str:
-        return "N/D"
+        return "Não informado"
     text = str(date_str).strip()
     for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%d/%m/%Y", "%Y%m%d"):
         try:
@@ -69,7 +69,7 @@ def format_date_br(date_str: str | None) -> str:
             return dt.strftime("%d/%m/%Y")
         except ValueError:
             continue
-    return "N/D"
+    return "Não informado"
 
 
 def format_percentage(value: float | None, decimals: int = 1) -> str:
@@ -80,11 +80,11 @@ def format_percentage(value: float | None, decimals: int = 1) -> str:
     Values > 1.0 are treated as already being percentages.
     """
     if value is None:
-        return "N/D"
+        return "Não informado"
     try:
         v = float(value)
     except (ValueError, TypeError):
-        return "N/D"
+        return "Não informado"
     # Heuristic: if <= 1.0, treat as ratio (0.0-1.0)
     if v <= 1.0:
         v = v * 100
@@ -359,7 +359,7 @@ def build_empresa_profile(data: dict) -> dict:
 
     # Capital social
     capital = emp.get("capital_social")
-    capital_formatted = format_brl(capital) if capital else "N/D"
+    capital_formatted = format_brl(capital) if capital else "Não informado"
 
     # Sede
     cidade = _safe_str(emp.get("cidade_sede", ""))
@@ -405,7 +405,7 @@ def build_empresa_profile(data: dict) -> dict:
         "regime_tributario": regime,
         "historico_contratos_count": len(historico),
         "historico_contratos_valor": hist_total_valor,
-        "historico_contratos_valor_formatted": format_brl(hist_total_valor) if hist_total_valor > 0 else "N/D",
+        "historico_contratos_valor_formatted": format_brl(hist_total_valor) if hist_total_valor > 0 else "Não informado",
         "maturity_profile": maturity_info,
     }
 
@@ -437,7 +437,7 @@ def build_edital_card(edital: dict, empresa: dict, idx: int) -> dict:
 
     # Valor
     valor = edital.get("valor_estimado")
-    valor_formatted = format_brl(valor) if valor is not None else "N/D"
+    valor_formatted = format_brl(valor) if valor is not None else "Não informado"
 
     # Data encerramento
     data_enc = edital.get("data_encerramento")
@@ -458,7 +458,7 @@ def build_edital_card(edital: dict, empresa: dict, idx: int) -> dict:
 
     # Win probability
     prob = _safe_float(wp.get("probability", 0)) if isinstance(wp, dict) else 0.0
-    prob_str = format_percentage(prob) if prob > 0 else "N/D"
+    prob_str = format_percentage(prob) if prob > 0 else "Não informado"
 
     # Acervo
     acervo = _safe_str(edital.get("acervo_status", "NAO_VERIFICADO"))

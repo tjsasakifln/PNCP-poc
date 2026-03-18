@@ -460,17 +460,33 @@ class ApiClient:
 # ============================================================
 
 def collect_opencnpj(api: ApiClient, cnpj14: str) -> dict:
-    """Fetch company data from OpenCNPJ."""
-    print("\n📋 Phase 1a: OpenCNPJ — Perfil da empresa")
+    """Fetch company data from OpenCNPJ, with BrasilAPI fallback.
+
+    If OpenCNPJ fails, automatically tries BrasilAPI as secondary source.
+    The report MUST have company data — we don't accept 'indisponível'.
+    """
+    print("\n📋 Phase 1a: Receita Federal — Perfil da empresa")
     data, status = api.get(
         f"{OPENCNPJ_BASE}/{cnpj14}",
         label=f"OpenCNPJ {cnpj14}",
     )
     if not data or status != "API":
-        return {
-            "_source": _source_tag("API_FAILED", "OpenCNPJ indisponível"),
-            "cnpj": _format_cnpj(cnpj14),
-        }
+        # FALLBACK: Try BrasilAPI before giving up
+        print(f"  ⚠ OpenCNPJ falhou — tentando BrasilAPI como fallback...")
+        data, status = api.get(
+            f"{BRASILAPI_BASE}/{cnpj14}",
+            label=f"BrasilAPI fallback {cnpj14}",
+        )
+        if not data or status != "API":
+            print(f"  ✗ Ambas fontes falharam. Verifique conectividade e CNPJ.")
+            return {
+                "_source": _source_tag("API_FAILED",
+                    "OpenCNPJ e BrasilAPI falharam. Verificar: "
+                    f"(1) https://api.opencnpj.org/{cnpj14} "
+                    f"(2) https://brasilapi.com.br/api/cnpj/v1/{cnpj14}"),
+                "cnpj": _format_cnpj(cnpj14),
+            }
+        print(f"  ✓ BrasilAPI respondeu — usando como fonte primária")
 
     # Parse capital_social (string with comma: "1232000,00")
     capital = _safe_float(data.get("capital_social")) or 0.0

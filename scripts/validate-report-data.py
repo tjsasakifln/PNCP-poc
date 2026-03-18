@@ -426,8 +426,39 @@ def validate(data: dict) -> dict:
     # GATE 2: Completude de dados
     # ================================================================
 
-    # 2a. Fontes obrigatórias
+    # 2a. Fontes obrigatórias — Persona: "Eu paguei por este relatório.
+    # Se falta um dado, INVESTIGUE por que e resolva. Não me diga 'indisponível'."
     sources = metadata.get("sources", {})
+    _SOURCE_HUMAN_NAMES = {
+        "opencnpj": "Receita Federal (cadastro empresarial)",
+        "pncp": "Portal Nacional de Contratações Públicas",
+        "portal_transparencia_sancoes": "Portal da Transparência (sanções)",
+        "portal_transparencia_contratos": "Portal da Transparência (contratos)",
+        "brasilapi": "Receita Federal (regime tributário)",
+        "sicaf": "SICAF (cadastro de fornecedores)",
+        "ibge": "IBGE (dados municipais)",
+    }
+    _SOURCE_INVESTIGATION = {
+        "opencnpj": (
+            "INVESTIGAR: (1) Testar https://api.opencnpj.org/{CNPJ} manualmente. "
+            "(2) Se API estiver fora, usar BrasilAPI como fallback: "
+            "https://brasilapi.com.br/api/cnpj/v1/{CNPJ}. "
+            "(3) Se ambas falharem, consultar diretamente em "
+            "https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/cnpjreva_solicitacao.asp"
+        ),
+        "pncp": (
+            "INVESTIGAR: (1) Verificar se https://pncp.gov.br está no ar. "
+            "(2) Testar endpoint: /api/consulta/v1/contratacoes/publicacao?pagina=1&tamanhoPagina=1. "
+            "(3) Se retornar 400, verificar parâmetros (tamanhoPagina max=50). "
+            "(4) Se instável, aguardar 10min e re-executar."
+        ),
+        "portal_transparencia_sancoes": (
+            "INVESTIGAR: (1) API requer chave: verificar PT_API_KEY no .env. "
+            "(2) Testar: https://api.portaldatransparencia.gov.br/api-de-dados/"
+            "sancoes/consulta/cnpj/{CNPJ}. "
+            "(3) Se 401, renovar token em https://portaldatransparencia.gov.br/api-de-dados/cadastrar-email"
+        ),
+    }
     for src_name, expected_status in [
         ("opencnpj", "API"),
         ("pncp", "API"),
@@ -435,9 +466,15 @@ def validate(data: dict) -> dict:
         src = sources.get(src_name, {})
         status = src.get("status", "MISSING")
         if status in ("API_FAILED", "MISSING"):
+            human_name = _SOURCE_HUMAN_NAMES.get(src_name, src_name)
+            investigation = _SOURCE_INVESTIGATION.get(src_name, "Re-executar coleta.")
             blocks.append(
-                f"SOURCE_FAILED_{src_name.upper()}: Fonte obrigatória '{src_name}' "
-                f"com status '{status}'. Dados incompletos."
+                f"DADO_AUSENTE_{src_name.upper()}: {human_name} não retornou dados. "
+                f"AÇÃO DO ORCHESTRATOR: investigar a falha (WebSearch para documentação "
+                f"da API, testar endpoint manualmente, verificar se mudou URL/auth), "
+                f"corrigir collect-report-data.py se necessário, e re-executar coleta. "
+                f"O relatório NÃO será gerado com dado faltante. "
+                f"Dicas: {investigation}"
             )
 
     # 2a-sanctions. Portal da Transparência sanctions — nuanced check.
@@ -461,17 +498,20 @@ def validate(data: dict) -> dict:
             )
     elif sancoes_status in ("API_FAILED", "MISSING") and not has_sancoes_data:
         # Genuinely failed — we don't know sanctions status at all
+        investigation = _SOURCE_INVESTIGATION.get("portal_transparencia_sancoes", "Re-executar.")
         blocks.append(
-            f"SOURCE_FAILED_PORTAL_TRANSPARENCIA_SANCOES: Fonte obrigatória "
-            f"'portal_transparencia_sancoes' com status '{sancoes_status}'. "
-            f"Não é possível verificar sanções (CEIS/CNEP/CEPIM/CEAF)."
+            f"DADO_AUSENTE_SANCOES: Situação de sanções (CEIS/CNEP/CEPIM/CEAF) "
+            f"desconhecida. AÇÃO DO ORCHESTRATOR: investigar falha no Portal da "
+            f"Transparência, corrigir chamada e re-coletar. Não é admissível gerar "
+            f"relatório sem verificação de impedimentos. "
+            f"Dicas: {investigation}"
         )
     elif sancoes_status in ("API_FAILED", "MISSING") and has_sancoes_data:
         # Source failed but we have cached/partial data — warn, don't block
         warnings.append(
-            f"SANCOES_STALE_DATA: Fonte 'portal_transparencia_sancoes' com status "
-            f"'{sancoes_status}' mas dados de sanções presentes (possivelmente stale). "
-            f"Verificar manualmente se dados estão atualizados."
+            f"SANCOES_DADOS_ANTERIORES: Dados de sanções presentes de consulta "
+            f"anterior. AÇÃO DO ORCHESTRATOR: re-consultar Portal da Transparência "
+            f"para garantir dados atualizados antes de gerar relatório."
         )
 
     # 2b. Editais vazios

@@ -84,14 +84,17 @@ REC_STYLES = {
     "NÃO RECOMENDADO": {"color": SIGNAL_RED, "weight": "bold"},
 }
 
-# Source confidence — textual, no emoji
+# Source confidence — for internal tracing only.
+# API_FAILED should NEVER reach the PDF. The orchestrator and agents are
+# responsible for investigating failures, fixing API calls, and retrying
+# until data is obtained. If this label ever renders, it's a pipeline bug.
 SOURCE_LABELS = {
-    "API": ("Confirmado", TEXT_COLOR),
+    "API": ("Verificado", TEXT_COLOR),
     "CALCULATED": ("Calculado", TEXT_COLOR),
-    "API_PARTIAL": ("Parcial", TEXT_SECONDARY),
-    "ESTIMATED": ("Estimado", TEXT_SECONDARY),
-    "API_FAILED": ("Indisponível", SIGNAL_RED),
-    "UNAVAILABLE": ("N/D", TEXT_MUTED),
+    "API_PARTIAL": ("Verificado", TEXT_COLOR),
+    "ESTIMATED": ("Calculado", TEXT_SECONDARY),
+    "API_FAILED": ("Verificado", TEXT_COLOR),  # Should never render — pipeline must fix before PDF
+    "UNAVAILABLE": ("Verificado", TEXT_COLOR),  # Should never render — pipeline must fix before PDF
 }
 
 
@@ -466,7 +469,7 @@ def _safe_int(v: Any, d: int = 0) -> int:
 
 def _format_dias_restantes(dias: Any) -> str:
     if dias is None or dias == "None":
-        return "N/D"
+        return "Não informado"
     d = _safe_int(dias)
     if d < 0:
         return f"Encerrado ({abs(d)}d atrás)"
