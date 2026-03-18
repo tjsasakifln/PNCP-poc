@@ -4557,6 +4557,13 @@ def collect_competitive_intel(
                 ]
             else:
                 ed["competitive_intel_filtered"] = contracts[:20]
+            # HARD-002: Audit trail for sector filtering
+            ed["competitive_intel_stats"] = {
+                "raw_count": len(contracts[:20]),
+                "filtered_count": len(ed["competitive_intel_filtered"]),
+                "filter_method": "SECTOR_KEYWORDS" if sector_kws and len(ed["competitive_intel_filtered"]) < len(contracts[:20]) else "UNFILTERED",
+                "sector_key": sector_key,
+            }
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(_fetch_organ_intel, orgao_map.items()))
@@ -5024,42 +5031,62 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
 
     # Improvement D: Inexigibilidade penalty — reduces inflated PARTICIPAR count
     # Not a veto — just a 20-point penalty to reflect higher qualification barriers.
-    if "Inexigibilidade" in modalidade_raw:
+    if "inexigibilidade" in modalidade:
         total = max(0, total - 20)
 
     # ================================================================
-    # CRÍTICA 5: ACERVO CONFIRMATION FLAG
-    # Historical contract volume ≠ proven technical capacity.
-    # Derive from historico_contratos: if >=2 contracts match the edital's
-    # sector/cluster, infer acervo técnico.
+    # HARD-003: 3-Tier Acervo Status (replaces binary acervo_confirmado)
+    # CONFIRMADO: ≥2 contracts with ALTA similarity (prefix match or Jaccard≥0.50)
+    # PARCIAL: 1 ALTA or ≥2 MÉDIA contracts (Jaccard 0.30-0.49)
+    # NAO_VERIFICADO: insufficient data for inference
     # ================================================================
-    acervo_confirmado = False  # Default: NOT confirmed (requires manual verification)
+    acervo_status = "NAO_VERIFICADO"
+    acervo_similares_alta = 0
+    acervo_similares_media = 0
+    acervo_detalhes: list[dict] = []
 
-    # Derive acervo from historical contracts matching this edital's sector
     historico_for_acervo = empresa.get("historico_contratos", [])
     if historico_for_acervo and sector_key:
-        edital_obj_lower = (edital.get("objeto") or "").lower()
-        # Count contracts whose objeto shares keywords with edital or sector
+        edital_tokens = _normalize_for_dedup(edital.get("objeto", ""))
         sector_prefixes = []
         _cat_def = _ACTIVITY_CATEGORIES.get(sector_key, {})
         if _cat_def:
             sector_prefixes = _cat_def.get("prefixes", [])
-        similar_count = 0
+
         for hc in historico_for_acervo:
-            hc_obj = (hc.get("objeto") or "").lower()
+            hc_obj = (hc.get("objeto") or "")
             if not hc_obj:
                 continue
-            # Match via category prefixes (same method as cluster classification)
-            if sector_prefixes and any(pfx in hc_obj for pfx in sector_prefixes):
-                similar_count += 1
-            elif edital_obj_lower:
-                # Fallback: check if >=3 words overlap between edital and contract
-                edital_words = set(w for w in edital_obj_lower.split() if len(w) > 4)
-                hc_words = set(w for w in hc_obj.split() if len(w) > 4)
-                if len(edital_words & hc_words) >= 3:
-                    similar_count += 1
-        if similar_count >= 2:
-            acervo_confirmado = True
+            hc_obj_lower = hc_obj.lower()
+
+            # Check prefix match (high confidence)
+            prefix_match = sector_prefixes and any(pfx in hc_obj_lower for pfx in sector_prefixes)
+
+            # Jaccard similarity on normalized tokens
+            hc_tokens = _normalize_for_dedup(hc_obj)
+            sim = _jaccard_similarity(edital_tokens, hc_tokens)
+
+            if prefix_match or sim >= 0.50:
+                acervo_similares_alta += 1
+                if len(acervo_detalhes) < 5:
+                    acervo_detalhes.append({
+                        "objeto": hc_obj[:120],
+                        "similaridade": round(max(sim, 0.50 if prefix_match else sim), 2),
+                        "match_type": "PREFIX" if prefix_match else "JACCARD",
+                        "data": hc.get("data_inicio") or hc.get("data_assinatura") or "",
+                    })
+            elif sim >= 0.30:
+                acervo_similares_media += 1
+
+        # Determine status
+        if acervo_similares_alta >= 2:
+            acervo_status = "CONFIRMADO"
+        elif acervo_similares_alta >= 1 or acervo_similares_media >= 2:
+            acervo_status = "PARCIAL"
+        # else: remains NAO_VERIFICADO
+
+    # Backward compatibility: acervo_confirmado for existing code that reads it
+    acervo_confirmado = acervo_status == "CONFIRMADO"
 
     return {
         "total": round(total),
@@ -5073,6 +5100,10 @@ def compute_risk_score(edital: dict, empresa: dict, sicaf: dict, sector_key: str
         "weights": weights,
         "threshold_applied": threshold_applied,
         "acervo_confirmado": acervo_confirmado,
+        "acervo_status": acervo_status,
+        "acervo_similares_alta": acervo_similares_alta,
+        "acervo_similares_media": acervo_similares_media,
+        "acervo_detalhes": acervo_detalhes,
         "fiscal_risk": fiscal_risk,
         "_source": _source_tag("CALCULATED"),
     }
@@ -5208,41 +5239,75 @@ def compute_win_probability(
     # A risk_score of 20 should produce meaningfully different probability than 70.
     viability_factor = max(risk_score / 100.0, 0.05)
 
-    # CRÍTICA 1: Per-edital contextual multipliers — increase dispersion.
-    # These capture edital-specific conditions that the base model misses.
+    # HARD-005: Expanded contextual multipliers for wider probability dispersion.
+    # Target: ≥20pp spread between best and worst editais in a typical report.
     contextual_mult = 1.0
 
-    # Tight deadline reduces probability (hard to prepare quality proposal)
+    # Timeline impact (amplified range)
     dias = edital.get("dias_restantes")
-    if dias is not None and dias < 7:
-        contextual_mult *= 0.5  # <7 days: halved chance
-    elif dias is not None and dias < 15:
-        contextual_mult *= 0.75  # <15 days: reduced chance
+    if dias is not None:
+        if dias < 7:
+            contextual_mult *= 0.3   # <7 days: severe urgency (was 0.5)
+        elif dias < 15:
+            contextual_mult *= 0.65  # <15 days: reduced (was 0.75)
+        elif dias > 30:
+            contextual_mult *= 1.25  # >30 days: time advantage (NEW)
 
-    # Contract value >> company capacity = lower probability (financial disqualification risk)
+    # Financial capacity impact (amplified range)
     capital = _safe_float(empresa.get("capital_social")) or 0.0
     valor = _safe_float(edital.get("valor_estimado")) or 0.0
     if capital > 0 and valor > 0:
-        cap_ratio = valor / (capital * 5)  # value vs capacity (conservative heuristic)
+        cap_ratio = valor / (capital * 5)
         if cap_ratio > 5:
-            contextual_mult *= 0.5  # Extreme financial stretch
+            contextual_mult *= 0.3   # Extreme stretch (was 0.5)
         elif cap_ratio > 2:
-            contextual_mult *= 0.7  # Significant stretch
+            contextual_mult *= 0.6   # Significant stretch (was 0.7)
+        elif cap_ratio < 0.3:
+            contextual_mult *= 1.3   # Very comfortable (NEW)
+        elif cap_ratio < 0.5:
+            contextual_mult *= 1.15  # Comfortable (NEW)
 
-    # Presencial + distant = reduced chance (travel barrier)
-    if "presencial" in modalidade:
-        dist = edital.get("distancia", {})
-        km = dist.get("km") if isinstance(dist, dict) else None
-        if km is not None and km > 300:
+    # Distance impact (NEW: applies to ALL modalities, amplified for presencial)
+    dist = edital.get("distancia", {})
+    km = dist.get("km") if isinstance(dist, dict) else None
+    if km is not None:
+        if km < 50:
+            contextual_mult *= 1.35   # Local advantage (NEW)
+        elif km < 100:
+            contextual_mult *= 1.15   # Regional proximity (NEW)
+        elif km > 500:
+            contextual_mult *= 0.5    # Long distance penalty (NEW)
+        elif km > 300:
+            contextual_mult *= 0.7    # Moderate distance penalty
+        # Extra penalty for presencial + distant
+        if "presencial" in modalidade and km > 200:
             contextual_mult *= 0.8
 
-    # Final probability with widened bounds (CRÍTICA 1)
+    # Acervo impact (NEW: confirmed acervo = demonstrable technical advantage)
+    acervo_status = (edital.get("risk_score") or {}).get("acervo_status", "NAO_VERIFICADO")
+    if acervo_status == "CONFIRMADO":
+        contextual_mult *= 1.2   # Proven technical portfolio
+    elif acervo_status == "NAO_VERIFICADO":
+        contextual_mult *= 0.8   # Risk of disqualification
+
+    # Incumbency amplification (NEW: replace additive bonus with multiplicative)
+    if incumbency_bonus > 0:
+        contextual_mult *= 1.4   # Strong relationship signal
+        incumbency_bonus = 0.0   # Absorbed into contextual_mult (avoid double-counting)
+
+    # Final probability with confidence band
     raw_prob = competition_prob * mod_mult + incumbency_bonus
     final_prob = raw_prob * viability_factor * contextual_mult
-    final_prob = max(0.01, min(0.90, final_prob))  # Widened clamp [1%, 90%]
+    final_prob = max(0.01, min(0.45, final_prob))  # Capped at 45% (no customer relationship data)
+
+    # HARD-005: Compute probability range for confidence band display
+    prob_low = max(0.01, final_prob * 0.6)   # Pessimistic: 60% of point estimate
+    prob_high = min(0.45, final_prob * 1.5)  # Optimistic: 150% of point estimate
 
     result = {
         "probability": round(final_prob, 3),
+        "probability_low": round(prob_low, 3),
+        "probability_high": round(prob_high, 3),
         "confidence": confidence,
         "base_rate": base_rate,
         "n_unique_suppliers": n_suppliers,
@@ -5251,7 +5316,7 @@ def compute_win_probability(
         "sector_filtered": sector_filtered,
         "hhi": round(hhi, 4),
         "top_supplier_share": round(top_share, 3),
-        "incumbency_bonus": incumbency_bonus,
+        "incumbency_bonus": round(incumbency_bonus, 3),
         "modality_multiplier": mod_mult,
         "viability_factor": round(viability_factor, 2),
         "contextual_multiplier": round(contextual_mult, 2),
@@ -6973,6 +7038,60 @@ def assign_recommendations(editais: list, empresa: dict) -> None:
         ed["justificativa"] = _build_rich_justificativa(ed, empresa)
 
 
+def _compute_alertas_criticos(editais: list[dict]) -> None:
+    """HARD-004: Compute per-edital critical alerts for actionable presentation.
+
+    Mutates each edital dict to add 'alertas_criticos' list.
+    """
+    for ed in editais:
+        alertas: list[dict] = []
+        risk = ed.get("risk_score", {})
+        qual_gap = ed.get("qualification_gap", {})
+        rec = (ed.get("recomendacao") or "").upper()
+
+        # Alert 1: Acervo/CAT verification needed
+        acervo_status = risk.get("acervo_status", "NAO_VERIFICADO")
+        if acervo_status != "CONFIRMADO" and rec in ("PARTICIPAR", "AVALIAR COM CAUTELA"):
+            alertas.append({
+                "tipo": "CAT_REQUIRED",
+                "descricao": "Verificação de atestados técnicos necessária",
+                "acao": f"Verificar acervo técnico compatível com: {(ed.get('objeto') or '')[:80]}",
+                "severidade": "ALTA" if acervo_status == "NAO_VERIFICADO" else "MEDIA",
+            })
+
+        # Alert 2: Capital insuficiente (limítrofe)
+        fin_score = risk.get("financeiro", 100)
+        if fin_score <= 40 and rec in ("PARTICIPAR", "AVALIAR COM CAUTELA"):
+            alertas.append({
+                "tipo": "CAPITAL_LIMITROFE",
+                "descricao": "Capacidade financeira limítrofe para o valor do edital",
+                "acao": "Avaliar consórcio ou carta de fiança bancária",
+                "severidade": "ALTA" if fin_score <= 20 else "MEDIA",
+            })
+
+        # Alert 3: Prazo crítico
+        dias = ed.get("dias_restantes")
+        if dias is not None and dias <= 7 and rec in ("PARTICIPAR", "AVALIAR COM CAUTELA"):
+            alertas.append({
+                "tipo": "PRAZO_CRITICO",
+                "descricao": f"Apenas {dias} dia(s) restante(s) para submissão",
+                "acao": "Mobilizar equipe imediatamente — risco de perda por prazo",
+                "severidade": "ALTA",
+            })
+
+        # Alert 4: Qualification gaps
+        for gap in qual_gap.get("operational_gaps", []):
+            if gap.get("addressable") and gap.get("gap_type") not in ("ACERVO_EXISTENTE",):
+                alertas.append({
+                    "tipo": gap.get("gap_type", "GAP"),
+                    "descricao": (gap.get("description") or "")[:100],
+                    "acao": (gap.get("action_required") or "Verificar requisito")[:100],
+                    "severidade": "MEDIA",
+                })
+
+        ed["alertas_criticos"] = alertas
+
+
 # ============================================================
 # MAIN DETERMINISTIC CALCULATION CHAIN
 # ============================================================
@@ -7378,7 +7497,9 @@ def collect_price_benchmarks(editais: list[dict]) -> dict:
         if valor_est <= 0:
             continue
 
-        contracts = ed.get("competitive_intel", [])
+        # HARD-002: Use sector-filtered competitive intel for price benchmarks
+        # Raw intel may include off-sector contracts with wildly different price ranges
+        contracts = ed.get("competitive_intel_filtered", ed.get("competitive_intel", []))
         if not contracts:
             continue
 
@@ -7724,6 +7845,195 @@ def collect_sicaf(cnpj14: str, verbose: bool = True) -> dict:
 
 
 # ============================================================
+# HARD-001: Semantic deduplication helpers
+# ============================================================
+
+# Portuguese suffix stripping for dedup normalization (lightweight stemming)
+_PT_SUFFIXES = re.compile(
+    r"(ações|ação|amento|amentos|ência|ências|mente|idade|idades|ismo|ista|ável|ível|"
+    r"ções|ção|ados|ado|idas|ida|idos|ido|ando|endo|indo|aram|eram|iram|aram|"
+    r"antes|ante|ores|or|eiras|eira|eiros|eiro|"
+    r"ações|ação|ções|ção)$"
+)
+
+
+def _normalize_for_dedup(text: str) -> set[str]:
+    """Normalize procurement object text for Jaccard comparison.
+
+    Steps: lowercase → unidecode → remove punctuation → remove stopwords → strip suffixes.
+    Returns set of normalized tokens (>3 chars).
+    """
+    if not text:
+        return set()
+    t = text.lower()
+    # Remove accents (simple mapping, no unidecode dependency)
+    _accent_map = str.maketrans(
+        "áàâãäéèêëíìîïóòôõöúùûüçñ",
+        "aaaaaeeeeiiiiooooouuuucn",
+    )
+    t = t.translate(_accent_map)
+    # Remove punctuation and digits
+    t = re.sub(r"[^a-z\s]", " ", t)
+    # Stopwords (Portuguese procurement common words)
+    _stopwords = {
+        "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
+        "para", "por", "com", "sem", "sob", "sobre", "entre", "ate",
+        "que", "qual", "quais", "como", "uma", "uns", "umas",
+        "seu", "sua", "seus", "suas", "este", "esta", "esse", "essa",
+        "contratacao", "empresa", "especializada", "execucao", "servicos",
+        "servico", "prestacao", "objeto", "referente", "conforme",
+        "municipio", "prefeitura", "municipal", "estado", "governo",
+    }
+    tokens = set()
+    for word in t.split():
+        if len(word) <= 3 or word in _stopwords:
+            continue
+        # Strip common Portuguese suffixes
+        stemmed = _PT_SUFFIXES.sub("", word)
+        if len(stemmed) < 3:
+            stemmed = word  # Keep original if stem too short
+        tokens.add(stemmed)
+    return tokens
+
+
+def _jaccard_similarity(set_a: set, set_b: set) -> float:
+    """Jaccard similarity coefficient between two token sets."""
+    if not set_a or not set_b:
+        return 0.0
+    intersection = len(set_a & set_b)
+    union = len(set_a | set_b)
+    return intersection / union if union > 0 else 0.0
+
+
+def _semantic_dedup(all_editais: list[dict], source_priority: dict[str, int] | None = None) -> tuple[list[dict], dict]:
+    """Two-layer dedup: exact key → semantic similarity.
+
+    Layer 1: Exact match on link/ID (existing logic)
+    Layer 2: For remaining, group by (cnpj_orgao, valor±10%, data±3d) then Jaccard≥0.60
+
+    Returns: (deduped_list, stats_dict)
+    """
+    if source_priority is None:
+        source_priority = {"PNCP": 1, "PCP": 2, "LICITANET": 3, "BLL": 4, "BNC": 5}
+
+    stats = {"exact_removed": 0, "semantic_removed": 0, "candidates_evaluated": 0, "semantic_warnings": []}
+
+    # --- Layer 1: Exact link dedup (keep first = highest priority source) ---
+    seen_links: dict[str, int] = {}
+    layer1: list[dict] = []
+    for ed in all_editais:
+        link = (ed.get("link") or "").strip()
+        ed_id = ed.get("_id") or ed.get("id") or ""
+        key = link or ed_id
+        if key and key in seen_links:
+            stats["exact_removed"] += 1
+            continue
+        if key:
+            seen_links[key] = len(layer1)
+        layer1.append(ed)
+
+    # --- Layer 2: Semantic dedup ---
+    # Pre-compute normalized tokens for all editais
+    tokens_cache: list[set[str]] = []
+    for ed in layer1:
+        tokens_cache.append(_normalize_for_dedup(ed.get("objeto", "")))
+
+    # Group candidates by (cnpj_orgao) — only compare within same organ
+    orgao_groups: dict[str, list[int]] = defaultdict(list)
+    for i, ed in enumerate(layer1):
+        cnpj = re.sub(r"[^0-9]", "", ed.get("cnpj_orgao") or ed.get("orgao_cnpj") or "")
+        orgao_key = cnpj if len(cnpj) >= 8 else (ed.get("orgao") or "unknown").lower()[:30]
+        orgao_groups[orgao_key].append(i)
+
+    removed_indices: set[int] = set()
+
+    for orgao_key, indices in orgao_groups.items():
+        if len(indices) < 2:
+            continue
+
+        # Compare all pairs within this organ group
+        for a_pos in range(len(indices)):
+            i = indices[a_pos]
+            if i in removed_indices:
+                continue
+            ed_a = layer1[i]
+            val_a = _safe_float(ed_a.get("valor_estimado")) or 0.0
+            data_a = ed_a.get("data_abertura") or ed_a.get("data_publicacao") or ""
+
+            for b_pos in range(a_pos + 1, len(indices)):
+                j = indices[b_pos]
+                if j in removed_indices:
+                    continue
+                ed_b = layer1[j]
+                val_b = _safe_float(ed_b.get("valor_estimado")) or 0.0
+
+                stats["candidates_evaluated"] += 1
+
+                # Value proximity check (±10% or both zero)
+                if val_a > 0 and val_b > 0:
+                    ratio = min(val_a, val_b) / max(val_a, val_b)
+                    if ratio < 0.90:
+                        continue
+                elif val_a > 0 or val_b > 0:
+                    # One has value, other doesn't — might still be same edital (PCP has no values)
+                    pass
+
+                # Date proximity check (±3 days) — skip if no dates
+                data_b = ed_b.get("data_abertura") or ed_b.get("data_publicacao") or ""
+                if data_a and data_b:
+                    try:
+                        da = datetime.strptime(data_a[:10], "%Y-%m-%d")
+                        db = datetime.strptime(data_b[:10], "%Y-%m-%d")
+                        if abs((da - db).days) > 3:
+                            continue
+                    except (ValueError, TypeError):
+                        pass
+
+                # Jaccard similarity on normalized objeto tokens
+                sim = _jaccard_similarity(tokens_cache[i], tokens_cache[j])
+                if sim >= 0.60:
+                    # Determine winner by source priority
+                    src_a = ed_a.get("_source_name") or ed_a.get("fonte") or "PNCP"
+                    src_b = ed_b.get("_source_name") or ed_b.get("fonte") or "PNCP"
+                    pri_a = source_priority.get(src_a, 99)
+                    pri_b = source_priority.get(src_b, 99)
+
+                    if pri_b < pri_a:
+                        loser_idx, winner_idx = i, j
+                    else:
+                        loser_idx, winner_idx = j, i
+
+                    removed_indices.add(loser_idx)
+                    stats["semantic_removed"] += 1
+
+                    # Merge: fill empty fields in winner from loser
+                    winner = layer1[winner_idx]
+                    loser = layer1[loser_idx]
+                    for field in ("valor_estimado", "modalidade", "orgao", "data_abertura", "data_encerramento"):
+                        w_val = winner.get(field)
+                        l_val = loser.get(field)
+                        if (w_val is None or w_val == "" or w_val == 0) and l_val:
+                            winner[field] = l_val
+
+                    # Audit trail
+                    winner.setdefault("_dedup_semantic_matches", []).append({
+                        "score": round(sim, 3),
+                        "merged_from": loser.get("_source_name") or loser.get("fonte") or "unknown",
+                        "merged_link": loser.get("link", ""),
+                    })
+
+                    if sim < 0.70:
+                        stats["semantic_warnings"].append({
+                            "objeto_a": (ed_a.get("objeto") or "")[:80],
+                            "objeto_b": (ed_b.get("objeto") or "")[:80],
+                            "score": round(sim, 3),
+                        })
+
+    deduped = [ed for i, ed in enumerate(layer1) if i not in removed_indices]
+    return deduped, stats
+
+
+# ============================================================
 # ASSEMBLE FINAL JSON
 # ============================================================
 
@@ -7753,26 +8063,38 @@ def assemble_report_data(
     empresa_full["historico_contratos"] = transparencia["historico_contratos"]
     empresa_full["historico_source"] = transparencia["historico_source"]
 
-    # Merge + dedup editais (PNCP priority)
-    all_editais = list(editais_pncp)  # PNCP first (priority)
-    pncp_links = {ed.get("link") for ed in editais_pncp if ed.get("link")}
-    pcp_dedup_count = 0
-    pcp_added_count = 0
+    # Merge + dedup editais (PNCP priority) — HARD-001: Semantic dedup
+    all_editais_raw = list(editais_pncp) + list(editais_pcp)
+    # Tag sources for dedup priority
+    for ed in editais_pncp:
+        ed.setdefault("_source_name", "PNCP")
     for ed in editais_pcp:
-        if ed.get("link") not in pncp_links:
-            all_editais.append(ed)
-            pcp_added_count += 1
-        else:
-            pcp_dedup_count += 1
+        ed.setdefault("_source_name", "PCP")
 
-    # Update source details with dedup info
+    all_editais, dedup_stats = _semantic_dedup(all_editais_raw)
+    pcp_dedup_count = dedup_stats["exact_removed"] + dedup_stats["semantic_removed"]
+    pcp_added_count = sum(1 for ed in all_editais if ed.get("_source_name") == "PCP")
+
+    if dedup_stats["semantic_removed"] > 0:
+        print(f"  HARD-001 Semantic dedup: {dedup_stats['semantic_removed']} duplicados semânticos removidos "
+              f"({dedup_stats['candidates_evaluated']} pares avaliados)")
+    if dedup_stats["semantic_warnings"]:
+        for w in dedup_stats["semantic_warnings"][:3]:
+            print(f"    ⚠ Match zona cinzenta ({w['score']}): '{w['objeto_a'][:50]}...' vs '{w['objeto_b'][:50]}...'")
+
+
+    # Update source details with dedup info (HARD-001: includes semantic dedup stats)
     if isinstance(pncp_source, dict):
         old = pncp_source.get("detail", "")
-        pncp_source["detail"] = f"{old}, {len(editais_pncp)} incluídos no relatório" if old else f"{len(editais_pncp)} editais incluídos"
+        n_pncp_final = sum(1 for ed in all_editais if ed.get("_source_name") == "PNCP")
+        pncp_source["detail"] = f"{old}, {n_pncp_final} incluídos no relatório" if old else f"{n_pncp_final} editais incluídos"
     if isinstance(pcp_source, dict):
         old = pcp_source.get("detail", "")
         if editais_pcp:
-            pcp_source["detail"] = f"{len(editais_pcp)} obtidos, {pcp_dedup_count} duplicados removidos, {pcp_added_count} complementares incluídos"
+            pcp_source["detail"] = (
+                f"{len(editais_pcp)} obtidos, {dedup_stats['exact_removed']} duplicados exatos + "
+                f"{dedup_stats['semantic_removed']} semânticos removidos, {pcp_added_count} complementares incluídos"
+            )
         elif old:
             pcp_source["detail"] = old
         else:
@@ -7922,6 +8244,7 @@ Examples:
 
         # Assign recomendacao + justificativa after all scores are computed
         assign_recommendations(editais, empresa)
+        _compute_alertas_criticos(editais)  # HARD-004
 
         # Store results
         data["portfolio"] = analysis_results["portfolio"]
@@ -8427,6 +8750,7 @@ Examples:
 
     # Assign recomendacao + justificativa after all scores are computed
     assign_recommendations(data["editais"], data["empresa"])
+    _compute_alertas_criticos(data["editais"])  # HARD-004
 
     # Store cross-edital analysis at top level
     data["portfolio"] = analysis_results["portfolio"]

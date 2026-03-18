@@ -1,0 +1,458 @@
+# Squad: Report B2G Hardening — Eliminação de Fragilidades Críticas
+# Created: 2026-03-18
+# Trigger: Crítica detalhada de qualidade do relatório executivo
+# Scope: 6 módulos críticos em collect-report-data.py + generate-report-b2g.py
+
+squad:
+  name: squad-report-b2g-hardening
+  version: "1.0"
+  objective: |
+    Eliminar 6 fragilidades críticas do /report-b2g que comprometem credibilidade
+    e acionabilidade do relatório executivo B2G. Cada fragilidade é um STORY
+    independente com testes de aceitação mensuráveis.
+
+  priority: CRITICAL
+  estimated_effort: "3-5 dias (parallelizable)"
+
+  # ─── FILES IN SCOPE ─────────────────────────────────────────────
+  files:
+    primary:
+      - scripts/collect-report-data.py     # 8,521 lines — dedup, competitive intel, probability, risk, acervo
+      - scripts/generate-report-b2g.py     # 5,799 lines — PDF generation, development plan, eliminados
+    secondary:
+      - scripts/validate-report-data.py    # 676 lines — validation gate
+      - .claude/commands/report-b2g-analyst.md    # Analyst agent instructions
+      - .claude/commands/report-b2g-auditor.md    # Auditor agent instructions
+      - .claude/commands/report-b2g.md            # Orchestrator
+    reference:
+      - backend/consolidation.py           # Backend dedup (reference pattern)
+      - backend/clients/base.py            # UnifiedProcurement dedup_key
+      - backend/viability.py               # Viability assessment (reference)
+      - backend/synonyms.py                # Fuzzy matching patterns
+
+  # ─── TEAM COMPOSITION ──────────────────────────────────────────
+  agents:
+    - role: architect
+      name: "@architect"
+      responsibility: |
+        Design semantic similarity algorithms, probability recalibration model,
+        and data structure changes. Review all implementations before merge.
+      stories: [HARD-001, HARD-005]
+
+    - role: data-engineer
+      name: "@data-engineer"
+      responsibility: |
+        Implement dedup fuzzy matching, competitive intel sector filtering,
+        acervo técnico cross-reference inference. All changes in collect-report-data.py.
+      stories: [HARD-001, HARD-002, HARD-003]
+
+    - role: dev
+      name: "@dev"
+      responsibility: |
+        Implement PDF-side changes: eliminados per-edital marking, development plan
+        edital-linking, probability display with confidence bands.
+        Changes in generate-report-b2g.py + agent commands.
+      stories: [HARD-004, HARD-005, HARD-006]
+
+    - role: qa
+      name: "@qa"
+      responsibility: |
+        Validate each story against real report JSON data (docs/reports/data-*.json).
+        Regression test: generate report with known data, compare before/after.
+      stories: [ALL]
+
+    - role: analyst
+      name: "@analyst"
+      responsibility: |
+        Validate business logic: probability model calibration, ROI methodology,
+        competitive intel relevance criteria. Domain expertise in licitações.
+      stories: [HARD-002, HARD-005]
+
+  # ─── STORIES ────────────────────────────────────────────────────
+  stories:
+
+    - id: HARD-001
+      title: "Deduplicação Semântica Cross-Portal"
+      severity: CRITICAL
+      problem: |
+        Dedup atual usa chave exata (cnpj:numero_edital:ano ou cnpj:md5(objeto):valor).
+        Editais idênticos publicados em PNCP, PCP, Licitanet com IDs diferentes
+        aparecem como oportunidades distintas. "31 recomendados" na verdade são ~20.
+      solution: |
+        Implementar dedup em 2 camadas no collect-report-data.py:
+
+        1. CAMADA 1 — Chave exata (atual, mantém):
+           cnpj_orgao + numero_edital + ano → dedup imediata
+
+        2. CAMADA 2 — Similaridade semântica (NOVO):
+           Para editais que sobrevivem à Camada 1, agrupar candidatos por:
+           a) Mesmo cnpj_orgao (ou nome_orgao normalizado)
+           b) Valor estimado dentro de ±10% (ou ambos zero)
+           c) Data de abertura dentro de ±3 dias
+
+           Para cada grupo candidato, calcular similaridade de objeto:
+           - Normalizar: lowercase, remover stopwords, remover pontuação
+           - Tokenizar em palavras significativas (>3 chars)
+           - Jaccard similarity = |intersection| / |union|
+           - Threshold: ≥0.60 = mesmo edital (merge)
+
+           Winner: fonte com maior prioridade (PNCP=1 > PCP=2 > outros)
+           Merge: campos vazios do winner preenchidos pelo loser
+           Audit trail: campo `_dedup_semantic_match` com score e fonte merged
+
+        3. MÉTRICAS:
+           - `dedup_exact_count`: removidos por chave exata
+           - `dedup_semantic_count`: removidos por similaridade
+           - `dedup_candidates_evaluated`: pares avaliados na Camada 2
+           - Log WARNING para matches com score 0.60-0.70 (zona cinzenta)
+
+      acceptance_criteria:
+        - "AC1: Editais com mesmo órgão, valor ±10%, data ±3 dias e Jaccard ≥0.60 são merged"
+        - "AC2: Winner é sempre a fonte de maior prioridade"
+        - "AC3: Audit trail em _dedup_semantic_match com score, fonte_merged, campos_preenchidos"
+        - "AC4: Log WARNING para matches na zona 0.60-0.70"
+        - "AC5: Métricas dedup_exact_count e dedup_semantic_count no JSON de saída"
+        - "AC6: Zero falsos positivos: editais de mesmo órgão com objetos genuinamente distintos NÃO são merged"
+        - "AC7: Performance: <2s overhead para 500 editais (O(n²) bounded por pre-grouping)"
+
+      files:
+        - scripts/collect-report-data.py  # Função nova: _semantic_dedup()
+
+      tests:
+        - "Test com 2 editais idênticos de fontes diferentes → merged em 1"
+        - "Test com 2 editais do mesmo órgão mas objetos distintos → mantém 2"
+        - "Test com valor 0 em ambos → usa data+objeto para match"
+        - "Test performance: 500 editais em <2s"
+
+    - id: HARD-002
+      title: "Inteligência Competitiva com Filtro de Relevância Setorial"
+      severity: CRITICAL
+      problem: |
+        collect_competitive_intel() busca histórico de contratação do órgão sem filtrar
+        por compatibilidade de objeto. Resultado: "Ventisol da Amazônia Indústria de
+        Aparelhos" aparece como fornecedor recorrente em editais de construção civil.
+        Isso destrói a credibilidade da análise competitiva inteira.
+      solution: |
+        Adicionar filtro de relevância setorial ANTES de computar HHI e top suppliers:
+
+        1. Para cada contrato histórico do órgão:
+           a) Extrair objeto do contrato
+           b) Comparar com keywords do setor ativo (_ACTIVITY_CATEGORIES[sector_key])
+           c) Match: pelo menos 1 keyword do setor presente no objeto do contrato
+              OU Jaccard similarity ≥0.30 entre objeto_contrato e objeto_edital
+           d) Se NÃO match → excluir do competitive_intel deste edital
+
+        2. Fallback: Se filtro elimina TODOS os contratos:
+           a) Relaxar para top-3 contratos por valor (assume grandes contratos são relevantes)
+           b) Marcar como `"filtered_relevance": "RELAXED"` no audit trail
+
+        3. Campos novos por edital:
+           - `competitive_intel_filtered`: lista filtrada (usada para HHI, suppliers)
+           - `competitive_intel_raw_count`: total antes do filtro
+           - `competitive_intel_filtered_count`: total após filtro
+           - `competitive_intel_filter_method`: "SECTOR_KEYWORDS" | "JACCARD" | "RELAXED"
+
+        4. HHI e supplier analysis DEVEM usar competitive_intel_filtered, não raw.
+
+      acceptance_criteria:
+        - "AC1: Contratos históricos cujo objeto NÃO tem keyword do setor ativo são excluídos"
+        - "AC2: Fornecedores sem contratos relevantes NÃO aparecem como recorrentes"
+        - "AC3: Campo competitive_intel_filter_method indica método usado"
+        - "AC4: Fallback RELAXED quando filtro elimina 100% (evita dados vazios)"
+        - "AC5: HHI recalculado apenas com contratos relevantes"
+        - "AC6: Auditor verifica que todos os fornecedores listados têm contratos no setor"
+
+      files:
+        - scripts/collect-report-data.py  # collect_competitive_intel() + novo _filter_by_sector_relevance()
+        - .claude/commands/report-b2g-auditor.md  # Novo check C12: competitive relevance
+
+      tests:
+        - "Test: contrato de ar-condicionado excluído do competitive_intel de edital de construção"
+        - "Test: contrato de pavimentação mantido no competitive_intel de edital de obras viárias"
+        - "Test: fallback RELAXED quando todos contratos são off-sector"
+        - "Test: HHI difere entre raw e filtered quando há contaminação cross-sector"
+
+    - id: HARD-003
+      title: "Acervo Técnico — Inferência Real ou Honestidade Explícita"
+      severity: HIGH
+      problem: |
+        "Acervo técnico inferido: 6 contratos similares no histórico" repetido
+        mecanicamente. O número é o total genérico de contratos da empresa,
+        não uma análise de compatibilidade técnica. Isso é enganoso.
+      solution: |
+        Reformular a lógica de acervo em compute_risk_score():
+
+        1. INFERÊNCIA REAL (quando há dados):
+           Para cada contrato histórico da empresa (historico_contratos):
+           a) Calcular similaridade entre objeto_contrato e objeto_edital:
+              - Jaccard similarity de tokens significativos (>4 chars)
+              - Match de prefixes do _ACTIVITY_CATEGORIES[sector_key]
+           b) Classificar: ALTA (≥0.50 Jaccard ou prefix match),
+                          MÉDIA (0.30-0.49), BAIXA (<0.30)
+           c) `acervo_similares_alta`: count de ALTA
+           d) `acervo_similares_media`: count de MÉDIA
+           e) `acervo_similares_total`: ALTA + MÉDIA
+           f) `acervo_detalhes`: lista dos contratos ALTA com objeto resumido
+
+        2. HONESTIDADE EXPLÍCITA (quando não há dados suficientes):
+           Se historico_contratos vazio ou sem matches ALTA/MÉDIA:
+           a) `acervo_confirmado = False`
+           b) `acervo_status = "NAO_VERIFICADO"` (não "inferido")
+           c) Justificativa: "Acervo técnico não verificado — dados insuficientes
+              para inferência. Recomenda-se consulta direta ao acervo da empresa."
+
+        3. CAMPOS NOVOS no edital:
+           - `acervo_status`: "CONFIRMADO" | "PARCIAL" | "NAO_VERIFICADO"
+           - `acervo_similares_alta`: int (contratos com alta similaridade)
+           - `acervo_similares_media`: int
+           - `acervo_detalhes`: list[{objeto, similaridade, data}] (top 5)
+           - REMOVER: número genérico de "contratos similares" sem qualificação
+
+        4. NO PDF (generate-report-b2g.py):
+           - CONFIRMADO: "Acervo verificado: N contratos com alta aderência"
+           - PARCIAL: "Acervo parcial: N contratos com aderência média — verificação recomendada"
+           - NAO_VERIFICADO: "Acervo não verificado" (sem número enganoso)
+
+      acceptance_criteria:
+        - "AC1: Número de contratos similares reflete APENAS matches ALTA/MÉDIA, não total genérico"
+        - "AC2: Campo acervo_status distingue CONFIRMADO/PARCIAL/NAO_VERIFICADO"
+        - "AC3: acervo_detalhes lista contratos específicos com score de similaridade"
+        - "AC4: PDF mostra texto diferenciado por status (não número mecânico)"
+        - "AC5: Empresa sem histórico → 'Acervo não verificado' (nunca '0 contratos similares')"
+        - "AC6: Auditor valida que acervo_status é coerente com acervo_detalhes"
+
+      files:
+        - scripts/collect-report-data.py  # compute_risk_score() + _compute_acervo_similarity()
+        - scripts/generate-report-b2g.py  # Seções que exibem acervo
+        - .claude/commands/report-b2g-auditor.md  # Check de coerência acervo
+
+    - id: HARD-004
+      title: "Alertas Críticos Vinculados a Editais Específicos"
+      severity: HIGH
+      problem: |
+        Capa lista "11 editais dependem de verificação de atestados técnicos" como
+        agregado, mas não diz QUAIS são. Informação mais acionável do documento
+        não aparece de forma utilizável. Usuário precisa descobrir sozinho.
+      solution: |
+        1. NO JSON (collect-report-data.py):
+           Cada edital já tem `qualification_gap` e `habilitacao_checklist`.
+           Adicionar campo consolidado:
+           - `alertas_criticos`: list[str] — ex: ["CAT_REQUIRED", "CAPITAL_INSUFICIENTE", "PRAZO_CRITICO"]
+           - `alertas_detalhes`: list[{tipo, descricao, acao_recomendada}]
+
+        2. NO PDF — CAPA (generate-report-b2g.py):
+           Cada alerta agregado DEVE listar os editais afetados:
+           ```
+           ⚠ Verificação de atestados técnicos necessária (11 editais):
+             • Edital #3 — Pavimentação Rua XV (Joinville/SC) — CAT obra similar ≥R$500K
+             • Edital #7 — Construção UBS (Chapecó/SC) — CAT edificação saúde
+             • ...
+           ```
+
+        3. NO PDF — FICHA DO EDITAL:
+           Badge/tag visual ao lado da recomendação:
+           - 🔴 "Requer CAT específico" se CAT_REQUIRED
+           - 🟡 "Capital limítrofe" se CAPITAL_LIMITROFE
+           - 🔴 "Prazo crítico (<7d)" se PRAZO_CRITICO
+
+        4. NO PDF — PRÓXIMOS PASSOS:
+           Ação vinculada: "Providenciar CAT de [tipo] para Edital #N até [data-3dias]"
+
+      acceptance_criteria:
+        - "AC1: Capa lista editais específicos afetados por cada alerta (não apenas contagem)"
+        - "AC2: Ficha do edital mostra badges de alertas aplicáveis"
+        - "AC3: Próximos passos vinculam ação + edital + deadline"
+        - "AC4: Campo alertas_criticos no JSON por edital"
+        - "AC5: Editais PARTICIPAR com alerta CAT_REQUIRED são visualmente distintos dos sem alerta"
+
+      files:
+        - scripts/collect-report-data.py   # Campo alertas_criticos por edital
+        - scripts/generate-report-b2g.py   # Capa, fichas, próximos passos
+
+    - id: HARD-005
+      title: "Recalibração do Modelo de Probabilidade de Vitória"
+      severity: HIGH
+      problem: |
+        Probabilidades de 10%, 11%, 12% com baixíssima variação entre editais
+        muito diferentes. R$104K/20dias/122km vs R$1,8M/Florianópolis ficam no
+        mesmo cluster 10-12%. Modelo tem baixa sensibilidade ou supercomprime variância.
+      solution: |
+        DIAGNÓSTICO: O viability_factor (risk_score/100) comprime tudo.
+        Se risk_score fica entre 50-70 (common range), viability_factor = 0.50-0.70,
+        e como base_rate já é baixo (~0.08-0.15), o resultado fica 4-10% com pouca spread.
+
+        RECALIBRAÇÃO:
+
+        1. AMPLIAR SPREAD DO BASE RATE por setor + modalidade:
+           - Pregão eletrônico pequeno (<R$500K): base_rate = 0.20-0.25
+           - Concorrência grande (>R$5M): base_rate = 0.05-0.08
+           - Inexigibilidade: base_rate = 0.02 (quase impossível sem convite)
+
+        2. MULTIPLICADORES COM MAIOR AMPLITUDE:
+           - Prazo <7 dias: ×0.3 (era ×0.5) — urgência severa
+           - Prazo >30 dias: ×1.3 (era ×1.0) — tempo é vantagem real
+           - Distância <50km: ×1.4 (NOVO) — proximidade é vantagem competitiva
+           - Distância >500km: ×0.5 (NOVO) — custo logístico significativo
+           - Valor < 30% da capacidade: ×1.3 (NOVO) — empresa confortável
+           - Valor > 200% da capacidade: ×0.3 (NOVO) — stretch severo
+           - Incumbência prévia: ×1.5 (era +10pp) — histórico com órgão
+           - Acervo CONFIRMADO: ×1.2 (NOVO) — vantagem técnica demonstrável
+           - Acervo NAO_VERIFICADO: ×0.8 (NOVO) — risco de inabilitação
+
+        3. RESULTADO ESPERADO:
+           - Editais favoráveis (próximo, valor adequado, prazo bom, acervo): 25-40%
+           - Editais medianos: 8-15%
+           - Editais desfavoráveis (longe, valor alto, prazo curto): 2-5%
+           - Spread mínimo entre melhor e pior: 20+ percentage points
+
+        4. CONFIDENCE BANDS no PDF:
+           Mostrar range ao invés de ponto:
+           "Probabilidade estimada: 8-15% (confiança média)"
+           Não "12%" como se fosse preciso.
+
+        5. VALIDAÇÃO:
+           Gerar tabela comparativa com 10 editais reais de um report existente:
+           | Edital | Prob_Atual | Prob_Nova | Delta | Justificativa |
+           Verificar que spread > 20pp e ranking faz sentido intuitivo.
+
+      acceptance_criteria:
+        - "AC1: Spread entre melhor e pior probabilidade ≥20 percentage points num report típico"
+        - "AC2: Distância, prazo e valor têm impacto visível (>5pp cada) na probabilidade"
+        - "AC3: PDF mostra range (ex: 8-15%) ao invés de ponto único"
+        - "AC4: Confidence level (ALTA/MÉDIA/BAIXA) reflete qualidade dos dados disponíveis"
+        - "AC5: Incumbência prévia com órgão gera boost significativo (≥10pp)"
+        - "AC6: Acervo CONFIRMADO vs NAO_VERIFICADO gera diferença mensurável"
+        - "AC7: Tabela comparativa antes/depois com 10+ editais reais documenta melhoria"
+
+      files:
+        - scripts/collect-report-data.py  # compute_win_probability() rewrite
+        - scripts/generate-report-b2g.py  # Exibição de probability range
+
+      tests:
+        - "Test: edital próximo+barato+prazo_longo > edital longe+caro+prazo_curto em ≥20pp"
+        - "Test: incumbência prévia boost ≥10pp"
+        - "Test: acervo CONFIRMADO vs NAO_VERIFICADO diferença ≥5pp"
+        - "Test: spread numa lista de 10 editais variados ≥20pp"
+
+    - id: HARD-006
+      title: "Plano de Desenvolvimento Vinculado a Editais Concretos"
+      severity: MEDIUM
+      problem: |
+        Seção E4 repete lacunas genéricas (ISO 9001, ISO 27001, LGPD, CAT, atestado)
+        sem vincular a editais concretos. Se edital #8 exige CAT de quadra e #13
+        exige atestado de obra escolar, o plano deveria mapear isso diretamente.
+        Resultado: checklist desconectado da realidade do pipeline.
+      solution: |
+        1. NO JSON — CAMPO NOVO POR EDITAL (collect-report-data.py):
+           `requisitos_habilitacao`: list[{tipo, descricao, edital_ref}]
+           Extraído de qualification_gap + habilitacao_checklist + analise_documental
+
+        2. NO PDF — SEÇÃO E4 REFORMULADA (generate-report-b2g.py):
+
+           ANTES (genérico):
+           ```
+           Lacunas identificadas:
+           • Certificação ISO 9001
+           • Atestado de capacidade técnica
+           • Adequação LGPD
+           ```
+
+           DEPOIS (vinculado):
+           ```
+           Plano de Desenvolvimento — Vinculado ao Pipeline
+
+           PRIORIDADE 1 — Impacto em 8 editais:
+           • CAT de obra similar ≥R$500K
+             → Editais #3 (Joinville), #7 (Chapecó), #12 (Blumenau), ...
+             → Deadline mais próximo: 25/03/2026 (Edital #3)
+             → Ação: Solicitar atestado ao contratante do Contrato X (2024)
+
+           PRIORIDADE 2 — Impacto em 3 editais:
+           • Certidão negativa de débitos trabalhistas atualizada
+             → Editais #5, #9, #15
+             → Ação: Emitir via portal do TST (prazo: 48h)
+
+           PRIORIDADE 3 — Investimento estratégico:
+           • Certificação ISO 9001 (diferencial competitivo)
+             → Não exigida em nenhum edital atual, mas melhora scoring em 60% deles
+             → Ação: Iniciar processo (prazo: 6-12 meses)
+           ```
+
+        3. ALGORITMO DE PRIORIZAÇÃO:
+           a) Agrupar requisitos por tipo (CAT, certidão, ISO, etc.)
+           b) Contar editais PARTICIPAR + AVALIAR que exigem cada requisito
+           c) Ordenar por: (count × urgência_do_deadline_mais_proximo)
+           d) Separar: PRIORIDADE 1 (≥3 editais), 2 (1-2 editais), 3 (0 editais, estratégico)
+
+        4. MAPEAR AÇÃO CONCRETA:
+           Para cada requisito, sugerir ação específica baseada no tipo:
+           - CAT → "Solicitar atestado ao contratante de [contrato mais similar]"
+           - Certidão → "Emitir via [portal específico]"
+           - ISO → "Iniciar processo de certificação"
+
+      acceptance_criteria:
+        - "AC1: Cada lacuna do plano lista os editais específicos que a exigem"
+        - "AC2: Priorização por impacto (count de editais afetados × urgência)"
+        - "AC3: Deadline mais próximo visível para cada lacuna"
+        - "AC4: Ação concreta por tipo de requisito (não genérica)"
+        - "AC5: Requisitos sem edital associado marcados como 'investimento estratégico'"
+        - "AC6: Auditor valida que mapeamento lacuna→edital é factualmente correto"
+
+      files:
+        - scripts/collect-report-data.py   # Consolidar requisitos por edital
+        - scripts/generate-report-b2g.py   # _build_development_plan_condensed() rewrite
+
+  # ─── EXECUTION ORDER ───────────────────────────────────────────
+  execution:
+    phase_1_parallel:
+      label: "Fundação — Pode executar em paralelo"
+      stories: [HARD-001, HARD-002, HARD-003]
+      agents: [data-engineer, architect]
+      rationale: "Dedup, competitive intel e acervo são módulos independentes em collect-report-data.py"
+
+    phase_2_parallel:
+      label: "Apresentação — Depende parcialmente da Phase 1"
+      stories: [HARD-004, HARD-005, HARD-006]
+      agents: [dev, analyst]
+      rationale: "PDF changes + probability model. HARD-005 pode iniciar em paralelo."
+      dependencies:
+        HARD-004: [HARD-003]  # alertas_criticos precisa do acervo_status
+        HARD-006: [HARD-003, HARD-004]  # plano vinculado usa alertas + acervo
+
+    phase_3_validation:
+      label: "Validação End-to-End"
+      agents: [qa, analyst]
+      rationale: "Gerar report completo com dados reais, comparar antes/depois"
+      tasks:
+        - "Escolher 2 JSONs reais de docs/reports/data-*.json"
+        - "Gerar report com código atual (baseline)"
+        - "Gerar report com código novo"
+        - "Comparar: dedup count, competitive intel, acervo, probability spread, plano"
+        - "Auditor executa checklist C1-C11 no novo report"
+
+  # ─── DEFINITION OF DONE ────────────────────────────────────────
+  definition_of_done:
+    - "Todos os AC de todas as 6 stories passando"
+    - "Report gerado com dados reais (docs/reports/data-*.json) sem erros"
+    - "Auditor gate PASSED no report gerado"
+    - "Zero regressões em validate-report-data.py"
+    - "Commit convencional: feat(report-b2g): HARD-NNN description"
+    - "CHANGELOG.md atualizado"
+
+  # ─── RISK REGISTRY ─────────────────────────────────────────────
+  risks:
+    - id: R1
+      description: "Jaccard similarity pode gerar falsos positivos em objetos genéricos ('serviços de engenharia')"
+      mitigation: "Pre-grouping por cnpj_orgao + valor ±10% reduz universo; threshold 0.60 é conservador"
+
+    - id: R2
+      description: "Filtro de relevância setorial pode eliminar demais contratos, zerando competitive_intel"
+      mitigation: "Fallback RELAXED mantém top-3 por valor; campo filter_method audita o caso"
+
+    - id: R3
+      description: "Recalibração de probabilidade pode gerar valores implausíveis (>50%)"
+      mitigation: "Hard cap em 45%; validação com tabela comparativa de 10 editais reais"
+
+    - id: R4
+      description: "collect-report-data.py tem 8,521 linhas — risco de regressão"
+      mitigation: "Cada story toca funções isoladas; testes unitários por função; validate-report-data.py como gate"

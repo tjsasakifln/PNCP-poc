@@ -933,13 +933,18 @@ def _build_resumo_decisorio(data: dict, styles: dict) -> list:
         max((e.get("roi_potential") or {}).get("roi_max", 0), 0)
         for e in participar
     )
+    # HARD-004: Alerts linked to specific editais (not just aggregate count)
     acervo_note = ""
-    acervo_eds = [e for e in editais if (e.get("risk_score") or {}).get("acervo_confirmado") is False
+    acervo_eds = [e for e in editais if (e.get("risk_score") or {}).get("acervo_status", "NAO_VERIFICADO") != "CONFIRMADO"
                   and (e.get("recomendacao") or "").upper() in ("PARTICIPAR", "AVALIAR COM CAUTELA")]
     if acervo_eds:
+        ed_refs = ", ".join(
+            f"#{e.get('_display_idx', '?')}" for e in acervo_eds[:8]
+        )
+        suffix = f" e mais {len(acervo_eds) - 8}" if len(acervo_eds) > 8 else ""
         acervo_note = (
             f" <b>Atenção:</b> {len(acervo_eds)} edital(is) dependem de verificação prévia "
-            f"de atestados técnicos compatíveis com o objeto licitado."
+            f"de atestados técnicos ({ed_refs}{suffix})."
         )
 
     if participar:
@@ -2330,9 +2335,34 @@ def _build_detailed_analysis(data: dict, styles: dict, sec: dict | None = None, 
             styles["h2"],
         ))
 
-        # CRÍTICA 5: Acervo confirmation note — warn when technical capacity is unconfirmed
-        acervo_confirmado = risk.get("acervo_confirmado", False)
-        if not acervo_confirmado:
+        # HARD-004: Per-edital alert badges (replaces generic acervo warning)
+        alertas = ed.get("alertas_criticos", [])
+        acervo_status = risk.get("acervo_status", "NAO_VERIFICADO")
+
+        # Show specific alerts as compact badges
+        alert_parts = []
+        for alerta in alertas[:3]:
+            tipo = alerta.get("tipo", "")
+            sev = alerta.get("severidade", "MEDIA")
+            color = SIGNAL_RED if sev == "ALTA" else SIGNAL_AMBER
+            icon = "●" if sev == "ALTA" else "◐"
+            label = {
+                "CAT_REQUIRED": "Requer CAT",
+                "CAPITAL_LIMITROFE": "Capital limítrofe",
+                "PRAZO_CRITICO": f"Prazo crítico ({ed.get('dias_restantes', '?')}d)",
+            }.get(tipo, tipo.replace("_", " ").title())
+            alert_parts.append(f"<font color='{color.hexval()}'>{icon} {label}</font>")
+
+        if alert_parts:
+            header_block.append(Paragraph(
+                " &nbsp;&nbsp; ".join(alert_parts),
+                ParagraphStyle(
+                    f"alerts_{idx}", parent=styles["body"],
+                    fontName="Helvetica-Bold", fontSize=8,
+                    spaceBefore=1 * mm, spaceAfter=1 * mm,
+                ),
+            ))
+        elif acervo_status != "CONFIRMADO":
             header_block.append(Paragraph(
                 "⚠ A participação efetiva depende de verificação prévia dos atestados técnicos "
                 "compatíveis com o objeto licitado.",
@@ -4259,7 +4289,8 @@ def _build_executive_summary_v6(data: dict, styles: dict, sec: dict | None = Non
 
 def _get_top_fornecedores_for_edital(ed: dict) -> list[dict]:
     """Extract top 3 recurring suppliers for an edital from competitive_intel."""
-    ci = ed.get("competitive_intel", {})
+    # HARD-002: Prefer sector-filtered intel to avoid cross-sector noise
+    ci = ed.get("competitive_intel_filtered", ed.get("competitive_intel", {}))
     fornecedores = []
     if isinstance(ci, dict) and ci.get("top_fornecedores"):
         for c in ci["top_fornecedores"][:3]:
@@ -4415,12 +4446,15 @@ def _build_edital_fichas(data: dict, styles: dict, sec: dict | None = None, _sta
             else:
                 checks.append(("SIM", SIGNAL_GREEN, "Sem sanções ativas"))
 
-        # Acervo / CAT
-        acervo_confirmado = risk.get("acervo_confirmado", False)
-        if acervo_confirmado:
-            checks.append(("SIM", SIGNAL_GREEN, "Acervo técnico compatível"))
+        # Acervo / CAT — HARD-003: 3-tier status
+        acervo_status = risk.get("acervo_status", risk.get("acervo_confirmado", False))
+        if acervo_status == "CONFIRMADO" or acervo_status is True:
+            n_alta = risk.get("acervo_similares_alta", 0)
+            checks.append(("SIM", SIGNAL_GREEN, f"Acervo técnico verificado ({n_alta} contrato(s) compatíveis)"))
+        elif acervo_status == "PARCIAL":
+            checks.append(("VERIFICAR", SIGNAL_AMBER, "Acervo parcial — verificação de CAT recomendada"))
         else:
-            checks.append(("VERIFICAR", SIGNAL_AMBER, "CAT exigida (verificar acervo)"))
+            checks.append(("VERIFICAR", SIGNAL_AMBER, "Acervo não verificado — confirmar atestados técnicos"))
 
         # Hab analysis dimensions
         hab = ed.get("habilitacao_analysis", {})
@@ -4442,12 +4476,19 @@ def _build_edital_fichas(data: dict, styles: dict, sec: dict | None = None, _sta
         # === 3. TEMOS CHANCE? ===
         ficha_block.append(Paragraph("<b>3. TEMOS CHANCE?</b>", styles["h3"]))
         prob = _safe_float(wp.get("probability", 0))
+        prob_low = _safe_float(wp.get("probability_low", prob * 0.6))
+        prob_high = _safe_float(wp.get("probability_high", min(prob * 1.5, 0.45)))
         n_suppliers = _safe_int(wp.get("n_unique_suppliers", wp.get("unique_suppliers", 0)))
         prob_pct = prob * 100
+        confidence = wp.get("confidence", "baixa")
 
         chance_parts = []
         if prob_pct > 0:
-            chance_parts.append(f"Probabilidade: {_pct(prob)}")
+            # HARD-005: Show range instead of point estimate
+            low_pct = prob_low * 100
+            high_pct = prob_high * 100
+            conf_label = {"alta": "alta", "media": "média", "baixa": "baixa"}.get(confidence, confidence)
+            chance_parts.append(f"Probabilidade: {low_pct:.0f}–{high_pct:.0f}% (confiança {conf_label})")
         if n_suppliers > 0:
             chance_parts.append(f"Concorrentes: ~{n_suppliers}")
         else:
@@ -4549,7 +4590,8 @@ def _build_edital_fichas(data: dict, styles: dict, sec: dict | None = None, _sta
             else:
                 action = f"Iniciar preparacao documental. Prazo: {_date(ed.get('data_encerramento'))}"
         else:  # AVALIAR
-            if not acervo_confirmado:
+            _acervo_ok = (risk.get("acervo_status", risk.get("acervo_confirmado", False))) in ("CONFIRMADO", True)
+            if not _acervo_ok:
                 action = "Verificar acervo tecnico antes de decidir participacao"
             else:
                 action = f"Avaliar custo-beneficio e decidir ate 7 dias antes de {_date(ed.get('data_encerramento'))}"
@@ -4636,55 +4678,143 @@ def _build_annex_nao_recomendado_inline(data: dict, styles: dict, sec: dict) -> 
 
 
 def _build_development_plan_condensed(data: dict, styles: dict, sec: dict | None = None) -> list:
-    """V6: Development plan condensed to 3-5 bullet points."""
+    """HARD-006: Development plan linked to specific editais with impact prioritization.
+
+    Groups requirements by type, counts affected editais, prioritizes by
+    (count x urgency of nearest deadline), and suggests concrete actions.
+    """
     editais = data.get("editais", [])
-    all_gaps = []
+
+    # Collect all requirements linked to their source editais
+    req_map: dict[str, dict] = {}  # key: (gap_type, description) -> {editais, action, deadline, severidade}
+
     for ed in editais:
+        rec = _normalize_recommendation(_s(ed.get("recomendacao", "")))
+        if rec == "NÃO RECOMENDADO":
+            continue
+
+        idx = ed.get("_display_idx", 0)
+        obj = _trunc(_s(ed.get("objeto", "")), 50)
+        mun = _s(ed.get("municipio", ""))
+        uf = _s(ed.get("uf", ""))
+        deadline = ed.get("data_encerramento") or ed.get("data_abertura") or ""
+        dias = ed.get("dias_restantes", 999)
+
+        # From alertas_criticos
+        for alerta in ed.get("alertas_criticos", []):
+            tipo = alerta.get("tipo", "OUTRO")
+            key = tipo
+            if key not in req_map:
+                req_map[key] = {
+                    "tipo": tipo,
+                    "descricao": alerta.get("descricao", ""),
+                    "acao": alerta.get("acao", ""),
+                    "editais": [],
+                    "min_dias": 999,
+                    "min_deadline": "",
+                }
+            entry = req_map[key]
+            entry["editais"].append(f"#{idx} ({mun}/{uf})" if mun else f"#{idx}")
+            if dias < entry["min_dias"]:
+                entry["min_dias"] = dias
+                entry["min_deadline"] = deadline
+
+        # From qualification_gap
         qual_gap = ed.get("qualification_gap", {})
         for gap in qual_gap.get("operational_gaps", []):
-            gap_copy = dict(gap)
-            gap_copy["edital_objeto"] = _trunc(_s(ed.get("objeto", "")), 60)
-            all_gaps.append(gap_copy)
+            gap_type = gap.get("gap_type", "")
+            if not gap_type or gap_type == "ACERVO_EXISTENTE":
+                continue
+            key = gap_type
+            if key not in req_map:
+                req_map[key] = {
+                    "tipo": gap_type,
+                    "descricao": (gap.get("description") or "")[:100],
+                    "acao": (gap.get("action_required") or "")[:100],
+                    "editais": [],
+                    "min_dias": 999,
+                    "min_deadline": "",
+                }
+            entry = req_map[key]
+            ed_ref = f"#{idx} ({mun}/{uf})" if mun else f"#{idx}"
+            if ed_ref not in entry["editais"]:
+                entry["editais"].append(ed_ref)
+            if dias < entry["min_dias"]:
+                entry["min_dias"] = dias
+                entry["min_deadline"] = deadline
 
-    if not all_gaps:
+    if not req_map:
         return []
 
-    # Deduplicate
-    seen = set()
-    unique_gaps = []
-    for g in all_gaps:
-        key = (g.get("gap_type", ""), g.get("description", ""))
-        if key not in seen:
-            seen.add(key)
-            unique_gaps.append(g)
+    # Sort by priority: count of affected editais x urgency (inverse of min_dias)
+    sorted_reqs = sorted(
+        req_map.values(),
+        key=lambda r: len(r["editais"]) * max(1, 100 - r["min_dias"]),
+        reverse=True,
+    )
 
-    if not unique_gaps:
-        return []
+    # Classify into priority tiers
+    p1 = [r for r in sorted_reqs if len(r["editais"]) >= 3]
+    p2 = [r for r in sorted_reqs if len(r["editais"]) in (1, 2)]
+    # p3 = strategic items without edital association (not collected here)
 
     el = []
     num = sec["next"]() if sec else 5
-    el.extend(_section_heading(f"{num}. Plano de Desenvolvimento", styles))
+    el.extend(_section_heading(f"{num}. Plano de Desenvolvimento — Vinculado ao Pipeline", styles))
 
     el.append(Paragraph(
-        "Lacunas operacionais identificadas que, se sanadas, ampliam o acesso a novos mercados.",
+        "Lacunas operacionais priorizadas por impacto no pipeline atual. "
+        "Cada item indica os editais afetados e o deadline mais próximo.",
         styles["body_small"],
     ))
-    el.append(Spacer(1, 2 * mm))
+    el.append(Spacer(1, 3 * mm))
 
-    # Max 5 bullets
-    for g in unique_gaps[:5]:
-        gap_type = _s(g.get("gap_type", ""))
-        desc = _trunc(_s(g.get("description", "")), 100)
-        action = _trunc(_s(g.get("action_required", "")), 80)
-        timeline = _s(g.get("estimated_timeline", ""))
+    # Action label mapping
+    _ACTION_LABELS = {
+        "CAT_REQUIRED": "Solicitar atestado de capacidade técnica ao contratante mais recente",
+        "CAPITAL_LIMITROFE": "Estruturar carta de fiança bancária ou consórcio",
+        "PRAZO_CRITICO": "Mobilizar equipe imediatamente para preparação de proposta",
+        "ACERVO_PRESUMIDO": "Verificar e documentar acervo técnico existente",
+        "ACERVO_SETOR_DIVERGENTE": "Obter atestados específicos para o setor do edital",
+        "SICAF_PARCIAL": "Regularizar cadastro SICAF (documentação pendente)",
+        "CAPITAL_INSUFICIENTE": "Ampliar capital social ou formar consórcio",
+    }
 
-        bullet_text = f"<b>{gap_type}:</b> {desc}"
-        if action:
-            bullet_text += f" — <i>{action}</i>"
-        if timeline:
-            bullet_text += f" ({timeline})"
+    def _render_tier(items: list, tier_label: str, tier_desc: str) -> None:
+        if not items:
+            return
+        el.append(Paragraph(f"<b>{tier_label}</b> — {tier_desc}", styles["h3"]))
+        el.append(Spacer(1, 1 * mm))
 
-        el.append(Paragraph(f"  {bullet_text}", styles["body_small"]))
+        for r in items[:5]:
+            tipo = r["tipo"]
+            n_eds = len(r["editais"])
+            desc = r["descricao"] or tipo.replace("_", " ").title()
+            action = r["acao"] or _ACTION_LABELS.get(tipo, "Verificar requisito específico")
+            eds_text = ", ".join(r["editais"][:6])
+            if n_eds > 6:
+                eds_text += f" +{n_eds - 6}"
+            deadline_text = ""
+            if r["min_deadline"]:
+                deadline_text = f" (deadline: {r['min_deadline'][:10]})"
+
+            el.append(Paragraph(
+                f"<b>• {desc}</b>{deadline_text}",
+                styles["body"],
+            ))
+            el.append(Paragraph(
+                f"  Editais: {eds_text}",
+                ParagraphStyle(f"dev_eds_{tipo}", parent=styles["body_small"],
+                               textColor=TEXT_SECONDARY),
+            ))
+            el.append(Paragraph(
+                f"  → <i>{action}</i>",
+                styles["body_small"],
+            ))
+            el.append(Spacer(1, 2 * mm))
+
+    _render_tier(p1, "PRIORIDADE 1", f"Impacto em ≥3 editais")
+    _render_tier(p2, "PRIORIDADE 2", f"Impacto em 1-2 editais")
 
     el.append(Spacer(1, 6 * mm))
     return el
