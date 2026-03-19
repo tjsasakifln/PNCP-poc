@@ -174,6 +174,39 @@ Verificar `extraction_quality` de cada edital no top20:
 
 ---
 
+### Step 6 — Analise Estruturada (LLM)
+
+```bash
+python scripts/intel-analyze.py --input {DATA_JSON}
+```
+
+O script automaticamente:
+1. Le o texto extraido de cada edital no top20
+2. Usa GPT-4.1-nano para extrair os 16 campos obrigatorios
+3. Produz `top20[].analise` com valores concretos (NUNCA "verificar" ou "possivelmente")
+4. Processa editais em paralelo (5 threads)
+
+Se `OPENAI_API_KEY` nao disponivel: PARAR e informar ao usuario.
+
+---
+
+### Step 6.5 — Validacao Programatica (Gates 2+4+5)
+
+```bash
+python scripts/intel-validate.py --input {DATA_JSON} --fix
+```
+
+Validacoes automaticas:
+1. **Gate 2:** Rejeita editais semanticamente incompativeis (software para construtora, etc.)
+2. **Gate 4:** Verifica completude — nenhum campo com palavras proibidas
+3. **Gate 5:** Coerencia — nenhum EXPIRADO, nenhum NAO PARTICIPAR no top20, campos_completos >= 60%
+
+Com `--fix`: corrige automaticamente issues encontradas (remove expirados, substitui "VERIFICAR" por "NAO PARTICIPAR").
+
+**Se `overall_passed == false` apos --fix:** Revisar manualmente os issues listados no validation report.
+
+---
+
 ### Step 7 — Analise Profunda (Claude inline)
 
 Para cada edital do top 20, ler o texto extraido dos documentos e produzir a analise estruturada.
@@ -258,7 +291,7 @@ Salvar no JSON como `top20[].analise`.
    c. Apos 2 tentativas sem sucesso: aceitar "Nao consta no edital disponivel" (genuinamente ausente)
 3. Se `recomendacao_acao` contem "VERIFICAR": substituir por:
    - `status_temporal == "EXPIRADO"` — "NAO PARTICIPAR — edital encerrado"
-   - `status_temporal == "SEM_DATA"` — "PARTICIPAR COM CAUTELA — confirmar prazo antes de preparar proposta"
+   - `status_temporal == "SEM_DATA"` — "PARTICIPAR" (com observacao em `observacoes_criticas`: "Sem data de encerramento publicada — confirmar prazo antes de preparar proposta")
    - Caso contrario — decidir PARTICIPAR ou NAO PARTICIPAR baseado na analise
 
 **REGRA:** O Gate 4 tem autonomia total para demandar reexecucao dos Steps 5, 6, e 7.
@@ -270,7 +303,8 @@ Salvar no JSON como `top20[].analise`.
 Apos a analise e validacao pelo Gate 4:
 - **REMOVER do top20** editais com `recomendacao_acao = "NAO PARTICIPAR"`
 - Substituir slots removidos pelos proximos editais elegiveis
-- Se substituicao necessaria, rodar Steps 5-7 + Gate 3-4 para os novos editais
+- Se substituicao necessaria, rodar Steps 5-7 + Gate 3-4 para os novos editais.
+**LIMITE:** Maximo 2 rodadas de substituicao. Se apos 2 rodadas o top20 tiver menos de 20 editais, aceitar o top20 com o numero disponivel.
 
 **O relatorio PDF contem APENAS editais com recomendacao PARTICIPAR.**
 
@@ -340,7 +374,7 @@ Informar ao usuario:
 11. **PDF contem apenas editais RECOMENDADOS** dentro da capacidade
 12. Se download de documentos falhar: marcar "Analise limitada — edital principal nao disponivel para download"
 13. Se PyMuPDF/OCR nao instalado: informar o usuario e prosseguir sem extracao (analise limitada ao objeto)
-14. **Limite de 15 paginas** no PDF — se 20 editais nao cabem, priorizar os de maior valor
+14. **Top 10 editais no PDF** (max 15 paginas). Se a empresa tem >10 editais PARTICIPAR, priorizar por valor e incluir os demais como lista resumida (1 linha por edital). O Excel contem a lista completa.
 15. **Cada gate tem autonomia para demandar reexecucao** de etapas anteriores
 
 ## Params

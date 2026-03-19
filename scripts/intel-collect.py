@@ -109,6 +109,16 @@ MODALIDADES_BUSCA = {
 # CNAE keyword density gate: 1% minimum (lower than report's 2% for zero false negatives)
 INTEL_DENSITY_MIN = 0.01
 
+# Per-sector keyword density overrides (lower = more inclusive for niche terms)
+SECTOR_DENSITY_OVERRIDES = {
+    "impermeabilizacao": 0.005,
+    "acustica": 0.005,
+    "avaliacao_imoveis": 0.005,
+    "geotecnia": 0.005,
+    "topografia": 0.005,
+    "demolicao": 0.005,
+}
+
 
 # ============================================================
 # HELPERS
@@ -135,7 +145,7 @@ def _compute_dedup_hash(edital: dict) -> str:
     uf = edital.get("uf") or ""
     municipio = (edital.get("municipio") or "").lower().strip()
     raw = f"{uf}|{municipio}|{valor}|{obj[:150]}"
-    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 def _date_compact(dt: datetime) -> str:
@@ -626,8 +636,9 @@ def apply_cnae_keyword_gate(
         # Density via compiled patterns (more accurate, word-boundary)
         density = _compute_keyword_density(objeto_lower, keyword_patterns)
 
-        # Compatibility gate: at least 1 keyword match with density >= 1%
-        is_compatible = len(matched_kws) >= 1 and density >= INTEL_DENSITY_MIN
+        # Compatibility gate: at least 1 keyword match with density >= threshold
+        density_threshold = SECTOR_DENSITY_OVERRIDES.get(sector_key, INTEL_DENSITY_MIN)
+        is_compatible = len(matched_kws) >= 1 and density >= density_threshold
 
         ed["cnae_compatible"] = is_compatible
         ed["keyword_density"] = round(density, 4)
@@ -636,6 +647,14 @@ def apply_cnae_keyword_gate(
         ed["exclusion_reason"] = None if is_compatible else (
             "zero_keyword_match" if len(matched_kws) == 0 else f"low_density_{density:.4f}"
         )
+
+        ed["gate2_decision"] = {
+            "compatible": ed["cnae_compatible"],
+            "reason": ed.get("exclusion_reason", "keyword_match" if ed["cnae_compatible"] else "low_density"),
+            "keyword_density": ed["keyword_density"],
+            "match_keywords": ed["match_keywords"][:5],  # top 5 matches
+            "timestamp": _today().isoformat(),
+        }
 
         if is_compatible:
             stats["compatible"] += 1

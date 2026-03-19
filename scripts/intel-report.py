@@ -294,6 +294,43 @@ def _trunc(text: str, n: int = 100) -> str:
     return text if len(text) <= n else text[: n - 3].rstrip() + "..."
 
 
+# Common verbose prefixes in tender objects that obscure the actual content
+_OBJECT_PREFIXES_TO_STRIP = [
+    "Seleção de proposta mais vantajosa para contratação de empresa especializada em ",
+    "Selecao de proposta mais vantajosa para contratacao de empresa especializada em ",
+    "[Portal de Compras Públicas] - ",
+    "[Portal de Compras Publicas] - ",
+    "Registro de preços, visando a contratação de ",
+    "Registro de precos, visando a contratacao de ",
+    "Registro de preços para futura e eventual contratação de ",
+    "Registro de precos para futura e eventual contratacao de ",
+    "Contratação de empresa especializada em ",
+    "Contratacao de empresa especializada em ",
+    "Contratação de empresa especializada para ",
+    "Contratacao de empresa especializada para ",
+    "Contratação de pessoa jurídica especializada em ",
+    "Contratacao de pessoa juridica especializada em ",
+]
+
+
+def _smart_trunc(objeto: str, n: int = 50) -> str:
+    """Strip common verbose prefixes from tender objects, then truncate.
+
+    This reveals the actual distinct content instead of 20 objects all
+    starting with 'Seleção de proposta mais vantajosa...'.
+    """
+    text = _s(objeto)
+    text_lower = text.lower()
+    for prefix in _OBJECT_PREFIXES_TO_STRIP:
+        if text_lower.startswith(prefix.lower()):
+            text = text[len(prefix):]
+            # Capitalize first letter of remaining text
+            if text:
+                text = text[0].upper() + text[1:]
+            break
+    return text if len(text) <= n else text[: n - 3].rstrip() + "…"
+
+
 def _safe_float(v: Any, d: float = 0.0) -> float:
     try:
         return float(v) if v is not None else d
@@ -709,7 +746,7 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
         rows = [header]
         for idx, ed in enumerate(top5, 1):
             link = _fix_pncp_link(ed.get("link") or ed.get("link_edital", ""))
-            obj_text = _trunc(_s(ed.get("objeto", "")), 55)
+            obj_text = _smart_trunc(ed.get("objeto", ""), 55)
             if link:
                 obj_text = f'<a href="{link}" color="#1a56db">{obj_text}</a>'
             rows.append([
@@ -922,7 +959,7 @@ def _build_perfil_e_mapa(data: dict, styles: dict) -> list:
             cost_text = _currency_short(cost_total) if cost_total else "—"
 
             link = _fix_pncp_link(ed.get("link") or ed.get("link_edital", ""))
-            obj_text = _trunc(_s(ed.get("objeto", "")), 40)
+            obj_text = _smart_trunc(ed.get("objeto", ""), 40)
             if link:
                 obj_text = f'<a href="{link}" color="#1a56db">{obj_text}</a>'
             rows.append([
@@ -959,7 +996,7 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
     elements.append(Spacer(1, 2 * mm))
 
     # Title (clickable link to PNCP)
-    objeto = _trunc(_s(ed.get("objeto", "Sem objeto")), 80)
+    objeto = _smart_trunc(ed.get("objeto", "Sem objeto"), 80)
     link = _fix_pncp_link(ed.get("link") or ed.get("link_pncp") or ed.get("link_edital", ""))
     if link:
         title_text = f'#{idx} — <a href="{link}" color="#1a56db">{objeto}</a>'
@@ -993,7 +1030,7 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
     elif status_t == "EXPIRADO":
         status_badge = f'<font color="{TEXT_MUTED.hexval()}">ENCERRADO</font>'
     else:
-        status_badge = '<font color="#8896A6">Prazo indefinido</font>'
+        status_badge = '<font color="#8896A6">Sem data de encerramento publicada — consultar edital</font>'
 
     elements.append(Paragraph(
         f"Valor Estimado: <b>{valor}</b> | Abertura: <b>{data_abertura}</b> | {status_badge}",
@@ -1032,6 +1069,24 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
 
     if geo_parts:
         elements.append(Paragraph(" | ".join(geo_parts), styles["edital_meta"]))
+
+    # Sector-specific cost/distance warnings
+    _roi_class = roi_data.get("classificacao", "") if isinstance(roi_data, dict) else ""
+    _dist_km = dist_data.get("km") if isinstance(dist_data, dict) else None
+    if _roi_class in ("MARGINAL", "DESFAVORAVEL"):
+        elements.append(Paragraph(
+            '<font color="' + SIGNAL_RED.hexval() + '"><b>⚠ ROI ' + _roi_class + '</b> — '
+            'Custo de participação elevado em relação ao valor do edital. '
+            'Avaliar cuidadosamente antes de prosseguir.</font>',
+            styles["edital_meta"],
+        ))
+    if _dist_km is not None and _dist_km > 1000:
+        elements.append(Paragraph(
+            '<font color="' + SIGNAL_AMBER.hexval() + '"><i>'
+            'Logística de longa distância (' + f'{_dist_km:.0f}' + ' km) — avaliar custo-benefício'
+            '</i></font>',
+            styles["edital_meta"],
+        ))
 
     # Clickable link
     link = _fix_pncp_link(ed.get("link") or ed.get("link_edital", ""))
@@ -1159,6 +1214,157 @@ def _build_analise_individual(data: dict, styles: dict) -> list:
     return el
 
 
+
+def _build_proximos_passos(data: dict, styles: dict) -> list:
+    """Render Próximos Passos section as a priority-grouped numbered table."""
+    passos = data.get("proximos_passos", [])
+    if not passos:
+        return []
+
+    el: list = []
+    avail = PAGE_WIDTH - 2 * MARGIN
+
+    el.extend(_section_heading("Próximos Passos", styles))
+    el.append(Spacer(1, 2 * mm))
+
+    # Validate and clean items -- skip raw JSON keys like "acao_imediata"
+    _RAW_KEY_PATTERN = re.compile(r"^[a-z_]+$")
+    valid_passos: list[dict] = []
+    for p in passos:
+        if isinstance(p, str):
+            # Plain string item -- skip if it looks like a raw JSON key
+            if _RAW_KEY_PATTERN.match(p.strip()):
+                continue
+            valid_passos.append({"acao": p, "prazo": "", "prioridade": ""})
+        elif isinstance(p, dict):
+            acao = _s(p.get("acao") or p.get("descricao") or p.get("texto", ""))
+            if not acao or _RAW_KEY_PATTERN.match(acao.strip()):
+                continue
+            valid_passos.append({
+                "acao": acao,
+                "prazo": _s(p.get("prazo", "")),
+                "prioridade": _s(p.get("prioridade", "")),
+            })
+
+    if not valid_passos:
+        return []
+
+    # Assign priority based on deadline days if not already set
+    def _infer_priority(passo: dict) -> str:
+        prio = passo.get("prioridade", "").upper()
+        if prio in ("URGENTE", "ALTA", "MEDIA", "BAIXA"):
+            return prio
+        prazo = passo.get("prazo", "")
+        # Try to extract days from prazo text
+        m = re.search(r"(\d+)\s*dias?", prazo, re.IGNORECASE)
+        if m:
+            dias = int(m.group(1))
+            if dias <= 7:
+                return "URGENTE"
+            elif dias <= 14:
+                return "ALTA"
+            elif dias <= 30:
+                return "MEDIA"
+            else:
+                return "BAIXA"
+        return "MEDIA"  # default
+
+    for p in valid_passos:
+        p["_priority"] = _infer_priority(p)
+
+    # Sort by priority
+    _PRIORITY_ORDER = {"URGENTE": 0, "ALTA": 1, "MEDIA": 2, "BAIXA": 3}
+    valid_passos.sort(key=lambda x: _PRIORITY_ORDER.get(x["_priority"], 2))
+
+    # Priority colors
+    _PRIORITY_COLORS = {
+        "URGENTE": SIGNAL_RED,
+        "ALTA": SIGNAL_AMBER,
+        "MEDIA": TEXT_COLOR,
+        "BAIXA": TEXT_MUTED,
+    }
+
+    # Build table
+    header = [
+        Paragraph("#", styles["cell_header_center"]),
+        Paragraph("Ação", styles["cell_header"]),
+        Paragraph("Prazo", styles["cell_header_center"]),
+        Paragraph("Prioridade", styles["cell_header_center"]),
+    ]
+    rows = [header]
+    for idx, p in enumerate(valid_passos, 1):
+        prio = p["_priority"]
+        prio_color = _PRIORITY_COLORS.get(prio, TEXT_COLOR)
+        prio_style = ParagraphStyle(
+            f"prio_{idx}", parent=styles["cell_center"],
+            textColor=prio_color, fontName="Helvetica-Bold",
+        )
+        rows.append([
+            Paragraph(str(idx), styles["cell_center"]),
+            Paragraph(_s(p["acao"]), styles["cell"]),
+            Paragraph(_s(p["prazo"]) or "—", styles["cell_center"]),
+            Paragraph(prio, prio_style),
+        ])
+
+    widths = [20, avail - 20 - 65 - 65, 65, 65]
+    el.append(_three_rule_table(rows, widths))
+    el.append(Spacer(1, 4 * mm))
+
+    return el
+
+
+def _build_consorcio_section(data: dict, styles: dict) -> list:
+    """Render consortium opportunities -- tenders above 10x capacity but relevant."""
+    opportunities = data.get("consorcio_opportunities", [])
+    if not opportunities:
+        return []
+
+    el: list = []
+    avail = PAGE_WIDTH - 2 * MARGIN
+
+    el.extend(_section_heading("Oportunidades de Consórcio", styles))
+    el.append(Spacer(1, 2 * mm))
+
+    el.append(Paragraph(
+        "Os editais abaixo excedem a capacidade econômico-financeira individual da empresa, "
+        "mas são relevantes para o setor. Considere participação via consórcio.",
+        styles["body_small"],
+    ))
+    el.append(Spacer(1, 2 * mm))
+
+    # Show up to 5 items
+    items = opportunities[:5]
+    header = [
+        Paragraph("#", styles["cell_header_center"]),
+        Paragraph("Objeto", styles["cell_header"]),
+        Paragraph("Valor", styles["cell_header_right"]),
+        Paragraph("Município/UF", styles["cell_header_center"]),
+        Paragraph("Interesse", styles["cell_header"]),
+    ]
+    rows = [header]
+    for idx, opp in enumerate(items, 1):
+        obj_text = _smart_trunc(opp.get("objeto", ""), 40)
+        link = _fix_pncp_link(opp.get("link") or opp.get("link_edital", ""))
+        if link:
+            obj_text = '<a href="' + link + '" color="#1a56db">' + obj_text + '</a>'
+        mun = _s(opp.get("municipio", ""))
+        uf = _s(opp.get("uf", ""))
+        loc = f"{mun}/{uf}" if mun else uf
+        motivo = _s(opp.get("motivo_interesse") or opp.get("motivo", "Setor compatível"))
+        rows.append([
+            Paragraph(str(idx), styles["cell_center"]),
+            Paragraph(obj_text, styles["cell"]),
+            Paragraph(_currency_short(opp.get("valor_estimado")), styles["cell_right"]),
+            Paragraph(loc, styles["cell_center"]),
+            Paragraph(_trunc(motivo, 40), styles["cell"]),
+        ])
+
+    widths = [18, avail - 18 - 60 - 65 - 100, 60, 65, 100]
+    el.append(_three_rule_table(rows, widths))
+    el.append(Spacer(1, 4 * mm))
+
+    return el
+
 def _build_plano_acao(data: dict, styles: dict) -> list:
     """Pages 14-15: Próximos Passos + Cronograma."""
     el: list = []
@@ -1215,7 +1421,7 @@ def _build_plano_acao(data: dict, styles: dict) -> list:
             )
             acao = _trunc(_s(analise.get("recomendacao_acao", "—")), 45)
             link = _fix_pncp_link(ed.get("link") or ed.get("link_pncp") or ed.get("link_edital", ""))
-            obj_text = _trunc(_s(ed.get("objeto", "")), 40)
+            obj_text = _smart_trunc(ed.get("objeto", ""), 40)
             if link:
                 obj_text = f'<a href="{link}" color="#1a56db">{obj_text}</a>'
             rows.append([
@@ -1343,7 +1549,13 @@ def generate_intel_report(data: dict, output_path: str) -> str:
     # Pages 4-13: Análise Individual
     elements.extend(_build_analise_individual(data, styles))
 
-    # Pages 14-15: Plano de Ação
+    # Próximos Passos (priority-grouped action items)
+    elements.extend(_build_proximos_passos(data, styles))
+
+    # Consortium opportunities (above capacity but relevant)
+    elements.extend(_build_consorcio_section(data, styles))
+
+    # Plano de Ação (timeline + final notes)
     elements.extend(_build_plano_acao(data, styles))
 
     # Build PDF
