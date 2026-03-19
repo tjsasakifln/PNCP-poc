@@ -31,6 +31,7 @@ if sys.platform == "win32":
         pass
 
 from openpyxl import Workbook
+from openpyxl.cell import WriteOnlyCell
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side, numbers
 from openpyxl.utils import get_column_letter
 
@@ -74,8 +75,8 @@ COLUMNS = [
     ("Popula\u00e7\u00e3o", 12, "right"),
     ("Compat\u00edvel CNAE", 12, "center"),
     ("Dentro Capacidade", 14, "center"),
-    ("Densidade KW", 10, "center"),
-    ("Keywords", 25, "left"),
+    ("Relevância", 10, "center"),
+    ("Setor", 25, "left"),
     ("Link PNCP", 12, "center"),
 ]
 
@@ -220,26 +221,55 @@ def _make_styles():
 
 
 # ---------------------------------------------------------------------------
+# WriteOnlyCell helpers
+# ---------------------------------------------------------------------------
+
+
+def _woc(ws, value=None, font=None, fill=None, alignment=None, border=None, number_format=None):
+    """Create a WriteOnlyCell with optional style attributes."""
+    c = WriteOnlyCell(ws, value=value)
+    if font is not None:
+        c.font = font
+    if fill is not None:
+        c.fill = fill
+    if alignment is not None:
+        c.alignment = alignment
+    if border is not None:
+        c.border = border
+    if number_format is not None:
+        c.number_format = number_format
+    return c
+
+
+# ---------------------------------------------------------------------------
 # Sheet builders
 # ---------------------------------------------------------------------------
 
 
 def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | None):
-    """Build Sheet 1: Oportunidades."""
-    ws = wb.active
-    ws.title = "Oportunidades"
+    """Build Sheet 1: Oportunidades (write-only mode)."""
+    ws = wb.create_sheet("Oportunidades")
     st = _make_styles()
 
-    # --- Headers ---
-    for col_idx, (header, width, _) in enumerate(COLUMNS, start=1):
-        cell = ws.cell(row=1, column=col_idx, value=header)
-        cell.font = st["header_font"]
-        cell.fill = st["header_fill"]
-        cell.alignment = st["header_align"]
-        cell.border = st["thin_border"]
+    # Column widths MUST be set before appending rows in write-only mode
+    for col_idx, (_, width, _) in enumerate(COLUMNS, start=1):
         ws.column_dimensions[get_column_letter(col_idx)].width = width
 
     ws.freeze_panes = "A2"
+
+    # --- Header row ---
+    header_row = []
+    for header, _, _ in COLUMNS:
+        c = _woc(
+            ws,
+            value=header,
+            font=st["header_font"],
+            fill=st["header_fill"],
+            alignment=st["header_align"],
+            border=st["thin_border"],
+        )
+        header_row.append(c)
+    ws.append(header_row)
 
     # --- Sort by valor desc (None values last) ---
     def sort_key(it):
@@ -259,175 +289,193 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
         cap_label = _capacity_label(valor, capacity_10x)
         kw_density = _safe_float(item.get("keyword_density"))
 
-        # Match keywords — can be list or comma-separated string
-        match_kw = item.get("match_keywords", item.get("keywords_matched", ""))
-        if isinstance(match_kw, list):
-            match_kw = ", ".join(str(k) for k in match_kw)
+        # Sector name (human-readable)
+        sector_name = item.get("sector_name", item.get("setor", ""))
+        if not sector_name:
+            # Fallback: use match_keywords as sector hint
+            match_kw = item.get("match_keywords", item.get("keywords_matched", ""))
+            if isinstance(match_kw, list):
+                sector_name = ", ".join(str(k) for k in match_kw[:3])
+            elif isinstance(match_kw, str):
+                sector_name = match_kw[:50]
 
         # Link
         link_pncp = item.get("link_pncp", item.get("link", ""))
 
+        # Helper: standard data cell with row fill and alignment
+        def _dc(col_idx, value=None, font=None, fill=None, number_format=None):
+            _, _, h_align = COLUMNS[col_idx - 1]
+            eff_fill = fill if fill is not None else row_fill
+            return _woc(
+                ws,
+                value=value,
+                font=font,
+                fill=eff_fill,
+                alignment=Alignment(horizontal=h_align, vertical="top", wrap_text=True),
+                border=st["thin_border"],
+                number_format=number_format,
+            )
+
+        row = []
+
         # A: Row number
-        ws.cell(row=row_num, column=1, value=data_idx)
+        row.append(_dc(1, value=data_idx))
 
         # B: Objeto
-        ws.cell(row=row_num, column=2, value=_sanitize(item.get("objeto", item.get("objetoCompra", ""))))
+        row.append(_dc(2, value=_sanitize(item.get("objeto", item.get("objetoCompra", "")))))
 
         # C: Orgao
-        ws.cell(row=row_num, column=3, value=_sanitize(item.get("orgao", item.get("nomeOrgao", ""))))
+        row.append(_dc(3, value=_sanitize(item.get("orgao", item.get("nomeOrgao", "")))))
 
         # D: UF
-        ws.cell(row=row_num, column=4, value=item.get("uf", ""))
+        row.append(_dc(4, value=item.get("uf", "")))
 
         # E: Municipio
-        ws.cell(row=row_num, column=5, value=_sanitize(item.get("municipio", "")))
+        row.append(_dc(5, value=_sanitize(item.get("municipio", ""))))
 
         # F: Valor Estimado
-        val_cell = ws.cell(row=row_num, column=6)
         if valor is not None:
-            val_cell.value = valor
-            val_cell.number_format = CURRENCY_FMT
+            row.append(_dc(6, value=valor, number_format=CURRENCY_FMT))
         else:
-            val_cell.value = "Sigiloso"
+            row.append(_dc(6, value="Sigiloso"))
 
         # G: Modalidade
-        ws.cell(row=row_num, column=7, value=_sanitize(
+        row.append(_dc(7, value=_sanitize(
             item.get("modalidade_nome", item.get("modalidadeNome", ""))
-        ))
+        )))
 
         # H: Data Publicacao
         dt_pub = _parse_dt(item.get("data_publicacao", item.get("dataPublicacaoPncp")))
-        pub_cell = ws.cell(row=row_num, column=8, value=dt_pub)
-        if dt_pub:
-            pub_cell.number_format = DATE_FMT
+        row.append(_dc(8, value=dt_pub, number_format=DATE_FMT if dt_pub else None))
 
         # I: Abertura Propostas
         dt_ab = _parse_dt(item.get("data_abertura_proposta", item.get("dataAberturaProposta")))
-        ab_cell = ws.cell(row=row_num, column=9, value=dt_ab)
-        if dt_ab:
-            ab_cell.number_format = DATETIME_FMT
+        row.append(_dc(9, value=dt_ab, number_format=DATETIME_FMT if dt_ab else None))
 
         # J: Encerramento
         dt_enc = _parse_dt(item.get("data_encerramento_proposta", item.get("dataEncerramentoProposta")))
-        enc_cell = ws.cell(row=row_num, column=10, value=dt_enc)
-        if dt_enc:
-            enc_cell.number_format = DATETIME_FMT
+        row.append(_dc(10, value=dt_enc, number_format=DATETIME_FMT if dt_enc else None))
 
         # K: Distância (km)
         dist_data = item.get("distancia", {})
         dist_km = _safe_float(dist_data.get("km")) if isinstance(dist_data, dict) else None
-        dist_cell = ws.cell(row=row_num, column=11)
         if dist_km is not None:
-            dist_cell.value = dist_km
-            dist_cell.number_format = '#,##0'
+            row.append(_dc(11, value=dist_km, number_format='#,##0'))
         else:
-            dist_cell.value = ""
+            row.append(_dc(11, value=""))
 
         # L: Custo Proposta
         custo_data = item.get("custo_proposta", {})
         custo_total = _safe_float(custo_data.get("total")) if isinstance(custo_data, dict) else None
-        custo_cell = ws.cell(row=row_num, column=12)
         if custo_total is not None:
-            custo_cell.value = custo_total
-            custo_cell.number_format = CURRENCY_FMT
+            row.append(_dc(12, value=custo_total, number_format=CURRENCY_FMT))
         else:
-            custo_cell.value = ""
+            row.append(_dc(12, value=""))
 
         # M: ROI
         roi_data = item.get("roi_proposta", {})
         roi_class = roi_data.get("classificacao", "") if isinstance(roi_data, dict) else ""
-        roi_cell = ws.cell(row=row_num, column=13, value=roi_class)
         if roi_class in ("EXCELENTE", "BOM"):
-            roi_cell.font = st["green_font"]
+            roi_font = st["green_font"]
         elif roi_class in ("MARGINAL", "DESFAVORAVEL"):
-            roi_cell.font = st["red_font"]
+            roi_font = st["red_font"]
         elif roi_class == "MODERADO":
-            roi_cell.font = st["amber_font"]
+            roi_font = st["amber_font"]
+        else:
+            roi_font = None
+        row.append(_dc(13, value=roi_class, font=roi_font))
 
         # N: População
         ibge_data = item.get("ibge", {})
         pop = ibge_data.get("populacao") if isinstance(ibge_data, dict) else None
-        pop_cell = ws.cell(row=row_num, column=14)
         if pop is not None:
-            pop_cell.value = pop
-            pop_cell.number_format = '#,##0'
+            row.append(_dc(14, value=pop, number_format='#,##0'))
         else:
-            pop_cell.value = ""
+            row.append(_dc(14, value=""))
 
         # O: Compativel CNAE
-        cnae_cell = ws.cell(row=row_num, column=15, value=cnae_label)
         if cnae_label == "SIM":
-            cnae_cell.font = st["green_font"]
+            cnae_font = st["green_font"]
         elif cnae_label == "N\u00c3O":
-            cnae_cell.font = st["red_font"]
+            cnae_font = st["red_font"]
         else:
-            cnae_cell.font = st["amber_font"]
+            cnae_font = st["amber_font"]
+        row.append(_dc(15, value=cnae_label, font=cnae_font))
 
         # P: Dentro Capacidade
-        cap_cell = ws.cell(row=row_num, column=16, value=cap_label)
         if cap_label == "SIM":
-            cap_cell.font = st["green_font"]
+            cap_font = st["green_font"]
         elif cap_label == "N\u00c3O":
-            cap_cell.font = st["red_font"]
+            cap_font = st["red_font"]
         else:
-            cap_cell.font = Font(color="808080")
+            cap_font = Font(color="808080")
+        row.append(_dc(16, value=cap_label, font=cap_font))
 
-        # Q: Densidade KW
-        kw_cell = ws.cell(row=row_num, column=17)
+        # Q: Relevância (human-readable label from keyword density)
         if kw_density is not None:
-            kw_cell.value = kw_density / 100.0 if kw_density > 1 else kw_density
-            kw_cell.number_format = PCT_FMT
+            if kw_density >= 5:
+                rel_label, rel_font = "Alta", st["green_font"]
+            elif kw_density >= 1:
+                rel_label, rel_font = "Média", st["amber_font"]
+            else:
+                rel_label, rel_font = "Baixa", st["red_font"]
+            row.append(_dc(17, value=rel_label, font=rel_font))
         else:
-            kw_cell.value = ""
+            row.append(_dc(17, value=""))
 
-        # R: Keywords
-        ws.cell(row=row_num, column=18, value=_sanitize(match_kw))
+        # R: Setor
+        row.append(_dc(18, value=_sanitize(sector_name)))
 
-        # S: Link PNCP
+        # S: Link PNCP — use HYPERLINK formula (write-only mode doesn't support cell.hyperlink)
         if link_pncp:
-            link_cell = ws.cell(row=row_num, column=19, value="Abrir")
-            link_cell.hyperlink = str(link_pncp)
-            link_cell.font = st["link_font"]
+            safe_url = str(link_pncp).replace('"', '%22')
+            link_val = f'=HYPERLINK("{safe_url}","Abrir")'
+            row.append(_dc(19, value=link_val, font=st["link_font"]))
         else:
-            ws.cell(row=row_num, column=19, value="")
+            row.append(_dc(19, value=""))
 
-        # Apply row-level styling
-        for col in range(1, len(COLUMNS) + 1):
-            cell = ws.cell(row=row_num, column=col)
-            cell.border = st["thin_border"]
-            # Only set fill if not already a styled cell (links, cnae, capacity, roi keep font)
-            if col not in (13, 15, 16, 19):
-                if is_alt and cell.fill == PatternFill(fill_type=None):
-                    cell.fill = row_fill
-            elif is_alt:
-                cell.fill = row_fill
-            # Alignment per column
-            _, _, h_align = COLUMNS[col - 1]
-            cell.alignment = Alignment(horizontal=h_align, vertical="top", wrap_text=True)
+        ws.append(row)
 
     # --- Total row ---
     if sorted_items:
-        total_row = len(sorted_items) + 2
-        count_cell = ws.cell(row=total_row, column=1, value=len(sorted_items))
-        count_cell.font = st["bold_font"]
-
-        label_cell = ws.cell(row=total_row, column=5, value="TOTAL:")
-        label_cell.font = st["bold_font"]
-
-        sum_cell = ws.cell(
-            row=total_row,
-            column=6,
-            value=f"=SUM(F2:F{total_row - 1})",
-        )
-        sum_cell.number_format = CURRENCY_FMT
-        sum_cell.font = st["bold_font"]
-
-        for col in range(1, len(COLUMNS) + 1):
-            ws.cell(row=total_row, column=col).border = st["thin_border"]
+        total_row_idx = len(sorted_items) + 2
+        total_row = []
+        for col_idx in range(1, len(COLUMNS) + 1):
+            _, _, h_align = COLUMNS[col_idx - 1]
+            if col_idx == 1:
+                c = _woc(
+                    ws, value=len(sorted_items),
+                    font=st["bold_font"],
+                    border=st["thin_border"],
+                    alignment=Alignment(horizontal=h_align, vertical="top"),
+                )
+            elif col_idx == 5:
+                c = _woc(
+                    ws, value="TOTAL:",
+                    font=st["bold_font"],
+                    border=st["thin_border"],
+                    alignment=Alignment(horizontal=h_align, vertical="top"),
+                )
+            elif col_idx == 6:
+                c = _woc(
+                    ws, value=f"=SUM(F2:F{total_row_idx - 1})",
+                    font=st["bold_font"],
+                    border=st["thin_border"],
+                    number_format=CURRENCY_FMT,
+                    alignment=Alignment(horizontal=h_align, vertical="top"),
+                )
+            else:
+                c = _woc(
+                    ws, value=None,
+                    border=st["thin_border"],
+                    alignment=Alignment(horizontal=h_align, vertical="top"),
+                )
+            total_row.append(c)
+        ws.append(total_row)
 
 
 def _build_resumo_uf(wb: Workbook, items: list[dict]):
-    """Build Sheet 2: Resumo por UF."""
+    """Build Sheet 2: Resumo por UF (write-only mode)."""
     ws = wb.create_sheet("Resumo por UF")
     st = _make_styles()
 
@@ -448,45 +496,51 @@ def _build_resumo_uf(wb: Workbook, items: list[dict]):
     headers = ["UF", "Qtd Total", "Qtd Compat\u00edvel", "Valor Total", "Valor Compat\u00edvel"]
     widths = [8, 12, 16, 20, 20]
 
-    for col, (h, w) in enumerate(zip(headers, widths), start=1):
-        cell = ws.cell(row=1, column=col, value=h)
-        cell.font = st["header_font"]
-        cell.fill = st["header_fill"]
-        cell.alignment = st["header_align"]
-        cell.border = st["thin_border"]
-        ws.column_dimensions[get_column_letter(col)].width = w
+    # Set column widths before appending
+    for col_idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = w
 
     ws.freeze_panes = "A2"
 
-    for row, (uf, d) in enumerate(sorted(uf_data.items()), start=2):
-        ws.cell(row=row, column=1, value=uf).border = st["thin_border"]
-        ws.cell(row=row, column=2, value=d["qtd_total"]).border = st["thin_border"]
-        ws.cell(row=row, column=3, value=d["qtd_compat"]).border = st["thin_border"]
-        vc = ws.cell(row=row, column=4, value=d["valor_total"])
-        vc.number_format = CURRENCY_FMT
-        vc.border = st["thin_border"]
-        vcc = ws.cell(row=row, column=5, value=d["valor_compat"])
-        vcc.number_format = CURRENCY_FMT
-        vcc.border = st["thin_border"]
+    # Header row
+    header_row = []
+    for h in headers:
+        c = _woc(
+            ws, value=h,
+            font=st["header_font"],
+            fill=st["header_fill"],
+            alignment=st["header_align"],
+            border=st["thin_border"],
+        )
+        header_row.append(c)
+    ws.append(header_row)
+
+    sorted_ufs = sorted(uf_data.items())
+    for uf, d in sorted_ufs:
+        row = [
+            _woc(ws, value=uf, border=st["thin_border"]),
+            _woc(ws, value=d["qtd_total"], border=st["thin_border"]),
+            _woc(ws, value=d["qtd_compat"], border=st["thin_border"]),
+            _woc(ws, value=d["valor_total"], border=st["thin_border"], number_format=CURRENCY_FMT),
+            _woc(ws, value=d["valor_compat"], border=st["thin_border"], number_format=CURRENCY_FMT),
+        ]
+        ws.append(row)
 
     # Totals
     if uf_data:
         tr = len(uf_data) + 2
-        ws.cell(row=tr, column=1, value="TOTAL").font = st["bold_font"]
-        ws.cell(row=tr, column=2, value=f"=SUM(B2:B{tr-1})").font = st["bold_font"]
-        ws.cell(row=tr, column=3, value=f"=SUM(C2:C{tr-1})").font = st["bold_font"]
-        tc4 = ws.cell(row=tr, column=4, value=f"=SUM(D2:D{tr-1})")
-        tc4.number_format = CURRENCY_FMT
-        tc4.font = st["bold_font"]
-        tc5 = ws.cell(row=tr, column=5, value=f"=SUM(E2:E{tr-1})")
-        tc5.number_format = CURRENCY_FMT
-        tc5.font = st["bold_font"]
-        for col in range(1, 6):
-            ws.cell(row=tr, column=col).border = st["thin_border"]
+        total_row = [
+            _woc(ws, value="TOTAL", font=st["bold_font"], border=st["thin_border"]),
+            _woc(ws, value=f"=SUM(B2:B{tr-1})", font=st["bold_font"], border=st["thin_border"]),
+            _woc(ws, value=f"=SUM(C2:C{tr-1})", font=st["bold_font"], border=st["thin_border"]),
+            _woc(ws, value=f"=SUM(D2:D{tr-1})", font=st["bold_font"], border=st["thin_border"], number_format=CURRENCY_FMT),
+            _woc(ws, value=f"=SUM(E2:E{tr-1})", font=st["bold_font"], border=st["thin_border"], number_format=CURRENCY_FMT),
+        ]
+        ws.append(total_row)
 
 
 def _build_resumo_modalidade(wb: Workbook, items: list[dict]):
-    """Build Sheet 3: Resumo por Modalidade."""
+    """Build Sheet 3: Resumo por Modalidade (write-only mode)."""
     ws = wb.create_sheet("Resumo por Modalidade")
     st = _make_styles()
 
@@ -502,41 +556,46 @@ def _build_resumo_modalidade(wb: Workbook, items: list[dict]):
     headers = ["Modalidade", "Qtd", "Valor Total"]
     widths = [35, 10, 22]
 
-    for col, (h, w) in enumerate(zip(headers, widths), start=1):
-        cell = ws.cell(row=1, column=col, value=h)
-        cell.font = st["header_font"]
-        cell.fill = st["header_fill"]
-        cell.alignment = st["header_align"]
-        cell.border = st["thin_border"]
-        ws.column_dimensions[get_column_letter(col)].width = w
+    for col_idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = w
 
     ws.freeze_panes = "A2"
 
-    for row, (mod, d) in enumerate(sorted(mod_data.items()), start=2):
-        ws.cell(row=row, column=1, value=mod).border = st["thin_border"]
-        ws.cell(row=row, column=2, value=d["qtd"]).border = st["thin_border"]
-        vc = ws.cell(row=row, column=3, value=d["valor_total"])
-        vc.number_format = CURRENCY_FMT
-        vc.border = st["thin_border"]
+    header_row = []
+    for h in headers:
+        c = _woc(
+            ws, value=h,
+            font=st["header_font"],
+            fill=st["header_fill"],
+            alignment=st["header_align"],
+            border=st["thin_border"],
+        )
+        header_row.append(c)
+    ws.append(header_row)
+
+    for mod, d in sorted(mod_data.items()):
+        row = [
+            _woc(ws, value=mod, border=st["thin_border"]),
+            _woc(ws, value=d["qtd"], border=st["thin_border"]),
+            _woc(ws, value=d["valor_total"], border=st["thin_border"], number_format=CURRENCY_FMT),
+        ]
+        ws.append(row)
 
     if mod_data:
         tr = len(mod_data) + 2
-        ws.cell(row=tr, column=1, value="TOTAL").font = st["bold_font"]
-        ws.cell(row=tr, column=2, value=f"=SUM(B2:B{tr-1})").font = st["bold_font"]
-        tc3 = ws.cell(row=tr, column=3, value=f"=SUM(C2:C{tr-1})")
-        tc3.number_format = CURRENCY_FMT
-        tc3.font = st["bold_font"]
-        for col in range(1, 4):
-            ws.cell(row=tr, column=col).border = st["thin_border"]
+        total_row = [
+            _woc(ws, value="TOTAL", font=st["bold_font"], border=st["thin_border"]),
+            _woc(ws, value=f"=SUM(B2:B{tr-1})", font=st["bold_font"], border=st["thin_border"]),
+            _woc(ws, value=f"=SUM(C2:C{tr-1})", font=st["bold_font"], border=st["thin_border"], number_format=CURRENCY_FMT),
+        ]
+        ws.append(total_row)
 
 
 def _build_metadata(wb: Workbook, data: dict, items: list[dict]):
-    """Build Sheet 4: Metadata."""
+    """Build Sheet 4: Metadata (write-only mode)."""
     ws = wb.create_sheet("Metadata")
     st = _make_styles()
 
-    # Header styling for column A
-    header_fill = PatternFill(start_color=INK, end_color=INK, fill_type="solid")
     ws.column_dimensions["A"].width = 28
     ws.column_dimensions["B"].width = 50
 
@@ -602,6 +661,9 @@ def _build_metadata(wb: Workbook, data: dict, items: list[dict]):
 
     restricao_str = "SIM" if restricao_sicaf else ("N\u00c3O" if restricao_sicaf is not None else "N/D")
 
+    label_font = Font(bold=True)
+    label_fill = PatternFill(start_color="E8EBF0", end_color="E8EBF0", fill_type="solid")
+
     rows = [
         ("CNPJ", _format_cnpj(empresa.get("cnpj", "N/D"))),
         ("Raz\u00e3o Social", empresa.get("razao_social", "N/D")),
@@ -626,15 +688,19 @@ def _build_metadata(wb: Workbook, data: dict, items: list[dict]):
         ("Script", "intel-collect.py + intel-enrich.py + intel-excel.py"),
     ]
 
-    for row_idx, (label, value) in enumerate(rows, start=1):
-        label_cell = ws.cell(row=row_idx, column=1, value=label)
-        label_cell.font = Font(bold=True)
-        label_cell.fill = PatternFill(start_color="E8EBF0", end_color="E8EBF0", fill_type="solid")
-        label_cell.border = st["thin_border"]
-
-        val_cell = ws.cell(row=row_idx, column=2, value=value)
-        val_cell.border = st["thin_border"]
-        val_cell.alignment = Alignment(wrap_text=True)
+    for label, value in rows:
+        label_cell = _woc(
+            ws, value=label,
+            font=label_font,
+            fill=label_fill,
+            border=st["thin_border"],
+        )
+        val_cell = _woc(
+            ws, value=value,
+            border=st["thin_border"],
+            alignment=Alignment(wrap_text=True),
+        )
+        ws.append([label_cell, val_cell])
 
 
 # ---------------------------------------------------------------------------
@@ -671,7 +737,9 @@ def generate_excel(data: dict, output_path: str) -> str:
     capital = _safe_float(empresa.get("capital_social"))
     capacity_10x = capital * 10 if capital else None
 
-    wb = Workbook()
+    # write_only=True: streams rows directly to disk — no in-memory cell graph.
+    # Reduces RAM from ~500MB to ~10MB for 8000+ rows.
+    wb = Workbook(write_only=True)
 
     # Sheet 1: Oportunidades
     _build_oportunidades(wb, items, capacity_10x)

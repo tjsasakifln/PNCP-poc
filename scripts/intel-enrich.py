@@ -195,25 +195,49 @@ def enrich_editais(
     editais: list[dict],
     cidade_sede: str,
     uf_sede: str,
-    max_editais: int = 50,
+    max_editais: int = 80,
+    capital_social: float | None = None,
 ) -> dict[str, Any]:
     """Enrich editais with distance, IBGE data, and cost estimates.
 
-    Operates on the top N compatible editais by valor.
+    Selects the top N compatible editais prioritising those within capacity
+    (valor_estimado <= capital_social * 10), rather than raw value ranking.
 
     Returns summary stats dict.
     """
     # Filter compatible editais
     compatible = [ed for ed in editais if ed.get("cnae_compatible")]
+
+    # Capacity filter: keep editais within 10× capital_social (or with no value info)
+    if capital_social and capital_social > 0:
+        capacity_limit = capital_social * 10
+        within_capacity = [
+            ed for ed in compatible
+            if not (ed.get("valor_estimado") or 0) or (ed.get("valor_estimado") or 0) <= capacity_limit
+        ]
+        skipped = len(compatible) - len(within_capacity)
+        if skipped:
+            print(f"\n  [FILTRO] {skipped} editais acima da capacidade "
+                  f"(R${capacity_limit:,.0f} = 10× capital social R${capital_social:,.0f}) — ignorados")
+        compatible_filtered = within_capacity
+    else:
+        compatible_filtered = compatible
+
     compatible_sorted = sorted(
-        compatible,
+        compatible_filtered,
         key=lambda e: (e.get("valor_estimado") or 0.0),
         reverse=True,
     )
     target_editais = compatible_sorted[:max_editais]
     target_ids = {ed["_id"] for ed in target_editais}
 
-    print(f"\n  Enriquecendo {len(target_editais)} editais compatíveis (top {max_editais} por valor)...")
+    capacity_note = (
+        f" dentro da capacidade (≤R${capital_social * 10:,.0f})"
+        if capital_social and capital_social > 0
+        else ""
+    )
+    print(f"\n  Enriquecendo {len(target_editais)} editais compatíveis{capacity_note} "
+          f"(top {max_editais} por valor)...")
 
     # --- 2a. Geocode sede ---
     print(f"\n  [GEO] Geocodificando sede: {cidade_sede}/{uf_sede}")
@@ -328,7 +352,7 @@ def main():
     parser.add_argument("--input", "-i", required=True, help="JSON de entrada (output do intel-collect.py)")
     parser.add_argument("--output", "-o", default=None, help="JSON de saída (default: sobrescreve input)")
     parser.add_argument("--skip-sicaf", action="store_true", help="Pular coleta SICAF (evita captcha)")
-    parser.add_argument("--max-editais", type=int, default=50, help="Max editais para enriquecer (default: 50)")
+    parser.add_argument("--max-editais", type=int, default=80, help="Max editais para enriquecer dentro da capacidade (default: 80)")
     parser.add_argument("--quiet", action="store_true", help="Reduzir output")
     args = parser.parse_args()
 
@@ -353,6 +377,7 @@ def main():
     cnpj = empresa.get("cnpj", "")
     cnpj14 = _clean_cnpj(cnpj) if cnpj else ""
     razao = empresa.get("razao_social", "N/A")
+    capital_social = _safe_float(empresa.get("capital_social"))
 
     print(f"  Empresa: {razao}")
     print(f"  CNPJ: {_format_cnpj(cnpj14)}")
@@ -389,6 +414,7 @@ def main():
         enrich_stats = enrich_editais(
             api, editais, cidade_sede, uf_sede,
             max_editais=args.max_editais,
+            capital_social=capital_social,
         )
 
     # ── Save output ──

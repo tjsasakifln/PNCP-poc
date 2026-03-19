@@ -99,7 +99,22 @@ except ImportError:
 # ============================================================
 
 def extract_pdf(path: str) -> str:
-    """Extract text from a PDF using PyMuPDF, with pytesseract OCR fallback."""
+    """Extract text from a PDF.
+
+    Primary: pymupdf4llm.to_markdown() — preserves table structure for better LLM analysis.
+    Fallback: PyMuPDF page.get_text() with pytesseract OCR for scanned PDFs.
+    """
+    # --- Primary: pymupdf4llm (markdown output preserves tables) ---
+    try:
+        import pymupdf4llm  # type: ignore[import]
+        text = pymupdf4llm.to_markdown(path)
+        return text[:MAX_TEXT_PER_EDITAL]
+    except ImportError:
+        pass  # Not installed — fall through to PyMuPDF direct extraction
+    except Exception as exc:
+        print(f"    ⚠ pymupdf4llm falhou para {Path(path).name}: {exc} — usando fallback")
+
+    # --- Fallback: PyMuPDF direct extraction ---
     if not _FITZ_OK:
         print(f"    ⚠ PyMuPDF not available — skipping {Path(path).name}")
         return ""
@@ -451,27 +466,53 @@ def process_edital(edital: dict[str, Any], idx: int, total: int) -> None:
 # FILTERING & SORTING
 # ============================================================
 
+def _dedup_key(e: dict[str, Any]) -> str:
+    """Generate a dedup key from orgao CNPJ + year + sequential number."""
+    orgao = (e.get("orgao_cnpj") or "").replace("/", "").replace(".", "").replace("-", "").strip()
+    ano = str(e.get("ano") or e.get("ano_compra") or "")
+    seq = str(e.get("sequencial") or e.get("numero_sequencial") or "")
+    if orgao and ano and seq:
+        return f"{orgao}/{ano}/{seq}"
+    # Fallback: normalize objeto text for similarity-based dedup
+    obj = (e.get("objeto") or "").lower().strip()
+    # Remove Portal de Compras prefix
+    for prefix in ["[portal de compras públicas] - ", "[portal de compras publicas] - "]:
+        if obj.startswith(prefix):
+            obj = obj[len(prefix):]
+    valor = e.get("valor_estimado") or 0
+    uf = e.get("uf") or ""
+    return f"{uf}|{valor}|{obj[:100]}"
+
+
 def select_top_editais(
     editais: list[dict[str, Any]],
     capital_social: float,
     top_n: int,
 ) -> list[dict[str, Any]]:
     """
-    Filter editais by CNAE compatibility + valor capacity, sort by valor desc,
+    Filter editais by CNAE compatibility + valor capacity, dedup, sort by valor desc,
     return top N.
     """
     capacidade = capital_social * 10
 
     candidates: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
     for e in editais:
         if not e.get("cnae_compatible"):
             continue
         valor = e.get("valor_estimado")
-        # Include if valor is None/null (unknown) or within capacity
-        if valor is None or valor <= capacidade:
-            candidates.append(e)
+        # STRICT capacity filter: only include if valor > 0 AND within capacity
+        # valor == 0 or None means sigiloso — include as unknown
+        if valor is not None and valor > 0 and valor > capacidade:
+            continue
+        # Dedup: skip if we've already seen this edital
+        key = _dedup_key(e)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        candidates.append(e)
 
-    # Sort by valor desc; None values (unknown) go to end
+    # Sort by valor desc; None/0 values (unknown) go to end
     candidates.sort(key=lambda e: e.get("valor_estimado") or 0, reverse=True)
     return candidates[:top_n]
 

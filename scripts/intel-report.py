@@ -643,20 +643,22 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
     el.extend(_section_heading("Sumário Executivo", styles))
     el.append(Spacer(1, 4 * mm))
 
-    # Metrics row — 3 big numbers
-    total_oportunidades = estatisticas.get("total_editais", len(data.get("editais", [])))
-    dentro_capacidade = len(top20)
+    # Metrics row — 4 big numbers
+    total_compat = estatisticas.get("total_cnae_compativel", len(data.get("editais", [])))
+    dentro_capacidade = estatisticas.get("total_dentro_capacidade", total_compat)
+    analisados = len(top20)
 
     valor_total = sum(_safe_float(e.get("valor_estimado")) for e in top20)
 
     avail = PAGE_WIDTH - 2 * MARGIN
-    col_w = avail / 3
+    col_w = avail / 4
     metrics_row = [[
-        _metric_cell(str(total_oportunidades), "Total de Oportunidades", styles),
+        _metric_cell(str(total_compat), "Compatíveis CNAE", styles),
         _metric_cell(str(dentro_capacidade), "Dentro da Capacidade", styles),
-        _metric_cell(_currency_short(valor_total), "Valor Total Acessível", styles),
+        _metric_cell(str(analisados), "Analisados em Profundidade", styles),
+        _metric_cell(_currency_short(valor_total), "Valor Total Analisado", styles),
     ]]
-    metrics_t = Table(metrics_row, colWidths=[col_w, col_w, col_w])
+    metrics_t = Table(metrics_row, colWidths=[col_w, col_w, col_w, col_w])
     metrics_t.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), 6),
@@ -674,11 +676,21 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
                 el.append(Paragraph(_s(paragraph), styles["body"]))
     else:
         el.append(Paragraph(
-            f"Foram identificadas <b>{total_oportunidades}</b> oportunidades em licitações públicas. "
-            f"Após análise de capacidade econômico-financeira, <b>{dentro_capacidade}</b> editais "
-            f"foram selecionados como acessíveis, totalizando <b>{_currency_short(valor_total)}</b> "
+            f"Foram identificadas <b>{total_compat}</b> oportunidades compatíveis com os CNAEs da empresa. "
+            f"Destas, <b>{dentro_capacidade}</b> estão dentro da capacidade econômico-financeira. "
+            f"<b>{analisados}</b> foram analisados em profundidade, totalizando <b>{_currency_short(valor_total)}</b> "
             f"em valor estimado.",
             styles["body"],
+        ))
+
+    # Note about excluded editais
+    excluded = data.get("top20_excluded_count", 0)
+    if excluded > 0:
+        el.append(Spacer(1, 2 * mm))
+        el.append(Paragraph(
+            f"<i>{excluded} editais foram analisados mas excluídos deste relatório por incompatibilidade "
+            f"com a atividade da empresa ou duplicidade. A lista completa está na planilha Excel.</i>",
+            styles["italic_note"],
         ))
 
     el.append(Spacer(1, 4 * mm))
@@ -696,9 +708,13 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
         ]
         rows = [header]
         for idx, ed in enumerate(top5, 1):
+            link = _fix_pncp_link(ed.get("link") or ed.get("link_edital", ""))
+            obj_text = _trunc(_s(ed.get("objeto", "")), 55)
+            if link:
+                obj_text = f'<a href="{link}" color="#1a56db">{obj_text}</a>'
             rows.append([
                 Paragraph(str(idx), styles["cell_center"]),
-                Paragraph(_trunc(_s(ed.get("objeto", "")), 55), styles["cell"]),
+                Paragraph(obj_text, styles["cell"]),
                 Paragraph(_currency_short(ed.get("valor_estimado")), styles["cell_right"]),
                 Paragraph(_s(ed.get("uf", "")), styles["cell_center"]),
                 Paragraph(_date(ed.get("data_abertura") or ed.get("data_publicacao")), styles["cell_center"]),
@@ -889,9 +905,13 @@ def _build_perfil_e_mapa(data: dict, styles: dict) -> list:
             cost_total = cost_data.get("total") if isinstance(cost_data, dict) else None
             cost_text = _currency_short(cost_total) if cost_total else "—"
 
+            link = _fix_pncp_link(ed.get("link") or ed.get("link_edital", ""))
+            obj_text = _trunc(_s(ed.get("objeto", "")), 40)
+            if link:
+                obj_text = f'<a href="{link}" color="#1a56db">{obj_text}</a>'
             rows.append([
                 Paragraph(str(idx), styles["cell_center"]),
-                Paragraph(_trunc(_s(ed.get("objeto", "")), 40), styles["cell"]),
+                Paragraph(obj_text, styles["cell"]),
                 Paragraph(_currency_short(ed.get("valor_estimado")), styles["cell_right"]),
                 Paragraph(_s(ed.get("uf", "")), styles["cell_center"]),
                 Paragraph(dist_text, styles["cell_right"]),
@@ -922,9 +942,14 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
     elements.append(rule_t)
     elements.append(Spacer(1, 2 * mm))
 
-    # Title
+    # Title (clickable link to PNCP)
     objeto = _trunc(_s(ed.get("objeto", "Sem objeto")), 80)
-    elements.append(Paragraph(f"#{idx} — {objeto}", styles["edital_title"]))
+    link = _fix_pncp_link(ed.get("link") or ed.get("link_pncp") or ed.get("link_edital", ""))
+    if link:
+        title_text = f'#{idx} — <a href="{link}" color="#1a56db">{objeto}</a>'
+    else:
+        title_text = f"#{idx} — {objeto}"
+    elements.append(Paragraph(title_text, styles["edital_title"]))
 
     # Metadata line
     orgao = _s(ed.get("orgao") or ed.get("nomeOrgao", ""))
@@ -1158,9 +1183,13 @@ def _build_plano_acao(data: dict, styles: dict) -> list:
                 textColor=dif_color, fontName="Helvetica-Bold",
             )
             acao = _trunc(_s(analise.get("recomendacao_acao", "—")), 45)
+            link = _fix_pncp_link(ed.get("link") or ed.get("link_pncp") or ed.get("link_edital", ""))
+            obj_text = _trunc(_s(ed.get("objeto", "")), 40)
+            if link:
+                obj_text = f'<a href="{link}" color="#1a56db">{obj_text}</a>'
             rows.append([
                 Paragraph(str(orig_idx), styles["cell_center"]),
-                Paragraph(_trunc(_s(ed.get("objeto", "")), 40), styles["cell"]),
+                Paragraph(obj_text, styles["cell"]),
                 Paragraph(_date(ed.get("data_abertura") or ed.get("data_publicacao")), styles["cell_center"]),
                 Paragraph(acao, styles["cell"]),
                 Paragraph(dif_text, dif_style),
@@ -1186,8 +1215,42 @@ def _build_plano_acao(data: dict, styles: dict) -> list:
 # MAIN GENERATOR
 # ============================================================
 
+def _filter_top20(top20: list[dict]) -> list[dict]:
+    """Remove editais NÃO PARTICIPAR and DUPLICATAs from top20 for the PDF report."""
+    exclude_keywords = ["NÃO PARTICIPAR", "NAO PARTICIPAR", "DUPLICATA"]
+    seen_keys: set[str] = set()
+    filtered: list[dict] = []
+    for e in top20:
+        analise = e.get("analise", {})
+        acao = (analise.get("recomendacao_acao") or "").upper()
+        # Skip excluded recommendations
+        if any(kw in acao for kw in exclude_keywords):
+            continue
+        # Dedup by normalized objeto + valor
+        obj = (e.get("objeto") or "").lower().strip()
+        for prefix in ["[portal de compras públicas] - ", "[portal de compras publicas] - "]:
+            if obj.startswith(prefix):
+                obj = obj[len(prefix):]
+        valor = e.get("valor_estimado") or 0
+        key = f"{e.get('uf','')}|{valor}|{obj[:80]}"
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        filtered.append(e)
+    return filtered
+
+
 def generate_intel_report(data: dict, output_path: str) -> str:
     """Generate the intelligence report PDF."""
+    # Filter top20: remove NÃO PARTICIPAR, DUPLICATAs, and dedup
+    raw_top20 = data.get("top20", [])
+    filtered_top20 = _filter_top20(raw_top20)
+    excluded_count = len(raw_top20) - len(filtered_top20)
+    data["top20_report"] = filtered_top20
+    data["top20_excluded_count"] = excluded_count
+    # Use filtered list for all report sections
+    data["top20"] = filtered_top20
+
     styles = _build_styles()
     elements: list = []
 

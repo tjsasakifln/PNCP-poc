@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import hashlib
 import importlib.util
 import io
 import json
@@ -89,8 +90,13 @@ CNAE_INCOMPATIBLE_OBJECTS = _crd.CNAE_INCOMPATIBLE_OBJECTS
 # CONSTANTS
 # ============================================================
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# Checkpoint file for resume/fault-tolerance
+_CHECKPOINT_FILE = _PROJECT_ROOT / "data" / "intel_pncp_checkpoint.json"
+_CHECKPOINT_TTL_HOURS = 2      # Re-use cached UF+mod result if < 2h old
+_CHECKPOINT_CLEANUP_HOURS = 24  # Evict stale checkpoint entries older than 24h
 
 # Competitive modalidades ONLY (Concorrencias + Pregoes)
 # Excluded: Dispensa(8), Inexigibilidade(9), Inaplicabilidade(14),
@@ -112,6 +118,26 @@ def _today() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _compute_dedup_hash(edital: dict) -> str:
+    """Compute a cross-portal dedup hash based on objeto, valor, uf, and municipio.
+
+    Strips portal-specific prefixes so the same edital published on both PNCP
+    and Portal de Compras Públicas produces the same hash and can be deduplicated.
+    """
+    obj = (edital.get("objeto") or "").lower().strip()
+    # Remove portal prefixes injected by PCP
+    for prefix in ["[portal de compras públicas] - ", "[portal de compras publicas] - "]:
+        if obj.startswith(prefix):
+            obj = obj[len(prefix):]
+    # Normalize: collapse extra whitespace, remove punctuation noise
+    obj = re.sub(r'\s+', ' ', obj).strip()
+    valor = str(edital.get("valor_estimado") or 0)
+    uf = edital.get("uf") or ""
+    municipio = (edital.get("municipio") or "").lower().strip()
+    raw = f"{uf}|{municipio}|{valor}|{obj[:150]}"
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:16]
+
+
 def _date_compact(dt: datetime) -> str:
     return dt.strftime("%Y%m%d")
 
@@ -121,19 +147,149 @@ def _date_iso(dt: datetime) -> str:
 
 
 # ============================================================
+# CHECKPOINT HELPERS (resume / fault-tolerance)
+# ============================================================
+
+def _checkpoint_key(cnpj14: str, ufs: list[str], dias: int) -> str:
+    """Top-level checkpoint key: {cnpj}_{ufs_sorted}_{dias}."""
+    ufs_sorted = ",".join(sorted(ufs))
+    return f"{cnpj14}_{ufs_sorted}_{dias}"
+
+
+def _subkey(mod_code: int, uf: str) -> str:
+    return f"mod_{mod_code}_{uf}"
+
+
+def _load_checkpoint() -> dict:
+    """Load checkpoint file from disk. Returns {} on any error."""
+    try:
+        if _CHECKPOINT_FILE.exists():
+            with open(_CHECKPOINT_FILE, encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def _save_checkpoint(data: dict) -> None:
+    """Atomically write checkpoint to disk (tmp → rename)."""
+    try:
+        _CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _CHECKPOINT_FILE.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+        tmp.replace(_CHECKPOINT_FILE)
+    except Exception as e:
+        print(f"  WARN: Falha ao salvar checkpoint: {e}")
+
+
+def _cleanup_old_checkpoints(data: dict) -> dict:
+    """Remove top-level keys (and sub-keys) older than _CHECKPOINT_CLEANUP_HOURS."""
+    cutoff = _today() - timedelta(hours=_CHECKPOINT_CLEANUP_HOURS)
+    cleaned: dict = {}
+    for top_key, sub_dict in data.items():
+        if not isinstance(sub_dict, dict):
+            continue
+        # Keep if any sub-key is recent enough
+        keep = False
+        for sub_val in sub_dict.values():
+            if isinstance(sub_val, dict):
+                ts_str = sub_val.get("timestamp", "")
+                try:
+                    ts = datetime.fromisoformat(ts_str)
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    if ts > cutoff:
+                        keep = True
+                        break
+                except Exception:
+                    pass
+        if keep:
+            cleaned[top_key] = sub_dict
+    return cleaned
+
+
+# ============================================================
 # STEP 3: EXHAUSTIVE PNCP SEARCH (no keyword filtering)
 # ============================================================
+
+def _parse_pncp_item(item: dict, mod_code: int, mod_name: str, ufs: list[str]) -> dict | None:
+    """Parse a raw PNCP API item into our internal format. Returns None if UF doesn't match."""
+    orgao_entity = item.get("orgaoEntidade") or {}
+    cnpj_compra = orgao_entity.get("cnpj") or item.get("cnpjCompra") or ""
+    cnpj_clean = re.sub(r"[^0-9]", "", str(cnpj_compra))
+    ano = str(item.get("anoCompra") or "")
+    seq = str(item.get("sequencialCompra") or "")
+
+    # Parse the raw item into our format
+    unidade = item.get("unidadeOrgao") or {}
+    uf = (unidade.get("ufSigla") or item.get("ufSigla") or "").upper()
+
+    # UF filter (when not using server-side UF param)
+    if ufs and uf and uf not in ufs:
+        return None
+
+    objeto = (item.get("objetoCompra") or item.get("objeto") or "").strip()
+    orgao = (orgao_entity.get("razaoSocial") or
+             unidade.get("nomeUnidade") or
+             item.get("nomeOrgao") or "")
+    municipio = unidade.get("municipioNome") or ""
+    valor = _safe_float(item.get("valorTotalEstimado") or item.get("valorEstimado"))
+    modalidade_nome = item.get("modalidadeNome") or mod_name
+
+    # Dates
+    data_pub_raw = item.get("dataPublicacaoPncp") or ""
+    data_abertura_raw = item.get("dataAberturaProposta") or ""
+    data_encerramento_raw = item.get("dataEncerramentoProposta") or ""
+
+    data_publicacao = _parse_date_flexible(data_pub_raw) or ""
+    data_abertura = data_abertura_raw  # Keep full ISO for proposals
+    data_encerramento = data_encerramento_raw
+
+    # Link
+    link_sistema = item.get("linkSistemaOrigem") or ""
+    if cnpj_clean and ano and seq:
+        link = f"https://pncp.gov.br/app/editais/{cnpj_clean}/{ano}/{seq}"
+    elif link_sistema:
+        link = link_sistema
+    else:
+        link = ""
+
+    return {
+        "_id": f"{cnpj_clean}/{ano}/{seq}" if (cnpj_clean and ano and seq) else f"unknown/{uuid.uuid4().hex[:12]}",
+        "objeto": objeto,
+        "orgao": orgao,
+        "cnpj_orgao": cnpj_clean,
+        "uf": uf,
+        "municipio": municipio,
+        "valor_estimado": valor,
+        "modalidade_code": mod_code,
+        "modalidade_nome": modalidade_nome,
+        "data_publicacao": data_publicacao,
+        "data_abertura_proposta": data_abertura,
+        "data_encerramento_proposta": data_encerramento,
+        "link_pncp": link,
+        "ano_compra": ano,
+        "sequencial_compra": seq,
+        "_dedup_key": f"{cnpj_clean}/{ano}/{seq}",
+    }
+
 
 def search_pncp_exhaustive(
     api: ApiClient,
     ufs: list[str],
     dias: int,
     modalidades: dict[int, str],
+    cnpj14: str = "",
+    use_cache: bool = True,
 ) -> tuple[list[dict], dict]:
     """Fetch ALL editais from PNCP for the given UFs, modalidades, and date range.
 
     NO keyword filtering at this stage -- captures everything to avoid false negatives.
     Deduplicates by {cnpj_orgao}/{anoCompra}/{sequencialCompra}.
+
+    Parallelizes UF fetching within each modalidade using ThreadPoolExecutor(max_workers=5).
+    Supports resume/checkpoint: skips UF+mod combos already fetched within the last 2 hours.
 
     Returns (raw_editais, source_meta).
     """
@@ -142,6 +298,8 @@ def search_pncp_exhaustive(
 
     all_items: list[dict] = []
     seen_ids: set[str] = set()
+    items_lock = threading.Lock()   # protects all_items + seen_ids
+
     source_meta = {
         "total_raw_api": 0,
         "total_after_dedup": 0,
@@ -149,133 +307,173 @@ def search_pncp_exhaustive(
         "errors": 0,
         "pagination_exhausted": [],
     }
+    meta_lock = threading.Lock()   # protects source_meta
 
     use_per_uf = 1 <= len(ufs) <= 10
     uf_iterations: list[str | None] = list(ufs) if use_per_uf else [None]
     max_pages = PNCP_MAX_PAGES_UF if use_per_uf else PNCP_MAX_PAGES
 
-    for mod_code, mod_name in sorted(modalidades.items()):
-        print(f"\n  Modalidade {mod_code} ({mod_name}):")
+    # ── Checkpoint setup ──
+    top_key = _checkpoint_key(cnpj14, ufs, dias) if cnpj14 else ""
+    checkpoint: dict = {}
+    if use_cache and top_key:
+        checkpoint = _load_checkpoint()
+    cp_top: dict = checkpoint.get(top_key, {}) if top_key else {}
+    cp_lock = threading.Lock()   # protects cp_top + checkpoint writes
 
-        for uf_filter in uf_iterations:
+    cutoff_ts = _today() - timedelta(hours=_CHECKPOINT_TTL_HOURS)
+
+    def _is_cache_fresh(sub_k: str) -> bool:
+        if not use_cache or not top_key:
+            return False
+        entry = cp_top.get(sub_k)
+        if not isinstance(entry, dict):
+            return False
+        ts_str = entry.get("timestamp", "")
+        try:
+            ts = datetime.fromisoformat(ts_str)
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            return ts > cutoff_ts
+        except Exception:
+            return False
+
+    def _load_from_cache(sub_k: str) -> list[dict]:
+        with cp_lock:
+            return list(cp_top.get(sub_k, {}).get("items", []))
+
+    def _save_to_cache(sub_k: str, items: list[dict], page_count: int) -> None:
+        if not top_key:
+            return
+        entry = {
+            "last_page": page_count,
+            "items": items,
+            "timestamp": _today().isoformat(),
+        }
+        with cp_lock:
+            cp_top[sub_k] = entry
+            checkpoint[top_key] = cp_top
+        _save_checkpoint(checkpoint)
+
+    def _fetch_uf(mod_code: int, mod_name: str, uf_filter: str | None) -> None:
+        """Worker: fetch all pages for one (modalidade, UF) combination."""
+        sub_k = _subkey(mod_code, uf_filter or "ALL")
+
+        # Check checkpoint cache
+        if _is_cache_fresh(sub_k):
+            cached_items = _load_from_cache(sub_k)
+            cached_pages = cp_top.get(sub_k, {}).get("last_page", 0)
             if uf_filter:
-                print(f"    UF {uf_filter}:", end=" ", flush=True)
+                print(f"    UF {uf_filter}: {cached_pages} pages, {len(cached_items)} editais (cache)")
+            with meta_lock:
+                source_meta["pages_fetched"] += cached_pages
+                source_meta["total_raw_api"] += len(cached_items)
+            with items_lock:
+                for parsed in cached_items:
+                    dk = parsed.get("_dedup_key", parsed.get("_id", ""))
+                    if dk and dk not in seen_ids:
+                        seen_ids.add(dk)
+                        all_items.append(parsed)
+            return
 
-            page_count = 0
-            uf_items = 0
+        page_count = 0
+        uf_items_list: list[dict] = []
+        local_raw = 0
+        error_occurred = False
 
-            for page in range(1, max_pages + 1):
-                params = {
-                    "dataInicial": data_inicial,
-                    "dataFinal": data_final,
-                    "codigoModalidadeContratacao": mod_code,
-                    "pagina": page,
-                    "tamanhoPagina": PNCP_MAX_PAGE_SIZE,
-                }
-                if uf_filter:
-                    params["uf"] = uf_filter
+        for page in range(1, max_pages + 1):
+            params = {
+                "dataInicial": data_inicial,
+                "dataFinal": data_final,
+                "codigoModalidadeContratacao": mod_code,
+                "pagina": page,
+                "tamanhoPagina": PNCP_MAX_PAGE_SIZE,
+            }
+            if uf_filter:
+                params["uf"] = uf_filter
 
-                uf_label = f" uf={uf_filter}" if uf_filter else ""
-                data, status = api.get(
-                    f"{PNCP_BASE}/contratacoes/publicacao",
-                    params=params,
-                    label=f"PNCP mod={mod_code}{uf_label} p={page}",
-                )
+            uf_label = f" uf={uf_filter}" if uf_filter else ""
+            data, status = api.get(
+                f"{PNCP_BASE}/contratacoes/publicacao",
+                params=params,
+                label=f"PNCP mod={mod_code}{uf_label} p={page}",
+            )
 
-                if status != "API" or not data:
+            if status != "API" or not data:
+                with meta_lock:
                     source_meta["errors"] += 1
-                    break
+                error_occurred = True
+                break
 
-                items = data if isinstance(data, list) else data.get("data", data.get("resultado", []))
-                if not isinstance(items, list) or not items:
-                    break
+            items = data if isinstance(data, list) else data.get("data", data.get("resultado", []))
+            if not isinstance(items, list) or not items:
+                break
 
-                page_count += 1
-                source_meta["pages_fetched"] += 1
-                source_meta["total_raw_api"] += len(items)
+            page_count += 1
+            local_raw += len(items)
 
-                for item in items:
-                    orgao_entity = item.get("orgaoEntidade") or {}
-                    cnpj_compra = orgao_entity.get("cnpj") or item.get("cnpjCompra") or ""
-                    cnpj_clean = re.sub(r"[^0-9]", "", str(cnpj_compra))
-                    ano = str(item.get("anoCompra") or "")
-                    seq = str(item.get("sequencialCompra") or "")
-
-                    dedup_key = f"{cnpj_clean}/{ano}/{seq}"
-                    if dedup_key in seen_ids:
+            for item in items:
+                parsed = _parse_pncp_item(item, mod_code, mod_name, ufs)
+                if parsed is None:
+                    continue
+                dk = parsed["_dedup_key"]
+                with items_lock:
+                    if dk in seen_ids:
                         continue
-                    seen_ids.add(dedup_key)
-
-                    # Parse the raw item into our format
-                    unidade = item.get("unidadeOrgao") or {}
-                    uf = (unidade.get("ufSigla") or item.get("ufSigla") or "").upper()
-
-                    # UF filter (when not using server-side UF param)
-                    if ufs and uf and uf not in ufs:
-                        continue
-
-                    objeto = (item.get("objetoCompra") or item.get("objeto") or "").strip()
-                    orgao = (orgao_entity.get("razaoSocial") or
-                             unidade.get("nomeUnidade") or
-                             item.get("nomeOrgao") or "")
-                    municipio = unidade.get("municipioNome") or ""
-                    valor = _safe_float(item.get("valorTotalEstimado") or item.get("valorEstimado"))
-                    modalidade_nome = item.get("modalidadeNome") or mod_name
-
-                    # Dates
-                    data_pub_raw = item.get("dataPublicacaoPncp") or ""
-                    data_abertura_raw = item.get("dataAberturaProposta") or ""
-                    data_encerramento_raw = item.get("dataEncerramentoProposta") or ""
-
-                    data_publicacao = _parse_date_flexible(data_pub_raw) or ""
-                    data_abertura = data_abertura_raw  # Keep full ISO for proposals
-                    data_encerramento = data_encerramento_raw
-
-                    # Link
-                    link_sistema = item.get("linkSistemaOrigem") or ""
-                    if cnpj_clean and ano and seq:
-                        link = f"https://pncp.gov.br/app/editais/{cnpj_clean}/{ano}/{seq}"
-                    elif link_sistema:
-                        link = link_sistema
-                    else:
-                        link = ""
-
-                    parsed = {
-                        "_id": f"{cnpj_clean}/{ano}/{seq}" if (cnpj_clean and ano and seq) else f"unknown/{uuid.uuid4().hex[:12]}",
-                        "objeto": objeto,
-                        "orgao": orgao,
-                        "cnpj_orgao": cnpj_clean,
-                        "uf": uf,
-                        "municipio": municipio,
-                        "valor_estimado": valor,
-                        "modalidade_code": mod_code,
-                        "modalidade_nome": modalidade_nome,
-                        "data_publicacao": data_publicacao,
-                        "data_abertura_proposta": data_abertura,
-                        "data_encerramento_proposta": data_encerramento,
-                        "link_pncp": link,
-                        "ano_compra": ano,
-                        "sequencial_compra": seq,
-                    }
+                    seen_ids.add(dk)
                     all_items.append(parsed)
-                    uf_items += 1
+                uf_items_list.append(parsed)
 
-                if len(items) < PNCP_MAX_PAGE_SIZE:
-                    break
+            if len(items) < PNCP_MAX_PAGE_SIZE:
+                break
 
-                time.sleep(0.5)  # Rate limiting
+            time.sleep(0.5)  # Rate limiting per worker
 
-            if uf_filter:
-                # Print inline summary for this UF
-                print(f"{page_count} pages, {uf_items} editais")
-
-            # Check pagination exhaustion
+        with meta_lock:
+            source_meta["pages_fetched"] += page_count
+            source_meta["total_raw_api"] += local_raw
             if page_count == max_pages:
                 source_meta["pagination_exhausted"].append(
                     f"mod={mod_code} uf={uf_filter or 'ALL'}"
                 )
 
+        if uf_filter:
+            status_note = " (erro parcial)" if error_occurred else ""
+            print(f"    UF {uf_filter}: {page_count} pages, {len(uf_items_list)} editais{status_note}")
+
+        # Save checkpoint (even on partial error — preserves what we got)
+        if not error_occurred or uf_items_list:
+            _save_to_cache(sub_k, uf_items_list, page_count)
+
+    for mod_code, mod_name in sorted(modalidades.items()):
+        print(f"\n  Modalidade {mod_code} ({mod_name}):")
+
+        # Parallelize across UFs (max 5 threads — respect PNCP rate limits)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+            futures = {
+                pool.submit(_fetch_uf, mod_code, mod_name, uf_filter): uf_filter
+                for uf_filter in uf_iterations
+            }
+            for fut in concurrent.futures.as_completed(futures):
+                try:
+                    fut.result()
+                except Exception as exc:
+                    uf_filter = futures[fut]
+                    print(f"    UF {uf_filter}: ERRO inesperado: {exc}")
+                    with meta_lock:
+                        source_meta["errors"] += 1
+
     source_meta["total_after_dedup"] = len(all_items)
+
+    # Cleanup stale checkpoint entries
+    if top_key and use_cache:
+        try:
+            cleaned = _cleanup_old_checkpoints(checkpoint)
+            if len(cleaned) != len(checkpoint):
+                _save_checkpoint(cleaned)
+        except Exception:
+            pass
+
     return all_items, source_meta
 
 
@@ -560,13 +758,12 @@ def assemble_output(
     capital = _safe_float(empresa.get("capital_social")) or 0.0
     capacidade_10x = capital * 10.0 if capital > 0 else 0.0
 
-    top20_dentro = 0
+    total_dentro_capacidade = 0
     if capacidade_10x > 0:
-        compat_sorted = sorted(compatible, key=lambda e: (e.get("valor_estimado") or 0.0), reverse=True)
-        for ed in compat_sorted[:20]:
+        for ed in compatible:
             v = _safe_float(ed.get("valor_estimado")) or 0.0
-            if 0 < v <= capacidade_10x:
-                top20_dentro += 1
+            if v == 0 or v <= capacidade_10x:
+                total_dentro_capacidade += 1
 
     # Sort editais: compatible first (by valor desc), then incompatible (by valor desc)
     compatible_sorted = sorted(compatible, key=lambda e: (e.get("valor_estimado") or 0.0), reverse=True)
@@ -596,10 +793,11 @@ def assemble_output(
             "total_needs_llm_review": len(needs_llm),
             "valor_total_compativel": round(valor_total_compat, 2),
             "capacidade_10x": round(capacidade_10x, 2),
-            "top20_dentro_capacidade": top20_dentro,
+            "total_dentro_capacidade": total_dentro_capacidade,
             "pncp_pages_fetched": source_meta.get("pages_fetched", 0),
             "pncp_errors": source_meta.get("errors", 0),
             "pncp_pagination_exhausted": source_meta.get("pagination_exhausted", []),
+            "total_after_dedup": source_meta.get("total_after_xdedup", len(editais)),
         },
         "editais": editais_sorted,
         "_metadata": {
@@ -632,6 +830,7 @@ def main():
     parser.add_argument("--dias", type=int, default=30, help="Periodo de busca em dias (default: 30)")
     parser.add_argument("--output", type=str, default=None, help="Caminho do JSON de saida")
     parser.add_argument("--quiet", action="store_true", help="Reduzir output no console")
+    parser.add_argument("--no-cache", action="store_true", help="Ignorar checkpoint e forcar nova coleta completa")
     args = parser.parse_args()
 
     t0 = time.time()
@@ -648,6 +847,7 @@ def main():
     print(f"  UFs:  {', '.join(ufs)}")
     print(f"  Dias: {dias}")
     print(f"  Modalidades: {sorted(MODALIDADES_BUSCA.keys())}")
+    print(f"  Cache:       {'desabilitado (--no-cache)' if args.no_cache else 'habilitado (2h TTL)'}")
     print(f"{'='*60}")
 
     api = ApiClient(verbose=not args.quiet)
@@ -745,10 +945,52 @@ def main():
 
     # ── Step 3: Exhaustive PNCP search ──
     print(f"\n[3/6] Busca exaustiva PNCP ({dias} dias, {len(ufs)} UFs, {len(MODALIDADES_BUSCA)} modalidades)...")
-    editais, source_meta = search_pncp_exhaustive(api, ufs, dias, MODALIDADES_BUSCA)
-    print(f"\n  Total bruto (dedup): {len(editais)} editais")
+    editais, source_meta = search_pncp_exhaustive(
+        api, ufs, dias, MODALIDADES_BUSCA,
+        cnpj14=cnpj14,
+        use_cache=not args.no_cache,
+    )
+    print(f"\n  Total bruto (dedup _id): {len(editais)} editais")
     if source_meta["pagination_exhausted"]:
         print(f"  WARN: Paginacao esgotada em: {source_meta['pagination_exhausted']}")
+
+    # ── Cross-portal dedup (between PNCP and PCP) ──
+    # Same edital may appear on both portals with different _id values.
+    # Group by (uf, municipio, valor, objeto[:150]) hash and keep the best copy.
+    total_before_xdedup = len(editais)
+    hash_to_editais: dict[str, list[dict]] = {}
+    for ed in editais:
+        h = _compute_dedup_hash(ed)
+        ed["dedup_hash"] = h
+        hash_to_editais.setdefault(h, []).append(ed)
+
+    deduped_editais: list[dict] = []
+    n_duplicatas = 0
+    for h, group in hash_to_editais.items():
+        if len(group) == 1:
+            deduped_editais.append(group[0])
+        else:
+            # Keep the edital with more metadata (more non-None fields).
+            # On tie, prefer PNCP source (link_pncp starting with pncp.gov.br).
+            def _score(ed: dict) -> tuple[int, int]:
+                filled = sum(1 for v in ed.values() if v is not None and v != "" and v != [])
+                is_pncp = 1 if "pncp.gov.br" in (ed.get("link_pncp") or "") else 0
+                return (filled, is_pncp)
+
+            best = max(group, key=_score)
+            best_id = best["_id"]
+            for ed in group:
+                if ed["_id"] != best_id:
+                    ed["_duplicata_de"] = best_id
+                    n_duplicatas += 1
+            deduped_editais.append(best)
+
+    editais = deduped_editais
+    source_meta["total_after_xdedup"] = len(editais)
+    if n_duplicatas > 0:
+        print(f"  Dedup cross-portal: {n_duplicatas} duplicatas removidas de {total_before_xdedup} editais")
+    else:
+        print(f"  Dedup cross-portal: sem duplicatas detectadas ({total_before_xdedup} editais)")
 
     # ── Step 4: CNAE keyword gate ──
     print(f"\n[4/6] Aplicando gate de keywords CNAE ({len(all_cnae_prefixes)} prefixos, {len(all_sector_keys)} setores)...")
@@ -806,7 +1048,7 @@ def main():
     print(f"  Precisam LLM review:  {stats['total_needs_llm_review']}")
     print(f"  Valor total compat:   {_fmt_brl(stats['valor_total_compativel'])}")
     print(f"  Capacidade 10x:       {_fmt_brl(stats['capacidade_10x'])}")
-    print(f"  Top 20 dentro cap:    {stats['top20_dentro_capacidade']}")
+    print(f"  Dentro capacidade:    {stats['total_dentro_capacidade']}")
     print(f"  Paginas PNCP:         {stats['pncp_pages_fetched']}")
     print(f"  Erros PNCP:           {stats['pncp_errors']}")
     print(f"  Tempo total:          {elapsed:.1f}s")
