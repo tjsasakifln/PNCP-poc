@@ -690,7 +690,7 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
     avail = PAGE_WIDTH - 2 * MARGIN
     col_w = avail / 4
     metrics_row = [[
-        _metric_cell(str(total_compat), "Compatíveis CNAE", styles),
+        _metric_cell(str(total_compat), "Compatíveis com a Empresa", styles),
         _metric_cell(str(dentro_capacidade), "Dentro da Capacidade", styles),
         _metric_cell(str(analisados), "Analisados em Profundidade", styles),
         _metric_cell(_currency_short(valor_total), "Valor Total Analisado", styles),
@@ -713,7 +713,7 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
                 el.append(Paragraph(_s(paragraph), styles["body"]))
     else:
         el.append(Paragraph(
-            f"Foram identificadas <b>{total_compat}</b> oportunidades compatíveis com os CNAEs da empresa. "
+            f"Foram identificadas <b>{total_compat}</b> oportunidades compatíveis com as atividades da empresa. "
             f"Destas, <b>{dentro_capacidade}</b> estão dentro da capacidade econômico-financeira. "
             f"<b>{analisados}</b> foram analisados em profundidade, totalizando <b>{_currency_short(valor_total)}</b> "
             f"em valor estimado.",
@@ -806,7 +806,7 @@ def _build_perfil_e_mapa(data: dict, styles: dict) -> list:
     if cnae:
         cnae_text = f"{cnae} — {cnae_desc}" if cnae_desc else cnae
         profile_rows.append([
-            Paragraph("CNAE Principal", styles["cell_header"]),
+            Paragraph("Atividade Principal", styles["cell_header"]),
             Paragraph(cnae_text, styles["cell"]),
         ])
     if capital > 0:
@@ -896,7 +896,7 @@ def _build_perfil_e_mapa(data: dict, styles: dict) -> list:
                     '<font color="#B5342A"><b>EMPRESA SANCIONADA</b></font>'
                 )
             else:
-                sancoes_text = '<font color="#1B7A3D">Nenhuma sanção ativa (CEIS/CNEP/CEPIM/CEAF)</font>'
+                sancoes_text = '<font color="#1B7A3D">Nenhuma sanção ativa nos cadastros federais</font>'
 
             cadastral_rows.append([
                 Paragraph("Sanções", styles["cell_header"]),
@@ -1060,7 +1060,14 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
         roi_color = "#1B7A3D" if roi_class in ("EXCELENTE", "BOM") else (
             "#B5342A" if roi_class in ("MARGINAL", "DESFAVORAVEL") else "#B8860B"
         )
-        geo_parts.append(f'ROI: <font color="{roi_color}"><b>{roi_class}</b></font>')
+        retorno_label = {
+            "EXCELENTE": "Retorno excelente",
+            "BOM": "Bom retorno",
+            "MODERADO": "Retorno moderado",
+            "MARGINAL": "Retorno marginal",
+            "DESFAVORAVEL": "Retorno desfavorável",
+        }.get(roi_class, roi_class)
+        geo_parts.append(f'<font color="{roi_color}"><b>{retorno_label}</b></font>')
 
     if isinstance(ibge_data, dict) and ibge_data.get("populacao"):
         pop = ibge_data["populacao"]
@@ -1075,8 +1082,8 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
     _dist_km = dist_data.get("km") if isinstance(dist_data, dict) else None
     if _roi_class in ("MARGINAL", "DESFAVORAVEL"):
         elements.append(Paragraph(
-            '<font color="' + SIGNAL_RED.hexval() + '"><b>⚠ ROI ' + _roi_class + '</b> — '
-            'Custo de participação elevado em relação ao valor do edital. '
+            '<font color="' + SIGNAL_RED.hexval() + '"><b>Custo de participação elevado</b> — '
+            'O investimento para participar desta licitação é alto em relação ao retorno potencial. '
             'Avaliar cuidadosamente antes de prosseguir.</font>',
             styles["edital_meta"],
         ))
@@ -1104,7 +1111,13 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
         level_color = {"BAIXA": SIGNAL_RED, "MEDIA": SIGNAL_AMBER, "ALTA": SIGNAL_GREEN, "MUITO_ALTA": SIGNAL_GREEN}
         color = level_color.get(level, TEXT_COLOR)
 
-        comp_parts.append(f'Competição: <font color="{color.hexval()}"><b>{level}</b></font> ({comp_intel["unique_suppliers"]} fornecedores)')
+        level_label = {
+            "BAIXA": "Poucos concorrentes",
+            "MEDIA": "Concorrência moderada",
+            "ALTA": "Muitos concorrentes",
+            "MUITO_ALTA": "Concorrência intensa",
+        }.get(level, level)
+        comp_parts.append(f'<font color="{color.hexval()}"><b>{level_label}</b></font> ({comp_intel["unique_suppliers"]} fornecedores no órgão)')
 
         top_sup = comp_intel.get("top_suppliers", [])
         if top_sup:
@@ -1114,7 +1127,9 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
 
         hhi = comp_intel.get("hhi", 0)
         if hhi > 0.5:
-            comp_parts.append(f'HHI: <font color="{SIGNAL_RED.hexval()}"><b>{hhi:.3f}</b></font> (concentrado)')
+            comp_parts.append(f'<font color="{SIGNAL_RED.hexval()}"><b>Mercado dominado por poucos fornecedores</b></font>')
+        elif hhi > 0.25:
+            comp_parts.append("Mercado com fornecedores recorrentes")
 
         elements.append(Paragraph(" | ".join(comp_parts), styles["edital_meta"]))
 
