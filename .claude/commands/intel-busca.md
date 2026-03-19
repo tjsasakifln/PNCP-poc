@@ -178,42 +178,23 @@ Verificar `extraction_quality` de cada edital no top20:
 
 ---
 
-### Step 6 — Analise Estruturada (LLM)
+### Step 6 — Analise Estruturada (Claude inline)
 
+**Etapa A — Preparar contexto:**
 ```bash
-python scripts/intel-analyze.py --input {DATA_JSON}
+python scripts/intel-analyze.py --input {DATA_JSON} --prepare
 ```
 
-O script automaticamente:
-1. Le o texto extraido de cada edital no top20
-2. Usa GPT-4.1-nano para extrair os 16 campos obrigatorios
-3. Produz `top20[].analise` com valores concretos (NUNCA "verificar" ou "possivelmente")
-4. Processa editais em paralelo (5 threads)
+O script prepara `_analysis_context` e `_analysis_rules` para cada edital no top20, sem chamar API externa.
 
-Se `OPENAI_API_KEY` nao disponivel: PARAR e informar ao usuario.
+**Etapa B — Analise por Claude (inline):**
+Ler o JSON preparado. Para cada edital em `top20` (que NAO tenha `analise` preenchida):
 
----
-
-### Step 6.5 — Validacao Programatica (Gates 2+4+5)
-
-```bash
-python scripts/intel-validate.py --input {DATA_JSON} --fix
-```
-
-Validacoes automaticas:
-1. **Gate 2:** Rejeita editais semanticamente incompativeis (software para construtora, etc.)
-2. **Gate 4:** Verifica completude — nenhum campo com palavras proibidas
-3. **Gate 5:** Coerencia — nenhum EXPIRADO, nenhum NAO PARTICIPAR no top20, campos_completos >= 60%
-
-Com `--fix`: corrige automaticamente issues encontradas (remove expirados, substitui "VERIFICAR" por "NAO PARTICIPAR").
-
-**Se `overall_passed == false` apos --fix:** Revisar manualmente os issues listados no validation report.
-
----
-
-### Step 7 — Analise Profunda (Claude inline)
-
-Para cada edital do top 20, ler o texto extraido dos documentos e produzir a analise estruturada.
+1. Ler campos: `_analysis_context`, `_analysis_rules`, `texto_documentos`
+2. Se `_analysis_limited == true`: analisar apenas com metadados, marcar `_source: "claude_limited"`
+3. Aplicar as regras de extracao do Step 7 (schema de 16 campos, palavras proibidas, enums)
+4. Usar `_analysis_rules` como regras mandatorias adicionais (sancoes, status temporal, distancia)
+5. Produzir os 16 campos obrigatorios em JSON e escrever em `top20[N].analise`
 
 **REGRA ABSOLUTA: A analise deve produzir CLAREZA, nao duvida.**
 - NUNCA escrever "verificar", "a confirmar", "possivelmente", "nao detalhado"
@@ -234,7 +215,7 @@ Para cada edital do top 20, ler o texto extraido dos documentos e produzir a ana
 - Regime de execucao (empreitada global, preco unitario, parcelada)
 - Exclusividade ME/EPP (buscar: "exclusiv", "LC 123", "microempresa")
 
-Usar os dados enriquecidos (distancia, custo, IBGE, SICAF) e `status_temporal`:
+**Usar dados enriquecidos** (`_analysis_context` + `_analysis_rules`) e `status_temporal`:
 - Se `status_temporal == "URGENTE"`: destacar prazo curto na recomendacao
 - Se `status_temporal == "IMINENTE"`: mencionar prazo moderado
 - Se `distancia.km` > 500: mencionar custo logistico elevado
@@ -243,29 +224,78 @@ Usar os dados enriquecidos (distancia, custo, IBGE, SICAF) e `status_temporal`:
 - Se `ibge.populacao` < 5000 e valor > R$1M: alertar fragilidade logistica
 - Se empresa sancionada/com restricao SICAF: todas as recomendacoes = NAO PARTICIPAR
 
+**Schema JSON (16 campos obrigatorios):**
 ```json
 {
-  "resumo_objeto": "...",
-  "requisitos_tecnicos": ["...", "..."],
-  "requisitos_habilitacao": ["...", "..."],
+  "resumo_objeto": "2-3 frases descrevendo o que esta sendo contratado",
+  "requisitos_tecnicos": ["lista", "de", "requisitos"],
+  "requisitos_habilitacao": ["lista", "de", "requisitos"],
   "qualificacao_economica": "Patrimonio liquido minimo de X% (R$ Y)",
-  "prazo_execucao": "X meses a partir da OS",
+  "prazo_execucao": "X meses a partir da OS / N dias corridos",
   "garantias": "X% do valor do contrato (seguro-garantia/caucao/fianca)",
-  "criterio_julgamento": "Menor Preco Global / Tecnica e Preco",
+  "criterio_julgamento": "Menor Preco Global / Tecnica e Preco / Maior Desconto",
   "data_sessao": "DD/MM/YYYY as HH:MM (plataforma: BNC/BLL/BBMNET/PCP)",
   "prazo_proposta": "DD/MM/YYYY as HH:MM",
   "visita_tecnica": "Obrigatoria ate DD/MM/YYYY / Facultativa / Nao consta no edital disponivel",
   "exclusividade_me_epp": "Sim/Nao/Cota reservada X%",
   "regime_execucao": "Empreitada por preco global / unitario / parcelada",
   "consorcio": "Permitido/Vedado/Nao mencionado no edital",
-  "observacoes_criticas": "...",
+  "observacoes_criticas": "Riscos, gaps, alertas relevantes",
   "nivel_dificuldade": "BAIXO/MEDIO/ALTO",
-  "recomendacao_acao": "PARTICIPAR / NAO PARTICIPAR (nunca VERIFICAR)",
-  "custo_logistico_nota": "..."
+  "recomendacao_acao": "PARTICIPAR ou NAO PARTICIPAR (nunca VERIFICAR)",
+  "custo_logistico_nota": "Avaliacao de impacto logistico"
 }
 ```
 
-Salvar no JSON como `top20[].analise`.
+Processar TODOS os editais do top20 e salvar o JSON atualizado com Write tool.
+
+**Etapa C — Validar e salvar:**
+```bash
+python scripts/intel-analyze.py --input {DATA_JSON} --save-analysis
+```
+
+Valida cada `analise` (normaliza enums, garante campos obrigatorios, limpa campos de preparacao).
+
+**Modo API legado:** Se preferir usar OpenAI API: `python scripts/intel-analyze.py --input {DATA_JSON}` (requer `OPENAI_API_KEY`).
+
+---
+
+### Step 6.5 — Validacao Programatica (Gates 2+4+5)
+
+```bash
+python scripts/intel-validate.py --input {DATA_JSON} --fix
+```
+
+Validacoes automaticas:
+1. **Gate 2:** Rejeita editais semanticamente incompativeis (software para construtora, etc.)
+2. **Gate 4:** Verifica completude — nenhum campo com palavras proibidas
+3. **Gate 5:** Coerencia — nenhum EXPIRADO, nenhum NAO PARTICIPAR no top20, campos_completos >= 60%
+
+Com `--fix`: corrige automaticamente issues encontradas (remove expirados, substitui "VERIFICAR" por "NAO PARTICIPAR").
+
+**Se `overall_passed == false` apos --fix:** Revisar manualmente os issues listados no validation report.
+
+---
+
+### Step 7 — Revisao Adversarial + Resumo Executivo (Claude inline)
+
+**7.1 — Revisao adversarial:**
+Para cada edital no top20 com `analise` preenchida e `texto_documentos` disponivel:
+- Comparar a analise com o texto do edital
+- Verificar: data_sessao confere? criterio_julgamento correto? garantias corretas? Algum campo "Nao consta" mas a info ESTA no texto?
+- Corrigir campos com erro factual diretamente no JSON
+- Marcar `analise._reviewed = true`
+
+**7.2 — Resumo executivo:**
+Redigir `resumo_executivo` (2-3 paragrafos): total de editais, compativeis, recomendados, destaques, alertas.
+Citar numeros concretos, valores, municipios. Ser direto e acionavel.
+
+**7.3 — Proximos passos:**
+Redigir `proximos_passos` (lista de 5-8 acoes concretas).
+Cada passo deve comecar com prefixo: `URGENTE:` / `PRIORITARIO:` / `AVALIAR:` / `MONITORAR:`
+Citar numeros de editais (#N), valores, datas, municipios. NUNCA usar "verificar".
+
+Salvar `resumo_executivo` e `proximos_passos` no JSON.
 
 ---
 
@@ -318,10 +348,6 @@ Se houver editais relevantes ACIMA da capacidade 10x que seriam excelentes oport
 - Listar ate 5 como "Oportunidades via Consorcio" em secao separada do relatorio
 - Mencionar apenas brevemente (objeto, valor, municipio, por que e interessante)
 - NAO fazer analise profunda — apenas sinalizar como potencial
-
-Tambem redigir:
-- `resumo_executivo`: 2-3 paragrafos de visao geral
-- `proximos_passos`: lista de acoes priorizadas com deadlines CONCRETAS (nunca "verificar")
 
 ---
 

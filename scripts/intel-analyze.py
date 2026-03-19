@@ -754,6 +754,149 @@ def generate_executive_summary(
 
 
 # ============================================================
+# PREPARE MODE (no API calls — Claude analyzes inline)
+# ============================================================
+
+def prepare_mode(input_path: Path, output_path: str | None, top_n: int) -> None:
+    """Prepare analysis context for each edital without making LLM calls.
+
+    Adds _analysis_context, _analysis_rules, and _analysis_limited to each
+    top20 entry so Claude Code can read them and produce the analysis inline.
+    """
+    with open(input_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    empresa = data.get("empresa", {})
+    top20 = data.get("top20", [])
+
+    if not top20:
+        print("ERROR: Campo 'top20' vazio ou ausente no JSON.", file=sys.stderr)
+        sys.exit(1)
+
+    to_prepare = top20[:top_n]
+    razao = empresa.get("razao_social", "N/A")
+
+    print(f"{'=' * 60}")
+    print(f"  INTEL-ANALYZE v{VERSION} — PREPARE MODE")
+    print(f"  Input:   {input_path}")
+    print(f"  Empresa: {razao}")
+    print(f"  Top20:   {len(to_prepare)} editais")
+    print(f"{'=' * 60}")
+
+    for i, ed in enumerate(to_prepare, 1):
+        texto = ed.get("texto_documentos", "")
+        quality = ed.get("extraction_quality", "")
+        limited = quality == "VAZIO" or len(texto.strip()) < 100
+
+        context = _build_enrichment_context(ed, empresa)
+        overrides = _build_override_rules(ed, empresa)
+
+        ed["_analysis_context"] = context
+        ed["_analysis_rules"] = overrides
+        ed["_analysis_limited"] = limited
+
+        objeto = (ed.get("objeto") or "")[:60]
+        chars = len(texto)
+        print(f"  [{i}/{len(to_prepare)}] {objeto} — {'limitada' if limited else f'{chars:,} chars'}")
+
+    # Save
+    out_path = output_path or str(input_path)
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2, default=str)
+
+    print(f"\n  Contexto preparado para {len(to_prepare)} editais.")
+    print(f"  Salvo em: {out_path}")
+    print(f"  Proximo passo: Claude analisa cada edital e preenche top20[].analise")
+
+
+# ============================================================
+# SAVE-ANALYSIS MODE (validate Claude's output)
+# ============================================================
+
+def save_analysis_mode(input_path: Path, output_path: str | None) -> None:
+    """Validate and finalize analyses pre-filled by Claude inline.
+
+    Runs _validate_analysis() on each top20[].analise, cleans up
+    preparation fields, and updates metadata.
+    """
+    with open(input_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    top20 = data.get("top20", [])
+
+    print(f"{'=' * 60}")
+    print(f"  INTEL-ANALYZE v{VERSION} — SAVE-ANALYSIS MODE")
+    print(f"  Input: {input_path}")
+    print(f"{'=' * 60}")
+
+    analyzed = 0
+    for ed in top20:
+        analise = ed.get("analise")
+        if analise:
+            ed["analise"] = _validate_analysis(analise)
+            # Add metadata if not present
+            if "_source" not in ed["analise"]:
+                ed["analise"]["_source"] = "claude"
+            if "_model" not in ed["analise"]:
+                ed["analise"]["_model"] = "claude-inline"
+            ed["analise"]["_texto_chars"] = len(ed.get("texto_documentos", ""))
+            analyzed += 1
+
+        # Clean up preparation fields
+        ed.pop("_analysis_context", None)
+        ed.pop("_analysis_rules", None)
+        ed.pop("_analysis_limited", None)
+
+    # Update metadata
+    if "_metadata" not in data:
+        data["_metadata"] = {}
+    data["_metadata"]["analysis"] = {
+        "version": VERSION,
+        "analyzed_at": datetime.now(timezone.utc).isoformat(),
+        "model": "claude-inline",
+        "editais_analyzed": analyzed,
+        "editais_total": len(top20),
+        "editais_with_text": sum(1 for e in top20 if (e.get("texto_documentos") or "").strip()),
+        "editais_limited": sum(
+            1 for e in top20
+            if e.get("analise", {}).get("_source") in ("claude_limited", "llm_limited")
+        ),
+        "editais_fallback": sum(
+            1 for e in top20
+            if e.get("analise", {}).get("_source") == "fallback"
+        ),
+        "participar": sum(
+            1 for e in top20
+            if "PARTICIPAR" in (e.get("analise", {}).get("recomendacao_acao", ""))
+            and "NAO" not in (e.get("analise", {}).get("recomendacao_acao", ""))
+        ),
+        "nao_participar": sum(
+            1 for e in top20
+            if "NAO" in (e.get("analise", {}).get("recomendacao_acao", ""))
+        ),
+        "review_enabled": False,
+        "review_corrections_total": 0,
+        "review_corrections_per_edital": {},
+    }
+
+    # Save
+    out_path = output_path or str(input_path)
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2, default=str)
+
+    participar = data["_metadata"]["analysis"]["participar"]
+    nao = data["_metadata"]["analysis"]["nao_participar"]
+
+    print(f"\n  Editais validados:  {analyzed}/{len(top20)}")
+    print(f"  PARTICIPAR:         {participar}")
+    print(f"  NAO PARTICIPAR:     {nao}")
+    print(f"  Salvo em:           {out_path}")
+    print(f"{'=' * 60}")
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -783,9 +926,22 @@ def main() -> None:
         help="Numero maximo de editais do top20 a analisar (default: 20)",
     )
     parser.add_argument(
+        "--prepare",
+        action="store_true",
+        help="Preparar contexto de analise para cada edital (sem chamadas API). "
+             "Adiciona _analysis_context e _analysis_rules ao top20.",
+    )
+    parser.add_argument(
+        "--save-analysis",
+        action="store_true",
+        dest="save_analysis",
+        help="Validar e salvar analises pre-preenchidas por Claude inline. "
+             "Espera top20[].analise ja populado. Roda _validate_analysis() em cada.",
+    )
+    parser.add_argument(
         "--model",
         default="gpt-4.1-nano",
-        help="Modelo OpenAI a usar (default: gpt-4.1-nano)",
+        help="Modelo OpenAI a usar no modo API (default: gpt-4.1-nano)",
     )
     parser.add_argument(
         "--workers",
@@ -796,7 +952,7 @@ def main() -> None:
     parser.add_argument(
         "--skip-summary",
         action="store_true",
-        help="Pular geracao de resumo_executivo e proximos_passos",
+        help="Pular geracao de resumo_executivo e proximos_passos (modo API)",
     )
     parser.add_argument(
         "--force",
@@ -806,7 +962,7 @@ def main() -> None:
     parser.add_argument(
         "--review",
         action="store_true",
-        help="Habilitar revisao adversarial pos-analise (LLM auditor corrige erros factuais)",
+        help="Habilitar revisao adversarial pos-analise (modo API)",
     )
     parser.add_argument(
         "--quiet",
@@ -817,10 +973,20 @@ def main() -> None:
 
     t0 = time.time()
 
-    # ── Validate API key ──
+    # ── Route to new modes ──
+    if args.prepare:
+        prepare_mode(Path(args.input), args.output, args.top)
+        return
+
+    if args.save_analysis:
+        save_analysis_mode(Path(args.input), args.output)
+        return
+
+    # ── API mode (legacy) — requires OPENAI_API_KEY ──
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
         print("ERROR: OPENAI_API_KEY env var not set.", file=sys.stderr)
+        print("  Dica: Use --prepare para modo sem API (Claude analisa inline).", file=sys.stderr)
         sys.exit(1)
 
     # ── Load input ──
