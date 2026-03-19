@@ -289,25 +289,39 @@ def apply_cnae_keyword_gate(
     keyword_patterns: list[re.Pattern],
     sector_key: str,
     cnae_prefix: str,
+    all_cnae_prefixes: set[str] | None = None,
+    all_sector_keys: set[str] | None = None,
 ) -> None:
     """Classify each edital as cnae_compatible or not. Mutates in place.
 
     Uses sector keywords + CNAE refinements for matching.
     All editais pass through -- we just flag them.
+    When multiple CNAEs are provided, an edital is only excluded if it's
+    incompatible with ALL CNAEs (not just the primary one).
     """
-    # Get CNAE-specific exclude patterns
+    _all_prefixes = all_cnae_prefixes or {cnae_prefix}
+    _all_sectors = all_sector_keys or {sector_key}
+
+    # Aggregate CNAE-specific exclude patterns from ALL CNAEs
+    # An exclude only applies if it comes from the PRIMARY CNAE —
+    # secondary CNAEs ADD coverage, they don't restrict it
     cnae_refinements = CNAE_KEYWORD_REFINEMENTS.get(cnae_prefix, {})
     exclude_terms = cnae_refinements.get("exclude_patterns", [])
     exclude_patterns = _compile_keyword_patterns(exclude_terms) if exclude_terms else []
 
-    # CNAE-object incompatibility regex patterns
-    cnae_incompat = CNAE_INCOMPATIBLE_OBJECTS.get(cnae_prefix, [])
-    cnae_incompat_compiled = []
-    for pat_str in cnae_incompat:
-        try:
-            cnae_incompat_compiled.append(re.compile(pat_str, re.IGNORECASE))
-        except re.error:
-            pass
+    # CNAE-object incompatibility: only reject if ALL company CNAEs are incompatible
+    # Build per-prefix compiled patterns
+    per_cnae_incompat: dict[str, list[re.Pattern]] = {}
+    for prefix in _all_prefixes:
+        pats = CNAE_INCOMPATIBLE_OBJECTS.get(prefix, [])
+        compiled = []
+        for pat_str in pats:
+            try:
+                compiled.append(re.compile(pat_str, re.IGNORECASE))
+            except re.error:
+                pass
+        if compiled:
+            per_cnae_incompat[prefix] = compiled
 
     stats = {"compatible": 0, "incompatible": 0, "needs_llm": 0}
 
@@ -336,20 +350,32 @@ def apply_cnae_keyword_gate(
             stats["incompatible"] += 1
             continue
 
-        # Check CNAE-object incompatibility
-        cnae_incompat_hit = None
-        for cpat in cnae_incompat_compiled:
-            if cpat.search(objeto_lower):
-                cnae_incompat_hit = cpat.pattern
-                break
-        if cnae_incompat_hit:
-            ed["cnae_compatible"] = False
-            ed["keyword_density"] = 0.0
-            ed["match_keywords"] = []
-            ed["needs_llm_review"] = False
-            ed["exclusion_reason"] = f"cnae_incompatible: {cnae_incompat_hit}"
-            stats["incompatible"] += 1
-            continue
+        # Check CNAE-object incompatibility — only reject if ALL CNAEs are incompatible
+        if per_cnae_incompat:
+            all_incompatible = True
+            incompat_detail = ""
+            for prefix, cpats in per_cnae_incompat.items():
+                prefix_hit = False
+                for cpat in cpats:
+                    if cpat.search(objeto_lower):
+                        prefix_hit = True
+                        incompat_detail = cpat.pattern
+                        break
+                if not prefix_hit:
+                    all_incompatible = False
+                    break
+            # Also compatible if some CNAEs have NO incompatibility patterns at all
+            cnaes_without_rules = _all_prefixes - set(per_cnae_incompat.keys())
+            if cnaes_without_rules:
+                all_incompatible = False
+            if all_incompatible:
+                ed["cnae_compatible"] = False
+                ed["keyword_density"] = 0.0
+                ed["match_keywords"] = []
+                ed["needs_llm_review"] = False
+                ed["exclusion_reason"] = f"cnae_incompatible_all: {incompat_detail}"
+                stats["incompatible"] += 1
+                continue
 
         # Check CNAE-refinement exclude patterns
         exclude_hit = False
@@ -516,6 +542,8 @@ def assemble_output(
     sector_key: str,
     keywords: list[str],
     source_meta: dict,
+    all_cnaes: list[str] | None = None,
+    all_sector_keys: set[str] | None = None,
 ) -> dict:
     """Build the final JSON output structure."""
     now = _today()
@@ -558,6 +586,8 @@ def assemble_output(
             "sector_key": sector_key,
             "keywords_count": len(keywords),
             "keywords_sample": keywords[:20],
+            "cnaes_count": len(all_cnaes) if all_cnaes else 1,
+            "sector_keys": sorted(all_sector_keys) if all_sector_keys else [sector_key],
         },
         "estatisticas": {
             "total_bruto": len(editais),
@@ -639,43 +669,75 @@ def main():
     print(f"  Capital: {_fmt_brl(capital)}")
     print(f"  UF Sede: {uf_sede}")
 
-    # ── Step 2: Map CNAE -> keywords ──
-    print("\n[2/6] Mapeando CNAE para keywords...")
-    sector_name, keywords, sector_key = map_sector(cnae_principal)
-    print(f"  Setor: {sector_name} (key: {sector_key})")
-    print(f"  Keywords base: {len(keywords)}")
+    # ── Step 2: Map ALL CNAEs -> keywords (principal + secundários) ──
+    print("\n[2/6] Mapeando TODOS os CNAEs para keywords...")
 
-    # Extract CNAE prefix for refinements
-    cnae_digits = re.sub(r"[^0-9]", "", cnae_principal.split("-")[0].split(" ")[0])[:7]
-    cnae_prefix = cnae_digits[:4]
+    # Collect all CNAEs (principal + secondary)
+    all_cnaes: list[str] = []
+    if cnae_principal:
+        all_cnaes.append(cnae_principal)
+    cnaes_sec_raw = empresa.get("cnaes_secundarios", "")
+    if cnaes_sec_raw:
+        # May be comma-separated string or list
+        if isinstance(cnaes_sec_raw, list):
+            all_cnaes.extend(str(c).strip() for c in cnaes_sec_raw if str(c).strip())
+        else:
+            all_cnaes.extend(c.strip() for c in str(cnaes_sec_raw).split(",") if c.strip())
+    print(f"  CNAEs encontrados: {len(all_cnaes)} (1 principal + {len(all_cnaes)-1} secundarios)")
 
-    # Add CNAE refinement extra keywords
-    cnae_refinements = CNAE_KEYWORD_REFINEMENTS.get(cnae_prefix, {})
-    extra_include = cnae_refinements.get("extra_include", [])
-    if extra_include:
-        keywords = list(keywords) + extra_include
-        print(f"  + {len(extra_include)} keywords extras do CNAE {cnae_prefix}")
+    # Map each CNAE to sector + keywords, aggregating all
+    all_keywords: list[str] = []
+    all_sector_keys: set[str] = set()
+    all_cnae_prefixes: set[str] = set()
+    primary_sector_name = ""
+    primary_sector_key = ""
 
-    # Add CNAE description words (>3 chars, not already in keywords)
-    cnae_desc_part = cnae_principal.split("-")[-1].split("/")[-1] if "-" in cnae_principal else cnae_principal
-    desc_words = [w.strip().lower() for w in cnae_desc_part.split() if len(w.strip()) > 3]
-    existing_lower = {kw.lower() for kw in keywords}
-    new_desc_words = [w for w in desc_words if w not in existing_lower]
-    if new_desc_words:
-        keywords = list(keywords) + new_desc_words
-        print(f"  + {len(new_desc_words)} palavras do CNAE descricao")
+    for i, cnae_raw in enumerate(all_cnaes):
+        s_name, s_keywords, s_key = map_sector(cnae_raw)
+        all_keywords.extend(s_keywords)
+        all_sector_keys.add(s_key)
+
+        # Extract 4-digit prefix
+        cnae_d = re.sub(r"[^0-9]", "", cnae_raw.split("-")[0].split(" ")[0])[:7]
+        prefix = cnae_d[:4]
+        if prefix:
+            all_cnae_prefixes.add(prefix)
+
+        # Add CNAE refinement extra keywords
+        cnae_ref = CNAE_KEYWORD_REFINEMENTS.get(prefix, {})
+        extra_inc = cnae_ref.get("extra_include", [])
+        if extra_inc:
+            all_keywords.extend(extra_inc)
+
+        # Add CNAE description words
+        cnae_desc_part = cnae_raw.split("-")[-1].split("/")[-1] if "-" in cnae_raw else cnae_raw
+        desc_words = [w.strip().lower() for w in cnae_desc_part.split() if len(w.strip()) > 3]
+        all_keywords.extend(desc_words)
+
+        if i == 0:
+            primary_sector_name = s_name
+            primary_sector_key = s_key
+            print(f"  CNAE principal: {cnae_raw} → {s_name} ({s_key})")
+        elif s_key != "geral":
+            print(f"  CNAE secundario: {prefix} → {s_name}")
+
+    sector_name = primary_sector_name
+    sector_key = primary_sector_key
+    cnae_prefix = re.sub(r"[^0-9]", "", cnae_principal.split("-")[0].split(" ")[0])[:4]
 
     # Deduplicate keywords
     seen_kw: set[str] = set()
     unique_keywords: list[str] = []
-    for kw in keywords:
+    for kw in all_keywords:
         kw_low = kw.lower().strip()
         if kw_low and kw_low not in seen_kw:
             seen_kw.add(kw_low)
             unique_keywords.append(kw)
     keywords = unique_keywords
 
-    print(f"  Total keywords: {len(keywords)}")
+    print(f"  Setores cobertos: {', '.join(sorted(all_sector_keys))}")
+    print(f"  Prefixos CNAE: {', '.join(sorted(all_cnae_prefixes))}")
+    print(f"  Total keywords (dedup): {len(keywords)}")
 
     # Compile patterns
     keyword_patterns = _compile_keyword_patterns(keywords)
@@ -689,8 +751,12 @@ def main():
         print(f"  WARN: Paginacao esgotada em: {source_meta['pagination_exhausted']}")
 
     # ── Step 4: CNAE keyword gate ──
-    print(f"\n[4/6] Aplicando gate de keywords CNAE...")
-    apply_cnae_keyword_gate(editais, keywords, keyword_patterns, sector_key, cnae_prefix)
+    print(f"\n[4/6] Aplicando gate de keywords CNAE ({len(all_cnae_prefixes)} prefixos, {len(all_sector_keys)} setores)...")
+    apply_cnae_keyword_gate(
+        editais, keywords, keyword_patterns, sector_key, cnae_prefix,
+        all_cnae_prefixes=all_cnae_prefixes,
+        all_sector_keys=all_sector_keys,
+    )
 
     # ── Step 5: Fetch documents for top 50 ──
     print(f"\n[5/6] Buscando documentos PNCP...")
@@ -708,6 +774,8 @@ def main():
         sector_key=sector_key,
         keywords=keywords,
         source_meta=source_meta,
+        all_cnaes=all_cnaes,
+        all_sector_keys=all_sector_keys,
     )
 
     # Determine output path

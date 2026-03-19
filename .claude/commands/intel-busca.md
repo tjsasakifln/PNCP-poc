@@ -4,6 +4,7 @@
 
 Busca exaustiva e análise profunda de editais abertos no PNCP para um CNPJ específico.
 Zero ruído. Zero perda de oportunidades. Funciona para qualquer ramo de atividade.
+Utiliza TODOS os CNAEs da empresa (principal + secundários) para máxima cobertura.
 
 **Entregáveis:**
 1. `docs/intel/intel-{CNPJ}-{YYYY-MM-DD}.xlsx` — Planilha completa com TODOS os editais
