@@ -338,6 +338,10 @@ def _safe_float(v: Any, d: float = 0.0) -> float:
         return d
 
 
+def _plural(n: int, singular: str, plural: str) -> str:
+    return singular if n == 1 else plural
+
+
 def _format_cnpj(cnpj: str) -> str:
     """Format CNPJ: 12345678000199 -> 12.345.678/0001-99."""
     c = re.sub(r"\D", "", str(cnpj))
@@ -452,12 +456,12 @@ def _build_styles() -> dict[str, ParagraphStyle]:
     )
     s["bullet_small"] = ParagraphStyle(
         "bullet_small_intel", parent=base["Normal"],
-        fontName="Helvetica", fontSize=7.5, textColor=TEXT_COLOR,
+        fontName="Helvetica", fontSize=8.5, textColor=TEXT_COLOR,
         leading=9.5, leftIndent=10, spaceAfter=0.5 * mm,
     )
     s["caption"] = ParagraphStyle(
         "caption_intel", parent=base["Normal"],
-        fontName="Helvetica", fontSize=7, textColor=TEXT_MUTED,
+        fontName="Helvetica", fontSize=8, textColor=TEXT_MUTED,
         leading=9,
     )
     s["italic_note"] = ParagraphStyle(
@@ -469,12 +473,12 @@ def _build_styles() -> dict[str, ParagraphStyle]:
     # Metrics
     s["metric_value"] = ParagraphStyle(
         "mv_intel", parent=base["Normal"],
-        fontName="Times-Bold", fontSize=18, textColor=INK,
+        fontName="Times-Bold", fontSize=22, textColor=INK,
         alignment=TA_CENTER, leading=22,
     )
     s["metric_label"] = ParagraphStyle(
         "ml_intel", parent=base["Normal"],
-        fontName="Helvetica", fontSize=7, textColor=TEXT_MUTED,
+        fontName="Helvetica", fontSize=8.5, textColor=TEXT_MUTED,
         alignment=TA_CENTER, leading=9,
     )
 
@@ -482,22 +486,22 @@ def _build_styles() -> dict[str, ParagraphStyle]:
     for name, align in [("cell", TA_LEFT), ("cell_center", TA_CENTER), ("cell_right", TA_RIGHT)]:
         s[name] = ParagraphStyle(
             f"{name}_intel", parent=base["Normal"],
-            fontName="Helvetica", fontSize=8, textColor=TEXT_COLOR,
+            fontName="Helvetica", fontSize=8.5, textColor=TEXT_COLOR,
             leading=10, alignment=align,
         )
     s["cell_header"] = ParagraphStyle(
         "ch_intel", parent=base["Normal"],
-        fontName="Helvetica-Bold", fontSize=8, textColor=INK,
+        fontName="Helvetica-Bold", fontSize=8.5, textColor=INK,
         leading=10, alignment=TA_LEFT,
     )
     s["cell_header_center"] = ParagraphStyle(
         "chc_intel", parent=base["Normal"],
-        fontName="Helvetica-Bold", fontSize=8, textColor=INK,
+        fontName="Helvetica-Bold", fontSize=8.5, textColor=INK,
         leading=10, alignment=TA_CENTER,
     )
     s["cell_header_right"] = ParagraphStyle(
         "chr_intel", parent=base["Normal"],
-        fontName="Helvetica-Bold", fontSize=8, textColor=INK,
+        fontName="Helvetica-Bold", fontSize=8.5, textColor=INK,
         leading=10, alignment=TA_RIGHT,
     )
 
@@ -671,6 +675,81 @@ def _build_cover(data: dict, styles: dict) -> list:
     return el
 
 
+def _build_funil(data: dict, styles: dict) -> list:
+    """Build visual funnel explaining the filtering pipeline."""
+    el: list = []
+    estatisticas = data.get("estatisticas", {})
+    top20 = data.get("top20", [])
+
+    total_bruto = estatisticas.get("total_bruto", len(data.get("editais", [])))
+    total_compat = estatisticas.get("total_cnae_compativel", 0)
+    total_dentro = estatisticas.get("total_dentro_capacidade", total_compat)
+    total_nao_expirados = estatisticas.get("total_nao_expirados", total_dentro)
+    total_analisados = estatisticas.get("total_analisados_profundidade", 20)
+    total_recomendados = len(top20)
+
+    empresa = data.get("empresa", {})
+    ufs = ", ".join(data.get("busca", {}).get("ufs", []))
+    dias = data.get("busca", {}).get("dias", 30)
+
+    el.append(Spacer(1, 6 * mm))
+    el.append(Paragraph("Metodologia de Seleção", styles["h2"]))
+    el.append(Spacer(1, 2 * mm))
+
+    avail = PAGE_WIDTH - 2 * MARGIN
+
+    # Funnel rows: [count, description, detail]
+    funnel_steps = [
+        (str(total_bruto), "editais publicados", f"PNCP — {ufs} — últimos {dias} dias"),
+        (str(total_compat), "compatíveis com CNAE", f"filtro por {len(empresa.get('cnaes', []) or [''])} códigos de atividade"),
+        (str(total_dentro), "dentro da capacidade", f"limite: {_currency_short(empresa.get('capital_social', 0) * 10)} (10× capital social)"),
+        (str(total_nao_expirados), "com prazo vigente", "excluídos editais encerrados ou expirados"),
+        (str(total_analisados), "analisados em profundidade", "documentos baixados e revisados individualmente"),
+        (str(total_recomendados), "RECOMENDADOS", "viabilidade técnica e econômica confirmada"),
+    ]
+
+    rows = []
+    for count, label, detail in funnel_steps:
+        rows.append([
+            Paragraph(f"<b>{count}</b>", ParagraphStyle("fc", fontName="Times-Bold", fontSize=14, textColor=INK, alignment=TA_RIGHT, leading=18)),
+            Paragraph(f"<b>{label}</b>", ParagraphStyle("fl", fontName="Helvetica", fontSize=9, textColor=TEXT_COLOR, leading=12)),
+            Paragraph(detail, ParagraphStyle("fd", fontName="Helvetica", fontSize=7.5, textColor=TEXT_SECONDARY, leading=10)),
+        ])
+
+    # Arrow rows between steps
+    final_rows = []
+    for i, row in enumerate(rows):
+        final_rows.append(row)
+        if i < len(rows) - 1:
+            final_rows.append([
+                Paragraph("", styles["cell"]),
+                Paragraph("↓", ParagraphStyle("arrow", fontName="Helvetica", fontSize=8, textColor=TEXT_MUTED, alignment=TA_LEFT, leading=10)),
+                Paragraph("", styles["cell"]),
+            ])
+
+    col_widths = [45, avail * 0.35, avail - 45 - avail * 0.35]
+    t = Table(final_rows, colWidths=col_widths)
+    t.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING", (0, 0), (0, -1), 0),
+        ("RIGHTPADDING", (0, 0), (0, -1), 8),
+        # Last row highlight (green background)
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8F5E9")),
+        ("ROUNDEDCORNERS", [0, 0, 0, 0]),
+    ]))
+    el.append(t)
+
+    el.append(Spacer(1, 3 * mm))
+    el.append(Paragraph(
+        "<i>A planilha Excel contém todos os editais compatíveis com a empresa para análise própria.</i>",
+        styles["italic_note"],
+    ))
+
+    return el
+
+
 def _build_sumario_executivo(data: dict, styles: dict) -> list:
     """Page 2: Sumário Executivo."""
     el: list = []
@@ -683,7 +762,7 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
     # Metrics row — 4 big numbers
     total_compat = estatisticas.get("total_cnae_compativel", len(data.get("editais", [])))
     dentro_capacidade = estatisticas.get("total_dentro_capacidade", total_compat)
-    analisados = len(top20)
+    recomendados = len(top20)
 
     valor_total = sum(_safe_float(e.get("valor_estimado")) for e in top20)
 
@@ -692,8 +771,8 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
     metrics_row = [[
         _metric_cell(str(total_compat), "Compatíveis com a Empresa", styles),
         _metric_cell(str(dentro_capacidade), "Dentro da Capacidade", styles),
-        _metric_cell(str(analisados), "Analisados em Profundidade", styles),
-        _metric_cell(_currency_short(valor_total), "Valor Total Analisado", styles),
+        _metric_cell(str(recomendados), "Recomendados", styles),
+        _metric_cell(_currency_short(valor_total), "Valor Total Recomendado", styles),
     ]]
     metrics_t = Table(metrics_row, colWidths=[col_w, col_w, col_w, col_w])
     metrics_t.setStyle(TableStyle([
@@ -712,11 +791,16 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
             if paragraph:
                 el.append(Paragraph(_s(paragraph), styles["body"]))
     else:
+        _v_foram = "Foi identificada" if total_compat == 1 else "Foram identificadas"
+        _n_oport = _plural(total_compat, "oportunidade compatível", "oportunidades compatíveis")
+        _n_dentro = _plural(dentro_capacidade, "está", "estão")
+        _v_rec = _plural(recomendados, "é recomendada", "são recomendadas")
+        _n_rec = _plural(recomendados, "oportunidade", "oportunidades")
         el.append(Paragraph(
-            f"Foram identificadas <b>{total_compat}</b> oportunidades compatíveis com as atividades da empresa. "
-            f"Destas, <b>{dentro_capacidade}</b> estão dentro da capacidade econômico-financeira. "
-            f"<b>{analisados}</b> foram analisados em profundidade, totalizando <b>{_currency_short(valor_total)}</b> "
-            f"em valor estimado.",
+            f"{_v_foram} <b>{total_compat}</b> {_n_oport} com as atividades da empresa. "
+            f"Destas, <b>{dentro_capacidade}</b> {_n_dentro} dentro da capacidade econômico-financeira. "
+            f"Após análise de documentos e viabilidade, <b>{recomendados}</b> {_n_rec} {_v_rec} "
+            f"para participação, totalizando <b>{_currency_short(valor_total)}</b> em valor estimado.",
             styles["body"],
         ))
 
@@ -741,11 +825,11 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
             Paragraph("Objeto", styles["cell_header"]),
             Paragraph("Valor", styles["cell_header_right"]),
             Paragraph("UF", styles["cell_header_center"]),
-            Paragraph("Abertura", styles["cell_header_center"]),
+            Paragraph("Prazo", styles["cell_header_center"]),
         ]
         rows = [header]
         for idx, ed in enumerate(top5, 1):
-            link = _fix_pncp_link(ed.get("link") or ed.get("link_edital", ""))
+            link = _fix_pncp_link(ed.get("link_pncp") or ed.get("link") or ed.get("link_edital", ""))
             obj_text = _smart_trunc(ed.get("objeto", ""), 55)
             if link:
                 obj_text = f'<a href="{link}" color="#1a56db">{obj_text}</a>'
@@ -754,7 +838,7 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
                 Paragraph(obj_text, styles["cell"]),
                 Paragraph(_currency_short(ed.get("valor_estimado")), styles["cell_right"]),
                 Paragraph(_s(ed.get("uf", "")), styles["cell_center"]),
-                Paragraph(_date(ed.get("data_abertura") or ed.get("data_publicacao")), styles["cell_center"]),
+                Paragraph(_date(ed.get("data_encerramento_proposta") or ed.get("data_abertura_proposta") or ed.get("data_abertura") or ed.get("data_publicacao")), styles["cell_center"]),
             ])
         widths = [20, avail - 20 - 70 - 30 - 55, 70, 30, 55]
         el.append(_three_rule_table(rows, widths))
@@ -774,6 +858,8 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
         "QualitySeal", parent=styles["caption"],
         textColor=seal_color, fontSize=7,
     )))
+
+    el.extend(_build_funil(data, styles))
 
     el.append(PageBreak())
     return el
@@ -1016,7 +1102,7 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
 
     # Value + date line
     valor = _currency(ed.get("valor_estimado"))
-    data_abertura = _date(ed.get("data_abertura") or ed.get("data_publicacao"))
+    prazo_proposta = _date(ed.get("data_encerramento_proposta") or ed.get("data_abertura_proposta") or ed.get("data_abertura") or ed.get("data_publicacao"))
 
     # Status temporal badge
     status_t = ed.get("status_temporal", "")
@@ -1033,7 +1119,7 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
         status_badge = '<font color="#8896A6">Sem data de encerramento publicada — consultar edital</font>'
 
     elements.append(Paragraph(
-        f"Valor Estimado: <b>{valor}</b> | Abertura: <b>{data_abertura}</b> | {status_badge}",
+        f"Valor Estimado: <b>{valor}</b> | Prazo Proposta: <b>{prazo_proposta}</b> | {status_badge}",
         styles["edital_meta"],
     ))
 
@@ -1095,13 +1181,7 @@ def _build_edital_detail(idx: int, ed: dict, styles: dict) -> list:
             styles["edital_meta"],
         ))
 
-    # Clickable link
-    link = _fix_pncp_link(ed.get("link") or ed.get("link_edital", ""))
-    if link:
-        elements.append(Paragraph(
-            f'Link: <a href="{link}" color="#1a56db">{_trunc(link, 70)}</a>',
-            styles["edital_link"],
-        ))
+    # Link is already in the clickable title — no standalone link needed
 
     # --- Competitive Intelligence ---
     comp_intel = ed.get("competitive_intel", {})

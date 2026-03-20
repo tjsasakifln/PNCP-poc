@@ -335,7 +335,9 @@ def gate4_completeness(
         "missing_fields": [],
     }
 
-    is_sancionada = bool(empresa.get("sancionada") or empresa.get("sancoes"))
+    sancoes = empresa.get("sancoes") or {}
+    has_active_sanction = any(v for v in sancoes.values()) if isinstance(sancoes, dict) else bool(sancoes)
+    is_sancionada = bool(empresa.get("sancionada")) or has_active_sanction
 
     for idx, edital in enumerate(top20):
         analise = edital.get("analise") or {}
