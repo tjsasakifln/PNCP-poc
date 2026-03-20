@@ -7,10 +7,15 @@ Zero ruido. Zero perda de oportunidades. Zero incerteza no relatorio.
 Utiliza TODOS os CNAEs da empresa (principal + secundarios) para maxima cobertura.
 
 **Entregaveis:**
-1. `docs/intel/intel-{CNPJ}-{razao-slug}-{YYYY-MM-DD}.xlsx` — Planilha completa com TODOS os editais (inclui distancia, custo, ROI)
-2. `docs/intel/intel-{CNPJ}-{razao-slug}-{YYYY-MM-DD}.pdf` — Relatorio estrategico dos top 20 RECOMENDADOS (max 15 paginas)
+1. `docs/intel/intel-{CNPJ}-{razao-slug}-{YYYY-MM-DD}.xlsx` — Planilha com TODAS as oportunidades compativeis (sem ruido — zero editais fora do setor)
+2. `docs/intel/intel-{CNPJ}-{razao-slug}-{YYYY-MM-DD}.pdf` — Relatorio estrategico dos 20 editais analisados (max 15 paginas)
 
-**Principio:** O relatorio e fonte de CLAREZA, nunca de duvida. Cada gate tem autonomia para demandar reexecucao de etapas anteriores.
+**Principios:**
+- O relatorio e fonte de CLAREZA, nunca de duvida
+- Cada gate tem autonomia para demandar reexecucao de etapas anteriores
+- **O top20 DEVE conter 20 editais genuinamente compativeis analisados.** Se um edital e excluido por incompatibilidade semantica (nao pertence ao setor da empresa), o proximo elegivel (#21, #22...) entra e passa pelo pipeline completo (Steps 5-7 + Gates 3-4). Maximo 3 rodadas de substituicao.
+- A recomendacao (PARTICIPAR / NAO PARTICIPAR) e resultado da analise, NAO criterio de exclusao do top20. Editais NAO PARTICIPAR por motivos legitimos (prazo, acervo, distancia) permanecem — o cliente precisa dessa informacao.
+- O cliente NUNCA ve editais fora do setor. Editais de medicamentos, alimentacao, TI, etc. sao filtrados antes de qualquer output.
 
 ---
 
@@ -99,32 +104,27 @@ O `intel-collect.py` calcula `status_temporal` para cada edital:
 
 **Objetivo:** Garantir que NENHUM edital incompativel chegue ao top20.
 
-### Step 3 — Gate de Compatibilidade
+### Step 3 — Validacao Semantica (Gate 2)
 
-**Processo em duas etapas:**
+**O `intel-collect.py` agora faz a maior parte do trabalho:**
+1. Exclusion patterns eliminam editais obviamente incompativeis (medicamentos, alimentacao, TI, etc.)
+2. Classificador heuristico secundario resolve os `needs_llm_review` restantes
+3. Resultado: `needs_llm_review = 0` — todos classificados automaticamente
 
-**Etapa A — Gate de Ruido (editais `needs_llm_review`):**
-Ler o JSON. Para editais marcados com `needs_llm_review = true`:
-- Ler o campo `objeto`
-- Considerar o CNAE da empresa (codigo + descricao)
-- Decidir: COMPATIVEL ou INCOMPATIVEL
-- Criterio conservador: na duvida, INCOMPATIVEL (zero ruido > zero perda)
-- Salvar JSON atualizado
-
-**Etapa B — Validacao Semantica dos Top 40:**
-Apos a etapa A, identificar os **top 40 editais por valor** (compativeis + dentro da capacidade + NAO EXPIRADOS).
-Para cada um, validar que o `objeto` e genuinamente compativel com a atividade da empresa.
+**Neste step, validar os top 30 candidatos (por `_opportunity_score`):**
+Para cada um, confirmar que o `objeto` e genuinamente compativel com a atividade da empresa.
 
 Criterios de INCOMPATIBILIDADE (rejeitar imediatamente):
 - Software/TI/ERP/sistemas quando empresa e de construcao
 - Alimentacao/refeicoes quando empresa e de engenharia
 - Limpeza/conservacao quando empresa e de obras
 - Concessoes de servico publico (Zona Azul, iluminacao, transporte) quando empresa e construtora
-- Obras em UFs distantes (>1000 km) sem justificativa estrategica
+- Construcao naval/lanchas quando empresa e de engenharia civil
+- Equipamentos militares especializados fora do escopo
 
-Resultado: lista limpa de candidatos ao top20, sem falsos positivos.
+Resultado: lista limpa de candidatos ao top20+backlog, sem falsos positivos.
 
-**Autonomia do Gate:** Se >10 dos 40 candidatos forem eliminados, expandir para top 60 e revalidar.
+**Autonomia do Gate:** Se >10 dos 30 candidatos forem eliminados, expandir para top 50 e revalidar.
 
 ---
 
@@ -141,16 +141,18 @@ Verificar: arquivo gerado, tamanho, contagem de linhas.
 ### Step 5 — Download e Extracao de Documentos
 
 ```bash
-python scripts/intel-extract-docs.py --input {DATA_JSON} --top 20
+python scripts/intel-extract-docs.py --input {DATA_JSON} --top 30
 ```
 
+**IMPORTANTE:** Extrair documentos para **top 30** (50% buffer), nao apenas 20. Isso garante que quando editais forem excluidos por incompatibilidade semantica na analise, ja existem substitutos com documentos extraidos prontos para analise imediata.
+
 O script automaticamente:
-1. Filtra top 20 editais compativeis dentro da capacidade, **excluindo EXPIRADOS**
+1. Usa `_opportunity_score` para ranking (valor x proximidade x urgencia), excluindo EXPIRADOS e SESSAO_REALIZADA
 2. Prioriza documentos por relevancia (edital > TR > planilha > outros)
 3. Baixa ate 3 documentos por edital (max 50MB cada)
 4. Extrai texto: PDF (PyMuPDF + OCR fallback), ZIP/RAR (descompacta recursivamente), XLS/XLSX (openpyxl/xlrd)
 5. Calcula `extraction_quality` por edital: COMPLETO / PARCIAL / INSUFICIENTE / VAZIO
-6. Salva texto em `editais[].texto_documentos` e cria array `top20` no JSON
+6. Salva texto em `editais[].texto_documentos` e cria array `top20` (primeiros 20) + `_backlog` (posicoes 21-30) no JSON
 
 ---
 
@@ -328,15 +330,18 @@ Salvar `resumo_executivo` e `proximos_passos` no JSON.
 
 ---
 
-### Step 7.5 — Filtro Pos-Analise (OBRIGATORIO)
+### Step 7.5 — Substituicao por Incompatibilidade (ITERATIVO)
 
-Apos a analise e validacao pelo Gate 4:
-- **REMOVER do top20** editais com `recomendacao_acao = "NAO PARTICIPAR"`
-- Substituir slots removidos pelos proximos editais elegiveis
-- Se substituicao necessaria, rodar Steps 5-7 + Gate 3-4 para os novos editais.
-**LIMITE:** Maximo 2 rodadas de substituicao. Se apos 2 rodadas o top20 tiver menos de 20 editais, aceitar o top20 com o numero disponivel.
+Apos a analise:
+1. **Identificar editais INCOMPATIVEIS** no top20 — editais que NAO pertencem ao setor da empresa e entraram por falha do gate CNAE (ex: lanchas militares para construtora, TI para engenharia civil, projetos farmaceuticos para empresa de obras).
+2. **NAO REMOVER editais NAO PARTICIPAR por motivos legitimos** — prazo curto, acervo especifico, distancia inviavel. Estes PERMANECEM no top20 porque o cliente precisa saber POR QUE nao participar.
+3. **Substituir slots de incompativeis** pelos proximos elegiveis do `_backlog` (posicoes 21-30, ja com documentos extraidos).
+4. Para cada substituto: rodar analise (Steps 6-7) + Gates 3-4.
+5. Se o backlog se esgotar e ainda faltar editais, expandir: `python scripts/intel-extract-docs.py --input {DATA_JSON} --top 40 --preserve-top20`
 
-**O relatorio PDF contem APENAS editais com recomendacao PARTICIPAR.**
+**LIMITE:** Maximo 3 rodadas de substituicao. Se apos 3 rodadas o top20 tiver menos de 20, aceitar com o numero disponivel.
+
+**O relatorio PDF contem TODOS os 20 editais analisados — tanto PARTICIPAR quanto NAO PARTICIPAR com justificativa.**
 
 ### Step 7.6 — Adendo: Oportunidades Acima da Capacidade (via Consorcio)
 
@@ -353,8 +358,9 @@ Se houver editais relevantes ACIMA da capacidade 10x que seriam excelentes oport
 
 **Validacoes automaticas (executadas pelo `intel-report.py`):**
 1. Nenhum edital EXPIRADO no relatorio
-2. Nenhum edital com recomendacao "NAO PARTICIPAR" no relatorio
+2. Nenhum edital semanticamente incompativel no relatorio (editais fora do setor da empresa)
 3. Todos os editais tem `data_sessao` preenchida ou `status_temporal` definido
+4. Top20 tem exatamente 20 editais (ou maximo disponivel apos 3 rodadas de substituicao)
 4. `proximos_passos` ordenados por urgencia (data mais proxima primeiro)
 5. Nenhum proximo passo contem "verificar" ou "buscar"
 6. Todas as datas em `proximos_passos` sao futuras
@@ -378,10 +384,11 @@ python scripts/intel-report.py --input {DATA_JSON} --output {PDF_FILE}
 ### Step 9 — Report Results
 
 Informar ao usuario:
-- Excel: `{EXCEL_FILE}` — {N} editais ({M} compativeis CNAE, {X} expirados excluidos)
-- PDF: `{PDF_FILE}` — Analise de {K} oportunidades recomendadas (completude: XX%)
+- Excel: `{EXCEL_FILE}` — {N} oportunidades compativeis com o perfil da empresa
+- PDF: `{PDF_FILE}` — Analise de 20 editais ({K} PARTICIPAR, {L} NAO PARTICIPAR com justificativa, completude: XX%)
 - JSON: `{DATA_JSON}`
-- Resumo: top 3 oportunidades com valor, prazo, e status temporal
+- Resumo: top 3 oportunidades PARTICIPAR com valor, prazo, e status temporal
+- Destaques: editais NAO PARTICIPAR mais relevantes e motivo (para contexto estrategico)
 
 ---
 
@@ -393,11 +400,11 @@ Informar ao usuario:
 4. **NUNCA incluir editais EXPIRADOS** — nem no top20, nem no relatorio
 5. **NUNCA incluir editais acima da capacidade 10x no top 20** — apenas no adendo de consorcio
 6. **NUNCA incluir duplicatas** — dedup por orgao/ano/sequencial e por similaridade de objeto+valor
-7. **NUNCA incluir no relatorio editais com recomendacao "NAO PARTICIPAR"** — apenas na planilha
+7. **Editais NAO PARTICIPAR por motivo legitimo PERMANECEM no relatorio** com justificativa clara. So sao removidos editais que entraram por erro do gate (incompatibilidade semantica com o setor).
 8. **NUNCA usar "VERIFICAR" como recomendacao** — PARTICIPAR ou NAO PARTICIPAR, sempre
 9. **NUNCA usar palavras proibidas** — "verificar", "possivelmente", "buscar edital", "nao detalhado", "a confirmar"
-10. **Planilha contem TODOS os editais** — sem filtro de valor/viabilidade
-11. **PDF contem apenas editais RECOMENDADOS** dentro da capacidade
+10. **Planilha contem APENAS oportunidades compativeis** — zero ruido (sem editais fora do setor)
+11. **PDF contem os 20 editais analisados** — PARTICIPAR e NAO PARTICIPAR com justificativa
 12. Se download de documentos falhar: marcar "Analise limitada — edital principal nao disponivel para download"
 13. Se PyMuPDF/OCR nao instalado: informar o usuario e prosseguir sem extracao (analise limitada ao objeto)
 14. **Top 10 editais no PDF** (max 15 paginas). Se a empresa tem >10 editais PARTICIPAR, priorizar por valor e incluir os demais como lista resumida (1 linha por edital). O Excel contem a lista completa.

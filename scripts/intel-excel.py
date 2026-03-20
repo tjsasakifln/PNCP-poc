@@ -524,144 +524,6 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
         ws.append(total_row)
 
 
-def _build_todos_editais(wb: Workbook, items: list[dict], capacity_10x: float | None):
-    """Build Sheet 2: Todos os Editais — lightweight reference sheet with all items (write-only mode)."""
-    ws = wb.create_sheet("Todos os Editais")
-    st = _make_styles()
-
-    # Lightweight columns: Nº, Objeto, Órgão, UF, Município, Valor, Modalidade, Compatível, Link PNCP
-    TODOS_COLS = [
-        ("N\u00ba", 5, "center"),
-        ("Objeto", 55, "left"),
-        ("\u00d3rg\u00e3o", 35, "left"),
-        ("UF", 5, "center"),
-        ("Munic\u00edpio", 20, "left"),
-        ("Valor Estimado", 18, "right"),
-        ("Modalidade", 20, "left"),
-        ("Compat\u00edvel", 12, "center"),
-        ("Link PNCP", 12, "center"),
-    ]
-
-    for col_idx, (_, width, _) in enumerate(TODOS_COLS, start=1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-    ws.freeze_panes = "A2"
-
-    # Header row
-    header_row = []
-    for header, _, _ in TODOS_COLS:
-        c = _woc(
-            ws,
-            value=header,
-            font=st["header_font"],
-            fill=st["header_fill"],
-            alignment=st["header_align"],
-            border=st["thin_border"],
-        )
-        header_row.append(c)
-    ws.append(header_row)
-
-    # Sort by valor desc (None last)
-    def sort_key(it):
-        v = _safe_float(it.get("valor_estimado"))
-        return v if v is not None else -1
-
-    sorted_items = sorted(items, key=sort_key, reverse=True)
-
-    for row_num, item in enumerate(sorted_items, start=2):
-        data_idx = row_num - 1
-        is_alt = (row_num % 2) == 0
-        row_fill = st["alt_fill"] if is_alt else st["no_fill"]
-
-        valor = _safe_float(item.get("valor_estimado"))
-        cnae_label = _cnae_label(item)
-
-        def _dc(col_idx, value=None, font=None, fill=None, number_format=None):
-            _, _, h_align = TODOS_COLS[col_idx - 1]
-            eff_fill = fill if fill is not None else row_fill
-            return _woc(
-                ws,
-                value=value,
-                font=font,
-                fill=eff_fill,
-                alignment=Alignment(horizontal=h_align, vertical="top", wrap_text=True),
-                border=st["thin_border"],
-                number_format=number_format,
-            )
-
-        link_pncp = item.get("link_pncp", item.get("link", ""))
-
-        row = []
-        row.append(_dc(1, value=data_idx))
-        row.append(_dc(2, value=_sanitize(item.get("objeto", item.get("objetoCompra", "")))))
-        row.append(_dc(3, value=_sanitize(item.get("orgao", item.get("nomeOrgao", "")))))
-        row.append(_dc(4, value=item.get("uf", "")))
-        row.append(_dc(5, value=_sanitize(item.get("municipio", ""))))
-
-        if valor is not None:
-            row.append(_dc(6, value=valor, number_format=CURRENCY_FMT))
-        else:
-            row.append(_dc(6, value="Sigiloso"))
-
-        row.append(_dc(7, value=_sanitize(
-            item.get("modalidade_nome", item.get("modalidadeNome", ""))
-        )))
-
-        if cnae_label == "SIM":
-            cnae_font = st["green_font"]
-        elif cnae_label == "N\u00c3O":
-            cnae_font = st["red_font"]
-        else:
-            cnae_font = st["amber_font"]
-        row.append(_dc(8, value=cnae_label, font=cnae_font))
-
-        if link_pncp:
-            safe_url = str(link_pncp).replace('"', '%22')
-            link_val = f'=HYPERLINK("{safe_url}","Abrir")'
-            row.append(_dc(9, value=link_val, font=st["link_font"]))
-        else:
-            row.append(_dc(9, value=""))
-
-        ws.append(row)
-
-    # Total row
-    if sorted_items:
-        total_row_idx = len(sorted_items) + 2
-        total_row = []
-        for col_idx in range(1, len(TODOS_COLS) + 1):
-            _, _, h_align = TODOS_COLS[col_idx - 1]
-            if col_idx == 1:
-                c = _woc(
-                    ws, value=len(sorted_items),
-                    font=st["bold_font"],
-                    border=st["thin_border"],
-                    alignment=Alignment(horizontal=h_align, vertical="top"),
-                )
-            elif col_idx == 5:
-                c = _woc(
-                    ws, value="TOTAL:",
-                    font=st["bold_font"],
-                    border=st["thin_border"],
-                    alignment=Alignment(horizontal=h_align, vertical="top"),
-                )
-            elif col_idx == 6:
-                c = _woc(
-                    ws, value=f"=SUM(F2:F{total_row_idx - 1})",
-                    font=st["bold_font"],
-                    border=st["thin_border"],
-                    number_format=CURRENCY_FMT,
-                    alignment=Alignment(horizontal=h_align, vertical="top"),
-                )
-            else:
-                c = _woc(
-                    ws, value=None,
-                    border=st["thin_border"],
-                    alignment=Alignment(horizontal=h_align, vertical="top"),
-                )
-            total_row.append(c)
-        ws.append(total_row)
-
-
 def _build_resumo_uf(wb: Workbook, items: list[dict]):
     """Build Sheet 2: Resumo por UF (write-only mode)."""
     ws = wb.create_sheet("Resumo por UF")
@@ -868,15 +730,13 @@ def _build_metadata(wb: Workbook, data: dict, items: list[dict]):
         ("Per\u00edodo", periodo_str),
         ("Dias", dias),
         ("Setor Mapeado", setor),
-        ("Total Bruto (PNCP)", total_bruto),
-        ("Total Compat\u00edvel com a Empresa", compat_count),
-        ("Total Incompat\u00edvel", incompat_count),
-        ("Valor Total Compat\u00edvel", _format_brl(valor_compat)),
+        ("Editais Analisados", total_bruto),
+        ("Oportunidades Identificadas", compat_count),
+        ("Valor Total das Oportunidades", _format_brl(valor_compat)),
         ("Gerado em", datetime.now().strftime("%d/%m/%Y %H:%M:%S")),
         ("Script", "intel-collect.py + intel-enrich.py + intel-excel.py"),
         ("", ""),  # separator
-        ("NOTA - Aba 'Oportunidades'", f"Exibe apenas os {compat_count} editais com CNAE compativel (sem falsos positivos). Use esta aba para priorizar propostas."),
-        ("NOTA - Aba 'Todos os Editais'", f"Exibe todos os {total} editais encontrados (compatíveis e incompatíveis). Use como referência ou para revisar a classificação CNAE."),
+        ("NOTA - Aba 'Oportunidades'", f"{compat_count} oportunidades identificadas (de {total_bruto} editais analisados em {ufs_str}). CNAE compativel + prazo vigente."),
     ]
 
     for label, value in rows:
@@ -942,16 +802,13 @@ def generate_excel(data: dict, output_path: str) -> str:
     # Sheet 1: Oportunidades (only CNAE-compatible items)
     _build_oportunidades(wb, compat_items, capacity_10x)
 
-    # Sheet 2: Todos os Editais (complete list for reference)
-    _build_todos_editais(wb, items, capacity_10x)
-
-    # Sheet 3: Resumo por UF
+    # Sheet 2: Resumo por UF
     _build_resumo_uf(wb, items)
 
-    # Sheet 4: Resumo por Modalidade
+    # Sheet 3: Resumo por Modalidade
     _build_resumo_modalidade(wb, items)
 
-    # Sheet 5: Metadata
+    # Sheet 4: Metadata
     _build_metadata(wb, data, items)
 
     # Save
@@ -1017,11 +874,8 @@ def main():
         if _cnae_label(i) == "SIM" and str(i.get("status_temporal", "")).upper() != "EXPIRADO"
     ) if isinstance(items, list) else 0
 
-    print(f"Excel gerado: {abs_path} ({n} editais totais, {size_kb:.0f}KB)")
-    print(f"  Aba 'Oportunidades': {compat} compativeis (CNAE + prazo vigente)")
-    print(f"  Aba 'Todos os Editais': {n} editais completos (referencia)")
-    print(f"  Expirados excluidos da aba principal: {sum(1 for i in items if _cnae_label(i) == 'SIM' and str(i.get('status_temporal', '')).upper() == 'EXPIRADO') if isinstance(items, list) else 0}")
-    print(f"  Abas: Oportunidades, Todos os Editais, Resumo por UF, Resumo por Modalidade, Metadata")
+    print(f"Excel gerado: {abs_path} ({compat} oportunidades, {size_kb:.0f}KB)")
+    print(f"  Abas: Oportunidades, Resumo por UF, Resumo por Modalidade, Metadata")
 
 
 if __name__ == "__main__":

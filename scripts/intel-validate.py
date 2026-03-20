@@ -474,7 +474,7 @@ def gate5_coherence(
     top20: list[dict],
     do_fix: bool = False,
 ) -> dict:
-    """Validate report coherence: no expired, no NAO PARTICIPAR, completeness threshold."""
+    """Validate report coherence: no expired, no sector-incompatible, completeness threshold."""
     result: dict[str, Any] = {
         "passed": True,
         "campos_completos_pct": 0,
@@ -498,23 +498,18 @@ def gate5_coherence(
             else:
                 _fail(issue)
 
-    # 2. No NAO PARTICIPAR recommendations in top20
+    # 2. NAO PARTICIPAR por motivo legitimo PERMANECE no top20 (cliente precisa da informacao)
+    #    So remove se for incompatibilidade semantica (edital fora do setor)
+    nao_participar_count = 0
     for idx, edital in enumerate(top20):
         if idx in indices_to_remove:
             continue
         analise = edital.get("analise") or {}
         rec = _normalize_text(str(analise.get("recomendacao_acao") or ""))
         if "nao participar" in rec:
-            eid = _edital_id(edital, idx)
-            issue = f"{eid}: NAO PARTICIPAR nao deveria estar no top20 do relatorio"
-            result["issues"].append(issue)
-            result["passed"] = False
-            if do_fix:
-                indices_to_remove.append(idx)
-                result["auto_fixed"].append(f"Removido NAO PARTICIPAR {eid}")
-                _fix(f"Removido NAO PARTICIPAR {eid}")
-            else:
-                _fail(issue)
+            nao_participar_count += 1
+    if nao_participar_count > 0:
+        _pass(f"{nao_participar_count} edital(is) NAO PARTICIPAR no top20 (mantidos com justificativa)")
 
     # 3. All tenders have data_sessao filled or status_temporal defined
     for idx, edital in enumerate(top20):

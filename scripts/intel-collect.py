@@ -127,6 +127,50 @@ SECTOR_DENSITY_OVERRIDES = {
     "demolicao": 0.005,
 }
 
+# Exclusion patterns applied BEFORE LLM review to reject obviously incompatible editais.
+# Any zero-keyword-match edital whose objeto matches one of these is rejected immediately
+# (cnae_compatible=False, needs_llm_review=False) without spending an LLM call.
+EXCLUSION_PATTERNS: list[tuple[str, re.Pattern]] = []
+_EXCLUSION_PATTERN_STRINGS: list[tuple[str, str]] = [
+    # Medical/Health
+    ("medical_health", r'(medicament|farmac|hospitalar|cirurg|laboratori|curativ|seringa|equipos|extensores|filtros.*processo.*254|luvas.*procedimento|aparelho.*medico|protese|ortese|implante.*medico|ventilador.*pulmonar|monitor.*multiparametr|desfibrilador|tomograf|ressonancia|ultrassom.*medico|endoscop|laparoscop|broncoscop|marcapasso|material.*hospitalar|rouparia.*hospitalar|colchoes.*hospitalar|camera.*mortuaria|servicos.*medicos|pediatria|ginecologia|anestesi|psiquiatr)'),
+    # Pharmaceuticals
+    ("pharmaceuticals", r'(valproato|acebrofilina|beclometasona|domperidona|alopurinol|brimonidina|omeprazol|losartana|metformina|insulina|dipirona|paracetamol|amoxicilina|azitromicina|\d+\s*mg\s*(comprimido|capsula|frasco|ampola|suspensao))'),
+    # Food/Nutrition
+    ("food_nutrition", r'(generos alimenticios|alimentacao.*escolar|merenda|refeicao|nutricao|carne.*embutido|leite.*derivado|hortifruti|padaria|alimento.*perecivel|kit.*lanche|cesta.*basica)'),
+    # Financial services
+    ("financial_services", r'(instituicao financeira|servicos bancarios|operacoes de credito|folha de pagamento.*banco|conta.*salario)'),
+    # IT/Software/Telecom
+    ("it_software_telecom", r'(software|sistema.{0,15}(informatica|gestao|erp|eletronico|gerenciamento de informac)|tecnologia da informacao|solucao hiperconverg|servidor.*rack|computador|notebook|impressora|scanner|red hat|jboss|subscricao|licenca.*software|outsourcing.*impressao|comunicacao multimidia|mpls|link.*dados|fibra optica.*rede|switch.*rede|roteador|firewall|storage|backup.*dados|datacenter|cloud.*computing)'),
+    # Surveillance/Security guards
+    ("surveillance_security_guards", r'(vigilancia.*patrimonial|controlador de acesso|vigia\b|porteiro|seguranca.*armada|monitoramento.*eletronico.*patrimon)'),
+    # Cleaning/Conservation
+    ("cleaning_conservation", r'(limpeza.{0,15}(asseio|conserva|predial|hospitalar)|servicos de conservacao e limpeza|coleta.{0,15}(residuo|lixo)|destinacao final.{0,15}(residuo|rcc|aterro))'),
+    # Vehicles/Fuel (purchase, not road construction)
+    ("vehicles_fuel", r'(aquisicao de (veiculo|automovel|caminhao|onibus|ambulancia|motocicleta)|combustivel|gasolina|diesel|etanol|gas liquefeito|lubrificante)'),
+    # Uniforms/Office
+    ("uniforms_office", r'(uniforme|fardamento|vestuario|material de escritorio|papelaria|toner|cartucho)'),
+    # Energy purchase (not infrastructure)
+    ("energy_purchase", r'(aquisicao de energia eletrica|contratacao.{0,20}energia eletrica.*varejista|locacao.*usina.*energia)'),
+    # Equipment purchase (not construction-related)
+    ("equipment_purchase", r'(equipamentos perifericos.*sistema|equipamentos especiais.*paassex|rolo compactador|retroescavadeira|pa carregadeira|motoniveladora|escavadeira hidraulica)'),
+    # Naval/Military specialized
+    ("naval_military", r'(construcao naval|lancha|embarcacao|navio|fragata|corveta|submarino)'),
+    # Pest control / mosquito
+    ("pest_control", r'(controle de (mosquit|pragas|vetores)|desinsetizacao|desratizacao)'),
+    # TV/Media operations
+    ("tv_media", r'(operacao.{0,15}(tv|televisao|radio|camera)|producao audiovisual)'),
+    # Kitchen equipment
+    ("kitchen_equipment", r'(equipamento.*cozinha industrial|balcao termico|fogao industrial|camera.*frigorifica.*cozinha)'),
+    # Specific medical equipment rental
+    ("medical_equipment_rental", r'(locacao.{0,20}equipamento.*medico|videolaparoscop|videobroncoscop)'),
+]
+for _pat_name, _pat_str in _EXCLUSION_PATTERN_STRINGS:
+    try:
+        EXCLUSION_PATTERNS.append((_pat_name, re.compile(_pat_str, re.IGNORECASE)))
+    except re.error as _e:
+        print(f"WARNING: Failed to compile exclusion pattern '{_pat_name}': {_e}", file=sys.stderr)
+
 
 # ============================================================
 # HELPERS
@@ -293,6 +337,17 @@ def _parse_pncp_item(item: dict, mod_code: int, mod_name: str, ufs: list[str]) -
                 status_temporal = "PLANEJAVEL"
         except (ValueError, TypeError):
             status_temporal = "SEM_DATA"
+
+    # Check if session (abertura) already happened — even if encerramento is still in the future
+    if status_temporal not in ("EXPIRADO",) and data_abertura_raw:
+        try:
+            ab_str = data_abertura_raw[:19]  # trim to YYYY-MM-DDTHH:MM:SS
+            dt_ab = datetime.fromisoformat(ab_str)
+            now_ab = datetime.now()
+            if dt_ab.replace(tzinfo=None) < now_ab.replace(tzinfo=None):
+                status_temporal = "SESSAO_REALIZADA"
+        except (ValueError, TypeError):
+            pass  # unparseable date — leave status_temporal unchanged
 
     return {
         "_id": f"{cnpj_clean}/{ano}/{seq}" if (cnpj_clean and ano and seq) else f"unknown/{uuid.uuid4().hex[:12]}",
@@ -522,6 +577,68 @@ def search_pncp_exhaustive(
 # STEP 4: CNAE KEYWORD GATE
 # ============================================================
 
+def classify_by_object_heuristic(objeto: str, cnae_principal_desc: str) -> str:
+    """
+    Secondary heuristic classifier for editais that didn't match keywords
+    but also didn't match exclusion patterns.
+    Returns: 'COMPATIVEL', 'INCOMPATIVEL', or 'NEEDS_REVIEW'
+    """
+    obj_lower = (objeto or '').lower()
+
+    # Strong compatibility signals (construction/engineering context)
+    strong_compat = re.compile(
+        r'(obra|construcao|reforma|ampliacao|restauracao|recuperacao|revitalizacao|'
+        r'pavimentacao|drenagem|terraplanagem|saneamento|urbanizacao|'
+        r'projeto (basico|executivo)|levantamento topografico|estudo geotecnico|'
+        r'fiscalizacao de obra|supervisao de obra|gerenciamento de obra|'
+        r'instalacoes (eletricas|hidraulicas|sanitarias)|'
+        r'impermeabilizacao|revestimento|alvenaria|concretagem|fundacao|'
+        r'estrutura metalica|cobertura|telhado|fachada|'
+        r'rede de (agua|esgoto|drenagem)|estacao (tratamento|elevatoria)|'
+        r'ponte|viaduto|passarela|muro de contencao|talude|'
+        r'sinalizacao (viaria|rodoviaria)|defensa|guard.?rail|'
+        r'CBUQ|massa asfaltica|base.*sub.?base|meio.?fio|sarjeta|boca.?de.?lobo)',
+        re.IGNORECASE
+    )
+
+    # Weak compatibility (could be construction but ambiguous)
+    weak_compat = re.compile(
+        r'(engenharia|servicos de engenharia|manutencao predial|'
+        r'conservacao de (logradouro|via|estrada)|'
+        r'iluminacao publica|semaforo|'
+        r'ar condicionado|climatizacao|elevador|'
+        r'pintura|vidracaria|serralheria|marcenaria)',
+        re.IGNORECASE
+    )
+
+    # Strong incompatibility signals (not construction)
+    strong_incompat = re.compile(
+        r'(consultoria (juridica|contabil|tributaria|financeira|ambiental)|'
+        r'assessoria (juridica|contabil)|auditoria|'
+        r'transporte (escolar|publico|coletivo|passageiros)|fretamento|'
+        r'seguro (predial|patrimonial|vida|saude|automovel)|'
+        r'telefonia|internet|banda larga|'
+        r'publicidade|propaganda|marketing|'
+        r'capacitacao|treinamento|curso|'
+        r'locacao de (imovel|sala|espaco|galpao|veiculo)|'
+        r'servico de copa|coffee break|buffet|catering)',
+        re.IGNORECASE
+    )
+
+    has_strong_compat = bool(strong_compat.search(obj_lower))
+    has_weak_compat = bool(weak_compat.search(obj_lower))
+    has_strong_incompat = bool(strong_incompat.search(obj_lower))
+
+    if has_strong_compat and not has_strong_incompat:
+        return 'COMPATIVEL'
+    if has_strong_incompat and not has_strong_compat:
+        return 'INCOMPATIVEL'
+    if has_weak_compat and not has_strong_incompat:
+        return 'COMPATIVEL'
+    # Default: conservative rejection (zero noise > zero loss)
+    return 'INCOMPATIVEL'
+
+
 def apply_cnae_keyword_gate(
     editais: list[dict],
     keywords: list[str],
@@ -562,7 +679,7 @@ def apply_cnae_keyword_gate(
         if compiled:
             per_cnae_incompat[prefix] = compiled
 
-    stats = {"compatible": 0, "incompatible": 0, "needs_llm": 0}
+    stats = {"compatible": 0, "incompatible": 0, "needs_llm": 0, "excluded_pattern": 0}
 
     for ed in editais:
         objeto = ed.get("objeto", "")
@@ -656,6 +773,46 @@ def apply_cnae_keyword_gate(
             "zero_keyword_match" if len(matched_kws) == 0 else f"low_density_{density:.4f}"
         )
 
+        # Exclusion pattern check: reject obviously incompatible editais BEFORE LLM review.
+        # Only applies to zero-keyword-match editais that would otherwise be sent to LLM.
+        if ed["needs_llm_review"]:
+            for _excl_name, _excl_pat in EXCLUSION_PATTERNS:
+                if _excl_pat.search(objeto_lower):
+                    ed["cnae_compatible"] = False
+                    ed["needs_llm_review"] = False
+                    ed["exclusion_reason"] = f"exclusion_pattern: {_excl_name}"
+                    stats["excluded_pattern"] += 1
+                    break
+
+        # Secondary heuristic classifier: resolve remaining needs_llm_review editais.
+        if ed["needs_llm_review"]:
+            _cnae_desc = ed.get("cnae_principal_descricao") or ""
+            _heuristic = classify_by_object_heuristic(objeto, _cnae_desc)
+            if _heuristic == 'COMPATIVEL':
+                ed["cnae_compatible"] = True
+                ed["needs_llm_review"] = False
+                ed["gate2_decision"] = {
+                    "compatible": True,
+                    "reason": "COMPATIVEL_HEURISTIC",
+                    "keyword_density": ed["keyword_density"],
+                    "match_keywords": ed["match_keywords"][:5],
+                    "timestamp": _today().isoformat(),
+                }
+                stats["compatible"] += 1
+            else:
+                ed["cnae_compatible"] = False
+                ed["needs_llm_review"] = False
+                ed["gate2_decision"] = {
+                    "compatible": False,
+                    "reason": "INCOMPATIVEL_HEURISTIC",
+                    "keyword_density": ed["keyword_density"],
+                    "match_keywords": ed["match_keywords"][:5],
+                    "timestamp": _today().isoformat(),
+                }
+                stats["incompatible"] += 1
+            stats["needs_llm_heuristic"] = stats.get("needs_llm_heuristic", 0) + 1
+            continue
+
         ed["gate2_decision"] = {
             "compatible": ed["cnae_compatible"],
             "reason": ed.get("exclusion_reason", "keyword_match" if ed["cnae_compatible"] else "low_density"),
@@ -671,9 +828,25 @@ def apply_cnae_keyword_gate(
             if ed["needs_llm_review"]:
                 stats["needs_llm"] += 1
 
-    print(f"\n  CNAE Gate: {stats['compatible']} compativeis, "
-          f"{stats['incompatible']} incompativeis, "
-          f"{stats['needs_llm']} precisam LLM review")
+    _heuristic_total = stats.get("needs_llm_heuristic", 0)
+    _heuristic_compat = sum(
+        1 for ed in editais
+        if ed.get("gate2_decision", {}).get("reason") == "COMPATIVEL_HEURISTIC"
+    )
+    _heuristic_incompat = _heuristic_total - _heuristic_compat
+    print()
+    print(
+        "  CNAE Gate: %d compativeis, %d incompativeis, "
+        "%d excluidos por padrao, %d precisam LLM review" % (
+            stats['compatible'], stats['incompatible'],
+            stats['excluded_pattern'], stats['needs_llm'],
+        )
+    )
+    if _heuristic_total:
+        print(f"  Heuristic classifier: {_heuristic_compat} COMPATIVEL, "
+              f"{_heuristic_incompat} INCOMPATIVEL "
+              f"(de {_heuristic_total} restantes)")
+        print(f"  Remaining needs_llm_review: 0")
 
 
 # ============================================================
@@ -1162,6 +1335,8 @@ def assemble_output(
         "estatisticas": {
             "total_bruto": len(editais) + source_meta.get("total_expirados_removidos", 0),
             "total_expirados_removidos": source_meta.get("total_expirados_removidos", 0),
+            "total_expirados_encerrados": source_meta.get("total_expirados_encerrados", 0),
+            "total_sessao_realizada": source_meta.get("total_sessao_realizada", 0),
             "total_apos_filtro_temporal": len(editais),
             "total_cnae_compativel": len(compatible),
             "total_cnae_incompativel": len(incompatible),
@@ -1703,10 +1878,15 @@ def main():
     # ── Step 3b: Remove expired tenders BEFORE any further processing ──
     n_before_expiry = len(editais)
     n_expirados = sum(1 for ed in editais if ed.get("status_temporal") == "EXPIRADO")
-    editais = [ed for ed in editais if ed.get("status_temporal") != "EXPIRADO"]
-    if n_expirados > 0:
-        print(f"\n  Filtro temporal: {n_expirados} expirados removidos de {n_before_expiry} editais ({len(editais)} restantes)")
-    source_meta["total_expirados_removidos"] = n_expirados
+    n_sessao_realizada = sum(1 for ed in editais if ed.get("status_temporal") == "SESSAO_REALIZADA")
+    editais = [ed for ed in editais if ed.get("status_temporal") not in ("EXPIRADO", "SESSAO_REALIZADA")]
+    n_removed = n_expirados + n_sessao_realizada
+    if n_removed > 0:
+        print(f"\n  Filtro temporal: {n_removed} removidos de {n_before_expiry} editais ({len(editais)} restantes) "
+              f"[{n_expirados} encerrados + {n_sessao_realizada} sessao realizada]")
+    source_meta["total_expirados_removidos"] = n_removed
+    source_meta["total_expirados_encerrados"] = n_expirados
+    source_meta["total_sessao_realizada"] = n_sessao_realizada
 
     # ── Step 4: CNAE keyword gate ──
     print(f"\n[4/7] Aplicando gate de keywords CNAE ({len(all_cnae_prefixes)} prefixos, {len(all_sector_keys)} setores)...")
@@ -1769,7 +1949,9 @@ def main():
     print(f"  RESULTADO")
     print(f"{'='*60}")
     print(f"  Total bruto:          {stats['total_bruto']}")
-    print(f"  Expirados removidos:  {stats['total_expirados_removidos']} (filtrados antes de tudo)")
+    _n_enc = stats.get("total_expirados_encerrados", stats["total_expirados_removidos"])
+    _n_sr = stats.get("total_sessao_realizada", 0)
+    print(f"  Expirados removidos:  {stats['total_expirados_removidos']} ({_n_enc} encerrados + {_n_sr} sessao realizada)")
     print(f"  Ativos analisados:    {stats['total_apos_filtro_temporal']}")
     print(f"  CNAE compativeis:     {stats['total_cnae_compativel']}")
     print(f"  CNAE incompativeis:   {stats['total_cnae_incompativel']}")

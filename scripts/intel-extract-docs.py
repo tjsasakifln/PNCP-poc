@@ -484,16 +484,51 @@ def _dedup_key(e: dict[str, Any]) -> str:
     return f"{uf}|{valor}|{obj[:100]}"
 
 
+def calculate_opportunity_score(edital: dict[str, Any], capacidade_10x: float) -> float:
+    """Score editais for top20 ranking. Higher = better opportunity."""
+    valor = edital.get('valor_estimado') or 0
+    dist_km = (edital.get('distancia') or {}).get('km')
+    status = edital.get('status_temporal', 'PLANEJAVEL')
+
+    # Base score = valor normalized to capacity
+    if capacidade_10x > 0:
+        base_score = min(valor / capacidade_10x, 1.0)
+    else:
+        base_score = 0
+
+    # Distance penalty
+    if dist_km is None:
+        dist_penalty = 0.15  # Unknown distance = moderate penalty
+    elif dist_km <= 100:
+        dist_penalty = 0.0
+    elif dist_km <= 300:
+        dist_penalty = 0.10
+    elif dist_km <= 500:
+        dist_penalty = 0.25
+    elif dist_km <= 700:
+        dist_penalty = 0.40
+    else:
+        dist_penalty = 0.60  # >700km = heavy penalty
+
+    # Temporal bonus
+    temporal_bonus = {'URGENTE': 0.10, 'IMINENTE': 0.05, 'PLANEJAVEL': 0.0, 'SEM_DATA': -0.05}.get(status, 0)
+
+    # Final score
+    score = base_score * (1 - dist_penalty) + temporal_bonus
+    return round(score, 4)
+
+
 def select_top_editais(
     editais: list[dict[str, Any]],
     capital_social: float,
     top_n: int,
 ) -> list[dict[str, Any]]:
     """
-    Filter editais by CNAE compatibility + valor capacity, dedup, sort by valor desc,
-    return top N.
+    Filter editais by CNAE compatibility + valor capacity, dedup, sort by opportunity
+    score (valor × proximity × urgency), return top N.
     """
-    capacidade = capital_social * 10
+    capacidade_10x = capital_social * 10
+    capacidade_3x = capital_social * 3
 
     candidates: list[dict[str, Any]] = []
     seen_keys: set[str] = set()
@@ -503,11 +538,17 @@ def select_top_editais(
         valor = e.get("valor_estimado")
         # STRICT capacity filter: only include if valor > 0 AND within capacity
         # valor == 0 or None means sigiloso — include as unknown
-        if valor is not None and valor > 0 and valor > capacidade:
+        if valor is not None and valor > 0 and valor > capacidade_10x:
             continue
         # Skip expired editais
         if e.get("status_temporal") == "EXPIRADO":
             continue
+        # Hard cutoff: >700km AND valor < capacidade_3x — exclude from top20
+        dist_km = (e.get('distancia') or {}).get('km')
+        if dist_km is not None and dist_km > 700:
+            v = valor or 0
+            if capacidade_3x > 0 and v < capacidade_3x:
+                continue
         # Dedup: skip if we've already seen this edital
         key = _dedup_key(e)
         if key in seen_keys:
@@ -515,8 +556,10 @@ def select_top_editais(
         seen_keys.add(key)
         candidates.append(e)
 
-    # Sort by valor desc; None/0 values (unknown) go to end
-    candidates.sort(key=lambda e: e.get("valor_estimado") or 0, reverse=True)
+    # Score and sort by opportunity score desc
+    for e in candidates:
+        e['_opportunity_score'] = calculate_opportunity_score(e, capacidade_10x)
+    candidates.sort(key=lambda e: e.get('_opportunity_score') or 0, reverse=True)
     return candidates[:top_n]
 
 
@@ -619,7 +662,21 @@ def main() -> None:
             print(f"JSON salvo: {output_path}")
             return
 
-        print(f"\nProcessando {len(top)} editais (top {args.top} por valor, capacidade R$ {capacidade:,.0f})")
+        print(f"\nProcessando {len(top)} editais (top {args.top} por score, capacidade R$ {capacidade:,.0f})")
+
+        # ── Print top scoring summary ──
+        print(f"\n  Top {len(top)} por score (valor x proximidade x urgencia):")
+        for rank, ed in enumerate(top, 1):
+            score = ed.get('_opportunity_score', 0)
+            valor_ed = ed.get('valor_estimado') or 0
+            municipio = ed.get('municipio') or ed.get('municipio_orgao') or '?'
+            uf_ed = ed.get('uf') or ''
+            loc = f"{municipio}/{uf_ed}" if uf_ed else municipio
+            dist_km = (ed.get('distancia') or {}).get('km')
+            dist_str = f"{dist_km:.0f}km" if dist_km is not None else "dist?"
+            status_ed = ed.get('status_temporal') or 'SEM_DATA'
+            valor_str = f"R${valor_ed/1e6:.0f}M" if valor_ed >= 1e6 else f"R${valor_ed/1e3:.0f}k" if valor_ed >= 1e3 else f"R${valor_ed:.0f}"
+            print(f"    #{rank} score={score:.2f} {valor_str} {loc} ({dist_str}, {status_ed})")
 
         # ── Process each edital ──
         for i, ed in enumerate(top, 1):
