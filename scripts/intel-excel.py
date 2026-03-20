@@ -932,8 +932,12 @@ def generate_excel(data: dict, output_path: str) -> str:
     # Reduces RAM from ~500MB to ~10MB for 8000+ rows.
     wb = Workbook(write_only=True)
 
-    # Split: compatible only for main sheet, all for reference sheet
-    compat_items = [it for it in items if _cnae_label(it) == "SIM"]
+    # Split: main sheet = compatible + not expired; reference = all
+    compat_items = [
+        it for it in items
+        if _cnae_label(it) == "SIM"
+        and str(it.get("status_temporal", "")).upper() != "EXPIRADO"
+    ]
 
     # Sheet 1: Oportunidades (only CNAE-compatible items)
     _build_oportunidades(wb, compat_items, capacity_10x)
@@ -1008,12 +1012,15 @@ def main():
     size_kb = os.path.getsize(abs_path) / 1024
     n = len(items) if isinstance(items, list) else 0
 
-    compat = sum(1 for i in items if _cnae_label(i) == "SIM") if isinstance(items, list) else 0
+    compat = sum(
+        1 for i in items
+        if _cnae_label(i) == "SIM" and str(i.get("status_temporal", "")).upper() != "EXPIRADO"
+    ) if isinstance(items, list) else 0
 
     print(f"Excel gerado: {abs_path} ({n} editais totais, {size_kb:.0f}KB)")
-    print(f"  Aba 'Oportunidades': {compat} compativeis CNAE (sem falsos positivos)")
+    print(f"  Aba 'Oportunidades': {compat} compativeis (CNAE + prazo vigente)")
     print(f"  Aba 'Todos os Editais': {n} editais completos (referencia)")
-    print(f"  Incompativeis CNAE: {n - compat}")
+    print(f"  Expirados excluidos da aba principal: {sum(1 for i in items if _cnae_label(i) == 'SIM' and str(i.get('status_temporal', '')).upper() == 'EXPIRADO') if isinstance(items, list) else 0}")
     print(f"  Abas: Oportunidades, Todos os Editais, Resumo por UF, Resumo por Modalidade, Metadata")
 
 
