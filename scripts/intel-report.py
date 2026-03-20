@@ -342,6 +342,85 @@ def _plural(n: int, singular: str, plural: str) -> str:
     return singular if n == 1 else plural
 
 
+# ============================================================
+# DETERMINISTIC RESUMO + PRÓXIMOS PASSOS (computed from data)
+# ============================================================
+
+def _generate_resumo(empresa: dict, top20_pdf: list[dict], stats: dict) -> str:
+    """Generate resumo executivo deterministically from data."""
+    participar = [e for e in top20_pdf if (e.get('analise') or {}).get('recomendacao_acao', '').upper().startswith('PARTICIPAR')]
+    nao_part = [e for e in top20_pdf if (e.get('analise') or {}).get('recomendacao_acao', '').upper().startswith('NAO')]
+
+    acao_imediata = [e for e in participar if e.get('status_temporal') in ('PLANEJAVEL', 'IMINENTE', 'URGENTE')]
+    sessao_realizada = [e for e in participar if e.get('status_temporal') == 'SESSAO_REALIZADA']
+
+    val_participar = sum((_safe_float(e.get('valor_estimado')) for e in participar))
+    val_imediata = sum((_safe_float(e.get('valor_estimado')) for e in acao_imediata))
+
+    total_compat = stats.get('total_cnae_compativel', 0)
+
+    nome = empresa.get('razao_social', 'A empresa')
+    sede = f"{empresa.get('cidade_sede', '')} / {empresa.get('uf_sede', '')}".strip(' /')
+
+    lines: list[str] = []
+    lines.append(f"A {nome} possui {total_compat} oportunidades compatíveis identificadas no PNCP.")
+    lines.append(f"Dos editais analisados, {len(participar)} receberam recomendação PARTICIPAR "
+                  f"(valor total R$ {val_participar/1e6:.1f}M) e {len(nao_part)} NÃO PARTICIPAR com justificativa.")
+
+    if acao_imediata:
+        lines.append(f"{len(acao_imediata)} editais têm propostas abertas para ação imediata "
+                      f"(R$ {val_imediata/1e6:.1f}M).")
+    if sessao_realizada:
+        lines.append(f"{len(sessao_realizada)} editais tiveram sessão já realizada — consultar resultado "
+                      f"nos portais antes de qualquer ação.")
+
+    # Top 3 destaques
+    top3 = sorted(participar, key=lambda e: _safe_float(e.get('valor_estimado')), reverse=True)[:3]
+    if top3:
+        destaques = []
+        for e in top3:
+            mun = e.get('municipio', '?')
+            val = _safe_float(e.get('valor_estimado')) / 1e6
+            obj_short = (e.get('objeto', '') or '')[:50]
+            destaques.append(f"{mun} (R$ {val:.1f}M — {obj_short})")
+        lines.append(f"Destaques: {', '.join(destaques)}.")
+
+    return '\n\n'.join(lines)
+
+
+def _generate_proximos_passos(top20_pdf: list[dict]) -> list[dict]:
+    """Generate action items deterministically from data."""
+    participar = [e for e in top20_pdf if (e.get('analise') or {}).get('recomendacao_acao', '').upper().startswith('PARTICIPAR')]
+
+    urgency_order = {'URGENTE': 0, 'IMINENTE': 1, 'PLANEJAVEL': 2, 'SESSAO_REALIZADA': 3}
+    priority_label = {'URGENTE': 'URGENTE', 'IMINENTE': 'URGENTE', 'PLANEJAVEL': 'PRIORITÁRIO', 'SESSAO_REALIZADA': 'MONITORAR'}
+
+    sorted_eds = sorted(participar, key=lambda e: (
+        urgency_order.get(e.get('status_temporal', 'SESSAO_REALIZADA'), 9),
+        -(_safe_float(e.get('valor_estimado')))
+    ))
+
+    passos: list[dict] = []
+    for e in sorted_eds[:8]:
+        st = e.get('status_temporal', 'SESSAO_REALIZADA')
+        prefix = priority_label.get(st, 'AVALIAR')
+        mun = e.get('municipio', '?')
+        val = _safe_float(e.get('valor_estimado')) / 1e6
+        obj = (e.get('objeto', '') or '')[:60].strip()
+
+        data_val = (e.get('analise') or {}).get('data_sessao', '') or (e.get('analise') or {}).get('prazo_proposta', '')
+
+        if st == 'SESSAO_REALIZADA':
+            acao = f"{prefix}: {mun} — {obj} R$ {val:.1f}M. Sessão já realizada, consultar resultado no portal."
+        else:
+            acao = f"{prefix}: {mun} — {obj} R$ {val:.1f}M (sessão {data_val})."
+
+        prazo = data_val if st != 'SESSAO_REALIZADA' else ""
+        passos.append({"acao": acao, "prazo": prazo, "prioridade": prefix})
+
+    return passos
+
+
 def _format_cnpj(cnpj: str) -> str:
     """Format CNPJ: 12345678000199 -> 12.345.678/0001-99."""
     c = re.sub(r"\D", "", str(cnpj))
@@ -788,26 +867,19 @@ def _build_sumario_executivo(data: dict, styles: dict) -> list:
     el.append(metrics_t)
     el.append(Spacer(1, 6 * mm))
 
-    # Resumo executivo text
-    resumo = data.get("resumo_executivo", "")
-    if resumo:
-        for paragraph in resumo.split("\n\n"):
-            paragraph = paragraph.strip()
-            if paragraph:
-                el.append(Paragraph(_s(paragraph), styles["body"]))
-    else:
-        _v_foram = "Foi identificada" if total_compat == 1 else "Foram identificadas"
-        _n_oport = _plural(total_compat, "oportunidade compatível", "oportunidades compatíveis")
-        _n_dentro = _plural(dentro_capacidade, "está", "estão")
-        _v_rec = _plural(recomendados, "é recomendada", "são recomendadas")
-        _n_rec = _plural(recomendados, "oportunidade", "oportunidades")
-        el.append(Paragraph(
-            f"{_v_foram} <b>{total_compat}</b> {_n_oport} com as atividades da empresa. "
-            f"Destas, <b>{dentro_capacidade}</b> {_n_dentro} dentro da capacidade econômico-financeira. "
-            f"Após análise de documentos e viabilidade, <b>{recomendados}</b> {_n_rec} {_v_rec} "
-            f"para participação, totalizando <b>{_currency_short(valor_total)}</b> em valor estimado.",
-            styles["body"],
-        ))
+    # Resumo executivo text — ALWAYS computed from data (never from JSON field)
+    # Use raw top20 (includes NAO PARTICIPAR) for accurate counting
+    raw_top20 = data.get("top20_raw", top20)
+    top20_with_analise = [e for e in raw_top20 if e.get("analise")]
+    resumo = _generate_resumo(
+        data.get("empresa", {}),
+        top20_with_analise,
+        estatisticas,
+    )
+    for paragraph in resumo.split("\n\n"):
+        paragraph = paragraph.strip()
+        if paragraph:
+            el.append(Paragraph(_s(paragraph), styles["body"]))
 
     # Note about excluded editais
     excluded = data.get("top20_excluded_count", 0)
@@ -1583,9 +1655,13 @@ def _build_analise_individual(data: dict, styles: dict) -> list:
 
 
 def _build_proximos_passos(data: dict, styles: dict) -> list:
-    """Render Próximos Passos section as a priority-grouped numbered table."""
-    passos = data.get("proximos_passos", [])
-    if not passos:
+    """Render Próximos Passos section — ALWAYS computed from top20 data."""
+    top20 = data.get("top20", [])
+    top20_pdf = [e for e in top20 if e.get("analise")]
+
+    # Generate passos deterministically from data (ignore JSON proximos_passos field)
+    valid_passos = _generate_proximos_passos(top20_pdf)
+    if not valid_passos:
         return []
 
     el: list = []
@@ -1594,70 +1670,10 @@ def _build_proximos_passos(data: dict, styles: dict) -> list:
     el.extend(_section_heading("Próximos Passos", styles))
     el.append(Spacer(1, 2 * mm))
 
-    # Validate and clean items -- skip raw JSON keys like "acao_imediata"
-    _RAW_KEY_PATTERN = re.compile(r"^[a-z_]+$")
-    valid_passos: list[dict] = []
-    for p in passos:
-        if isinstance(p, str):
-            # Plain string item -- skip if it looks like a raw JSON key
-            if _RAW_KEY_PATTERN.match(p.strip()):
-                continue
-            valid_passos.append({"acao": p, "prazo": "", "prioridade": ""})
-        elif isinstance(p, dict):
-            acao = _s(p.get("acao") or p.get("descricao") or p.get("texto", ""))
-            if not acao or _RAW_KEY_PATTERN.match(acao.strip()):
-                continue
-            valid_passos.append({
-                "acao": acao,
-                "prazo": _s(p.get("prazo", "")),
-                "prioridade": _s(p.get("prioridade", "")),
-            })
-
-    if not valid_passos:
-        return []
-
-    # Assign priority based on deadline days if not already set
-    def _infer_priority(passo: dict) -> str:
-        # If acao is a string with priority prefix (e.g. "URGENTE: Do X by DD/MM/YYYY")
-        acao_text = passo.get("acao", "").upper()
-        if "URGENTE:" in acao_text:
-            return "URGENTE"
-        if "PRIORITARIO:" in acao_text or "PRIORITÁRIO:" in acao_text:
-            return "ALTA"
-        if "AVALIAR:" in acao_text:
-            return "MEDIA"
-        if "MONITORAR:" in acao_text:
-            return "BAIXA"
-
-        prio = passo.get("prioridade", "").upper()
-        if prio in ("URGENTE", "ALTA", "MEDIA", "BAIXA"):
-            return prio
-
-        # Try to extract deadline date from acao text for priority inference
-        prazo = passo.get("prazo", "")
-        if not prazo:
-            # Extract date from acao string
-            date_m = re.search(r"(\d{2}/\d{2}/\d{4})", passo.get("acao", ""))
-            if date_m:
-                prazo = date_m.group(1)
-                passo["prazo"] = prazo  # populate prazo from extracted date
-
-        # Try to extract days from prazo text
-        m = re.search(r"(\d+)\s*dias?", prazo, re.IGNORECASE)
-        if m:
-            dias = int(m.group(1))
-            if dias <= 7:
-                return "URGENTE"
-            elif dias <= 14:
-                return "ALTA"
-            elif dias <= 30:
-                return "MEDIA"
-            else:
-                return "BAIXA"
-        return "MEDIA"  # default
-
+    # Map priority labels to internal priority levels
+    _PRIO_MAP = {"URGENTE": "URGENTE", "PRIORITÁRIO": "ALTA", "MONITORAR": "BAIXA", "AVALIAR": "MEDIA"}
     for p in valid_passos:
-        p["_priority"] = _infer_priority(p)
+        p["_priority"] = _PRIO_MAP.get(p.get("prioridade", ""), "MEDIA")
 
     # Sort by priority
     _PRIORITY_ORDER = {"URGENTE": 0, "ALTA": 1, "MEDIA": 2, "BAIXA": 3}
@@ -1869,7 +1885,9 @@ def generate_intel_report(data: dict, output_path: str) -> str:
     excluded_count = len(raw_top20) - len(filtered_top20)
     data["top20_report"] = filtered_top20
     data["top20_excluded_count"] = excluded_count
-    # Use filtered list for all report sections
+    # Keep raw top20 for resumo counting (needs NAO PARTICIPAR count)
+    data["top20_raw"] = raw_top20
+    # Use filtered list for Mapa + Análise Individual sections
     data["top20"] = filtered_top20
 
     # ── Quality Gate: Validate completeness ──

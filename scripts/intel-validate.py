@@ -378,6 +378,41 @@ def gate4_completeness(
                                 ]
                             _fix(f"Substituido '{word_label}' em {eid}.{field_name}")
 
+        # 1b. "Não consta no edital" embedded in sentences (all fields)
+        # Rule: "Não consta no edital disponível" is OK as standalone value,
+        # but NOT OK when embedded in a longer sentence (len > 50).
+        _nao_consta_embedded = re.compile(r"N[ãa]o\s+consta", re.IGNORECASE)
+        for field_name, field_val in analise.items():
+            if not isinstance(field_val, str):
+                continue
+            val_stripped = field_val.strip()
+            if not _nao_consta_embedded.search(val_stripped):
+                continue
+            # Allow standalone "Não consta..." values (short, self-contained)
+            if len(val_stripped) <= 50:
+                continue
+            # Longer text containing "Não consta" = placeholder leaked into sentence
+            issue = (
+                f"{eid}: campo '{field_name}' contem 'Nao consta' embutido em sentenca "
+                f"({len(val_stripped)} chars): '{val_stripped[:80]}...'"
+            )
+            result["issues"].append(issue)
+            result["passed"] = False
+            _fail(issue)
+            if do_fix:
+                # Replace the embedded placeholder with empty marker
+                cleaned_val = re.sub(
+                    r"N[ãa]o\s+consta\s+no\s+edital\s*(?:dispon[ií]vel)?",
+                    "",
+                    val_stripped,
+                    flags=re.IGNORECASE,
+                ).strip()
+                if cleaned_val:
+                    analise[field_name] = cleaned_val
+                else:
+                    analise[field_name] = REPLACEMENT_VALUE
+                _fix(f"Removido 'Nao consta' embutido de {eid}.{field_name}")
+
         # 2. Required fields with concrete values
         # data_sessao
         data_sessao_val = str(analise.get("data_sessao") or "").strip()
@@ -858,8 +893,14 @@ def main() -> None:
             json.dump(data, f, ensure_ascii=False, indent=2)
         print(f"JSON corrigido salvo em: {input_path}")
 
-    # Exit code for --strict
+    # Exit code logic:
+    # --fix + still failing = exit 1 (fix didn't resolve everything)
+    # --strict = exit 1 on ANY remaining failure
+    if args.fix and not overall_passed:
+        print(f"\n{_c('EXIT 1', _C_RED)}: --fix usado mas issues permanecem apos correcao")
+        sys.exit(1)
     if args.strict and not overall_passed:
+        print(f"\n{_c('EXIT 1', _C_RED)}: --strict e gates falharam")
         sys.exit(1)
 
 

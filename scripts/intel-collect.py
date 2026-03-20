@@ -1834,7 +1834,34 @@ def collect_price_benchmarks(api: "ApiClient", editais: list[dict]) -> None:
     except Exception as e:
         print(f"  WARN: Falha ao salvar benchmark cache: {e}")
 
+    # Compute lance_sugerido from benchmark data
+    lance_count = 0
+    for ed in editais:
+        if ed["_id"] not in top20_ids:
+            continue
+        bench = ed.get("price_benchmark", {})
+        desc_mediano = bench.get("desconto_mediano_orgao")
+        contratos = bench.get("contratos_analisados", 0)
+        valor = _safe_float(ed.get("valor_estimado")) or 0
+
+        if desc_mediano and contratos >= 3 and valor > 0:
+            # 15% less aggressive than median discount
+            desconto_sugerido = desc_mediano * 0.85
+            ed["lance_sugerido"] = {
+                "valor": round(valor * (1 - desconto_sugerido), 2),
+                "desconto_pct": round(desconto_sugerido * 100, 1),
+                "faixa_agressiva": round(valor * (1 - desc_mediano), 2),
+                "faixa_conservadora": round(valor * (1 - desc_mediano * 0.5), 2),
+                "margem_liquida_pct": round((1 - desconto_sugerido) * 0.92 * 100 - 100, 1),  # 8% overhead
+                "confianca": "ALTA" if contratos >= 5 else "MEDIA",
+                "base_contratos": contratos,
+                "desconto_mediano_orgao": desc_mediano,
+            }
+            lance_count += 1
+
     print(f"  Price benchmark: {applied} editais enriquecidos de {len(top20)} top-20")
+    if lance_count:
+        print(f"  Lance sugerido: {lance_count} editais com lance calculado")
 
 
 # ============================================================

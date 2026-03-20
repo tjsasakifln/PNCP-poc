@@ -586,6 +586,10 @@ def calculate_opportunity_score(
     else:
         score = existing_score
 
+    # SESSAO_REALIZADA penalty — prioritize open proposals over already-held sessions
+    if status == 'SESSAO_REALIZADA':
+        score *= 0.4  # -60% penalty
+
     return round(score, 4)
 
 
@@ -824,8 +828,12 @@ def main() -> None:
     print(f"\n  Qualidade extra\u00e7\u00e3o: {quality_counts}")
 
     # ── Update JSON ──
-    # Upsert top20 key; store the enriched slice
-    data["top20"] = top
+    # Upsert top20 key (exactly 20 max); overflow goes to _backlog
+    data["top20"] = top[:20]
+    if len(top) > 20:
+        data["_backlog"] = top[20:]
+    else:
+        data["_backlog"] = []
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -835,7 +843,7 @@ def main() -> None:
 
     print(f"\n{'─' * 60}")
     print(f"JSON atualizado: {output_path}")
-    print(f"top20: {len(top)} editais | {docs_extracted} com texto extra\u00eddo | {total_chars:,} chars total")
+    print(f"top20: {len(data['top20'])} editais | _backlog: {len(data['_backlog'])} | {docs_extracted} com texto extra\u00eddo | {total_chars:,} chars total")
 
 
 if __name__ == "__main__":
