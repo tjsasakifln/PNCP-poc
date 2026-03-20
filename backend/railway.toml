@@ -11,8 +11,9 @@ dockerfilePath = "Dockerfile"
 watchPatterns = ["**"]
 
 [deploy]
-# NOTE: Using Dockerfile CMD instead of startCommand for proper $PORT expansion
-# startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+# CRIT-SIGSEGV-FIX: Force uvicorn standalone (no Gunicorn fork) to eliminate SIGSEGV
+# caused by cryptography C extensions in forked workers.
+startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --timeout-keep-alive 75"
 healthcheckPath = "/health/ready"
 # SLA-001 + STORY-303 AC6: 300s grace period for cold starts.
 # Without --preload (STORY-303), each worker loads 65+ modules independently (~5-15s).
