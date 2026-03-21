@@ -1,5 +1,11 @@
 # =============================================================================
 # Production dependencies - PINNED for Railway compatibility
+#
+# QA-008: Supply chain safety — to regenerate this file with hash verification:
+#   pip install pip-tools
+#   pip-compile --generate-hashes requirements.in --output-file requirements.txt
+# Until a requirements.in is maintained, run `pip-audit -r requirements.txt`
+# in CI to catch known CVEs (see .github/workflows/backend-tests.yml CI-002).
 # =============================================================================
 fastapi==0.129.0
 # DEBT-101 AC3: uvicorn[standard] re-enabled for uvloop/httptools performance.

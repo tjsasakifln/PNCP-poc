@@ -33,6 +33,13 @@ jobs:
           cd frontend
           npm ci
 
+      # CI-002: Advisory security audit — runs early so results are visible even if tests fail.
+      # The blocking critical-level audit (DEBT-123 AC2) runs after tests.
+      - name: Security audit (advisory — high level)
+        run: npm audit --audit-level=high 2>&1 || true
+        working-directory: frontend
+        continue-on-error: true  # CI-002: intentional — advisory only, blocking critical scan follows
+
       - name: TypeScript type check
         run: |
           cd frontend

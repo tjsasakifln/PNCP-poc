@@ -44,6 +44,16 @@ jobs:
           pip install pytest pytest-cov pytest-asyncio httpx pytest-timeout
           pip install pip-audit ruff mypy
 
+      # CI-002: Advisory security audit — shows detailed descriptions, non-blocking
+      # Runs early so results are visible even if later steps fail.
+      # The blocking pip-audit step (DEBT-123 AC1) runs after tests.
+      - name: Security audit (advisory — detailed output)
+        run: |
+          cd backend
+          pip-audit --strict --desc on -r requirements.txt 2>&1 || true
+          echo "ℹ️ pip-audit advisory scan complete (non-blocking)"
+        continue-on-error: true  # CI-002: intentional — advisory scan, blocking scan follows after tests
+
       - name: Run tests (exit code 0 required)
         run: |
           cd backend
