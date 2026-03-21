@@ -13,7 +13,7 @@ fastapi==0.129.0
 # faulthandler + uvloop interaction. With faulthandler disabled in production
 # (main.py + gunicorn_conf.py), uvloop is safe. uvloop is NOT available on
 # Windows (dev), so h11 + asyncio loop is used locally.
-uvicorn[standard]==0.41.0
+uvicorn[standard]==0.42.0
 gunicorn==23.0.0
 pydantic[email]==2.12.5
 pydantic-settings==2.10.1
