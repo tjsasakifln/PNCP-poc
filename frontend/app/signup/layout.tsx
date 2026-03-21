@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { ErrorBoundary } from "../../components/ErrorBoundary";
 
 // GTM-COPY-006 AC5: Per-page metadata for /signup
 export const metadata: Metadata = {
@@ -10,10 +11,11 @@ export const metadata: Metadata = {
   },
 };
 
+/** DEBT-FE-007: ErrorBoundary wrapping for signup page */
 export default function SignupLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <ErrorBoundary pageName="signup">{children}</ErrorBoundary>;
 }

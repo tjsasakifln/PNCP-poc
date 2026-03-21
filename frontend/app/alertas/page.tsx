@@ -5,6 +5,8 @@ import { useAuth } from "../components/AuthProvider";
 import { PageHeader } from "../../components/PageHeader";
 import { AuthLoadingScreen } from "../../components/AuthLoadingScreen";
 import { ErrorStateWithRetry } from "../../components/ErrorStateWithRetry";
+import { ComingSoonPage } from "../../components/ComingSoonPage";
+import { isFeatureGated } from "../../lib/feature-gates";
 import { toast } from "sonner";
 import { AlertCard } from "./components/AlertCard";
 import { AlertFormModal } from "./components/AlertFormModal";
@@ -14,7 +16,26 @@ import { useAlerts } from "../../hooks/useAlerts";
 import type { Alert as HookAlert } from "../../hooks/useAlerts";
 import type { Alert, AlertFormData } from "./components/types";
 
+// DEBT-FE-012: Show ComingSoonPage when feature is gated
+const ALERTAS_GATED = isFeatureGated("alertas");
+
 export default function AlertasPage() {
+  if (ALERTAS_GATED) {
+    return (
+      <>
+        <PageHeader title="Alertas" />
+        <ComingSoonPage
+          title="Alertas por E-mail"
+          description="Receba notificacoes automaticas quando novas licitacoes compativeis com seu perfil forem publicadas. Configure filtros por setor, UF e valor para nao perder nenhuma oportunidade."
+        />
+      </>
+    );
+  }
+
+  return <AlertasPageInner />;
+}
+
+function AlertasPageInner() {
   const { session, loading: authLoading } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);

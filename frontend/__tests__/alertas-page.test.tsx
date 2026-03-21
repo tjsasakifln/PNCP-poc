@@ -43,6 +43,12 @@ jest.mock("sonner", () => ({
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { toast: mockToast } = require("sonner");
 
+// DEBT-FE-012: Disable feature gate so we can test the actual page
+jest.mock("../lib/feature-gates", () => ({
+  isFeatureGated: () => false,
+  GATED_FEATURES: new Set(),
+}));
+
 jest.mock("../lib/constants/sector-names", () => ({
   SECTOR_DISPLAY_NAMES: {
     vestuario: "Vestuario e Uniformes",

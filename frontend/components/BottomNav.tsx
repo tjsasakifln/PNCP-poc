@@ -7,6 +7,7 @@ import { useAuth } from "../app/components/AuthProvider";
 import { usePlan } from "../hooks/usePlan";
 import {
   Search,
+  LayoutDashboard,
   Layers,
   Clock,
   MessageSquare,
@@ -28,6 +29,7 @@ interface BottomNavItem {
 // Compact icons (20x20 = size 20, strokeWidth 1.5)
 const icons = {
   search: <Search className="w-5 h-5" strokeWidth={1.5} />,
+  dashboard: <LayoutDashboard className="w-5 h-5" strokeWidth={1.5} />,
   pipeline: <Layers className="w-5 h-5" strokeWidth={1.5} />,
   history: <Clock className="w-5 h-5" strokeWidth={1.5} />,
   messages: <MessageSquare className="w-5 h-5" strokeWidth={1.5} />,
@@ -45,7 +47,7 @@ const MAIN_ITEMS: BottomNavItem[] = [
   { href: "/buscar", label: "Busca", icon: icons.search },
   { href: "/pipeline", label: "Pipeline", icon: icons.pipeline },
   { href: "/historico", label: "Hist.", ariaLabel: "Histórico", icon: icons.history },
-  { href: "/dashboard", label: "Dash", ariaLabel: "Dashboard", icon: icons.search },
+  { href: "/dashboard", label: "Dash", ariaLabel: "Dashboard", icon: icons.dashboard },
 ];
 
 // SHIP-002 AC9: Alertas hidden — feature-gated

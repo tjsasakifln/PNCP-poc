@@ -5,6 +5,8 @@ import { useAuth } from "../components/AuthProvider";
 import { PageHeader } from "../../components/PageHeader";
 import { ErrorStateWithRetry } from "../../components/ErrorStateWithRetry";
 import { AuthLoadingScreen } from "../../components/AuthLoadingScreen";
+import { ComingSoonPage } from "../../components/ComingSoonPage";
+import { isFeatureGated } from "../../lib/feature-gates";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { useConversations } from "../../hooks/useConversations";
 import { useRouter } from "next/navigation";
@@ -54,7 +56,26 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("pt-BR");
 }
 
+// DEBT-FE-012: Show ComingSoonPage when feature is gated
+const MENSAGENS_GATED = isFeatureGated("mensagens");
+
 export default function MensagensPage() {
+  if (MENSAGENS_GATED) {
+    return (
+      <>
+        <PageHeader title="Suporte" />
+        <ComingSoonPage
+          title="Central de Mensagens"
+          description="Comunique-se diretamente com a equipe SmartLic. Envie duvidas, sugestoes ou reporte problemas e acompanhe suas conversas em um so lugar."
+        />
+      </>
+    );
+  }
+
+  return <MensagensPageInner />;
+}
+
+function MensagensPageInner() {
   const { session, user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
 

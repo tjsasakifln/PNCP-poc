@@ -8,6 +8,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MensagensPage from '@/app/mensagens/page';
 
+// DEBT-FE-012: Disable feature gate so we can test the actual page
+jest.mock('../../lib/feature-gates', () => ({
+  isFeatureGated: () => false,
+  GATED_FEATURES: new Set(),
+}));
+
 // Mock useAuth
 const mockUser = { id: 'user-1', email: 'test@test.com' };
 const mockSession = { access_token: 'mock-token' };

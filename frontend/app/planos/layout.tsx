@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { ErrorBoundary } from "../../components/ErrorBoundary";
 
 // GTM-COPY-006 AC5: Per-page metadata for /planos
 export const metadata: Metadata = {
@@ -10,10 +11,11 @@ export const metadata: Metadata = {
   },
 };
 
+/** DEBT-FE-007: ErrorBoundary wrapping for planos page */
 export default function PlanosLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <ErrorBoundary pageName="planos">{children}</ErrorBoundary>;
 }
