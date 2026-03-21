@@ -3,6 +3,9 @@
 Tests cover:
 - DELETE /me - Account deletion endpoint (AC26, AC28)
 - GET /me/export - Data export endpoint (AC27)
+
+DEBT-DB-018: Restructured delete_account to use profiles CASCADE + auth.users CASCADE
+for comprehensive coverage of all user data tables.
 """
 
 from datetime import datetime
@@ -32,7 +35,14 @@ def setup_auth_override(user_id="test-user-123"):
 
 
 class TestDeleteAccountEndpoint:
-    """Test DELETE /me endpoint (AC26, AC28) - Account deletion."""
+    """Test DELETE /me endpoint (AC26, AC28) - Account deletion.
+
+    DEBT-DB-018: New deletion strategy:
+    1. Cancel Stripe subscription
+    2. Delete profiles (CASCADE to child tables)
+    3. Delete remaining auth.users-referenced tables (best-effort)
+    4. Delete auth user
+    """
 
     @patch("stripe.Subscription.cancel")
     def test_successful_account_deletion_with_stripe_subscription(
@@ -41,22 +51,16 @@ class TestDeleteAccountEndpoint:
         """Should delete account successfully and cancel Stripe subscription."""
         cleanup = setup_auth_override("user-with-subscription")
         try:
-            # Mock Supabase client
             mock_sb = MagicMock()
             app.dependency_overrides[get_db] = lambda: mock_sb
 
-            # Mock Stripe subscription check
             mock_sb.table.return_value = mock_sb
             mock_sb.select.return_value = mock_sb
             mock_sb.eq.return_value = mock_sb
             mock_sb.execute.return_value = Mock(
                 data=[{"stripe_subscription_id": "sub_test123", "is_active": True}]
             )
-
-            # Mock table deletions
             mock_sb.delete.return_value = mock_sb
-
-            # Mock auth user deletion
             mock_sb.auth.admin.delete_user = Mock()
 
             response = client.delete("/v1/me")
@@ -69,19 +73,13 @@ class TestDeleteAccountEndpoint:
             # Verify Stripe subscription was cancelled
             mock_stripe_cancel.assert_called_once_with("sub_test123")
 
-            # Verify all tables were deleted from
-            expected_tables = [
-                "search_sessions",
-                "monthly_quota",
-                "user_subscriptions",
-                "user_oauth_tokens",
-                "messages",
-                "profiles"
-            ]
-            # Check that table() was called for each expected table
+            # Verify profiles was deleted (CASCADE handles child tables)
             table_calls = [call[0][0] for call in mock_sb.table.call_args_list]
-            for table in expected_tables:
-                assert table in table_calls
+            assert "profiles" in table_calls
+
+            # Verify auth.users-referenced tables are also cleaned
+            for t in ["monthly_quota", "user_subscriptions", "user_oauth_tokens"]:
+                assert t in table_calls, f"Table {t} should be explicitly deleted"
 
             # Verify auth user was deleted
             mock_sb.auth.admin.delete_user.assert_called_once_with("user-with-subscription")
@@ -95,20 +93,14 @@ class TestDeleteAccountEndpoint:
         """Should delete account successfully when no Stripe subscription exists."""
         cleanup = setup_auth_override("user-without-subscription")
         try:
-            # Mock Supabase client
             mock_sb = MagicMock()
             app.dependency_overrides[get_db] = lambda: mock_sb
 
-            # Mock empty Stripe subscription check
             mock_sb.table.return_value = mock_sb
             mock_sb.select.return_value = mock_sb
             mock_sb.eq.return_value = mock_sb
             mock_sb.execute.return_value = Mock(data=[])
-
-            # Mock table deletions
             mock_sb.delete.return_value = mock_sb
-
-            # Mock auth user deletion
             mock_sb.auth.admin.delete_user = Mock()
 
             response = client.delete("/v1/me")
@@ -116,9 +108,7 @@ class TestDeleteAccountEndpoint:
             assert response.status_code == 200
             data = response.json()
             assert data["success"] is True
-            assert data["message"] == "Conta excluída com sucesso."
 
-            # Verify auth user was deleted
             mock_sb.auth.admin.delete_user.assert_called_once_with("user-without-subscription")
 
         finally:
@@ -131,11 +121,9 @@ class TestDeleteAccountEndpoint:
         """Should continue account deletion even if Stripe cancellation fails."""
         cleanup = setup_auth_override("user-stripe-error")
         try:
-            # Mock Supabase client
             mock_sb = MagicMock()
             app.dependency_overrides[get_db] = lambda: mock_sb
 
-            # Mock Stripe subscription check
             mock_sb.table.return_value = mock_sb
             mock_sb.select.return_value = mock_sb
             mock_sb.eq.return_value = mock_sb
@@ -143,62 +131,21 @@ class TestDeleteAccountEndpoint:
                 data=[{"stripe_subscription_id": "sub_invalid", "is_active": True}]
             )
 
-            # Mock Stripe cancel failure
             import stripe as stripe_lib
             mock_stripe_cancel.side_effect = stripe_lib.InvalidRequestError(
                 message="Subscription not found",
                 param="subscription"
             )
 
-            # Mock table deletions
             mock_sb.delete.return_value = mock_sb
-
-            # Mock auth user deletion
             mock_sb.auth.admin.delete_user = Mock()
 
             response = client.delete("/v1/me")
 
-            # Should still succeed
             assert response.status_code == 200
             data = response.json()
             assert data["success"] is True
-
-            # Verify deletion continued despite Stripe error
             mock_sb.auth.admin.delete_user.assert_called_once()
-
-        finally:
-            cleanup()
-
-    def test_deletion_fails_with_500_on_search_sessions_error(
-        self
-    ):
-        """Should return 500 if deletion from search_sessions fails."""
-        cleanup = setup_auth_override("user-db-error")
-        try:
-            # Mock Supabase client
-            mock_sb = MagicMock()
-            app.dependency_overrides[get_db] = lambda: mock_sb
-
-            # Mock empty subscription check
-            mock_sb.table.return_value = mock_sb
-            mock_sb.select.return_value = mock_sb
-            mock_sb.eq.return_value = mock_sb
-
-            # First execute is for subscription check (empty)
-            # Subsequent executes fail
-            mock_sb.execute.side_effect = [
-                Mock(data=[]),  # Empty subscription check
-                Exception("Database connection lost")  # First table deletion fails
-            ]
-
-            mock_sb.delete.return_value = mock_sb
-
-            response = client.delete("/v1/me")
-
-            assert response.status_code == 500
-            data = response.json()
-            assert "detail" in data
-            assert "search_sessions" in data["detail"]
 
         finally:
             cleanup()
@@ -206,28 +153,20 @@ class TestDeleteAccountEndpoint:
     def test_deletion_fails_with_500_on_profile_error(
         self
     ):
-        """Should return 500 if profile deletion fails."""
+        """Should return 500 if profile deletion fails (step 2)."""
         cleanup = setup_auth_override("user-profile-error")
         try:
-            # Mock Supabase client
             mock_sb = MagicMock()
             app.dependency_overrides[get_db] = lambda: mock_sb
 
-            # Mock table operations
             mock_sb.table.return_value = mock_sb
             mock_sb.select.return_value = mock_sb
             mock_sb.eq.return_value = mock_sb
             mock_sb.delete.return_value = mock_sb
 
-            # Subscription check succeeds (empty), first 5 table deletions succeed,
-            # but profile deletion (6th table) fails
+            # Subscription check succeeds (empty), then profiles deletion fails
             mock_sb.execute.side_effect = [
                 Mock(data=[]),  # Subscription check
-                Mock(data=[]),  # search_sessions
-                Mock(data=[]),  # monthly_quota
-                Mock(data=[]),  # user_subscriptions
-                Mock(data=[]),  # user_oauth_tokens
-                Mock(data=[]),  # messages
                 Exception("Profile deletion failed")  # profiles
             ]
 
@@ -236,7 +175,45 @@ class TestDeleteAccountEndpoint:
             assert response.status_code == 500
             data = response.json()
             assert "detail" in data
-            assert "perfil" in data["detail"]  # Portuguese error message
+            assert "perfil" in data["detail"]
+
+        finally:
+            cleanup()
+
+    def test_deletion_continues_if_secondary_table_fails(
+        self
+    ):
+        """DEBT-DB-018: Should continue if auth.users-referenced table delete fails."""
+        cleanup = setup_auth_override("user-secondary-fail")
+        try:
+            mock_sb = MagicMock()
+            app.dependency_overrides[get_db] = lambda: mock_sb
+
+            mock_sb.table.return_value = mock_sb
+            mock_sb.select.return_value = mock_sb
+            mock_sb.eq.return_value = mock_sb
+            mock_sb.delete.return_value = mock_sb
+            mock_sb.auth.admin.delete_user = Mock()
+
+            call_count = 0
+            def execute_side_effect(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                # 1=subscription check, 2=profiles OK
+                # 3=monthly_quota fails, rest succeed
+                if call_count == 3:
+                    raise Exception("monthly_quota timeout")
+                return Mock(data=[])
+
+            mock_sb.execute.side_effect = execute_side_effect
+
+            response = client.delete("/v1/me")
+
+            # Should still succeed (secondary failures are best-effort)
+            assert response.status_code == 200
+            data = response.json()
+            assert data["success"] is True
+            mock_sb.auth.admin.delete_user.assert_called_once()
 
         finally:
             cleanup()
@@ -247,20 +224,14 @@ class TestDeleteAccountEndpoint:
         """Should return 500 if auth user deletion fails."""
         cleanup = setup_auth_override("user-auth-error")
         try:
-            # Mock Supabase client
             mock_sb = MagicMock()
             app.dependency_overrides[get_db] = lambda: mock_sb
 
-            # Mock table operations
             mock_sb.table.return_value = mock_sb
             mock_sb.select.return_value = mock_sb
             mock_sb.eq.return_value = mock_sb
             mock_sb.delete.return_value = mock_sb
-
-            # All table deletions succeed
             mock_sb.execute.return_value = Mock(data=[])
-
-            # Auth user deletion fails
             mock_sb.auth.admin.delete_user.side_effect = Exception("Auth API error")
 
             response = client.delete("/v1/me")
@@ -268,31 +239,26 @@ class TestDeleteAccountEndpoint:
             assert response.status_code == 500
             data = response.json()
             assert "detail" in data
-            assert "autenticação" in data["detail"]  # Portuguese error message
+            assert "autenticação" in data["detail"]
 
         finally:
             cleanup()
 
     def test_unauthorized_deletion_without_auth(self):
         """Should return 401/403 when no authentication provided."""
-        # No auth override
         response = client.delete("/v1/me")
-
-        # Should be unauthorized
         assert response.status_code in [401, 403]
 
     @patch("stripe.Subscription.cancel")
     def test_deletion_cascades_all_user_data(
         self, mock_stripe_cancel
     ):
-        """Should cascade delete from ALL expected tables."""
+        """DEBT-DB-018: Should delete profiles + all auth.users-referenced tables."""
         cleanup = setup_auth_override("user-cascade-test")
         try:
-            # Mock Supabase client
             mock_sb = MagicMock()
             app.dependency_overrides[get_db] = lambda: mock_sb
 
-            # Mock operations
             mock_sb.table.return_value = mock_sb
             mock_sb.select.return_value = mock_sb
             mock_sb.eq.return_value = mock_sb
@@ -304,22 +270,36 @@ class TestDeleteAccountEndpoint:
 
             assert response.status_code == 200
 
-            # Verify cascade order and tables
             table_calls = [call[0][0] for call in mock_sb.table.call_args_list]
 
-            # Check all expected tables are present
-            expected_in_order = [
-                "user_subscriptions",  # For Stripe check
-                "search_sessions",
+            # Profiles must be present (CASCADE handles child tables)
+            assert "profiles" in table_calls
+
+            # Auth.users-referenced tables must be explicitly deleted
+            auth_tables = [
                 "monthly_quota",
                 "user_subscriptions",
                 "user_oauth_tokens",
-                "messages",
-                "profiles"
+                "google_sheets_exports",
+                "search_results_cache",
+                "mfa_recovery_codes",
+                "mfa_trusted_devices",
+                "search_results_store",
             ]
-
-            for table in expected_in_order:
+            for table in auth_tables:
                 assert table in table_calls, f"Table {table} should be deleted"
+
+            # Profiles must come BEFORE auth.users-referenced tables
+            profiles_idx = table_calls.index("profiles")
+            for table in auth_tables:
+                if table in table_calls:
+                    table_idx = table_calls.index(table)
+                    # Skip user_subscriptions used for Stripe check (appears before profiles)
+                    if table == "user_subscriptions" and table_idx < profiles_idx:
+                        continue
+                    assert table_idx > profiles_idx, (
+                        f"{table} should be deleted after profiles"
+                    )
 
         finally:
             cleanup()

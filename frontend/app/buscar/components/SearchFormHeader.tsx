@@ -85,6 +85,8 @@ export default function SearchFormHeader({
           <button
             type="button"
             onClick={() => { setSearchMode("setor"); clearResult(); }}
+            aria-pressed={searchMode === "setor"}
+            aria-label="Buscar por setor"
             className={`flex-1 py-2.5 text-sm sm:text-base font-medium transition-all duration-200 ${
               searchMode === "setor"
                 ? "bg-brand-navy text-white"
@@ -96,6 +98,8 @@ export default function SearchFormHeader({
           <button
             type="button"
             onClick={() => { setSearchMode("termos"); clearResult(); }}
+            aria-pressed={searchMode === "termos"}
+            aria-label="Buscar por termos específicos"
             className={`flex-1 py-2.5 text-sm sm:text-base font-medium transition-all duration-200 ${
               searchMode === "termos"
                 ? "bg-brand-navy text-white"
@@ -205,6 +209,7 @@ export default function SearchFormHeader({
               <input
                 id="termos-busca"
                 type="text"
+                aria-label="Adicionar termos de busca"
                 value={termoInput}
                 onChange={e => {
                   const val = e.target.value;

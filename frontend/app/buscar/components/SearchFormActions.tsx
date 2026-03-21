@@ -34,6 +34,7 @@ export default function SearchFormActions({
         disabled={loading || !canSearch || isTrialExpired || isGracePeriod}
         loading={loading}
         type="button"
+        aria-label="Iniciar busca de licitações"
         aria-busy={loading}
         data-tour="search-button"
         title={isGracePeriod ? "Análises suspensas ate regularizacao do pagamento." : isTrialExpired ? "Seu trial expirou. Ative um plano para continuar buscando." : undefined}

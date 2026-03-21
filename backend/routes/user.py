@@ -489,12 +489,16 @@ async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db))
     Uses admin client (get_db) because it needs db.auth.admin.delete_user()
     and must delete across multiple tables regardless of RLS.
 
-    Cascade order:
-    1. Cancel active Stripe subscription (if any)
-    2. Delete from: search_sessions, monthly_quota, user_subscriptions,
-       user_oauth_tokens, messages, profiles
-    3. Delete auth user via Supabase admin API
-    4. Log anonymized audit entry
+    Strategy:
+    1. Cancel active Stripe subscription (external side-effect, must be first)
+    2. Delete from profiles (CASCADE propagates to most child tables)
+    3. Delete from remaining tables that reference auth.users directly
+    4. Delete auth user via Supabase admin API
+    5. Log anonymized audit entry
+
+    If auth user deletion fails (step 4), we do NOT roll back the profile
+    deletion — the user's data is already gone and a dangling auth entry
+    is preferable to leaving personal data behind (LGPD Art. 18 VI).
     """
     import stripe
 
@@ -526,26 +530,10 @@ async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db))
     except Exception as e:
         logger.warning(f"Failed to check Stripe subscriptions during account deletion: {e}")
 
-    # Step 2: Cascade delete from all tables
-    tables_to_delete = [
-        "search_sessions",
-        "monthly_quota",
-        "user_subscriptions",
-        "user_oauth_tokens",
-        "messages",
-    ]
-
-    for table in tables_to_delete:
-        try:
-            await sb_execute(db.table(table).delete().eq("user_id", user_id))
-        except Exception as e:
-            logger.error(f"Failed to delete from {table} for user {mask_user_id(user_id)}: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Erro ao excluir dados de {table}. Tente novamente.",
-            )
-
-    # Delete profile (id column, not user_id)
+    # Step 2: Delete profile — CASCADE propagates to child tables:
+    #   pipeline_items, classification_feedback, trial_email_log,
+    #   alert_preferences, alerts, search_state_transitions,
+    #   messages, search_sessions (via FK standardization migrations)
     try:
         await sb_execute(db.table("profiles").delete().eq("id", user_id))
     except Exception as e:
@@ -555,7 +543,36 @@ async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db))
             detail="Erro ao excluir perfil. Tente novamente.",
         )
 
-    # Step 3: Delete auth user
+    # Step 3: Delete from tables that reference auth.users directly
+    # (not covered by profiles CASCADE). Each is best-effort — if the
+    # table doesn't exist or has no rows, that's fine.
+    auth_user_tables = [
+        "monthly_quota",
+        "user_subscriptions",
+        "user_oauth_tokens",
+        "google_sheets_exports",
+        "search_results_cache",
+        "mfa_recovery_codes",
+        "mfa_trusted_devices",
+        "search_results_store",
+    ]
+
+    failed_tables: list[str] = []
+    for table in auth_user_tables:
+        try:
+            await sb_execute(db.table(table).delete().eq("user_id", user_id))
+        except Exception as e:
+            # Log but don't abort — auth user deletion CASCADE will clean up
+            logger.warning(f"Failed to delete from {table} for user {mask_user_id(user_id)}: {e}")
+            failed_tables.append(table)
+
+    if failed_tables:
+        logger.warning(
+            f"Account deletion: {len(failed_tables)} tables had errors "
+            f"(will rely on auth CASCADE): {failed_tables}"
+        )
+
+    # Step 4: Delete auth user (cascades to any remaining FK references)
     try:
         db.auth.admin.delete_user(user_id)
     except Exception as e:
@@ -565,7 +582,7 @@ async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db))
             detail="Erro ao excluir conta de autenticação. Tente novamente.",
         )
 
-    # Step 4: Anonymized audit log
+    # Step 5: Anonymized audit log
     log_user_action(logger, "account_deleted", hashed_id)
     logger.info(f"Account deleted successfully: hashed_id={hashed_id}")
 

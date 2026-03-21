@@ -84,7 +84,7 @@ export default function ProtectedLayout({
   return (
     <>
       <AppHeader />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <Breadcrumbs />
         <Suspense fallback={<ProtectedLoading />}>
           {children}

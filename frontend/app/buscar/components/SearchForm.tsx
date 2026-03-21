@@ -44,7 +44,7 @@ export default function SearchForm(props: SearchFormProps) {
   })();
 
   return (
-    <>
+    <div role="search" aria-label="Buscar licitações">
       <SearchFormHeader
         setores={props.setores}
         setoresLoading={props.setoresLoading}
@@ -120,6 +120,6 @@ export default function SearchForm(props: SearchFormProps) {
         onShowUpgradeModal={props.onShowUpgradeModal}
         compactSummary={compactSummary}
       />
-    </>
+    </div>
   );
 }
