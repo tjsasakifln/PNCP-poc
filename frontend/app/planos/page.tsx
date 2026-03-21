@@ -642,7 +642,10 @@ export default function PlanosPage() {
                 className="backdrop-blur-md bg-white/60 dark:bg-gray-900/50 border border-white/20 dark:border-white/10 rounded-card overflow-hidden"
               >
                 <button
+                  id={`faq-btn-${index}`}
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  aria-expanded={openFaq === index}
+                  aria-controls={`faq-panel-${index}`}
                   className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-[var(--surface-1)] transition-colors"
                 >
                   <span className="font-medium text-[var(--ink)]">{item.question}</span>
@@ -657,7 +660,12 @@ export default function PlanosPage() {
                   </svg>
                 </button>
                 {openFaq === index && (
-                  <div className="px-6 pb-4">
+                  <div
+                    id={`faq-panel-${index}`}
+                    role="region"
+                    aria-labelledby={`faq-btn-${index}`}
+                    className="px-6 pb-4"
+                  >
                     <p className="text-sm text-[var(--ink-secondary)]">{item.answer}</p>
                   </div>
                 )}

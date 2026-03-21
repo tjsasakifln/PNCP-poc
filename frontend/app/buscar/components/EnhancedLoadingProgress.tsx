@@ -13,6 +13,9 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { SearchProgressEvent } from '../../../hooks/useSearchSSE';
+import { ProgressAnimation } from './ProgressAnimation';
+import { ProgressBar } from './ProgressBar';
+import { ProgressSteps } from './ProgressSteps';
 
 export interface EnhancedLoadingProgressProps {
   currentStep: number;
@@ -254,11 +257,6 @@ export function EnhancedLoadingProgress({
     ? sseEvent.progress
     : undefined;
 
-  // A-02 AC9: Amber color scheme for degraded state
-  const progressBarColor = isDegraded
-    ? 'bg-gradient-to-r from-amber-500 to-amber-600'
-    : 'bg-gradient-to-r from-brand-blue to-brand-blue-hover';
-
   return (
     <div
       className={`relative mt-6 sm:mt-8 p-4 sm:p-6 rounded-card animate-fade-in-up ${
@@ -283,45 +281,10 @@ export function EnhancedLoadingProgress({
       )}
 
       {/* AC4: Header with spinner and "Analisando oportunidades..." */}
-      <div className="flex items-center gap-3 mb-4">
-        <svg
-          className={`animate-spin h-6 w-6 ${isDegraded ? 'text-amber-500' : 'text-brand-blue'}`}
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-            fill="none"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          />
-        </svg>
-        <p className="text-base sm:text-lg font-semibold text-ink">
-          Analisando oportunidades...
-        </p>
-      </div>
+      <ProgressAnimation isDegraded={isDegraded} />
 
       {/* AC3: Progress bar — animated, no percentage */}
-      <div className="mb-5">
-        <div className="w-full bg-surface-2 rounded-full h-2.5 overflow-hidden">
-          <div
-            className={`${progressBarColor} h-2.5 rounded-full transition-all duration-700 ease-out`}
-            style={{ width: `${progressPercentage}%` }}
-            role="progressbar"
-            aria-valuenow={progressPercentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          />
-        </div>
-      </div>
+      <ProgressBar progress={progressPercentage} isDegraded={isDegraded} />
 
       {/* AC5 + AC10 + AC11: Educational B2G carousel */}
       <div
@@ -394,35 +357,11 @@ export function EnhancedLoadingProgress({
       )}
 
       {/* AC6: Meta information — states processed + cancel */}
-      <div className="flex justify-between items-center text-xs text-ink-secondary pt-3 border-t border-strong">
-        <span>
-          {effectiveStatesProcessed > 0 ? (
-            stateCount >= 27 ? (
-              <>Analisando em todo o Brasil...</>
-            ) : (
-              <>
-                <span className="font-semibold text-brand-blue">{effectiveStatesProcessed}</span>
-                {' de '}
-                <span className="font-semibold">{stateCount}</span>
-                {` ${stateCount === 1 ? 'estado processado' : 'estados processados'}`}
-              </>
-            )
-          ) : (
-            stateCount >= 27 ? 'Analisando em todo o Brasil...' : `Processando ${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}`
-          )}
-        </span>
-
-        {/* AC8: Cancel button */}
-        {onCancel && (
-          <button
-            onClick={onCancel}
-            className="text-xs text-ink-muted hover:text-error transition-colors underline underline-offset-2"
-            type="button"
-          >
-            Cancelar
-          </button>
-        )}
-      </div>
+      <ProgressSteps
+        stateCount={stateCount}
+        statesProcessed={effectiveStatesProcessed}
+        onCancel={onCancel}
+      />
 
       {/* STORY-359/CRIT-052: SSE status indicator */}
       {isReconnecting ? (
