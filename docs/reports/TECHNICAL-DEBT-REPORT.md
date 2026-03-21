@@ -1,157 +1,291 @@
-# Relatorio de Prontidao GTM — SmartLic
-
-**Data:** 12 de Marco de 2026
-**Projeto:** SmartLic v0.5 — Plataforma de Inteligencia em Licitacoes
-**Empresa:** CONFENGE Avaliacoes e Inteligencia Artificial LTDA
-**Versao:** 2.0 (sobrescreve relatorio de 10/03/2026)
+# Relatorio de Debito Tecnico -- SmartLic
+**Data:** 2026-03-20
+**Versao:** 1.0
+**Preparado por:** Equipe de Engenharia -- CONFENGE Avaliacoes e Inteligencia Artificial LTDA
 
 ---
 
-## Resumo Executivo
+## Executive Summary
 
-O SmartLic esta **PRONTO para lancamento comercial**. A plataforma foi auditada em 3 dimensoes (sistema, banco de dados, frontend/UX) por 4 especialistas e recebeu aprovacao unificada.
+### Situacao Atual
 
-### Numeros-Chave
+A equipe de engenharia conduziu uma auditoria completa da plataforma SmartLic, envolvendo quatro especialistas (arquitetura, banco de dados, frontend/UX e qualidade). Foram analisados todos os componentes do sistema: backend (65+ modulos), banco de dados (35 migrations, 20+ tabelas), e frontend (22 paginas, 33 componentes). O objetivo foi mapear todo o debito tecnico acumulado durante o desenvolvimento acelerado da fase POC, antes de escalar o produto para clientes pagantes.
+
+Identificamos 81 itens de debito tecnico, dos quais **apenas 2 sao criticos** e 14 de alta prioridade. A boa noticia: o sistema funciona e esta em producao com usuarios reais. A base de testes e robusta (7.332 testes backend + 5.583 frontend, todos passando), e a arquitetura multi-fonte com fallbacks garante resiliencia. O debito acumulado e compativel com o estagio do produto -- um POC avancado construido em ritmo intenso.
+
+A recomendacao principal e agir sobre os 2 itens criticos imediatamente (seguranca e integridade de pagamentos), investir nas proximas 5-6 semanas em remediacoes estruturais, e tratar o restante de forma incremental. O investimento total estimado e de **R$ 42.000** -- um valor modesto comparado ao risco acumulado de nao agir, estimado entre R$ 150.000 e R$ 500.000 em cenarios adversos.
+
+### Numeros Chave
 
 | Metrica | Valor |
 |---------|-------|
-| Status | **GO para GTM** |
-| Bloqueadores | 2 (fixes de 5 minutos cada) |
-| Testes Automatizados | 7.872+ passando, zero falhas |
-| Seguranca | RLS em 100% das tabelas, MFA, audit LGPD |
-| Billing | Stripe integrado, trial 14d, 3 planos |
-| Fontes de Dados | 2 APIs ativas (PNCP + PCP) |
-| Uptime Infrastructure | Railway + Supabase + Redis |
+| Total de Debitos Identificados | 81 |
+| Debitos Criticos | 2 |
+| Debitos de Alta Prioridade | 14 |
+| Debitos de Media Prioridade | 28 |
+| Debitos de Baixa Prioridade | 37 |
+| Esforco Total Estimado | ~280 horas |
+| Custo Estimado (R$150/hora) | **R$ 42.000** |
+| Timeline Recomendado | 5-6 semanas |
 
-### Recomendacao
+### O Que Esta Funcionando Bem
 
-Proceder com Go-To-Market imediatamente apos resolver 2 fixes obrigatorios (10 minutos de trabalho). A divida tecnica identificada (40h de trabalho pos-lancamento) nao afeta a operacao comercial e pode ser tratada nos primeiros sprints apos o lancamento.
+Antes de discutir o que precisa melhorar, e importante reconhecer os pontos fortes:
 
----
+- **Resiliencia de busca:** Pipeline multi-fonte com 3 APIs governamentais, circuit breakers, e fallback em cascata
+- **Cobertura de testes excepcional:** 12.915 testes automatizados passando (backend + frontend), bem acima da media da industria para um POC
+- **IA integrada:** Classificacao setorial e analise de viabilidade funcionando em producao
+- **Cache inteligente:** Sistema de cache em dois niveis (memoria + banco) com stale-while-revalidate
+- **Pipeline CI/CD completo:** Testes automaticos, migracao de banco, e deploy integrados
+- **Monitoramento:** Prometheus, OpenTelemetry e Sentry configurados
 
-## O que Funciona Hoje
+### Recomendacao Principal
 
-### Para o Usuario Final
-- **Busca inteligente** em 2 fontes de licitacoes com classificacao IA por setor
-- **Pipeline Kanban** para organizar oportunidades por estagio
-- **Alertas por email** para novas licitacoes relevantes
-- **Relatorios Excel** com resumo executivo gerado por IA
-- **Dashboard** com analytics de buscas e setores
-- **Trial gratuito** de 14 dias sem cartao de credito
-
-### Para o Negocio
-- **Billing automatizado** via Stripe (checkout, portal, webhooks)
-- **3 planos** com 3 periodos de cobranca (desconto progressivo)
-- **Quotas automaticas** por plano (sem intervencao manual)
-- **Metricas** de uso por usuario para analise de churn/engagement
-
-### Para Compliance/Enterprise
-- **Isolamento de dados** por usuario (PostgreSQL RLS em todas as tabelas)
-- **Audit trail** compativel com LGPD (PII hasheado)
-- **MFA** com TOTP e recovery codes
-- **Rate limiting** configurado
-- **CI/CD** com 18 workflows automatizados
+**Iniciar imediatamente a correcao dos 2 itens criticos** (seguranca CORS e identificadores de pagamento expostos em codigo), que representam 7 horas de trabalho e R$ 1.050. Esses itens representam risco real para a operacao: um pode permitir acesso indevido a API, e outro pode causar cobrancas erradas em ambiente de testes. Apos isso, executar o plano de 4 fases descrito abaixo, priorizando a fundacao tecnica que permitira escalar o produto com confianca.
 
 ---
 
-## Acoes Necessarias
+## Analise de Custos
 
-### ANTES do Lancamento (10 minutos)
+### Custo de RESOLVER
 
-1. **Inserir CNPJ real na pagina de privacidade** — Documento legal com placeholder. Risco juridico
-2. **Proteger rota /pipeline no middleware** — Funcionalidade premium acessivel sem login
+| Categoria | Itens | Horas | Custo (R$150/h) |
+|-----------|-------|-------|-----------------|
+| Imediato -- P0 (seguranca + bloqueios) | 7 | 19,5h | R$ 2.925 |
+| Sprint 1 -- P1 (fundacao tecnica) | 13 | 110,5h | R$ 16.575 |
+| Sprint 2 -- P2 (otimizacao) | 25 | 107h | R$ 16.050 |
+| Backlog -- P3 (melhorias incrementais) | 36 | 42,5h | R$ 6.375 |
+| **TOTAL** | **81** | **~280h** | **R$ 42.000** |
 
-### Recomendado ANTES do Lancamento (3.5 horas)
+**Nota:** O custo esta distribuido ao longo de 5-6 semanas. Nao e necessario investir tudo de uma vez. As Fases 0 e 1 (R$ 19.500) concentram 80% do valor de retorno.
 
-3. Corrigir icone do Dashboard na navegacao mobile
-4. Proteger endpoint de metricas com token de acesso
-5. Respeitar preferencia de movimento reduzido (acessibilidade)
-6. Adicionar atributos de acessibilidade na pagina de precos
-7. Adicionar atributos de acessibilidade no modal do pipeline
-
----
-
-## Investimento Pos-Lancamento
-
-### Custos de Manutencao Tecnica (considerando R$150/hora)
-
-| Fase | Horas | Custo | Quando | O que |
-|------|-------|-------|--------|-------|
-| Fixes obrigatorios | 0.2h | R$ 30 | Antes GTM | CNPJ + middleware |
-| Fixes recomendados | 3.5h | R$ 525 | Antes GTM | Icone + seguranca + a11y |
-| Sprint 1 pos-GTM | 16h | R$ 2.400 | Semana 2-3 | Decomposicao de modulos grandes |
-| Sprint 2 pos-GTM | 20h | R$ 3.000 | Semana 4-6 | Performance + typing |
-| Backlog | 10h | R$ 1.500 | Mes 2+ | Limpeza e consolidacao |
-| **TOTAL** | **~50h** | **R$ 7.455** | | |
-
-### Custo de NAO Resolver
-
-Os debitos tecnicos identificados sao de **manutencao**, nao de **operacao**. O sistema funciona corretamente hoje. Os riscos de nao resolver sao:
+### Custo de NAO RESOLVER (Risco Acumulado)
 
 | Risco | Probabilidade | Impacto | Custo Potencial |
-|-------|--------------|---------|-----------------|
-| Bug em modulo grande (2500+ LOC) dificil de debugar | Media | Medio | 4-8h de debugging (R$ 600-1.200) |
-| Performance com 500+ usuarios simultaneos | Baixa (escala atual) | Medio | Refactoring emergencial |
-| Accessibility lawsuit (baixa no Brasil) | Muito baixa | Alto | Custos legais |
+|-------|---------------|---------|-----------------|
+| **Acesso indevido a API** (CORS aberto a qualquer dominio) | Alta | Critico | R$ 50.000 - R$ 150.000 (incidente de seguranca, perda de confianca, LGPD) |
+| **Cobrancas incorretas** (IDs de pagamento Stripe em codigo) | Media | Alto | R$ 20.000 - R$ 50.000 (disputas, chargebacks, risco regulatorio) |
+| **Indisponibilidade prolongada** (sem timeout por request, pool sem controle) | Media | Alto | R$ 30.000 - R$ 80.000 (churn em periodo de trial, perda de leads) |
+| **Lentidao no desenvolvimento** (poluicao de testes, codigo acoplado) | Alta | Medio | R$ 40.000 - R$ 100.000 (custo de oportunidade, atraso em features) |
+| **Vazamento de dados pessoais** (gaps LGPD nao endererados) | Baixa | Critico | R$ 50.000 - R$ 200.000 (multa ANPD, dano reputacional) |
+| **Perda de dados de busca** (cache JSONB sem versionamento) | Baixa | Medio | R$ 10.000 - R$ 30.000 (retrabalho, inconsistencias) |
 
-**Conclusao:** O custo de resolver (R$ 7.455) e muito menor que o risco acumulado. Recomendamos resolver nos 2 primeiros meses pos-lancamento.
+**Custo potencial acumulado de nao agir: R$ 200.000 a R$ 610.000**
+
+A relacao entre investimento (R$ 42.000) e risco evitado e clara: **cada R$ 1 investido em remediacao evita entre R$ 5 e R$ 15 em risco.**
 
 ---
 
-## Diferenciais Tecnicos para Marketing
+## Impacto no Negocio
 
-1. **IA Zero-Noise** — Classificacao setorial com GPT-4.1-nano. Se a IA nao tem certeza, rejeita. Nenhum resultado irrelevante
-2. **Cache Inteligente 3 Niveis** — Resultados em < 2 segundos via cache SWR
-3. **17 Estados de Resiliencia** — Se algo falha, o usuario sabe exatamente o que aconteceu e o que fazer
-4. **7.872+ Testes Automatizados** — Qualidade de software enterprise
-5. **Seguranca B2G-Grade** — RLS, MFA, audit trail LGPD, rate limiting
-6. **Pipeline Kanban** — Visualize e gerencie oportunidades como um CRM de licitacoes
-7. **Mobile-First** — Interface completa no celular com pull-to-refresh
-8. **Keyboard Shortcuts** — Produtividade de ferramenta profissional
+### Seguranca
+
+Dois problemas exigem atencao imediata:
+
+1. **Configuracao de acesso a API:** O sistema atual aceita requisicoes de qualquer origem (CORS aberto com `*`). Isso significa que qualquer site na internet pode tentar acessar a API do SmartLic em nome de um usuario autenticado. Embora a autenticacao via Supabase proteja contra acesso nao autenticado, o risco existe para usuarios logados que visitam sites maliciosos. Este problema esta ligado a uma ambiguidade na configuracao do servidor -- existem dois pontos de entrada (main.py e app_factory.py), e a producao pode estar rodando com a configuracao menos segura.
+
+2. **Identificadores de pagamento em codigo:** IDs reais do Stripe (sistema de pagamentos) estao gravados diretamente em arquivos de migracao do banco. Se alguem configurar um ambiente de testes sem cuidado, pode acionar cobrancas reais. A correcao e mover esses identificadores para variaveis de ambiente.
+
+**Impacto para o negocio:** Risco de incidente de seguranca que poderia comprometer a credibilidade da plataforma antes mesmo de comecar a gerar receita. Para uma empresa pre-revenue buscando primeiros clientes pagantes, um incidente desses pode ser fatal.
+
+### Performance e Confiabilidade
+
+O sistema de busca funciona, mas carrega limitacoes herdadas do desenvolvimento rapido:
+
+- **Comunicacao com PNCP sincrona:** O principal conector de dados governamentais usa uma biblioteca sincrona. Hoje funciona porque o volume e baixo (2 workers), mas limitara a capacidade conforme crescer. A mitigacao existente (execucao em thread separada) e adequada para o curto prazo.
+
+- **Metricas perdem-se a cada deploy:** Os indicadores de desempenho (Prometheus) sao armazenados em memoria e resetam quando o servidor reinicia. Isso impede analises de tendencia e dificulta a deteccao precoce de problemas.
+
+- **Monitoramento de APIs governamentais incompleto:** A ComprasGov v3 esta fora do ar ha 17 dias sem alerta automatico. O check de saude da PNCP nao detecta mudancas nos limites da API (como a reducao de 500 para 50 resultados por pagina, ocorrida em fevereiro).
+
+**Impacto para o negocio:** Usuarios em trial podem experimentar lentidao ou resultados incompletos, reduzindo a taxa de conversao. Problemas intermitentes sem monitoramento adequado significam que a equipe descobre problemas depois dos usuarios.
+
+### Experiencia do Usuario
+
+O frontend foi construido com velocidade, e as funcionalidades estao la. Porem:
+
+- **Visual inconsistente:** Cerca de 1.754 referencias a estilos inline ao inves do sistema de design padrao. O usuario ve pequenas inconsistencias de cores, espacamentos e sombras entre paginas.
+
+- **Componentes basicos ausentes:** Faltam 5 componentes primitivos (Card, Badge, Modal, Select, Tabs) no design system. Cada pagina reimplementa esses elementos de forma ligeiramente diferente.
+
+- **Acessibilidade:** Embora o basico esteja coberto (396 usos de aria-hidden, audit automatizado no CI com 0 violacoes criticas), existem gaps em modais (foco nao retorna apos fechar) e SVGs sem marcacao acessivel.
+
+- **Flash de layout em mobile:** Na primeira carga, a interface "pula" brevemente porque o detector de mobile inicia com valor errado. Correcao simples (2 horas).
+
+**Impacto para o negocio:** Inconsistencias visuais passam uma impressao de produto inacabado, o que e particularmente prejudicial em demonstracoes para potenciais clientes B2G. Empresas grandes avaliam qualidade visual como proxy de qualidade tecnica.
+
+### Velocidade de Desenvolvimento
+
+O maior custo invisivel:
+
+- **Poluicao de testes:** 8 padroes documentados de contaminacao entre testes. Testes que passam isoladamente falham em conjunto. A equipe gasta tempo investigando falhas espurias ao inves de desenvolver features. Este item foi elevado a prioridade maxima (P0) pela equipe de qualidade porque bloqueia a velocidade de todo o time.
+
+- **Codigo acoplado:** A pagina principal de busca tem 39 componentes e 9 hooks. Qualquer mudanca exige cuidado extremo para nao quebrar funcionalidades adjacentes.
+
+- **Tres locais para componentes:** Sem convencao clara de onde colocar componentes, novos desenvolvedores (ou o proprio time apos algumas semanas) perdem tempo decidindo e buscando.
+
+**Impacto para o negocio:** Cada feature nova demora mais do que deveria. Em fase de pre-revenue com trial ativo, a velocidade de iteracao e critica -- cada semana de atraso em melhorias e uma semana a menos para converter trials em clientes pagantes.
+
+### Conformidade
+
+- **LGPD:** Nao ha mecanismo implementado de exclusao de dados pessoais (right-to-deletion), exportacao de dados, ou politica de retencao de PII. Aceitavel para beta com menos de 100 usuarios, mas bloqueante antes de escalar.
+
+- **Acessibilidade:** O CI ja verifica violacoes criticas (0 encontradas), mas faltam refinamentos para conformidade completa com WCAG 2.1.
+
+- **Seguranca da cadeia de dependencias:** `pip-audit` e `npm audit` rodam no CI, mas os resultados nao sao revisados formalmente. Aceitavel para o estagio atual.
+
+**Impacto para o negocio:** Gaps de LGPD precisam ser endereados antes de escalar para clientes enterprise ou participar de processos que exijam conformidade. O custo de remediar depois e exponencialmente maior.
 
 ---
 
 ## Timeline Recomendado
 
-```
-Semana 0 (Hoje):     Fixes obrigatorios (10min) + recomendados (3.5h)
-                     → LANCAMENTO GTM
+### Fase 0: Urgente (1 semana)
 
-Semana 1:            Monitoramento pos-lancamento
-                     - Acompanhar metricas de trial conversion
-                     - Monitorar error rate e latencia
-                     - Suporte a primeiros usuarios
+**O que:** Corrigir as 2 vulnerabilidades criticas + desbloquear velocidade do time.
 
-Semanas 2-3:         Sprint 1 pos-GTM
-                     - Decomposicao de modulos grandes (16h)
+| Acao | Por que | Horas |
+|------|---------|-------|
+| Investigar e corrigir configuracao de seguranca (CORS) | Producao pode estar aceitando requisicoes de qualquer origem. Resolve 4 problemas de uma vez (seguranca, registro de rotas, nome e versao do app). | 4h |
+| Mover IDs de pagamento Stripe para configuracao segura | Previne cobrancas acidentais em ambientes de teste | 3h |
+| Eliminar contaminacao entre testes | Desbloqueia a velocidade de desenvolvimento de todo o time | 12h |
+| Corrigir dependencia de producao classificada errada | react-hook-form esta em devDependencies mas e usado em producao | 0,5h |
 
-Semanas 4-6:         Sprint 2 pos-GTM
-                     - Performance e typing (20h)
+- **Custo:** R$ 2.925
+- **ROI:** Eliminacao de riscos criticos de seguranca e desbloqueio da velocidade de desenvolvimento. Sem isso, todas as fases seguintes serao mais lentas e arriscadas.
 
-Mes 2+:              Backlog
-                     - Limpeza e consolidacao (10h)
-```
+### Fase 1: Fundacao (2 semanas)
+
+**O que:** Estabilizar a arquitetura backend e criar a base do design system frontend.
+
+**Backend (R$ 7.800 -- 52h):**
+- Adicionar controle de timeout por requisicao (previne travamentos)
+- Persistir metricas de desempenho (permite analise de tendencias)
+- Melhorar monitoramento das APIs governamentais (detectar mudancas e quedas)
+- Padronizar versionamento da API (prepara para integracao com parceiros)
+- Migrar conector PNCP para comunicacao assincrona (escala futura)
+- Limpar decomposicao de modulo de busca (reduz fragilidade)
+- Corrigir trigger de banco para novos usuarios (trial correto desde o inicio)
+- Adicionar limpeza automatica de registros de assinatura (previne acumulo)
+
+**Frontend (R$ 9.300 -- 62h):**
+- Reorganizar componente de autenticacao (pre-requisito para melhorias seguintes)
+- Corrigir flash de layout em mobile (2h, impacto imediato na UX)
+- Construir 5 componentes basicos do design system (Card, Modal, Badge, Select, Tabs)
+- Iniciar migracao de 1.754 estilos inline para sistema padronizado
+
+- **Custo:** R$ 16.575
+- **ROI:** Backend estavel permite focar em features ao inves de apagar incendios. Design system consistente melhora a percepcao de qualidade do produto em demos e trials. Estimativa: reducao de 30-40% no tempo de desenvolvimento de novas telas.
+
+### Fase 2: Otimizacao (2 semanas)
+
+**O que:** Melhorias incrementais em performance, organizacao e experiencia do usuario.
+
+**Backend e Banco de Dados (R$ 6.075 -- 40,5h):**
+- Monitoramento automatico da ComprasGov (cron a cada 15 min)
+- Unificar 5 implementacoes diferentes de cache em interface comum
+- Controle unificado de conexoes com banco e Redis
+- Otimizar consultas de conversas (50 subconsultas por pagina para 1 JOIN)
+- Adicionar versionamento de dados em cache JSONB
+- Limpeza e padronizacao de schema do banco
+
+**Frontend (R$ 11.100 -- 74h):**
+- Simplificar pagina principal de busca (39 componentes em modulos claros)
+- Unificar localizacao de componentes (3 locais para 1 convencao)
+- Implementar Storybook (catalogo visual de componentes)
+- Melhorar acessibilidade de modais e icones SVG
+- Padronizar paginas de erro e rodape
+- Configurar feature gates para paginas ocultas
+
+- **Custo:** R$ 16.050
+- **ROI:** Produto mais consistente visualmente, melhor performance percebida pelo usuario, e base de codigo mais facil de manter. Estimativa: reducao adicional de 20% no tempo de desenvolvimento.
+
+### Backlog (continuo)
+
+**O que:** 36 itens de baixo risco que podem ser resolvidos oportunisticamente.
+
+- 12 quick wins de menos de 1 hora cada (ex: labels confusos, timestamps nullable, icone errado no menu mobile)
+- 14 itens pequenos de 1-4 horas (ex: formatacao de datas, animacoes duplicadas, audit de acessibilidade)
+- 1 item maior de 8 horas (paginas SEO orientadas a CMS)
+- 9 itens que nao exigem nenhum esforco (aceitos como estao, documentados)
+
+- **Custo:** R$ 6.375
+- **Abordagem:** Resolver 2-3 itens por sprint, priorizando os que estao no caminho de features ja planejadas.
+
+---
+
+## ROI da Resolucao
+
+| Investimento | Retorno Esperado |
+|--------------|------------------|
+| R$ 42.000 (resolucao total) | R$ 200.000 - R$ 610.000 (riscos evitados) |
+| ~280 horas de engenharia | +40% velocidade de desenvolvimento estimada |
+| 5-6 semanas de execucao | Produto pronto para escalar com confianca |
+| R$ 19.500 (Fases 0+1 apenas) | 80% do valor de retorno em 3 semanas |
+
+**ROI Estimado: 5:1 a 15:1** (considerando riscos evitados)
+
+**ROI das Fases 0+1 apenas: 8:1 a 25:1** (maior concentracao de valor)
+
+A estrategia recomendada e clara: investir R$ 19.500 nas Fases 0 e 1, que concentram a eliminacao de riscos e o desbloqueio de velocidade, e depois avaliar as Fases 2 e Backlog conforme a evolucao do negocio.
+
+---
+
+## Top 5 Acoes Prioritarias
+
+1. **Corrigir configuracao de seguranca (CORS + dual-path)** -- Producao pode estar aceitando requisicoes de qualquer dominio. R$ 600 (4h). Timeline: 1 dia. Resolve 4 problemas simultaneamente.
+
+2. **Mover identificadores Stripe para configuracao segura** -- Previne cobrancas acidentais em staging/dev. R$ 450 (3h). Timeline: 1 dia. Risco financeiro direto.
+
+3. **Eliminar contaminacao de testes** -- Maior bloqueio de velocidade do time hoje. Testes falham de forma intermitente, gerando retrabalho. R$ 1.800 (12h). Timeline: 3 dias.
+
+4. **Construir design system basico (5 componentes)** -- Cada tela nova reimplementa Card, Modal, Badge de forma diferente. R$ 3.600 (24h). Timeline: 1 semana. Reduz tempo de desenvolvimento de telas em 40%.
+
+5. **Migrar estilos inline para design system** -- 1.754 inconsistencias visuais afetam a percepcao de qualidade. R$ 4.800 (32h). Timeline: 1,5 semanas. Produto com visual profissional e consistente.
 
 ---
 
 ## Proximos Passos
 
-1. [x] Auditoria completa executada (Sistema + DB + Frontend + QA review)
-2. [ ] Resolver 2 bloqueadores (10 minutos)
-3. [ ] Resolver 5 fixes recomendados (3.5 horas)
-4. [ ] **LANCAR**
-5. [ ] Sprint 1 pos-GTM (semanas 2-3)
-6. [ ] Sprint 2 pos-GTM (semanas 4-6)
+1. [ ] Aprovar orcamento inicial de R$ 2.925 (Fase 0 -- itens urgentes)
+2. [ ] Iniciar Fase 0 imediatamente (investigacao de seguranca e Stripe IDs)
+3. [ ] Aprovar orcamento de R$ 16.575 para Fase 1 (fundacao tecnica)
+4. [ ] Alocar engenheiro(s) para execucao -- 1 backend + 1 frontend idealmente
+5. [ ] Definir metricas de acompanhamento (sugestao abaixo)
+6. [ ] Revisao quinzenal de progresso com base nas metricas
+7. [ ] Avaliar Fases 2 e Backlog apos conclusao da Fase 1
+
+### Metricas Sugeridas de Acompanhamento
+
+| Metrica | Hoje | Meta |
+|---------|------|------|
+| Testes backend passando | 7.332 | >= 7.332 |
+| Testes frontend passando | 5.583 | >= 5.583 |
+| Testes E2E passando | 60 | >= 60 |
+| Estilos inline (`var(--`) | ~1.754 | < 50 |
+| Componentes UI padronizados | 6 | >= 11 |
+| Origens CORS permitidas | `*` (todas) | Lista explicita |
+| Tabelas sem politica de retencao | 3+ | 0 |
+| Violacoes criticas de acessibilidade | 0 | 0 (manter) |
+
+---
+
+## Nota Final
+
+O SmartLic esta em uma posicao solida para um produto em estagio POC. A base tecnica -- especialmente a cobertura de testes, a arquitetura de resiliencia, e a integracao com IA -- esta acima da media para este estagio. O debito tecnico identificado e tipico de desenvolvimento acelerado e plenamente gerenciavel.
+
+O investimento recomendado de R$ 42.000 (ou R$ 19.500 para as fases de maior impacto) e modesto comparado ao valor que protege. A questao nao e se esse debito deve ser pago, mas quando -- e quanto mais cedo, menor o custo.
 
 ---
 
 ## Anexos
 
-- `docs/architecture/system-architecture.md` — Auditoria de sistema completa
-- `supabase/docs/SCHEMA.md` — Schema e inventario de tabelas
-- `supabase/docs/DB-AUDIT.md` — Auditoria detalhada do banco
-- `docs/frontend/frontend-spec.md` — Auditoria de frontend/UX
-- `docs/reviews/db-specialist-review.md` — Review do @data-engineer
-- `docs/reviews/ux-specialist-review.md` — Review do @ux-design-expert
-- `docs/reviews/qa-review.md` — Review do @qa
-- `docs/prd/technical-debt-assessment.md` — Assessment final consolidado
+- [Assessment Tecnico Completo](../prd/technical-debt-assessment.md) -- 81 itens detalhados com severidade, horas e responsaveis
+- [Arquitetura do Sistema](../architecture/system-architecture.md)
+- [Schema do Banco de Dados](../../supabase/docs/SCHEMA.md)
+- [Especificacao do Frontend](../frontend/frontend-spec.md)
+
+---
+
+*Relatorio gerado em 2026-03-20 pela equipe de engenharia da CONFENGE como parte do processo de Brownfield Discovery (Phase 9).*
+*Dados validados por 4 especialistas: arquitetura, banco de dados, frontend/UX e qualidade.*

@@ -1,89 +1,115 @@
-# Epic: GTM Readiness Sprint
-**ID:** EPIC-GTM-001
-**Date:** 2026-03-10
+# Epic: Resolucao de Debitos Tecnicos -- SmartLic
+**ID:** EPIC-DEBT
+**Data:** 2026-03-20
 **Owner:** Engineering Team
-**Source:** Brownfield Discovery Assessment v1.0
+**Status:** PLANNED
 
-## Objective
+## Objetivo
 
-Ship the remaining security verifications, conversion quick wins, CI hardening, and reliability improvements that separate SmartLic from a polished POC and a product worthy of paying customers at R$397-997/month. The assessment scored the platform at 8.0/10 (GREEN) with zero confirmed P0 blockers, but identified 9 P1 items and 19 P2 items that collectively represent the gap between "works" and "trustworthy." This sprint closes that gap in 8 weeks, front-loading the highest-ROI items into Week 1.
+Resolver sistematicamente os 81 debitos tecnicos identificados na Brownfield Discovery, eliminando riscos de seguranca (CORS wildcard, Stripe IDs hardcoded), desbloqueando velocidade do time (test pollution), e estabelecendo fundacao arquitetural (component library, async PNCP, API versioning) para escalar o SmartLic de beta para producao com clientes pagantes.
 
-## Success Criteria
+## Escopo
+- 81 debitos tecnicos identificados (CRITICAL: 2, HIGH: 14, MEDIUM: 28, LOW: 37)
+- ~280h de esforco estimado
+- 4 sprints planejados (Sprint 0 + 1 + 2 + Backlog)
+- 3 areas: Sistema (~102h), Database (~27h), Frontend (~151h)
 
-- [ ] All P0 items verified/resolved (RLS production state confirmed)
-- [ ] All quick wins shipped (9 items, estimated +20-35% signup improvement)
-- [ ] All P1 items resolved within 30 days
-- [ ] Test coverage maintained at baseline (7332 backend / 5583 frontend)
-- [ ] CI security scans (pip-audit, npm audit) running as blocking gates
-- [ ] Zero-downtime deploy capability verified
+## Criterios de Sucesso
 
-## Stories
-
-### Week 1: Quick Wins + P0 Verification
-| Story ID | Title | Effort | Priority |
-|----------|-------|--------|----------|
-| DEBT-121 | Verify P0 RLS in Production | 10min | P0-verify |
-| DEBT-122 | Ship Conversion Quick Wins (testimonials, annual default, CTA button) | 3h | P1 |
-| DEBT-123 | Make CI Security Scans Blocking | 4-8h | P1 |
-| DEBT-125 | Landing Page Product Screenshot | 6h | P1 |
-| DEBT-126 | WhatsApp CTA on Pricing Page | 2h | P1 |
-| DEBT-130 | E2E Python Version Fix | 5min | P2 |
-
-### Weeks 2-4: P1 High Priority
-| Story ID | Title | Effort | Priority |
-|----------|-------|--------|----------|
-| DEBT-124 | Graceful Shutdown / Zero-Downtime Deploys | 4h | P1 |
-| DEBT-127 | Dashboard Actionable Insights | 8h | P1 |
-| DEBT-129 | Capacity Limits Documentation + Alerting | 4h | P1 |
-
-### Weeks 5-8: P2 Medium Priority
-| Story ID | Title | Effort | Priority |
-|----------|-------|--------|----------|
-| DEBT-128 | Feature Flag Cleanup | 8h | P2 |
+| Metrica | Baseline (hoje) | Meta pos-remediacao |
+|---------|-----------------|---------------------|
+| Backend tests | 7332 pass / 0 fail | >= 7332 pass / 0 fail |
+| Frontend tests | 5583 pass / 0 fail | >= 5583 pass / 0 fail |
+| E2E tests | 60 pass | >= 60 pass |
+| Backend coverage | 70%+ (CI gate) | >= 70% |
+| Frontend coverage | 60%+ (CI gate) | >= 60% |
+| `var(--` in frontend | ~1,754 | <50 |
+| UI primitives | 6 | >= 11 |
+| CORS unauthorized origins | `*` (all) | 0 (explicit allowlist) |
+| Tables without retention | 3+ | 0 |
+| a11y critical violations | 0 (axe-core) | 0 (manter) |
 
 ## Timeline
 
-```
-Week 1  [===========] P0 verify + quick wins + screenshot + CI scans
-Week 2  [=====]        Graceful shutdown (DEBT-124)
-Week 3  [========]     Dashboard insights (DEBT-127) + alerting (DEBT-129)
-Week 4  [===]          Buffer / overflow from weeks 2-3
-Week 5  [========]     Feature flag cleanup (DEBT-128)
-Week 6-8 [...]         P2 items from assessment (not in this epic's stories)
-```
+| Sprint | Foco | Duracao | Horas | Stories |
+|--------|------|---------|-------|---------|
+| 0 | Urgente/Security | 1 semana | ~19.5h | DEBT-S0.1, DEBT-S0.2, DEBT-S0.3 |
+| 1 | Fundacao | 2 semanas | ~110.5h | DEBT-S1.1, DEBT-S1.2, DEBT-S1.3, DEBT-S1.4 |
+| 2 | Otimizacao | 2 semanas | ~107h | DEBT-S2.1, DEBT-S2.2, DEBT-S2.3 |
+| Backlog | Melhoria Continua | Ongoing | ~42.5h | DEBT-BL.1, DEBT-BL.2 |
+
+## Stories
+
+### Sprint 0 -- P0 (Imediato, ~19.5h)
+
+| ID | Titulo | Horas | Debt Items |
+|----|--------|-------|------------|
+| DEBT-S0.1 | Fix main.py/app_factory dual-path + CORS | 4h | SYS-01, SYS-06, SYS-17, SYS-18 |
+| DEBT-S0.2 | Security Hardening -- Stripe IDs + Dependencies | 3.5h | DB-01, FE-19 |
+| DEBT-S0.3 | Test Infrastructure -- Eliminar Pollution | 12h | SYS-14 |
+
+### Sprint 1 -- P1 (Fundacao, ~110.5h)
+
+| ID | Titulo | Horas | Debt Items |
+|----|--------|-------|------------|
+| DEBT-S1.1 | PNCP Client Modernization -- Sync to Async | 16h | SYS-02 |
+| DEBT-S1.2 | Database Integrity + Backend Hardening | 22.5h | DB-02, DB-06, SYS-05, SYS-08, SYS-09, SYS-10 |
+| DEBT-S1.3 | Design System Foundation -- UI Primitives + Tokens | 60h | FE-01, FE-02, FE-07, FE-34 |
+| DEBT-S1.4 | Observability e API Versioning | 16h | SYS-04, SYS-07 |
+
+### Sprint 2 -- P2 (Otimizacao, ~107h)
+
+| ID | Titulo | Horas | Debt Items |
+|----|--------|-------|------------|
+| DEBT-S2.1 | Frontend Architecture -- Components + Hooks | 65h | FE-03, FE-04, FE-06, FE-09, FE-12, FE-14, FE-16, FE-18, FE-20, FE-21, FE-26 |
+| DEBT-S2.2 | Backend Cleanup -- Cache, Keywords, Pools | 26h | SYS-03, SYS-11, SYS-12, SYS-13, SYS-16 |
+| DEBT-S2.3 | Database Performance + Schema | 16.5h | DB-03, DB-04, DB-08, DB-10, DB-11, DB-13, DB-17, DB-28, DB-30 |
+
+### Backlog -- P3 (Melhoria Continua, ~42.5h)
+
+| ID | Titulo | Horas | Debt Items |
+|----|--------|-------|------------|
+| DEBT-BL.1 | Code Quality -- Dead Code, Naming, Documentation | 28h | SYS-19, SYS-20, DB-05, DB-09, DB-12, DB-14, DB-15, DB-18, DB-19, DB-21, DB-22, DB-23, DB-24, DB-25, DB-26, DB-27, DB-29, DB-31, FE-05, FE-08, FE-10, FE-11, FE-15, FE-17, FE-23, FE-25, FE-27, FE-28, FE-29, FE-30, FE-32, FE-33 |
+| DEBT-BL.2 | Accessibility + UX Polish | 14.5h | FE-24, FE-31, FE-35, FE-36 |
+
+## Riscos
+
+| Risco | Probabilidade | Impacto | Mitigacao |
+|-------|---------------|---------|-----------|
+| main.py/app_factory dual-path: producao roda com middleware incompleta | HIGH | CRITICAL | Investigar em 30min via Railway logs. Se confirmado, wiring app_factory resolve 4 items. |
+| CORS fix quebra frontend proxy | MEDIUM | HIGH | Frontend proxy e same-origin, bypassa CORS. Testar com Origin headers via TestClient. |
+| PNCP async migration quebra 7332 testes | LOW | CRITICAL | Migrar incrementalmente (1 metodo por vez em feature branch). |
+| Component library quebra paginas existentes | MEDIUM | MEDIUM | Sem Storybook, validacao manual. Usar Playwright screenshot comparison. |
+| Test pollution fixes quebram testes dependentes de estado poluido | MEDIUM | MEDIUM | Rodar full suite apos cada fix individual. Corrigir em cascata. |
 
 ## Dependencies
 
-```
-DEBT-121 (RLS verify)
-  |
-  v (if not applied -> deploy migration 027 immediately)
+- **SYS-01** resolve SYS-06, SYS-17, SYS-18 (bundle)
+- **FE-34** (Sprint 1) desbloqueia FE-09 e FE-26 (Sprint 2)
+- **FE-02** (Sprint 1) desbloqueia FE-01 codemod e FE-03 refactor (Sprint 2)
+- **DB-01** (Sprint 0) desbloqueia DB-18 (Backlog)
+- **DB-02, DB-08, DB-19** podem ser agrupados em 1 migration
 
-DEBT-123 (CI hardening) --- ship BEFORE other code fixes to ensure pipeline is secure
-  |
-  v
-DEBT-124 (graceful shutdown) --> future P1-009 (horizontal scaling)
-  |    scaling without shutdown = more deploy failures
-  |
-DEBT-125 (product screenshot) --> future P2-005 (next/image infra)
-  |    needs image optimization before adding many visuals
-  |
-DEBT-122 (conversion quick wins) --- no blockers, ship immediately
-DEBT-126 (WhatsApp CTA) --- no blockers
-DEBT-127 (dashboard insights) --- no blockers, but benefits from DEBT-124
-DEBT-128 (feature flags) --- no blockers
-DEBT-129 (alerting) --- no blockers
-DEBT-130 (E2E Python) --- no blockers, 5-minute fix
+## Caminho Critico
+
+```
+SYS-01 (4h) --> SYS-14 (12h) --> FE-34 (2h) --> FE-02 (24h) --> FE-01 (32h) --> FE-03 (16h)
+Total: ~90h (~6 semanas com 1 dev FE dedicado)
 ```
 
-## Risk Mitigation
+## Gaps Aceitos
 
-1. **If DEBT-121 fails (RLS not applied):** Deploy migration 027 immediately via `supabase db push --include-all`. Migration is idempotent and tested. Estimated recovery: 15 minutes.
+8 gaps documentados na assessment e aceitos para o estagio atual (pre-revenue beta, <100 usuarios):
+1. Sem consumer-driven contract tests (Pact)
+2. LGPD compliance gaps (data retention PII)
+3. Rate limiting fallback per-worker in-memory
+4. Sem dead letter queue para ARQ jobs
+5. Supply chain security nao auditado formalmente
+6. OAuth token encryption app-layer only
+7. Dependency supply chain nao verificado
+8. DDoS resilience nao avaliada
 
-2. **If DEBT-123 takes longer (CI audit findings):** Phase the rollout. Day 1: make pip-audit and npm audit blocking. Week 2: tackle pr-validation.yml. Deferred items do not block other stories.
+---
 
-3. **If DEBT-125 takes longer (screenshot design iteration):** Ship text-only hero improvement first (adjust layout/copy). Add screenshot as follow-up. Core conversion win is the testimonials import (DEBT-122), which is independent.
-
-4. **If DEBT-124 is complex (Gunicorn lifecycle):** Start with FastAPI lifespan `shutdown` event for new-request rejection. Full drain behavior can be a follow-up. Partial fix still reduces deploy-time failures.
-
-5. **If any story exceeds estimate by 2x:** Escalate to PM for scope cut. Every story has ACs that can be partially shipped (minimum viable improvement).
+*Gerado 2026-03-20 por @pm durante Brownfield Discovery Phase 10.*
+*Baseado no Technical Debt Assessment FINAL v1.0.*
