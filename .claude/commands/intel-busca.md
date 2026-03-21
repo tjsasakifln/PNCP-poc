@@ -92,10 +92,11 @@ Se `empresa.sancionada == true`: Informar o impedimento legal e recomendar regul
 
 ## GATE 1 — Validacao Temporal (apos coleta)
 
-**Objetivo:** Garantir que NENHUM edital expirado chegue ao relatorio.
+**Objetivo:** Garantir que APENAS editais com propostas abertas cheguem ao relatorio.
 
 O `intel-collect.py` calcula `status_temporal` para cada edital:
-- `EXPIRADO` — encerramento ja passou — **excluido automaticamente** do top20
+- `EXPIRADO` — encerramento ja passou — **excluido automaticamente**
+- `SESSAO_REALIZADA` — sessao de lances ja aconteceu — **excluido automaticamente** (oportunidade perdida)
 - `URGENTE` — encerramento dentro de 7 dias — flag vermelho no relatorio
 - `IMINENTE` — encerramento entre 7-15 dias — flag amarelo
 - `PLANEJAVEL` — encerramento > 15 dias — normal
@@ -105,7 +106,7 @@ O `intel-collect.py` calcula `status_temporal` para cada edital:
 - Se `total_expirados` > 0: OK, foram excluidos automaticamente
 - Se >50% dos compativeis sao `SEM_DATA`: ALERTA — muitos editais sem prazo definido, mencionar no relatorio
 
-**REGRA ABSOLUTA:** Editais `EXPIRADO` NUNCA aparecem no top20 nem no relatorio.
+**REGRA ABSOLUTA:** Editais `EXPIRADO` e `SESSAO_REALIZADA` NUNCA aparecem no top20 nem no relatorio. Apenas oportunidades abertas.
 
 ---
 

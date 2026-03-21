@@ -2188,19 +2188,17 @@ def main():
     n_semantic_removed = n_before_semantic - len(editais)
     source_meta["total_semantic_dedup_removed"] = n_semantic_removed
 
-    # ── Step 3b: Remove expired tenders BEFORE any further processing ──
-    # NOTE: Only EXPIRADO (based on data_encerramento_proposta) causes removal.
-    # SESSAO_REALIZADA is kept as a status flag but does NOT exclude — data_abertura_proposta
-    # being in the past means proposals STARTED being accepted, not that the tender is closed.
+    # ── Step 3b: Remove expired + session-held tenders BEFORE any further processing ──
+    # EXPIRADO: data_encerramento_proposta already passed
+    # SESSAO_REALIZADA: data_abertura_proposta already passed (bidding session held, can't participate)
     n_before_expiry = len(editais)
     n_expirados = sum(1 for ed in editais if ed.get("status_temporal") == "EXPIRADO")
     n_sessao_realizada = sum(1 for ed in editais if ed.get("status_temporal") == "SESSAO_REALIZADA")
-    editais = [ed for ed in editais if ed.get("status_temporal") != "EXPIRADO"]
-    n_removed = n_expirados
+    editais = [ed for ed in editais if ed.get("status_temporal") not in ("EXPIRADO", "SESSAO_REALIZADA")]
+    n_removed = n_expirados + n_sessao_realizada
     if n_removed > 0:
-        print(f"\n  Filtro temporal: {n_removed} expirados removidos de {n_before_expiry} editais ({len(editais)} restantes)")
-    if n_sessao_realizada > 0:
-        print(f"  Info: {n_sessao_realizada} editais com sessao realizada mantidos (proposta aberta)")
+        print(f"\n  Filtro temporal: {n_removed} removidos de {n_before_expiry} editais ({len(editais)} restantes)")
+        print(f"    {n_expirados} expirados + {n_sessao_realizada} sessao ja realizada")
     source_meta["total_expirados_removidos"] = n_removed
     source_meta["total_expirados_encerrados"] = n_expirados
     source_meta["total_sessao_realizada"] = n_sessao_realizada

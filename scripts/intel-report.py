@@ -351,28 +351,18 @@ def _generate_resumo(empresa: dict, top20_pdf: list[dict], stats: dict) -> str:
     participar = [e for e in top20_pdf if (e.get('analise') or {}).get('recomendacao_acao', '').upper().startswith('PARTICIPAR')]
     nao_part = [e for e in top20_pdf if (e.get('analise') or {}).get('recomendacao_acao', '').upper().startswith('NAO')]
 
-    acao_imediata = [e for e in participar if e.get('status_temporal') in ('PLANEJAVEL', 'IMINENTE', 'URGENTE')]
-    sessao_realizada = [e for e in participar if e.get('status_temporal') == 'SESSAO_REALIZADA']
-
     val_participar = sum((_safe_float(e.get('valor_estimado')) for e in participar))
-    val_imediata = sum((_safe_float(e.get('valor_estimado')) for e in acao_imediata))
 
     total_compat = stats.get('total_cnae_compativel', 0)
+    n_removidos = stats.get('total_expirados_removidos', 0)
 
     nome = empresa.get('razao_social', 'A empresa')
-    sede = f"{empresa.get('cidade_sede', '')} / {empresa.get('uf_sede', '')}".strip(' /')
 
     lines: list[str] = []
-    lines.append(f"A {nome} possui {total_compat} oportunidades compatíveis identificadas no PNCP.")
-    lines.append(f"Dos editais analisados, {len(participar)} receberam recomendação PARTICIPAR "
+    lines.append(f"A {nome} possui {total_compat} oportunidades abertas compatíveis identificadas no PNCP "
+                  f"({n_removidos} editais expirados ou com sessão já realizada foram excluídos).")
+    lines.append(f"Dos editais analisados em profundidade, {len(participar)} receberam recomendação PARTICIPAR "
                   f"(valor total R$ {val_participar/1e6:.1f}M) e {len(nao_part)} NÃO PARTICIPAR com justificativa.")
-
-    if acao_imediata:
-        lines.append(f"{len(acao_imediata)} editais têm propostas abertas para ação imediata "
-                      f"(R$ {val_imediata/1e6:.1f}M).")
-    if sessao_realizada:
-        lines.append(f"{len(sessao_realizada)} editais tiveram sessão já realizada — consultar resultado "
-                      f"nos portais antes de qualquer ação.")
 
     # Top 3 destaques
     top3 = sorted(participar, key=lambda e: _safe_float(e.get('valor_estimado')), reverse=True)[:3]
@@ -392,31 +382,25 @@ def _generate_proximos_passos(top20_pdf: list[dict]) -> list[dict]:
     """Generate action items deterministically from data."""
     participar = [e for e in top20_pdf if (e.get('analise') or {}).get('recomendacao_acao', '').upper().startswith('PARTICIPAR')]
 
-    urgency_order = {'URGENTE': 0, 'IMINENTE': 1, 'PLANEJAVEL': 2, 'SESSAO_REALIZADA': 3}
-    priority_label = {'URGENTE': 'URGENTE', 'IMINENTE': 'URGENTE', 'PLANEJAVEL': 'PRIORITÁRIO', 'SESSAO_REALIZADA': 'MONITORAR'}
+    urgency_order = {'URGENTE': 0, 'IMINENTE': 1, 'PLANEJAVEL': 2, 'SEM_DATA': 3}
+    priority_label = {'URGENTE': 'URGENTE', 'IMINENTE': 'URGENTE', 'PLANEJAVEL': 'PRIORITÁRIO', 'SEM_DATA': 'AVALIAR'}
 
     sorted_eds = sorted(participar, key=lambda e: (
-        urgency_order.get(e.get('status_temporal', 'SESSAO_REALIZADA'), 9),
+        urgency_order.get(e.get('status_temporal', 'SEM_DATA'), 9),
         -(_safe_float(e.get('valor_estimado')))
     ))
 
     passos: list[dict] = []
     for e in sorted_eds[:8]:
-        st = e.get('status_temporal', 'SESSAO_REALIZADA')
+        st = e.get('status_temporal', 'SEM_DATA')
         prefix = priority_label.get(st, 'AVALIAR')
         mun = e.get('municipio', '?')
         val = _safe_float(e.get('valor_estimado')) / 1e6
         obj = (e.get('objeto', '') or '')[:60].strip()
-
         data_val = (e.get('analise') or {}).get('data_sessao', '') or (e.get('analise') or {}).get('prazo_proposta', '')
 
-        if st == 'SESSAO_REALIZADA':
-            acao = f"{prefix}: {mun} — {obj} R$ {val:.1f}M. Sessão já realizada, consultar resultado no portal."
-        else:
-            acao = f"{prefix}: {mun} — {obj} R$ {val:.1f}M (sessão {data_val})."
-
-        prazo = data_val if st != 'SESSAO_REALIZADA' else ""
-        passos.append({"acao": acao, "prazo": prazo, "prioridade": prefix})
+        acao = f"{prefix}: {mun} — {obj} R$ {val:.1f}M (sessão {data_val})." if data_val else f"{prefix}: {mun} — {obj} R$ {val:.1f}M."
+        passos.append({"acao": acao, "prazo": data_val, "prioridade": prefix})
 
     return passos
 

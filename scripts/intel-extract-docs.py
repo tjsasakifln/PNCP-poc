@@ -586,9 +586,9 @@ def calculate_opportunity_score(
     else:
         score = existing_score
 
-    # SESSAO_REALIZADA penalty — prioritize open proposals over already-held sessions
+    # SESSAO_REALIZADA = opportunity lost — exclude entirely
     if status == 'SESSAO_REALIZADA':
-        score *= 0.4  # -60% penalty
+        return 0.0
 
     return round(score, 4)
 
@@ -620,8 +620,8 @@ def select_top_editais(
         # valor == 0 or None means sigiloso — include as unknown
         if valor is not None and valor > 0 and valor > capacidade_10x:
             continue
-        # Skip expired editais
-        if e.get("status_temporal") == "EXPIRADO":
+        # Skip expired and already-held sessions — only open opportunities
+        if e.get("status_temporal") in ("EXPIRADO", "SESSAO_REALIZADA"):
             continue
         # Hard cutoff: >700km AND valor < capacidade_3x — exclude from top20
         dist_km = (e.get('distancia') or {}).get('km')
