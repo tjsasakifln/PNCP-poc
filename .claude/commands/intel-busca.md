@@ -10,12 +10,19 @@ Utiliza TODOS os CNAEs da empresa (principal + secundarios) para maxima cobertur
 1. `docs/intel/intel-{CNPJ}-{razao-slug}-{YYYY-MM-DD}.xlsx` — Planilha com TODAS as oportunidades compativeis (sem ruido — zero editais fora do setor)
 2. `docs/intel/intel-{CNPJ}-{razao-slug}-{YYYY-MM-DD}.pdf` — Relatorio estrategico dos 20 editais analisados (max 15 paginas)
 
-**Principios:**
-- O relatorio e fonte de CLAREZA, nunca de duvida
-- Cada gate tem autonomia para demandar reexecucao de etapas anteriores
-- **O top20 DEVE conter 20 editais genuinamente compativeis analisados.** Se um edital e excluido por incompatibilidade semantica (nao pertence ao setor da empresa), o proximo elegivel (#21, #22...) entra e passa pelo pipeline completo (Steps 5-7 + Gates 3-4). Maximo 3 rodadas de substituicao.
-- A recomendacao (PARTICIPAR / NAO PARTICIPAR) e resultado da analise, NAO criterio de exclusao do top20. Editais NAO PARTICIPAR por motivos legitimos (prazo, acervo, distancia) permanecem — o cliente precisa dessa informacao.
-- O cliente NUNCA ve editais fora do setor. Editais de medicamentos, alimentacao, TI, etc. sao filtrados antes de qualquer output.
+**Princípios:**
+- O relatório é fonte de CLAREZA, nunca de dúvida
+- Cada gate tem autonomia para demandar reexecução de etapas anteriores
+- **O top20 DEVE conter 20 editais genuinamente compatíveis analisados.** Se um edital é excluído por incompatibilidade semântica (não pertence ao setor da empresa), o próximo elegível (#21, #22...) entra e passa pelo pipeline completo (Steps 5-7 + Gates 3-4). Máximo 3 rodadas de substituição.
+- A recomendação (PARTICIPAR / NÃO PARTICIPAR) é resultado da análise, NÃO critério de exclusão do top20. Editais NÃO PARTICIPAR por motivos legítimos (prazo, acervo, distância) permanecem — o cliente precisa dessa informação.
+- O cliente NUNCA vê editais fora do setor. Editais de medicamentos, alimentação, TI, etc. são filtrados antes de qualquer output.
+
+**REGRA DE IDIOMA (OBRIGATÓRIA):**
+- **TODO texto gerado pelo pipeline DEVE usar português correto com acentuação completa** (ç, ã, á, é, ê, í, ó, ô, ú, à).
+- Isso inclui: `resumo_executivo`, `proximos_passos`, todos os campos de `analise` (resumo_objeto, observacoes_criticas, recomendacao_acao, custo_logistico_nota, etc.).
+- Exemplos corretos: "construção" (não "construcao"), "não" (não "nao"), "patrimônio líquido" (não "patrimonio liquido"), "São Paulo" (não "Sao Paulo"), "distância" (não "distancia"), "logístico" (não "logistico").
+- Campos enum com acento: "Não consta no edital disponível", "Empreitada por preço global", "Técnica e Preço", "NÃO PARTICIPAR".
+- **Violação desta regra invalida o entregável.** O PDF é documento profissional entregue ao cliente.
 
 ### Capacidades v4 (novo)
 
@@ -241,27 +248,33 @@ Se precisar indicar limitacao documental, reformular como: "Edital completo indi
 - Se `ibge.populacao` < 5000 e valor > R$1M: alertar fragilidade logistica
 - Se empresa sancionada/com restricao SICAF: todas as recomendacoes = NAO PARTICIPAR
 
-**Schema JSON (16 campos obrigatorios):**
+**Schema JSON (16 campos obrigatórios — TODOS com acentuação correta):**
 ```json
 {
-  "resumo_objeto": "2-3 frases descrevendo o que esta sendo contratado",
+  "resumo_objeto": "2-3 frases descrevendo o que está sendo contratado",
   "requisitos_tecnicos": ["lista", "de", "requisitos"],
   "requisitos_habilitacao": ["lista", "de", "requisitos"],
-  "qualificacao_economica": "Patrimonio liquido minimo de X% (R$ Y)",
+  "qualificacao_economica": "Patrimônio líquido mínimo de X% (R$ Y)",
   "prazo_execucao": "X meses a partir da OS / N dias corridos",
-  "garantias": "X% do valor do contrato (seguro-garantia/caucao/fianca)",
-  "criterio_julgamento": "Menor Preco Global / Tecnica e Preco / Maior Desconto",
-  "data_sessao": "DD/MM/YYYY as HH:MM (plataforma: BNC/BLL/BBMNET/PCP)",
-  "prazo_proposta": "DD/MM/YYYY as HH:MM",
-  "visita_tecnica": "Obrigatoria ate DD/MM/YYYY / Facultativa / Nao consta no edital disponivel",
-  "exclusividade_me_epp": "Sim/Nao/Cota reservada X%",
-  "regime_execucao": "Empreitada por preco global / unitario / parcelada",
-  "consorcio": "Permitido/Vedado/Nao mencionado no edital",
-  "observacoes_criticas": "Riscos, gaps, alertas relevantes",
-  "nivel_dificuldade": "BAIXO/MEDIO/ALTO",
-  "recomendacao_acao": "PARTICIPAR ou NAO PARTICIPAR (nunca VERIFICAR)",
-  "custo_logistico_nota": "Avaliacao de impacto logistico"
+  "garantias": "X% do valor do contrato (seguro-garantia/caução/fiança)",
+  "criterio_julgamento": "Menor Preço Global / Técnica e Preço / Maior Desconto",
+  "data_sessao": "DD/MM/YYYY às HH:MM (plataforma: BNC/BLL/BBMNET/PCP)",
+  "prazo_proposta": "DD/MM/YYYY às HH:MM",
+  "visita_tecnica": "Obrigatória até DD/MM/YYYY / Facultativa / Não consta no edital disponível",
+  "exclusividade_me_epp": "Sim/Não/Cota reservada X%",
+  "regime_execucao": "Empreitada por preço global / unitário / parcelada",
+  "consorcio": "Permitido/Vedado/Não mencionado no edital",
+  "observacoes_criticas": "Riscos, gaps, alertas relevantes (redigir com acentuação)",
+  "nivel_dificuldade": "BAIXO/MÉDIO/ALTO",
+  "recomendacao_acao": "PARTICIPAR ou NÃO PARTICIPAR (NUNCA 'VERIFICAR', NUNCA texto livre após o enum)",
+  "custo_logistico_nota": "Avaliação de impacto logístico (redigir com acentuação)"
 }
+```
+
+**REGRA ANL-03 (enum estrito para recomendacao_acao):**
+- O campo `recomendacao_acao` aceita EXATAMENTE dois valores: `"PARTICIPAR"` ou `"NÃO PARTICIPAR"`.
+- Qualificadores como "com cautela", "com ressalva", "condicional — se ME/EPP" devem ir em `observacoes_criticas`, NUNCA no campo de recomendação.
+- Se há condição para participar (ex: exige CAT específico), a recomendação é `"PARTICIPAR"` e a condição vai em `observacoes_criticas`.
 ```
 
 Processar TODOS os editais do top20 e salvar o JSON atualizado com Write tool.
@@ -304,8 +317,8 @@ Para cada edital no top20 com `analise` preenchida e `texto_documentos` disponiv
 - Marcar `analise._reviewed = true`
 
 **7.2 — Resumo executivo:**
-Redigir `resumo_executivo` (2-3 paragrafos): total de editais, compativeis, recomendados, destaques, alertas.
-Citar numeros concretos, valores, municipios. Ser direto e acionavel.
+Redigir `resumo_executivo` (2-3 parágrafos) **em português com acentuação completa**: total de editais, compatíveis, recomendados, destaques, alertas.
+Citar números concretos, valores, municípios. Ser direto e acionável.
 
 **REGRA DE CONSISTENCIA:** Os numeros do resumo executivo DEVEM ser computados a partir do JSON:
 - "X editais PARTICIPAR" = count de top20 com analise.recomendacao_acao == "PARTICIPAR"
@@ -316,10 +329,10 @@ Redigir resumo separando:
 - Editais com acao imediata (PLANEJAVEL + IMINENTE + URGENTE): X editais, R$ Y
 - Editais com sessao realizada (SESSAO_REALIZADA): X editais — consultar resultados nos portais
 
-**7.3 — Proximos passos:**
-Redigir `proximos_passos` (lista de 5-8 acoes concretas).
-Cada passo deve comecar com prefixo: `URGENTE:` / `PRIORITARIO:` / `AVALIAR:` / `MONITORAR:`
-Citar numeros de editais (#N), valores, datas, municipios. NUNCA usar "verificar".
+**7.3 — Próximos passos:**
+Redigir `proximos_passos` (lista de 5-8 ações concretas) **em português com acentuação completa**.
+Cada passo deve começar com prefixo: `URGENTE:` / `PRIORITÁRIO:` / `AVALIAR:` / `MONITORAR:`
+Citar números de editais (#N), valores, datas, municípios. NUNCA usar "verificar".
 
 **REGRA ABSOLUTA:** Proximos passos NUNCA devem citar editais cuja recomendacao_acao seja NAO PARTICIPAR.
 Antes de incluir qualquer edital nos proximos passos, confirmar que sua recomendacao e PARTICIPAR.
@@ -332,12 +345,12 @@ Salvar `resumo_executivo` e `proximos_passos` no JSON.
 
 **Objetivo:** Garantir que NENHUM campo obrigatorio contem linguagem de incerteza.
 
-**Campos obrigatorios com valor concreto:**
-- `data_sessao` — data exata OU "Nao consta no edital disponivel"
-- `criterio_julgamento` — valor do enum: Menor Preco / Tecnica e Preco / Maior Desconto
-- `regime_execucao` — valor do enum: Empreitada Global / Preco Unitario / Semi-Integrada
-- `consorcio` — Permitido / Vedado / Nao mencionado no edital
-- `recomendacao_acao` — PARTICIPAR ou NAO PARTICIPAR (NUNCA "VERIFICAR")
+**Campos obrigatórios com valor concreto (com acentuação):**
+- `data_sessao` — data exata OU "Não consta no edital disponível"
+- `criterio_julgamento` — valor do enum: Menor Preço / Técnica e Preço / Maior Desconto
+- `regime_execucao` — valor do enum: Empreitada por preço global / Preço unitário / Semi-integrada
+- `consorcio` — Permitido / Vedado / Não mencionado no edital
+- `recomendacao_acao` — PARTICIPAR ou NÃO PARTICIPAR (NUNCA "VERIFICAR", NUNCA texto livre junto)
 
 **Palavras proibidas em qualquer campo da analise:**
 - "verificar" (qualquer forma)

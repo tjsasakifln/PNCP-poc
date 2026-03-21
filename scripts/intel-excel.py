@@ -70,7 +70,7 @@ _ILLEGAL_XML_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
 
 # Column definitions: (header, width, align)
 COLUMNS = [
-    ("Status", 12, "center"),               # 1  - _delta_status (NOVO/ATUALIZADO/VENCENDO/INALTERADO)
+    ("Recomendação", 16, "center"),           # 1  - analise.recomendacao_acao (PARTICIPAR/NÃO PARTICIPAR)
     ("N\u00ba", 5, "center"),                # 2
     ("Objeto", 55, "left"),                  # 3
     ("\u00d3rg\u00e3o", 35, "left"),         # 4
@@ -81,23 +81,24 @@ COLUMNS = [
     ("Publica\u00e7\u00e3o", 13, "center"),  # 9
     ("Abertura Propostas", 18, "center"),    # 10
     ("Encerramento", 18, "center"),          # 11
-    ("Dist\u00e2ncia (km)", 12, "right"),    # 12
-    ("Custo Proposta", 14, "right"),         # 13
-    ("Retorno Estimado", 14, "center"),      # 14
-    ("Ader\u00eancia Perfil", 14, "center"), # 15 - _victory_fit_label
-    ("Concorr\u00eancia", 14, "center"),     # 16
-    ("Fornecedores no \u00d3rg\u00e3o", 14, "right"),  # 17
-    ("Principal Fornecedor", 30, "left"),    # 18
-    ("Desconto Mediano do \u00d3rg\u00e3o", 16, "center"),  # 19
-    ("Lance Sugerido", 18, "right"),         # 20 - single column (was min/max)
-    ("P(Vit\u00f3ria)", 10, "center"),       # 21 - win probability
-    ("Popula\u00e7\u00e3o", 12, "right"),    # 22
-    ("Compat\u00edvel", 12, "center"),       # 23
-    ("Confian\u00e7a CNAE", 12, "center"),   # 24 - cnae_confidence %
-    ("Dentro Capacidade", 14, "center"),     # 25
-    ("Relev\u00e2ncia", 10, "center"),       # 26
-    ("Setor", 25, "left"),                   # 27
-    ("Link PNCP", 12, "center"),             # 28
+    ("Urgência", 12, "center"),             # 12 - status_temporal (URGENTE/IMINENTE/PLANEJÁVEL)
+    ("Distância (km)", 12, "right"),         # 13
+    ("Custo Proposta", 14, "right"),         # 14
+    ("Retorno Estimado", 14, "center"),      # 15
+    ("Aderência Perfil", 14, "center"),      # 16 - _victory_fit_label
+    ("Concorrência", 14, "center"),          # 17
+    ("Fornecedores no Órgão", 14, "right"),  # 18
+    ("Principal Fornecedor", 30, "left"),    # 19
+    ("Desconto Mediano do Órgão", 16, "center"),  # 20
+    ("Lance Sugerido", 18, "right"),         # 21
+    ("P(Vitória)", 10, "center"),            # 22 - win probability
+    ("População", 12, "right"),              # 23
+    ("Compatível", 12, "center"),            # 24
+    ("Confiança CNAE", 12, "center"),        # 25 - cnae_confidence %
+    ("Dentro Capacidade", 14, "center"),     # 26
+    ("Relevância", 10, "center"),            # 27
+    ("Setor", 25, "left"),                   # 28
+    ("Link PNCP", 12, "center"),             # 29
 ]
 
 # ---------------------------------------------------------------------------
@@ -342,19 +343,31 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
 
         row = []
 
-        # Col 1: Status (_delta_status)
-        delta_status = item.get("_delta_status", "")
-        if delta_status == "NOVO":
-            status_font = st["green_font"]
-        elif delta_status == "ATUALIZADO":
-            status_font = st["blue_font"]
-        elif delta_status == "VENCENDO":
-            status_font = st["red_font"]
-        elif delta_status == "INALTERADO":
-            status_font = st["gray_font"]
+        # Col 1: Recomendação (analise.recomendacao_acao) — replaces old _delta_status
+        analise = item.get("analise", {}) or {}
+        if isinstance(analise, str):
+            try:
+                import json as _json
+                analise = _json.loads(analise)
+            except Exception:
+                analise = {}
+        rec_acao = analise.get("recomendacao_acao", "")
+        # Normalize: extract just PARTICIPAR or NÃO PARTICIPAR from free text
+        rec_label = ""
+        if isinstance(rec_acao, str):
+            upper = rec_acao.upper()
+            if "NÃO PARTICIPAR" in upper or "NAO PARTICIPAR" in upper or "NÃO" in upper.split(".")[0]:
+                rec_label = "NÃO PARTICIPAR"
+            elif "PARTICIPAR" in upper:
+                rec_label = "PARTICIPAR"
+        if rec_label == "PARTICIPAR":
+            rec_font = st["green_font"]
+        elif rec_label == "NÃO PARTICIPAR":
+            rec_font = st["red_font"]
         else:
-            status_font = None
-        row.append(_dc(1, value=delta_status, font=status_font))
+            rec_font = st.get("gray_font")
+            rec_label = rec_label or ""
+        row.append(_dc(1, value=rec_label, font=rec_font))
 
         # Col 2: Row number
         row.append(_dc(2, value=data_idx))
@@ -394,23 +407,39 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
         dt_enc = _parse_dt(item.get("data_encerramento_proposta", item.get("dataEncerramentoProposta")))
         row.append(_dc(11, value=dt_enc, number_format=DATETIME_FMT if dt_enc else None))
 
-        # Col 12: Distancia (km)
+        # Col 12: Urgência (status_temporal)
+        urg_val = item.get("status_temporal", "")
+        urg_label = {
+            "URGENTE": "URGENTE",
+            "IMINENTE": "IMINENTE",
+            "PLANEJAVEL": "PLANEJÁVEL",
+            "SEM_DATA": "SEM DATA",
+        }.get(str(urg_val).upper(), str(urg_val) if urg_val else "")
+        if str(urg_val).upper() == "URGENTE":
+            urg_font = st["red_font"]
+        elif str(urg_val).upper() == "IMINENTE":
+            urg_font = Font(name="Calibri", size=10, color="FF8C00")  # orange
+        else:
+            urg_font = st.get("green_font")
+        row.append(_dc(12, value=urg_label, font=urg_font))
+
+        # Col 13: Distancia (km)
         dist_data = item.get("distancia", {})
         dist_km = _safe_float(dist_data.get("km")) if isinstance(dist_data, dict) else None
         if dist_km is not None:
-            row.append(_dc(12, value=dist_km, number_format='#,##0'))
-        else:
-            row.append(_dc(12, value=""))
-
-        # Col 13: Custo Proposta
-        custo_data = item.get("custo_proposta", {})
-        custo_total = _safe_float(custo_data.get("total")) if isinstance(custo_data, dict) else None
-        if custo_total is not None:
-            row.append(_dc(13, value=custo_total, number_format=CURRENCY_FMT))
+            row.append(_dc(13, value=dist_km, number_format='#,##0'))
         else:
             row.append(_dc(13, value=""))
 
-        # Col 14: Retorno Estimado (ROI)
+        # Col 14: Custo Proposta
+        custo_data = item.get("custo_proposta", {})
+        custo_total = _safe_float(custo_data.get("total")) if isinstance(custo_data, dict) else None
+        if custo_total is not None:
+            row.append(_dc(14, value=custo_total, number_format=CURRENCY_FMT))
+        else:
+            row.append(_dc(14, value=""))
+
+        # Col 15: Retorno Estimado (ROI)
         roi_data = item.get("roi_proposta", {})
         roi_class = roi_data.get("classificacao", "") if isinstance(roi_data, dict) else ""
         if roi_class in ("EXCELENTE", "BOM"):
@@ -421,9 +450,9 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
             roi_font = st["amber_font"]
         else:
             roi_font = None
-        row.append(_dc(14, value=roi_class, font=roi_font))
+        row.append(_dc(15, value=roi_class, font=roi_font))
 
-        # Col 15: Aderencia Perfil (_victory_fit_label)
+        # Col 16: Aderencia Perfil (_victory_fit_label)
         fit_label = item.get("_victory_fit_label", "")
         if fit_label == "Excelente":
             fit_font = st["green_font"]
@@ -435,9 +464,9 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
             fit_font = st["red_font"]
         else:
             fit_font = None
-        row.append(_dc(15, value=fit_label, font=fit_font))
+        row.append(_dc(16, value=fit_label, font=fit_font))
 
-        # Col 16: Competicao (competition_level)
+        # Col 17: Competicao (competition_level)
         comp = item.get("competitive_intel", {})
         comp_level = comp.get("competition_level", "") if isinstance(comp, dict) else ""
         if comp_level in ("ALTA", "MUITO_ALTA"):
@@ -448,26 +477,26 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
             comp_font = st["red_font"]
         else:
             comp_font = None
-        row.append(_dc(16, value=comp_level, font=comp_font))
+        row.append(_dc(17, value=comp_level, font=comp_font))
 
-        # Col 17: Fornecedores (unique_suppliers)
+        # Col 18: Fornecedores (unique_suppliers)
         unique_sup = comp.get("unique_suppliers", "") if isinstance(comp, dict) else ""
-        row.append(_dc(17, value=unique_sup))
+        row.append(_dc(18, value=unique_sup))
 
-        # Col 18: Incumbente (top supplier name)
+        # Col 19: Incumbente (top supplier name)
         top_sups = comp.get("top_suppliers", []) if isinstance(comp, dict) else []
         incumbente = top_sups[0].get("nome", "")[:30] if top_sups else ""
-        row.append(_dc(18, value=_sanitize(incumbente)))
+        row.append(_dc(19, value=_sanitize(incumbente)))
 
-        # Col 19: Desc. Mediano Orgao
+        # Col 20: Desc. Mediano Orgao
         bench = item.get("price_benchmark", {})
         desc_med = bench.get("desconto_mediano_orgao") if isinstance(bench, dict) else None
         if desc_med is not None:
-            row.append(_dc(19, value=desc_med, number_format=PCT_FMT))
+            row.append(_dc(20, value=desc_med, number_format=PCT_FMT))
         else:
-            row.append(_dc(19, value=""))
+            row.append(_dc(20, value=""))
 
-        # Col 20: Lance Sugerido (single column from _bid_simulation or price_benchmark)
+        # Col 21: Lance Sugerido (single column from _bid_simulation or price_benchmark)
         bid_sim = item.get("_bid_simulation", {})
         lance_sugerido = None
         if isinstance(bid_sim, dict):
@@ -476,11 +505,11 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
             # Fallback: use price_benchmark min as single value
             lance_sugerido = _safe_float(bench.get("valor_sugerido_min")) if isinstance(bench, dict) else None
         if lance_sugerido is not None:
-            row.append(_dc(20, value=lance_sugerido, number_format=CURRENCY_FMT))
+            row.append(_dc(21, value=lance_sugerido, number_format=CURRENCY_FMT))
         else:
-            row.append(_dc(20, value=""))
+            row.append(_dc(21, value=""))
 
-        # Col 21: P(Vitoria) — win probability
+        # Col 22: P(Vitoria) — win probability
         win_prob = None
         if isinstance(bid_sim, dict):
             win_prob = _safe_float(bid_sim.get("win_probability"))
@@ -491,28 +520,28 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
                 prob_font = st["amber_font"]
             else:
                 prob_font = st["red_font"]
-            row.append(_dc(21, value=win_prob, font=prob_font, number_format="0%"))
-        else:
-            row.append(_dc(21, value=""))
-
-        # Col 22: Populacao
-        ibge_data = item.get("ibge", {})
-        pop = ibge_data.get("populacao") if isinstance(ibge_data, dict) else None
-        if pop is not None:
-            row.append(_dc(22, value=pop, number_format='#,##0'))
+            row.append(_dc(22, value=win_prob, font=prob_font, number_format="0%"))
         else:
             row.append(_dc(22, value=""))
 
-        # Col 23: Compativel CNAE
+        # Col 23: Populacao
+        ibge_data = item.get("ibge", {})
+        pop = ibge_data.get("populacao") if isinstance(ibge_data, dict) else None
+        if pop is not None:
+            row.append(_dc(23, value=pop, number_format='#,##0'))
+        else:
+            row.append(_dc(23, value=""))
+
+        # Col 24: Compativel CNAE
         if cnae_label == "SIM":
             cnae_font = st["green_font"]
         elif cnae_label == "N\u00c3O":
             cnae_font = st["red_font"]
         else:
             cnae_font = st["amber_font"]
-        row.append(_dc(23, value=cnae_label, font=cnae_font))
+        row.append(_dc(24, value=cnae_label, font=cnae_font))
 
-        # Col 24: Confianca CNAE (cnae_confidence as percentage)
+        # Col 25: Confianca CNAE (cnae_confidence as percentage)
         cnae_conf = _safe_float(item.get("cnae_confidence"))
         if cnae_conf is not None:
             # Normalize: if value is 0-1, convert to 0-100 for display
@@ -526,20 +555,20 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
                 conf_font = st["amber_font"]
             else:
                 conf_font = st["red_font"]
-            row.append(_dc(24, value=cnae_conf_display, font=conf_font, number_format="0%"))
+            row.append(_dc(25, value=cnae_conf_display, font=conf_font, number_format="0%"))
         else:
-            row.append(_dc(24, value=""))
+            row.append(_dc(25, value=""))
 
-        # Col 25: Dentro Capacidade
+        # Col 26: Dentro Capacidade
         if cap_label == "SIM":
             cap_font = st["green_font"]
         elif cap_label == "N\u00c3O":
             cap_font = st["red_font"]
         else:
             cap_font = st["gray_font"]
-        row.append(_dc(25, value=cap_label, font=cap_font))
+        row.append(_dc(26, value=cap_label, font=cap_font))
 
-        # Col 26: Relevancia — based on cnae_confidence + capacity
+        # Col 27: Relevancia — based on cnae_confidence + capacity
         # Alta: confidence >= 0.8 AND within capacity
         # Media: confidence >= 0.5 (or no confidence data)
         # Baixa: confidence < 0.5
@@ -556,18 +585,18 @@ def _build_oportunidades(wb: Workbook, items: list[dict], capacity_10x: float | 
                 rel_label, rel_font = "Baixa", st["red_font"]
         else:
             rel_label, rel_font = "M\u00e9dia", st["amber_font"]
-        row.append(_dc(26, value=rel_label, font=rel_font))
+        row.append(_dc(27, value=rel_label, font=rel_font))
 
-        # Col 27: Setor
-        row.append(_dc(27, value=_sanitize(sector_name)))
+        # Col 28: Setor
+        row.append(_dc(28, value=_sanitize(sector_name)))
 
-        # Col 28: Link PNCP — use HYPERLINK formula (write-only mode doesn't support cell.hyperlink)
+        # Col 29: Link PNCP — use HYPERLINK formula (write-only mode doesn't support cell.hyperlink)
         if link_pncp:
             safe_url = str(link_pncp).replace('"', '%22')
             link_val = f'=HYPERLINK("{safe_url}","Abrir")'
-            row.append(_dc(28, value=link_val, font=st["link_font"]))
+            row.append(_dc(29, value=link_val, font=st["link_font"]))
         else:
-            row.append(_dc(28, value=""))
+            row.append(_dc(29, value=""))
 
         ws.append(row)
 
