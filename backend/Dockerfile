@@ -22,8 +22,10 @@ RUN echo "Build: ${CACHEBUST}" && apt-get update && apt-get install -y \
     libjemalloc2 \
     && rm -rf /var/lib/apt/lists/*
 
-# HARDEN-002: Preload jemalloc to replace glibc malloc — prevents RSS creep
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+# HARDEN-002: jemalloc DISABLED — causes SIGSEGV with cryptography>=46 OpenSSL bindings
+# when processing HTTP requests through Starlette BaseHTTPMiddleware threading.
+# jemalloc + OpenSSL malloc hooks = segfault on POST body parsing.
+# ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
 # Copy requirements first
 COPY requirements.txt .
