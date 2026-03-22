@@ -178,6 +178,44 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
     }
   }, [loading, result]);
 
+  // CRIT-CORE-001: Async mode safety timeout — if async search is active for 120s
+  // without delivering results, force exit loading and show actionable error.
+  // This prevents infinite loading when SSE dies and polling doesn't act.
+  const asyncSafetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (asyncSearchActive && loading && !result) {
+      asyncSafetyTimerRef.current = setTimeout(() => {
+        console.error('[CRIT-CORE-001] Async safety timeout (120s) — forcing exit from loading state');
+        setAsyncSearchActive(false);
+        asyncSearchActiveRef.current = false;
+        asyncSearchIdRef.current = null;
+        setLoading(false);
+        setError({
+          message: "A análise demorou mais que o esperado. Tente novamente — se o problema persistir, reduza o número de estados.",
+          rawMessage: "Async safety timeout after 120s",
+          errorCode: "ASYNC_TIMEOUT",
+          searchId: searchId || "",
+          correlationId: null,
+          requestId: null,
+          httpStatus: 504,
+          timestamp: new Date().toISOString(),
+        });
+      }, 120_000);
+
+      return () => {
+        if (asyncSafetyTimerRef.current) {
+          clearTimeout(asyncSafetyTimerRef.current);
+          asyncSafetyTimerRef.current = null;
+        }
+      };
+    }
+    // Clear timer if result arrives or async ends
+    if (asyncSafetyTimerRef.current && (!asyncSearchActive || result)) {
+      clearTimeout(asyncSafetyTimerRef.current);
+      asyncSafetyTimerRef.current = null;
+    }
+  }, [asyncSearchActive, loading, result, searchId]);
+
   const estimateSearchTime = useCallback((ufCount: number, dateRangeDays: number): number => {
     const baseTime = 10;
     const parallelUfs = Math.min(ufCount, 10);

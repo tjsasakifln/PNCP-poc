@@ -239,6 +239,95 @@ async def buscar_licitacoes(
     )
 
     # -----------------------------------------------------------------------
+    # CRIT-CORE-001: Cache-first check BEFORE async decision.
+    # If cache has data (fresh or stale), return immediately — no 202, no SSE dependency.
+    # This ensures users always get results when cached data exists.
+    # -----------------------------------------------------------------------
+    if not request.force_fresh and request.search_id:
+        try:
+            from search_cache import get_from_cache_cascade
+            from pipeline.cache_manager import _build_cache_params
+
+            cache_params = _build_cache_params(request)
+
+            if user and user.get("id"):
+                _cached = await get_from_cache_cascade(
+                    user_id=user["id"],
+                    params=cache_params,
+                )
+
+                if _cached and _cached.get("results"):
+                    logger.info(
+                        f"CRIT-CORE-001: Cache-first hit for {request.search_id} "
+                        f"({_cached.get('cache_age_hours', '?')}h old, "
+                        f"level={_cached.get('cache_level', 'unknown')}) — returning immediately"
+                    )
+
+                    # Build immediate response from cache
+                    pipeline = SearchPipeline(deps)
+                    ctx = SearchContext(
+                        request=request,
+                        user=user,
+                        tracker=None,  # Don't emit progress for cache-first
+                        start_time=sync_time.time(),
+                    )
+
+                    await pipeline.stage_validate(ctx)
+                    await pipeline.stage_prepare(ctx)
+
+                    ctx.licitacoes_raw = _cached["results"]
+                    ctx.cached = True
+                    ctx.cached_at = _cached.get("cached_at")
+                    ctx.cached_sources = _cached.get("cached_sources", ["PNCP"])
+                    ctx.cache_status = (
+                        _cached.get("cache_status", "stale")
+                        if isinstance(_cached.get("cache_status"), str)
+                        else ("stale" if _cached.get("is_stale") else "fresh")
+                    )
+                    ctx.cache_level = _cached.get("cache_level", "supabase")
+                    ctx.response_state = "cached"
+
+                    await pipeline.stage_filter(ctx)
+                    await pipeline.stage_enrich(ctx)
+                    await pipeline.stage_generate(ctx)
+
+                    if ctx.response:
+                        ctx.response.live_fetch_in_progress = True
+
+                    response = await pipeline.stage_persist(ctx)
+                    if response:
+                        response.live_fetch_in_progress = True
+
+                    # Dispatch background live fetch for fresher data
+                    _cleanup_stale_results()
+                    active_count = len(_active_background_tasks)
+                    if active_count < _MAX_BACKGROUND_TASKS and request.search_id not in _active_background_tasks:
+                        task = asyncio.create_task(
+                            _execute_background_fetch(
+                                search_id=request.search_id,
+                                request=request,
+                                user=user,
+                                deps=deps,
+                                cached_response=response,
+                            )
+                        )
+                        _active_background_tasks[request.search_id] = task
+
+                    # Apply trial paywall
+                    response = _apply_trial_paywall(response, user)
+
+                    # Observability headers
+                    http_response.headers["X-Response-State"] = ctx.response_state or "live"
+                    http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
+                    sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
+                    from metrics import SEARCH_MODE_TOTAL
+                    SEARCH_MODE_TOTAL.labels(mode="cache_first").inc()
+                    return response
+
+        except Exception as cache_err:
+            logger.debug(f"CRIT-CORE-001: Pre-async cache check failed (falling through): {cache_err}")
+
+    # -----------------------------------------------------------------------
     # STORY-363: Async search — ARQ Worker (primary) with in-process fallback
     # -----------------------------------------------------------------------
     from config import get_feature_flag
@@ -383,110 +472,8 @@ async def buscar_licitacoes(
             )
 
     # -----------------------------------------------------------------------
-    # A-04 AC1: Cache-first — check cascade before running full pipeline
-    # -----------------------------------------------------------------------
-    if not request.force_fresh and request.search_id:
-        try:
-            from search_cache import get_from_cache_cascade
-            from pipeline.cache_manager import _build_cache_params
-
-            cache_params = _build_cache_params(request)
-            stale_cache = None
-
-            if user and user.get("id"):
-                stale_cache = await get_from_cache_cascade(
-                    user_id=user["id"],
-                    params=cache_params,
-                )
-
-            if stale_cache and stale_cache.get("results"):
-                logger.info(
-                    f"A-04: Cache-first hit for {request.search_id} "
-                    f"({stale_cache.get('cache_age_hours', '?')}h old, "
-                    f"level={stale_cache.get('cache_level', 'unknown')})"
-                )
-
-                # Build immediate response from cache
-                pipeline = SearchPipeline(deps)
-                ctx = SearchContext(
-                    request=request,
-                    user=user,
-                    tracker=None,  # Don't emit progress for cache-first
-                    start_time=sync_time.time(),
-                )
-
-                # Stage 1+2: Validate and prepare (needed for quota, sector, keywords)
-                await pipeline.stage_validate(ctx)
-                await pipeline.stage_prepare(ctx)
-
-                # Populate context from cache
-                ctx.licitacoes_raw = stale_cache["results"]
-                ctx.cached = True
-                ctx.cached_at = stale_cache.get("cached_at")
-                ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
-                ctx.cache_status = (
-                    stale_cache.get("cache_status", "stale")
-                    if isinstance(stale_cache.get("cache_status"), str)
-                    else ("stale" if stale_cache.get("is_stale") else "fresh")
-                )
-                ctx.cache_level = stale_cache.get("cache_level", "supabase")
-                ctx.response_state = "cached"
-
-                # Run filter + enrich + generate on cached data
-                await pipeline.stage_filter(ctx)
-                await pipeline.stage_enrich(ctx)
-                await pipeline.stage_generate(ctx)
-
-                # Set live_fetch_in_progress on response
-                if ctx.response:
-                    ctx.response.live_fetch_in_progress = True
-
-                response = await pipeline.stage_persist(ctx)
-                if response:
-                    response.live_fetch_in_progress = True
-
-                # A-04 AC2: Dispatch background live fetch
-                _cleanup_stale_results()
-                active_count = len(_active_background_tasks)
-                if active_count < _MAX_BACKGROUND_TASKS and request.search_id not in _active_background_tasks:
-                    task = asyncio.create_task(
-                        _execute_background_fetch(
-                            search_id=request.search_id,
-                            request=request,
-                            user=user,
-                            deps=deps,
-                            cached_response=response,
-                        )
-                    )
-                    _active_background_tasks[request.search_id] = task
-                    logger.debug(f"A-04: Background fetch task dispatched for {request.search_id}")
-                else:
-                    # Budget exceeded or duplicate — emit degraded instead
-                    logger.warning(
-                        f"A-04: Background fetch skipped for {request.search_id} "
-                        f"(active={active_count}, max={_MAX_BACKGROUND_TASKS})"
-                    )
-                    if tracker:
-                        from pipeline.cache_manager import _build_degraded_detail
-                        await tracker.emit_degraded("source_failure", _build_degraded_detail(ctx))
-                        await remove_tracker(request.search_id)
-
-                # STORY-320 AC3: Apply trial paywall truncation (cache-first path)
-                response = _apply_trial_paywall(response, user)
-
-                # CRIT-005 AC1-2: Observability headers (cache-first path)
-                http_response.headers["X-Response-State"] = ctx.response_state or "live"
-                http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
-                # GTM-STAB-008 AC6: elapsed_s tag (cache-first path)
-                sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
-                return response
-
-        except Exception as cache_err:
-            # Cache-first failed — fall through to synchronous path
-            logger.debug(f"A-04: Cache-first check failed (falling through to sync): {cache_err}")
-
-    # -----------------------------------------------------------------------
     # AC10: No cache — synchronous pipeline (unchanged flow)
+    # NOTE: Cache-first check moved to CRIT-CORE-001 block above (before async decision)
     # CRIT-072 AC9: Count sync mode searches
     # -----------------------------------------------------------------------
     from metrics import SEARCH_MODE_TOTAL

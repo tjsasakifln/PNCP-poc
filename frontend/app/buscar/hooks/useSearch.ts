@@ -263,9 +263,56 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     searchId: activeSearchId,
     enabled: sseDisconnected && execution.loading && !!activeSearchId,
     authToken: session?.access_token,
-    onStatusUpdate: (status) => {
+    onStatusUpdate: async (status) => {
       if (status.status === 'completed' || status.status === 'failed' || status.status === 'timed_out') {
         execution.setUseRealProgress(false);
+      }
+
+      // CRIT-CORE-001: When polling detects completed, fetch actual results.
+      // This is the critical fallback when SSE dies — without this, the user
+      // stays in loading forever because polling only updated progress, never fetched results.
+      if (status.status === 'completed' && execution.asyncSearchActive) {
+        const sid = execution.asyncSearchIdRef.current || activeSearchId;
+        if (sid) {
+          try {
+            const headers: Record<string, string> = {};
+            if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+
+            const response = await fetch(`/api/buscar-results/${encodeURIComponent(sid)}`, { headers });
+            if (response.ok) {
+              const fetchedData = await response.json();
+              setResult(fetchedData);
+              if (fetchedData.total_raw) execution.setRawCount(fetchedData.total_raw);
+              execution.setError(null);
+            }
+          } catch (e) {
+            console.warn('[CRIT-CORE-001] Polling: failed to fetch results after completed status:', e);
+          } finally {
+            execution.setAsyncSearchActive(false);
+            execution.asyncSearchActiveRef.current = false;
+            execution.asyncSearchIdRef.current = null;
+            execution.setLoading(false);
+            execution.setSearchId(null);
+          }
+        }
+      }
+
+      // CRIT-CORE-001: When polling detects failure, exit loading with error.
+      if ((status.status === 'failed' || status.status === 'timed_out') && execution.asyncSearchActive) {
+        execution.setAsyncSearchActive(false);
+        execution.asyncSearchActiveRef.current = false;
+        execution.asyncSearchIdRef.current = null;
+        execution.setLoading(false);
+        execution.setError({
+          message: status.error_message || "A análise não pôde ser concluída. Tente novamente.",
+          rawMessage: status.error_message || `Search ${status.status}`,
+          errorCode: status.error_code || "SEARCH_FAILED",
+          searchId: status.search_id,
+          correlationId: null,
+          requestId: null,
+          httpStatus: status.status === 'timed_out' ? 504 : 500,
+          timestamp: new Date().toISOString(),
+        });
       }
     },
   });

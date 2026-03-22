@@ -519,7 +519,7 @@ async def _execute_background_fetch(
 # STORY-292 AC3: Async search via asyncio.create_task (replaces ARQ worker)
 # ---------------------------------------------------------------------------
 
-_ASYNC_SEARCH_TIMEOUT = 120  # AC9: Hard limit in seconds
+_ASYNC_SEARCH_TIMEOUT = 240  # AC9: Hard limit — raised from 120s to accommodate tamanhoPagina=50
 
 
 async def _run_async_search(
@@ -594,7 +594,7 @@ async def _run_async_search(
         )
         if tracker:
             await tracker.emit_error(
-                "Busca excedeu o tempo limite de 120 segundos. "
+                f"Busca excedeu o tempo limite de {_ASYNC_SEARCH_TIMEOUT} segundos. "
                 "Tente com menos estados ou um período menor."
             )
         if state_machine:
@@ -627,6 +627,14 @@ async def _run_async_search(
                 logger.warning(f"State machine fail() failed: {sm_err}")
 
     finally:
+        # Release concurrent search slot to prevent slot leak (was missing — 3 crashes = user blocked 10min)
+        try:
+            from job_queue import release_search_slot
+            user_id = user.get("id", "")
+            if user_id:
+                await release_search_slot(user_id, search_id)
+        except Exception as slot_err:
+            logger.debug(f"release_search_slot in finally failed (non-fatal): {slot_err}")
         await remove_tracker(search_id)
         _active_background_tasks.pop(search_id, None)
         if state_machine:

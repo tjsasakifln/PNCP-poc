@@ -102,7 +102,8 @@ class TestAC1Returns202:
                  patch("routes.search.check_user_roles", new_callable=AsyncMock, return_value=(False, False)), \
                  patch("routes.search.SearchPipeline") as mock_pipeline_cls, \
                  patch("routes.search.remove_tracker", new_callable=AsyncMock), \
-                 patch("routes.search.remove_state_machine"):
+                 patch("routes.search.remove_state_machine"), \
+                 patch("search_cache.get_from_cache_cascade", new_callable=AsyncMock, return_value=None):
 
                 tracker_inst = AsyncMock()
                 tracker_inst.emit = AsyncMock()
