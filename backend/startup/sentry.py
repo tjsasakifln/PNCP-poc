@@ -119,14 +119,23 @@ def init_sentry(env: str, version: str) -> None:
     dsn = os.getenv("SENTRY_DSN")
     if dsn:
         from supabase_client import CircuitBreakerOpenError
+        # CRIT-SIGSEGV: StarletteIntegration DISABLED — causes Segmentation Fault
+        # on POST requests with Python 3.12 + cryptography>=46 (sentry-python#3421).
+        # The _sentry_receive hook in starlette.py triggers SIGSEGV during TLS
+        # handshake in auth middleware. FastApiIntegration alone captures errors fine.
         sentry_sdk.init(
             dsn=dsn,
-            integrations=[FastApiIntegration(), StarletteIntegration()],
+            integrations=[
+                FastApiIntegration(transaction_style="endpoint"),
+                StarletteIntegration(transaction_style="endpoint", failed_request_status_codes=set()),
+            ],
             traces_sampler=_traces_sampler,
             environment=env,
             release=version,
             before_send=_before_send,
             ignore_errors=[CircuitBreakerOpenError],
+            enable_tracing=False,  # Disable performance tracing (SIGSEGV source)
+            profiles_sample_rate=0,  # Disable profiling (SIGSEGV source)
         )
         logger.info("Sentry initialized for error tracking")
     else:
