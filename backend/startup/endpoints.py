@@ -19,6 +19,11 @@ APP_VERSION = os.getenv("APP_VERSION", "dev")
 def register_endpoints(app: FastAPI) -> None:
     """Attach root endpoints to *app* (excluding /debug/pncp-test, see module docstring)."""
 
+    @app.post("/debug/post-test")
+    async def post_test():
+        """Minimal POST endpoint for debugging 502 issues — no auth, no body parsing."""
+        return {"ok": True, "method": "POST"}
+
     @app.get("/", response_model=RootResponse)
     async def root():
         """API root — navigation and version info."""
