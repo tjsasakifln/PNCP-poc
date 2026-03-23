@@ -1074,6 +1074,28 @@ def _format_cache_date_range(cached_at: str | None) -> str | None:
 # ============================================================================
 
 
+def _all_sources_down() -> bool:
+    """CRIT-081: Check if all data source circuit breakers are open/degraded.
+
+    Returns True only when PNCP, PCP, and ComprasGov are all degraded,
+    meaning no live data is obtainable and expired cache should be served.
+    Returns False on any error (fail-open — better to try live sources than
+    refuse to serve).
+    """
+    try:
+        from pncp_client import get_circuit_breaker
+        cb_pncp = get_circuit_breaker("pncp")
+        cb_pcp = get_circuit_breaker("pcp")
+        cb_comprasgov = get_circuit_breaker("comprasgov")
+        return (
+            cb_pncp.is_degraded
+            and cb_pcp.is_degraded
+            and cb_comprasgov.is_degraded
+        )
+    except Exception:
+        return False  # Fail-open: assume sources are up
+
+
 async def get_from_cache_cascade(
     user_id: str,
     params: dict,
@@ -1127,6 +1149,37 @@ async def get_from_cache_cascade(
                     f"{legacy_hash[:12]}... (fallback from {params_hash[:12]})"
                 )
                 return result
+
+    # CRIT-081: If all sources are down and feature is enabled, auto-retry with allow_expired
+    if not allow_expired:
+        try:
+            from config import SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE
+            if SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE and _all_sources_down():
+                logger.warning(
+                    "CRIT-081: All sources down — retrying cascade with allow_expired=True "
+                    "for hash %s...",
+                    params_hash[:12],
+                )
+                result = _cascade_read_levels(
+                    user_id, params_hash, params, _process_cache_hit_allow_expired
+                )
+                if asyncio.iscoroutine(result):
+                    result = await result
+                if result:
+                    result["is_stale_fallback"] = True
+                    METRICS_CACHE_HITS.labels(
+                        level=str(result.get("cache_level", "unknown")),
+                        freshness="expired_outage",
+                    ).inc()
+                    logger.warning(json.dumps({
+                        "event": "cache_expired_served_total_outage",
+                        "cache_key": params_hash[:12],
+                        "cache_age_hours": result.get("cache_age_hours"),
+                        "results_count": len(result.get("results", [])),
+                    }))
+                    return result
+        except Exception as e:
+            logger.debug("CRIT-081: total-outage expired fallback check failed: %s", e)
 
     METRICS_CACHE_MISSES.labels(level="cascade").inc()
     return None

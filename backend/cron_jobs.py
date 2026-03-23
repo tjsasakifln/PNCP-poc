@@ -5,6 +5,7 @@ Runs as background asyncio tasks during FastAPI lifespan.
 
 import asyncio
 import logging
+import os
 import threading
 import time as _time_mod
 from datetime import datetime, timezone, timedelta, date
@@ -263,7 +264,7 @@ async def warmup_top_params() -> dict:
     from search_cache import get_top_popular_params, trigger_background_revalidation
 
     try:
-        top_params = await get_top_popular_params(limit=10)
+        top_params = await get_top_popular_params(limit=30)
 
         if not top_params:
             logger.info("Warmup: no popular params found to pre-warm")
@@ -1968,6 +1969,184 @@ async def _plan_reconciliation_loop() -> None:
             else:
                 logger.error("DEBT-010: Reconciliation loop error: %s", e, exc_info=True)
             await asyncio.sleep(300)
+
+
+# ============================================================================
+# CRIT-081: Periodic cache coverage check (every hour)
+# ============================================================================
+
+COVERAGE_CHECK_INTERVAL = int(os.environ.get("ENSURE_COVERAGE_INTERVAL_HOURS", "1")) * 3600
+
+
+async def ensure_minimum_cache_coverage() -> dict:
+    """CRIT-081: Ensure all active sector×UF combos have fresh cache (<12h).
+
+    Checks the top 5 UFs against all configured sectors.
+    Triggers background revalidation for any sector/UF combo missing fresh cache.
+
+    Returns dict with: deficit, dispatched.
+    """
+    from search_cache import trigger_background_revalidation
+    from sectors import SECTORS
+    from config import ALL_BRAZILIAN_UFS, WARMUP_ENABLED
+
+    if not WARMUP_ENABLED:
+        logger.debug("CRIT-081: coverage check skipped (WARMUP_ENABLED=false)")
+        return {"deficit": 0, "dispatched": 0, "skipped": True}
+
+    deficit = 0
+    dispatched = 0
+
+    try:
+        # Use top 5 UFs from priority list
+        prioritized = await _get_prioritized_ufs(ALL_BRAZILIAN_UFS)
+        top_ufs = prioritized[:5]
+
+        all_sectors = list(SECTORS.values())
+
+        for sector in all_sectors:
+            for uf in top_ufs:
+                age_hours = await _get_cache_entry_age(sector.id, uf)
+                if age_hours is None or age_hours > 12:
+                    deficit += 1
+                    try:
+                        params = {
+                            "setor_id": sector.id,
+                            "ufs": [uf],
+                            "status": None,
+                            "modalidades": None,
+                            "modo_busca": None,
+                        }
+                        request_data = {
+                            "ufs": [uf],
+                            "data_inicial": (date.today() - timedelta(days=10)).isoformat(),
+                            "data_final": date.today().isoformat(),
+                            "modalidades": None,
+                        }
+                        ok = await trigger_background_revalidation(
+                            user_id="00000000-0000-0000-0000-000000000000",
+                            params=params,
+                            request_data=request_data,
+                        )
+                        if ok:
+                            dispatched += 1
+                        await asyncio.sleep(0.5)  # Rate limit
+                    except Exception as e:
+                        logger.warning(
+                            "CRIT-081: coverage revalidation failed for %s:%s: %s",
+                            sector.id, uf, e,
+                        )
+
+        logger.info(
+            "CRIT-081: coverage check complete: deficit=%d, dispatched=%d, "
+            "sectors=%d, ufs=%d",
+            deficit, dispatched, len(all_sectors), len(top_ufs),
+        )
+
+        # Update metric if available
+        try:
+            from metrics import WARMUP_COVERAGE_RATIO
+            total = len(all_sectors) * len(top_ufs)
+            covered = total - deficit
+            WARMUP_COVERAGE_RATIO.set(covered / total if total > 0 else 0)
+        except Exception:
+            pass
+
+    except Exception as e:
+        logger.error("CRIT-081: ensure_minimum_cache_coverage failed: %s", e, exc_info=True)
+
+    return {"deficit": deficit, "dispatched": dispatched}
+
+
+async def _get_cache_entry_age(sector_id: str, uf: str) -> float | None:
+    """CRIT-081: Get age in hours of the most recent cache entry for sector+UF.
+
+    Returns age in hours (float), or None if no cache entry exists.
+    Uses Supabase search_results_cache table — looks for entries whose
+    search_params contain the given sector_id and uf.
+    """
+    try:
+        from supabase_client import get_supabase, sb_execute
+        from datetime import datetime, timezone
+
+        sb = get_supabase()
+        # Query for entries matching this sector_id
+        resp = await sb_execute(
+            sb.table("search_results_cache")
+            .select("fetched_at, search_params")
+            .eq("search_params->>setor_id", sector_id)
+            .order("fetched_at", desc=True)
+            .limit(50)
+        )
+
+        if not resp.data:
+            return None
+
+        now = datetime.now(timezone.utc)
+
+        for row in resp.data:
+            # Check if this entry covers the UF
+            sp = row.get("search_params", {})
+            if not isinstance(sp, dict):
+                continue
+            entry_ufs = sp.get("ufs") or []
+            if uf not in entry_ufs:
+                continue
+
+            fetched_at_raw = row.get("fetched_at")
+            if not fetched_at_raw:
+                continue
+            try:
+                fetched_at = datetime.fromisoformat(
+                    str(fetched_at_raw).replace("Z", "+00:00")
+                )
+                if fetched_at.tzinfo is None:
+                    fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+                age_hours = (now - fetched_at).total_seconds() / 3600
+                return age_hours
+            except (ValueError, TypeError):
+                continue
+
+        return None
+
+    except Exception as e:
+        logger.debug("CRIT-081: _get_cache_entry_age error for %s:%s: %s", sector_id, uf, e)
+        return None
+
+
+async def start_coverage_check_task() -> asyncio.Task:
+    """CRIT-081: Start periodic cache coverage check (every hour)."""
+    task = asyncio.create_task(
+        _coverage_check_loop(),
+        name="coverage_check",
+    )
+    logger.info(
+        "CRIT-081: Coverage check task started (interval: %ds, initial_delay: 300s)",
+        COVERAGE_CHECK_INTERVAL,
+    )
+    return task
+
+
+async def _coverage_check_loop() -> None:
+    """CRIT-081: Run coverage check after startup delay then every hour."""
+    # Wait 5 minutes after startup (let warmup run first)
+    await asyncio.sleep(300)
+
+    while True:
+        try:
+            result = await ensure_minimum_cache_coverage()
+            logger.info("CRIT-081: coverage check result: %s", result)
+        except asyncio.CancelledError:
+            logger.info("CRIT-081: coverage check task cancelled")
+            return
+        except Exception as e:
+            logger.error("CRIT-081: coverage check task error: %s", e, exc_info=True)
+
+        try:
+            await asyncio.sleep(COVERAGE_CHECK_INTERVAL)
+        except asyncio.CancelledError:
+            logger.info("CRIT-081: coverage check task cancelled during sleep")
+            return
 
 
 # ============================================================================

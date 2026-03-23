@@ -54,7 +54,7 @@ WARMUP_SECTORS: list[str] = [
 ]
 WARMUP_STARTUP_DELAY_SECONDS: int = int(os.getenv("WARMUP_STARTUP_DELAY_SECONDS", "120"))
 WARMUP_BATCH_DELAY_SECONDS: float = float(os.getenv("WARMUP_BATCH_DELAY_SECONDS", "2"))
-WARMUP_PERIODIC_INTERVAL_HOURS: int = int(os.getenv("WARMUP_PERIODIC_INTERVAL_HOURS", "3"))
+WARMUP_PERIODIC_INTERVAL_HOURS: int = int(os.getenv("WARMUP_PERIODIC_INTERVAL_HOURS", "2"))
 WARMUP_RATE_LIMIT_RPS: float = float(os.getenv("WARMUP_RATE_LIMIT_RPS", "2.0"))
 WARMUP_PNCP_DEGRADED_PAUSE_S: float = float(os.getenv("WARMUP_PNCP_DEGRADED_PAUSE_S", "300.0"))
 WARMUP_UF_BATCH_SIZE: int = int(os.getenv("WARMUP_UF_BATCH_SIZE", "5"))
@@ -76,9 +76,9 @@ WARMING_RATE_LIMIT_BACKOFF_S: float = float(os.getenv("WARMING_RATE_LIMIT_BACKOF
 # ============================================
 # CRIT-032: Periodic Cache Refresh
 # ============================================
-CACHE_REFRESH_ENABLED: bool = str_to_bool(os.getenv("CACHE_REFRESH_ENABLED", "false"))
-CACHE_REFRESH_INTERVAL_HOURS: int = int(os.getenv("CACHE_REFRESH_INTERVAL_HOURS", "12"))
-CACHE_REFRESH_BATCH_SIZE: int = int(os.getenv("CACHE_REFRESH_BATCH_SIZE", "25"))
+CACHE_REFRESH_ENABLED: bool = str_to_bool(os.getenv("CACHE_REFRESH_ENABLED", "true"))
+CACHE_REFRESH_INTERVAL_HOURS: int = int(os.getenv("CACHE_REFRESH_INTERVAL_HOURS", "4"))
+CACHE_REFRESH_BATCH_SIZE: int = int(os.getenv("CACHE_REFRESH_BATCH_SIZE", "50"))
 CACHE_REFRESH_STAGGER_SECONDS: int = int(os.getenv("CACHE_REFRESH_STAGGER_SECONDS", "5"))
 
 # STORY-306: Cache Correctness & Data Integrity
@@ -87,6 +87,11 @@ SHOW_CACHE_FALLBACK_BANNER: bool = str_to_bool(os.getenv("SHOW_CACHE_FALLBACK_BA
 CACHE_WARMING_POST_DEPLOY_ENABLED: bool = str_to_bool(os.getenv("CACHE_WARMING_POST_DEPLOY_ENABLED", "true"))
 CACHE_WARMING_POST_DEPLOY_TOP_N: int = int(os.getenv("CACHE_WARMING_POST_DEPLOY_TOP_N", "10"))
 CACHE_WARMING_POST_DEPLOY_DELAY_S: int = int(os.getenv("CACHE_WARMING_POST_DEPLOY_DELAY_S", "30"))
+
+# ============================================
+# CRIT-081: Serve expired cache on total outage
+# ============================================
+SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE: bool = os.environ.get("SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE", "true").lower() == "true"
 
 # ============================================
 # Cron Jobs & Email Digests

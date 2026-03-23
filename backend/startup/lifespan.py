@@ -181,6 +181,7 @@ async def lifespan(app_instance: FastAPI):
         start_sector_stats_task, start_support_sla_task,
         start_daily_volume_task, start_results_cleanup_task,
         start_stripe_events_purge_task, start_plan_reconciliation_task,
+        start_coverage_check_task,
     )
     from progress import _periodic_tracker_cleanup
 
@@ -200,6 +201,7 @@ async def lifespan(app_instance: FastAPI):
     task_registry.register("tracker_cleanup", _periodic_tracker_cleanup, is_coroutine=True)
     task_registry.register("saturation_metrics", _periodic_saturation_metrics, is_coroutine=True)
     task_registry.register("warmup", start_warmup_task)
+    task_registry.register("coverage_check", start_coverage_check_task)
 
     await task_registry.start_all()
 
