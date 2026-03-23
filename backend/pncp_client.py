@@ -23,7 +23,17 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from config import RetryConfig, DEFAULT_MODALIDADES, MODALIDADES_EXCLUIDAS
+from config import (
+    RetryConfig, DEFAULT_MODALIDADES, MODALIDADES_EXCLUIDAS,
+    # DEBT-322: CB configs consolidated in config.pncp — single source of truth
+    PNCP_CIRCUIT_BREAKER_THRESHOLD, PNCP_CIRCUIT_BREAKER_COOLDOWN,
+    PCP_CIRCUIT_BREAKER_THRESHOLD, PCP_CIRCUIT_BREAKER_COOLDOWN,
+    COMPRASGOV_CIRCUIT_BREAKER_THRESHOLD, COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN,
+    PNCP_TIMEOUT_PER_MODALITY, PNCP_MODALITY_RETRY_BACKOFF,
+    PNCP_TIMEOUT_PER_UF, PNCP_TIMEOUT_PER_UF_DEGRADED,
+    PNCP_BATCH_SIZE, PNCP_BATCH_DELAY_S,
+    USE_REDIS_CIRCUIT_BREAKER, CB_REDIS_TTL,
+)
 from exceptions import PNCPAPIError
 from middleware import request_id_var
 from metrics import CIRCUIT_BREAKER_STATE
@@ -41,67 +51,9 @@ class PNCPDegradedError(PNCPAPIError):
 
 
 # ============================================================================
-# Circuit Breaker (STORY-252 AC8)
+# DEBT-322: CB configs, timeout, and batching vars consolidated in config.pncp.
+# Imported above from config package — single source of truth.
 # ============================================================================
-
-# Configurable via environment variables (GTM-FIX-005)
-PNCP_CIRCUIT_BREAKER_THRESHOLD: int = int(
-    # GTM-INFRA-001 AC4: Reduced from 50 to 15 — trips in ~30s instead of ~3min
-    os.environ.get("PNCP_CIRCUIT_BREAKER_THRESHOLD", "15")
-)
-PNCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
-    # GTM-INFRA-001 AC5: Reduced proportionally from 120s to 60s
-    os.environ.get("PNCP_CIRCUIT_BREAKER_COOLDOWN", "60")
-)
-PCP_CIRCUIT_BREAKER_THRESHOLD: int = int(
-    # STORY-305 AC5: Aligned with PNCP — same class of government API, no justification for 2x tolerance
-    os.environ.get("PCP_CIRCUIT_BREAKER_THRESHOLD", "15")
-)
-PCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
-    # STORY-305 AC5: Aligned with PNCP (was 120s)
-    os.environ.get("PCP_CIRCUIT_BREAKER_COOLDOWN", "60")
-)
-
-# STORY-305 AC2: ComprasGov circuit breaker — same class of government API
-COMPRASGOV_CIRCUIT_BREAKER_THRESHOLD: int = int(
-    os.environ.get("COMPRASGOV_CIRCUIT_BREAKER_THRESHOLD", "15")
-)
-COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN: int = int(
-    os.environ.get("COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN", "60")
-)
-
-# Per-modality timeout (STORY-252 AC6, GTM-RESILIENCE-F03 AC1) — configurable
-# PerModality=20s: GTM-STAB — tighter budget per modality under new PerUF=30s.
-# Hierarchy: PerModality(20s) < PerUF(30s) — margin 10s.
-PNCP_TIMEOUT_PER_MODALITY: float = float(
-    os.environ.get("PNCP_TIMEOUT_PER_MODALITY", "20")
-)
-
-# Modality retry on timeout (STORY-252 AC9)
-PNCP_MODALITY_RETRY_BACKOFF: float = float(
-    os.environ.get("PNCP_MODALITY_RETRY_BACKOFF", "3.0")
-)
-
-# Per-UF timeout (GTM-FIX-029 AC1/AC5) — configurable
-# Calculation: 4 modalities × ~15s/mod (with retry) = ~60s + 30s margin = 90s
-PNCP_TIMEOUT_PER_UF: float = float(
-    os.environ.get("PNCP_TIMEOUT_PER_UF", "30")
-)
-# Degraded mode per-UF timeout (GTM-FIX-029 AC2)
-PNCP_TIMEOUT_PER_UF_DEGRADED: float = float(
-    os.environ.get("PNCP_TIMEOUT_PER_UF_DEGRADED", "15")
-)
-
-# GTM-FIX-031: Phased UF batching — reduces PNCP API pressure
-PNCP_BATCH_SIZE: int = int(os.environ.get("PNCP_BATCH_SIZE", "5"))
-PNCP_BATCH_DELAY_S: float = float(os.environ.get("PNCP_BATCH_DELAY_S", "2.0"))
-
-# B-06: Redis-backed circuit breaker toggle (rollback: set to "false")
-USE_REDIS_CIRCUIT_BREAKER: bool = os.environ.get(
-    "USE_REDIS_CIRCUIT_BREAKER", "true"
-).lower() == "true"
-# B-06: Circuit breaker Redis key TTL — auto-expire safety net (AC12)
-CB_REDIS_TTL: int = int(os.environ.get("CB_REDIS_TTL", "300"))  # 5 minutes
 
 # ============================================================================
 # Startup Timeout Chain Validation (GTM-RESILIENCE-F03 AC7-AC12)

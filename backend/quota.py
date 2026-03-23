@@ -41,15 +41,26 @@ PLAN_CAPABILITIES_CACHE_TTL = 300  # 5 minutes in seconds
 
 # STORY-291 AC3: In-memory plan status cache (fallback when Supabase CB open)
 # Key: user_id, Value: (plan_id, cached_at)
+# DEBT-323: Bounded to prevent unbounded memory growth under high-cardinality user IDs.
+# When maxsize is exceeded, the oldest entry (by insertion order) is evicted.
+PLAN_STATUS_CACHE_MAXSIZE = 1000
 _plan_status_cache: dict[str, tuple[str, float]] = {}
 _plan_status_cache_lock = threading.Lock()
 PLAN_STATUS_CACHE_TTL = 300  # 5 minutes
 
 
 def _cache_plan_status(user_id: str, plan_id: str) -> None:
-    """Cache plan status for fallback when Supabase is unavailable."""
+    """Cache plan status for fallback when Supabase is unavailable.
+
+    DEBT-323: Enforces maxsize — evicts oldest entries when full.
+    """
     with _plan_status_cache_lock:
+        # If key already exists, remove it first so re-insertion goes to end
+        _plan_status_cache.pop(user_id, None)
         _plan_status_cache[user_id] = (plan_id, time.monotonic())
+        # Evict oldest entries if over maxsize
+        while len(_plan_status_cache) > PLAN_STATUS_CACHE_MAXSIZE:
+            _plan_status_cache.pop(next(iter(_plan_status_cache)))
 
 
 def _get_cached_plan_status(user_id: str) -> Optional[str]:

@@ -928,3 +928,66 @@ class TestDebtDB022IncrementQuotaLastResort:
 
         # Fail-open: return 0 rather than blocking user
         assert result == 0
+
+
+class TestPlanStatusCacheBounded:
+    """DEBT-323: Verify _plan_status_cache enforces maxsize eviction."""
+
+    def test_cache_evicts_oldest_when_full(self):
+        """Insert more than maxsize entries; oldest should be evicted."""
+        from quota import (
+            _plan_status_cache,
+            _plan_status_cache_lock,
+            _cache_plan_status,
+            _get_cached_plan_status,
+            PLAN_STATUS_CACHE_MAXSIZE,
+        )
+
+        # Clear cache before test
+        with _plan_status_cache_lock:
+            _plan_status_cache.clear()
+
+        try:
+            # Insert maxsize + 50 entries
+            for i in range(PLAN_STATUS_CACHE_MAXSIZE + 50):
+                _cache_plan_status(f"user-{i}", "smartlic_pro")
+
+            # Cache should be bounded
+            assert len(_plan_status_cache) == PLAN_STATUS_CACHE_MAXSIZE
+
+            # Oldest entries (0..49) should have been evicted
+            assert _get_cached_plan_status("user-0") is None
+            assert _get_cached_plan_status("user-49") is None
+
+            # Newest entries should still be present
+            last_idx = PLAN_STATUS_CACHE_MAXSIZE + 49
+            assert _get_cached_plan_status(f"user-{last_idx}") == "smartlic_pro"
+        finally:
+            # Clean up
+            with _plan_status_cache_lock:
+                _plan_status_cache.clear()
+
+    def test_cache_update_existing_key_does_not_grow(self):
+        """Updating an existing key should not increase cache size."""
+        from quota import (
+            _plan_status_cache,
+            _plan_status_cache_lock,
+            _cache_plan_status,
+            _get_cached_plan_status,
+        )
+
+        with _plan_status_cache_lock:
+            _plan_status_cache.clear()
+
+        try:
+            _cache_plan_status("user-A", "free_trial")
+            _cache_plan_status("user-B", "free_trial")
+            assert len(_plan_status_cache) == 2
+
+            # Update existing key
+            _cache_plan_status("user-A", "smartlic_pro")
+            assert len(_plan_status_cache) == 2
+            assert _get_cached_plan_status("user-A") == "smartlic_pro"
+        finally:
+            with _plan_status_cache_lock:
+                _plan_status_cache.clear()

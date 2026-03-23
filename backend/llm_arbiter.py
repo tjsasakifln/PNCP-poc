@@ -70,7 +70,11 @@ LLM_STRUCTURED_MAX_TOKENS = int(os.getenv("LLM_STRUCTURED_MAX_TOKENS", "800"))
 # D-02 AC9: gpt-4.1-nano pricing (per million tokens)
 _PRICING_INPUT_PER_M = 0.10   # USD per 1M input tokens
 _PRICING_OUTPUT_PER_M = 0.40  # USD per 1M output tokens
-_USD_TO_BRL = 5.0  # approximate
+# DEBT-325: Configurable via USD_TO_BRL_RATE env var (default 5.0)
+def _get_usd_to_brl() -> float:
+    """Lazy import to avoid circular dependency with config at module level."""
+    from config import USD_TO_BRL_RATE
+    return USD_TO_BRL_RATE
 
 # In-memory L1 cache for LLM decisions (key = MD5 hash of input)
 # D-02 AC8: Cache value is now dict (structured) or bool (legacy), keyed with prompt version
@@ -213,7 +217,7 @@ def _log_token_usage(
         input_tokens * _PRICING_INPUT_PER_M / 1_000_000
         + output_tokens * _PRICING_OUTPUT_PER_M / 1_000_000
     )
-    cost_brl = cost_usd * _USD_TO_BRL
+    cost_brl = cost_usd * _get_usd_to_brl()
     try:
         from metrics import LLM_COST_BRL
         LLM_COST_BRL.labels(model=LLM_MODEL, call_type=call_type).inc(cost_brl)
@@ -234,7 +238,7 @@ def get_search_cost_stats(search_id: str) -> dict:
         stats["llm_tokens_input"] * _PRICING_INPUT_PER_M / 1_000_000
         + stats["llm_tokens_output"] * _PRICING_OUTPUT_PER_M / 1_000_000
     )
-    cost_brl = cost_usd * _USD_TO_BRL
+    cost_brl = cost_usd * _get_usd_to_brl()
     stats["llm_cost_estimated_brl"] = round(cost_brl, 6)
 
     # AC9: Alert if cost > R$ 0.10 per search

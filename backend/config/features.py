@@ -62,6 +62,9 @@ TRIAL_PAYWALL_DAY: int = int(os.getenv("TRIAL_PAYWALL_DAY", "7"))
 TRIAL_PAYWALL_MAX_RESULTS: int = int(os.getenv("TRIAL_PAYWALL_MAX_RESULTS", "10"))
 TRIAL_PAYWALL_MAX_PIPELINE: int = int(os.getenv("TRIAL_PAYWALL_MAX_PIPELINE", "5"))
 
+# DEBT-325: USD to BRL exchange rate for LLM cost estimation
+USD_TO_BRL_RATE: float = float(os.getenv("USD_TO_BRL_RATE", "5.0"))
+
 # D-04: Viability Assessment
 VIABILITY_WEIGHT_MODALITY: float = float(os.getenv("VIABILITY_WEIGHT_MODALITY", "0.30"))
 VIABILITY_WEIGHT_TIMELINE: float = float(os.getenv("VIABILITY_WEIGHT_TIMELINE", "0.25"))

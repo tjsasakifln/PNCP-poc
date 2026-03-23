@@ -96,7 +96,7 @@ function HomePageContent() {
 
       <MobileDrawer open={orch.drawerOpen} onClose={() => orch.setDrawerOpen(false)} />
 
-      <main id="main-content" className="max-w-5xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+      <main id="buscar-content" className="max-w-5xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <PullToRefresh
           onRefresh={orch.search.handleRefresh}
           pullingContent=""
