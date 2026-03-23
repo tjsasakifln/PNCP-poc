@@ -153,7 +153,7 @@ class TestInvoicePaymentFailedWebhook:
         }
 
         # Mock logging to capture attempt_count
-        with patch("webhooks.stripe.logger") as mock_logger:
+        with patch("webhooks.handlers.invoice.logger") as mock_logger:
             await _handle_invoice_payment_failed(sb_mock, event)
 
             # Check if attempt_count was logged

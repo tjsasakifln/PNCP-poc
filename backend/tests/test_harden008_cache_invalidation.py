@@ -155,7 +155,7 @@ class TestDowngradeInvalidation:
     """AC3: Teste unitário valida invalidação no downgrade."""
 
     @pytest.mark.asyncio
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     @patch("webhooks.stripe.get_supabase")
     async def test_subscription_deleted_invalidates_plan_cache(
         self, mock_get_sb, mock_redis, mock_supabase_client
@@ -186,16 +186,16 @@ class TestDowngradeInvalidation:
         event.data = Mock()
         event.data.object = data_obj
 
-        with patch("webhooks.stripe._mark_partner_referral_churned"):
+        with patch("webhooks.handlers.subscription._mark_partner_referral_churned"):
             await _handle_subscription_deleted(sb, event)
 
         # Cache must be invalidated
         assert _get_cached_plan_status(user_id) is None
 
     @pytest.mark.asyncio
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     @patch("webhooks.stripe.get_supabase")
-    @patch("webhooks.stripe.clear_plan_capabilities_cache")
+    @patch("webhooks.handlers._shared.clear_plan_capabilities_cache")
     async def test_subscription_deleted_clears_capabilities_cache(
         self, mock_clear_caps, mock_get_sb, mock_redis, mock_supabase_client
     ):
@@ -217,7 +217,7 @@ class TestDowngradeInvalidation:
         event.data = Mock()
         event.data.object = data_obj
 
-        with patch("webhooks.stripe._mark_partner_referral_churned"):
+        with patch("webhooks.handlers.subscription._mark_partner_referral_churned"):
             await _handle_subscription_deleted(sb, event)
 
         mock_clear_caps.assert_called_once()
@@ -232,8 +232,8 @@ class TestUpgradeInvalidation:
     """AC4: Teste unitário valida invalidação no upgrade."""
 
     @pytest.mark.asyncio
-    @patch("webhooks.stripe._create_partner_referral_async")
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers.checkout._create_partner_referral_async")
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     @patch("webhooks.stripe.get_supabase")
     async def test_checkout_completed_invalidates_plan_cache(
         self, mock_get_sb, mock_redis, mock_referral, mock_supabase_client
@@ -297,10 +297,10 @@ class TestUpgradeInvalidation:
         assert _get_cached_plan_status(user_id) is None
 
     @pytest.mark.asyncio
-    @patch("webhooks.stripe._create_partner_referral_async")
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers.checkout._create_partner_referral_async")
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     @patch("webhooks.stripe.get_supabase")
-    @patch("webhooks.stripe.clear_plan_capabilities_cache")
+    @patch("webhooks.handlers._shared.clear_plan_capabilities_cache")
     async def test_checkout_completed_clears_capabilities_cache(
         self, mock_clear_caps, mock_get_sb, mock_redis, mock_referral, mock_supabase_client
     ):
@@ -362,7 +362,7 @@ class TestSubscriptionUpdatedInvalidation:
     """subscription.updated handler also invalidates caches."""
 
     @pytest.mark.asyncio
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     @patch("webhooks.stripe.get_supabase")
     async def test_subscription_updated_invalidates_plan_cache(
         self, mock_get_sb, mock_redis, mock_supabase_client

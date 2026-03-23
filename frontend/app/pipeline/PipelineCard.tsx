@@ -55,6 +55,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
       {...attributes}
       {...listeners}
       data-tour="pipeline-card"
+      aria-roledescription="item de pipeline"
       className={`bg-[var(--surface-0)] rounded-lg border border-[var(--border-strong)] border-l-4 ${urgencyClass} p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all hover:scale-[1.02] ${
         isDragging || isSortableDragging ? "opacity-50 shadow-lg ring-2 ring-brand-blue" : ""
       }`}
