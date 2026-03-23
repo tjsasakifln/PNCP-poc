@@ -513,7 +513,7 @@ class TestAC2AsyncPaymentFailed:
             f"Expected payment_failed status update, got: {update_calls}"
 
     @pytest.mark.asyncio
-    @patch('webhooks.stripe._send_async_payment_failed_email')
+    @patch('webhooks.handlers.checkout._send_async_payment_failed_email')
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
     @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')

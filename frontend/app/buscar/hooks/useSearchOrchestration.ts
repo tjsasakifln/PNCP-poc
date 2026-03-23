@@ -35,6 +35,14 @@ export function useSearchOrchestration() {
   trackEventRef.current = trackEvent;
   const router = useRouter();
 
+  // TD-H02: Auth guard — redirect unauthenticated users to landing page,
+  // matching the behavior of (protected)/layout.tsx for consistency.
+  useEffect(() => {
+    if (!authLoading && !session) {
+      router.replace("/");
+    }
+  }, [authLoading, session, router]);
+
   // ── Trial / Plan State ──────────────────────────────────────────────
   const [showTrialConversion, setShowTrialConversion] = useState(false);
   const [trialValue, setTrialValue] = useState<TrialValue | null>(null);

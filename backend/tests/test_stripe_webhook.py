@@ -693,7 +693,7 @@ class TestInvoicePayment:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.handlers._shared.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac14_invoice_payment_invalidates_cache(
@@ -722,7 +722,7 @@ class TestCacheInvalidation:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.handlers._shared.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac15_cache_key_format_is_features_user_id(
@@ -1056,7 +1056,7 @@ class TestCheckoutSessionCompleted:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.handlers._shared.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_checkout_completed_invalidates_cache(
@@ -1474,7 +1474,7 @@ class TestDeletedSubscriptionEdgeCases:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.handlers._shared.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_deleted_invalidates_cache(

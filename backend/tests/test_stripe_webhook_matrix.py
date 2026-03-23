@@ -160,9 +160,9 @@ class TestCheckoutSessionCompleted:
 
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
-    @patch("webhooks.stripe.invalidate_plan_status_cache")
-    @patch("webhooks.stripe.clear_plan_capabilities_cache")
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers._shared.invalidate_plan_status_cache")
+    @patch("webhooks.handlers._shared.clear_plan_capabilities_cache")
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     async def test_missing_user_id_returns_early(self, mock_redis, mock_clear, mock_inv):
         from webhooks.stripe import _handle_checkout_session_completed
         mock_sb = _make_chain_mock()
@@ -182,10 +182,10 @@ class TestCheckoutSessionCompleted:
 
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
-    @patch("webhooks.stripe._create_partner_referral_async")
-    @patch("webhooks.stripe.invalidate_plan_status_cache")
-    @patch("webhooks.stripe.clear_plan_capabilities_cache")
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers.checkout._create_partner_referral_async")
+    @patch("webhooks.handlers._shared.invalidate_plan_status_cache")
+    @patch("webhooks.handlers._shared.clear_plan_capabilities_cache")
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     async def test_unpaid_creates_pending_subscription(self, mock_redis, mock_clear, mock_inv, mock_partner):
         """STORY-280: Boleto/PIX checkout creates pending subscription."""
         from webhooks.stripe import _handle_checkout_session_completed
@@ -240,9 +240,9 @@ class TestAsyncPaymentSucceeded:
 
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
-    @patch("webhooks.stripe.invalidate_plan_status_cache")
-    @patch("webhooks.stripe.clear_plan_capabilities_cache")
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers._shared.invalidate_plan_status_cache")
+    @patch("webhooks.handlers._shared.clear_plan_capabilities_cache")
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     async def test_missing_user_id_returns_early(self, mock_redis, mock_clear, mock_inv):
         from webhooks.stripe import _handle_async_payment_succeeded
         mock_sb = _make_chain_mock()
@@ -353,10 +353,10 @@ class TestCheckoutActivation:
 
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
-    @patch("webhooks.stripe._create_partner_referral_async")
-    @patch("webhooks.stripe.invalidate_plan_status_cache")
-    @patch("webhooks.stripe.clear_plan_capabilities_cache")
-    @patch("webhooks.stripe.redis_cache", new_callable=AsyncMock)
+    @patch("webhooks.handlers.checkout._create_partner_referral_async")
+    @patch("webhooks.handlers._shared.invalidate_plan_status_cache")
+    @patch("webhooks.handlers._shared.clear_plan_capabilities_cache")
+    @patch("webhooks.handlers._shared.redis_cache", new_callable=AsyncMock)
     async def test_paid_checkout_activates_subscription(
         self, mock_redis, mock_clear, mock_inv, mock_partner
     ):
@@ -416,7 +416,7 @@ class TestAsyncPaymentFailedHandler:
 
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
-    @patch("webhooks.stripe._send_async_payment_failed_email")
+    @patch("webhooks.handlers.checkout._send_async_payment_failed_email")
     async def test_marks_pending_as_failed(self, mock_email):
         from webhooks.stripe import _handle_async_payment_failed
         mock_sb = _make_chain_mock()
