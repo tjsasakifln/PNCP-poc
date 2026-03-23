@@ -3,7 +3,7 @@
 Endpoints that live directly on the app (not inside a router):
   GET /             — API root / navigation
   GET /v1/setores   — Sector list for frontend dropdown
-  GET /debug/pncp-test — Admin diagnostic for PNCP API connectivity
+  GET /debug/pncp-test — Admin diagnostic for PNCP API connectivity (admin only)
 """
 
 import os
@@ -18,11 +18,6 @@ APP_VERSION = os.getenv("APP_VERSION", "dev")
 
 def register_endpoints(app: FastAPI) -> None:
     """Attach root endpoints to *app* (excluding /debug/pncp-test, see module docstring)."""
-
-    @app.post("/debug/post-test")
-    async def post_test():
-        """Minimal POST endpoint for debugging 502 issues — no auth, no body parsing."""
-        return {"ok": True, "method": "POST"}
 
     @app.get("/", response_model=RootResponse)
     async def root():

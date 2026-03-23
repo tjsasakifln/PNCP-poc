@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
     inputs:
       service:
@@ -301,7 +302,7 @@ jobs:
           FRONTEND_URL: ${{ vars.FRONTEND_URL }}
         run: |
           for i in 1 2 3 4 5; do
-            if curl -sf "${FRONTEND_URL}" > /dev/null 2>&1; then
+            if curl -sfL "${FRONTEND_URL}" > /dev/null 2>&1; then
               echo "Frontend health check passed"
               exit 0
             fi
@@ -330,13 +331,13 @@ jobs:
           echo "=== Backend Smoke Tests ==="
 
           echo "1. Health check..."
-          curl -sf "${BACKEND_URL}/health" | python3 -m json.tool
+          curl -sfL "${BACKEND_URL}/health" | python3 -m json.tool
 
           echo "2. Root endpoint..."
-          curl -sf "${BACKEND_URL}/" | python3 -m json.tool
+          curl -sfL "${BACKEND_URL}/" | python3 -m json.tool
 
           echo "3. OpenAPI docs accessible..."
-          curl -sf -o /dev/null -w "%{http_code}" "${BACKEND_URL}/docs" | grep -q 200
+          curl -sfL -o /dev/null -w "%{http_code}" "${BACKEND_URL}/docs" | grep -q 200
 
           echo "All backend smoke tests passed"
 
@@ -348,14 +349,14 @@ jobs:
           echo "=== Frontend Smoke Tests ==="
 
           echo "1. Page loads..."
-          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "${FRONTEND_URL}")
+          STATUS=$(curl -sfL -o /dev/null -w "%{http_code}" "${FRONTEND_URL}")
           if [ "$STATUS" != "200" ]; then
             echo "Frontend returned $STATUS"
             exit 1
           fi
 
           echo "2. Contains expected content..."
-          curl -sf "${FRONTEND_URL}" | grep -q "SmartLic"
+          curl -sfL "${FRONTEND_URL}" | grep -q "SmartLic"
 
           echo "All frontend smoke tests passed"
 
@@ -367,7 +368,7 @@ jobs:
           echo "=== Integration Smoke Tests ==="
 
           echo "1. POST /buscar with minimal payload..."
-          RESPONSE=$(curl -sf -X POST "${BACKEND_URL}/buscar" \
+          RESPONSE=$(curl -sfL -X POST "${BACKEND_URL}/buscar" \
             -H "Content-Type: application/json" \
             -d '{"ufs":["SP"],"data_inicial":"2026-01-20","data_final":"2026-01-27"}' \
             -w "\n%{http_code}" 2>&1 || true)
