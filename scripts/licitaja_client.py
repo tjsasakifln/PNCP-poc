@@ -26,6 +26,13 @@ from typing import Any, Generator
 
 import httpx
 
+# Load .env for local development (before reading env vars)
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv(str(Path(__file__).resolve().parent.parent / ".env"))
+except ImportError:
+    pass  # python-dotenv not installed — OK in production
+
 # ============================================================
 # CONSTANTS
 # ============================================================

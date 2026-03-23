@@ -33,6 +33,13 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+# Load .env for local development (Railway/Docker set env vars natively)
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv(str(Path(__file__).resolve().parent.parent / ".env"))
+except ImportError:
+    pass  # python-dotenv not installed — OK in production
+
 # Fix Windows console encoding for Unicode output
 # Guard: only wrap if not already wrapped (collect-report-data.py also wraps on import)
 if sys.platform == "win32":
@@ -929,57 +936,123 @@ def search_pncp_exhaustive(
 # STEP 4: CNAE KEYWORD GATE
 # ============================================================
 
-def classify_by_object_heuristic(objeto: str, cnae_principal_desc: str) -> str:
+# ── Sector-specific heuristic patterns (data-driven from YAML) ──
+# Loaded once at module level. Keys = sector_key, values = compiled regex.
+_SECTOR_HEURISTIC_CACHE: dict[str, dict[str, re.Pattern | None]] = {}
+
+
+def _get_sector_heuristic_patterns(sector_keys: set[str] | None = None) -> dict[str, re.Pattern | None]:
+    """Build sector-aware heuristic patterns from intel_sectors_config.yaml.
+
+    Returns dict with keys: strong_compat, weak_compat, strong_incompat.
+    Patterns come from the sector config; falls back to hardcoded construction
+    patterns only for engenharia/engenharia_rodoviaria/manutencao_predial sectors.
     """
-    Secondary heuristic classifier for editais that didn't match keywords
-    but also didn't match exclusion patterns.
+    cache_key = ",".join(sorted(sector_keys or {"geral"}))
+    if cache_key in _SECTOR_HEURISTIC_CACHE:
+        return _SECTOR_HEURISTIC_CACHE[cache_key]
+
+    # Try to load from YAML config
+    try:
+        from intel_sector_loader import load_intel_sectors_config
+        config = load_intel_sectors_config()
+        sectors_cfg = config.get("sectors", {})
+    except (ImportError, FileNotFoundError):
+        sectors_cfg = {}
+
+    # Aggregate patterns from all active sector keys
+    compat_pats: list[str] = []
+    incompat_pats: list[str] = []
+    weak_pats: list[str] = []
+
+    for sk in (sector_keys or {"geral"}):
+        sect = sectors_cfg.get(sk, {})
+        if not isinstance(sect, dict):
+            continue
+        hp = sect.get("heuristic_patterns", {})
+        if isinstance(hp, dict):
+            compat_pats.extend(hp.get("strong_compat", []))
+            incompat_pats.extend(hp.get("strong_incompat", []))
+            weak_pats.extend(hp.get("weak_compat", []))
+
+    # Build compiled patterns (None if no patterns)
+    def _compile_list(pats: list[str]) -> re.Pattern | None:
+        if not pats:
+            return None
+        joined = "|".join(f"({p})" for p in pats)
+        return re.compile(joined, re.IGNORECASE)
+
+    result = {
+        "strong_compat": _compile_list(compat_pats),
+        "weak_compat": _compile_list(weak_pats),
+        "strong_incompat": _compile_list(incompat_pats),
+    }
+
+    # Fallback: construction-sector hardcoded patterns (backward compat)
+    _construction_sectors = {"engenharia", "engenharia_rodoviaria", "manutencao_predial"}
+    _active = sector_keys or {"geral"}
+    if _active & _construction_sectors or (_active == {"geral"} and not any(result.values())):
+        if result["strong_compat"] is None:
+            result["strong_compat"] = re.compile(
+                r'(obra|construcao|reforma|ampliacao|restauracao|recuperacao|revitalizacao|'
+                r'pavimentacao|drenagem|terraplanagem|saneamento|urbanizacao|'
+                r'projeto (basico|executivo)|levantamento topografico|estudo geotecnico|'
+                r'fiscalizacao de obra|supervisao de obra|gerenciamento de obra|'
+                r'instalacoes (eletricas|hidraulicas|sanitarias)|'
+                r'impermeabilizacao|revestimento|alvenaria|concretagem|fundacao|'
+                r'estrutura metalica|cobertura|telhado|fachada|'
+                r'rede de (agua|esgoto|drenagem)|estacao (tratamento|elevatoria)|'
+                r'ponte|viaduto|passarela|muro de contencao|talude|'
+                r'sinalizacao (viaria|rodoviaria)|defensa|guard.?rail|'
+                r'CBUQ|massa asfaltica|base.*sub.?base|meio.?fio|sarjeta|boca.?de.?lobo)',
+                re.IGNORECASE
+            )
+        if result["weak_compat"] is None:
+            result["weak_compat"] = re.compile(
+                r'(engenharia|servicos de engenharia|manutencao predial|'
+                r'conservacao de (logradouro|via|estrada)|'
+                r'iluminacao publica|semaforo|'
+                r'ar condicionado|climatizacao|elevador|'
+                r'pintura|vidracaria|serralheria|marcenaria)',
+                re.IGNORECASE
+            )
+        if result["strong_incompat"] is None:
+            result["strong_incompat"] = re.compile(
+                r'(consultoria (juridica|contabil|tributaria|financeira|ambiental)|'
+                r'assessoria (juridica|contabil)|auditoria|'
+                r'transporte (escolar|publico|coletivo|passageiros)|fretamento|'
+                r'seguro (predial|patrimonial|vida|saude|automovel)|'
+                r'telefonia|internet|banda larga|'
+                r'publicidade|propaganda|marketing|'
+                r'capacitacao|treinamento|curso|'
+                r'locacao de (imovel|sala|espaco|galpao|veiculo)|'
+                r'servico de copa|coffee break|buffet|catering)',
+                re.IGNORECASE
+            )
+
+    _SECTOR_HEURISTIC_CACHE[cache_key] = result
+    return result
+
+
+def classify_by_object_heuristic(
+    objeto: str,
+    cnae_principal_desc: str,
+    sector_keys: set[str] | None = None,
+) -> str:
+    """
+    Sector-aware heuristic classifier for editais that didn't match keywords.
+
+    Uses patterns from intel_sectors_config.yaml per sector. Falls back to
+    hardcoded construction patterns only for engenharia sectors.
+
     Returns: 'COMPATIVEL', 'INCOMPATIVEL', or 'NEEDS_REVIEW'
     """
     obj_lower = (objeto or '').lower()
+    pats = _get_sector_heuristic_patterns(sector_keys)
 
-    # Strong compatibility signals (construction/engineering context)
-    strong_compat = re.compile(
-        r'(obra|construcao|reforma|ampliacao|restauracao|recuperacao|revitalizacao|'
-        r'pavimentacao|drenagem|terraplanagem|saneamento|urbanizacao|'
-        r'projeto (basico|executivo)|levantamento topografico|estudo geotecnico|'
-        r'fiscalizacao de obra|supervisao de obra|gerenciamento de obra|'
-        r'instalacoes (eletricas|hidraulicas|sanitarias)|'
-        r'impermeabilizacao|revestimento|alvenaria|concretagem|fundacao|'
-        r'estrutura metalica|cobertura|telhado|fachada|'
-        r'rede de (agua|esgoto|drenagem)|estacao (tratamento|elevatoria)|'
-        r'ponte|viaduto|passarela|muro de contencao|talude|'
-        r'sinalizacao (viaria|rodoviaria)|defensa|guard.?rail|'
-        r'CBUQ|massa asfaltica|base.*sub.?base|meio.?fio|sarjeta|boca.?de.?lobo)',
-        re.IGNORECASE
-    )
-
-    # Weak compatibility (could be construction but ambiguous)
-    weak_compat = re.compile(
-        r'(engenharia|servicos de engenharia|manutencao predial|'
-        r'conservacao de (logradouro|via|estrada)|'
-        r'iluminacao publica|semaforo|'
-        r'ar condicionado|climatizacao|elevador|'
-        r'pintura|vidracaria|serralheria|marcenaria)',
-        re.IGNORECASE
-    )
-
-    # Strong incompatibility signals (not construction)
-    strong_incompat = re.compile(
-        r'(consultoria (juridica|contabil|tributaria|financeira|ambiental)|'
-        r'assessoria (juridica|contabil)|auditoria|'
-        r'transporte (escolar|publico|coletivo|passageiros)|fretamento|'
-        r'seguro (predial|patrimonial|vida|saude|automovel)|'
-        r'telefonia|internet|banda larga|'
-        r'publicidade|propaganda|marketing|'
-        r'capacitacao|treinamento|curso|'
-        r'locacao de (imovel|sala|espaco|galpao|veiculo)|'
-        r'servico de copa|coffee break|buffet|catering)',
-        re.IGNORECASE
-    )
-
-    has_strong_compat = bool(strong_compat.search(obj_lower))
-    has_weak_compat = bool(weak_compat.search(obj_lower))
-    has_strong_incompat = bool(strong_incompat.search(obj_lower))
+    has_strong_compat = bool(pats["strong_compat"] and pats["strong_compat"].search(obj_lower))
+    has_weak_compat = bool(pats["weak_compat"] and pats["weak_compat"].search(obj_lower))
+    has_strong_incompat = bool(pats["strong_incompat"] and pats["strong_incompat"].search(obj_lower))
 
     if has_strong_compat and not has_strong_incompat:
         return 'COMPATIVEL'
@@ -987,7 +1060,6 @@ def classify_by_object_heuristic(objeto: str, cnae_principal_desc: str) -> str:
         return 'INCOMPATIVEL'
     if has_weak_compat and not has_strong_incompat:
         return 'COMPATIVEL'
-    # Default: pass through for LLM review (avoid discarding ambiguous editais)
     return 'NEEDS_REVIEW'
 
 
@@ -1132,25 +1204,15 @@ def apply_cnae_keyword_gate(
         # Base confidence from keyword density (caps at 60%)
         confidence = min(1.0, density / density_threshold * 0.6) if density_threshold > 0 else 0.0
 
-        # Heuristic bonus: check object classification
+        # Heuristic bonus: check object classification (sector-aware)
         _cnae_desc = ed.get("cnae_principal_descricao") or ""
-        _heuristic = classify_by_object_heuristic(objeto, _cnae_desc)
+        _heuristic = classify_by_object_heuristic(objeto, _cnae_desc, sector_keys=all_sector_keys)
         heuristic_label = None
         if _heuristic == 'COMPATIVEL':
-            # Determine strong vs weak by re-checking patterns
+            # Determine strong vs weak using sector-aware patterns
             _obj_lower_h = (objeto or '').lower()
-            _strong_compat_pat = re.compile(
-                r'(obra|construcao|reforma|ampliacao|restauracao|recuperacao|revitalizacao|'
-                r'pavimentacao|drenagem|terraplanagem|saneamento|urbanizacao|'
-                r'projeto (basico|executivo)|levantamento topografico|estudo geotecnico|'
-                r'fiscalizacao de obra|supervisao de obra|gerenciamento de obra|'
-                r'impermeabilizacao|revestimento|alvenaria|concretagem|fundacao|'
-                r'estrutura metalica|cobertura|telhado|fachada|'
-                r'rede de (agua|esgoto|drenagem)|estacao (tratamento|elevatoria)|'
-                r'ponte|viaduto|passarela|muro de contencao|talude)',
-                re.IGNORECASE
-            )
-            if _strong_compat_pat.search(_obj_lower_h):
+            _pats = _get_sector_heuristic_patterns(all_sector_keys)
+            if _pats["strong_compat"] and _pats["strong_compat"].search(_obj_lower_h):
                 confidence += 0.20  # strong_compatible
                 heuristic_label = "strong_compatible"
             else:

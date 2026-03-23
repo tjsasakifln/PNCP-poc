@@ -197,6 +197,34 @@ def get_all_incompatible_objects(config: dict[str, Any] | None = None) -> dict[s
     return result
 
 
+def get_sector_heuristic_patterns(
+    sector_key: str,
+    config: dict[str, Any] | None = None,
+) -> dict[str, list[str]]:
+    """Get heuristic classification patterns for a sector.
+
+    Returns: {"strong_compat": [...], "strong_incompat": [...], "weak_compat": [...]}
+    Empty lists for any missing pattern type.
+    """
+    if config is None:
+        config = load_intel_sectors_config()
+
+    sectors = config.get("sectors", {})
+    sector_data = sectors.get(sector_key, {})
+    if not isinstance(sector_data, dict):
+        return {"strong_compat": [], "strong_incompat": [], "weak_compat": []}
+
+    hp = sector_data.get("heuristic_patterns", {})
+    if not isinstance(hp, dict):
+        return {"strong_compat": [], "strong_incompat": [], "weak_compat": []}
+
+    return {
+        "strong_compat": hp.get("strong_compat", []),
+        "strong_incompat": hp.get("strong_incompat", []),
+        "weak_compat": hp.get("weak_compat", []),
+    }
+
+
 def get_llm_fallback_config(config: dict[str, Any] | None = None) -> dict[str, Any]:
     """Get LLM fallback configuration for unknown CNAEs.
 

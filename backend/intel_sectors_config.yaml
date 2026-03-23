@@ -363,11 +363,15 @@ sectors:
       - "2121"  # Fabricação de medicamentos
       - "2123"  # Fabricação de preparações farmacêuticas
       - "3250"  # Fabricação de instrumentos/materiais médicos
+      - "4644"  # Comércio atacadista de medicamentos e drogas de uso humano
+      - "4645"  # Comércio atacadista de instrumentos e materiais médico-cirúrgicos
+      - "4646"  # Comércio atacadista de cosméticos, produtos de perfumaria e higiene pessoal
+      - "4649"  # Comércio atacadista de outros equipamentos e artigos de uso pessoal/doméstico
       - "4771"  # Comércio varejista de produtos farmacêuticos
-      - "4773"  # Comércio varejista de artigos médicos
+      - "4773"  # Comércio varejista de artigos médicos e ortopédicos
       - "8610"  # Atividades de atendimento hospitalar
       - "8630"  # Atividades de atenção ambulatorial
-      - "8640"  # Atividades de complementação diagnóstica
+      - "8640"  # Atividades de complementação diagnóstica e terapêutica
 
     sector_hints:
       - "saúde"
@@ -378,8 +382,130 @@ sectors:
       - "hospitalar"
       - "laborat"
 
+    # Sector-aware heuristic patterns for the CNAE gate
+    heuristic_patterns:
+      strong_compat:
+        - "medicamento"
+        - "medicamentos"
+        - "material (medico|médico|hospitalar|cirurgico|cirúrgico)"
+        - "materiais (medicos|médicos|hospitalares|cirurgicos|cirúrgicos)"
+        - "insumo (hospitalar|medico|médico)"
+        - "insumos (hospitalares|medicos|médicos)"
+        - "equipamento (medico|médico|hospitalar)"
+        - "equipamentos (medicos|médicos|hospitalares)"
+        - "farmacia|farmácia"
+        - "produto farmaceutico|produto farmacêutico"
+        - "produtos farmaceuticos|produtos farmacêuticos"
+        - "droga|drogas"
+        - "formula infantil|fórmula infantil"
+        - "leite especial|leites especiais"
+        - "suplemento (nutricional|alimentar)"
+        - "dieta enteral"
+        - "ortese|orteses|órtese|órteses"
+        - "protese|proteses|prótese|próteses"
+        - "reagente|reagentes"
+        - "laboratorio|laboratório"
+        - "exame|exames"
+        - "diagnostico|diagnóstico"
+        - "vacina|vacinas"
+        - "seringa|seringas"
+        - "luva (cirurgica|procedimento|descartavel|descartável)"
+        - "agulha|agulhas"
+        - "cateter|cateteres"
+        - "sonda|sondas"
+        - "curativo|curativos"
+        - "atadura|ataduras"
+        - "gaze|gazes"
+        - "esparadrapo"
+        - "termometro|termômetro"
+        - "esfigmomanometro|esfigmomanômetro"
+        - "estetoscopio|estetoscópio"
+        - "oximetro|oxímetro"
+        - "desfibrilador"
+        - "monitor multiparametro|monitor multiparâmetro"
+        - "ventilador (pulmonar|mecanico|mecânico)"
+        - "oxigenio|oxigênio"
+        - "gases medicinais"
+        - "ambulancia|ambulância"
+        - "raio.?x|tomografia|ressonancia|ressonância|ultrassom"
+        - "servico medico|serviço médico|servicos medicos|serviços médicos"
+        - "atendimento (hospitalar|ambulatorial|domiciliar)"
+        - "plantao medico|plantão médico"
+        - "higienizacao hospitalar|higienização hospitalar"
+        - "esterilizacao|esterilização"
+        - "autoclave"
+      strong_incompat:
+        - "\\bobra\\b"
+        - "construcao|construção"
+        - "pavimentacao|pavimentação"
+        - "asfalto|CBUQ|massa asfaltica|massa asfáltica"
+        - "terraplanagem"
+        - "engenharia civil"
+        - "\\breforma\\b(?!.*hospitalar)(?!.*ubs)(?!.*saude)(?!.*saúde)"
+        - "drenagem|saneamento|esgoto"
+        - "ponte|viaduto|passarela"
+        - "muro de contencao|muro de contenção"
+        - "estrutura metalica|estrutura metálica"
+        - "alvenaria|concretagem|fundacao|fundação"
+        - "recapeamento"
+        - "meio.?fio|sarjeta|boca.?de.?lobo"
+        - "sinalizacao (viaria|rodoviária)|sinalização (viária|rodoviária)"
+        - "bloquete|paver|intertravado"
+        - "quadra (poliesportiva|coberta|esportiva)"
+        - "serralheria|marcenaria|vidracaria|vidraçaria"
+        - "transporte (escolar|coletivo|publico|público)"
+        - "fretamento"
+        - "publicidade|propaganda|marketing"
+        - "locacao de (imovel|imóvel|sala|veiculo|veículo)"
+        - "consultoria (juridica|jurídica|contabil|contábil|tributaria|tributária)"
+        - "assessoria (juridica|jurídica|contabil|contábil)"
+        - "\\bsoftware\\b|\\bsistema\\b|\\berp\\b|\\bti\\b"
+        - "telefonia|internet|banda larga"
+        - "merenda|refeicao|refeição|alimentacao|alimentação"
+        - "uniforme|vestuario|vestuário|fardamento"
+        - "vigilancia|vigilância|seguranca|segurança"
+        - "limpeza|conservacao|conservação|zeladoria"
+        - "aduelas|concreto armado|gabiao|gabião"
+        - "iluminacao publica|iluminação pública"
+      weak_compat:
+        - "saude|saúde"
+        - "hospital|hospitalar"
+        - "clinica|clínica"
+        - "UBS|PSF|UPA|SAMU"
+        - "posto de saude|posto de saúde"
+        - "unidade (basica|básica) de saude|unidade (basica|básica) de saúde"
+        - "secretaria (municipal|estadual) de saude|secretaria (municipal|estadual) de saúde"
+        - "sus|SUS"
+        - "enfermagem"
+        - "fisioterapia"
+        - "odontologico|odontológico"
+        - "oftalmologico|oftalmológico"
+
     cnae_refinements: {}
-    incompatible_objects: {}
+
+    incompatible_objects:
+      "4644":
+        - "\\bobra\\b"
+        - "\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\basfalto\\b|\\bCBUQ\\b"
+        - "\\bterraplanagem\\b"
+        - "\\bdrenagem\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\balimentacao\\b|\\balimentação\\b"
+        - "\\bvigilancia\\b|\\bvigilância\\b"
+        - "\\blimpeza\\b|\\bzeladoria\\b"
+      "4645":
+        - "\\bobra\\b"
+        - "\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\bmerenda\\b|\\balimentacao\\b|\\balimentação\\b"
+      "4646":
+        - "\\bobra\\b"
+        - "\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bsoftware\\b|\\berp\\b"
 
   transporte:
     cnae_prefixes:
