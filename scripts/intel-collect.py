@@ -105,6 +105,14 @@ CNAE_INCOMPATIBLE_OBJECTS = _crd.CNAE_INCOMPATIBLE_OBJECTS
 collect_sicaf = _crd.collect_sicaf
 collect_portal_transparencia = _crd.collect_portal_transparencia
 
+# LicitaJa client (optional source, priority 4)
+from licitaja_client import (
+    collect_licitaja,
+    build_keyword_groups,
+    LICITAJA_ENABLED,
+    LICITAJA_API_KEY,
+)
+
 # ============================================================
 # CONSTANTS
 # ============================================================
@@ -1803,6 +1811,15 @@ def assemble_output(
             "status_temporal": status_counts,
             "total_expirados": source_meta.get("total_expirados_removidos", 0),
             "total_urgentes": status_counts.get("URGENTE", 0),
+            # LicitaJa stats
+            "licitaja_total_raw": source_meta.get("licitaja_total_raw", 0),
+            "licitaja_pages_fetched": source_meta.get("licitaja_pages_fetched", 0),
+            "licitaja_errors": source_meta.get("licitaja_errors", 0),
+            "licitaja_rate_limited": source_meta.get("licitaja_rate_limited", 0),
+            "licitaja_dedup_removed": source_meta.get("licitaja_dedup_removed", 0),
+            "licitaja_after_filter": source_meta.get("licitaja_after_filter", 0),
+            "licitaja_unique_added": source_meta.get("licitaja_unique_added", 0),
+            "licitaja_status": source_meta.get("licitaja_status", "DISABLED"),
         },
         "editais": editais_sorted,
         "_metadata": {
@@ -1817,6 +1834,12 @@ def assemble_output(
                     "errors": source_meta.get("errors", 0),
                 },
                 "opencnpj": empresa.get("_source", {}).get("status", "UNKNOWN"),
+                "licitaja": {
+                    "status": source_meta.get("licitaja_status", "DISABLED"),
+                    "raw_items": source_meta.get("licitaja_total_raw", 0),
+                    "unique_added": source_meta.get("licitaja_unique_added", 0),
+                    "pages_fetched": source_meta.get("licitaja_pages_fetched", 0),
+                },
             },
         },
     }
@@ -2126,7 +2149,7 @@ def collect_price_benchmarks(api: "ApiClient", editais: list[dict]) -> None:
                 "desconto_pct": round(desconto_sugerido * 100, 1),
                 "faixa_agressiva": round(valor * (1 - desc_mediano), 2),
                 "faixa_conservadora": round(valor * (1 - desc_mediano * 0.5), 2),
-                "margem_liquida_pct": round((1 - desconto_sugerido) * 0.92 * 100 - 100, 1),  # 8% overhead
+                "margem_liquida_pct": round(((1 - desconto_sugerido) / 0.80 - 1) * 100, 1),  # custo ~80% do valor estimado (BDI ~25%)
                 "confianca": "ALTA" if contratos >= 5 else "MEDIA",
                 "base_contratos": contratos,
                 "desconto_mediano_orgao": desc_mediano,
@@ -2438,6 +2461,44 @@ def main():
     print(f"\n  Total bruto (dedup _id): {len(editais)} editais")
     if source_meta["pagination_exhausted"]:
         print(f"  WARN: Paginacao esgotada em: {source_meta['pagination_exhausted']}")
+
+    # ── Step 3a: LicitaJa search (priority 4, sequential, after PNCP) ──
+    elapsed_s = time.time() - t0
+    if LICITAJA_ENABLED and LICITAJA_API_KEY:
+        print(f"\n[3a/7] Busca LicitaJa (fonte complementar, 10 req/min)...")
+        now_dt = datetime.now(timezone.utc)
+        date_from_str = (now_dt - timedelta(days=dias)).strftime("%Y-%m-%d")
+        date_to_str = now_dt.strftime("%Y-%m-%d")
+
+        # Build 2-3 keyword groups from top keywords
+        kw_groups = build_keyword_groups(keywords, max_groups=3, terms_per_group=5)
+
+        licitaja_editais, licitaja_stats = collect_licitaja(
+            keywords_sample=kw_groups,
+            ufs=list(ufs),
+            date_from=date_from_str,
+            date_to=date_to_str,
+            value_max=int(capital * 10) if capital > 0 else None,
+            verbose=not args.quiet,
+            elapsed_s=elapsed_s,
+            pipeline_timeout_s=300.0,
+        )
+
+        # Merge into editais list (will be deduped in cross-portal dedup below)
+        if licitaja_editais:
+            editais.extend(licitaja_editais)
+            print(f"  LicitaJa: +{len(licitaja_editais)} editais adicionados ao pipeline")
+
+        # Store stats in source_meta
+        for k, v in licitaja_stats.items():
+            source_meta[k] = v
+    else:
+        reason = "LICITAJA_ENABLED=false" if not LICITAJA_ENABLED else "sem API key"
+        if not args.quiet:
+            print(f"\n[3a/7] LicitaJa: pulado ({reason})")
+        source_meta["licitaja_status"] = "DISABLED"
+        source_meta["licitaja_total_raw"] = 0
+        source_meta["licitaja_unique_added"] = 0
 
     # ── Cross-portal dedup (between PNCP and PCP) ──
     # Same edital may appear on both portals with different _id values.
