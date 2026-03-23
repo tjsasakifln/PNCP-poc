@@ -3653,6 +3653,47 @@
         "title": "MfaStatusResponse",
         "type": "object"
       },
+      "NewOpportunitiesResponse": {
+        "description": "DEBT-127 AC6-AC9: New opportunities since last search.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "days_since_last_search": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Since Last Search"
+          },
+          "has_previous_search": {
+            "title": "Has Previous Search",
+            "type": "boolean"
+          },
+          "last_search_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Search At"
+          }
+        },
+        "required": [
+          "count",
+          "has_previous_search"
+        ],
+        "title": "NewOpportunitiesResponse",
+        "type": "object"
+      },
       "PanoramaStats": {
         "properties": {
           "avg_value": {
@@ -4002,6 +4043,19 @@
             "title": "Pncp Id",
             "type": "string"
           },
+          "search_id": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Search session that discovered this item (DEBT-120)",
+            "title": "Search Id"
+          },
           "stage": {
             "anyOf": [
               {
@@ -4111,6 +4165,17 @@
           "pncp_id": {
             "title": "Pncp Id",
             "type": "string"
+          },
+          "search_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Id"
           },
           "stage": {
             "title": "Stage",
@@ -6024,7 +6089,7 @@
     },
     "/debug/pncp-test": {
       "get": {
-        "description": "Diagnostic: test if PNCP API is reachable. Admin only.",
+        "description": "Diagnostic: test if PNCP API is reachable from this server. Admin only.",
         "operationId": "debug_pncp_test_debug_pncp_test_get",
         "responses": {
           "200": {
@@ -6088,7 +6153,7 @@
     },
     "/health/ready": {
       "get": {
-        "description": "HARDEN-016 AC2: Readiness probe \u2014 checks Redis + Supabase.",
+        "description": "HARDEN-016 AC2: Readiness probe \u2014 checks Redis + Supabase.\n\nDEBT-124 AC6: Returns 503 during graceful shutdown drain phase.",
         "operationId": "health_ready_health_ready_get",
         "responses": {
           "200": {
@@ -7722,6 +7787,33 @@
         ]
       }
     },
+    "/v1/analytics/new-opportunities": {
+      "get": {
+        "description": "Get count of opportunities from user's most recent search.\n\nDEBT-127 AC6-AC9: Drives users back to /buscar by showing how many\nopportunities were found in their latest search and how long ago it was.\nIf no previous search exists, returns has_previous_search=False for\nonboarding prompt (AC9).",
+        "operationId": "get_new_opportunities_v1_analytics_new_opportunities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewOpportunitiesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get New Opportunities",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
     "/v1/analytics/searches-over-time": {
       "get": {
         "description": "Get time-series search data grouped by period.",
@@ -9266,6 +9358,7 @@
         ],
         "summary": "Buscar Progress Stream",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -9312,6 +9405,7 @@
         ],
         "summary": "Get Search Results",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -9688,7 +9782,7 @@
     },
     "/v1/me": {
       "delete": {
-        "description": "Delete entire user account and all associated data (LGPD Art. 18 VI).\n\nUses admin client (get_db) because it needs db.auth.admin.delete_user()\nand must delete across multiple tables regardless of RLS.\n\nCascade order:\n1. Cancel active Stripe subscription (if any)\n2. Delete from: search_sessions, monthly_quota, user_subscriptions,\n   user_oauth_tokens, messages, profiles\n3. Delete auth user via Supabase admin API\n4. Log anonymized audit entry",
+        "description": "Delete entire user account and all associated data (LGPD Art. 18 VI).\n\nUses admin client (get_db) because it needs db.auth.admin.delete_user()\nand must delete across multiple tables regardless of RLS.\n\nStrategy:\n1. Cancel active Stripe subscription (external side-effect, must be first)\n2. Delete from profiles (CASCADE propagates to most child tables)\n3. Delete from remaining tables that reference auth.users directly\n4. Delete auth user via Supabase admin API\n5. Log anonymized audit entry\n\nIf auth user deletion fails (step 4), we do NOT roll back the profile\ndeletion \u2014 the user's data is already gone and a dangling auth entry\nis preferable to leaving personal data behind (LGPD Art. 18 VI).",
         "operationId": "delete_account_v1_me_delete",
         "responses": {
           "200": {
@@ -10565,7 +10659,7 @@
     },
     "/v1/pipeline/alerts": {
       "get": {
-        "description": "Get pipeline items with deadlines within 3 days (AC6).\n\nSTORY-265 AC3: Trial expired can view alerts (read-only).\nReturns items where data_encerramento < now() + 3 days\nand stage is NOT in ('enviada', 'resultado').",
+        "description": "Get pipeline items with deadlines within 7 days (DEBT-127 AC1).\n\nSTORY-265 AC3: Trial expired can view alerts (read-only).\nReturns items where data_encerramento < now() + 7 days\nand stage is NOT in ('enviada', 'resultado').",
         "operationId": "get_pipeline_alerts_v1_pipeline_alerts_get",
         "responses": {
           "200": {
@@ -10970,6 +11064,7 @@
         ],
         "summary": "Cancel Search",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -11016,6 +11111,7 @@
         ],
         "summary": "Regenerate Excel Endpoint",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -11062,6 +11158,7 @@
         ],
         "summary": "Get Search Results V1",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -11108,6 +11205,7 @@
         ],
         "summary": "Retry Search",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -11156,6 +11254,7 @@
         ],
         "summary": "Search Status Endpoint",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -11202,6 +11301,7 @@
         ],
         "summary": "Search Timeline Endpoint",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -11248,6 +11348,7 @@
         ],
         "summary": "Get Zero Match Results Endpoint",
         "tags": [
+          "search",
           "search"
         ]
       }
@@ -11586,23 +11687,6 @@
         "tags": [
           "user"
         ]
-      }
-    },
-    "/v1/webhooks/stripe": {
-      "post": {
-        "description": "Handle Stripe webhook events with idempotency and signature validation.\n\nSecurity:\n- Verifies Stripe signature to prevent fake webhooks\n- Rejects unsigned/invalid requests with HTTP 400\n\nIdempotency:\n- Checks stripe_webhook_events table for duplicate event IDs\n- Returns \"already_processed\" for duplicate webhooks\n\nProcessing:\n- Determines billing_period from Stripe subscription interval\n- Updates user_subscriptions table via Supabase client\n- Syncs profiles.plan_type for fallback reliability\n- Invalidates Redis cache for affected user\n- Stores event in stripe_webhook_events for audit trail\n\nArgs:\n    request: FastAPI Request object with Stripe event payload\n\nReturns:\n    dict: {\"status\": \"success\"} or {\"status\": \"already_processed\"}\n\nRaises:\n    HTTPException 400: Invalid payload or signature verification failed\n    HTTPException 500: Database error during processing",
-        "operationId": "stripe_webhook_v1_webhooks_stripe_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Stripe Webhook"
       }
     },
     "/webhooks/stripe": {

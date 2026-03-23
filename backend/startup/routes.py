@@ -43,7 +43,7 @@ from routes.feature_flags import router as feature_flags_router
 
 _v1_routers = [
     admin_router, subscriptions_router, features_router, messages_router,
-    analytics_router, oauth_router, export_sheets_router, stripe_webhook_router,
+    analytics_router, oauth_router, export_sheets_router,
     search_router, user_router, billing_router, sessions_router, plans_router,
     emails_router, pipeline_router, onboarding_router, auth_email_router,
     cache_health_router, feedback_router, auth_check_router, bid_analysis_router,
@@ -66,5 +66,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(admin_trace_router)
     app.include_router(slo_router)
 
-    # Stripe webhook at root (callback URL already configured in Stripe dashboard)
+    # Stripe webhook at root — DEBT-324: single registration only.
+    # Removed from _v1_routers above to prevent duplicate at /v1/webhooks/stripe.
+    # Stripe Dashboard must be configured with: POST /webhooks/stripe
     app.include_router(stripe_webhook_router)
