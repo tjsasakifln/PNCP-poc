@@ -1,6 +1,4 @@
-'use client';
-
-import { useInView } from '@/app/hooks/useInView';
+import AnimateOnScroll from '@/components/ui/AnimateOnScroll';
 
 interface DifferentialsGridProps {
   className?: string;
@@ -53,36 +51,31 @@ const differentials: DifferentialCard[] = [
   },
 ];
 
+/**
+ * DEBT-2: Converted to RSC with AnimateOnScroll client islands.
+ */
 export default function DifferentialsGrid({ className = '' }: DifferentialsGridProps) {
-  const { ref, isInView } = useInView({ threshold: 0.1 });
-
   return (
     <section
-      ref={ref as React.RefObject<HTMLElement>}
       className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
     >
-      <h2
-        className={`text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-4 transition-all duration-500 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
-        Cada funcionalidade elimina um risco real
-      </h2>
-      <p
-        className={`text-lg text-center text-ink-secondary mb-12 max-w-2xl mx-auto transition-all duration-500 delay-100 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
-        Menos ruído, menos desperdício, mais retorno
-      </p>
+      <AnimateOnScroll threshold={0.1}>
+        <h2 className="text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-4">
+          Cada funcionalidade elimina um risco real
+        </h2>
+      </AnimateOnScroll>
+      <AnimateOnScroll threshold={0.1} delay={100}>
+        <p className="text-lg text-center text-ink-secondary mb-12 max-w-2xl mx-auto">
+          Menos ruído, menos desperdício, mais retorno
+        </p>
+      </AnimateOnScroll>
 
       {/* Layout 1+3 Assimétrico */}
       <div className="grid lg:grid-cols-4 gap-6">
         {/* Card Featured (TEMPO) — Full width on mobile, first col on desktop */}
-        <div
-          className={`lg:col-span-4 bg-brand-navy text-white p-8 rounded-card transition-all duration-500 delay-150 hover:-translate-y-0.5 hover:shadow-xl ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
+        <AnimateOnScroll
+          delay={150}
+          className="lg:col-span-4 bg-brand-navy text-white p-8 rounded-card hover:-translate-y-0.5 hover:shadow-xl"
         >
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -100,16 +93,14 @@ export default function DifferentialsGrid({ className = '' }: DifferentialsGridP
               ))}
             </ul>
           </div>
-        </div>
+        </AnimateOnScroll>
 
         {/* 3 Cards menores */}
         {differentials.slice(1).map((differential, index) => (
-          <div
+          <AnimateOnScroll
             key={index}
-            className={`lg:col-span-1 bg-surface-1 p-6 rounded-card border border-[var(--border)] transition-all duration-500 hover:-translate-y-0.5 hover:shadow-md ${
-              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-            style={{ transitionDelay: `${200 + index * 50}ms` }}
+            delay={200 + index * 50}
+            className="lg:col-span-1 bg-surface-1 p-6 rounded-card border border-[var(--border)] hover:-translate-y-0.5 hover:shadow-md"
           >
             <div className="w-12 h-12 bg-brand-blue-subtle rounded-card flex items-center justify-center text-brand-blue mb-4">
               {differential.icon}
@@ -125,7 +116,7 @@ export default function DifferentialsGrid({ className = '' }: DifferentialsGridP
                 </li>
               ))}
             </ul>
-          </div>
+          </AnimateOnScroll>
         ))}
       </div>
     </section>

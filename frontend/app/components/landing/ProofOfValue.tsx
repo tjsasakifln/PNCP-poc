@@ -1,7 +1,5 @@
-'use client';
-
-import { useInView } from '@/app/hooks/useInView';
 import { CheckCircle2, XCircle, MapPin, Calendar, DollarSign, Building2, TrendingUp, AlertTriangle } from 'lucide-react';
+import AnimateOnScroll from '@/components/ui/AnimateOnScroll';
 
 interface ProofOfValueProps {
   className?: string;
@@ -60,44 +58,35 @@ function RejectionIcon({ tipo }: { tipo: string }) {
 }
 
 /**
- * GTM-COPY-003: Proof of Value — Real recommendation example in the first fold
- *
- * Shows a recommended bid card with compatibility badge + justification criteria,
- * and a contrasting rejected bid card to demonstrate the filtering mechanism.
- * All data is static/hardcoded — no API calls, no auth required.
+ * GTM-COPY-003: Proof of Value — Real recommendation example
+ * DEBT-2: Converted to RSC with AnimateOnScroll client islands.
  */
 export default function ProofOfValue({ className = '' }: ProofOfValueProps) {
-  const { ref, isInView } = useInView({ threshold: 0.15 });
-
   return (
     <section
       id="proof-of-value"
-      ref={ref as React.RefObject<HTMLElement>}
       className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
     >
       {/* Section Header */}
-      <div
-        className={`text-center mb-12 transition-all duration-500 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
-        <h2 className="text-3xl sm:text-4xl font-bold text-ink tracking-tight mb-4">
-          Veja como o filtro funciona na prática
-        </h2>
-        {/* AC7: Mechanism explanation */}
-        <p className="text-lg text-ink-secondary max-w-3xl mx-auto">
-          O SmartLic cruza o perfil da sua empresa com cada edital publicado.
-          Avalia setor, valor, prazo e região. Entrega apenas o que tem aderência — com a explicação do porquê.
-        </p>
-      </div>
+      <AnimateOnScroll threshold={0.15}>
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-ink tracking-tight mb-4">
+            Veja como o filtro funciona na prática
+          </h2>
+          {/* AC7: Mechanism explanation */}
+          <p className="text-lg text-ink-secondary max-w-3xl mx-auto">
+            O SmartLic cruza o perfil da sua empresa com cada edital publicado.
+            Avalia setor, valor, prazo e região. Entrega apenas o que tem aderência — com a explicação do porquê.
+          </p>
+        </div>
+      </AnimateOnScroll>
 
       {/* Cards Grid: Recommended + Rejected */}
       <div className="grid md:grid-cols-5 gap-6 items-start">
         {/* AC2+AC3: Recommended Bid Card — 60% width */}
-        <div
-          className={`md:col-span-3 bg-surface-0 border-2 border-emerald-200 dark:border-emerald-700/50 rounded-2xl p-6 sm:p-8 shadow-md transition-all duration-500 delay-100 hover:-translate-y-1 hover:shadow-lg ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
+        <AnimateOnScroll
+          delay={100}
+          className="md:col-span-3 bg-surface-0 border-2 border-emerald-200 dark:border-emerald-700/50 rounded-2xl p-6 sm:p-8 shadow-md hover:-translate-y-1 hover:shadow-lg"
         >
           {/* Header with compatibility badge */}
           <div className="flex items-start justify-between gap-4 mb-4">
@@ -161,13 +150,13 @@ export default function ProofOfValue({ className = '' }: ProofOfValueProps) {
               Viabilidade: {recommendedBid.viabilidade}
             </span>
           </div>
-        </div>
+        </AnimateOnScroll>
 
         {/* AC4: Rejected Bid Card — 40% width, subdued */}
-        <div
-          className={`md:col-span-2 bg-surface-0 border border-red-200/50 dark:border-red-800/30 rounded-2xl p-6 shadow-sm opacity-75 transition-all duration-500 delay-200 ${
-            isInView ? 'opacity-75 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
+        <AnimateOnScroll
+          delay={200}
+          visibleClass="opacity-75 translate-y-0"
+          className="md:col-span-2 bg-surface-0 border border-red-200/50 dark:border-red-800/30 rounded-2xl p-6 shadow-sm"
         >
           {/* Header */}
           <div className="flex items-center gap-2 mb-4">
@@ -208,21 +197,23 @@ export default function ProofOfValue({ className = '' }: ProofOfValueProps) {
             </ul>
           </div>
 
-          {/* Visual indicator: this protects your time */}
+          {/* Visual indicator */}
           <p className="mt-4 text-xs text-red-400 italic">
             Parecia perfeita, mas te custaria horas para descobrir sozinho.
           </p>
-        </div>
+        </AnimateOnScroll>
       </div>
 
       {/* AC6: Transparency annotation */}
-      <p
-        className={`text-xs text-ink-muted text-center mt-8 italic transition-all duration-500 delay-300 ${
-          isInView ? 'opacity-100' : 'opacity-0'
-        }`}
+      <AnimateOnScroll
+        delay={300}
+        hiddenClass="opacity-0"
+        visibleClass="opacity-100"
       >
-        Exemplo ilustrativo baseado em análises reais do sistema. Dados anonimizados.
-      </p>
+        <p className="text-xs text-ink-muted text-center mt-8 italic">
+          Exemplo ilustrativo baseado em análises reais do sistema. Dados anonimizados.
+        </p>
+      </AnimateOnScroll>
     </section>
   );
 }

@@ -1,6 +1,4 @@
-'use client';
-
-import { useInView } from '@/app/hooks/useInView';
+import AnimateOnScroll from '@/components/ui/AnimateOnScroll';
 
 interface HowItWorksProps {
   className?: string;
@@ -46,63 +44,58 @@ const steps: StepCard[] = [
   },
 ];
 
+/**
+ * DEBT-2: Converted to RSC with AnimateOnScroll client islands.
+ */
 export default function HowItWorks({ className = '' }: HowItWorksProps) {
-  const { ref, isInView } = useInView({ threshold: 0.1 });
-
   return (
     <section
       id="como-funciona"
-      ref={ref as React.RefObject<HTMLElement>}
       className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 bg-surface-1 ${className}`}
     >
-      <h2
-        className={`text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-4 transition-all duration-500 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
-        Como funciona
-      </h2>
-      <p
-        className={`text-lg text-center text-ink-secondary mb-12 max-w-2xl mx-auto transition-all duration-500 delay-100 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
-        Da definição do seu perfil à decisão de investir proposta — sem ruído.
-      </p>
+      <AnimateOnScroll threshold={0.1}>
+        <h2 className="text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-4">
+          Como funciona
+        </h2>
+      </AnimateOnScroll>
+      <AnimateOnScroll threshold={0.1} delay={100}>
+        <p className="text-lg text-center text-ink-secondary mb-12 max-w-2xl mx-auto">
+          Da definição do seu perfil à decisão de investir proposta — sem ruído.
+        </p>
+      </AnimateOnScroll>
 
       <div className="grid md:grid-cols-3 gap-8 relative">
         {steps.map((step, index) => (
-          <div
+          <AnimateOnScroll
             key={index}
-            className={`relative transition-all duration-500 ${
-              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-            style={{ transitionDelay: `${150 + index * 100}ms` }}
+            delay={150 + index * 100}
           >
-            {/* Connector line (desktop only) */}
-            {index < steps.length - 1 && (
-              <div className="hidden md:block absolute top-8 left-[calc(50%+24px)] w-[calc(100%-48px)] h-0.5 bg-[var(--border)]" />
-            )}
+            <div className="relative">
+              {/* Connector line (desktop only) */}
+              {index < steps.length - 1 && (
+                <div className="hidden md:block absolute top-8 left-[calc(50%+24px)] w-[calc(100%-48px)] h-0.5 bg-[var(--border)]" />
+              )}
 
-            {/* Step Card */}
-            <div className="bg-surface-0 p-6 rounded-card border border-[var(--border)] hover:-translate-y-0.5 hover:shadow-md transition-all h-full">
-              {/* Step Number Badge */}
-              <div className="w-12 h-12 bg-brand-navy text-white rounded-full flex items-center justify-center text-lg font-bold mb-4 relative z-10">
-                {step.stepNumber}
+              {/* Step Card */}
+              <div className="bg-surface-0 p-6 rounded-card border border-[var(--border)] hover:-translate-y-0.5 hover:shadow-md transition-all h-full">
+                {/* Step Number Badge */}
+                <div className="w-12 h-12 bg-brand-navy text-white rounded-full flex items-center justify-center text-lg font-bold mb-4 relative z-10">
+                  {step.stepNumber}
+                </div>
+
+                {/* Icon */}
+                <div className="w-10 h-10 bg-brand-blue-subtle rounded-button flex items-center justify-center text-brand-blue mb-4">
+                  {step.icon}
+                </div>
+
+                {/* Title */}
+                <h3 className="text-lg font-bold text-ink mb-2">{step.title}</h3>
+
+                {/* Description */}
+                <p className="text-sm text-ink-secondary">{step.description}</p>
               </div>
-
-              {/* Icon */}
-              <div className="w-10 h-10 bg-brand-blue-subtle rounded-button flex items-center justify-center text-brand-blue mb-4">
-                {step.icon}
-              </div>
-
-              {/* Title */}
-              <h3 className="text-lg font-bold text-ink mb-2">{step.title}</h3>
-
-              {/* Description */}
-              <p className="text-sm text-ink-secondary">{step.description}</p>
             </div>
-          </div>
+          </AnimateOnScroll>
         ))}
       </div>
     </section>

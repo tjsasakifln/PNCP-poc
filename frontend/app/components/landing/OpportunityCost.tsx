@@ -1,32 +1,23 @@
-'use client';
-
 import { AlertTriangle } from 'lucide-react';
-import { useInView } from '@/app/hooks/useInView';
+import AnimateOnScroll from '@/components/ui/AnimateOnScroll';
 
 interface OpportunityCostProps {
   className?: string;
 }
 
+/**
+ * DEBT-2: Converted to RSC with AnimateOnScroll client island.
+ */
 export default function OpportunityCost({ className = '' }: OpportunityCostProps) {
-  const { ref, isInView } = useInView({ threshold: 0.2 });
-
   return (
     <section
-      ref={ref as React.RefObject<HTMLElement>}
       className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 ${className}`}
     >
-      <div
-        className={`
-          bg-gradient-to-br from-yellow-50 to-yellow-100
-          dark:from-yellow-900/20 dark:to-yellow-800/20
-          border border-yellow-200/50 dark:border-yellow-700/50
-          rounded-2xl p-8 shadow-md
-          transition-all duration-500
-          hover:shadow-lg hover:-translate-y-0.5
-          ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-        `}
+      <AnimateOnScroll
+        threshold={0.2}
+        className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border border-yellow-200/50 dark:border-yellow-700/50 rounded-2xl p-8 shadow-md hover:shadow-lg hover:-translate-y-0.5"
       >
-        {/* Headline Provocativa — Tom institucional direto */}
+        {/* Headline Provocativa */}
         <div className="flex items-start gap-4">
           <AlertTriangle
             className="w-8 h-8 text-yellow-600 flex-shrink-0 mt-1"
@@ -38,7 +29,7 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
               Continuar sem filtro estratégico é operar no escuro.
             </h2>
 
-            {/* Bullet Points — Custo de oportunidade financeiro */}
+            {/* Bullet Points */}
             <ul className="mt-6 space-y-3 text-lg text-ink-secondary">
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
@@ -61,7 +52,7 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
             </p>
           </div>
         </div>
-      </div>
+      </AnimateOnScroll>
     </section>
   );
 }
