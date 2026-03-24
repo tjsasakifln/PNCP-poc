@@ -166,8 +166,10 @@ async def stage_generate(pipeline, ctx: SearchContext) -> None:
     ctx.excel_available = (ctx.quota_info.capabilities or {}).get("allow_excel", False) if ctx.quota_info else False
     ctx.upgrade_message = None
 
-    if queue_available and search_id:
+    if queue_available and search_id and ctx.tracker is not None:
         # === QUEUE MODE: Dispatch to background, return fast ===
+        # NOTE: Requires tracker (SSE) to deliver excel_ready/llm_ready events.
+        # Cache-first path has tracker=None — falls through to inline mode.
         logger.info(f"Queue mode: dispatching LLM + Excel jobs for search_id={search_id}")
         ctx.queue_mode = True
 
