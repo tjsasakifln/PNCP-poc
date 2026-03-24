@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Gera um PDF de proposta comercial personalizada e profissional para um lead especifico. Cruza perfil da empresa + oportunidades abertas + historico gov para construir uma proposta irrecusavel que mostra ao decisor exatamente quanto dinheiro ele esta deixando na mesa.
+Gera um PDF de proposta comercial personalizada e profissional para um lead especifico de QUALQUER setor. Cruza perfil da empresa + panorama de mercado + historico gov para construir uma proposta irrecusavel que mostra ao decisor exatamente quanto dinheiro ele esta deixando na mesa.
 
 **Output primario:** `docs/propostas/proposta-{CNPJ}-{YYYY-MM-DD}.pdf`
 **Output secundario:** `docs/propostas/proposta-{CNPJ}-{YYYY-MM-DD}.md` (markdown)
@@ -23,22 +23,24 @@ Gera um PDF de proposta comercial personalizada e profissional para um lead espe
 
 | Pacote | Preco | Report freq | PDF analysis | UFs | Suporte |
 |--------|-------|-------------|-------------|-----|---------|
-| **Mensal** | R$997/mes | 1x/mes | Ate 3 editais | SC | Comercial |
-| **Semanal (Rec.)** | R$1.500/mes | 4x semanal + 1x mensal | Ate 8 editais | SC+PR+RS | Estendido |
-| **Diario** | R$2.997/mes | Diario + semanal + mensal | Ilimitada | 5 estados | Dedicado |
+| **Mensal** | R$997/mes | 1x/mes | Ate 3 editais | UF sede | Comercial |
+| **Semanal (Rec.)** | R$1.500/mes | 4x semanal + 1x mensal | Ate 8 editais | UF sede + limitrofes (de `uf_abrangencia.semanal`) | Estendido |
+| **Diario** | R$2.997/mes | Diario + semanal + mensal | Ilimitada | Cobertura ampla (de `uf_abrangencia.diario`) | Dedicado |
 
 Todos os pacotes tem desconto anual: pague 10, leve 12.
 
 Se `--pacote` nao for informado, o command seleciona automaticamente baseado no tier/score do `/qualify-b2g`.
 
+**Cobertura de UFs e dinamica:** O campo `uf_abrangencia` no JSON de dados define quais UFs cada pacote cobre, calculado a partir da UF-sede da empresa. Nunca hardcodar UFs na proposta.
+
 ## Principios de Conversao
 
-- **Autoridade**: Tiago Sasaki e servidor efetivo da SIE/SC ha 7 anos. Conhece a maquina por dentro. Ja analisou 500+ propostas de habilitacao. Sabe onde 80% das inabilitacoes acontecem.
-- **Escassez temporal**: Editais tem prazo. Cada dia sem monitoramento = edital perdido. O CTA usa o edital mais proximo de encerrar como ancora.
-- **Prova de valor**: A proposta em si E o produto. Mostra exatamente o que o relatorio /report-b2g entrega.
+- **Autoridade**: Tiago Sasaki e consultor especializado em licitacoes publicas com experiencia comprovada. Analisa editais profissionalmente, identificando armadilhas que eliminam licitantes desavisados.
+- **Escassez temporal**: Novos editais sao publicados toda semana. Cada semana sem monitoramento = oportunidades perdidas. O CTA usa urgencia generica, nunca datas de editais especificos.
+- **Prova de valor**: A proposta em si E o produto. Mostra exatamente o que o relatorio /intel-busca entrega.
 - **Reciprocidade**: Primeiro mes de cortesia para contratacoes na vigencia da proposta.
 - **Contraste**: Tabela "COM vs SEM monitoramento" e "Consultoria Tradicional vs Esta Consultoria".
-- **Dados reais, nao promessas**: Todo numero vem de fonte publica verificavel (PNCP, Portal da Transparencia, OpenCNPJ).
+- **Dados reais, nao promessas**: Todo numero vem de fonte publica verificavel (PNCP, PCP v2, Portal da Transparencia, OpenCNPJ, IBGE).
 
 ## What It Does
 
@@ -50,31 +52,24 @@ Se `--pacote` nao for informado, o command seleciona automaticamente baseado no 
    curl -s "https://api.opencnpj.org/${CNPJ_LIMPO}"
    ```
 
-2. **Historico governamental** — PNCP contratos (ultimos 12 meses deste CNPJ)
-   ```bash
-   curl -s "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao\
-     ?dataInicial={12_meses_atras_YYYYMMDD}\
-     &dataFinal={hoje_YYYYMMDD}\
-     &cnpj=${CNPJ_LIMPO}\
-     &pagina=1&tamanhoPagina=50"
-   ```
-   - Contar contratos, somar valores, listar orgaos, mapear UFs
-   - Calcular faturamento gov mensal medio
-   - Identificar concentracao (% de receita do top orgao)
+2. **Mapeamento CNAE -> Setor** — Determinar o setor da empresa para keywords e contexto
+   - Ler `backend/sectors_data.yaml` e mapear o CNAE principal para um dos 15 setores
+   - Se CNAE nao mapear diretamente, usar LLM fallback (GPT-4.1-nano): "Dado o CNAE {codigo} - {descricao}, qual dos seguintes setores e mais relevante: {lista_setores}?"
+   - O setor determina: keywords de busca, faixa de valor, intro da proposta, exemplos de autoridade
+   - **Campos derivados do mapeamento:**
+     - `setor_intro`: Paragrafo introdutorio dinamico para a carta ao decisor, contextualizado ao setor (ex: "O mercado de licitacoes para {setor} movimenta R${valor} anualmente em {UFs}..." — nunca texto especifico de construcao/engenharia)
+     - `uf_abrangencia`: Dict com chaves `semanal` (lista de UFs proximas da sede) e `diario` (lista ampla de UFs regionais). Calculado a partir da UF-sede da empresa.
+     - `taxa_vitoria_setor`: Float, default 0.20. Ajustavel por setor (ex: TI=0.25, construcao=0.15, saude=0.20)
+     - `autoridade_exemplos`: Lista de 4 bullets genericos de autoridade (ex: "Identificacao de clausulas restritivas disfarcadas", "Analise de indices financeiros eliminatorios", "Verificacao de conformidade documental completa", "Deteccao de exigencias acima do permitido pela Lei 14.133")
 
-3. **Sancoes** — Portal da Transparencia (verificar impedimentos)
-   ```bash
-   PT_KEY=$(grep PORTAL_TRANSPARENCIA_API_KEY backend/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
-   curl -s -H "chave-api-dados: ${PT_KEY}" \
-     "https://api.portaldatransparencia.gov.br/api-de-dados/pessoa-juridica?cnpj=${CNPJ_LIMPO}"
-   ```
+3. **Panorama do mercado** — Executar `python scripts/build-proposta-data.py {CNPJ_LIMPO} --pacote {pacote}`
+   - O script coleta PNCP, detecta setor, filtra keywords, agrega volumes
+   - Output: `docs/propostas/data-{CNPJ}-{YYYY-MM-DD}.json`
+   - **NAO buscar historico de contratos** — suprimido da proposta
+   - **NAO listar editais individuais** — apenas volumes e valores agregados
+   - Se script falhar, coletar manualmente: OpenCNPJ + PNCP por UF/modalidade
 
-4. **Oportunidades abertas** — Varredura PNCP + PCP dos editais ATUALMENTE abertos no setor
-   - Usar keywords do setor mapeado via CNAE
-   - Filtrar ultimos 30 dias
-   - Contar: total de editais, valor total, por UF, por modalidade
-
-5. **Cross-reference qualify** — Se `--from-qualify` fornecido, puxar score e tier do lead
+4. **Cross-reference qualify** — Se `--from-qualify` fornecido, puxar score e tier do lead
 
 ### Phase 2: Calculo de ROI (@analyst)
 
@@ -82,30 +77,30 @@ O coracao da proposta. Demonstrar matematicamente o retorno do investimento.
 
 **Metricas calculadas:**
 
-1. **Oportunidades perdidas** — Editais abertos AGORA que o lead poderia participar mas provavelmente nao sabe
+1. **Volume de oportunidades no setor** — Total de editais abertos no setor nas UFs de interesse
    ```
-   Editais_setoriais_abertos - Editais_que_o_lead_participa = Oportunidades_perdidas
-   ```
-
-2. **Valor na mesa** — Soma dos valores estimados das oportunidades perdidas
-   ```
-   Valor_na_mesa = SUM(valor_estimado dos editais nao participados)
+   Editais_setoriais_abertos = Total de editais encontrados na varredura
    ```
 
-3. **Taxa de vitoria estimada** — Baseada no historico do lead
+2. **Valor em disputa** — Soma dos valores estimados dos editais do setor
    ```
-   Taxa_vitoria = Contratos_ganhos / Participacoes_estimadas
-   Se sem historico suficiente, usar media setorial: 15-25%
+   Valor_em_disputa = SUM(valor_estimado dos editais encontrados)
+   ```
+
+3. **Taxa de vitoria estimada** — Baseada no historico do lead ou default do setor
+   ```
+   Taxa_vitoria = taxa_vitoria_setor (default 0.20, ajustavel)
+   Se historico disponivel: Contratos_ganhos / Participacoes_estimadas
    ```
 
 4. **Receita incremental projetada** — O que o lead ganharia com a consultoria
    ```
-   Receita_incremental = Valor_na_mesa × Taxa_vitoria × Fator_melhoria(1.3)
+   Receita_incremental = Valor_em_disputa x Taxa_vitoria x Fator_melhoria(1.3)
    ```
 
 5. **ROI da consultoria**
    ```
-   ROI = (Receita_incremental_anual - Custo_consultoria_anual) / Custo_consultoria_anual × 100
+   ROI = (Receita_incremental_anual - Custo_consultoria_anual) / Custo_consultoria_anual x 100
    ```
 
 6. **Payback** — Em quantos meses o investimento se paga
@@ -115,7 +110,7 @@ O coracao da proposta. Demonstrar matematicamente o retorno do investimento.
 
 ### Phase 3: Construcao da Proposta (@analyst + @dev)
 
-**Estrutura do PDF (12 secoes):**
+**Estrutura do PDF (11 secoes):**
 
 #### 1. Capa
 - Dinamica: data=hoje, validade=hoje+15dias, CNPJ/nome do JSON
@@ -125,69 +120,82 @@ O coracao da proposta. Demonstrar matematicamente o retorno do investimento.
 
 #### 2. Carta ao Decisor
 - Personalizada com deteccao de genero (Sr./Sra.) a partir do QSA
-- Template-driven, referencia dados reais do edital prioritario
+- Usa `setor_intro` do JSON para contextualizar o mercado do lead (dinamico por setor)
 - Tom: consultivo, direto, sem floreios
+- Nunca referenciar editais individuais com datas
 
 #### 3. Diagnostico da Empresa
 - Dinamico do JSON: pontos fortes/atencao derivados dos dados coletados
 - Dados cadastrais (razao, fantasia, CNAE, porte, capital, cidade)
-- Historico gov: {N} contratos em 12 meses, R${valor} faturamento gov
-- UFs de atuacao, orgaos mais frequentes
-- Analise de concentracao: "{X}% da receita gov vem de {orgao_top}" — risco ou oportunidade
+- **NAO incluir historico de contratos ou faturamento gov** — suprimido da proposta
+- Pontos fortes e de atencao derivados exclusivamente dos dados cadastrais
 
-#### 4. Radiografia do Mercado
-- Dinamica: distribuicao municipal computada de editais via groupby
-- Tendencias extraidas de `inteligencia_mercado` do JSON
-- Total de editais abertos no setor: {N}, valor total em disputa: R${valor}
+#### 4. Panorama do Mercado
+- Volume total: "{N} editais abertos no setor de {setor} nos ultimos 30 dias"
+- Valor total em disputa: "R${valor} em oportunidades abertas"
+- Distribuicao por faixa de valor (tabela: ate R$100k, R$100k-500k, R$500k-1M, R$1M-5M, acima R$5M)
+- Distribuicao por modalidade (Pregao Eletronico, Concorrencia, etc.)
 - Distribuicao por UF (tabela computada dos editais)
+- **NAO listar editais individuais** — apenas agregados de volume e valor
 
-#### 5. Top Oportunidades
-- Dinamica: ordenadas por (prioridade de recomendacao, valor desc), sem truncamento
-- Datas no formato DD/MM/YYYY (nunca ISO)
-- Separador travessao (—) no objeto/orgao
-- Todos os editais listados, nao apenas top 10
-
-#### 6. Analise Detalhada — Edital Prioritario
-- Primeiro edital com recomendacao PARTICIPAR
-- Analise de habilitacao (requisitos do edital)
-- Analise estrategica com 6 fatores
-- Perguntas e respostas para o decisor (Q&A)
-
-#### 7. Dimensionamento da Oportunidade
+#### 5. Dimensionamento da Oportunidade
 - ROI computado a partir de contagens/valores reais dos editais
 - Tabela comparativa COM vs SEM monitoramento
 - Tabela de projecao anual
 - Disclaimer: "Projecoes baseadas em dados publicos. Resultados dependem da execucao."
 
-#### 8. O Que Cada Relatorio Entrega
-- Showcase da qualidade do /report-b2g (10 secoes + 6 fontes)
+#### 6. O Que Cada Relatorio Entrega
+- Showcase do que o /intel-busca entrega de fato:
+  - **Perfil da Empresa** — Dados cadastrais, porte, capital, CNAE, QSA
+  - **Resumo Executivo** — Visao geral do mercado e posicionamento da empresa
+  - **Top 20 Editais Analisados** — 17 campos por edital (objeto, orgao, valor, UF, modalidade, status, datas, score, recomendacao, justificativa, etc.)
+  - **Analise Documental** — Requisitos de habilitacao extraidos dos editais
+  - **Recomendacao PARTICIPAR / NAO PARTICIPAR** — Veredicto claro com justificativa por edital
+  - **Qualificacao Economica** — Analise de indices financeiros exigidos
+  - **Plano de Acao** — Proximos passos concretos e priorizados
 - Demonstra que a proposta EM SI e o produto
+- **NAO incluir:** "Mapa Competitivo", "Diarios Oficiais", "Inteligencia de Mercado" (nao existem no intel-busca)
 
-#### 9. Pacotes de Monitoramento
+#### 7. Pacotes de Monitoramento
 - 3 tiers: Mensal R$997 | Semanal R$1.500 (RECOMENDADO) | Diario R$2.997
+- Cobertura de UFs dinamica: usa `uf_abrangencia.semanal` e `uf_abrangencia.diario` do JSON
 - Comparativo rapido entre pacotes
 - Desconto anual destacado: pague 10, leve 12
 
-#### 10. Quem Analisa Seus Editais
-- Secao de AUTORIDADE
-- 7 anos como servidor efetivo da SIE/SC
-- 500+ propostas de habilitacao analisadas pelo lado do orgao
-- Exemplos concretos de red flags detectadas (clausulas restritivas disfarcadas, indices eliminatorios)
-- Conhecimento dos criterios nao escritos das comissoes
-- Historico de pagamento dos orgaos
-- SmartLic como tecnologia proprietaria
+#### 8. Quem Analisa Seus Editais
+- Secao de AUTORIDADE (generica, aplicavel a qualquer setor)
+- Experiencia comprovada em analise de licitacoes publicas
+- Usa `autoridade_exemplos` do JSON (4 bullets genericos):
+  - Identificacao de clausulas restritivas disfarcadas
+  - Analise de indices financeiros eliminatorios
+  - Verificacao de conformidade documental completa
+  - Deteccao de exigencias acima do permitido pela Lei 14.133
+- SmartLic como tecnologia proprietaria de monitoramento e analise
+- **Nunca mencionar cargo especifico em orgao publico, nunca mencionar "acompanhei obras" ou experiencia setorial especifica**
 
-#### 11. Condicoes Comerciais
+#### 9. Condicoes Comerciais
 - Preco dinamico baseado em `--pacote`
 - Condicao especial com destaque visual e prazo (hoje+15dias)
 - Desconto (se `--desconto` informado): "Condicao especial: {X}% — valida ate {data+15dias}"
 - Forma de pagamento: Boleto, PIX, Cartao
 - Prazo de contrato: Minimo 3 meses; Cancelamento: 30 dias de antecedencia
 
-#### 12. Proximos Passos
-- Calendario de prazo dos editais (ancora de urgencia)
-- CTA de ALTA CONVERSAO com urgencia baseada no edital mais proximo de encerrar
+#### 10. Proximos Passos
+- CTA de ALTA CONVERSAO com urgencia generica
+- Urgencia: "Novos editais sao publicados toda semana. Cada semana sem monitoramento sao oportunidades que passam despercebidas."
+- **Nunca listar calendario de editais com datas especificas**
+- **Nunca referenciar prazos de editais individuais**
 - CTA claro: "Para iniciar, responda este WhatsApp ou ligue para (48)9 8834-4559"
+
+#### 11. Fontes Consultadas
+- Lista das fontes reais utilizadas:
+  - PNCP — Portal Nacional de Contratacoes Publicas
+  - PCP v2 — Portal de Compras Publicas
+  - OpenCNPJ — Dados cadastrais de empresas
+  - Portal da Transparencia — Verificacao de sancoes e impedimentos
+  - PDFs dos Editais — Documentos originais quando disponiveis
+  - IBGE — Dados demograficos e economicos regionais
+- **Nunca listar:** Querido Diario, Mapa Competitivo, Diarios Oficiais
 
 **Rodape em todas as paginas:** "Tiago Sasaki - Consultor de Licitacoes (48)9 8834-4559"
 
@@ -206,10 +214,62 @@ Se o script nao existir, gerar o JSON de dados e criar o PDF via reportlab/weasy
 
 - Acentuacao PT-BR automatica (fix_accents) aplicada a todos os textos do JSON
 - Datas sempre no formato DD/MM/YYYY (nunca ISO)
-- Travessao (—) no lugar de meia-risca (–) em todo o documento
+- Travessao no lugar de meia-risca em todo o documento
 - Tabelas usam KeepTogether para evitar quebra entre paginas
 - Colunas dimensionadas para word-wrap (Paragraph), nunca truncamento de texto
 - Todo conteudo e dinamico do JSON — nenhum valor hardcoded no script
+
+## Campos Obrigatorios no JSON de Dados
+
+O JSON gerado na Phase 1 DEVE incluir estes campos para suportar a proposta sector-agnostic:
+
+```json
+{
+  "cnpj": "12345678000190",
+  "razao_social": "...",
+  "nome_fantasia": "...",
+  "cnae_principal": "4120-4/00",
+  "setor_mapeado": "engenharia_construcao",
+  "setor_nome": "Engenharia e Construcao",
+  "setor_intro": "O mercado de licitacoes para engenharia e construcao...",
+  "uf_sede": "SC",
+  "uf_abrangencia": {
+    "semanal": ["SC", "PR", "RS"],
+    "diario": ["SC", "PR", "RS", "SP", "MG"]
+  },
+  "taxa_vitoria_setor": 0.15,
+  "autoridade_exemplos": [
+    "Identificacao de clausulas restritivas disfarcadas",
+    "Analise de indices financeiros eliminatorios",
+    "Verificacao de conformidade documental completa",
+    "Deteccao de exigencias acima do permitido pela Lei 14.133"
+  ],
+  "panorama_mercado": {
+    "total_editais": 142,
+    "valor_total": 85000000.0,
+    "por_faixa_valor": {},
+    "por_modalidade": {},
+    "por_uf": {}
+  },
+  "decisor": {},
+  "historico_gov": {},
+  "sancoes": {},
+  "roi": {}
+}
+```
+
+**Campo `historico_contratos` NAO deve existir no JSON** — dados de contratos sao usados apenas internamente para calculo de ROI, nunca expostos na proposta.
+
+## Suppressions (nunca incluir na proposta)
+
+- `historico_contratos` — nunca mostrar lista de contratos individuais
+- Editais individuais com datas — nunca listar oportunidades abertas especificas
+- "Mapa Competitivo" — nao existe no intel-busca
+- "Querido Diario" / "Diarios Oficiais" — nao e fonte utilizada
+- "Inteligencia de Mercado" como secao — nao existe como funcionalidade separada
+- Calendario de editais em andamento — nao incluir datas de encerramento
+- Referencias a cargo publico especifico (ex: "engenheiro da SIE/SC")
+- Referencias a experiencia setorial especifica (ex: "acompanhei obras")
 
 ## APIs Reference
 
@@ -219,14 +279,15 @@ Se o script nao existir, gerar o JSON de dados e criar o PDF via reportlab/weasy
 | Portal Transparencia | `api.portaldatransparencia.gov.br/api-de-dados/` | `chave-api-dados` header | 90 req/min |
 | PNCP | `pncp.gov.br/api/consulta/v1/contratacoes/publicacao` | Nenhuma | ~100 req/min |
 | PCP v2 | `compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos` | Nenhuma | ~60 req/min |
+| IBGE | `servicodados.ibge.gov.br` | Nenhuma | — |
 
 ## Downstream
 
 ```
-/intel-b2g leads de engenharia           → 150 leads brutos
-/qualify-b2g engenharia                  → 35 Tier1
-/proposta-b2g {CNPJ_tier1_top}          → PDF proposta personalizada
-/cadencia-b2g engenharia --tier 1        → cadencia com proposta em anexo
+/intel-b2g leads de {setor}                 -> 150 leads brutos
+/qualify-b2g {setor}                        -> 35 Tier1
+/proposta-b2g {CNPJ_tier1_top}             -> PDF proposta personalizada
+/cadencia-b2g {setor} --tier 1              -> cadencia com proposta em anexo
 ```
 
 ## Params
