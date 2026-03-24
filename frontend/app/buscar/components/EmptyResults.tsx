@@ -105,16 +105,6 @@ export function EmptyResults({
           <ul className="text-sm text-[var(--ink-secondary)] space-y-2">
             <li
               className="flex items-start gap-2"
-              data-testid="suggestion-ampliar-periodo"
-            >
-              <span className="text-[var(--brand-blue)] mt-0.5">•</span>
-              <span>
-                <strong>Ampliar o período</strong> — Busque nos últimos 14 ou 30
-                dias para mais resultados
-              </span>
-            </li>
-            <li
-              className="flex items-start gap-2"
               data-testid="suggestion-remover-uf"
             >
               <span className="text-[var(--brand-blue)] mt-0.5">•</span>

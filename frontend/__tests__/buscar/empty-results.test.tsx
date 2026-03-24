@@ -18,10 +18,8 @@ describe("EmptyResults", () => {
 
   it("shows contextual suggestions (AC2)", () => {
     render(<EmptyResults />);
-    expect(screen.getByTestId("suggestion-ampliar-periodo")).toBeInTheDocument();
     expect(screen.getByTestId("suggestion-remover-uf")).toBeInTheDocument();
     expect(screen.getByTestId("suggestion-termos-genericos")).toBeInTheDocument();
-    expect(screen.getByText(/Ampliar o período/)).toBeInTheDocument();
     expect(screen.getByText(/Remover filtros de UF/)).toBeInTheDocument();
     expect(screen.getByText(/Usar termos genéricos/)).toBeInTheDocument();
   });

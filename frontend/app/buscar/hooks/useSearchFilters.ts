@@ -188,7 +188,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
 
   // P0 Filters
   const [status, setStatus] = useState<StatusLicitacao>("recebendo_proposta");
-  const [modalidades, setModalidades] = useState<number[]>([4, 5, 6, 7]);
+  const [modalidades, setModalidades] = useState<number[]>([]);
   const [valorMin, setValorMin] = useState<number | null>(null);
   const [valorMax, setValorMax] = useState<number | null>(null);
   const [valorValid, setValorValid] = useState(true);
@@ -561,11 +561,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   // STORY-246 AC1-AC4: Compute smart defaults state
   const allUfsSelected = ufsSelecionadas.size === UFS.length;
   const isUsingDefaults = allUfsSelected &&
-    modalidades.length === 4 &&
-    modalidades.includes(4) &&
-    modalidades.includes(5) &&
-    modalidades.includes(6) &&
-    modalidades.includes(7);
+    modalidades.length === 0;
 
   return {
     setores, setoresLoading, setoresError, setoresUsingFallback, setoresUsingStaleCache, staleCacheAge, setoresRetryCount,
