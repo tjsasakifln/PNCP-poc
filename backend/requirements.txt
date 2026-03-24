@@ -8,12 +8,10 @@
 # in CI to catch known CVEs (see .github/workflows/backend-tests.yml CI-002).
 # =============================================================================
 fastapi==0.129.0
-# DEBT-101 AC3: uvicorn[standard] re-enabled for uvloop/httptools performance.
-# Previously removed due to SIGSEGV crash loops (CRIT-SIGSEGV). Root cause was
-# faulthandler + uvloop interaction. With faulthandler disabled in production
-# (main.py + gunicorn_conf.py), uvloop is safe. uvloop is NOT available on
-# Windows (dev), so h11 + asyncio loop is used locally.
-uvicorn[standard]==0.41.0
+# CRIT-SIGSEGV-v2: uvicorn WITHOUT [standard] extras. uvloop causes intermittent
+# SIGSEGV in production (chardet/hiredis/cryptography C extension interaction).
+# Performance diff is negligible for single-worker uvicorn standalone mode.
+uvicorn==0.41.0
 gunicorn==23.0.0
 pydantic[email]==2.12.5
 pydantic-settings==2.10.1

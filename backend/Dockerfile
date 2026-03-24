@@ -44,6 +44,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
         opentelemetry-exporter-otlp-proto-grpc \
         opentelemetry-exporter-otlp \
         httptools \
+        uvloop \
     2>/dev/null || true && \
     echo "=== CRIT-041: Verifying no fork-unsafe packages remain ===" && \
     pip list | grep -iE "grpc|uvloop|httptools" && echo "WARNING: fork-unsafe packages still present!" || echo "OK: all fork-unsafe packages removed"
