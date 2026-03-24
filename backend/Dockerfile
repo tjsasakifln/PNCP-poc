@@ -8,8 +8,8 @@ FROM python:3.12-slim
 
 # CACHE BUST - This label forces Railway to rebuild when changed
 # Update timestamp to invalidate all cached layers: 2026-02-28T18:00:00
-LABEL build.timestamp="2026-02-28T18:00:00"
-ARG CACHEBUST=20260228v1
+LABEL build.timestamp="2026-03-24T14:20:00"
+ARG CACHEBUST=20260324v1
 
 # Set working directory
 WORKDIR /app
