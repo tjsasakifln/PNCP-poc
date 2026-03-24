@@ -2496,112 +2496,16 @@ _SECTOR_SUBCATEGORIES: dict[str, dict[str, list[str]]] = {
     },
 }
 
-# Typical habilitação requirements per sector (P3)
-_HABILITACAO_REQUIREMENTS: dict[str, dict] = {
-    "engenharia": {
-        "capital_minimo_pct": 0.10,
-        "atestados": ["Atestado técnico de execução de obra similar (acervo CREA/CAU)"],
-        "certifications": ["CREA (registro ativo)", "CAU (se arquitetura)"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "engenharia_rodoviaria": {
-        "capital_minimo_pct": 0.10,
-        "atestados": ["Atestado técnico de pavimentação ou obra rodoviária similar"],
-        "certifications": ["CREA (registro ativo)"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "software": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado técnico de desenvolvimento/implantação de sistema similar"],
-        "certifications": ["ISO 27001 (frequente)", "LGPD compliance (crescente)"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "informatica": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de fornecimento de equipamentos de TI similares"],
-        "certifications": ["Autorização de fabricante/distribuidor (quando exigido)"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "saude": {
-        "capital_minimo_pct": 0.10,
-        "atestados": ["Atestado de fornecimento/serviço similar na área de saúde"],
-        "certifications": ["ANVISA (AFE — Autorização de Funcionamento)", "CRM (se serviço médico)", "CRF (se farmacêutico)"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "facilities": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de prestação de serviço continuado similar"],
-        "certifications": [],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "vigilancia": {
-        "capital_minimo_pct": 0.10,
-        "atestados": ["Atestado de prestação de serviço de vigilância similar"],
-        "certifications": ["Autorização de Funcionamento (Polícia Federal)", "Alvará de Funcionamento"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    # --- Fornecimento de materiais (supply sectors) ---
-    "fornecimento_saude": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de fornecimento de materiais hospitalares ou similares"],
-        "certifications": ["AFE/ANVISA (se medicamentos ou correlatos)", "Alvará Sanitário (se aplicável)"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "fornecimento_limpeza": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de fornecimento de produtos de limpeza ou similares"],
-        "certifications": ["AFE/ANVISA (se saneantes domissanitários)"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "fornecimento_papelaria": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de fornecimento de material de expediente ou similares"],
-        "certifications": [],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "fornecimento_mobiliario": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de fornecimento de mobiliário ou similares"],
-        "certifications": [],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "fornecimento_alimentos": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de fornecimento de gêneros alimentícios ou similares"],
-        "certifications": ["Alvará Sanitário", "Licença da Vigilância Sanitária"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "fornecimento_geral": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de fornecimento de materiais similares"],
-        "certifications": [],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "servicos_profissionais": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Registro profissional ativo no conselho de classe (CRM, CRF, COREN, etc.)"],
-        "certifications": ["Conselho profissional (CRM/CRF/COREN)", "Alvará Sanitário (se aplicável)"],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "servicos_gerais": {
-        "capital_minimo_pct": 0.05,
-        "atestados": ["Atestado de prestação de serviço similar"],
-        "certifications": [],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "concessao": {
-        "capital_minimo_pct": 0.10,
-        "atestados": ["Atestado de capacidade técnica para exploração de atividade similar"],
-        "certifications": [],
-        "fiscal": ["CND Federal/Previdenciária", "CND Estadual", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-    "_default": {
-        "capital_minimo_pct": 0.10,
-        "atestados": ["Atestado técnico de execução de serviço similar"],
-        "certifications": [],
-        "fiscal": ["CND Federal/Previdenciária", "CND Municipal", "CRF FGTS", "CNDT Trabalhista"],
-    },
-}
+# Habilitação requirements loaded from YAML (intel_sectors_config.yaml)
+def _load_habilitacao_requirements() -> dict[str, dict]:
+    """Load habilitação requirements from YAML config."""
+    try:
+        from intel_sector_loader import get_all_habilitacao_requirements
+        return get_all_habilitacao_requirements()
+    except Exception:
+        return {"_default": {"capital_minimo_pct": 0.10, "atestados": [], "certifications": [], "fiscal": []}}
+
+_HABILITACAO_REQUIREMENTS: dict[str, dict] = _load_habilitacao_requirements()
 
 # Sector-specific systemic risk warnings (P5)
 # NOTE: These flags are applied per-edital based on the EDITAL's effective sector,
@@ -3586,61 +3490,18 @@ def optimize_portfolio(
 # FIX 2: 3-GATE SECTOR RELEVANCE FILTER
 # ============================================================
 
-# Hard exclusions for engenharia_civil sector (Gate 1).
-# If ANY of these phrases appears (case-insensitive) in the edital objeto,
-# the edital is IMMEDIATELY rejected regardless of keyword matches.
-HARD_EXCLUSIONS_ENGENHARIA: frozenset[str] = frozenset({
-    "buffet", "coffee break", "lavanderia", "limpeza predial", "limpeza hospitalar",
-    "alimentação escolar", "alimentacao escolar", "merenda", "catering",
-    "vigilância armada", "vigilancia armada",
-    "vigilância desarmada", "vigilancia desarmada",
-    "segurança patrimonial", "seguranca patrimonial",
-    "material de escritório", "material de escritorio",
-    "combustível", "abastecimento de combustivel", "recarga de toner", "cartuchos",
-    "locação de veículos", "locacao de veiculos",
-    "serviço de copa", "servico de copa",
-    "jardinagem",
-    # Removed: "paisagismo ornamental" (often part of construction landscaping)
-    "coleta de lixo", "coleta de residuos solidos",
-    "transporte escolar",
-    "fornecimento de refeição", "fornecimento de refeicao",
-    "fornecimento de refeições", "fornecimento de refeicoes",
-    "quentinha", "marmitex",
-    "uniforme", "fardamento",
-    "material de limpeza",
-    "detergente", "desinfetante", "papel higiênico", "papel higienico",
-    "papel toalha",
-    # Removed: "ar condicionado" (often part of building construction scope)
-    # Removed: "mobiliario"/"moveis" (often part of building renovation scope)
-    "equipamento de informática", "equipamento de informatica",
-    "computador", "notebook", "impressora",
-    "medicamento", "material hospitalar", "material médico", "material medico",
-    "ambulância", "ambulancia",
-    "serviço funerário", "servico funerario",
-    "seguro de vida", "plano de saúde", "plano de saude",
-    # Odontologia/saúde
-    "material odontológico", "material odontologico",
-    "odontológico", "odontologico",
-    "cadeira odontológica", "cadeira odontologica",
-    # Gases
-    "gás argônio", "gas argonio",
-    "argônio", "argonio",
-    "gás medicinal", "gas medicinal",
-    "gases medicinais", "gases industriais",
-    # Hospitalar expandido
-    "material médico-hospitalar", "material medico-hospitalar",
-    "insumo hospitalar", "equipamento hospitalar",
-    "equipamento médico", "equipamento medico",
-    "órtese", "ortese", "prótese", "protese",
-})
+# Cross-sector exclusions loaded from YAML (intel_sectors_config.yaml)
+# Each sector defines what is NOT relevant to it.
+def _load_hard_exclusions_by_sector() -> dict[str, frozenset[str]]:
+    """Load cross-sector exclusions from YAML config."""
+    try:
+        from intel_sector_loader import get_all_cross_sector_exclusions
+        all_excl = get_all_cross_sector_exclusions()
+        return {k: frozenset(v) for k, v in all_excl.items()}
+    except Exception:
+        return {}
 
-# Map from sector_key prefix → hard exclusion set
-_HARD_EXCLUSIONS_BY_SECTOR: dict[str, frozenset[str]] = {
-    "engenharia": HARD_EXCLUSIONS_ENGENHARIA,
-    "engenharia_civil": HARD_EXCLUSIONS_ENGENHARIA,
-    "engenharia_rodoviaria": HARD_EXCLUSIONS_ENGENHARIA,
-    "arquitetura": HARD_EXCLUSIONS_ENGENHARIA,
-}
+_HARD_EXCLUSIONS_BY_SECTOR: dict[str, frozenset[str]] = _load_hard_exclusions_by_sector()
 
 # Minimum keyword density required (Gate 2): fraction of words in objeto
 # that must match sector keywords for the edital to pass.
@@ -5109,75 +4970,27 @@ _SECTOR_MARGINS: dict[str, tuple[float, float]] = {
     "concessao": (0.10, 0.25),                # Concession
 }
 
-# Sector-specific viability weight profiles (must sum to 1.0)
-# Rationale: weights reflect what matters most for each sector's competitive dynamics
-_SECTOR_WEIGHT_PROFILES: dict[str, dict[str, float]] = {
-    # Construction: capital-intensive, on-site, fewer bidders per municipality
-    "engenharia": {"hab": 0.25, "fin": 0.30, "geo": 0.25, "prazo": 0.15, "comp": 0.05},
-    "engenharia_rodoviaria": {"hab": 0.25, "fin": 0.30, "geo": 0.25, "prazo": 0.15, "comp": 0.05},
-    # IT/Software: remote execution, commoditized, many bidders
-    "software": {"hab": 0.15, "fin": 0.15, "geo": 0.05, "prazo": 0.25, "comp": 0.40},
-    "informatica": {"hab": 0.15, "fin": 0.20, "geo": 0.10, "prazo": 0.20, "comp": 0.35},
-    # Facilities/Security: local presence needed, moderate competition
-    "facilities": {"hab": 0.25, "fin": 0.20, "geo": 0.20, "prazo": 0.15, "comp": 0.20},
-    "vigilancia": {"hab": 0.25, "fin": 0.20, "geo": 0.20, "prazo": 0.15, "comp": 0.20},
-    # Health: regulatory-heavy (ANVISA, CRM, certifications dominate)
-    "saude": {"hab": 0.30, "fin": 0.20, "geo": 0.15, "prazo": 0.15, "comp": 0.20},
-    # Food/Transport: logistics matter, moderate barriers
-    "alimentos": {"hab": 0.25, "fin": 0.20, "geo": 0.20, "prazo": 0.20, "comp": 0.15},
-    "transporte": {"hab": 0.20, "fin": 0.25, "geo": 0.15, "prazo": 0.15, "comp": 0.25},
-    # Commerce/Supply: lower barriers, more competition
-    "vestuario": {"hab": 0.20, "fin": 0.25, "geo": 0.10, "prazo": 0.20, "comp": 0.25},
-    "mobiliario": {"hab": 0.20, "fin": 0.25, "geo": 0.10, "prazo": 0.20, "comp": 0.25},
-    "papelaria": {"hab": 0.20, "fin": 0.25, "geo": 0.10, "prazo": 0.20, "comp": 0.25},
-    # Maintenance: on-site, moderate capital
-    "manutencao_predial": {"hab": 0.25, "fin": 0.20, "geo": 0.25, "prazo": 0.15, "comp": 0.15},
-    # Materials: supply chain, moderate geography importance
-    "materiais_eletricos": {"hab": 0.20, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.20},
-    "materiais_hidraulicos": {"hab": 0.20, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.20},
-    # Fornecimento (supply): low qualification barriers, price-driven competition
-    "fornecimento_saude": {"hab": 0.10, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.30},
-    "fornecimento_limpeza": {"hab": 0.10, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.30},
-    "fornecimento_papelaria": {"hab": 0.10, "fin": 0.25, "geo": 0.10, "prazo": 0.20, "comp": 0.35},
-    "fornecimento_mobiliario": {"hab": 0.10, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.30},
-    "fornecimento_alimentos": {"hab": 0.15, "fin": 0.25, "geo": 0.20, "prazo": 0.20, "comp": 0.20},
-    "fornecimento_geral": {"hab": 0.10, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.30},
-    "servicos_profissionais": {"hab": 0.35, "fin": 0.15, "geo": 0.15, "prazo": 0.15, "comp": 0.20},
-    "servicos_gerais": {"hab": 0.20, "fin": 0.20, "geo": 0.20, "prazo": 0.20, "comp": 0.20},
-    "concessao": {"hab": 0.20, "fin": 0.30, "geo": 0.25, "prazo": 0.15, "comp": 0.10},
-    # Default fallback — preserves original behavior
-    "_default": {"hab": 0.30, "fin": 0.25, "geo": 0.20, "prazo": 0.15, "comp": 0.10},
-}
+# Sector weight profiles loaded from YAML (intel_sectors_config.yaml)
+def _load_weight_profiles() -> dict[str, dict[str, float]]:
+    """Load viability weight profiles from YAML config."""
+    try:
+        from intel_sector_loader import get_all_weight_profiles
+        return get_all_weight_profiles()
+    except Exception:
+        return {"_default": {"hab": 0.25, "fin": 0.25, "geo": 0.15, "prazo": 0.20, "comp": 0.15}}
 
-# Sector-typical base win rates (derived from average number of bidders per procurement)
-_SECTOR_BASE_WIN_RATES: dict[str, float] = {
-    "engenharia": 0.15,              # ~7 bidders typical
-    "engenharia_rodoviaria": 0.12,   # ~8 bidders, larger contracts
-    "software": 0.08,                # ~12 bidders, commoditized
-    "informatica": 0.10,             # ~10 bidders
-    "facilities": 0.06,              # ~15+ bidders, very competitive
-    "vigilancia": 0.08,              # ~12 bidders
-    "saude": 0.10,                   # ~10 bidders, regulatory barriers
-    "vestuario": 0.10,               # ~10 bidders
-    "alimentos": 0.08,               # ~12 bidders
-    "transporte": 0.10,              # ~10 bidders
-    "mobiliario": 0.12,              # ~8 bidders
-    "papelaria": 0.08,               # ~12 bidders, commodity
-    "manutencao_predial": 0.12,      # ~8 bidders
-    "materiais_eletricos": 0.10,     # ~10 bidders
-    "materiais_hidraulicos": 0.10,   # ~10 bidders
-    # Fornecimento (supply) sectors
-    "fornecimento_saude": 0.08,      # ~12 bidders, commoditized hospital materials
-    "fornecimento_limpeza": 0.08,    # ~12 bidders
-    "fornecimento_papelaria": 0.06,  # ~15+ bidders, very commoditized
-    "fornecimento_mobiliario": 0.10, # ~10 bidders
-    "fornecimento_alimentos": 0.08,  # ~12 bidders
-    "fornecimento_geral": 0.08,     # ~12 bidders
-    "servicos_profissionais": 0.15, # ~7 professionals per credenciamento
-    "servicos_gerais": 0.10,        # ~10 bidders
-    "concessao": 0.15,              # ~7 bidders, barriers to entry
-    "_default": 0.10,
-}
+_SECTOR_WEIGHT_PROFILES: dict[str, dict[str, float]] = _load_weight_profiles()
+
+# Sector base win rates loaded from YAML (intel_sectors_config.yaml)
+def _load_base_win_rates() -> dict[str, float]:
+    """Load base win rates from YAML config."""
+    try:
+        from intel_sector_loader import get_all_base_win_rates
+        return get_all_base_win_rates()
+    except Exception:
+        return {"_default": 0.10}
+
+_SECTOR_BASE_WIN_RATES: dict[str, float] = _load_base_win_rates()
 
 # Modality multipliers for win probability — adjusts base rate by competition intensity
 _MODALITY_MULTIPLIERS: dict[str, float] = {
@@ -5193,51 +5006,16 @@ _MODALITY_MULTIPLIERS: dict[str, float] = {
     "dispensa de licitação": 1.20,
 }
 
-# CRÍTICA 6: Sector-specific keywords for filtering competitive_intel.
-# Only contracts whose objeto matches these keywords are considered "sector-relevant"
-# when calculating HHI, n_suppliers, and incumbency. Prevents noise from unrelated contracts.
-_SECTOR_COMPETITION_KEYWORDS: dict[str, list[str]] = {
-    "engenharia": ["obra", "construção", "construcao", "reforma", "pavimentação", "pavimentacao",
-                    "edificação", "edificacao", "engenharia", "drenagem", "terraplenagem",
-                    "saneamento", "infraestrutura", "ponte", "viaduto"],
-    "engenharia_rodoviaria": ["rodovia", "estrada", "pavimentação", "pavimentacao", "asfalto",
-                               "terraplenagem", "sinalização", "sinalizacao", "ponte", "viaduto",
-                               "drenagem", "engenharia rodoviária"],
-    "software": ["software", "sistema", "desenvolvimento", "tecnologia da informação",
-                  "informática", "informatica", "plataforma", "aplicativo", "licença"],
-    "informatica": ["informática", "informatica", "computador", "equipamento", "hardware",
-                     "impressora", "notebook", "servidor", "rede", "cabeamento"],
-    "facilities": ["limpeza", "conservação", "conservacao", "jardinagem", "portaria",
-                    "recepção", "recepcao", "facilities", "manutenção predial"],
-    "vigilancia": ["vigilância", "vigilancia", "segurança", "seguranca", "monitoramento",
-                    "alarme", "cftv", "controle de acesso"],
-    "saude": ["saúde", "saude", "medicamento", "hospitalar", "laborat", "clínic",
-              "ambulância", "ambulancia", "médic", "enferm"],
-    "vestuario": ["uniforme", "fardamento", "vestuário", "vestuario", "roupa", "camiseta",
-                   "calçado", "calcado", "epi", "proteção individual"],
-    "alimentos": ["alimentação", "alimentacao", "refeição", "refeicao", "merenda",
-                   "gênero alimentício", "cesta básica", "nutrição"],
-    "transporte": ["transporte", "veículo", "veiculo", "locação de veículo", "frete",
-                    "combustível", "combustivel", "ônibus", "onibus"],
-    # Fornecimento (supply) sectors
-    "fornecimento_saude": ["hospitalar", "material hospitalar", "material médico", "insumo",
-                            "descartável", "luva", "seringa", "gaze", "soro", "medicamento",
-                            "ambulatorial", "equipamento médico", "enfermagem"],
-    "fornecimento_limpeza": ["limpeza", "saneante", "produto de limpeza", "higienização",
-                              "desinfetante", "detergente", "alvejante"],
-    "fornecimento_papelaria": ["papel", "caneta", "toner", "cartucho", "material de escritório",
-                                "material escolar", "expediente"],
-    "fornecimento_mobiliario": ["móvel", "movel", "cadeira", "mesa", "armário", "estante",
-                                 "eletrodoméstic", "eletrodomestic"],
-    "fornecimento_alimentos": ["alimentação", "alimentacao", "gênero alimentício", "merenda",
-                                "cesta básica", "hortifrúti"],
-    "fornecimento_geral": ["fornecimento", "material", "aquisição", "registro de preços"],
-    "servicos_profissionais": ["credenciamento", "serviço médico", "atendimento", "consulta",
-                                "plantão", "profissional de saúde", "enfermeiro", "fisioterapia"],
-    "servicos_gerais": ["serviço", "manutenção", "reparo", "conserto", "consultoria",
-                         "assessoria", "treinamento", "evento"],
-    "concessao": ["concessão", "cessão", "permissão", "exploração", "cantina", "restaurante"],
-}
+# Sector competition keywords loaded from YAML (intel_sectors_config.yaml)
+def _load_competition_keywords() -> dict[str, list[str]]:
+    """Load competition keywords from YAML config."""
+    try:
+        from intel_sector_loader import get_all_competition_keywords
+        return get_all_competition_keywords()
+    except Exception:
+        return {}
+
+_SECTOR_COMPETITION_KEYWORDS: dict[str, list[str]] = _load_competition_keywords()
 
 
 def _compute_fiscal_risk(edital: dict, competitive_intel: list[dict]) -> dict:
@@ -7025,10 +6803,18 @@ def compute_organ_risk_profile(
     dias = edital.get("dias_restantes")
     if dias is not None and valor > 0:
         # Simple heuristic: complex projects need more time
-        if sector_key in ("engenharia", "engenharia_rodoviaria"):
-            min_days = 30 if valor < 500_000 else (60 if valor < 2_000_000 else 90)
-        else:
-            min_days = 15 if valor < 500_000 else 30
+        # Timeline rules from YAML config (sector-agnostic)
+        try:
+            from intel_sector_loader import get_timeline_rules
+            _tl_rules = get_timeline_rules(sector_key)
+        except Exception:
+            _tl_rules = [{"max_value": 500000, "min_days": 15}, {"max_value": None, "min_days": 30}]
+        min_days = 15  # fallback
+        for _rule in _tl_rules:
+            _max_val = _rule.get("max_value")
+            if _max_val is None or valor <= _max_val:
+                min_days = _rule.get("min_days", 15)
+                break
         if dias >= min_days:
             timeline = "ADEQUADO"
             timeline_rationale = f"Prazo de {dias} dias adequado para o porte/complexidade"

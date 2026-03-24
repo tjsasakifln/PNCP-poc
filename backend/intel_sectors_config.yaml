@@ -1,25 +1,22 @@
 # =============================================================================
-# Intel-Busca Sector Configuration — extends sectors_data.yaml
+# Intel-Busca Sector Configuration — SINGLE SOURCE OF TRUTH
 #
-# This file contains sector-specific configuration for the /intel-busca command.
-# It maps CNAE prefixes to sectors, defines keyword refinements per CNAE,
-# incompatible object patterns, and sector matching hints.
-#
-# Previously these were hardcoded in collect-report-data.py and intel-collect.py.
-# Now they live here as data, making it trivial to add new sectors.
+# ALL sector-specific logic lives here. Python code reads from this file
+# via intel_sector_loader.py. ZERO hardcoding in Python.
 #
 # To add a new sector:
-#   1. Add the sector in sectors_data.yaml (name, keywords, exclusions, etc.)
-#   2. Add the sector key here with cnae_prefixes, refinements, etc.
-#   3. Run tests: pytest scripts/tests/test_intel_collect.py -v
+#   1. Add the sector key below with ALL required fields
+#   2. Run tests: pytest scripts/tests/test_intel_collect.py -v
+#   3. No Python code changes needed
 #
-# Loaded by: collect-report-data.py (map_sector, keyword gate)
+# Loaded by: collect-report-data.py, intel-collect.py
 # =============================================================================
 
-# CNAE 4-digit prefix -> sector_key mapping (reverse lookup built at load time)
-# Each sector lists which CNAE prefixes belong to it.
 sectors:
 
+  # ===========================================================================
+  # ENGENHARIA E CONSTRUÇÃO
+  # ===========================================================================
   engenharia:
     cnae_prefixes:
       - "4120"  # Construção de edifícios
@@ -121,6 +118,181 @@ sectors:
         - "\\bubs\\b"
         - "\\bunidade\\s+(habitacional|de sa[uú]de)\\b"
 
+    heuristic_patterns:
+      strong_compat:
+        - "obra"
+        - "construcao|construção"
+        - "reforma"
+        - "ampliacao|ampliação"
+        - "restauracao|restauração"
+        - "edificacao|edificação"
+        - "pavimentacao|pavimentação"
+        - "drenagem"
+        - "terraplenagem"
+        - "saneamento"
+        - "fundacao|fundação"
+        - "alvenaria"
+        - "concretagem"
+        - "estrutura metalica|estrutura metálica"
+        - "cobertura metalica|cobertura metálica"
+        - "muro de contencao|muro de contenção"
+        - "meio.?fio|sarjeta|boca.?de.?lobo"
+        - "bloquete|paver|intertravado"
+        - "recapeamento"
+        - "asfalto|CBUQ|massa asfaltica|massa asfáltica"
+        - "quadra (poliesportiva|coberta|esportiva)"
+        - "iluminacao publica|iluminação pública"
+      strong_incompat:
+        - "\\bmedicamento\\b"
+        - "\\bmaterial hospitalar\\b"
+        - "\\bsoftware\\b|\\berp\\b|\\bsistema de gestão\\b"
+        - "\\buniforme\\b|\\bfardamento\\b|\\bvestuário\\b"
+        - "\\bmerenda\\b|\\brefeição\\b|\\balimentação escolar\\b"
+        - "\\bvigilância\\b|\\bsegurança patrimonial\\b"
+        - "\\blimpeza predial\\b|\\bzeladoria\\b"
+        - "\\bcombustível\\b|\\babastecimento\\b"
+        - "\\bcomputador\\b|\\bnotebook\\b|\\bimpressora\\b"
+        - "\\bambulância\\b|\\bequipamento médico\\b"
+        - "\\bórtese\\b|\\bprótese\\b"
+        - "\\bgás medicinal\\b|\\bgases medicinais\\b"
+        - "\\btransporte escolar\\b|\\bfrete\\b"
+        - "\\blocação de veículo\\b"
+        - "\\bseguro de vida\\b|\\bplano de saúde\\b"
+      weak_compat:
+        - "engenharia"
+        - "infraestrutura"
+        - "urbanizacao|urbanização"
+        - "predio publico|prédio público"
+        - "manutencao predial|manutenção predial"
+
+    cross_sector_exclusions:
+      - "buffet"
+      - "coffee break"
+      - "lavanderia"
+      - "limpeza predial"
+      - "limpeza hospitalar"
+      - "alimentação escolar"
+      - "alimentacao escolar"
+      - "merenda"
+      - "catering"
+      - "vigilância armada"
+      - "vigilancia armada"
+      - "vigilância desarmada"
+      - "vigilancia desarmada"
+      - "segurança patrimonial"
+      - "seguranca patrimonial"
+      - "material de escritório"
+      - "material de escritorio"
+      - "combustível"
+      - "abastecimento de combustivel"
+      - "recarga de toner"
+      - "cartuchos"
+      - "locação de veículos"
+      - "locacao de veiculos"
+      - "serviço de copa"
+      - "servico de copa"
+      - "jardinagem"
+      - "coleta de lixo"
+      - "coleta de residuos solidos"
+      - "transporte escolar"
+      - "fornecimento de refeição"
+      - "fornecimento de refeicao"
+      - "quentinha"
+      - "marmitex"
+      - "uniforme"
+      - "fardamento"
+      - "material de limpeza"
+      - "detergente"
+      - "desinfetante"
+      - "papel higiênico"
+      - "papel higienico"
+      - "papel toalha"
+      - "equipamento de informática"
+      - "equipamento de informatica"
+      - "computador"
+      - "notebook"
+      - "impressora"
+      - "medicamento"
+      - "material hospitalar"
+      - "material médico"
+      - "material medico"
+      - "ambulância"
+      - "ambulancia"
+      - "serviço funerário"
+      - "servico funerario"
+      - "seguro de vida"
+      - "plano de saúde"
+      - "plano de saude"
+      - "material odontológico"
+      - "material odontologico"
+      - "gás medicinal"
+      - "gas medicinal"
+      - "gases medicinais"
+      - "material médico-hospitalar"
+      - "material medico-hospitalar"
+      - "insumo hospitalar"
+      - "equipamento hospitalar"
+      - "equipamento médico"
+      - "equipamento medico"
+      - "órtese"
+      - "ortese"
+      - "prótese"
+      - "protese"
+
+    competition_keywords:
+      - "obra"
+      - "construção"
+      - "construcao"
+      - "reforma"
+      - "pavimentação"
+      - "pavimentacao"
+      - "edificação"
+      - "edificacao"
+      - "engenharia"
+      - "drenagem"
+      - "terraplenagem"
+      - "saneamento"
+      - "infraestrutura"
+      - "ponte"
+      - "viaduto"
+
+    weight_profile:
+      hab: 0.25
+      fin: 0.30
+      geo: 0.25
+      prazo: 0.15
+      comp: 0.05
+
+    base_win_rate: 0.15
+
+    habilitacao:
+      capital_minimo_pct: 0.10
+      atestados:
+        - "Atestado técnico de execução de obra similar (acervo CREA/CAU)"
+      certifications:
+        - "CREA (registro ativo)"
+        - "CAU (se arquitetura)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Estadual"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 30
+      - max_value: 2000000
+        min_days: 60
+      - max_value: null
+        min_days: 90
+
+    priority_modalidades: [4, 5, 6, 7]
+    cnae_gate_threshold: 0.55
+
+  # ===========================================================================
+  # ENGENHARIA RODOVIÁRIA
+  # ===========================================================================
   engenharia_rodoviaria:
     cnae_prefixes:
       - "4211"  # Construção de rodovias e ferrovias
@@ -178,6 +350,95 @@ sectors:
         - "\\bubs\\b"
         - "\\bunidade\\s+(habitacional|de sa[uú]de)\\b"
 
+    heuristic_patterns:
+      strong_compat:
+        - "rodovia|estrada"
+        - "pavimentacao|pavimentação"
+        - "asfalto|CBUQ|massa asfaltica|massa asfáltica"
+        - "terraplenagem"
+        - "sinalizacao|sinalização"
+        - "ponte|viaduto"
+        - "drenagem"
+        - "ciclovia|calcada|calçada"
+        - "meio.?fio|sarjeta"
+        - "recapeamento"
+      strong_incompat:
+        - "\\bmedicamento\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\brefeição\\b"
+        - "\\bvigilância\\b|\\bsegurança patrimonial\\b"
+        - "\\bcomputador\\b|\\bnotebook\\b"
+        - "\\bambulância\\b|\\bequipamento médico\\b"
+      weak_compat:
+        - "engenharia rodoviária"
+        - "infraestrutura viária"
+        - "mobilidade urbana"
+
+    cross_sector_exclusions:
+      - "medicamento"
+      - "material hospitalar"
+      - "uniforme"
+      - "fardamento"
+      - "merenda"
+      - "alimentação escolar"
+      - "vigilância armada"
+      - "vigilancia armada"
+      - "computador"
+      - "notebook"
+      - "software"
+      - "material de limpeza"
+
+    competition_keywords:
+      - "rodovia"
+      - "estrada"
+      - "pavimentação"
+      - "pavimentacao"
+      - "asfalto"
+      - "terraplenagem"
+      - "sinalização"
+      - "sinalizacao"
+      - "ponte"
+      - "viaduto"
+      - "drenagem"
+      - "engenharia rodoviária"
+
+    weight_profile:
+      hab: 0.25
+      fin: 0.30
+      geo: 0.25
+      prazo: 0.15
+      comp: 0.05
+
+    base_win_rate: 0.12
+
+    habilitacao:
+      capital_minimo_pct: 0.10
+      atestados:
+        - "Atestado técnico de pavimentação ou obra rodoviária similar"
+      certifications:
+        - "CREA (registro ativo)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Estadual"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 30
+      - max_value: 2000000
+        min_days: 60
+      - max_value: null
+        min_days: 90
+
+    priority_modalidades: [4, 5, 6, 7]
+    cnae_gate_threshold: 0.55
+
+  # ===========================================================================
+  # MANUTENÇÃO PREDIAL
+  # ===========================================================================
   manutencao_predial:
     cnae_prefixes:
       - "4321"  # Instalações elétricas
@@ -230,6 +491,86 @@ sectors:
 
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "manutencao predial|manutenção predial"
+        - "instalacao eletrica|instalação elétrica"
+        - "instalacao hidraulica|instalação hidráulica"
+        - "ar condicionado|climatizacao|climatização"
+        - "pintura predial|pintura de fachada"
+        - "reforma predial"
+        - "acabamento"
+        - "revestimento"
+        - "forro|gesso"
+        - "impermeabilizacao|impermeabilização"
+      strong_incompat:
+        - "\\bmedicamento\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\brefeição\\b"
+        - "\\bvigilância\\b"
+        - "\\bcomputador\\b|\\bnotebook\\b"
+      weak_compat:
+        - "predial"
+        - "instalacoes|instalações"
+        - "reparo"
+
+    cross_sector_exclusions:
+      - "medicamento"
+      - "material hospitalar"
+      - "uniforme"
+      - "fardamento"
+      - "merenda"
+      - "alimentação escolar"
+      - "computador"
+      - "notebook"
+      - "software"
+
+    competition_keywords:
+      - "manutenção predial"
+      - "manutencao predial"
+      - "instalação elétrica"
+      - "instalação hidráulica"
+      - "ar condicionado"
+      - "pintura"
+      - "reforma"
+      - "reparo"
+
+    weight_profile:
+      hab: 0.25
+      fin: 0.20
+      geo: 0.25
+      prazo: 0.15
+      comp: 0.15
+
+    base_win_rate: 0.12
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado de prestação de serviço de manutenção predial similar"
+      certifications:
+        - "CREA (se instalações elétricas/hidráulicas)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 15
+      - max_value: 2000000
+        min_days: 30
+      - max_value: null
+        min_days: 45
+
+    priority_modalidades: [5, 6, 8]
+    cnae_gate_threshold: 0.50
+
+  # ===========================================================================
+  # VESTUÁRIO E UNIFORMES
+  # ===========================================================================
   vestuario:
     cnae_prefixes:
       - "4781"  # Comércio varejista de artigos de vestuário
@@ -241,6 +582,9 @@ sectors:
       - "1421"  # Fabricação de meias
       - "1422"  # Fabricação de artigos do vestuário em malharias
       - "1531"  # Fabricação de calçados de couro
+      - "4689"  # Comércio atacadista especializado de outros produtos
+      - "1340"  # Acabamentos em fios, tecidos e artefatos têxteis
+      - "3292"  # Fabricação de equipamentos de proteção e segurança
 
     sector_hints:
       - "vestuário"
@@ -251,10 +595,119 @@ sectors:
       - "roupa"
       - "têxtil"
       - "textil"
+      - "fardamento"
+      - "calçado"
+      - "calcado"
 
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario|vestuário"
+        - "camiseta|camisa"
+        - "calca|calça"
+        - "jaleco"
+        - "colete"
+        - "bota|botina"
+        - "calcado|calçado"
+        - "epi|equipamento de protecao individual|equipamento de proteção individual"
+        - "luva (de protecao|de proteção|de raspa|de procedimento)"
+        - "capacete"
+        - "avental"
+        - "macacão|macacao"
+        - "confeccao|confecção"
+        - "bordado|serigrafia"
+        - "tela|tecido"
+        - "roupa (profissional|hospitalar|cirurgica|cirúrgica)"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\basfalto\\b|\\bterraplanagem\\b"
+        - "\\bmedicamento\\b|\\bdroga\\b"
+        - "\\bsoftware\\b|\\berp\\b|\\bsistema de gestão\\b"
+        - "\\bvigilância\\b|\\bsegurança patrimonial\\b"
+        - "\\bcomputador\\b|\\bnotebook\\b|\\bservidor\\b"
+        - "\\bmerenda\\b|\\bgênero alimentício\\b"
+        - "\\bcombustível\\b|\\bgasolina\\b|\\bdiesel\\b"
+        - "\\bambulância\\b|\\bequipamento médico\\b"
+      weak_compat:
+        - "roupa"
+        - "proteção individual"
+        - "protecao individual"
+        - "têxtil|textil"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "construcao"
+      - "pavimentação"
+      - "pavimentacao"
+      - "asfalto"
+      - "medicamento"
+      - "material hospitalar"
+      - "software"
+      - "sistema de gestão"
+      - "computador"
+      - "notebook"
+      - "merenda"
+      - "gênero alimentício"
+      - "combustível"
+      - "ambulância"
+      - "vigilância armada"
+      - "vigilancia armada"
+      - "material de limpeza"
+      - "detergente"
+
+    competition_keywords:
+      - "uniforme"
+      - "fardamento"
+      - "vestuário"
+      - "vestuario"
+      - "roupa"
+      - "camiseta"
+      - "calçado"
+      - "calcado"
+      - "epi"
+      - "proteção individual"
+
+    weight_profile:
+      hab: 0.20
+      fin: 0.25
+      geo: 0.10
+      prazo: 0.20
+      comp: 0.25
+
+    base_win_rate: 0.10
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado de fornecimento de uniformes ou vestuário similar"
+      certifications:
+        - "INMETRO (se EPI — CA válido)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 20
+      - max_value: null
+        min_days: 30
+
+    priority_modalidades: [5, 8, 6]
+    cnae_gate_threshold: 0.40
+
+  # ===========================================================================
+  # ALIMENTOS E MERENDA
+  # ===========================================================================
   alimentos:
     cnae_prefixes:
       - "1011"  # Abate de reses
@@ -268,6 +721,10 @@ sectors:
       - "5620"  # Serviços de catering, bufê
       - "4729"  # Comércio varejista de produtos alimentícios
       - "4721"  # Padaria e confeitaria
+      - "4637"  # Comércio atacadista de café, açúcar, cereais
+      - "4639"  # Comércio atacadista de produtos alimentícios em geral
+      - "1051"  # Laticínios
+      - "1071"  # Fabricação de açúcar
 
     sector_hints:
       - "aliment"
@@ -277,10 +734,113 @@ sectors:
       - "nutriç"
       - "nutricao"
       - "panifica"
+      - "gênero alimentício"
 
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "alimentacao|alimentação"
+        - "merenda (escolar)?"
+        - "refeicao|refeição"
+        - "genero alimenticio|gênero alimentício"
+        - "generos alimenticios|gêneros alimentícios"
+        - "cesta basica|cesta básica"
+        - "kit (alimentação|alimentacao|alimento)"
+        - "hortifr[uú]ti"
+        - "carne|frango|peixe"
+        - "leite|laticinio|laticínio"
+        - "arroz|feijao|feijão"
+        - "cafe|café"
+        - "acucar|açúcar"
+        - "oleo|óleo (de soja|vegetal|comestível)"
+        - "farinha"
+        - "macarrao|macarrão"
+        - "biscoito|bolacha"
+        - "pao|pães"
+        - "fornecimento de refeicao|fornecimento de refeição"
+        - "quentinha|marmitex"
+        - "catering|buffet|bufê"
+        - "copa e cozinha"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\basfalto\\b|\\bterraplanagem\\b"
+        - "\\bmedicamento\\b|\\bdroga\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bvigilância\\b|\\bsegurança patrimonial\\b"
+        - "\\bcomputador\\b|\\bnotebook\\b"
+        - "\\bcombustível\\b|\\bgasolina\\b"
+        - "\\bequipamento médico\\b"
+        - "\\bmaterial de construção\\b"
+      weak_compat:
+        - "nutricao|nutrição"
+        - "cozinha"
+        - "restaurante"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "construcao"
+      - "pavimentação"
+      - "medicamento"
+      - "material hospitalar"
+      - "software"
+      - "computador"
+      - "uniforme"
+      - "vigilância armada"
+      - "combustível"
+      - "material de construção"
+
+    competition_keywords:
+      - "alimentação"
+      - "alimentacao"
+      - "refeição"
+      - "refeicao"
+      - "merenda"
+      - "gênero alimentício"
+      - "cesta básica"
+      - "nutrição"
+
+    weight_profile:
+      hab: 0.25
+      fin: 0.20
+      geo: 0.20
+      prazo: 0.20
+      comp: 0.15
+
+    base_win_rate: 0.08
+
+    habilitacao:
+      capital_minimo_pct: 0.10
+      atestados:
+        - "Atestado de fornecimento de gêneros alimentícios ou refeições similar"
+      certifications:
+        - "ANVISA (Alvará Sanitário)"
+        - "Licença de Funcionamento da Vigilância Sanitária"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Estadual"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 15
+      - max_value: null
+        min_days: 20
+
+    priority_modalidades: [5, 8, 13]
+    cnae_gate_threshold: 0.40
+
+  # ===========================================================================
+  # INFORMÁTICA E TECNOLOGIA (hardware)
+  # ===========================================================================
   informatica:
     cnae_prefixes:
       - "4751"  # Comércio varejista de equipamentos de informática
@@ -289,6 +849,7 @@ sectors:
       - "2622"  # Fabricação de periféricos
       - "9511"  # Reparação e manutenção de computadores
       - "2631"  # Fabricação de equipamentos transmissores
+      - "4651"  # Comércio atacadista de computadores
 
     sector_hints:
       - "informática"
@@ -300,6 +861,103 @@ sectors:
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "computador|computadores"
+        - "notebook|notebooks"
+        - "servidor|servidores"
+        - "switch|roteador|router"
+        - "impressora|impressoras"
+        - "monitor|monitores"
+        - "nobreak|no.?break"
+        - "storage|armazenamento"
+        - "firewall"
+        - "cabeamento (estruturado|de rede)"
+        - "ponto de rede"
+        - "rack"
+        - "scanner"
+        - "equipamento de (informatica|informática|ti)"
+        - "periferico|periférico"
+        - "toner|cartucho (de tinta|de toner)"
+        - "tablet"
+        - "projetor|datashow"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\bmedicamento\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\brefeição\\b"
+        - "\\bvigilância\\b|\\bsegurança patrimonial\\b"
+        - "\\bcombustível\\b|\\bgasolina\\b"
+        - "\\bambulância\\b"
+        - "\\bmaterial de construção\\b"
+      weak_compat:
+        - "informática|informatica"
+        - "tecnologia"
+        - "ti|TI"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "pavimentação"
+      - "medicamento"
+      - "material hospitalar"
+      - "uniforme"
+      - "fardamento"
+      - "merenda"
+      - "alimentação escolar"
+      - "vigilância armada"
+      - "combustível"
+      - "ambulância"
+      - "material de construção"
+
+    competition_keywords:
+      - "informática"
+      - "informatica"
+      - "computador"
+      - "equipamento"
+      - "hardware"
+      - "impressora"
+      - "notebook"
+      - "servidor"
+      - "rede"
+      - "cabeamento"
+
+    weight_profile:
+      hab: 0.15
+      fin: 0.20
+      geo: 0.10
+      prazo: 0.20
+      comp: 0.35
+
+    base_win_rate: 0.10
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado de fornecimento de equipamentos de TI similares"
+      certifications:
+        - "Autorização de fabricante/distribuidor (quando exigido)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 15
+      - max_value: null
+        min_days: 20
+
+    priority_modalidades: [5, 8, 13]
+    cnae_gate_threshold: 0.45
+
+  # ===========================================================================
+  # SOFTWARE E TECNOLOGIA DA INFORMAÇÃO (serviço)
+  # ===========================================================================
   software:
     cnae_prefixes:
       - "6201"  # Desenvolvimento de programas sob encomenda
@@ -320,6 +978,99 @@ sectors:
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "software"
+        - "sistema (de gestão|de informação|integrado|erp)"
+        - "licenca|licença (de software|de uso)"
+        - "desenvolvimento (de sistema|de software|de aplicativo)"
+        - "suporte tecnico|suporte técnico (de ti|de sistema)"
+        - "hosting|hospedagem"
+        - "cloud|nuvem"
+        - "SaaS|PaaS|IaaS"
+        - "backup"
+        - "consultoria (de ti|em tecnologia)"
+        - "implantacao|implantação (de sistema|de software)"
+        - "manutencao de sistema|manutenção de sistema"
+        - "help desk|service desk"
+        - "outsourcing (de ti|tecnologia)"
+        - "portal|site|website"
+        - "aplicativo|app"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\bmedicamento\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\brefeição\\b"
+        - "\\bvigilância\\b|\\bsegurança patrimonial\\b"
+        - "\\bcombustível\\b"
+        - "\\bambulância\\b"
+        - "\\bmaterial de construção\\b"
+      weak_compat:
+        - "tecnologia da informação|tecnologia da informacao"
+        - "informática|informatica"
+        - "digital"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "pavimentação"
+      - "medicamento"
+      - "material hospitalar"
+      - "uniforme"
+      - "merenda"
+      - "vigilância armada"
+      - "combustível"
+      - "ambulância"
+      - "material de construção"
+
+    competition_keywords:
+      - "software"
+      - "sistema"
+      - "desenvolvimento"
+      - "tecnologia da informação"
+      - "informática"
+      - "informatica"
+      - "plataforma"
+      - "aplicativo"
+      - "licença"
+
+    weight_profile:
+      hab: 0.15
+      fin: 0.15
+      geo: 0.05
+      prazo: 0.25
+      comp: 0.40
+
+    base_win_rate: 0.08
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado técnico de desenvolvimento/implantação de sistema similar"
+      certifications:
+        - "ISO 27001 (frequente)"
+        - "LGPD compliance (crescente)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 15
+      - max_value: 2000000
+        min_days: 30
+      - max_value: null
+        min_days: 45
+
+    priority_modalidades: [5, 4, 8]
+    cnae_gate_threshold: 0.45
+
+  # ===========================================================================
+  # PRODUTOS DE LIMPEZA / FACILITIES
+  # ===========================================================================
   facilities:
     cnae_prefixes:
       - "8111"  # Serviços combinados para apoio a edifícios
@@ -328,6 +1079,8 @@ sectors:
       - "8122"  # Imunização e controle de pragas
       - "8129"  # Atividades de limpeza não especificadas
       - "8130"  # Atividades paisagísticas
+      - "2061"  # Fabricação de sabões, detergentes e produtos de limpeza
+      - "4649"  # Comércio atacadista de artigos de uso doméstico
 
     sector_hints:
       - "limpeza"
@@ -336,10 +1089,111 @@ sectors:
       - "zeladoria"
       - "jardinagem"
       - "paisagis"
+      - "higienizacao"
+      - "higienização"
+      - "saneante"
 
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "limpeza (predial|hospitalar|urbana)?"
+        - "conservacao|conservação"
+        - "jardinagem|paisagismo"
+        - "portaria|recepção|recepcao"
+        - "copeiragem"
+        - "dedetizacao|dedetização|imunização"
+        - "controle de pragas"
+        - "zeladoria"
+        - "material de limpeza"
+        - "detergente|desinfetante"
+        - "saneante|domissanitário"
+        - "papel (higiênico|higienico|toalha)"
+        - "sabão|sabao|sabonete"
+        - "álcool|alcool"
+        - "vassoura|rodo|balde"
+        - "saco de lixo"
+        - "higienizacao|higienização"
+        - "desratizacao|desratização"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\bmedicamento\\b|\\bdroga\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bcombustível\\b|\\bgasolina\\b"
+        - "\\bcomputador\\b|\\bnotebook\\b"
+        - "\\bambulância\\b"
+        - "\\bequipamento médico\\b"
+      weak_compat:
+        - "facilities"
+        - "predial"
+        - "apoio administrativo"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "construcao"
+      - "pavimentação"
+      - "medicamento"
+      - "material hospitalar"
+      - "software"
+      - "computador"
+      - "uniforme"
+      - "combustível"
+      - "ambulância"
+      - "equipamento médico"
+
+    competition_keywords:
+      - "limpeza"
+      - "conservação"
+      - "conservacao"
+      - "jardinagem"
+      - "portaria"
+      - "recepção"
+      - "recepcao"
+      - "facilities"
+      - "manutenção predial"
+      - "saneante"
+      - "material de limpeza"
+      - "higienização"
+
+    weight_profile:
+      hab: 0.25
+      fin: 0.20
+      geo: 0.20
+      prazo: 0.15
+      comp: 0.20
+
+    base_win_rate: 0.06
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado de prestação de serviço continuado similar"
+      certifications:
+        - "AFE/ANVISA (se saneantes domissanitários)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 15
+      - max_value: null
+        min_days: 20
+
+    priority_modalidades: [5, 8, 6]
+    cnae_gate_threshold: 0.40
+
+  # ===========================================================================
+  # SEGURANÇA E VIGILÂNCIA
+  # ===========================================================================
   vigilancia:
     cnae_prefixes:
       - "8011"  # Atividades de vigilância e segurança privada
@@ -353,25 +1207,120 @@ sectors:
       - "segurança"
       - "seguranca"
       - "monitoramento"
+      - "cftv"
 
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "vigilancia|vigilância"
+        - "seguranca patrimonial|segurança patrimonial"
+        - "seguranca armada|segurança armada"
+        - "seguranca desarmada|segurança desarmada"
+        - "monitoramento (eletronico|eletrônico|de alarme|cftv)"
+        - "cftv|circuito fechado"
+        - "alarme"
+        - "controle de acesso"
+        - "ronda"
+        - "vigilante"
+        - "portaria (armada|desarmada)"
+        - "transporte de valores"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\bmedicamento\\b|\\bdroga\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\brefeição\\b"
+        - "\\bcombustível\\b|\\bgasolina\\b"
+        - "\\bcomputador\\b|\\bnotebook\\b"
+        - "\\bambulância\\b"
+        - "\\bequipamento médico\\b"
+        - "\\bmaterial de construção\\b"
+      weak_compat:
+        - "segurança"
+        - "seguranca"
+        - "proteção patrimonial"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "construcao"
+      - "pavimentação"
+      - "medicamento"
+      - "material hospitalar"
+      - "software"
+      - "computador"
+      - "merenda"
+      - "alimentação escolar"
+      - "combustível"
+      - "ambulância"
+
+    competition_keywords:
+      - "vigilância"
+      - "vigilancia"
+      - "segurança"
+      - "seguranca"
+      - "monitoramento"
+      - "alarme"
+      - "cftv"
+      - "controle de acesso"
+
+    weight_profile:
+      hab: 0.25
+      fin: 0.20
+      geo: 0.20
+      prazo: 0.15
+      comp: 0.20
+
+    base_win_rate: 0.08
+
+    habilitacao:
+      capital_minimo_pct: 0.10
+      atestados:
+        - "Atestado de prestação de serviço de vigilância similar"
+      certifications:
+        - "Autorização de Funcionamento (Polícia Federal)"
+        - "Alvará de Funcionamento"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Estadual"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 15
+      - max_value: 2000000
+        min_days: 20
+      - max_value: null
+        min_days: 30
+
+    priority_modalidades: [5, 6, 4]
+    cnae_gate_threshold: 0.45
+
+  # ===========================================================================
+  # SAÚDE E MEDICAMENTOS + EQUIPAMENTOS E MATERIAL HOSPITALAR
+  # ===========================================================================
   saude:
     cnae_prefixes:
       - "2110"  # Fabricação de produtos farmoquímicos
       - "2121"  # Fabricação de medicamentos
       - "2123"  # Fabricação de preparações farmacêuticas
       - "3250"  # Fabricação de instrumentos/materiais médicos
-      - "4644"  # Comércio atacadista de medicamentos e drogas de uso humano
-      - "4645"  # Comércio atacadista de instrumentos e materiais médico-cirúrgicos
-      - "4646"  # Comércio atacadista de cosméticos, produtos de perfumaria e higiene pessoal
-      - "4649"  # Comércio atacadista de outros equipamentos e artigos de uso pessoal/doméstico
+      - "4644"  # Comércio atacadista de medicamentos
+      - "4645"  # Comércio atacadista de instrumentos médico-cirúrgicos
+      - "4646"  # Comércio atacadista de cosméticos e higiene
+      - "4649"  # Comércio atacadista de outros equipamentos
       - "4771"  # Comércio varejista de produtos farmacêuticos
       - "4773"  # Comércio varejista de artigos médicos e ortopédicos
       - "8610"  # Atividades de atendimento hospitalar
       - "8630"  # Atividades de atenção ambulatorial
-      - "8640"  # Atividades de complementação diagnóstica e terapêutica
+      - "8640"  # Complementação diagnóstica e terapêutica
+      - "3253"  # Fabricação de aparelhos eletromédicos
+      - "3299"  # Fabricação de produtos diversos (órtese/prótese)
 
     sector_hints:
       - "saúde"
@@ -382,7 +1331,6 @@ sectors:
       - "hospitalar"
       - "laborat"
 
-    # Sector-aware heuristic patterns for the CNAE gate
     heuristic_patterns:
       strong_compat:
         - "medicamento"
@@ -395,10 +1343,8 @@ sectors:
         - "equipamentos (medicos|médicos|hospitalares)"
         - "farmacia|farmácia"
         - "produto farmaceutico|produto farmacêutico"
-        - "produtos farmaceuticos|produtos farmacêuticos"
         - "droga|drogas"
         - "formula infantil|fórmula infantil"
-        - "leite especial|leites especiais"
         - "suplemento (nutricional|alimentar)"
         - "dieta enteral"
         - "ortese|orteses|órtese|órteses"
@@ -428,7 +1374,7 @@ sectors:
         - "gases medicinais"
         - "ambulancia|ambulância"
         - "raio.?x|tomografia|ressonancia|ressonância|ultrassom"
-        - "servico medico|serviço médico|servicos medicos|serviços médicos"
+        - "servico medico|serviço médico"
         - "atendimento (hospitalar|ambulatorial|domiciliar)"
         - "plantao medico|plantão médico"
         - "higienizacao hospitalar|higienização hospitalar"
@@ -457,29 +1403,21 @@ sectors:
         - "fretamento"
         - "publicidade|propaganda|marketing"
         - "locacao de (imovel|imóvel|sala|veiculo|veículo)"
-        - "consultoria (juridica|jurídica|contabil|contábil|tributaria|tributária)"
-        - "assessoria (juridica|jurídica|contabil|contábil)"
         - "\\bsoftware\\b|\\bsistema\\b|\\berp\\b|\\bti\\b"
         - "telefonia|internet|banda larga"
-        - "merenda|refeicao|refeição|alimentacao|alimentação"
         - "uniforme|vestuario|vestuário|fardamento"
         - "vigilancia|vigilância|seguranca|segurança"
         - "limpeza|conservacao|conservação|zeladoria"
-        - "aduelas|concreto armado|gabiao|gabião"
-        - "iluminacao publica|iluminação pública"
       weak_compat:
         - "saude|saúde"
         - "hospital|hospitalar"
         - "clinica|clínica"
         - "UBS|PSF|UPA|SAMU"
         - "posto de saude|posto de saúde"
-        - "unidade (basica|básica) de saude|unidade (basica|básica) de saúde"
-        - "secretaria (municipal|estadual) de saude|secretaria (municipal|estadual) de saúde"
         - "sus|SUS"
         - "enfermagem"
         - "fisioterapia"
         - "odontologico|odontológico"
-        - "oftalmologico|oftalmológico"
 
     cnae_refinements: {}
 
@@ -507,10 +1445,79 @@ sectors:
         - "\\bconstrucao\\b|\\bconstrução\\b"
         - "\\bsoftware\\b|\\berp\\b"
 
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "construcao"
+      - "pavimentação"
+      - "pavimentacao"
+      - "asfalto"
+      - "terraplanagem"
+      - "uniforme"
+      - "fardamento"
+      - "combustível"
+      - "software"
+      - "vigilância armada"
+      - "vigilancia armada"
+
+    competition_keywords:
+      - "saúde"
+      - "saude"
+      - "medicamento"
+      - "hospitalar"
+      - "laborat"
+      - "clínic"
+      - "ambulância"
+      - "ambulancia"
+      - "médic"
+      - "enferm"
+      - "equipamento médico"
+      - "material hospitalar"
+
+    weight_profile:
+      hab: 0.30
+      fin: 0.20
+      geo: 0.15
+      prazo: 0.15
+      comp: 0.20
+
+    base_win_rate: 0.10
+
+    habilitacao:
+      capital_minimo_pct: 0.10
+      atestados:
+        - "Atestado de fornecimento/serviço similar na área de saúde"
+      certifications:
+        - "ANVISA (AFE — Autorização de Funcionamento)"
+        - "CRM (se serviço médico)"
+        - "CRF (se farmacêutico)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Estadual"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 15
+      - max_value: null
+        min_days: 20
+
+    priority_modalidades: [5, 8, 13]
+    cnae_gate_threshold: 0.45
+
+  # ===========================================================================
+  # VEÍCULOS, PEÇAS E COMBUSTÍVEIS
+  # ===========================================================================
   transporte:
     cnae_prefixes:
       - "4511"  # Comércio de automóveis novos
       - "4512"  # Comércio de automóveis usados
+      - "4520"  # Manutenção e reparação de veículos
+      - "4530"  # Comércio de peças para veículos
       - "4912"  # Transporte ferroviário de carga
       - "4921"  # Transporte rodoviário coletivo
       - "4922"  # Transporte sob regime de fretamento
@@ -519,6 +1526,8 @@ sectors:
       - "4930"  # Transporte rodoviário de carga
       - "7711"  # Locação de automóveis sem condutor
       - "7719"  # Locação de outros meios de transporte
+      - "4731"  # Comércio varejista de combustíveis (posto)
+      - "4681"  # Comércio atacadista de combustíveis
 
     sector_hints:
       - "transporte"
@@ -527,10 +1536,114 @@ sectors:
       - "logística"
       - "logistica"
       - "frete"
+      - "combustível"
+      - "combustivel"
+      - "automotiv"
 
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "veiculo|veículo|veiculos|veículos"
+        - "automovel|automóvel"
+        - "caminhao|caminhão"
+        - "onibus|ônibus"
+        - "ambulancia|ambulância (veiculo|veículo)"
+        - "van|micro.?onibus|micro.?ônibus"
+        - "motocicleta|moto"
+        - "peca automotiva|peça automotiva"
+        - "pneu|pneus"
+        - "combustivel|combustível"
+        - "gasolina|diesel|etanol"
+        - "oleo lubrificante|óleo lubrificante"
+        - "locacao de veiculo|locação de veículo"
+        - "transporte (escolar|coletivo|de passageiros|de carga)"
+        - "frete|fretamento"
+        - "manutencao (veicular|de veiculos|de veículos)"
+        - "manutenção (veicular|de veículos)"
+        - "revisao veicular|revisão veicular"
+        - "guincho|reboque"
+        - "lavagem de veiculo|lavagem de veículo"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\bmedicamento\\b|\\bdroga\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\brefeição\\b"
+        - "\\bvigilância armada\\b"
+        - "\\bcomputador\\b|\\bnotebook\\b"
+        - "\\bequipamento médico\\b"
+        - "\\bmaterial de construção\\b"
+      weak_compat:
+        - "logística|logistica"
+        - "frota"
+        - "garagem"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "construcao"
+      - "pavimentação"
+      - "medicamento"
+      - "material hospitalar"
+      - "software"
+      - "computador"
+      - "uniforme"
+      - "merenda"
+      - "vigilância armada"
+      - "material de construção"
+
+    competition_keywords:
+      - "transporte"
+      - "veículo"
+      - "veiculo"
+      - "locação de veículo"
+      - "frete"
+      - "combustível"
+      - "combustivel"
+      - "ônibus"
+      - "onibus"
+
+    weight_profile:
+      hab: 0.20
+      fin: 0.25
+      geo: 0.15
+      prazo: 0.15
+      comp: 0.25
+
+    base_win_rate: 0.10
+
+    habilitacao:
+      capital_minimo_pct: 0.10
+      atestados:
+        - "Atestado de fornecimento de veículos ou combustíveis similar"
+      certifications:
+        - "INMETRO (veículos)"
+        - "ANTT (se transporte interestadual)"
+        - "ANP (se combustíveis)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Estadual"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 15
+      - max_value: null
+        min_days: 20
+
+    priority_modalidades: [5, 8, 6]
+    cnae_gate_threshold: 0.40
+
+  # ===========================================================================
+  # MOBILIÁRIO
+  # ===========================================================================
   mobiliario:
     cnae_prefixes:
       - "3101"  # Fabricação de móveis (madeira)
@@ -538,6 +1651,7 @@ sectors:
       - "3103"  # Fabricação de colchões
       - "3104"  # Fabricação de móveis (outros materiais)
       - "4754"  # Comércio varejista de móveis
+      - "4649"  # Comércio atacadista de outros equipamentos
 
     sector_hints:
       - "móvel"
@@ -550,6 +1664,100 @@ sectors:
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "mobiliario|mobiliário"
+        - "movel|móvel|moveis|móveis"
+        - "mesa|mesas"
+        - "cadeira|cadeiras"
+        - "armario|armário"
+        - "estante|prateleira"
+        - "arquivo (de aco|de aço|deslizante)"
+        - "biro|birô"
+        - "longarina"
+        - "sofa|sofá|poltrona"
+        - "colchao|colchão"
+        - "cama|beliche"
+        - "carteira escolar"
+        - "quadro branco|lousa"
+        - "bancada"
+        - "balcao|balcão"
+        - "eletrodomestic|eletrodoméstic"
+        - "geladeira|refrigerador"
+        - "fogao|fogão"
+        - "micro.?ondas"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\bmedicamento\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\brefeição\\b"
+        - "\\bvigilância\\b"
+        - "\\bcombustível\\b"
+        - "\\bambulância\\b"
+      weak_compat:
+        - "mobília|mobilia"
+        - "escritório|escritorio"
+        - "equipamento escolar"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "pavimentação"
+      - "medicamento"
+      - "software"
+      - "uniforme"
+      - "merenda"
+      - "vigilância armada"
+      - "combustível"
+      - "ambulância"
+
+    competition_keywords:
+      - "móvel"
+      - "movel"
+      - "cadeira"
+      - "mesa"
+      - "armário"
+      - "estante"
+      - "eletrodoméstic"
+      - "eletrodomestic"
+
+    weight_profile:
+      hab: 0.20
+      fin: 0.25
+      geo: 0.10
+      prazo: 0.20
+      comp: 0.25
+
+    base_win_rate: 0.12
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado de fornecimento de mobiliário similar"
+      certifications:
+        - "INMETRO (se mobiliário escolar)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 15
+      - max_value: null
+        min_days: 20
+
+    priority_modalidades: [5, 8, 13]
+    cnae_gate_threshold: 0.40
+
+  # ===========================================================================
+  # PAPELARIA E MATERIAL DE ESCRITÓRIO
+  # ===========================================================================
   papelaria:
     cnae_prefixes:
       - "4761"  # Comércio varejista de livros, jornais, papelaria
@@ -557,6 +1765,7 @@ sectors:
       - "1731"  # Fabricação de embalagens de papel
       - "1741"  # Fabricação de produtos de papel (uso doméstico)
       - "4647"  # Comércio atacadista de artigos de escritório
+      - "1811"  # Impressão de jornais, livros, revistas
 
     sector_hints:
       - "papelaria"
@@ -564,10 +1773,101 @@ sectors:
       - "escritório"
       - "escritorio"
       - "material escolar"
+      - "expediente"
 
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "material de escritorio|material de escritório"
+        - "material de expediente"
+        - "material escolar"
+        - "papel (a4|a3|sulfite|oficio|ofício)"
+        - "caneta|lapis|lápis"
+        - "envelope|pasta"
+        - "grampeador|furador"
+        - "toner|cartucho"
+        - "bobina (termica|térmica)"
+        - "fita adesiva"
+        - "clips|clipe"
+        - "caderno|bloco de anotações"
+        - "etiqueta|formulario|formulário"
+        - "agenda|calendário|calendario"
+        - "caixa de arquivo|caixa box"
+        - "régua|borracha|apontador"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bpavimentacao\\b|\\bpavimentação\\b"
+        - "\\bmedicamento\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b|\\bfardamento\\b"
+        - "\\bmerenda\\b|\\brefeição\\b"
+        - "\\bvigilância\\b"
+        - "\\bcombustível\\b"
+        - "\\bambulância\\b"
+        - "\\bequipamento médico\\b"
+      weak_compat:
+        - "papelaria"
+        - "escritório|escritorio"
+        - "suprimento"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "pavimentação"
+      - "medicamento"
+      - "material hospitalar"
+      - "software"
+      - "uniforme"
+      - "merenda"
+      - "vigilância armada"
+      - "combustível"
+      - "ambulância"
+
+    competition_keywords:
+      - "papel"
+      - "caneta"
+      - "toner"
+      - "cartucho"
+      - "material de escritório"
+      - "material escolar"
+      - "expediente"
+
+    weight_profile:
+      hab: 0.20
+      fin: 0.25
+      geo: 0.10
+      prazo: 0.20
+      comp: 0.25
+
+    base_win_rate: 0.08
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado de fornecimento de material de expediente ou similares"
+      certifications: []
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 7
+      - max_value: 2000000
+        min_days: 10
+      - max_value: null
+        min_days: 15
+
+    priority_modalidades: [5, 8, 13]
+    cnae_gate_threshold: 0.40
+
+  # ===========================================================================
+  # MATERIAIS ELÉTRICOS
+  # ===========================================================================
   materiais_eletricos:
     cnae_prefixes:
       - "2710"  # Fabricação de geradores, transformadores, motores
@@ -586,6 +1886,85 @@ sectors:
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "material eletrico|material elétrico"
+        - "cabo|fio (eletrico|elétrico)"
+        - "disjuntor|tomada|interruptor"
+        - "lampada|lâmpada|luminaria|luminária"
+        - "transformador"
+        - "quadro (eletrico|elétrico|de distribuicao|de distribuição)"
+        - "condutor"
+        - "eletroduto"
+        - "reator"
+        - "gerador"
+      strong_incompat:
+        - "\\bobra\\b|\\bconstrucao\\b|\\bconstrução\\b"
+        - "\\bmedicamento\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b"
+        - "\\bmerenda\\b"
+        - "\\bvigilância\\b"
+        - "\\bambulância\\b"
+      weak_compat:
+        - "elétric|eletric"
+        - "iluminação|iluminacao"
+
+    cross_sector_exclusions:
+      - "obra"
+      - "construção"
+      - "medicamento"
+      - "software"
+      - "uniforme"
+      - "merenda"
+      - "vigilância armada"
+      - "combustível"
+      - "ambulância"
+
+    competition_keywords:
+      - "material elétrico"
+      - "cabo"
+      - "fio"
+      - "lâmpada"
+      - "disjuntor"
+      - "tomada"
+      - "luminária"
+
+    weight_profile:
+      hab: 0.20
+      fin: 0.25
+      geo: 0.15
+      prazo: 0.20
+      comp: 0.20
+
+    base_win_rate: 0.10
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado de fornecimento de materiais elétricos similares"
+      certifications:
+        - "INMETRO (se aplicável)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 15
+      - max_value: null
+        min_days: 20
+
+    priority_modalidades: [5, 8, 13]
+    cnae_gate_threshold: 0.40
+
+  # ===========================================================================
+  # MATERIAIS HIDRÁULICOS
+  # ===========================================================================
   materiais_hidraulicos:
     cnae_prefixes:
       - "2222"  # Fabricação de tubos e acessórios plásticos
@@ -605,10 +1984,115 @@ sectors:
     cnae_refinements: {}
     incompatible_objects: {}
 
+    heuristic_patterns:
+      strong_compat:
+        - "material hidraulico|material hidráulico"
+        - "tubo|tubulacao|tubulação"
+        - "registro|valvula|válvula"
+        - "conexao|conexão (hidraulica|hidráulica)"
+        - "caixa d.?agua|caixa d.?água"
+        - "bomba (hidraulica|hidráulica|submersa|centrífuga)"
+        - "saneamento"
+        - "rede de agua|rede de água"
+        - "esgoto"
+      strong_incompat:
+        - "\\bmedicamento\\b"
+        - "\\bsoftware\\b|\\berp\\b"
+        - "\\buniforme\\b"
+        - "\\bmerenda\\b"
+        - "\\bvigilância\\b"
+        - "\\bcomputador\\b"
+        - "\\bambulância\\b"
+      weak_compat:
+        - "hidráulic|hidraulic"
+        - "encanamento"
+
+    cross_sector_exclusions:
+      - "medicamento"
+      - "software"
+      - "uniforme"
+      - "merenda"
+      - "vigilância armada"
+      - "combustível"
+      - "ambulância"
+      - "computador"
+
+    competition_keywords:
+      - "material hidráulico"
+      - "tubo"
+      - "tubulação"
+      - "registro"
+      - "válvula"
+      - "bomba"
+      - "saneamento"
+
+    weight_profile:
+      hab: 0.20
+      fin: 0.25
+      geo: 0.15
+      prazo: 0.20
+      comp: 0.20
+
+    base_win_rate: 0.10
+
+    habilitacao:
+      capital_minimo_pct: 0.05
+      atestados:
+        - "Atestado de fornecimento de materiais hidráulicos similares"
+      certifications:
+        - "INMETRO (se aplicável)"
+      fiscal:
+        - "CND Federal/Previdenciária"
+        - "CND Municipal"
+        - "CRF FGTS"
+        - "CNDT Trabalhista"
+
+    timeline_rules:
+      - max_value: 500000
+        min_days: 10
+      - max_value: 2000000
+        min_days: 15
+      - max_value: null
+        min_days: 20
+
+    priority_modalidades: [5, 8, 13]
+    cnae_gate_threshold: 0.40
+
 # =============================================================================
-# LLM Fallback Configuration
-# When map_sector() returns "Geral" (unknown CNAE), the LLM classifies
-# edital relevance using the company's CNAE description as context.
+# SECTOR DEFAULTS — fallback for any sector without explicit config
+# =============================================================================
+sector_defaults:
+  weight_profile:
+    hab: 0.25
+    fin: 0.25
+    geo: 0.15
+    prazo: 0.20
+    comp: 0.15
+  base_win_rate: 0.10
+  habilitacao:
+    capital_minimo_pct: 0.10
+    atestados:
+      - "Atestado de fornecimento ou serviço similar"
+    certifications: []
+    fiscal:
+      - "CND Federal/Previdenciária"
+      - "CND Municipal"
+      - "CRF FGTS"
+      - "CNDT Trabalhista"
+  timeline_rules:
+    - max_value: 500000
+      min_days: 15
+    - max_value: 2000000
+      min_days: 30
+    - max_value: null
+      min_days: 45
+  priority_modalidades: [5, 4, 6, 8]
+  cnae_gate_threshold: 0.45
+  cross_sector_exclusions: []
+  competition_keywords: []
+
+# =============================================================================
+# LLM Fallback Configuration — for ANY sector with low confidence
 # =============================================================================
 llm_fallback:
   enabled: true
@@ -617,6 +2101,8 @@ llm_fallback:
   timeout_s: 10
   # Fallback = REJECT on LLM failure (zero noise philosophy)
   on_failure: "reject"
+  # Confidence threshold below which LLM is invoked (any sector, not just "geral")
+  confidence_threshold: 0.40
   # Prompt template: {cnae_description} and {objeto} are interpolated
   prompt_template: |
     Você é um classificador de licitações públicas brasileiras.

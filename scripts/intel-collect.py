@@ -113,10 +113,10 @@ collect_sicaf = _crd.collect_sicaf
 collect_portal_transparencia = _crd.collect_portal_transparencia
 
 # LicitaJa client (optional source, priority 4)
+# LICITAJA_ENABLED flag removed — LicitaJa is always-on when API key is available.
 from licitaja_client import (
     collect_licitaja,
     build_keyword_groups,
-    LICITAJA_ENABLED,
     LICITAJA_API_KEY,
 )
 
@@ -172,49 +172,45 @@ SECTOR_DENSITY_OVERRIDES = {
     "demolicao": 0.005,
 }
 
-# Exclusion patterns applied BEFORE LLM review to reject obviously incompatible editais.
-# Any zero-keyword-match edital whose objeto matches one of these is rejected immediately
-# (cnae_compatible=False, needs_llm_review=False) without spending an LLM call.
-EXCLUSION_PATTERNS: list[tuple[str, re.Pattern]] = []
-_EXCLUSION_PATTERN_STRINGS: list[tuple[str, str]] = [
-    # Medical/Health
-    ("medical_health", r'(medicament|farmac|hospitalar|cirurg|laboratori|curativ|seringa|equipos|extensores|filtros.*processo.*254|luvas.*procedimento|aparelho.*medico|protese|ortese|implante.*medico|ventilador.*pulmonar|monitor.*multiparametr|desfibrilador|tomograf|ressonancia|ultrassom.*medico|endoscop|laparoscop|broncoscop|marcapasso|material.*hospitalar|rouparia.*hospitalar|colchoes.*hospitalar|camera.*mortuaria|servicos.*medicos|pediatria|ginecologia|anestesi|psiquiatr)'),
-    # Pharmaceuticals
-    ("pharmaceuticals", r'(valproato|acebrofilina|beclometasona|domperidona|alopurinol|brimonidina|omeprazol|losartana|metformina|insulina|dipirona|paracetamol|amoxicilina|azitromicina|\d+\s*mg\s*(comprimido|capsula|frasco|ampola|suspensao))'),
-    # Food/Nutrition
-    ("food_nutrition", r'(generos alimenticios|alimentacao.*escolar|merenda|refeicao|nutricao|carne.*embutido|leite.*derivado|hortifruti|padaria|alimento.*perecivel|kit.*lanche|cesta.*basica)'),
-    # Financial services
-    ("financial_services", r'(instituicao financeira|servicos bancarios|operacoes de credito|folha de pagamento.*banco|conta.*salario)'),
-    # IT/Software/Telecom
-    ("it_software_telecom", r'(software|sistema.{0,15}(informatica|gestao|erp|eletronico|gerenciamento de informac)|tecnologia da informacao|solucao hiperconverg|servidor.*rack|computador|notebook|impressora|scanner|red hat|jboss|subscricao|licenca.*software|outsourcing.*impressao|comunicacao multimidia|mpls|link.*dados|fibra optica.*rede|switch.*rede|roteador|firewall|storage|backup.*dados|datacenter|cloud.*computing)'),
-    # Surveillance/Security guards
-    ("surveillance_security_guards", r'(vigilancia.*patrimonial|controlador de acesso|vigia\b|porteiro|seguranca.*armada|monitoramento.*eletronico.*patrimon)'),
-    # Cleaning/Conservation
-    ("cleaning_conservation", r'(limpeza.{0,15}(asseio|conserva|predial|hospitalar)|servicos de conservacao e limpeza|coleta.{0,15}(residuo|lixo)|destinacao final.{0,15}residuo)'),
-    # Vehicles/Fuel (purchase, not road construction)
-    ("vehicles_fuel", r'(aquisicao de (veiculo|automovel|caminhao|onibus|ambulancia|motocicleta)|combustivel|gasolina|diesel|etanol|gas liquefeito|lubrificante)'),
-    # Uniforms/Office
-    ("uniforms_office", r'(uniforme|fardamento|vestuario|material de escritorio|papelaria|toner|cartucho)'),
-    # Energy purchase (not infrastructure)
-    ("energy_purchase", r'(aquisicao de energia eletrica|contratacao.{0,20}energia eletrica.*varejista|locacao.*usina.*energia)'),
-    # Equipment purchase (not construction-related)
-    ("equipment_purchase", r'(equipamentos perifericos.*sistema|equipamentos especiais.*paassex)'),
-    # Naval/Military specialized
-    ("naval_military", r'(construcao naval|lancha|embarcacao|navio|fragata|corveta|submarino)'),
-    # Pest control / mosquito
-    ("pest_control", r'(controle de (mosquit|pragas|vetores)|desinsetizacao|desratizacao)'),
-    # TV/Media operations
-    ("tv_media", r'(operacao.{0,15}(tv|televisao|radio|camera)|producao audiovisual)'),
-    # Kitchen equipment
-    ("kitchen_equipment", r'(equipamento.*cozinha industrial|balcao termico|fogao industrial|camera.*frigorifica.*cozinha)'),
-    # Specific medical equipment rental
-    ("medical_equipment_rental", r'(locacao.{0,20}equipamento.*medico|videolaparoscop|videobroncoscop)'),
-]
-for _pat_name, _pat_str in _EXCLUSION_PATTERN_STRINGS:
+# Cross-sector exclusions loaded dynamically from YAML per sector.
+# Each sector defines what is NOT relevant to it (e.g., engenharia excludes "medicamento").
+# This replaces the old universal EXCLUSION_PATTERNS that blocked ALL sectors.
+_EXCLUSION_PATTERNS_CACHE: dict[str, list] = {}
+
+
+def _get_exclusion_patterns_for_sector(sector_keys: set[str] | None = None) -> list:
+    """Build compiled exclusion patterns for given sector(s) from YAML config.
+
+    Returns list of compiled regex patterns that should reject editais for these sectors.
+    """
+    cache_key = ",".join(sorted(sector_keys or {"_default"}))
+    if cache_key in _EXCLUSION_PATTERNS_CACHE:
+        return _EXCLUSION_PATTERNS_CACHE[cache_key]
+
     try:
-        EXCLUSION_PATTERNS.append((_pat_name, re.compile(_pat_str, re.IGNORECASE)))
-    except re.error as _e:
-        print(f"WARNING: Failed to compile exclusion pattern '{_pat_name}': {_e}", file=sys.stderr)
+        from intel_sector_loader import get_cross_sector_exclusions
+        phrases: set[str] = set()
+        for sk in (sector_keys or {"_default"}):
+            phrases.update(get_cross_sector_exclusions(sk))
+
+        if not phrases:
+            _EXCLUSION_PATTERNS_CACHE[cache_key] = []
+            return []
+
+        # Compile each phrase as a case-insensitive regex with word boundaries.
+        # The matching in apply_cnae_keyword_gate already strips accents from objeto.
+        patterns = []
+        for phrase in phrases:
+            try:
+                patterns.append(re.compile(re.escape(phrase), re.IGNORECASE))
+            except re.error:
+                continue
+
+        _EXCLUSION_PATTERNS_CACHE[cache_key] = patterns
+        return patterns
+    except Exception:
+        _EXCLUSION_PATTERNS_CACHE[cache_key] = []
+        return []
 
 
 # ============================================================
@@ -945,8 +941,8 @@ def _get_sector_heuristic_patterns(sector_keys: set[str] | None = None) -> dict[
     """Build sector-aware heuristic patterns from intel_sectors_config.yaml.
 
     Returns dict with keys: strong_compat, weak_compat, strong_incompat.
-    Patterns come from the sector config; falls back to hardcoded construction
-    patterns only for engenharia/engenharia_rodoviaria/manutencao_predial sectors.
+    Patterns come exclusively from the YAML sector config. If a sector has no
+    patterns defined, returns empty (LLM fallback handles ambiguous cases).
     """
     cache_key = ",".join(sorted(sector_keys or {"geral"}))
     if cache_key in _SECTOR_HEURISTIC_CACHE:
@@ -988,47 +984,8 @@ def _get_sector_heuristic_patterns(sector_keys: set[str] | None = None) -> dict[
         "strong_incompat": _compile_list(incompat_pats),
     }
 
-    # Fallback: construction-sector hardcoded patterns (backward compat)
-    _construction_sectors = {"engenharia", "engenharia_rodoviaria", "manutencao_predial"}
-    _active = sector_keys or {"geral"}
-    if _active & _construction_sectors or (_active == {"geral"} and not any(result.values())):
-        if result["strong_compat"] is None:
-            result["strong_compat"] = re.compile(
-                r'(obra|construcao|reforma|ampliacao|restauracao|recuperacao|revitalizacao|'
-                r'pavimentacao|drenagem|terraplanagem|saneamento|urbanizacao|'
-                r'projeto (basico|executivo)|levantamento topografico|estudo geotecnico|'
-                r'fiscalizacao de obra|supervisao de obra|gerenciamento de obra|'
-                r'instalacoes (eletricas|hidraulicas|sanitarias)|'
-                r'impermeabilizacao|revestimento|alvenaria|concretagem|fundacao|'
-                r'estrutura metalica|cobertura|telhado|fachada|'
-                r'rede de (agua|esgoto|drenagem)|estacao (tratamento|elevatoria)|'
-                r'ponte|viaduto|passarela|muro de contencao|talude|'
-                r'sinalizacao (viaria|rodoviaria)|defensa|guard.?rail|'
-                r'CBUQ|massa asfaltica|base.*sub.?base|meio.?fio|sarjeta|boca.?de.?lobo)',
-                re.IGNORECASE
-            )
-        if result["weak_compat"] is None:
-            result["weak_compat"] = re.compile(
-                r'(engenharia|servicos de engenharia|manutencao predial|'
-                r'conservacao de (logradouro|via|estrada)|'
-                r'iluminacao publica|semaforo|'
-                r'ar condicionado|climatizacao|elevador|'
-                r'pintura|vidracaria|serralheria|marcenaria)',
-                re.IGNORECASE
-            )
-        if result["strong_incompat"] is None:
-            result["strong_incompat"] = re.compile(
-                r'(consultoria (juridica|contabil|tributaria|financeira|ambiental)|'
-                r'assessoria (juridica|contabil)|auditoria|'
-                r'transporte (escolar|publico|coletivo|passageiros)|fretamento|'
-                r'seguro (predial|patrimonial|vida|saude|automovel)|'
-                r'telefonia|internet|banda larga|'
-                r'publicidade|propaganda|marketing|'
-                r'capacitacao|treinamento|curso|'
-                r'locacao de (imovel|sala|espaco|galpao|veiculo)|'
-                r'servico de copa|coffee break|buffet|catering)',
-                re.IGNORECASE
-            )
+    # No hardcoded fallback — YAML heuristic_patterns is the sole source of truth.
+    # If YAML has no patterns for a sector, return empty (LLM fallback handles ambiguous cases).
 
     _SECTOR_HEURISTIC_CACHE[cache_key] = result
     return result
@@ -1221,8 +1178,9 @@ def apply_cnae_keyword_gate(
 
         # Exclusion pattern penalty: -30% for partial match (when not a full reject)
         _partial_exclusion_hit = False
+        _sector_exclusions = _get_exclusion_patterns_for_sector(_all_sectors)
         if len(matched_kws) > 0:  # Has some keywords, so not a full reject candidate
-            for _excl_name, _excl_pat in EXCLUSION_PATTERNS:
+            for _excl_pat in _sector_exclusions:
                 if _excl_pat.search(objeto_lower):
                     confidence -= 0.30
                     _partial_exclusion_hit = True
@@ -1256,12 +1214,12 @@ def apply_cnae_keyword_gate(
         # Exclusion pattern check: reject obviously incompatible editais BEFORE LLM review.
         # Only applies to zero-keyword-match editais that would otherwise be sent to LLM.
         if ed["needs_llm_review"]:
-            for _excl_name, _excl_pat in EXCLUSION_PATTERNS:
+            for _excl_pat in _sector_exclusions:
                 if _excl_pat.search(objeto_lower):
                     ed["cnae_compatible"] = False
                     ed["cnae_confidence"] = 0.0
                     ed["needs_llm_review"] = False
-                    ed["exclusion_reason"] = f"exclusion_pattern: {_excl_name}"
+                    ed["exclusion_reason"] = f"exclusion_pattern: {_excl_pat.pattern}"
                     stats["excluded_pattern"] += 1
                     break
 
@@ -1395,19 +1353,17 @@ def apply_llm_fallback_gate(
     max_concurrent: int = 5,
     model: str = "gpt-4.1-nano",
 ) -> dict[str, int]:
-    """Apply LLM classification to editais that need review when sector is unknown.
+    """Apply LLM classification to editais with low confidence, any sector.
 
-    Only runs when sector_key == "geral" (unknown CNAE mapping).
     Classifies editais with needs_llm_review=True using GPT.
+    Now sector-agnostic: runs for ANY sector when there are ambiguous editais.
     Mutates editais in place.
 
     Returns: stats dict with counts.
     """
     stats = {"llm_reviewed": 0, "llm_accepted": 0, "llm_rejected": 0, "llm_failed": 0}
 
-    if sector_key != "geral":
-        return stats
-
+    # LLM fallback now applies to ANY sector with low-confidence editais
     needs_review = [ed for ed in editais if ed.get("needs_llm_review")]
     if not needs_review:
         return stats
@@ -1427,7 +1383,7 @@ def apply_llm_fallback_gate(
     on_failure = llm_config.get("on_failure", "reject")
 
     print(f"  LLM fallback: classificando {len(needs_review)} editais ambiguos "
-          f"(setor=geral, CNAE={cnae_description[:60]}...)")
+          f"(setor={sector_key}, CNAE={cnae_description[:60]}...)")
 
     # Use ThreadPoolExecutor for parallel LLM calls
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_concurrent) as executor:
@@ -2676,7 +2632,7 @@ def main():
 
     # ── Step 3a: LicitaJa search (priority 4, sequential, after PNCP) ──
     elapsed_s = time.time() - t0
-    if LICITAJA_ENABLED and LICITAJA_API_KEY:
+    if LICITAJA_API_KEY:
         print(f"\n[3a/7] Busca LicitaJa (fonte complementar, 10 req/min)...")
         now_dt = datetime.now(timezone.utc)
         date_from_str = (now_dt - timedelta(days=dias)).strftime("%Y-%m-%d")
@@ -2705,7 +2661,7 @@ def main():
         for k, v in licitaja_stats.items():
             source_meta[k] = v
     else:
-        reason = "LICITAJA_ENABLED=false" if not LICITAJA_ENABLED else "sem API key"
+        reason = "sem LICITAJA_API_KEY"
         if not args.quiet:
             print(f"\n[3a/7] LicitaJa: pulado ({reason})")
         source_meta["licitaja_status"] = "DISABLED"
