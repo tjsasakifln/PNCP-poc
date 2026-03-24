@@ -2,45 +2,40 @@
 
 ## Purpose
 
-Gera um PDF de proposta comercial personalizada para um lead B2G de QUALQUER setor. A proposta apresenta o servico de consultoria em licitacoes — nao avalia editais nem faz analise de oportunidades (isso e trabalho do /intel-busca e /report-b2g).
+Gera um PDF de proposta comercial personalizada para um lead B2G de QUALQUER setor. A proposta apresenta o SERVICO de consultoria em licitacoes — o que sera entregue apos a contratacao. NAO busca editais, NAO analisa oportunidades, NAO apresenta metricas de mercado.
 
-**Output:** `docs/propostas/proposta-{CNPJ}-{slug}-{YYYY-MM-DD}.pdf` + `.md`
+**Output:** `docs/propostas/proposta-{CNPJ}-{slug}-{YYYY-MM-DD}.pdf`
 
 ---
 
 ## REGRAS CRITICAS (ler antes de executar)
 
-1. **NAO buscar editais individuais** — a proposta mostra volumes agregados do mercado, nunca lista editais
-2. **NAO buscar historico de contratos** — suprimido da proposta
-3. **NAO avaliar oportunidades** — a proposta VENDE o servico de monitoramento, nao FAZ o monitoramento
-4. **NAO usar termos de construcao/engenharia** — comando e 100% setor-agnostico
-5. **NAO referenciar cargo publico especifico** — autoridade e generica
-6. **NAO incluir datas de editais, calendarios ou prazos de encerramento**
-7. **Delegar coleta de dados ao script** — `python scripts/build-proposta-data.py {CNPJ}`
-8. **Delegar geracao PDF ao script** — `python scripts/generate-proposta-pdf.py --input {json} --output {pdf}`
+1. **NAO buscar editais** — a proposta nao consulta PNCP nem qualquer API de editais
+2. **NAO apresentar metricas de mercado** — zero volumes, zero valores agregados, zero "R$ X bilhoes"
+3. **NAO listar oportunidades abertas** — a proposta VENDE o servico, nao FAZ o monitoramento
+4. **NAO citar numero de fontes** — nunca "3 fontes", "PNCP + PCP + ComprasGov". Usar "monitoramento continuo das publicacoes oficiais"
+5. **NAO citar nomes de APIs ou portais** nas secoes voltadas ao cliente
+6. **NAO usar termos de construcao/engenharia** em textos genericos
+7. **NAO referenciar cargo publico especifico ou UF do consultor** — autoridade e generica
+8. **Delegar coleta de dados ao script** — `python scripts/build-proposta-data.py {CNPJ}`
+9. **Delegar geracao PDF ao script** — `python scripts/generate-proposta-pdf.py --input {json} --output {pdf}`
 
 ---
 
 ## Execucao (2 passos)
 
-### Passo 1: Gerar JSON de dados
+### Passo 1: Gerar JSON de dados (perfil empresa + setor)
 
 ```bash
 CNPJ_LIMPO=$(echo "{CNPJ}" | tr -d './-')
 python scripts/build-proposta-data.py ${CNPJ_LIMPO} --pacote semanal
 ```
 
-O script faz tudo automaticamente:
-- Coleta perfil da empresa (OpenCNPJ ou BrasilAPI)
-- Detecta setor via CNAE → `backend/sectors_data.yaml`
-- Busca editais PNCP por UF/modalidade e agrega volumes
-- Calcula UFs de abrangencia (vizinhas da sede)
-- Gera campos setor-agnosticos (setor_intro, autoridade_exemplos, uf_abrangencia)
+O script coleta APENAS:
+- Perfil da empresa (BrasilAPI)
+- Deteccao de setor via CNAE
+- UFs de abrangencia (vizinhas da sede)
 - Salva em `docs/propostas/data-{CNPJ}-{YYYY-MM-DD}.json`
-
-Se o script falhar (ex: yaml nao encontrado), coletar APENAS:
-- OpenCNPJ: `curl -s "https://api.opencnpj.org/${CNPJ_LIMPO}"`
-- Montar JSON manualmente seguindo o schema abaixo
 
 ### Passo 2: Gerar PDF
 
@@ -67,21 +62,16 @@ Desconto anual: pague 10, leve 12.
 
 ---
 
-## Estrutura do PDF (11 secoes)
-
-O script `generate-proposta-pdf.py` gera todas as secoes automaticamente a partir do JSON. Nao e necessario construir o PDF manualmente.
+## Estrutura do PDF (8 secoes)
 
 1. **Capa** — data, validade 15 dias, CNPJ, nome
-2. **Carta ao Decisor** — usa `setor_intro` do JSON (generico por setor)
-3. **Diagnostico da Empresa** — dados cadastrais, pontos fortes/atencao (sem historico de contratos)
-4. **Panorama do Mercado** — volumes agregados por faixa de valor e modalidade (sem editais individuais)
-5. **Dimensionamento da Oportunidade** — ROI, COM vs SEM monitoramento, projecao anual
-6. **O Que Cada Relatorio Entrega** — alinhado com /intel-busca (top 20, 17 campos, analise documental)
-7. **Pacotes de Monitoramento** — 3 tiers com UFs dinamicas do JSON
-8. **Retorno do Investimento** — cenarios e analise de sensibilidade
-9. **Quem Analisa Seus Editais** — autoridade generica via `autoridade_exemplos` do JSON
-10. **Condicoes Comerciais** — preco, oferta limitada, forma de pagamento
-11. **Proximos Passos** — CTA generico, plano de acao
+2. **Carta ao Decisor** — setor-agnostica, foco no servico
+3. **Diagnostico da Empresa** — dados cadastrais, pontos fortes (sem historico de contratos)
+4. **O Que Nosso Trabalho Entrega** — processo de analise (6 etapas), entregaveis, diferenciais do servico
+5. **Por Que Monitoramento Continuo** — COM vs SEM, logica do retorno (generico)
+6. **Pacotes de Monitoramento** — 3 tiers com UFs dinamicas
+7. **Quem Analisa Seus Editais** — autoridade generica, tecnologia, diferenciais
+8. **Condicoes Comerciais + Proximos Passos** — preco, oferta, CTA
 
 ---
 
@@ -89,31 +79,20 @@ O script `generate-proposta-pdf.py` gera todas as secoes automaticamente a parti
 
 - Editais individuais com datas, objetos, orgaos ou links
 - Historico de contratos ou faturamento governamental
-- Calendario de editais em andamento
-- "Mapa Competitivo", "Querido Diario", "Diarios Oficiais"
+- Metricas de mercado (volume, valor total, distribuicao)
+- Numero de fontes de dados ("3 fontes", nomes de APIs)
 - Cargo publico especifico (ex: "engenheiro da SIE/SC")
-- Experiencia setorial especifica (ex: "acompanhei obras", "execucoes de obras")
-- Termos de construcao civil (ex: "pavimentacao", "infraestrutura", "obra") em textos genericos
-- Qualquer hardcoding de UFs (ex: "SC+PR+RS")
+- Hardcoding de UFs (ex: "SC+PR+RS")
+- Termos de construcao civil em textos genericos
+- Qualquer dado que sugira busca de editais reais
 
----
+## Quality Gate (automatico)
 
-## JSON Schema (referencia)
-
-```json
-{
-  "empresa": { "razao_social": "...", "nome_fantasia": "...", "cnpj": "...", "cnae_principal": "...", "porte": "...", "capital_social": 0, "cidade_sede": "...", "uf_sede": "...", "qsa": [], "sancoes": {} },
-  "setor": "Nome do Setor",
-  "setor_intro": "Como consultor especializado em licitacoes publicas, acompanho o volume de contratacoes no setor de {setor}...",
-  "uf_abrangencia": { "semanal": ["UF1", "UF2", "UF3"], "diario": ["UF1", "UF2", "UF3", "UF4", "UF5"] },
-  "taxa_vitoria_setor": 0.20,
-  "autoridade_exemplos": ["bullet 1", "bullet 2", "bullet 3", "bullet 4"],
-  "editais": [],
-  "resumo_executivo": { "texto": "...", "destaques": [] },
-  "inteligencia_mercado": { "distribuicao_municipio": {}, "valor_total_mercado": 0, "modalidades": {} },
-  "proximos_passos": []
-}
-```
+O script `build-proposta-data.py` valida:
+- Razao social encontrada
+- CNAE detectado para setor especifico
+- Situacao cadastral ATIVA
+- Dados minimos presentes
 
 ---
 

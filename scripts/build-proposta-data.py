@@ -1,18 +1,19 @@
 """
-Build sector-agnostic proposta JSON for any CNPJ from PNCP data.
+Build proposta JSON for any CNPJ — company profile + service presentation only.
+
+NO edital searches, NO market metrics, NO PNCP queries.
+The proposal sells the monitoring SERVICE, not specific opportunities.
 
 Usage:
     python scripts/build-proposta-data.py 09225035000101
     python scripts/build-proposta-data.py 09225035000101 --pacote semanal
-    python scripts/build-proposta-data.py 09225035000101 --pacote diario --days 15
 """
 
 import argparse
 import json
 import sys
 import urllib.request
-from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -21,16 +22,11 @@ import yaml
 # Constants
 # ---------------------------------------------------------------------------
 
-CAPITAL_MULTIPLIER = 10
-PNCP_BASE = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao"
 BRASILAPI_CNPJ = "https://brasilapi.com.br/api/cnpj/v1"
-MODALIDADES = [4, 5]  # 4=Concorrência, 5=Pregão Eletrônico
-MAX_PAGES = 5
-PAGE_SIZE = 50
 REQUEST_TIMEOUT = 20
 USER_AGENT = "Mozilla/5.0 (SmartLic/1.0)"
 
-# Sector-agnostic authority examples (apply to any B2G sector)
+# Sector-agnostic authority examples
 AUTORIDADE_EXEMPLOS = [
     (
         "Análise de centenas de processos licitatórios — identificação dos "
@@ -88,95 +84,50 @@ UF_NEIGHBORS: dict[str, list[str]] = {
 # Extended CNAE→sector mapping (4-digit prefix → sector key in sectors_data.yaml)
 CNAE_TO_SECTOR: dict[str, str] = {
     # Vestuário
-    "4781": "vestuario",
-    "1412": "vestuario",
-    "1411": "vestuario",
-    "1413": "vestuario",
-    "1414": "vestuario",
+    "4781": "vestuario", "1412": "vestuario", "1411": "vestuario",
+    "1413": "vestuario", "1414": "vestuario",
     # Alimentos
-    "1011": "alimentos",
-    "1091": "alimentos",
-    "1092": "alimentos",
-    "1093": "alimentos",
-    "5611": "alimentos",
-    "5612": "alimentos",
+    "1011": "alimentos", "1091": "alimentos", "1092": "alimentos",
+    "1093": "alimentos", "5611": "alimentos", "5612": "alimentos",
     "5620": "alimentos",
     # Informática / TI
-    "6201": "informatica",
-    "6202": "informatica",
-    "6203": "informatica",
-    "6204": "informatica",
-    "4751": "informatica",
+    "6201": "informatica", "6202": "informatica", "6203": "informatica",
+    "6204": "informatica", "4751": "informatica",
     # Software
-    "6209": "software",
-    "6311": "software",
+    "6209": "software", "6311": "software",
     # Engenharia / Construção
-    "4120": "engenharia",
-    "4211": "engenharia",
-    "4212": "engenharia",
-    "4213": "engenharia",
-    "4221": "engenharia",
-    "4222": "engenharia",
-    "4223": "engenharia",
-    "4291": "engenharia",
-    "4292": "engenharia",
-    "4299": "engenharia",
-    "4311": "engenharia",
-    "4312": "engenharia",
-    "4313": "engenharia",
-    "4319": "engenharia",
-    "4321": "engenharia",
-    "4322": "engenharia",
-    "4329": "engenharia",
-    "4330": "engenharia",
-    "4391": "engenharia",
-    "4399": "engenharia",
-    "7111": "engenharia",
+    "4120": "engenharia", "4211": "engenharia", "4212": "engenharia",
+    "4213": "engenharia", "4221": "engenharia", "4222": "engenharia",
+    "4223": "engenharia", "4291": "engenharia", "4292": "engenharia",
+    "4299": "engenharia", "4311": "engenharia", "4312": "engenharia",
+    "4313": "engenharia", "4319": "engenharia", "4321": "engenharia",
+    "4322": "engenharia", "4329": "engenharia", "4330": "engenharia",
+    "4391": "engenharia", "4399": "engenharia", "7111": "engenharia",
     "7112": "engenharia",
-    # Engenharia Rodoviária
-    "4211": "engenharia_rodoviaria",
     # Facilities
-    "8121": "facilities",
-    "8122": "facilities",
-    "8129": "facilities",
+    "8121": "facilities", "8122": "facilities", "8129": "facilities",
     "8130": "facilities",
     # Vigilância / Segurança
-    "8011": "vigilancia",
-    "8012": "vigilancia",
-    "8020": "vigilancia",
+    "8011": "vigilancia", "8012": "vigilancia", "8020": "vigilancia",
     # Saúde
-    "8610": "saude",
-    "8621": "saude",
-    "8622": "saude",
-    "8630": "saude",
-    "3250": "saude",
+    "8610": "saude", "8621": "saude", "8622": "saude", "8630": "saude",
+    "3250": "saude", "4644": "saude", "4645": "saude", "4664": "saude",
     # Transporte
-    "4921": "transporte",
-    "4922": "transporte",
-    "4923": "transporte",
-    "4930": "transporte",
-    "4950": "transporte",
+    "4921": "transporte", "4922": "transporte", "4923": "transporte",
+    "4930": "transporte", "4950": "transporte",
     # Mobiliário
-    "3101": "mobiliario",
-    "3102": "mobiliario",
-    "3103": "mobiliario",
+    "3101": "mobiliario", "3102": "mobiliario", "3103": "mobiliario",
     "3104": "mobiliario",
     # Papelaria / Material de Escritório
-    "4761": "papelaria",
-    "1710": "papelaria",
-    "1721": "papelaria",
+    "4761": "papelaria", "1710": "papelaria", "1721": "papelaria",
     # Manutenção Predial
-    "4330": "manutencao_predial",
     "8111": "manutencao_predial",
     # Materiais Elétricos
-    "2710": "materiais_eletricos",
-    "2731": "materiais_eletricos",
-    "2732": "materiais_eletricos",
-    "2733": "materiais_eletricos",
+    "2710": "materiais_eletricos", "2731": "materiais_eletricos",
+    "2732": "materiais_eletricos", "2733": "materiais_eletricos",
     "4742": "materiais_eletricos",
     # Materiais Hidráulicos
-    "2223": "materiais_hidraulicos",
-    "4744": "materiais_hidraulicos",
+    "2223": "materiais_hidraulicos", "4744": "materiais_hidraulicos",
 }
 
 
@@ -218,26 +169,19 @@ def _load_sectors_yaml() -> dict:
     return data.get("sectors", {})
 
 
-def _detect_sector(cnae_principal: str, sectors: dict) -> tuple[str, str, list[str]]:
-    """
-    Detect sector from CNAE principal code.
-
-    Returns (sector_key, sector_name, keywords).
-    Falls back to generic keywords extracted from CNAE description.
-    """
+def _detect_sector(cnae_principal: str, sectors: dict) -> tuple[str, str]:
+    """Detect sector from CNAE principal code. Returns (sector_key, sector_name)."""
     prefix = _extract_cnae_prefix(cnae_principal)
     sector_key = CNAE_TO_SECTOR.get(prefix)
 
     if sector_key and sector_key in sectors:
         sec = sectors[sector_key]
-        return sector_key, sec["name"], sec.get("keywords", [])
+        return sector_key, sec["name"]
 
-    # Fallback: extract keywords from CNAE description
-    # cnae_principal might be "4120400 - Construcao de edificios"
+    # Fallback: extract name from CNAE description
     desc_part = cnae_principal.split("-", 1)[1].strip() if "-" in cnae_principal else ""
-    generic_kw = [w.lower().strip() for w in desc_part.split() if len(w) > 3]
     sector_name = desc_part or "Geral"
-    return "generico", sector_name, generic_kw
+    return "generico", sector_name
 
 
 def _uf_abrangencia(uf_sede: str) -> dict[str, list[str]]:
@@ -248,25 +192,8 @@ def _uf_abrangencia(uf_sede: str) -> dict[str, list[str]]:
     return {"semanal": semanal, "diario": diario}
 
 
-def _value_range_label(valor: float) -> str:
-    """Classify value into a range bucket."""
-    if valor <= 0:
-        return "sem_valor"
-    if valor < 100_000:
-        return "ate_100k"
-    if valor < 500_000:
-        return "100k_500k"
-    if valor < 1_000_000:
-        return "500k_1M"
-    if valor < 5_000_000:
-        return "1M_5M"
-    if valor < 10_000_000:
-        return "5M_10M"
-    return "acima_10M"
-
-
 # ---------------------------------------------------------------------------
-# Data collection
+# Data collection (company profile only — NO edital searches)
 # ---------------------------------------------------------------------------
 
 
@@ -280,72 +207,13 @@ def fetch_empresa(cnpj: str) -> dict:
     return data
 
 
-def fetch_editais(ufs: list[str], keywords: list[str], days: int = 30) -> list[dict]:
-    """Fetch editais from PNCP for given UFs, filtered by sector keywords."""
-    today = datetime.now()
-    data_ini = (today - timedelta(days=days)).strftime("%Y%m%d")
-    data_fim = today.strftime("%Y%m%d")
-
-    editais_raw: list[dict] = []
-    for uf in ufs:
-        for modalidade in MODALIDADES:
-            for page in range(1, MAX_PAGES + 1):
-                url = (
-                    f"{PNCP_BASE}"
-                    f"?dataInicial={data_ini}&dataFinal={data_fim}"
-                    f"&uf={uf}&codigoModalidadeContratacao={modalidade}"
-                    f"&pagina={page}&tamanhoPagina={PAGE_SIZE}"
-                )
-                data = _http_get_json(url)
-                if not data:
-                    break
-                items = data.get("data", data.get("content", []))
-                editais_raw.extend(items)
-                total = data.get("totalRegistros", data.get("totalElements", 0))
-                print(
-                    f"  UF={uf} mod={modalidade} pg={page}: "
-                    f"{len(items)} items (total: {total})"
-                )
-                if len(items) < PAGE_SIZE:
-                    break
-
-    # Dedup by numeroControlePNCP
-    seen: set[str] = set()
-    unique: list[dict] = []
-    for e in editais_raw:
-        nctrl = e.get("numeroControlePNCP", "")
-        if nctrl and nctrl not in seen:
-            seen.add(nctrl)
-            unique.append(e)
-
-    print(f"  Total raw: {len(editais_raw)}, unique: {len(seen)}")
-
-    # Filter by keywords
-    kw_lower = [kw.lower() for kw in keywords if kw]
-    if not kw_lower:
-        return unique  # No keywords = return all
-
-    relevant = []
-    for e in unique:
-        obj = (e.get("objetoCompra", "") or "").lower()
-        if any(kw in obj for kw in kw_lower):
-            relevant.append(e)
-
-    print(f"  Keyword-matched: {len(relevant)}")
-    return relevant
-
-
 # ---------------------------------------------------------------------------
 # JSON building
 # ---------------------------------------------------------------------------
 
 
-def build_proposta_json(
-    cnpj: str,
-    pacote: str = "semanal",
-    days: int = 30,
-) -> dict:
-    """Build the full proposta JSON for a given CNPJ."""
+def build_proposta_json(cnpj: str, pacote: str = "semanal") -> dict:
+    """Build proposta JSON — company profile + service presentation only."""
     today = datetime.now()
     sectors = _load_sectors_yaml()
 
@@ -366,7 +234,6 @@ def build_proposta_json(
     uf_sede = emp_raw.get("uf", "SP")
     cidade_sede = emp_raw.get("municipio", "")
     capital_str = emp_raw.get("capital_social", "0")
-    # BrasilAPI returns capital_social as number or string
     if isinstance(capital_str, str):
         capital = float(capital_str.replace(",", ".").replace(".", "", capital_str.count(".") - 1)) if capital_str else 0.0
     else:
@@ -413,104 +280,11 @@ def build_proposta_json(
     }
 
     # --- Sector detection ---
-    sector_key, sector_name, keywords = _detect_sector(cnae_display, sectors)
+    sector_key, sector_name = _detect_sector(cnae_display, sectors)
     print(f"Detected sector: {sector_name} (key={sector_key})")
 
     # --- UF coverage ---
     uf_cov = _uf_abrangencia(uf_sede)
-    search_ufs = uf_cov.get(pacote, uf_cov["semanal"])
-
-    # --- Fetch editais ---
-    print(f"Fetching editais for UFs={search_ufs}, days={days}...")
-    editais_all = fetch_editais(search_ufs, keywords, days=days)
-
-    # --- Process editais ---
-    threshold = capital * CAPITAL_MULTIPLIER if capital > 0 else float("inf")
-    editais_internal: list[dict] = []
-
-    for e in sorted(
-        editais_all,
-        key=lambda x: float(x.get("valorTotalEstimado", 0) or 0),
-        reverse=True,
-    ):
-        val = float(e.get("valorTotalEstimado", 0) or 0)
-        if 0 < val < 50_000:
-            continue
-
-        mun = e.get("unidadeOrgao", {}).get("municipioNome", "") or ""
-        uf = e.get("unidadeOrgao", {}).get("ufSigla", "") or uf_sede
-        orgao = e.get("orgaoEntidade", {}).get("razaoSocial", "") or ""
-        obj = e.get("objetoCompra", "") or ""
-        mod = e.get("modalidadeNome", "") or ""
-        data_enc = (e.get("dataEncerramentoProposta", "") or "")[:10]
-        data_pub = (e.get("dataPublicacaoPncp", "") or "")[:10]
-        num = e.get("numeroControlePNCP", "") or ""
-
-        try:
-            enc = datetime.strptime(data_enc, "%Y-%m-%d")
-            dias = (enc - today).days
-        except Exception:
-            dias = -1
-
-        # Skip already closed
-        if dias < 0 and data_enc:
-            continue
-
-        # Recommendation based on capital threshold
-        if val <= 0:
-            rec = "PARTICIPAR"
-            motivo = "Sem valor estimado — verificar edital"
-        elif val <= threshold:
-            rec = "PARTICIPAR"
-            motivo = f"Valor compatível com capital social de R$ {capital:,.0f}"
-        elif val <= threshold * 3:
-            rec = "PARTICIPAR"
-            motivo = "Valor acima do capital mas viável com experiência técnica"
-        else:
-            rec = "AVALIAR COM CAUTELA"
-            motivo = "Valor elevado para o porte — considerar consórcio"
-
-        editais_internal.append({
-            "objeto": obj,
-            "orgao": orgao,
-            "uf": uf,
-            "municipio": mun,
-            "valor_estimado": val,
-            "modalidade": mod,
-            "data_publicacao": data_pub,
-            "data_encerramento": data_enc,
-            "dias_restantes": dias,
-            "numero_controle": num,
-            "situacao": "Divulgada no PNCP",
-            "recomendacao": rec,
-            "motivo_recomendacao": motivo,
-        })
-
-    # Cap at top 20
-    editais_internal = editais_internal[:20]
-
-    # --- Market aggregates ---
-    mercado_volume = len(editais_internal)
-    mercado_valor_total = sum(e["valor_estimado"] for e in editais_internal)
-
-    mercado_por_faixa: dict[str, int] = Counter()
-    for e in editais_internal:
-        mercado_por_faixa[_value_range_label(e["valor_estimado"])] += 1
-
-    mercado_por_modalidade: dict[str, dict] = {}
-    for e in editais_internal:
-        m = e["modalidade"]
-        if m not in mercado_por_modalidade:
-            mercado_por_modalidade[m] = {"count": 0, "valor": 0}
-        mercado_por_modalidade[m]["count"] += 1
-        mercado_por_modalidade[m]["valor"] += e["valor_estimado"]
-
-    mun_dist = Counter(e["municipio"] for e in editais_internal)
-    uf_dist = Counter(e["uf"] for e in editais_internal)
-    n_participar = sum(1 for e in editais_internal if e["recomendacao"] == "PARTICIPAR")
-    n_avaliar = sum(
-        1 for e in editais_internal if e["recomendacao"] == "AVALIAR COM CAUTELA"
-    )
 
     # --- Company age ---
     try:
@@ -519,7 +293,9 @@ def build_proposta_json(
     except Exception:
         anos_mercado = 0
 
-    # --- Build output ---
+    n_cnaes = len([c.strip() for c in cnaes_sec.split(",") if c.strip()]) if cnaes_sec else 0
+
+    # --- Build output (service presentation, NO editais) ---
     output = {
         "empresa": empresa,
         "setor": sector_name,
@@ -532,92 +308,36 @@ def build_proposta_json(
         "uf_abrangencia": uf_cov,
         "taxa_vitoria_setor": 0.20,
         "autoridade_exemplos": AUTORIDADE_EXEMPLOS,
-        "mercado_volume": mercado_volume,
-        "mercado_valor_total": mercado_valor_total,
-        "mercado_por_faixa": dict(mercado_por_faixa),
-        "mercado_por_modalidade": mercado_por_modalidade,
-        "editais": editais_internal,
-        "resumo_executivo": {
-            "texto": (
-                f"A {razao_social}, sediada em {cidade_sede}/{uf_sede}"
-                + (f" com {anos_mercado} anos de mercado" if anos_mercado else "")
-                + (f" e capital social de R$ {capital:,.0f}" if capital else "")
-                + f", atua no setor de {sector_name}"
-                + (f" (CNAE {cnae_code})" if cnae_code else "")
-                + f". A varredura PNCP de {today.strftime('%d/%m/%Y')} identificou "
-                + f"{mercado_volume} editais relevantes em {', '.join(search_ufs)} "
-                + f"nos últimos {days} dias, totalizando R$ {mercado_valor_total:,.0f} "
-                + f"em valor estimado. Destes, {n_participar} editais são diretamente "
-                + f"compatíveis com o porte da empresa"
-                + (
-                    f", e {n_avaliar} merecem avaliação cuidadosa por valor elevado"
-                    if n_avaliar
-                    else ""
-                )
-                + "."
-            ),
-            "destaques": [
-                f"{n_participar} editais com recomendação PARTICIPAR",
-                *(
-                    [f"{n_avaliar} editais para AVALIAR COM CAUTELA"]
-                    if n_avaliar
-                    else []
-                ),
-                f"Total de {mercado_volume} oportunidades mapeadas em {', '.join(search_ufs)}",
-                *(
-                    [
-                        f"Empresa com {anos_mercado} anos de mercado, sem sanções "
-                        f"(CEIS/CNEP/CEPIM/CEAF limpos)"
-                    ]
-                    if anos_mercado
-                    else []
-                ),
-            ],
-        },
-        "inteligencia_mercado": {
-            "distribuicao_uf": dict(uf_dist.most_common()),
-            "distribuicao_municipio": dict(mun_dist.most_common(20)),
-            "valor_total_mercado": mercado_valor_total,
-            "modalidades": mercado_por_modalidade,
-            "fonte": "PNCP - Portal Nacional de Contratações Públicas (pncp.gov.br)",
-            "periodo_analise": (
-                f"{(today - timedelta(days=days)).strftime('%d/%m/%Y')} a "
-                f"{today.strftime('%d/%m/%Y')}"
-            ),
-        },
-        "proximos_passos": [
-            {
-                "acao": (
-                    "Revisar editais com recomendação PARTICIPAR e verificar "
-                    "requisitos de habilitação"
-                ),
-                "prazo": (today + timedelta(days=3)).strftime("%Y-%m-%d"),
-            },
-            {
-                "acao": (
-                    "Preparar documentação de habilitação (CRF, certidões, "
-                    "atestados de capacidade técnica)"
-                ),
-                "prazo": (today + timedelta(days=7)).strftime("%Y-%m-%d"),
-            },
-            {
-                "acao": (
-                    "Elaborar propostas de preço para editais com encerramento "
-                    "mais próximo"
-                ),
-                "prazo": (today + timedelta(days=10)).strftime("%Y-%m-%d"),
-            },
-            {
-                "acao": (
-                    "Submeter propostas nos sistemas eletrônicos "
-                    "(Compras.gov.br, Licitanet, BLL)"
-                ),
-                "prazo": (today + timedelta(days=14)).strftime("%Y-%m-%d"),
-            },
-        ],
+        "anos_mercado": anos_mercado,
+        "n_cnaes": n_cnaes + 1,  # principal + secondary
     }
 
     return output
+
+
+# ---------------------------------------------------------------------------
+# Quality Gate
+# ---------------------------------------------------------------------------
+
+
+def _run_quality_gates(output: dict) -> list[str]:
+    """Validate proposta data quality. Returns list of failure messages."""
+    failures: list[str] = []
+    emp = output.get("empresa", {})
+
+    if not emp.get("razao_social"):
+        failures.append("G1: Razão social não encontrada — dados da empresa incompletos")
+
+    if not emp.get("cnae_principal"):
+        failures.append("G2: CNAE principal não detectado — setor pode estar impreciso")
+
+    if output.get("setor") == "Geral":
+        failures.append("G3: Setor genérico — CNAE não mapeado para setor específico")
+
+    if emp.get("situacao_cadastral", "").upper() not in ("ATIVA", ""):
+        failures.append(f"G4: Empresa com situação '{emp.get('situacao_cadastral')}' — verificar antes de enviar")
+
+    return failures
 
 
 # ---------------------------------------------------------------------------
@@ -627,20 +347,14 @@ def build_proposta_json(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build sector-agnostic proposta JSON from PNCP data."
+        description="Build proposta JSON — company profile + service presentation."
     )
     parser.add_argument("cnpj", help="CNPJ (digits only, e.g. 09225035000101)")
     parser.add_argument(
         "--pacote",
-        choices=["semanal", "diario"],
+        choices=["mensal", "semanal", "diario"],
         default="semanal",
-        help="Coverage package: semanal (sede+2 UFs) or diario (sede+4 UFs)",
-    )
-    parser.add_argument(
-        "--days",
-        type=int,
-        default=30,
-        help="Number of days to look back (default: 30)",
+        help="Coverage package (default: semanal)",
     )
     parser.add_argument(
         "--output",
@@ -656,7 +370,16 @@ def main() -> None:
 
     print(f"=== Build Proposta Data: CNPJ {cnpj} | pacote={args.pacote} ===\n")
 
-    output = build_proposta_json(cnpj, pacote=args.pacote, days=args.days)
+    output = build_proposta_json(cnpj, pacote=args.pacote)
+
+    # Quality Gate
+    failures = _run_quality_gates(output)
+    if failures:
+        print(f"\n[QUALITY GATE] {len(failures)} alerta(s):")
+        for f in failures:
+            print(f"  [!]  {f}")
+    else:
+        print("\n[QUALITY GATE] [OK] Todas as verificações passaram")
 
     today = datetime.now()
     out_path = args.output or (
@@ -667,19 +390,9 @@ def main() -> None:
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
-    mercado = output["mercado_volume"]
-    valor = output["mercado_valor_total"]
-    n_part = sum(
-        1 for e in output["editais"] if e["recomendacao"] == "PARTICIPAR"
-    )
-    n_aval = sum(
-        1 for e in output["editais"] if e["recomendacao"] == "AVALIAR COM CAUTELA"
-    )
-
     print(f"\nJSON salvo: {out_path}")
     print(f"Setor: {output['setor']}")
-    print(f"Editais: {mercado}, Valor total: R$ {valor:,.0f}")
-    print(f"PARTICIPAR: {n_part}, AVALIAR: {n_aval}")
+    print(f"UFs: {output['uf_abrangencia']}")
 
 
 if __name__ == "__main__":
