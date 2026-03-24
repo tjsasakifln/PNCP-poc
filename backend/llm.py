@@ -28,6 +28,11 @@ from schemas import ResumoLicitacoes
 from excel import parse_datetime
 
 
+def _fmt_brl(value: float) -> str:
+    """Format float as pt-BR currency (e.g., 360.366,00)."""
+    return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 def gerar_resumo(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
     """
     Generate AI-powered executive summary of procurement bids using GPT-4.1-nano.
@@ -203,7 +208,7 @@ def format_resumo_html(resumo: ResumoLicitacoes) -> str:
                 <span class="stat-label">Licitações</span>
             </div>
             <div class="stat">
-                <span class="stat-value">R$ {resumo.valor_total:,.2f}</span>
+                <span class="stat-value">R$ {_fmt_brl(resumo.valor_total)}</span>
                 <span class="stat-label">Valor Total</span>
             </div>
         </div>
@@ -294,7 +299,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
     )[:3]
 
     destaques = [
-        f"{lic.get('nomeOrgao', 'N/A')}: R$ {(lic.get('valorTotalEstimado') or 0):,.2f}"
+        f"{lic.get('nomeOrgao', 'N/A')}: R$ {_fmt_brl(lic.get('valorTotalEstimado') or 0)}"
         for lic in top_valor
     ]
 
@@ -317,7 +322,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
     return ResumoLicitacoes(
         resumo_executivo=(
             f"Encontradas {total} licitações de uniformes "
-            f"totalizando R$ {valor_total:,.2f}."
+            f"totalizando R$ {_fmt_brl(valor_total)}."
         ),
         total_oportunidades=total,
         valor_total=valor_total,

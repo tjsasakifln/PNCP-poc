@@ -489,6 +489,28 @@ async def buscar_licitacoes(
     try:
         response = await pipeline.run(ctx)
 
+        # CRIT-PIPELINE-FIX: Defensive fallback if pipeline returned None
+        # (e.g., stage_generate early return didn't propagate through _run_stages)
+        if response is None:
+            response = ctx.response
+        if response is None:
+            logger.error(
+                f"Pipeline returned None for search {request.search_id} — building empty response"
+            )
+            from llm import gerar_resumo_fallback
+            response = BuscaResponse(
+                resumo=gerar_resumo_fallback([], request.setor_id or ""),
+                licitacoes=[],
+                excel_base64=None,
+                excel_available=False,
+                quota_used=0,
+                quota_remaining=0,
+                total_raw=len(ctx.licitacoes_raw),
+                total_filtrado=0,
+                filter_stats=ctx.filter_stats or {},
+                response_state=ctx.response_state or "empty_failure",
+            )
+
         # STORY-320 AC3: Apply trial paywall truncation (sync path)
         response = _apply_trial_paywall(response, user)
 

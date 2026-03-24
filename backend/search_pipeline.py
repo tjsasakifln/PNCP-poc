@@ -105,6 +105,7 @@ class SearchPipeline:
                 await traced_stage(_tracer, ctx, span_name, stage_fns[fn_key])
             if sm:
                 await sm.transition_to(SearchState.COMPLETED, stage="persist")
+            return ctx.response
         finally:
             ACTIVE_SEARCHES.dec()
             elapsed_s = sync_time_module.time() - ctx.start_time
