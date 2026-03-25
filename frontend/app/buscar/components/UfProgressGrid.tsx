@@ -88,7 +88,8 @@ const statusConfigs: Record<UfStatusType, StatusConfig> = {
     label: (status: UfStatus) => status.attempt ? `Tentativa ${status.attempt}...` : "Retentando...",
   },
   success: successWithResultsConfig,
-  failed: {
+  // BUG-004: "partial" — at least 1 source succeeded for this UF, others failed
+  partial: {
     bg: "bg-amber-50 dark:bg-amber-900/20",
     text: "text-amber-600 dark:text-amber-500",
     border: "border-amber-200 dark:border-amber-700/40",
@@ -97,7 +98,25 @@ const statusConfigs: Record<UfStatusType, StatusConfig> = {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
       </svg>
     ),
-    label: () => "Fonte lenta",
+    label: (status: UfStatus) => {
+      const count = status.count ?? 0;
+      if (count > 0) {
+        return count === 1 ? "1 oport. (parcial)" : `${count} oport. (parcial)`;
+      }
+      return "Parcial";
+    },
+  },
+  // BUG-004: "failed" = ALL sources failed for this UF → red "Indisponível"
+  failed: {
+    bg: "bg-red-50 dark:bg-red-900/20",
+    text: "text-red-600 dark:text-red-500",
+    border: "border-red-200 dark:border-red-700/40",
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    ),
+    label: () => "Indisponível",
   },
   recovered: {
     bg: "bg-emerald-50 dark:bg-emerald-900/20",

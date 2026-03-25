@@ -825,6 +825,9 @@ GLOBAL_EXCLUSION_OVERRIDES: Dict[str, Set[str]] = {
         "locacao de veiculo", "locacao de veiculos",
         "aluguel de veiculo", "aluguel de veiculos",
     },
+    "engenharia": {
+        "construcao de muro", "construcao de cerca",
+    },
     "engenharia_rodoviaria": {
         "construcao de muro", "construcao de cerca",
     },

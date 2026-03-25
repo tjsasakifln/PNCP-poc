@@ -121,7 +121,7 @@ describe('STORY-326 AC5: UfProgressGrid', () => {
     expect(screen.getByText('Consultando...')).toBeInTheDocument();
   });
 
-  it('failed UF shows "Fonte lenta"', () => {
+  it('failed UF shows "Indisponível"', () => {
     const statuses = new Map<string, UfStatus>([
       ['MG', { status: 'failed' }],
     ]);
@@ -129,7 +129,18 @@ describe('STORY-326 AC5: UfProgressGrid', () => {
     render(<UfProgressGrid ufStatuses={statuses} totalFound={0} />);
 
     expect(screen.getByText('MG')).toBeInTheDocument();
-    expect(screen.getByText('Fonte lenta')).toBeInTheDocument();
+    expect(screen.getByText('Indisponível')).toBeInTheDocument();
+  });
+
+  it('partial UF shows "Parcial"', () => {
+    const statuses = new Map<string, UfStatus>([
+      ['SP', { status: 'partial', count: 5 }],
+    ]);
+
+    render(<UfProgressGrid ufStatuses={statuses} totalFound={5} />);
+
+    expect(screen.getByText('SP')).toBeInTheDocument();
+    expect(screen.getByText('5 oport. (parcial)')).toBeInTheDocument();
   });
 
   it('recovered UF shows "N oportunidades (recuperado)"', () => {

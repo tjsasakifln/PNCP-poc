@@ -130,7 +130,7 @@ export interface RefreshAvailableInfo {
   removedCount: number;
 }
 
-export type UfStatusType = 'pending' | 'fetching' | 'retrying' | 'success' | 'failed' | 'recovered';
+export type UfStatusType = 'pending' | 'fetching' | 'retrying' | 'success' | 'failed' | 'recovered' | 'partial';
 
 export interface UfStatus {
   status: UfStatusType;
@@ -364,7 +364,23 @@ export function useSearchSSE({
         };
         setUfStatuses(prev => {
           const next = new Map(prev);
-          next.set(ufEvent.uf, { status: ufEvent.status, count: ufEvent.count, attempt: ufEvent.attempt });
+          const existing = next.get(ufEvent.uf);
+          // BUG-004: Aggregate multi-source results. If a source already succeeded for this UF,
+          // a subsequent failure from another source should not overwrite to "failed".
+          // Instead show "partial" (yellow) to indicate at least one source delivered data.
+          let resolvedStatus = ufEvent.status;
+          if (existing) {
+            const existingSucceeded = existing.status === 'success' || existing.status === 'recovered' || existing.status === 'partial';
+            const incomingFailed = ufEvent.status === 'failed';
+            const existingFailed = existing.status === 'failed' || existing.status === 'partial';
+            const incomingSucceeded = ufEvent.status === 'success' || ufEvent.status === 'recovered';
+            if (existingSucceeded && incomingFailed) {
+              resolvedStatus = 'partial';
+            } else if (existingFailed && incomingSucceeded) {
+              resolvedStatus = 'partial';
+            }
+          }
+          next.set(ufEvent.uf, { status: resolvedStatus, count: ufEvent.count ?? existing?.count, attempt: ufEvent.attempt });
           return next;
         });
         onUfStatusRef.current?.(ufEvent);
@@ -601,7 +617,21 @@ export function useSearchSSE({
         const ufEvent: UfStatusEvent = JSON.parse(e.data);
         setUfStatuses(prev => {
           const next = new Map(prev);
-          next.set(ufEvent.uf, { status: ufEvent.status, count: ufEvent.count, attempt: ufEvent.attempt });
+          const existing = next.get(ufEvent.uf);
+          // BUG-004: Same aggregation logic as handleMessage — preserve best-case status
+          let resolvedStatus = ufEvent.status;
+          if (existing) {
+            const existingSucceeded = existing.status === 'success' || existing.status === 'recovered' || existing.status === 'partial';
+            const incomingFailed = ufEvent.status === 'failed';
+            const existingFailed = existing.status === 'failed' || existing.status === 'partial';
+            const incomingSucceeded = ufEvent.status === 'success' || ufEvent.status === 'recovered';
+            if (existingSucceeded && incomingFailed) {
+              resolvedStatus = 'partial';
+            } else if (existingFailed && incomingSucceeded) {
+              resolvedStatus = 'partial';
+            }
+          }
+          next.set(ufEvent.uf, { status: resolvedStatus, count: ufEvent.count ?? existing?.count, attempt: ufEvent.attempt });
           return next;
         });
         onUfStatusRef.current?.(ufEvent);

@@ -20,7 +20,13 @@ export function AlertNotificationBell() {
   >([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [featureDisabled, setFeatureDisabled] = useState(false);
+  const [featureDisabled, setFeatureDisabled] = useState(() => {
+    try {
+      return sessionStorage.getItem("smartlic_alerts_disabled") === "true";
+    } catch {
+      return false;
+    }
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch unread alert count
@@ -32,6 +38,7 @@ export function AlertNotificationBell() {
       });
       // UX-434: 404 means alerts feature disabled — stop polling
       if (res.status === 404) {
+        try { sessionStorage.setItem("smartlic_alerts_disabled", "true"); } catch { /* ignore */ }
         setFeatureDisabled(true);
         return;
       }

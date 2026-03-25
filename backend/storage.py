@@ -6,7 +6,7 @@ horizontal scaling by removing filesystem dependencies.
 Architecture:
 - Bucket: excel-reports (auto-created if not exists)
 - File path: {timestamp}_{search_id}.xlsx
-- TTL: 60 minutes (signed URL expiry)
+- TTL: 24 hours (signed URL expiry, aligned with L2 cache TTL)
 - Graceful fallback: Returns None if upload fails
 """
 
@@ -18,7 +18,7 @@ from typing import Optional, Dict, Any
 logger = logging.getLogger(__name__)
 
 BUCKET_NAME = "excel-reports"
-SIGNED_URL_TTL = 3600  # 60 minutes in seconds
+SIGNED_URL_TTL = 86400  # 24 hours in seconds (aligned with L2 cache TTL)
 
 
 def _get_storage():

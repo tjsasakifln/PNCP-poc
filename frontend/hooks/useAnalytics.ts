@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import mixpanel from 'mixpanel-browser';
 import { getCookieConsent } from '../app/components/CookieConsentBanner';
 
@@ -76,7 +77,7 @@ export const useAnalytics = () => {
    * Track an event with optional properties.
    * Only fires if analytics consent is granted.
    */
-  const trackEvent = (eventName: string, properties?: Record<string, any>) => {
+  const trackEvent = useCallback((eventName: string, properties?: Record<string, any>) => {
     if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN && hasAnalyticsConsent()) {
       try {
         mixpanel.track(eventName, {
@@ -88,14 +89,14 @@ export const useAnalytics = () => {
         console.warn('Analytics tracking failed:', error);
       }
     }
-  };
+  }, []);
 
   /**
    * Identify a user for Mixpanel people profiles.
    * Only fires if analytics consent is granted (LGPD AC8).
    * STORY-219 AC10: Sets user properties for segmentation.
    */
-  const identifyUser = (userId: string, properties?: Record<string, any>) => {
+  const identifyUser = useCallback((userId: string, properties?: Record<string, any>) => {
     if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN && hasAnalyticsConsent()) {
       try {
         mixpanel.identify(userId);
@@ -106,14 +107,14 @@ export const useAnalytics = () => {
         console.warn('User identification failed:', error);
       }
     }
-  };
+  }, []);
 
   /**
    * Reset Mixpanel identity on logout.
    * Generates new distinct_id so post-logout events are anonymous.
    * STORY-219 AC11.
    */
-  const resetUser = () => {
+  const resetUser = useCallback(() => {
     if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) {
       try {
         mixpanel.reset();
@@ -121,14 +122,14 @@ export const useAnalytics = () => {
         console.warn('Mixpanel reset failed:', error);
       }
     }
-  };
+  }, []);
 
   /**
    * Track page view. Only fires if analytics consent is granted.
    */
-  const trackPageView = (pageName: string) => {
+  const trackPageView = useCallback((pageName: string) => {
     trackEvent('page_view', { page: pageName });
-  };
+  }, [trackEvent]);
 
   return {
     trackEvent,

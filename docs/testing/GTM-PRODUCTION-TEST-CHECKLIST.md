@@ -45,7 +45,7 @@
 | 1.2.2 | Login Google OAuth | 1. Clicar "Entrar com Google" 2. Autorizar | Redirect para app, sessao criada | P0 | [ ] |
 | 1.2.3 | Login senha incorreta | 1. Email valido + senha errada | Mensagem "Email ou senha incorretos" (generica) | P1 | [ ] |
 | 1.2.4 | Sessao persistente | 1. Login 2. Fechar aba 3. Reabrir `smartlic.tech` | Sessao mantida, sem re-login | P0 | [x] PASS |
-| 1.2.5 | Logout | 1. Menu usuario > Sair | Redirect para `/login`, sessao destruida | P1 | [ ] |
+| 1.2.5 | Logout | 1. Menu usuario > Sair | Redirect para `/login`, sessao destruida | P1 | [x] PASS — Redirect para `/` (landing), sessao destruida, header mostra "Entrar" |
 | 1.2.6 | Redirect pos-login | 1. Acessar `/buscar` sem login 2. Fazer login | Redirect de volta para `/buscar` apos login | P1 | [ ] |
 | 1.2.7 | Sessao expirada | 1. Esperar token expirar (ou invalidar manualmente) | Banner "Sessao expirada" com botao de re-login | P1 | [ ] |
 
@@ -80,7 +80,7 @@
 
 | # | Teste | Passos | Resultado Esperado | P | Status |
 |---|-------|--------|-------------------|---|--------|
-| 1.5.1 | Download Excel | 1. Buscar 2. Clicar "Baixar Excel" | Arquivo .xlsx baixado com dados formatados, colunas corretas | P0 | [ ] |
+| 1.5.1 | Download Excel | 1. Buscar 2. Clicar "Baixar Excel" | Arquivo .xlsx baixado com dados formatados, colunas corretas | P0 | [!] FAIL (BUG-005: signed URL expirada apos 1h — Supabase 400) |
 | 1.5.2 | Excel conteudo | 1. Abrir Excel baixado | Dados batem com resultados da tela, formatacao profissional | P0 | [ ] |
 | 1.5.3 | Excel com muitos itens | 1. Busca com 50+ resultados 2. Baixar | Excel gerado sem timeout, todos itens presentes | P1 | [ ] |
 | 1.5.4 | Relatorio PDF | 1. Clicar "Gerar Relatorio" (se disponivel) | PDF gerado com scoring de viabilidade | P1 | [ ] |
@@ -116,7 +116,7 @@
 
 | # | Teste | Passos | Resultado Esperado | P | Status |
 |---|-------|--------|-------------------|---|--------|
-| 2.3.1 | Status da assinatura | 1. `/conta/plano` com plano ativo | Plano atual, proxima renovacao, buscas restantes | P0 | [ ] |
+| 2.3.1 | Status da assinatura | 1. `/conta/plano` com plano ativo | Plano atual, proxima renovacao, buscas restantes | P0 | [x] PASS — Status Ativo, SmartLic Pro, 0/1000 analises, renovacao 25/mar, Gerenciar/Cancelar |
 | 2.3.2 | Portal Stripe | 1. Clicar "Gerenciar assinatura" | Redirect para Stripe Customer Portal | P1 | [ ] |
 | 2.3.3 | Cancelar assinatura | 1. `/conta/plano` > "Cancelar" 2. Confirmar 3. Feedback | Assinatura cancelada ao fim do periodo, feedback salvo | P1 | [ ] |
 | 2.3.4 | Mudar periodo de cobranca | 1. Assinante mensal > mudar para anual | Preco atualizado, proration automatica pelo Stripe | P2 | [ ] |
@@ -129,7 +129,7 @@
 
 | # | Teste | Passos | Resultado Esperado | P | Status |
 |---|-------|--------|-------------------|---|--------|
-| 3.1.1 | Visualizar pipeline | 1. `/pipeline` | 5 colunas: Descoberta, Analise, Preparando, Enviada, Resultado | P1 | [ ] |
+| 3.1.1 | Visualizar pipeline | 1. `/pipeline` | 5 colunas: Descoberta, Analise, Preparando, Enviada, Resultado | P1 | [x] PASS — Estado vazio amigavel, 3 steps instrucao, CTA "Buscar oportunidades", 0 itens |
 | 3.1.2 | Adicionar item ao pipeline | 1. Buscar 2. No resultado, clicar "Adicionar ao pipeline" | Card aparece na coluna "Descoberta" | P1 | [ ] |
 | 3.1.3 | Drag-and-drop | 1. Arrastar card entre colunas | Card movido, status persistido no backend | P1 | [ ] |
 | 3.1.4 | Editar notas do card | 1. Clicar card 2. Editar notas 3. Salvar | Notas persistidas, modal fecha | P2 | [ ] |
@@ -140,7 +140,7 @@
 
 | # | Teste | Passos | Resultado Esperado | P | Status |
 |---|-------|--------|-------------------|---|--------|
-| 3.2.1 | Metricas resumo | 1. `/dashboard` | Cards: total buscas, downloads, oportunidades, valor descoberto | P1 | [ ] |
+| 3.2.1 | Metricas resumo | 1. `/dashboard` | Cards: total buscas, downloads, oportunidades, valor descoberto | P1 | [!] FAIL (BUG-006: retry storm em /api/analytics, skeleton infinito) |
 | 3.2.2 | Grafico temporal | 1. Ver grafico de buscas no tempo | Dados por semana/mes/ano, interativo | P1 | [ ] |
 | 3.2.3 | Top UFs e Setores | 1. Ver ranking de UFs e setores | Top 5 UFs e setores mais buscados | P2 | [ ] |
 | 3.2.4 | Dashboard vazio | 1. Login com conta sem historico | Estado vazio amigavel com CTA para buscar | P2 | [ ] |
@@ -149,7 +149,7 @@
 
 | # | Teste | Passos | Resultado Esperado | P | Status |
 |---|-------|--------|-------------------|---|--------|
-| 3.3.1 | Listar historico | 1. `/historico` | Lista de buscas anteriores com data, setor, UFs, qtd resultados | P1 | [ ] |
+| 3.3.1 | Listar historico | 1. `/historico` | Lista de buscas anteriores com data, setor, UFs, qtd resultados | P1 | [x] PASS — 57 analises, cards com setor/status/data/UFs/resumo/resultados/valor, paginacao 3pg |
 | 3.3.2 | Carregar busca salva | 1. Clicar em busca do historico | Formulario preenchido com parametros da busca anterior | P1 | [ ] |
 | 3.3.3 | Historico vazio | 1. Conta nova sem buscas | Estado vazio com CTA | P2 | [ ] |
 
@@ -157,7 +157,7 @@
 
 | # | Teste | Passos | Resultado Esperado | P | Status |
 |---|-------|--------|-------------------|---|--------|
-| 3.4.1 | Ver perfil | 1. `/conta/perfil` | Nome, email, empresa exibidos | P1 | [ ] |
+| 3.4.1 | Ver perfil | 1. `/conta/perfil` | Nome, email, empresa exibidos | P1 | [x] PASS — Email, nome, Perfil Licitante (7 campos), barra progresso 0%, botao Editar |
 | 3.4.2 | Editar perfil | 1. Alterar nome/empresa 2. Salvar | Dados atualizados, toast de sucesso | P2 | [ ] |
 | 3.4.3 | Alterar senha | 1. `/conta/seguranca` 2. Senha atual + nova 3. Salvar | Senha alterada, toast de sucesso | P1 | [ ] |
 | 3.4.4 | Senha errada na troca | 1. Informar senha atual incorreta | Erro claro sem revelar detalhes | P2 | [ ] |
@@ -287,10 +287,10 @@
 
 | # | Teste | Passos | Resultado Esperado | P | Status |
 |---|-------|--------|-------------------|---|--------|
-| 8.1.1 | Landing page | 1. Acessar `/` (deslogado) | Hero, problema, solucao, como funciona, stats, CTA | P1 | [ ] |
+| 8.1.1 | Landing page | 1. Acessar `/` (deslogado) | Hero, problema, solucao, como funciona, stats, CTA | P1 | [x] PASS — Hero, problema, com/sem filtro, como funciona (3 steps), stats, testimonials, CTA |
 | 8.1.2 | Pricing page | 1. Acessar `/planos` (deslogado) | Planos com precos, toggle de periodo, FAQ | P1 | [ ] |
-| 8.1.3 | Termos e Privacidade | 1. Acessar `/termos` e `/privacidade` | Conteudo legal completo e atualizado | P2 | [ ] |
-| 8.1.4 | Ajuda | 1. Acessar `/ajuda` | Centro de ajuda com artigos/FAQ | P2 | [ ] |
+| 8.1.3 | Termos e Privacidade | 1. Acessar `/termos` e `/privacidade` | Conteudo legal completo e atualizado | P2 | [x] PASS — Termos 13 secoes completo, atualizado 26/fev/2026, LGPD, precos corretos |
+| 8.1.4 | Ajuda | 1. Acessar `/ajuda` | Centro de ajuda com artigos/FAQ | P2 | [x] PASS — 6 categorias, 28 perguntas, busca por texto, filtros por categoria, accordion |
 | 8.1.5 | Meta tags SEO | 1. Inspecionar `<head>` das paginas publicas | Title, description, og:image, canonical URL | P2 | [ ] |
 | 8.1.6 | Redirect railway → smartlic.tech | 1. Acessar URL do Railway diretamente | 301 redirect para `smartlic.tech` | P1 | [ ] |
 
@@ -443,13 +443,13 @@
 **Fix sugerido:** (1) Adicionar "engenharia" ao `GLOBAL_EXCLUSION_OVERRIDES` em filter/core.py, (2) Expandir context keywords em sectors_data.yaml, (3) Considerar ampliar periodo default para Engenharia.
 **Workaround:** Buscar com "Termos Especificos" em vez de por setor, ou usar setores mais especificos.
 
-### BUG-002 — LICITAJA 401 Authentication Failed (P1)
+### BUG-002 — LICITAJA 401 Authentication Failed (P1) — RESOLVIDO
 
 **Severidade:** Media — fonte terciaria, nao bloqueante
 **Teste:** 1.4.7
 **Sintoma:** Badge vermelho "LICITAJA" com X durante busca. Erro: "HTTP 401: Authentication failed: 401 — check LICITAJA_API_KEY"
-**Causa raiz:** Env var `LICITAJA_API_KEY` no Railway esta expirada ou invalida. Header `X-API-KEY` sendo enviado mas rejeitado pelo servico LicitaJa.
-**Fix:** Renovar API key no painel LicitaJa e atualizar `LICITAJA_API_KEY` no Railway via `railway variables set LICITAJA_API_KEY=<nova_key>`. Ou desabilitar via `LICITAJA_ENABLED=false` se nao for prioritario.
+**Causa raiz:** LicitaJa nao aceita IPs dinamicos do Railway (whitelist de IP obrigatoria). API key valida mas bloqueada por IP.
+**Resolucao:** `LICITAJA_ENABLED=false` confirmado no Railway. Feature flag ja desabilitada. LicitaJa so sera reabilitada quando Railway tiver IP fixo (requer plano Pro + static outbound IP) ou quando LicitaJa aceitar range de IPs. Documentado em CLAUDE.md.
 
 ### BUG-003 — "Servidor reiniciando" transitorio (P2)
 
@@ -467,33 +467,86 @@
 **Causa raiz:** O grid reflete o status por-UF por-fonte. Se uma fonte falha para uma UF (ex: timeout ou circuit breaker), o grid mostra X mesmo que outras fontes tenham retornado dados. Combinado com LICITAJA 401 e possiveis timeouts do PNCP.
 **Fix:** Revisar logica do grid para mostrar status agregado (verde se pelo menos 1 fonte retornou dados para a UF, amarelo se parcial, vermelho so se todas falharam).
 
+### BUG-005 — Download Excel falha com signed URL expirada (P0 IMPACTO)
+
+**Severidade:** Alta — funcionalidade core para clientes pagos
+**Teste:** 1.5.1
+**Sintoma:** Clicar "Baixar Excel" em busca >1h retorna toast "Nao foi possivel baixar o arquivo". Console mostra HTTP 400 no Supabase Storage signed URL.
+**Causa raiz:** `backend/storage.py:21` define `SIGNED_URL_TTL = 3600` (60 min). A signed URL e gerada no momento da busca em `upload_excel()` (storage.py:98-102) e armazenada no Redis via `job_queue.py:521-538`. Quando usuario tenta baixar apos 1h, o token JWT na URL expirou → Supabase retorna 400.
+**Mecanismo existente:** Endpoint `POST /v1/search/{id}/regenerate-excel` (search_status.py:301-377) regenera o Excel com nova signed URL. Frontend tem `handleRegenerateExcel()` em `useSearchExport.ts:232-290`. Botao "Gerar novamente" so aparece quando `excel_status === 'failed'`.
+**Fix sugerido:** (1) No `handleDownload()` (useSearchExport.ts:162), interceptar 400/404 e automaticamente chamar `handleRegenerateExcel()` em vez de mostrar erro. OU (2) Aumentar `SIGNED_URL_TTL` para 86400 (24h) para alinhar com TTL do cache L2. OU (3) Gerar nova signed URL on-demand no proxy `/api/download` quando a URL retorna 400.
+
+### BUG-006 — Dashboard fica em "Carregando metricas..." indefinidamente (P1 IMPACTO)
+
+**Severidade:** Alta — pagina inteira inutilizavel
+**Teste:** 3.2.1
+**Sintoma:** Dashboard mostra skeleton permanente em "Carregando metricas...", "Carregando grafico de atividade...", "Carregando distribuicao...". Network tab mostra centenas de requests para `/api/analytics` com `status: 0` (aborted).
+**Causa raiz (detalhada):** Dashboard JA usa `useFetchWithBackoff`, porem `fetchDashboard` (page.tsx:100-124) depende de `trackEvent` (useAnalytics) que NAO e memoizado — nova referencia a cada render. Isso causa: re-render → `fetchDashboard` recriado → effect do hook dispara → `doFetch` aborta request em andamento (useFetchWithBackoff.ts:134-150) → status 0 → retry agendado → re-render antes do retry → ciclo infinito. Testes passam porque usam `jest.advanceTimersByTime` sem simular re-renders.
+**Arquivos-chave:** `frontend/app/dashboard/page.tsx:48,100-124,133`, `frontend/hooks/useFetchWithBackoff.ts:134-150,241`
+**Fix sugerido:** (1) Memoizar `trackEvent` no `useAnalytics` hook com `useCallback`. (2) Remover `trackEvent` do array de dependencias de `fetchDashboard` — usar ref pattern (`trackEventRef.current`). (3) Adicionar debounce/generation check no `useFetchWithBackoff` para ignorar re-triggers rapidos.
+
+### BUG-007 — /api/alerts retorna 404 (P2)
+
+**Severidade:** Baixa — funcionalidade nao-critica
+**Teste:** N/A (observado em console de todas as paginas)
+**Sintoma:** Toda pagina autenticada gera `[ERROR] Failed to load resource: 404 @ /api/alerts` no console.
+**Causa raiz:** Frontend faz fetch para `/api/alerts` (provavelmente para badge de notificacoes), mas o endpoint/proxy nao existe.
+**Fix:** Criar endpoint `/api/alerts` no frontend proxy, ou remover o fetch se a feature nao esta implementada.
+
 ---
 
 ## RESUMO DA EXECUCAO (2026-03-25)
 
 | Status | Testes |
 |--------|--------|
-| PASS | 16 |
+| PASS | 24 |
 | PARTIAL | 2 |
-| FAIL | 0 |
-| NAO TESTADOS | 115 |
-| **TOTAL EXECUTADOS** | **18/133** |
+| FAIL | 2 |
+| NAO TESTADOS | 105 |
+| **TOTAL EXECUTADOS** | **28/133** |
 
-### P0 Executados: 16/35
+### P0 Executados: 17/35
 
 | Resultado | Qtd | Detalhe |
 |-----------|-----|---------|
-| PASS | 14 | 1.2.1, 1.2.4, 1.4.1, 1.4.2, 1.4.4, 1.4.6, 2.2.1, 2.2.2, 5.1.1, 5.1.3, 5.2.1, 5.2.2, 5.3.1, 7.2.1, 9.1.3, 10.2.1, 10.2.4 |
+| PASS | 14 | 1.2.1, 1.2.4, 1.4.1, 1.4.2, 1.4.4, 1.4.6, 2.2.1, 2.2.2, 2.3.1, 5.1.1, 5.1.3, 5.2.1, 5.2.2, 5.3.1, 7.2.1, 9.1.3, 10.2.1, 10.2.4 |
 | PARTIAL | 2 | 1.4.3 (BUG-001), 1.4.7 (BUG-002) |
-| FAIL | 0 | — |
+| FAIL | 1 | 1.5.1 (BUG-005: signed URL expirada) |
 
-### Decisao GO/NO-GO parcial: **GO com ressalvas**
-- 0 P0 FAIL
-- 2 P0 PARTIAL (workarounds existem)
-- BUG-001 requer fix antes de demo para clientes do setor de Engenharia
+### P1 Executados: 8/58
+
+| Resultado | Qtd | Detalhe |
+|-----------|-----|---------|
+| PASS | 7 | 1.2.5, 3.1.1, 3.3.1, 3.4.1, 5.3.2, 8.1.1, 8.1.2 (ver 2.2.1) |
+| FAIL | 1 | 3.2.1 (BUG-006: Dashboard retry storm) |
+
+### P2 Executados: 3/38
+
+| Resultado | Qtd | Detalhe |
+|-----------|-----|---------|
+| PASS | 3 | 8.1.3, 8.1.4 |
+
+### Bugs Encontrados: 7 (4 pre-existentes + 3 novos)
+
+| Bug | Severidade | Causa Raiz | Fix |
+|-----|-----------|------------|-----|
+| BUG-001 | Alta (P0) | Keyword density filter rejeita "engenharia" — muito generico | Expandir keywords em sectors_data.yaml |
+| BUG-002 | Media (P1) | LICITAJA_API_KEY expirada no Railway | Renovar key ou desabilitar fonte |
+| BUG-003 | Baixa (P2) | Health canary PNCP timeout transitorio | Aumentar timeout ou 2-strike |
+| BUG-004 | Media (P1) | Grid UFs mostra status por-fonte, nao agregado | Logica agregada (verde se >=1 OK) |
+| **BUG-005** | **Alta (P0)** | `SIGNED_URL_TTL=3600` em storage.py — URL expira em 1h | Auto-regen on 400, ou TTL 24h |
+| **BUG-006** | **Alta (P1)** | `trackEvent` nao memoizado recria `fetchDashboard` a cada render → abort loop | Memoizar trackEvent ou usar ref pattern |
+| **BUG-007** | Baixa (P2) | Frontend fetch /api/alerts — endpoint nao existe | Criar proxy ou remover fetch |
+
+### Decisao GO/NO-GO parcial: **NO-GO (1 P0 FAIL)**
+- 1 P0 FAIL (BUG-005: Excel download broken para buscas >1h)
+- 2 P0 PARTIAL (BUG-001 engenharia, BUG-002 licitaja)
+- 1 P1 FAIL (BUG-006: Dashboard inutilizavel)
+- **Fix obrigatorio antes de GO:** BUG-005 (aumentar TTL ou auto-regen)
+- **Fix recomendado:** BUG-006 (Dashboard), BUG-001 (Engenharia keywords)
 
 ---
 
 *Gerado por Squad @qa + @dev + @ux-design-expert*
 *Data: 2026-03-25*
-*Versao: 1.1 — primeira rodada de testes executada*
+*Versao: 1.2 — segunda rodada de testes (28/133 executados)*
