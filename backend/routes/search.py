@@ -325,7 +325,11 @@ async def buscar_licitacoes(
                     return response
 
         except Exception as cache_err:
-            logger.debug(f"CRIT-CORE-001: Pre-async cache check failed (falling through): {cache_err}")
+            logger.error(
+                f"CRIT-CORE-001: Pre-async cache check failed (falling through): "
+                f"{type(cache_err).__name__}: {cache_err}",
+                exc_info=True,
+            )
 
     # -----------------------------------------------------------------------
     # STORY-363: Async search — ARQ Worker (primary) with in-process fallback
