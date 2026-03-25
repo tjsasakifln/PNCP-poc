@@ -515,6 +515,10 @@ async def buscar_licitacoes(
                 response_state=ctx.response_state or "empty_failure",
             )
 
+        # Store results for PDF/reports endpoint access (sync path was missing this)
+        if request.search_id and response:
+            store_background_results(request.search_id, response)
+
         # STORY-320 AC3: Apply trial paywall truncation (sync path)
         response = _apply_trial_paywall(response, user)
 
