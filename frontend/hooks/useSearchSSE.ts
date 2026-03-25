@@ -555,7 +555,7 @@ export function useSearchSSE({
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
         }
-        const res = await fetch(`/api/buscar?endpoint=search/${encodeURIComponent(sid)}/status`, {
+        const res = await fetch(`/api/search-status?search_id=${encodeURIComponent(sid)}`, {
           headers,
         });
         if (!res.ok) return;

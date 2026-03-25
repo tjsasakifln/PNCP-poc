@@ -1,7 +1,7 @@
 /**
  * API Proxy Route — GET /api/buscar-results/{searchId}
  *
- * GTM-RESILIENCE-A04 AC9: Proxies to backend GET /v1/buscar-results/{search_id}
+ * GTM-RESILIENCE-A04 AC9: Proxies to backend GET /v1/search/{search_id}/results
  * to fetch live results from a completed background fetch (progressive delivery).
  */
 
@@ -46,7 +46,7 @@ export async function GET(
 
   try {
     const backendResponse = await fetch(
-      `${backendUrl}/v1/buscar-results/${encodeURIComponent(searchId)}`,
+      `${backendUrl}/v1/search/${encodeURIComponent(searchId)}/results`,
       { headers },
     );
 

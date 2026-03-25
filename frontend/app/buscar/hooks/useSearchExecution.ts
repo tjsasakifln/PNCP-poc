@@ -234,7 +234,7 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
     setSkeletonTimeoutReached(false);
     const activeId = asyncSearchIdRef.current || searchId;
     if (activeId && session?.access_token) {
-      fetch(`/api/v1/search/${encodeURIComponent(activeId)}/cancel`, {
+      fetch(`/api/search-cancel?search_id=${encodeURIComponent(activeId)}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       }).catch(() => {});
