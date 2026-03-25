@@ -191,7 +191,7 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
         asyncSearchIdRef.current = null;
         setLoading(false);
         setError({
-          message: "A análise demorou mais que o esperado. Tente novamente — se o problema persistir, reduza o número de estados.",
+          message: "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Sugestão: tente novamente — resultados parciais podem estar disponíveis.",
           rawMessage: "Async safety timeout after 120s",
           errorCode: "ASYNC_TIMEOUT",
           searchId: searchId || "",
@@ -646,7 +646,7 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
           } catch { /* ignore */ }
           // CRIT-070 AC2: Abort without partial must show error, never return silently
           const abortError: SearchError = {
-            message: "A análise demorou mais que o esperado. Tente com menos estados.",
+            message: "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Tente novamente — resultados parciais podem estar disponíveis.",
             rawMessage: "Client timeout triggered after 65s",
             errorCode: "CLIENT_TIMEOUT",
             searchId: newSearchId,

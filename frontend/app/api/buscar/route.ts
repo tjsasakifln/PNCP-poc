@@ -15,7 +15,7 @@ function getContextualErrorMessage(status: number, detail?: string): string {
     case 500: return "Ocorreu um erro interno. Tente novamente em alguns segundos.";
     case 502: return "Nossos servidores estão se atualizando. Tente novamente em 30 segundos.";
     case 503: return "Nossos servidores estão se atualizando. Tente novamente em 30 segundos.";
-    case 524: return "A análise demorou mais que o esperado. Tente com menos estados ou um período menor.";
+    case 524: return "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Tente novamente — resultados parciais podem estar disponíveis.";
     default: return "Erro inesperado. Tente novamente ou reduza o número de UFs selecionadas.";
   }
 }
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
           if (isTimeout) {
             return NextResponse.json(
               {
-                message: "A análise demorou mais que o esperado. Tente reduzir o número de estados ou usar um período menor.",
+                message: "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Tente novamente — resultados parciais podem estar disponíveis.",
                 error_code: "CLIENT_TIMEOUT",
               },
               { status: 524 }

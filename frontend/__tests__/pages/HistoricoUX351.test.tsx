@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import HistoricoPage from '../../app/historico/page';
 
@@ -216,6 +216,9 @@ describe('UX-351: Historico Funcional', () => {
 
       render(<HistoricoPage />);
 
+      // Click "Todas" to show all statuses (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
+
       await waitFor(() => {
         const badge = screen.getByTestId('status-badge-processing');
         expect(badge).toHaveTextContent('Em andamento');
@@ -257,6 +260,9 @@ describe('UX-351: Historico Funcional', () => {
       mockUseSessions.mockReturnValue(processingReturn);
 
       const { rerender } = render(<HistoricoPage />);
+
+      // Click "Todas" to show all statuses (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       // Initially shows processing
       await waitFor(() => {
@@ -307,6 +313,9 @@ describe('UX-351: Historico Funcional', () => {
 
       render(<HistoricoPage />);
 
+      // Click "Todas" to show all statuses (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
+
       await waitFor(() => {
         const badge = screen.getByTestId('status-badge-failed');
         expect(badge).toHaveTextContent('Falhou');
@@ -324,6 +333,9 @@ describe('UX-351: Historico Funcional', () => {
       });
 
       render(<HistoricoPage />);
+
+      // Click "Todas" to show all statuses (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       await waitFor(() => {
         const badge = screen.getByTestId('status-badge-timed_out');
@@ -469,6 +481,9 @@ describe('UX-351: Historico Funcional', () => {
 
       render(<HistoricoPage />);
 
+      // Click "Todas" to show all statuses (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
+
       await waitFor(() => {
         const errorEl = screen.getByTestId('error-message');
         expect(errorEl).toHaveTextContent('O servidor reiniciou. Tente novamente.');
@@ -489,6 +504,9 @@ describe('UX-351: Historico Funcional', () => {
       });
 
       render(<HistoricoPage />);
+
+      // Click "Todas" to show all statuses (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       // UX-357: timed_out always shows the canonical timeout message regardless of error_message
       await waitFor(() => {

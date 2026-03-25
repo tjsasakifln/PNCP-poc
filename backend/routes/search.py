@@ -504,7 +504,7 @@ async def buscar_licitacoes(
             )
             from llm import gerar_resumo_fallback
             response = BuscaResponse(
-                resumo=gerar_resumo_fallback([], request.setor_id or ""),
+                resumo=gerar_resumo_fallback([], sector_name=request.setor_id or "licitações"),
                 licitacoes=[],
                 excel_base64=None,
                 excel_available=False,
@@ -733,7 +733,10 @@ async def buscar_licitacoes(
             from pipeline.helpers import _convert_to_licitacao_items
             from llm import gerar_resumo_fallback
             items = _convert_to_licitacao_items(ctx.licitacoes_filtradas)
-            _fb_resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas)
+            _fb_resumo = gerar_resumo_fallback(
+                ctx.licitacoes_filtradas,
+                sector_name=ctx.sector.name if ctx.sector else "licitações",
+            )
             _qi = ctx.quota_info
             partial_response = BuscaResponse(
                 licitacoes=items,

@@ -300,8 +300,14 @@ async def get_profile_context(
             completed=completed,
         )
     except Exception as e:
-        logger.error(f"Failed to get profile context for {mask_user_id(user_id)}: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao buscar perfil de contexto")
+        # UX-429: Graceful fallback — return empty context instead of 500
+        # This handles cases where context_data column doesn't exist (migration 024 not applied)
+        # or any transient DB errors. The user sees an empty but functional profile section.
+        logger.warning(f"Profile context unavailable for {mask_user_id(user_id)}: {e}")
+        return PerfilContextoResponse(
+            context_data={},
+            completed=False,
+        )
 
 
 # ============================================================================
@@ -346,8 +352,9 @@ async def get_profile_completeness(
         )
         context_data = (result.data or {}).get("context_data") or {}
     except Exception as e:
-        logger.error(f"Failed to get profile for completeness: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao calcular completude do perfil")
+        # UX-429: Graceful fallback — return 0% completeness instead of 500
+        logger.warning(f"Profile completeness unavailable for {mask_user_id(user_id)}: {e}")
+        context_data = {}
 
     total_fields = len(_PROFILE_FIELDS)
     filled = 0

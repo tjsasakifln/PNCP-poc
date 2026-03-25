@@ -41,6 +41,10 @@ export interface SearchStateManagerProps {
 
   // Result availability (for "view partial" button)
   hasPartialResults: boolean;
+
+  // UX-436: UF context for smart retry with reduction suggestion
+  ufsSelecionadas?: Set<string>;
+  onRetryWithUfs?: (ufs: string[]) => void;
 }
 
 /**
@@ -92,6 +96,8 @@ export function SearchStateManager({
   onCancel,
   loading,
   hasPartialResults,
+  ufsSelecionadas,
+  onRetryWithUfs,
 }: SearchStateManagerProps) {
   const prevPhaseRef = useRef<SearchPhase>(phase);
 
@@ -127,6 +133,19 @@ export function SearchStateManager({
     phase === "offline" && !!error && retryExhausted && (retryCountdown == null || retryCountdown <= 0);
   const showFailed = phase === "failed" && !!error;
   const showQuota = phase === "quota_exceeded" && !!quotaError;
+
+  // UX-436: Detect timeout errors and suggest UF reduction
+  const isTimeoutError = !!(error && (
+    error.errorCode === "TIMEOUT" ||
+    error.errorCode === "ASYNC_TIMEOUT" ||
+    error.errorCode === "CLIENT_TIMEOUT" ||
+    error.httpStatus === 504 ||
+    error.rawMessage?.toLowerCase().includes("timeout") ||
+    error.rawMessage?.includes("demorou demais")
+  ));
+  const ufArray = ufsSelecionadas ? Array.from(ufsSelecionadas) : [];
+  const canSuggestReduction = isTimeoutError && ufArray.length > 2 && !!onRetryWithUfs;
+  const suggestedUfs = ufArray.slice(0, 2);
 
   return (
     <>
@@ -230,18 +249,39 @@ export function SearchStateManager({
             <ErrorDetail error={error} />
           </>
         )}
-        <Button
-          onClick={onRetry}
-          disabled={loading}
-          loading={loading}
-          variant="destructive"
-          size="default"
-          className="mt-3"
-          type="button"
-          data-testid="failed-retry-button"
-        >
-          {loading ? "Tentando..." : "Tentar novamente"}
-        </Button>
+
+        {/* UX-436: Smart retry with UF reduction suggestion for timeouts */}
+        {canSuggestReduction && (
+          <div className="mt-3 mb-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800" data-testid="uf-reduction-suggestion">
+            <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+              Sugestao: tente buscar com menos estados para resultados mais rapidos.
+            </p>
+            <Button
+              onClick={() => onRetryWithUfs!(suggestedUfs)}
+              disabled={loading}
+              variant="outline"
+              size="default"
+              type="button"
+              data-testid="retry-reduced-ufs-button"
+            >
+              Buscar apenas {suggestedUfs.join(" e ")}
+            </Button>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-2 mt-3">
+          <Button
+            onClick={onRetry}
+            disabled={loading}
+            loading={loading}
+            variant="destructive"
+            size="default"
+            type="button"
+            data-testid="failed-retry-button"
+          >
+            {loading ? "Tentando..." : "Tentar novamente"}
+          </Button>
+        </div>
       </FadePanel>
 
       {/* Quota exceeded -- link to plans */}

@@ -19,7 +19,7 @@ const ERROR_MAP: Record<string, string> = {
   "400": "Requisição inválida. Verifique os dados e tente novamente.",
   "503": "Serviço temporariamente indisponível. Tente em alguns minutos.",
   "502": "O servidor está temporariamente indisponível. Tente novamente em instantes.",
-  "504": "A análise demorou demais. Tente com menos estados ou um período menor.",
+  "504": "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Tente novamente — resultados parciais podem estar disponíveis.",
   "500": "Erro interno do servidor. Tente novamente.",
   "429": "Muitas requisições. Aguarde um momento e tente novamente.",
   "401": "Sessão expirada. Faça login novamente.",
@@ -56,9 +56,9 @@ const ERROR_MAP: Record<string, string> = {
   "Quota excedida": "Suas análises do mês acabaram. Faça upgrade para continuar.",
 
   // Timeout / PNCP specific (from backend detail messages)
-  "excedeu o tempo limite": "A análise demorou demais. Tente com menos estados ou um período menor.",
+  "excedeu o tempo limite": "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Tente novamente — resultados parciais podem estar disponíveis.",
   "PNCP está temporariamente": "O portal PNCP está temporariamente fora do ar. Tente novamente em instantes.",
-  "tempo limite de": "A análise demorou demais. Tente com menos estados ou um período menor.",
+  "tempo limite de": "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Tente novamente — resultados parciais podem estar disponíveis.",
 
   // UX FIX: Plan limit errors (date range)
   "período da análise não pode exceder": "keep_original", // Let the full message through
@@ -322,8 +322,8 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
   BACKEND_UNAVAILABLE: "Estamos voltando em instantes. Tente novamente em alguns segundos.",
   SOURCE_UNAVAILABLE: "As fontes de dados estão temporariamente em manutenção. Tente novamente em breve.",
   ALL_SOURCES_FAILED: "Nenhuma fonte respondeu a tempo. Tente novamente em 2-3 minutos.",
-  TIMEOUT: "A análise demorou mais que o esperado. Tente com menos estados ou um período menor.",
-  CLIENT_TIMEOUT: "A análise demorou mais que o esperado. Tente reduzir o número de estados ou usar um período menor.",
+  TIMEOUT: "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Sugestão: tente novamente — resultados parciais podem estar disponíveis.",
+  CLIENT_TIMEOUT: "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Sugestão: tente novamente — resultados parciais podem estar disponíveis.",
   RATE_LIMIT: "Muitas análises em sequência. Aguarde 1 minuto e tente novamente.",
   QUOTA_EXCEEDED: "Suas análises deste mês foram utilizadas. Faça upgrade para continuar.",
   VALIDATION_ERROR: "Verifique os filtros selecionados e tente novamente.",
@@ -362,7 +362,7 @@ export function getHumanizedError(
   // Timeout / 524
   if (httpStatus === 524 || httpStatus === 504 || msg.includes("timeout") || msg.includes("demorou")) {
     return {
-      message: "A análise demorou mais que o esperado. Tente reduzir o número de estados.",
+      message: "A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Tente novamente — resultados parciais podem estar disponíveis.",
       actionLabel: "Tentar novamente",
       secondaryActionLabel: "Reduzir escopo",
       tone: "yellow",

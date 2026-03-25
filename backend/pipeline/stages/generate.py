@@ -183,7 +183,11 @@ async def stage_generate(pipeline, ctx: SearchContext) -> None:
         ctx.queue_mode = True
 
         # Immediate fallback summary (pure Python, <1ms)
-        ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas)
+        ctx.resumo = gerar_resumo_fallback(
+            ctx.licitacoes_filtradas,
+            sector_name=ctx.sector.name if ctx.sector else "licitações",
+            termos_busca=ctx.request.termos_busca if hasattr(ctx.request, "termos_busca") else None,
+        )
         ctx.llm_status = "processing"
         ctx.llm_source = "processing"  # CRIT-005 AC13: LLM queued for background
 
@@ -261,7 +265,8 @@ async def stage_generate(pipeline, ctx: SearchContext) -> None:
             "llm.input_count": len(ctx.licitacoes_filtradas),
         }) as llm_span:
             try:
-                ctx.resumo = gerar_resumo(ctx.licitacoes_filtradas)
+                _sector = ctx.sector.name if ctx.sector else "licitações"
+                ctx.resumo = gerar_resumo(ctx.licitacoes_filtradas, sector_name=_sector)
                 llm_span.set_attribute("llm.status", "success")
                 logger.debug("LLM summary generated successfully")
                 ctx.llm_source = "ai"  # CRIT-005 AC13
@@ -271,7 +276,11 @@ async def stage_generate(pipeline, ctx: SearchContext) -> None:
                 logger.warning(
                     f"LLM generation failed, using fallback mechanism: {type(e).__name__}: {e}",
                 )
-                ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas)
+                ctx.resumo = gerar_resumo_fallback(
+                    ctx.licitacoes_filtradas,
+                    sector_name=ctx.sector.name if ctx.sector else "licitações",
+                    termos_busca=ctx.request.termos_busca if hasattr(ctx.request, "termos_busca") else None,
+                )
                 logger.debug("Fallback summary generated successfully")
                 ctx.llm_source = "fallback"  # CRIT-005 AC13
 

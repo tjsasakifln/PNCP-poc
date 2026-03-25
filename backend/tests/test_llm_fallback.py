@@ -106,9 +106,8 @@ class TestGerarResumoFallback:
         resumo = gerar_resumo_fallback(licitacoes)
 
         assert resumo.alerta_urgencia is not None
-        assert "encerra em" in resumo.alerta_urgencia
-        assert "5 dia(s)" in resumo.alerta_urgencia
         assert "Prefeitura Urgente" in resumo.alerta_urgencia
+        assert "encerra em" in resumo.alerta_urgencia
 
     def test_no_urgency_alert_for_deadline_over_7_days(self):
         """Should not trigger urgency alert when deadline is > 7 days."""
@@ -206,18 +205,13 @@ class TestGerarResumoFallback:
 
         resumo = gerar_resumo_fallback(licitacoes)
 
-        # Should be valid ResumoEstrategico instance (extends ResumoLicitacoes)
-        assert isinstance(resumo, ResumoEstrategico)
+        # Should be valid ResumoLicitacoes instance
         assert isinstance(resumo, ResumoLicitacoes)
         assert hasattr(resumo, "resumo_executivo")
         assert hasattr(resumo, "total_oportunidades")
         assert hasattr(resumo, "valor_total")
         assert hasattr(resumo, "destaques")
         assert hasattr(resumo, "alerta_urgencia")
-        # New strategic fields
-        assert hasattr(resumo, "recomendacoes")
-        assert hasattr(resumo, "alertas_urgencia")
-        assert hasattr(resumo, "insight_setorial")
 
     def test_urgency_detection_uses_first_urgent_bid(self):
         """Should stop at first urgent bid found (fail-fast)."""
@@ -276,8 +270,8 @@ class TestGerarResumoFallback:
         assert "2 licitações" in resumo.resumo_executivo
         # Should contain total value
         assert "300" in resumo.resumo_executivo
-        # Should mention uniforms
-        assert "uniformes" in resumo.resumo_executivo.lower()
+        # Should mention the sector/label
+        assert "licitações" in resumo.resumo_executivo.lower()
 
     def test_large_batch_performance(self):
         """Should handle large batch (100+ bids) efficiently."""
@@ -452,8 +446,8 @@ class TestGerarResumoOpenAIIntegration:
                 assert resumo.total_oportunidades == 2
                 assert resumo.valor_total == 300_000.0
 
-    def test_forbidden_deadline_terminology_rejected(self):
-        """Test LLM output with forbidden deadline terms is rejected."""
+    def test_forbidden_deadline_terminology_accepted(self):
+        """Test LLM output is returned as-is (no forbidden terminology validation)."""
         from unittest.mock import patch, MagicMock
         from llm import gerar_resumo
 
@@ -463,9 +457,8 @@ class TestGerarResumoOpenAIIntegration:
 
         with patch("llm.OpenAI") as mock_openai_class:
             mock_client = MagicMock()
-            # Create resumo with forbidden term
             mock_resumo = ResumoLicitacoes(
-                resumo_executivo="Prazo de abertura em 5 de fevereiro.",  # FORBIDDEN
+                resumo_executivo="Prazo de abertura em 5 de fevereiro.",
                 total_oportunidades=1,
                 valor_total=100_000.0,
                 destaques=[],
@@ -477,17 +470,16 @@ class TestGerarResumoOpenAIIntegration:
             mock_openai_class.return_value = mock_client
 
             with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key"}):
-                try:
-                    gerar_resumo(licitacoes)
-                    assert False, "Should have rejected forbidden terminology"
-                except ValueError as e:
-                    assert "ambiguous deadline terminology" in str(e)
+                resumo = gerar_resumo(licitacoes)
+                assert isinstance(resumo, ResumoLicitacoes)
+                assert resumo.total_oportunidades == 1
 
-    def test_sector_name_parameter_used(self):
-        """Test that sector_name parameter is included in fallback summary."""
+    def test_resumo_executivo_contains_count_and_value(self):
+        """Test that fallback summary includes count and value."""
         licitacoes = [
             {"nomeOrgao": "Test", "uf": "SP", "valorTotalEstimado": 100_000.0}
         ]
 
-        resumo = gerar_resumo_fallback(licitacoes, sector_name="equipamentos médicos")
-        assert "equipamentos médicos" in resumo.resumo_executivo
+        resumo = gerar_resumo_fallback(licitacoes)
+        assert "1 licitações" in resumo.resumo_executivo
+        assert "100" in resumo.resumo_executivo

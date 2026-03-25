@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import HistoricoPage from '../../app/historico/page';
 
@@ -265,6 +265,9 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     render(<HistoricoPage />);
 
+    // Click "Todas" to show all statuses (default filter is 'completed')
+    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
+
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
       expect(errorEl).toHaveTextContent('O servidor reiniciou. Recomendamos tentar novamente.');
@@ -287,6 +290,9 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     render(<HistoricoPage />);
 
+    // Click "Todas" to show all statuses (default filter is 'completed')
+    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
+
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
       expect(errorEl).toHaveTextContent(/servidor reiniciou/);
@@ -307,6 +313,9 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
     });
 
     render(<HistoricoPage />);
+
+    // Click "Todas" to show all statuses (default filter is 'completed')
+    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -329,6 +338,9 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     render(<HistoricoPage />);
 
+    // Click "Todas" to show all statuses (default filter is 'completed')
+    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
+
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
       expect(errorEl).toHaveTextContent('A conexão foi interrompida. Tente novamente.');
@@ -350,6 +362,9 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
     });
 
     render(<HistoricoPage />);
+
+    // Click "Todas" to show all statuses (default filter is 'completed')
+    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');

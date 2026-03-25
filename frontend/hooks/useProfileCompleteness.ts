@@ -13,6 +13,10 @@ const fetchProfileCompletenessWithAuth = async (url: string, token: string) => {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  // UX-434: 404 means endpoint unavailable — return default data silently
+  if (res.status === 404) {
+    return { completeness_pct: null };
+  }
   if (!res.ok) {
     throw new FetchError(`Erro ${res.status}`, res.status);
   }
@@ -30,6 +34,9 @@ export function useProfileCompleteness() {
       revalidateOnFocus: false,
       dedupingInterval: 60_000, // 1 min — completeness rarely changes mid-session
       errorRetryCount: 1,
+      // UX-434: Don't retry on 404 — it's not transient
+      shouldRetryOnError: (err: unknown) =>
+        !(err instanceof FetchError && err.status === 404),
     }
   );
 

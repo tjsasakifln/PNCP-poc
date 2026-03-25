@@ -20,15 +20,21 @@ export function AlertNotificationBell() {
   >([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [featureDisabled, setFeatureDisabled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch unread alert count
   const fetchNotifications = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!session?.access_token || featureDisabled) return;
     try {
       const res = await fetch("/api/alerts", {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
+      // UX-434: 404 means alerts feature disabled — stop polling
+      if (res.status === 404) {
+        setFeatureDisabled(true);
+        return;
+      }
       if (!res.ok) return;
       const data = await res.json();
       const alerts = Array.isArray(data) ? data : data.alerts || [];
@@ -47,7 +53,7 @@ export function AlertNotificationBell() {
     } catch {
       // silent
     }
-  }, [session?.access_token]);
+  }, [session?.access_token, featureDisabled]);
 
   useEffect(() => {
     fetchNotifications();
@@ -67,7 +73,7 @@ export function AlertNotificationBell() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  if (!session?.access_token) return null;
+  if (!session?.access_token || featureDisabled) return null;
 
   return (
     <div className="relative" ref={dropdownRef}>

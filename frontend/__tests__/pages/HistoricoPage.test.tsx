@@ -345,6 +345,9 @@ describe('HistoricoPage Component', () => {
 
       render(<HistoricoPage />);
 
+      // Click "Todas" to show all sessions (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
+
       expect(screen.getByText(/5 análises realizadas/)).toBeInTheDocument();
     });
 
@@ -359,6 +362,9 @@ describe('HistoricoPage Component', () => {
       });
 
       render(<HistoricoPage />);
+
+      // Click "Todas" to show all sessions (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       expect(screen.getByText(/1 análise realizada$/)).toBeInTheDocument();
     });
@@ -418,6 +424,9 @@ describe('HistoricoPage Component', () => {
       });
 
       render(<HistoricoPage />);
+
+      // Click "Todas" to show all sessions (default filter is 'completed')
+      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       expect(screen.getByText('5 análises realizadas')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Anterior/i })).not.toBeInTheDocument();

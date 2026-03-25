@@ -283,6 +283,20 @@ export function useSearchOrchestration() {
     }
   }, [search.loading]);
 
+  // UX-432: Auto-restore last search results when returning to /buscar
+  useEffect(() => {
+    // Only restore if: not loading, no current result, and has cached results
+    if (!search.loading && !search.result && !search.error) {
+      const cached = getLastSearch();
+      if (cached?.result) {
+        search.setResult(cached.result as BuscaResult);
+        setLastSearchAvailable(false); // Already loaded, hide "Ver ultima busca" button
+        toast.info("Resultados da analise anterior restaurados.", { duration: 4000 });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run only on mount
+  }, []);
+
   const originalBuscar = search.buscar;
   const buscarWithCollapse = useCallback(() => {
     if (backendStatus.status === "offline") {
@@ -306,6 +320,15 @@ export function useSearchOrchestration() {
       progressAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }, [originalBuscar, backendStatus.status]);
+
+  // UX-436: Retry search with a reduced set of UFs (for timeout recovery)
+  const handleRetryWithUfs = useCallback((ufs: string[]) => {
+    filters.setUfsSelecionadas(new Set(ufs));
+    // Small delay to let state propagate before triggering search
+    setTimeout(() => {
+      originalBuscar();
+    }, 100);
+  }, [filters.setUfsSelecionadas, originalBuscar]);
 
   useEffect(() => {
     if ((backendStatus.status === "online" || backendStatus.status === "recovering") && queuedSearchRef.current) {
@@ -455,6 +478,7 @@ export function useSearchOrchestration() {
     onViewPartial: search.viewPartialResults,
     onDismissPartial: () => setPartialDismissed(true),
     onRetryForceFresh: search.buscarForceFresh,
+    onRetryWithUfs: handleRetryWithUfs,
     onLoadLastSearch: handleLoadLastSearch,
     onRefreshResults: search.handleRefreshResults,
     onRetryNow: search.retryNow,
@@ -514,7 +538,7 @@ export function useSearchOrchestration() {
     filters.ufsSelecionadas, filters.sectorName, filters.searchMode, filters.termosArray,
     filters.ordenacao, filters.setOrdenacao, filters.dataInicial, filters.dataFinal,
     filters.setorId,
-    trackEvent, handleShowUpgradeModal, handleLoadLastSearch, startResultsTour,
+    trackEvent, handleShowUpgradeModal, handleLoadLastSearch, handleRetryWithUfs, startResultsTour,
     isResultsTourCompleted, searchElapsed, partialDismissed, lastSearchAvailable,
     pdfLoading, planInfo, session, isTrialExpiredOrQuota, trialPhase, isProfileComplete,
   ]);

@@ -244,7 +244,11 @@ class TestGetProfileContext:
         assert data["completed"] is False
 
     def test_get_context_db_error(self, client, mock_db):
+        """UX-429: DB errors return empty context (graceful fallback) instead of 500."""
         mock_db.table.return_value.select.return_value.eq.return_value.single.return_value.execute.side_effect = Exception("DB error")
 
         response = client.get("/v1/profile/context")
-        assert response.status_code == 500
+        assert response.status_code == 200
+        data = response.json()
+        assert data["context_data"] == {}
+        assert data["completed"] is False

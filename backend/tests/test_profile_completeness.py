@@ -193,15 +193,19 @@ class TestProfileCompletenessEndpoint:
         assert "experiencia_licitacoes" in missing
         assert "atestados" in missing
 
-    def test_db_error_returns_500(self, client, mock_db):
-        """DB failure returns 500."""
+    def test_db_error_returns_empty_fallback(self, client, mock_db):
+        """UX-429: DB failure returns 0% completeness (graceful fallback) instead of 500."""
         mock_db.table.return_value.select.return_value.eq.return_value.single.return_value.execute.side_effect = Exception(
             "DB error"
         )
 
         response = client.get("/v1/profile/completeness")
 
-        assert response.status_code == 500
+        assert response.status_code == 200
+        data = response.json()
+        assert data["completeness_pct"] == 0
+        assert data["filled_fields"] == 0
+        assert data["is_complete"] is False
 
     def test_none_context_data_treated_as_empty(self, client, mock_db):
         """Null context_data in DB is treated as empty dict -> 0%."""

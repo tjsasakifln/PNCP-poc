@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useBackendStatusContext } from "../components/BackendStatusIndicator";
@@ -137,6 +137,17 @@ export default function DashboardPage() {
     maxDelayMs: 30000,
     timeoutMs: LOADING_TIMEOUT_MS,
   });
+
+  // UX-431: Refetch dashboard data when tab becomes visible (prevents stale "last search")
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && session && !authLoading) {
+        manualRetry();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [session, authLoading, manualRetry]);
 
   // AC4/AC5: Per-section error flags (always from personal data)
   const summaryError = data?.summaryError ?? false;

@@ -101,6 +101,8 @@ export interface SearchResultsActions {
   onViewNearbyResults?: () => void;
   onGeneratePdf?: (options: { clientName: string; maxItems: number }) => void;
   onStartResultsTour?: () => void;
+  /** UX-436: Retry search with a reduced set of UFs */
+  onRetryWithUfs?: (ufs: string[]) => void;
 }
 
 // ---------------------------------------------------------------------------

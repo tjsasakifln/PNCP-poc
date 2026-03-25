@@ -93,7 +93,7 @@ export default function SearchResults(props: SearchResultsProps) {
     isResultsTourCompleted, onStartResultsTour, isProfileComplete = true,
     downloadLoading, downloadError, onDownload, planInfo, session, termosArray,
     onShowUpgradeModal, searchId, setorId, onRegenerateExcel, excelFailCount = 0,
-    onGeneratePdf, pdfLoading,
+    onGeneratePdf, pdfLoading, onRetryWithUfs,
   } = props;
 
   // --- State ---
@@ -112,6 +112,17 @@ export default function SearchResults(props: SearchResultsProps) {
   const [downloadCompleted, setDownloadCompleted] = useState(false);
   const [prevDownloadLoading, setPrevDownloadLoading] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // UX-435: Auto-dismiss live-fetch banner after 30s
+  const [liveFetchTimedOut, setLiveFetchTimedOut] = useState(false);
+  useEffect(() => {
+    if (liveFetchInProgress && result && !loading) {
+      setLiveFetchTimedOut(false);
+      const timer = setTimeout(() => setLiveFetchTimedOut(true), 30_000);
+      return () => clearTimeout(timer);
+    }
+    setLiveFetchTimedOut(false);
+  }, [liveFetchInProgress, result, loading]);
 
   useEffect(() => { setCurrentPage(1); }, [result, ordenacao]);
 
@@ -160,7 +171,7 @@ export default function SearchResults(props: SearchResultsProps) {
 
       <ResultsLoadingSection {...props} searchElapsedSeconds={searchElapsedSeconds} ufTotalFound={ufTotalFound} succeededUfCount={succeededUfCount} pendingUfCount={pendingUfCount} />
 
-      <SearchStateManager phase={searchPhase} error={error} quotaError={quotaError} retryCountdown={retryCountdown ?? null} retryMessage={retryMessage ?? null} retryExhausted={!!retryExhausted} onRetry={onSearch} onRetryNow={onRetryNow || onSearch} onCancelRetry={onCancelRetry || (() => {})} onCancel={onCancel} loading={loading} hasPartialResults={!!(result && result.resumo && result.resumo.total_oportunidades > 0)} />
+      <SearchStateManager phase={searchPhase} error={error} quotaError={quotaError} retryCountdown={retryCountdown ?? null} retryMessage={retryMessage ?? null} retryExhausted={!!retryExhausted} onRetry={onSearch} onRetryNow={onRetryNow || onSearch} onCancelRetry={onCancelRetry || (() => {})} onCancel={onCancel} loading={loading} hasPartialResults={!!(result && result.resumo && result.resumo.total_oportunidades > 0)} ufsSelecionadas={ufsSelecionadas} onRetryWithUfs={onRetryWithUfs} />
 
       {/* Empty/error states */}
       {!loading && result && result.response_state === "empty_failure" && <SourcesUnavailable onRetry={onSearch} onLoadLastSearch={onLoadLastSearch || (() => {})} hasLastSearch={!!hasLastSearch} retrying={loading} degradationGuidance={result.degradation_guidance} />}
@@ -182,7 +193,7 @@ export default function SearchResults(props: SearchResultsProps) {
       {!loading && result && !result.is_partial && result.response_state !== "empty_failure" && result.resumo.total_oportunidades === 0 && (!result.sources_degraded || result.sources_degraded.length === 0) && (result.total_filtrado === 0 && (result.total_raw || 0) > 0 ? <EmptyResults totalRaw={result.total_raw} sectorName={sectorName} ufCount={ufsSelecionadas.size} onScrollToTop={() => window.scrollTo({ top: 0, behavior: "smooth" })} /> : <ZeroResultsSuggestions sectorName={sectorName} ufCount={ufsSelecionadas.size} ufNames={Array.from(ufsSelecionadas)} dayRange={30} onAdjustPeriod={props.onAdjustPeriod} onAddNeighborStates={props.onAddNeighborStates} onChangeSector={() => window.scrollTo({ top: 0, behavior: "smooth" })} nearbyResultsCount={props.nearbyResultsCount} onViewNearbyResults={props.onViewNearbyResults} totalFromSources={result.total_raw} filterStats={result.filter_stats} />)}
       {!loading && result && result.filter_relaxed && result.resumo.total_oportunidades > 0 && <FilterRelaxedBanner relaxationLevel={result.hidden_by_min_match != null && result.hidden_by_min_match > 0 ? "min_match_lowered" : undefined} originalCount={0} relaxedCount={result.resumo.total_oportunidades} />}
       {!loading && refreshAvailable && props.onRefreshResults && <div className="mt-4"><RefreshBanner refreshInfo={refreshAvailable} onRefresh={props.onRefreshResults} /></div>}
-      {!loading && liveFetchInProgress && !refreshAvailable && result && (
+      {!loading && liveFetchInProgress && !liveFetchTimedOut && !refreshAvailable && result && (
         <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200" role="status">
           <svg className="h-4 w-4 animate-spin flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
           <span>Atualizando dados em tempo real...</span>

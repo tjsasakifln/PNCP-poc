@@ -154,6 +154,8 @@ export default function HistoricoPage() {
   const router = useRouter();
   const { trackEvent } = useAnalytics();
   const [page, setPage] = useState(0);
+  // UX-433: Filter to hide failures — default to showing only completed
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'failed'>('completed');
   const limit = 20;
 
   // TD-008 AC7/AC13: SWR-based sessions with auto-polling for active sessions
@@ -169,6 +171,14 @@ export default function HistoricoPage() {
     const hasActive = sessions.some((s: SearchSession) => !TERMINAL_STATUSES.has(s.status));
     setPollInterval(hasActive ? 5000 : 0);
   }, [sessions]);
+
+  // UX-433: Filter sessions by status
+  const filteredSessions = useMemo(() => {
+    if (statusFilter === 'all') return sessions;
+    if (statusFilter === 'completed') return sessions.filter((s: SearchSession) => s.status === 'completed');
+    // 'failed' shows failed + timed_out
+    return sessions.filter((s: SearchSession) => s.status === 'failed' || s.status === 'timed_out');
+  }, [sessions, statusFilter]);
 
   // Handle re-run search navigation (AC17: "Tentar novamente" for failed/timed_out)
   const handleRerunSearch = useCallback((searchSession: SearchSession) => {
@@ -249,7 +259,35 @@ export default function HistoricoPage() {
         }
       />
       <div className="max-w-4xl mx-auto py-8 px-4">
-        <p className="text-[var(--ink-secondary)] mb-6">{total} análise{total !== 1 ? "s" : ""} realizada{total !== 1 ? "s" : ""}</p>
+        <p className="text-[var(--ink-secondary)] mb-2">
+          {statusFilter === 'all'
+            ? `${total} análise${total !== 1 ? "s" : ""} realizada${total !== 1 ? "s" : ""}`
+            : `${filteredSessions.length} de ${sessions.length} análise${sessions.length !== 1 ? "s" : ""}`
+          }
+        </p>
+
+        {/* UX-433: Status filter */}
+        <div className="flex items-center gap-2 mb-4" role="radiogroup" aria-label="Filtrar por status">
+          {([
+            { value: 'completed' as const, label: 'Concluídas', icon: '\u2713' },
+            { value: 'all' as const, label: 'Todas', icon: '\u2630' },
+            { value: 'failed' as const, label: 'Com falha', icon: '\u2717' },
+          ]).map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => { setStatusFilter(opt.value); setPage(0); }}
+              className={`px-3 py-1.5 text-xs font-medium rounded-button border transition-colors ${
+                statusFilter === opt.value
+                  ? 'bg-[var(--brand-navy)] text-white border-[var(--brand-navy)]'
+                  : 'bg-[var(--surface-0)] text-[var(--ink-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'
+              }`}
+              role="radio"
+              aria-checked={statusFilter === opt.value}
+            >
+              {opt.icon} {opt.label}
+            </button>
+          ))}
+        </div>
 
         {loading ? (
           <div className="space-y-4">
@@ -277,8 +315,16 @@ export default function HistoricoPage() {
           />
         ) : (
           <>
+            {filteredSessions.length === 0 && sessions.length > 0 && (
+              <div className="text-center py-8 text-[var(--ink-secondary)]">
+                <p className="text-sm">Nenhuma análise {statusFilter === 'completed' ? 'concluída' : 'com falha'} neste período.</p>
+                <button onClick={() => setStatusFilter('all')} className="text-sm text-[var(--brand-blue)] hover:underline mt-2">
+                  Ver todas as análises
+                </button>
+              </div>
+            )}
             <div className="space-y-4">
-              {sessions.map((s: SearchSession) => (
+              {filteredSessions.map((s: SearchSession) => (
                 <div
                   key={s.id}
                   className="p-5 bg-[var(--surface-0)] border border-[var(--border)] rounded-card
@@ -326,9 +372,15 @@ export default function HistoricoPage() {
                             {s.total_filtered}
                           </p>
                           <p className="text-xs text-[var(--ink-muted)]">resultados</p>
-                          <p className="text-sm font-data text-[var(--success)] mt-1">
-                            {formatCurrency(s.valor_total)}
-                          </p>
+                          {s.valor_total > 0 ? (
+                            <p className="text-sm font-data text-[var(--success)] mt-1">
+                              {formatCurrency(s.valor_total)}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-[var(--ink-muted)] mt-1">
+                              Valor não informado
+                            </p>
+                          )}
                         </>
                       )}
                       {/* SAB-012 AC1-AC3: Smart duration display */}

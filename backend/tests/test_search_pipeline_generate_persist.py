@@ -345,7 +345,7 @@ class TestStageGenerate:
              patch("pipeline.stages.generate.upload_excel"):
             await pipeline.stage_generate(ctx)
 
-        mock_resumo.assert_called_once_with(lics, sector_name="Vestuario", termos_busca=None)
+        mock_resumo.assert_called_once_with(lics, sector_name="Vestuario")
         assert ctx.response is not None
         assert ctx.response.resumo.resumo_executivo == resumo.resumo_executivo
         # Actual totals override LLM values

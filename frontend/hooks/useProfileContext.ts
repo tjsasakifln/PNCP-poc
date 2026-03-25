@@ -2,7 +2,6 @@
 
 import useSWR from "swr";
 import { useAuth } from "../app/components/AuthProvider";
-import { FetchError } from "../lib/fetcher";
 
 /**
  * FE-007: SWR-based profile context hook.
@@ -26,7 +25,11 @@ const fetchProfileContextWithAuth = async (url: string, token: string) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
-    throw new FetchError(`Erro ${res.status}`, res.status);
+    // UX-429: Return empty context on error instead of throwing.
+    // This ensures the profile section renders (empty but functional)
+    // rather than staying in a permanent error/loading state.
+    console.warn(`Profile context fetch failed: ${res.status}`);
+    return {} as ProfileContext;
   }
   const data = await res.json();
   return (data.context_data ?? {}) as ProfileContext;

@@ -216,7 +216,7 @@ describe("CRIT-070: Client Timeout Silent Abort", () => {
     expect(result.current.error).not.toBeNull();
     expect(result.current.error?.httpStatus).toBe(524);
     expect(result.current.error?.errorCode).toBe("CLIENT_TIMEOUT");
-    expect(result.current.error?.message).toBe("A análise demorou mais que o esperado. Tente com menos estados.");
+    expect(result.current.error?.message).toBe("A análise excedeu o tempo limite. Algumas fontes podem estar lentas. Tente novamente — resultados parciais podem estar disponíveis.");
     expect(result.current.result).toBeNull();
   });
 

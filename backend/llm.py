@@ -24,7 +24,7 @@ import os
 
 from openai import OpenAI
 
-from schemas import ResumoLicitacoes
+from schemas import ResumoLicitacoes, ResumoEstrategico, Recomendacao
 from excel import parse_datetime
 
 
@@ -33,7 +33,7 @@ def _fmt_brl(value: float) -> str:
     return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def gerar_resumo(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
+def gerar_resumo(licitacoes: list[dict[str, Any]], *, sector_name: str = "licitações") -> ResumoLicitacoes:
     """
     Generate AI-powered executive summary of procurement bids using GPT-4.1-nano.
 
@@ -75,7 +75,7 @@ def gerar_resumo(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
     # Handle empty input
     if not licitacoes:
         return ResumoLicitacoes(
-            resumo_executivo="Nenhuma licitação de uniformes encontrada no período selecionado.",
+            resumo_executivo=f"Nenhuma licitação de {sector_name.lower()} encontrada no período selecionado.",
             total_oportunidades=0,
             valor_total=0.0,
             destaques=[],
@@ -110,7 +110,7 @@ def gerar_resumo(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
     client = OpenAI(api_key=api_key)
 
     # System prompt with expert persona and rules
-    system_prompt = """Você é um analista de licitações especializado em uniformes e fardamentos.
+    system_prompt = f"""Você é um analista de licitações especializado em {sector_name}.
 Analise as licitações fornecidas e gere um resumo executivo.
 
 REGRAS:
@@ -123,7 +123,7 @@ REGRAS:
 """
 
     # User prompt with context
-    user_prompt = f"""Analise estas {len(licitacoes)} licitações de uniformes/fardamentos e gere um resumo:
+    user_prompt = f"""Analise estas {len(licitacoes)} licitações de {sector_name} e gere um resumo:
 
 {json.dumps(dados_resumidos, ensure_ascii=False, indent=2)}
 
@@ -222,35 +222,39 @@ def format_resumo_html(resumo: ResumoLicitacoes) -> str:
     return html
 
 
-def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
+def gerar_resumo_fallback(
+    licitacoes: list[dict[str, Any]],
+    *,
+    sector_name: str = "licitações",
+    termos_busca: str | None = None,
+) -> ResumoEstrategico:
     """
     Generate basic executive summary without using LLM (fallback for OpenAI failures).
 
     This function provides a statistical summary using pure Python logic when the
     OpenAI API is unavailable due to network issues, rate limits, missing API key,
-    or any other errors. It maintains the same ResumoLicitacoes schema as gerar_resumo()
+    or any other errors. It maintains the same ResumoEstrategico schema as gerar_resumo()
     for seamless fallback integration.
 
     Features:
     - Calculates total opportunities and total value
     - Computes UF distribution (state-wise breakdown)
     - Highlights top 3 bids by value
-    - Detects urgent bids (deadline < 7 days)
+    - Detects urgent bids (deadline < 7 days, excludes expired)
+    - Generates actionable recommendations
     - No external dependencies (works offline)
 
     Args:
         licitacoes: List of filtered procurement bid dictionaries from PNCP API.
                    Each dict should contain keys: objetoCompra, nomeOrgao, uf,
                    valorTotalEstimado, dataAberturaProposta
+        sector_name: Name of the sector being searched (e.g., "Engenharia Civil").
+                    Defaults to "licitações" for backward compatibility.
+        termos_busca: Optional search terms entered by the user. When provided,
+                     these are used in the summary instead of sector_name.
 
     Returns:
-        ResumoLicitacoes: Structured summary containing:
-            - resumo_executivo: Basic sentence with count and total value
-            - total_oportunidades: Count of opportunities
-            - valor_total: Sum of all bid values in BRL
-            - destaques: Top 3 bids by value
-            - alerta_urgencia: Alert if any bid closes within 7 days
-            - distribuicao_uf: Dict mapping UF codes to bid counts
+        ResumoEstrategico: Structured summary with recommendations and sector insight.
 
     Examples:
         >>> licitacoes = [
@@ -273,14 +277,24 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
         >>> resumo.valor_total
         350000.0
     """
+    # Determine the display label for the summary
+    display_label = termos_busca if termos_busca else sector_name
+
     # Handle empty input
     if not licitacoes:
-        return ResumoLicitacoes(
+        if termos_busca:
+            _insight = f"Nenhuma oportunidade encontrada para '{termos_busca}'. Considere ampliar o período ou os estados da análise."
+        else:
+            _insight = f"Setor de {sector_name}: Nenhuma oportunidade encontrada. Considere ampliar o período ou os estados da análise."
+        return ResumoEstrategico(
             resumo_executivo="Nenhuma licitação encontrada.",
             total_oportunidades=0,
             valor_total=0.0,
             destaques=[],
             alerta_urgencia=None,
+            recomendacoes=[],
+            alertas_urgencia=[],
+            insight_setorial=_insight,
         )
 
     # Calculate basic statistics
@@ -303,8 +317,10 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
         for lic in top_valor
     ]
 
-    # Check for urgency (deadline < 7 days)
+    # Check for urgency (deadline < 7 days, exclude expired bids)
     alerta = None
+    alertas_urgencia: list[str] = []
+    recomendacoes: list[Recomendacao] = []
     hoje = datetime.now()
     for lic in licitacoes:
         data_abertura_str = lic.get("dataAberturaProposta")
@@ -314,18 +330,58 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
         abertura = parse_datetime(data_abertura_str)
         if abertura:
             dias_restantes = (abertura - hoje).days
-            if dias_restantes < 7:
+            # Only alert for future deadlines (not expired)
+            if 0 <= dias_restantes < 7:
                 orgao = lic.get("nomeOrgao", "Órgão não informado")
-                alerta = f"Licitação com prazo em menos de 7 dias: {orgao}"
-                break  # First urgent bid found
+                alerta_text = f"{orgao} encerra em {dias_restantes} dia(s)"
+                alertas_urgencia.append(alerta_text)
+                if alerta is None:
+                    alerta = alerta_text
 
-    return ResumoLicitacoes(
+    # Build recommendations from top bids
+    for lic in top_valor:
+        valor = lic.get("valorTotalEstimado") or 0
+        orgao = lic.get("nomeOrgao", "N/A")
+        objeto = (lic.get("objetoCompra") or "Objeto não informado")[:100]
+
+        # Determine urgency from deadline
+        urgencia = "baixa"
+        data_abertura_str = lic.get("dataAberturaProposta")
+        if data_abertura_str:
+            abertura = parse_datetime(data_abertura_str)
+            if abertura:
+                dias = (abertura - hoje).days
+                if dias < 0:
+                    urgencia = "baixa"  # expired
+                elif dias < 3:
+                    urgencia = "alta"
+                elif dias < 7:
+                    urgencia = "media"
+
+        recomendacoes.append(Recomendacao(
+            oportunidade=f"{orgao} - {objeto}",
+            valor=valor,
+            urgencia=urgencia,
+            acao_sugerida=f"Avaliar edital e preparar documentação.",
+            justificativa=f"Valor estimado de R$ {_fmt_brl(valor)}.",
+        ))
+
+    # Build sector insight
+    if termos_busca:
+        insight = f"Análise de '{termos_busca}': {total} oportunidade(s) encontrada(s) totalizando R$ {_fmt_brl(valor_total)}."
+    else:
+        insight = f"Setor de {sector_name}: {total} oportunidade(s) encontrada(s) totalizando R$ {_fmt_brl(valor_total)}."
+
+    return ResumoEstrategico(
         resumo_executivo=(
-            f"Encontradas {total} licitações de uniformes "
+            f"Encontradas {total} licitações de {display_label} "
             f"totalizando R$ {_fmt_brl(valor_total)}."
         ),
         total_oportunidades=total,
         valor_total=valor_total,
         destaques=destaques,
         alerta_urgencia=alerta,
+        recomendacoes=recomendacoes,
+        alertas_urgencia=alertas_urgencia,
+        insight_setorial=insight,
     )

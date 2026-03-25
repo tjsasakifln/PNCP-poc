@@ -30,6 +30,10 @@ const fetchAlertsWithAuth = async (url: string, token: string) => {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  // UX-434: 404 means alerts feature is disabled — return empty array silently
+  if (res.status === 404) {
+    return [];
+  }
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new FetchError(
@@ -53,6 +57,9 @@ export function useAlerts() {
       revalidateOnFocus: false,
       dedupingInterval: 30_000,
       errorRetryCount: 2,
+      // UX-434: Don't retry on 404 (feature disabled) — it's not transient
+      shouldRetryOnError: (err: unknown) =>
+        !(err instanceof FetchError && err.status === 404),
     }
   );
 

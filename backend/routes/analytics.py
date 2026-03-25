@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from auth import require_auth
@@ -362,6 +363,9 @@ async def get_new_opportunities(user: dict = Depends(require_auth), db=Depends(g
     """
     user_id = user["id"]
 
+    # UX-431: Always send no-cache headers so dashboard shows fresh data
+    no_cache_headers = {"Cache-Control": "no-store, no-cache, must-revalidate"}
+
     try:
         result = await sb_execute(
             db.table("search_sessions")
@@ -374,9 +378,12 @@ async def get_new_opportunities(user: dict = Depends(require_auth), db=Depends(g
         sessions = result.data or []
 
         if not sessions:
-            return NewOpportunitiesResponse(
-                count=0,
-                has_previous_search=False,
+            return JSONResponse(
+                content=NewOpportunitiesResponse(
+                    count=0,
+                    has_previous_search=False,
+                ).model_dump(mode="json"),
+                headers=no_cache_headers,
             )
 
         last_session = sessions[0]
@@ -388,16 +395,22 @@ async def get_new_opportunities(user: dict = Depends(require_auth), db=Depends(g
 
         days_since = (datetime.now(timezone.utc) - last_dt).days
 
-        return NewOpportunitiesResponse(
-            count=last_session.get("total_filtered") or 0,
-            has_previous_search=True,
-            last_search_at=created_at,
-            days_since_last_search=max(days_since, 0),
+        return JSONResponse(
+            content=NewOpportunitiesResponse(
+                count=last_session.get("total_filtered") or 0,
+                has_previous_search=True,
+                last_search_at=created_at,
+                days_since_last_search=max(days_since, 0),
+            ).model_dump(mode="json"),
+            headers=no_cache_headers,
         )
 
     except Exception as e:
         logger.error(f"Error fetching new opportunities for user {mask_user_id(user_id)}: {e}")
-        return NewOpportunitiesResponse(count=0, has_previous_search=False)
+        return JSONResponse(
+            content=NewOpportunitiesResponse(count=0, has_previous_search=False).model_dump(mode="json"),
+            headers=no_cache_headers,
+        )
 
 
 # ============================================================================
