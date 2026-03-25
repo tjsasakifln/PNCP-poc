@@ -507,18 +507,27 @@ _comprasgov_circuit_breaker = _CBClass(
     threshold=COMPRASGOV_CIRCUIT_BREAKER_THRESHOLD,
     cooldown_seconds=COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN,
 )
+# LicitaJá circuit breaker
+from config import LICITAJA_CIRCUIT_BREAKER_THRESHOLD, LICITAJA_CIRCUIT_BREAKER_COOLDOWN
+_licitaja_circuit_breaker = _CBClass(
+    name="licitaja",
+    threshold=LICITAJA_CIRCUIT_BREAKER_THRESHOLD,
+    cooldown_seconds=LICITAJA_CIRCUIT_BREAKER_COOLDOWN,
+)
 
 
 def get_circuit_breaker(source: str = "pncp") -> PNCPCircuitBreaker:
     """Return the circuit breaker singleton for a given data source.
 
     Args:
-        source: "pncp" (default), "pcp", or "comprasgov".
+        source: "pncp" (default), "pcp", "comprasgov", or "licitaja".
     """
     if source == "pcp":
         return _pcp_circuit_breaker
     if source == "comprasgov":
         return _comprasgov_circuit_breaker
+    if source == "licitaja":
+        return _licitaja_circuit_breaker
     return _circuit_breaker
 
 

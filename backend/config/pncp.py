@@ -144,6 +144,16 @@ COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN: int = int(
     os.getenv("COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN", "60")
 )
 
+# LicitaJá circuit breaker & source config
+LICITAJA_CIRCUIT_BREAKER_THRESHOLD: int = int(
+    os.getenv("LICITAJA_CIRCUIT_BREAKER_THRESHOLD", "10")
+)
+LICITAJA_CIRCUIT_BREAKER_COOLDOWN: int = int(
+    os.getenv("LICITAJA_CIRCUIT_BREAKER_COOLDOWN", "60")
+)
+LICITAJA_BULKHEAD_CONCURRENCY: int = int(os.getenv("LICITAJA_BULKHEAD_CONCURRENCY", "2"))
+LICITAJA_SOURCE_TIMEOUT: float = float(os.getenv("LICITAJA_SOURCE_TIMEOUT", "30"))
+
 # Per-modality timeout (STORY-252 AC6, GTM-RESILIENCE-F03 AC1) — configurable
 # PerModality=20s: GTM-STAB — tighter budget per modality under new PerUF=30s.
 # Hierarchy: PerModality(20s) < PerUF(30s) — margin 10s.

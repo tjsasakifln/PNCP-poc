@@ -60,6 +60,11 @@ from config.pncp import (
     PNCP_BATCH_DELAY_S,
     USE_REDIS_CIRCUIT_BREAKER,
     CB_REDIS_TTL,
+    # LicitaJá
+    LICITAJA_CIRCUIT_BREAKER_THRESHOLD,
+    LICITAJA_CIRCUIT_BREAKER_COOLDOWN,
+    LICITAJA_BULKHEAD_CONCURRENCY,
+    LICITAJA_SOURCE_TIMEOUT,
 )
 
 # features.py — feature flags, LLM, trial, viability, inspection
@@ -120,6 +125,7 @@ from config.features import (
     TERM_SEARCH_FILTER_CONTEXT,
     TERM_SEARCH_VALUE_RANGE_MIN,
     TERM_SEARCH_VALUE_RANGE_MAX,
+    LICITAJA_ENABLED,
     _feature_flag_cache,
     _FEATURE_FLAG_TTL,
     _FEATURE_FLAG_REGISTRY,

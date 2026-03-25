@@ -45,6 +45,7 @@ class SourceCode(str, Enum):
     LICITAR = "Licitar"
     COMPRAS_GOV = "ComprasGov"
     PORTAL_TRANSPARENCIA = "PortalTransparencia"
+    LICITAJA = "LicitaJa"
     BLL = "BLL"
     BNC = "BNC"
     QUERIDO_DIARIO = "QueridoDiario"
@@ -359,6 +360,16 @@ class SourceConfig:
         priority=5,
     ))
 
+    licitaja: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
+        code=SourceCode.LICITAJA,
+        name="LicitaJá - Agregador de Licitações",
+        base_url="https://www.licitaja.com.br/api/v1",
+        enabled=False,  # Requires LICITAJA_API_KEY
+        timeout=30,
+        rate_limit_rps=0.17,  # ~10 req/min
+        priority=4,  # After PNCP(1), PCP(2), ComprasGov(3)
+    ))
+
     querido_diario: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
         code=SourceCode.QUERIDO_DIARIO,
         name="Querido Diário - Diários Oficiais Municipais",
@@ -415,6 +426,11 @@ class SourceConfig:
         )
         config.bll.enabled = os.getenv("ENABLE_SOURCE_BLL", "false").lower() == "true"
         config.bnc.enabled = os.getenv("ENABLE_SOURCE_BNC", "false").lower() == "true"
+        # LicitaJá: requires API key, disabled by default
+        from config.base import str_to_bool as _str_to_bool
+        config.licitaja.enabled = _str_to_bool(
+            os.getenv("LICITAJA_ENABLED", "false")
+        )
         config.querido_diario.enabled = (
             os.getenv("ENABLE_SOURCE_QUERIDO_DIARIO", "false").lower() == "true"
         )
@@ -439,6 +455,13 @@ class SourceConfig:
         config.licitar.credentials = SourceCredentials(
             api_key=os.getenv("LICITAR_API_KEY")
         )
+        config.licitaja.credentials = SourceCredentials(
+            api_key=os.getenv("LICITAJA_API_KEY")
+        )
+        # LicitaJá: configurable timeout from env
+        licitaja_timeout = os.getenv("LICITAJA_TIMEOUT")
+        if licitaja_timeout:
+            config.licitaja.timeout = int(licitaja_timeout)
         config.bll.credentials = SourceCredentials.from_env("BLL")
         config.bnc.credentials = SourceCredentials.from_env("BNC")
 
@@ -460,7 +483,7 @@ class SourceConfig:
             List of enabled source code strings
         """
         sources = []
-        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.bll, self.bnc, self.querido_diario]:
+        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.licitaja, self.bll, self.bnc, self.querido_diario]:
             if source.enabled:
                 sources.append(source.code.value)
         return sources
@@ -495,6 +518,7 @@ class SourceConfig:
             "Licitar": self.licitar,
             "ComprasGov": self.compras_gov,
             "PortalTransparencia": self.portal_transparencia,
+            "LicitaJa": self.licitaja,
             "BLL": self.bll,
             "BNC": self.bnc,
             "QueridoDiario": self.querido_diario,
@@ -509,7 +533,7 @@ class SourceConfig:
             List of SingleSourceConfig objects for enabled sources
         """
         configs = []
-        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.bll, self.bnc, self.querido_diario]:
+        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.licitaja, self.bll, self.bnc, self.querido_diario]:
             if source.enabled:
                 configs.append(source)
         return sorted(configs, key=lambda s: s.priority)
@@ -520,7 +544,7 @@ class SourceConfig:
         STORY-257A AC13: For health endpoint reporting.
         """
         pending = []
-        for source in [self.portal, self.licitar, self.portal_transparencia, self.bll, self.bnc]:
+        for source in [self.portal, self.licitar, self.portal_transparencia, self.licitaja, self.bll, self.bnc]:
             if source.enabled and not source.is_available():
                 pending.append(source.code.value)
         return pending
@@ -550,6 +574,11 @@ class SourceConfig:
         if self.portal_transparencia.enabled and not self.portal_transparencia.credentials.has_api_key():
             messages.append(
                 "WARNING: Portal da Transparência enabled but PORTAL_TRANSPARENCIA_API_KEY not set"
+            )
+
+        if self.licitaja.enabled and not self.licitaja.credentials.has_api_key():
+            messages.append(
+                "WARNING: LicitaJá enabled but LICITAJA_API_KEY not set"
             )
 
         # Check timeout configuration

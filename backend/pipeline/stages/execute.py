@@ -458,6 +458,23 @@ async def _execute_multi_source(
                 timeout=source_config.portal.timeout,
             )
 
+    # LicitaJá: commercial aggregator (requires API key + LICITAJA_ENABLED flag)
+    if source_config.licitaja.enabled and source_config.licitaja.is_available():
+        from config import LICITAJA_ENABLED
+        if not LICITAJA_ENABLED:
+            logger.info("[MULTI-SOURCE] LicitaJá DISABLED via LICITAJA_ENABLED flag — skipping")
+            skipped_sources.append("LICITAJA")
+        else:
+            licitaja_cb = get_circuit_breaker("licitaja")
+            if licitaja_cb.is_degraded:
+                logger.warning("[MULTI-SOURCE] LicitaJá circuit breaker OPEN — skipping source")
+                skipped_sources.append("LICITAJA")
+            else:
+                from clients.licitaja_client import LicitaJaAdapter
+                adapters["LICITAJA"] = LicitaJaAdapter(
+                    timeout=source_config.licitaja.timeout,
+                )
+
     # STORY-305 AC10: If ALL sources are CB OPEN, pipeline will get no adapters.
     # ConsolidationService handles empty adapters -> AllSourcesFailedError -> cache stale path.
     if skipped_sources:

@@ -46,6 +46,9 @@ PENDING_REVIEW_TTL_SECONDS: int = int(os.getenv("PENDING_REVIEW_TTL_SECONDS", "8
 PENDING_REVIEW_MAX_RETRIES: int = int(os.getenv("PENDING_REVIEW_MAX_RETRIES", "3"))
 PENDING_REVIEW_RETRY_DELAY: int = int(os.getenv("PENDING_REVIEW_RETRY_DELAY", "300"))
 
+# LicitaJá Source
+LICITAJA_ENABLED: bool = str_to_bool(os.getenv("LICITAJA_ENABLED", "false"))
+
 # D-01: Item Inspection (Gray Zone)
 ITEM_INSPECTION_ENABLED: bool = str_to_bool(os.getenv("ITEM_INSPECTION_ENABLED", "true"))
 _MAX_ITEM_RAW = int(os.getenv("MAX_ITEM_INSPECTIONS", "20"))
@@ -148,6 +151,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "LLM_FALLBACK_PENDING_ENABLED": ("LLM_FALLBACK_PENDING_ENABLED", "true"),
     "PARTIAL_DATA_SSE_ENABLED": ("PARTIAL_DATA_SSE_ENABLED", "true"),
     "COMPRASGOV_ENABLED": ("COMPRASGOV_ENABLED", "false"),
+    "LICITAJA_ENABLED": ("LICITAJA_ENABLED", "false"),
 }
 
 
