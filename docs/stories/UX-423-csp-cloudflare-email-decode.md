@@ -1,6 +1,6 @@
 # UX-423 — CSP Bloqueia Cloudflare Email Decode na Página de Planos
 
-**Status:** Draft
+**Status:** Done
 **Severity:** MEDIUM
 **Origin:** Auditoria UX Playwright 25/03/2026
 **Agent:** @ux-design-expert (Uma)
@@ -11,7 +11,7 @@ Console error na página /planos: "Loading the script 'cloudflare-static/email-d
 
 ## Acceptance Criteria
 
-- [ ] AC1: Adicionar domínio Cloudflare ao CSP script-src OU desabilitar email obfuscation no Cloudflare dashboard
-- [ ] AC2: Zero erros CSP no console da página /planos
-- [ ] AC3: Substituir email inexistente contato@smartlic.tech por email válido (ex: tiago.sasaki@confenge.com.br) ou remover link mailto
-- [ ] AC4: Se email for mantido, configurar caixa de entrada no domínio smartlic.tech
+- [x] AC1: Adicionar domínio Cloudflare ao CSP script-src OU desabilitar email obfuscation no Cloudflare dashboard
+- [x] AC2: Zero erros CSP no console da página /planos
+- [x] AC3: Substituir email inexistente contato@smartlic.tech por email válido (ex: tiago.sasaki@confenge.com.br) ou remover link mailto
+- [x] AC4: Se email for mantido, configurar caixa de entrada no domínio smartlic.tech

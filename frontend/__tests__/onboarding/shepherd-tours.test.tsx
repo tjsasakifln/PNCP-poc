@@ -101,6 +101,9 @@ function resetAll() {
   localStorage.clear();
   sessionStorage.clear();
 
+  // Mock document.querySelector so startTour() element-existence check always passes
+  jest.spyOn(document, "querySelector").mockReturnValue(document.body as any);
+
   // Jest config has resetMocks: true — must re-establish implementations each test
   const shepherd = require("shepherd.js") as any;
   const instance = shepherd.__mockInstance;

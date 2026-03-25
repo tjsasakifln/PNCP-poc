@@ -56,18 +56,24 @@ export function DashboardRetryingState({ retryCount }: { retryCount: number }) {
   );
 }
 
-// Loading skeleton shown on initial load (max 10s)
+// UX-416 AC3: Labeled loading skeleton shown on initial load (max 10s)
 export function DashboardLoadingSkeleton() {
   return (
-    <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
+    <div className="min-h-screen bg-[var(--canvas)] py-8 px-4" data-testid="dashboard-skeleton">
       <div className="max-w-6xl mx-auto">
         <div className="h-8 w-48 bg-[var(--surface-1)] rounded animate-pulse mb-8" />
+        {/* UX-416 AC3: Labeled skeleton sections */}
+        <p className="text-xs text-[var(--ink-muted)] mb-2">Carregando métricas...</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-[var(--surface-1)] rounded-card animate-pulse" />
+          {['Análises', 'Oportunidades', 'Valor descoberto', 'Tempo economizado'].map((label) => (
+            <div key={label} className="h-32 bg-[var(--surface-1)] rounded-card animate-pulse flex items-end p-3">
+              <span className="text-[10px] text-[var(--ink-faint)]">{label}</span>
+            </div>
           ))}
         </div>
+        <p className="text-xs text-[var(--ink-muted)] mb-2">Carregando gráfico de atividade...</p>
         <div className="h-64 bg-[var(--surface-1)] rounded-card animate-pulse mb-8" />
+        <p className="text-xs text-[var(--ink-muted)] mb-2">Carregando distribuição...</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="h-48 bg-[var(--surface-1)] rounded-card animate-pulse" />
           <div className="h-48 bg-[var(--surface-1)] rounded-card animate-pulse" />

@@ -1,6 +1,6 @@
 # UX-419 — Dois Footers Redundantes na Página de Busca
 
-**Status:** Draft
+**Status:** Done
 **Severity:** MEDIUM
 **Origin:** Auditoria UX Playwright 25/03/2026
 **Agent:** @ux-design-expert (Uma)
@@ -11,6 +11,6 @@ Página de busca tem dois footers: um interno com links (Sobre, Planos, Suporte,
 
 ## Acceptance Criteria
 
-- [ ] AC1: Manter apenas footer secundário compacto na página de busca (com resultados)
-- [ ] AC2: Footer completo pode aparecer apenas quando não há resultados (empty state)
-- [ ] AC3: Garantir que links essenciais (Termos, Privacidade) permaneçam acessíveis
+- [x] AC1: Manter apenas footer secundário compacto na página de busca (com resultados)
+- [x] AC2: Footer completo pode aparecer apenas quando não há resultados (empty state)
+- [x] AC3: Garantir que links essenciais (Termos, Privacidade) permaneçam acessíveis

@@ -180,44 +180,17 @@ function HomePageContent() {
         </PullToRefresh>
       </main>
 
-      {/* DEBT-111 AC9: Feature-rich search footer — intentional dual-footer with NavigationShell minimal footer (SAB-013 AC7, DEBT-105 AC8) */}
-      <footer className="bg-surface-1 text-ink border-t border-[var(--border)] mt-12" aria-label="Links uteis da busca">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="font-bold text-lg mb-4 text-ink">Sobre</h3>
-              <ul className="space-y-2 text-sm text-ink-secondary">
-                <li><a href="/#sobre" className="hover:text-brand-blue transition-colors">Quem somos</a></li>
-                <li><a href="/#como-funciona" className="hover:text-brand-blue transition-colors">Como funciona</a></li>
-              </ul>
+      {/* UX-419: Compact search footer — single footer replaces redundant dual-footer */}
+      <footer className="bg-surface-1 text-ink border-t border-[var(--border)] mt-12" aria-label="Links úteis">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-ink-secondary">
+              <a href="/planos" className="hover:text-brand-blue transition-colors">Planos e Preços</a>
+              <a href="/privacidade" className="hover:text-brand-blue transition-colors">Política de Privacidade</a>
+              <a href="/termos" className="hover:text-brand-blue transition-colors">Termos de Uso</a>
+              <button onClick={() => orch.setShowKeyboardHelp(true)} className="hover:text-brand-blue transition-colors text-left">Atalhos de Teclado</button>
             </div>
-            <div>
-              <h3 className="font-bold text-lg mb-4 text-ink">Planos</h3>
-              <ul className="space-y-2 text-sm text-ink-secondary">
-                <li><a href="/planos" className="hover:text-brand-blue transition-colors">Planos e Precos</a></li>
-                <li><button onClick={() => orch.setShowKeyboardHelp(true)} className="hover:text-brand-blue transition-colors text-left">Atalhos de Teclado</button></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-bold text-lg mb-4 text-ink">Suporte</h3>
-              <ul className="space-y-2 text-sm text-ink-secondary">
-                <li><a href="/mensagens" className="hover:text-brand-blue transition-colors">Central de Ajuda</a></li>
-                <li><a href="/mensagens" className="hover:text-brand-blue transition-colors">Contato</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-bold text-lg mb-4 text-ink">Legal</h3>
-              <ul className="space-y-2 text-sm text-ink-secondary">
-                <li><a href="/privacidade" className="hover:text-brand-blue transition-colors">Politica de Privacidade</a></li>
-                <li><a href="/termos" className="hover:text-brand-blue transition-colors">Termos de Uso</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-[var(--border-strong)] pt-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-ink-secondary">© 2026 {APP_NAME}. Todos os direitos reservados.</p>
-              <p className="text-sm text-ink-secondary">CONFENGE Avaliacoes e Inteligencia Artificial LTDA</p>
-            </div>
+            <p className="text-xs text-ink-muted">© 2026 {APP_NAME} · CONFENGE Avaliações e Inteligência Artificial LTDA</p>
           </div>
         </div>
       </footer>

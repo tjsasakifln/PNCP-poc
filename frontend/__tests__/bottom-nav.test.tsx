@@ -44,10 +44,10 @@ describe("BottomNav", () => {
     expect(nav).toBeInTheDocument();
 
     // SAB-012 AC8: Abbreviated labels (SHIP-002: Mensagens removed, Dash added)
-    expect(screen.getByText("Busca")).toBeInTheDocument();
+    expect(screen.getByText("Buscar")).toBeInTheDocument();
     expect(screen.getByText("Pipeline")).toBeInTheDocument();
-    expect(screen.getByText("Hist.")).toBeInTheDocument();
-    expect(screen.getByText("Dash")).toBeInTheDocument();
+    expect(screen.getByText("Histórico")).toBeInTheDocument();
+    expect(screen.getByText("Painel")).toBeInTheDocument();
     expect(screen.getByText("Mais")).toBeInTheDocument();
   });
 
@@ -63,7 +63,7 @@ describe("BottomNav", () => {
     render(<BottomNav />);
     // All items should have visible text labels
     // SAB-012 AC8: Abbreviated labels (SHIP-002: Mensagens removed, Dash added)
-    const items = ["Busca", "Pipeline", "Hist.", "Dash", "Mais"];
+    const items = ["Buscar", "Pipeline", "Histórico", "Painel", "Mais"];
     items.forEach((label) => {
       const el = screen.getByText(label);
       expect(el).toBeInTheDocument();

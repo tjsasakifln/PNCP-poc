@@ -106,7 +106,7 @@ describe("MobileDrawer", () => {
     render(<MobileDrawer open={true} onClose={onClose} />);
     expect(screen.getByText("Buscar")).toBeInTheDocument();
     expect(screen.getByText("Pipeline")).toBeInTheDocument();
-    expect(screen.getByText("Historico")).toBeInTheDocument();
+    expect(screen.getByText("Histórico")).toBeInTheDocument();
     expect(screen.queryByText("Mensagens")).not.toBeInTheDocument();
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
   });

@@ -17,18 +17,25 @@ interface StatsSectionProps {
  */
 export default function StatsSection({ className = '' }: StatsSectionProps) {
   const { ref, isInView } = useInView({ threshold: 0.2 });
-  const [counts, setCounts] = useState({ sectors: 0, rules: 0, states: 0, filtered: 0 });
+  // UX-422 AC1+AC3: Initialize with final values (not zero) for SSR/SEO and no-JS fallback
+  const TARGETS = { sectors: 15, rules: 1000, states: 27 };
+  const [counts, setCounts] = useState(TARGETS);
   const hasAnimated = useRef(false);
 
   // STORY-351 AC4: Fetch discard rate from backend (FE-007: SWR)
   const { discardRate, isLoading: discardLoading } = useDiscardRate();
+  const [filteredCount, setFilteredCount] = useState(discardRate ?? 87);
 
+  // UX-422 AC1: Animate only when IntersectionObserver fires (reset to 0, then count up)
   useEffect(() => {
     if (!isInView || hasAnimated.current || discardLoading) return;
     hasAnimated.current = true;
 
-    const filteredTarget = discardRate ?? 0; // 0 means fallback text, not animated
-    const targets = { sectors: 15, rules: 1000, states: 27, filtered: filteredTarget };
+    const filteredTarget = discardRate ?? 87;
+    // Start animation from 0
+    setCounts({ sectors: 0, rules: 0, states: 0 });
+    setFilteredCount(0);
+
     const duration = 1200;
     const steps = 40;
     let step = 0;
@@ -37,11 +44,11 @@ export default function StatsSection({ className = '' }: StatsSectionProps) {
       step++;
       const progress = step / steps;
       setCounts({
-        sectors: Math.min(Math.round(targets.sectors * progress), targets.sectors),
-        rules: Math.min(Math.round(targets.rules * progress), targets.rules),
-        states: Math.min(Math.round(targets.states * progress), targets.states),
-        filtered: Math.min(Math.round(targets.filtered * progress), targets.filtered),
+        sectors: Math.min(Math.round(TARGETS.sectors * progress), TARGETS.sectors),
+        rules: Math.min(Math.round(TARGETS.rules * progress), TARGETS.rules),
+        states: Math.min(Math.round(TARGETS.states * progress), TARGETS.states),
       });
+      setFilteredCount(Math.min(Math.round(filteredTarget * progress), filteredTarget));
       if (step >= steps) clearInterval(timer);
     }, duration / steps);
 
@@ -50,8 +57,7 @@ export default function StatsSection({ className = '' }: StatsSectionProps) {
 
   // STORY-351 AC4: Determine label — use "a maioria" if no data available
   const showFallbackLabel = !discardLoading && discardRate === null;
-  const filteredDisplay = showFallbackLabel ? 'A maioria' : `${counts.filtered}%`;
-  // During animation with rate=0, show text not "0%"
+  const filteredDisplay = showFallbackLabel ? 'A maioria' : `${filteredCount}%`;
   const filteredAriaLabel = showFallbackLabel
     ? 'A maioria dos editais descartados'
     : `${discardRate ?? 87}% de editais descartados`;

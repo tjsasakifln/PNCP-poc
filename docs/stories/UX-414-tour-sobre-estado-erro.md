@@ -1,6 +1,6 @@
 # UX-414 — Tour Guiado Aparece Sobre Estado de Erro
 
-**Status:** Draft
+**Status:** Done
 **Severity:** CRITICAL
 **Origin:** Auditoria UX Playwright 25/03/2026
 **Agent:** @ux-design-expert (Uma)
@@ -20,12 +20,12 @@ Experiência absurda: tutorial ensinando a usar feature que está quebrada. Dest
 
 ## Acceptance Criteria
 
-- [ ] AC1: Tour NÃO inicia se Pipeline falhou ao carregar (verificar estado de erro antes de ativar Shepherd)
-- [ ] AC2: Tour só inicia quando kanban board está renderizado e com dados
-- [ ] AC3: Se Pipeline está vazio (0 itens, sem erro), tour pode iniciar com step adaptado ("Adicione licitações via busca")
-- [ ] AC4: Shepherd step com elemento não encontrado deve silenciar, não crashar
+- [x] AC1: Tour NÃO inicia se Pipeline falhou ao carregar (verificar estado de erro antes de ativar Shepherd)
+- [x] AC2: Tour só inicia quando kanban board está renderizado e com dados
+- [x] AC3: Se Pipeline está vazio (0 itens, sem erro), tour pode iniciar com step adaptado ("Adicione licitações via busca")
+- [x] AC4: Shepherd step com elemento não encontrado deve silenciar, não crashar
 
 ## File List
 
-- [ ] `frontend/app/pipeline/` — componente Pipeline, lógica do tour
-- [ ] Shepherd.js configuração — verificar `beforeShowPromise` ou `showOn` conditions
+- [x] `frontend/app/pipeline/` — componente Pipeline, lógica do tour
+- [x] Shepherd.js configuração — verificar `beforeShowPromise` ou `showOn` conditions

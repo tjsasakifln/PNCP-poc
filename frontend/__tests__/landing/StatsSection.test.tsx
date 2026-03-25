@@ -1,8 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 
 // Mock useInView — jsdom has no IntersectionObserver
+// Controllable via mockIsInView so individual tests can opt out of animation
+let mockIsInView = true;
 jest.mock('../../app/hooks/useInView', () => ({
-  useInView: () => ({ ref: { current: null }, isInView: true }),
+  useInView: () => ({ ref: { current: null }, isInView: mockIsInView }),
 }));
 
 // STORY-351 AC7 / FE-007: Mock useDiscardRate SWR hook
@@ -26,6 +28,7 @@ jest.mock('@/hooks/usePublicMetrics', () => ({
 beforeEach(() => {
   mockDiscardRate = null;
   mockDiscardLoading = false;
+  mockIsInView = true;
 });
 
 import StatsSection from '@/app/components/landing/StatsSection';
@@ -105,13 +108,17 @@ describe('StatsSection', () => {
     expect(screen.getByText(/estados cobertos/i)).toBeInTheDocument();
   });
 
-  it('starts counters at 0 before animation (SAB-006 AC6 — FOUC fix)', () => {
-    mockDiscardLoading = true; // simulate loading to keep counters at 0
+  it('initializes counters with final values for SSR/SEO (UX-422 AC1)', () => {
+    // UX-422: counters now start at final values (15, 1000, 27) for SSR/SEO,
+    // then animate from 0 when IntersectionObserver fires.
+    // Use isInView=false so the animation effect does not reset counters to 0.
+    mockIsInView = false;
     render(<StatsSection />);
 
-    // Initial render: counters start at 0 but section has opacity: 0 → no FOUC
-    const zeros = screen.getAllByText('0');
-    expect(zeros.length).toBeGreaterThan(0);
+    // Initial render: counters show final values (not 0) — SSR-friendly
+    expect(screen.getByText('15')).toBeInTheDocument();
+    expect(screen.getByText('1000+')).toBeInTheDocument();
+    expect(screen.getByText('27')).toBeInTheDocument();
   });
 
   it('uses hero number layout', () => {

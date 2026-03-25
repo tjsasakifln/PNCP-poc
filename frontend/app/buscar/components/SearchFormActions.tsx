@@ -65,7 +65,7 @@ export default function SearchFormActions({
           size="lg"
           className="w-full text-brand-navy border-brand-navy hover:bg-brand-blue-subtle
                      disabled:text-ink-muted disabled:border-ink-faint"
-          title={isMaxCapacity ? "Máximo de 10 análises salvas atingido" : "Salvar esta análise"}
+          title={isMaxCapacity ? "Máximo de 10 análises salvas atingido" : "Salvar esta análise para acessar depois em 'Análises Salvas'"}
         >
           <Bookmark className="w-5 h-5" strokeWidth={2} aria-hidden="true" />
           {isMaxCapacity ? "Limite de análises atingido" : "Salvar Análise"}

@@ -34,8 +34,8 @@ export const SEARCH_TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'search-period',
-    title: 'Defina o periodo',
-    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Defina o periodo para buscar editais recentes.</p>',
+    title: 'Defina o período',
+    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Defina o período para buscar editais recentes.</p>',
     attachTo: { element: '[data-tour="period-selector"]', on: 'bottom' },
   },
   {
@@ -50,7 +50,7 @@ export const RESULTS_TOUR_STEPS: TourStep[] = [
   {
     id: 'results-card',
     title: 'Suas oportunidades',
-    text: '<span class="tour-step-counter">Passo 1 de 4</span><p>Cada card mostra uma oportunidade com data, valor e orgao.</p>',
+    text: '<span class="tour-step-counter">Passo 1 de 4</span><p>Cada card mostra uma oportunidade com data, valor e órgão.</p>',
     attachTo: { element: '[data-tour="result-card"]', on: 'bottom' },
   },
   {
@@ -62,13 +62,13 @@ export const RESULTS_TOUR_STEPS: TourStep[] = [
   {
     id: 'results-pipeline',
     title: 'Pipeline de oportunidades',
-    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Clique em "Pipeline" para salvar oportunidades promissoras e acompanha-las no kanban.</p>',
+    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Clique em "Pipeline" para salvar oportunidades promissoras e acompanhá-las no kanban.</p>',
     attachTo: { element: '[data-tour="pipeline-button"]', on: 'bottom' },
   },
   {
     id: 'results-excel',
     title: 'Exporte para Excel',
-    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Exporte resultados para Excel para analise detalhada.</p>',
+    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Exporte resultados para Excel para análise detalhada.</p>',
     attachTo: { element: '[data-tour="excel-button"]', on: 'top' },
   },
 ];

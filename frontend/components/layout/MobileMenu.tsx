@@ -167,7 +167,7 @@ export default function MobileMenu({ isOpen, onClose, user, scrollToSection }: M
         ref={menuRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Menu de navegacao"
+        aria-label="Menu de navegação"
         className="fixed top-0 right-0 z-50 h-full w-[280px] max-w-[80vw] bg-[var(--surface-0)] shadow-2xl
                    transform transition-transform duration-300 ease-out
                    animate-slide-in-right"

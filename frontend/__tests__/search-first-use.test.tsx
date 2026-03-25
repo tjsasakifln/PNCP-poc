@@ -200,17 +200,17 @@ describe("UX-346: First-Use Experience", () => {
     jest.clearAllMocks();
   });
 
-  // ---------- AC8: Collapsed on first access ----------
+  // ---------- AC8: Expanded on first access (UX-417) ----------
 
-  describe("AC8: First access — collapsed", () => {
-    it("Personalizar análise is collapsed on first access", () => {
+  describe("AC8: First access — expanded", () => {
+    it("Personalizar análise is expanded on first access (UX-417 default-open)", () => {
       render(<HomePage />);
 
-      // Compact summary should be visible (data-testid)
-      expect(screen.getByTestId("compact-summary")).toBeInTheDocument();
+      // UX-417: Filters are open by default — "Selecionar todos" should be visible
+      expect(screen.getByText("Selecionar todos")).toBeInTheDocument();
 
-      // "Selecionar todos" only renders when accordion is open
-      expect(screen.queryByText("Selecionar todos")).not.toBeInTheDocument();
+      // Compact summary is NOT visible when accordion is open
+      expect(screen.queryByTestId("compact-summary")).not.toBeInTheDocument();
     });
 
     it("shows first-use tip for new users", () => {
@@ -243,9 +243,8 @@ describe("UX-346: First-Use Experience", () => {
   // ---------- AC9: Returning user — respects localStorage ----------
 
   describe("AC9: Returning user state persistence", () => {
-    it("respects localStorage open state for returning user", () => {
-      localStorage.setItem("smartlic-has-searched", "true");
-      localStorage.setItem("smartlic-customize-open", "open");
+    it("respects localStorage open state (smartlic:buscar:filters-expanded=true)", () => {
+      localStorage.setItem("smartlic:buscar:filters-expanded", "true");
 
       render(<HomePage />);
 
@@ -256,9 +255,8 @@ describe("UX-346: First-Use Experience", () => {
       expect(screen.queryByTestId("compact-summary")).not.toBeInTheDocument();
     });
 
-    it("respects localStorage closed state for returning user", () => {
-      localStorage.setItem("smartlic-has-searched", "true");
-      localStorage.setItem("smartlic-customize-open", "closed");
+    it("respects localStorage closed state (smartlic:buscar:filters-expanded=false)", () => {
+      localStorage.setItem("smartlic:buscar:filters-expanded", "false");
 
       render(<HomePage />);
 
@@ -269,21 +267,26 @@ describe("UX-346: First-Use Experience", () => {
       expect(screen.queryByText("Selecionar todos")).not.toBeInTheDocument();
     });
 
-    it("first-time user ignores customize-open localStorage", () => {
-      // User somehow has customize-open but hasn't searched
-      localStorage.setItem("smartlic-customize-open", "open");
-
+    it("defaults to open when no localStorage key present (UX-417)", () => {
+      // No localStorage — should default to open
       render(<HomePage />);
 
-      // Should still be collapsed for first-time user
-      expect(screen.getByTestId("compact-summary")).toBeInTheDocument();
-      expect(screen.queryByText("Selecionar todos")).not.toBeInTheDocument();
+      // UX-417: default is open
+      expect(screen.getByText("Selecionar todos")).toBeInTheDocument();
+      expect(screen.queryByTestId("compact-summary")).not.toBeInTheDocument();
     });
   });
 
   // ---------- AC10: Compact summary content ----------
+  // Compact summary is shown when filters accordion is closed.
+  // Since UX-417 defaults to open, these tests set localStorage to closed first.
 
   describe("AC10: Compact summary content", () => {
+    beforeEach(() => {
+      // Close the accordion so compact-summary is visible
+      localStorage.setItem("smartlic:buscar:filters-expanded", "false");
+    });
+
     it("shows Todo o Brasil for all 27 UFs", () => {
       render(<HomePage />);
 
@@ -314,7 +317,7 @@ describe("UX-346: First-Use Experience", () => {
     it("clicking compact summary expands accordion", () => {
       render(<HomePage />);
 
-      // Accordion is collapsed
+      // Accordion is collapsed (localStorage set to false above)
       expect(screen.queryByText("Selecionar todos")).not.toBeInTheDocument();
 
       // Click summary to expand

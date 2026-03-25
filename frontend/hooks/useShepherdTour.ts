@@ -18,9 +18,11 @@ export interface UseShepherdTourOptions {
   steps: TourStep[];
   onComplete?: (stepsSeen: number) => void;
   onSkip?: (skippedAtStep: number) => void;
+  /** UX-414: When true, tour will not start (e.g., page in error state) */
+  disabled?: boolean;
 }
 
-export function useShepherdTour({ tourId, steps, onComplete, onSkip }: UseShepherdTourOptions) {
+export function useShepherdTour({ tourId, steps, onComplete, onSkip, disabled = false }: UseShepherdTourOptions) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tourRef = useRef<any>(null);
   const [isActive, setIsActive] = useState(false);
@@ -140,12 +142,19 @@ export function useShepherdTour({ tourId, steps, onComplete, onSkip }: UseShephe
   }, [tourId, markCompleted]);
 
   const startTour = useCallback(() => {
+    // UX-414: Do not start tour when page is in error state or disabled
+    if (disabled) return;
     if (tourRef.current && !tourRef.current.isActive()) {
+      // UX-414 AC3: Verify all target elements exist before starting
+      const missingElement = stepsRef.current.some(
+        (step) => step.attachTo?.element && !document.querySelector(step.attachTo.element)
+      );
+      if (missingElement) return;
       stepsSeen.current = 0;
       tourRef.current.start();
       setIsActive(true);
     }
-  }, []);
+  }, [disabled]);
 
   const restartTour = useCallback(() => {
     resetCompletion();

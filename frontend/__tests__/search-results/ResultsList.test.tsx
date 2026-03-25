@@ -129,7 +129,7 @@ describe("ResultsList", () => {
       />
     );
     const paginations = screen.getAllByTestId("results-pagination");
-    expect(paginations).toHaveLength(2);
+    expect(paginations).toHaveLength(1);
   });
 
   it("passes correct props to pagination", () => {

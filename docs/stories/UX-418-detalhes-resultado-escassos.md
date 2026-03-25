@@ -1,6 +1,6 @@
 # UX-418 — Detalhes Expandidos do Resultado São Muito Escassos
 
-**Status:** Draft
+**Status:** Done
 **Severity:** HIGH
 **Origin:** Auditoria UX Playwright 25/03/2026
 **Agent:** @ux-design-expert (Uma)
@@ -21,10 +21,10 @@ Usuário precisa clicar "Ver edital" (link externo) para obter informações bá
 
 ## Acceptance Criteria
 
-- [ ] AC1: Detalhes expandidos incluem: número do processo/edital, CNPJ do órgão
-- [ ] AC2: Data/hora exata de encerramento de propostas (não só "Último dia")
-- [ ] AC3: Critério de julgamento (menor preço, técnica e preço, etc.)
-- [ ] AC4: Link direto para edital PDF quando disponível na API
-- [ ] AC5: Quantidade de itens/lotes (se disponível)
-- [ ] AC6: Fonte do dado (PNCP, PCP, ComprasGov) visível nos detalhes
-- [ ] AC7: Campos com dados da API PNCP que já estão disponíveis no backend mas não são exibidos
+- [x] AC1: Detalhes expandidos incluem: número do processo/edital, CNPJ do órgão
+- [x] AC2: Data/hora exata de encerramento de propostas (não só "Último dia")
+- [x] AC3: Critério de julgamento (menor preço, técnica e preço, etc.)
+- [x] AC4: Link direto para edital PDF quando disponível na API
+- [x] AC5: Quantidade de itens/lotes (se disponível)
+- [x] AC6: Fonte do dado (PNCP, PCP, ComprasGov) visível nos detalhes
+- [x] AC7: Campos com dados da API PNCP que já estão disponíveis no backend mas não são exibidos

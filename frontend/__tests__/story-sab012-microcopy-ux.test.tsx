@@ -300,32 +300,29 @@ describe("SAB-012 AC7-AC9: Mobile bottom nav abbreviations", () => {
     };
   });
 
-  // SHIP-002: Mensagens removed, Dash added in place of Msgs
-  it("AC8: uses abbreviated labels consistently", () => {
+  // UX-424: Full labels replace abbreviations (no truncation on 375px)
+  it("AC8: uses full labels consistently", () => {
     render(<BottomNav />);
 
-    expect(screen.getByText("Busca")).toBeInTheDocument();
+    expect(screen.getByText("Buscar")).toBeInTheDocument();
     expect(screen.getByText("Pipeline")).toBeInTheDocument();
-    expect(screen.getByText("Hist.")).toBeInTheDocument();
-    expect(screen.getByText("Dash")).toBeInTheDocument();
+    expect(screen.getByText("Histórico")).toBeInTheDocument();
+    expect(screen.getByText("Painel")).toBeInTheDocument();
     expect(screen.getByText("Mais")).toBeInTheDocument();
   });
 
-  it("AC8: old long labels are not present", () => {
+  it("AC8: old abbreviated labels are not present", () => {
     render(<BottomNav />);
 
-    expect(screen.queryByText("Buscar")).not.toBeInTheDocument();
-    expect(screen.queryByText("Histórico")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hist.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dash")).not.toBeInTheDocument();
   });
 
-  it("AC9: abbreviated items have aria-label for accessibility", () => {
+  it("AC9: items have aria-label for accessibility", () => {
     render(<BottomNav />);
 
-    const histLink = screen.getByText("Hist.").closest("a");
-    expect(histLink).toHaveAttribute("aria-label", "Histórico");
-
-    const dashLink = screen.getByText("Dash").closest("a");
-    expect(dashLink).toHaveAttribute("aria-label", "Dashboard");
+    const painelLink = screen.getByText("Painel").closest("a");
+    expect(painelLink).toHaveAttribute("aria-label", "Dashboard");
   });
 
   it("AC9: labels have truncate class to prevent overflow", () => {

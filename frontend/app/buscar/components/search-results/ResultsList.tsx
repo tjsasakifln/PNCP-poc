@@ -86,14 +86,7 @@ export function ResultsList({
         />
       )}
 
-      {/* STORY-333 AC3: Bottom Pagination */}
-      <ResultsPagination
-        totalItems={totalLicitacoes}
-        currentPage={currentPage}
-        pageSize={pageSize}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-      />
+      {/* UX-421 AC4: Single pagination (top only) — removed duplicate bottom pagination */}
 
       {/* STORY-320 AC7: Blurred results preview + paywall overlay for limited_access */}
       {paywallApplied && totalBeforePaywall && totalBeforePaywall > result.licitacoes.length && (

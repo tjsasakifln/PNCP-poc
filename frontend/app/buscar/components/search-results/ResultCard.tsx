@@ -63,9 +63,9 @@ export function ResultCard({
         </div>
         <div>
           <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
-            R$ {result.resumo.valor_total.toLocaleString("pt-BR")}
+            {result.resumo.valor_total > 0 ? `R$ ${result.resumo.valor_total.toLocaleString("pt-BR")}` : "Valor não divulgado"}
           </span>
-          <span className="text-sm sm:text-base text-ink-secondary block mt-1">valor total</span>
+          <span className="text-sm sm:text-base text-ink-secondary block mt-1">{result.resumo.valor_total > 0 ? "valor total" : "valor não disponível nas fontes"}</span>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ export function ResultCard({
       ) : result.resumo.alerta_urgencia ? (
         <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
           <p className="text-sm sm:text-base font-medium text-warning">
-            <span aria-hidden="true">Atencao: </span>
+            <span aria-hidden="true">Atenção: </span>
             {result.resumo.alerta_urgencia}
           </p>
         </div>
@@ -158,7 +158,7 @@ export function ResultCard({
                       {rec.urgencia === "alta" ? "Urgente" : rec.urgencia === "media" ? "Atenção" : "Normal"}
                     </span>
                     <span className="text-sm font-semibold text-brand-navy dark:text-brand-blue">
-                      R$ {rec.valor.toLocaleString("pt-BR")}
+                      {rec.valor > 0 ? `R$ ${rec.valor.toLocaleString("pt-BR")}` : "Valor não divulgado"}
                     </span>
                   </div>
                   <p className="text-sm sm:text-base font-medium text-ink mb-1">{rec.oportunidade}</p>

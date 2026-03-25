@@ -633,20 +633,19 @@ describe("T3 — Buscar page footer always visible (GTM-POLISH-001 AC8)", () => 
     expect(footer).toBeVisible();
   });
 
-  it("footer contains Sobre, Planos, Suporte, Legal sections", () => {
+  // UX-419: Compact footer replaces 4-section footer with inline links
+  it("footer contains essential links (Planos, Privacidade, Termos)", () => {
     render(<HomePage />);
 
-    expect(screen.getByText("Sobre")).toBeInTheDocument();
-    expect(screen.getByText("Planos")).toBeInTheDocument();
-    expect(screen.getByText("Suporte")).toBeInTheDocument();
-    expect(screen.getByText("Legal")).toBeInTheDocument();
+    expect(screen.getByText(/Planos e Preços/i)).toBeInTheDocument();
+    expect(screen.getByText(/Política de Privacidade/i)).toBeInTheDocument();
+    expect(screen.getByText(/Termos de Uso/i)).toBeInTheDocument();
   });
 
   it("footer contains copyright notice", () => {
     render(<HomePage />);
-    // Matches "© 2026 SmartLic.tech. Todos os direitos reservados."
     expect(
-      screen.getByText(/Todos os direitos reservados/i)
+      screen.getByText(/CONFENGE Avaliações/i)
     ).toBeInTheDocument();
   });
 });

@@ -27,7 +27,7 @@ function getStoredPageSize(): PageSize {
   if (stored && PAGE_SIZES.includes(Number(stored) as PageSize)) {
     return Number(stored) as PageSize;
   }
-  return 20;
+  return 10;
 }
 
 function storePageSize(size: PageSize) {
@@ -83,6 +83,17 @@ export function Pagination({
   }, [currentPage, scrollTargetId]);
 
   if (totalItems === 0) return null;
+
+  // UX-421 AC1+AC2: Hide full pagination when results fit in one page; show simple count
+  if (totalItems <= pageSize) {
+    return (
+      <div className="py-3" data-testid="pagination-simple">
+        <p className="text-sm text-[var(--ink-secondary)]" data-testid="pagination-info">
+          {totalItems} {totalItems === 1 ? 'oportunidade' : 'oportunidades'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

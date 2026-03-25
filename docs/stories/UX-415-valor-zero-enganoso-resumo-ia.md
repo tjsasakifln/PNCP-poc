@@ -1,6 +1,6 @@
 # UX-415 — "R$ 0" no Resumo IA é Enganoso Quando Valor Não Foi Informado
 
-**Status:** Draft
+**Status:** Done
 **Severity:** HIGH
 **Origin:** Auditoria UX Playwright 25/03/2026
 **Agent:** @ux-design-expert (Uma)
@@ -15,8 +15,8 @@ Usuário pode interpretar como licitações sem valor, reduzindo interesse. Inco
 
 ## Acceptance Criteria
 
-- [ ] AC1: Resumo IA exibe "Valor não divulgado" em vez de "R$ 0" quando nenhum resultado tem valor
-- [ ] AC2: Métrica grande no resumo mostra "—" ou "N/D" em vez de "R$ 0" quando valor é desconhecido
-- [ ] AC3: Cards mantêm "Valor não informado" (está correto)
-- [ ] AC4: Prompt da IA recebe instrução para diferenciar "sem valor informado" de "valor zero"
-- [ ] AC5: Alerta "2 licitações encerram em 7 dias" deve considerar se licitação já encerrou (hoje É 25/03 e diz "Último dia: 25/03")
+- [x] AC1: Resumo IA exibe "Valor não divulgado" em vez de "R$ 0" quando nenhum resultado tem valor
+- [x] AC2: Métrica grande no resumo mostra "—" ou "N/D" em vez de "R$ 0" quando valor é desconhecido
+- [x] AC3: Cards mantêm "Valor não informado" (está correto)
+- [x] AC4: Prompt da IA recebe instrução para diferenciar "sem valor informado" de "valor zero"
+- [x] AC5: Alerta "2 licitações encerram em 7 dias" deve considerar se licitação já encerrou (hoje É 25/03 e diz "Último dia: 25/03")

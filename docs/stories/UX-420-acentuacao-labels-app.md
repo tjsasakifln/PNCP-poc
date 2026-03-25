@@ -1,6 +1,6 @@
 # UX-420 — Falta de Acentuação em Labels do App
 
-**Status:** Draft
+**Status:** Done
 **Severity:** MEDIUM
 **Origin:** Auditoria UX Playwright 25/03/2026
 **Agent:** @ux-design-expert (Uma)
@@ -22,7 +22,7 @@ Story UX-353 já abordou acentuação parcialmente. Esta story cobre resíduos e
 
 ## Acceptance Criteria
 
-- [ ] AC1: Todos os labels visíveis no app usam acentuação correta do português
-- [ ] AC2: Busca textual por padrões comuns: "Seguranca", "Politica", "Precos", "Avaliacoes", "Historico" sem acentos
-- [ ] AC3: Footer interno e externo com acentuação correta
-- [ ] AC4: Menu de conta com acentuação correta
+- [x] AC1: Todos os labels visíveis no app usam acentuação correta do português
+- [x] AC2: Busca textual por padrões comuns: "Seguranca", "Politica", "Precos", "Avaliacoes", "Historico" sem acentos
+- [x] AC3: Footer interno e externo com acentuação correta
+- [x] AC4: Menu de conta com acentuação correta

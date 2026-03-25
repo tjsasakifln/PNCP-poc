@@ -131,18 +131,12 @@ export function useSearchOrchestration() {
 
   const [lastSearchAvailable, setLastSearchAvailable] = useState(() => checkHasLastSearch());
 
+  // UX-417 AC4: Filters visible by default (open on first access and always)
   const [customizeOpen, setCustomizeOpen] = useState(() => {
-    if (safeGetItem('smartlic-has-searched') !== 'true') return false;
-    const legacy = safeGetItem('smartlic-customize-open');
     const current = safeGetItem('smartlic:buscar:filters-expanded');
     if (current !== null) return current === 'true';
-    if (legacy !== null) {
-      const wasOpen = legacy === 'open';
-      safeSetItem('smartlic:buscar:filters-expanded', String(wasOpen));
-      safeRemoveItem('smartlic-customize-open');
-      return wasOpen;
-    }
-    return false;
+    // UX-417: Default to open (was false before)
+    return true;
   });
 
   useEffect(() => {

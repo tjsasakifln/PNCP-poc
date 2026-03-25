@@ -188,7 +188,7 @@ describe('ContaLayout sidebar (AC5)', () => {
     );
 
     expect(screen.getAllByText(/Perfil/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Seguranca/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Segurança/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Acesso/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Dados e LGPD/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Equipe/i).length).toBeGreaterThan(0);

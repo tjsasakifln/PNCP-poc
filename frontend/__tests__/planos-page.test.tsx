@@ -537,12 +537,12 @@ describe("DEBT-126: Contact row (WhatsApp + Email)", () => {
     expect(screen.getByTestId("icon-message-circle")).toBeInTheDocument();
   });
 
-  it("AC3: Email link with icon showing contato@smartlic.tech", () => {
+  it("AC3: Email link with icon showing tiago.sasaki@confenge.com.br", () => {
     setupMocks({ session: false });
     render(<PlanosPage />);
     const link = screen.getByTestId("email-link");
     expect(link).toBeInTheDocument();
-    expect(link.textContent).toContain("contato@smartlic.tech");
+    expect(link.textContent).toContain("tiago.sasaki@confenge.com.br");
     expect(screen.getByTestId("icon-mail")).toBeInTheDocument();
   });
 
@@ -559,7 +559,7 @@ describe("DEBT-126: Contact row (WhatsApp + Email)", () => {
     setupMocks({ session: false });
     render(<PlanosPage />);
     const link = screen.getByTestId("email-link") as HTMLAnchorElement;
-    expect(link.href).toBe("mailto:contato@smartlic.tech");
+    expect(link.href).toBe("mailto:tiago.sasaki@confenge.com.br");
   });
 
   it("AC8: WhatsApp link opens in new tab with security attrs", () => {

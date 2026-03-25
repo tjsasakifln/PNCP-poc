@@ -13,7 +13,7 @@ import { ErrorBoundary } from "../../components/ErrorBoundary";
 
 const NAV_ITEMS = [
   { href: "/conta/perfil", label: "Perfil", icon: "user" },
-  { href: "/conta/seguranca", label: "Seguranca", icon: "shield" },
+  { href: "/conta/seguranca", label: "Segurança", icon: "shield" },
   { href: "/conta/plano", label: "Acesso", icon: "credit-card" },
   { href: "/conta/dados", label: "Dados e LGPD", icon: "database" },
   { href: "/conta/equipe", label: "Equipe", icon: "users" },

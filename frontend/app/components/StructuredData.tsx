@@ -24,7 +24,7 @@ export function StructuredData() {
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
-      email: 'contato@smartlic.tech',
+      email: 'tiago.sasaki@confenge.com.br',
       availableLanguage: ['Portuguese'],
     },
     sameAs: [

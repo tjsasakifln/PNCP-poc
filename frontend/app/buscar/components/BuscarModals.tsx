@@ -86,12 +86,12 @@ export function BuscarModals({
       <Dialog
         isOpen={showSaveDialog}
         onClose={onCloseSaveDialog}
-        title="Salvar Analise"
+        title="Salvar Análise"
         className="max-w-md"
         id="save-search"
       >
         <div className="mb-4">
-          <label htmlFor="save-search-name" className="block text-sm font-medium text-ink-secondary mb-2">Nome da analise:</label>
+          <label htmlFor="save-search-name" className="block text-sm font-medium text-ink-secondary mb-2">Nome da análise:</label>
           <input
             id="save-search-name"
             type="text"

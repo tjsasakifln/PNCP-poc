@@ -299,7 +299,7 @@ describe('SearchResults Pagination', () => {
     expect(screen.getByTestId('sticky-count')).toHaveTextContent('50 oportunidades');
   });
 
-  // AC3: Pagination appears above and below results
+  // AC3: Pagination appears above results
   it('renders pagination both above and below results', () => {
     const licitacoes = makeLicitacoes(50);
     render(
@@ -317,8 +317,8 @@ describe('SearchResults Pagination', () => {
         } as any}
       />
     );
-    // Should have 2 pagination infos (top + bottom)
+    // Should have 1 pagination info (top only)
     const paginationInfos = screen.getAllByTestId('pagination-info');
-    expect(paginationInfos.length).toBe(2);
+    expect(paginationInfos.length).toBe(1);
   });
 });

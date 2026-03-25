@@ -44,10 +44,10 @@ const icons = {
 // SAB-012 AC8: Abbreviated labels for 375px viewport fit
 // SHIP-002 AC9: Mensagens hidden — feature-gated
 const MAIN_ITEMS: BottomNavItem[] = [
-  { href: "/buscar", label: "Busca", icon: icons.search },
+  { href: "/buscar", label: "Buscar", icon: icons.search },
   { href: "/pipeline", label: "Pipeline", icon: icons.pipeline },
-  { href: "/historico", label: "Hist.", ariaLabel: "Histórico", icon: icons.history },
-  { href: "/dashboard", label: "Dash", ariaLabel: "Dashboard", icon: icons.dashboard },
+  { href: "/historico", label: "Histórico", icon: icons.history },
+  { href: "/dashboard", label: "Painel", ariaLabel: "Dashboard", icon: icons.dashboard },
 ];
 
 // SHIP-002 AC9: Alertas hidden — feature-gated
@@ -164,7 +164,7 @@ export function BottomNav() {
                 aria-label={item.ariaLabel || item.label}
               >
                 {item.icon}
-                <span className="text-[10px] font-medium leading-tight truncate max-w-[56px]">{item.label}</span>
+                <span className="text-[10px] font-medium leading-tight truncate max-w-[64px]">{item.label}</span>
               </Link>
             );
           })}

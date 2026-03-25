@@ -1,6 +1,6 @@
 # UX-424 — Mobile: Bottom Nav com Labels Truncados
 
-**Status:** Draft
+**Status:** Done
 **Severity:** LOW
 **Origin:** Auditoria UX Playwright 25/03/2026
 **Agent:** @ux-design-expert (Uma)
@@ -11,7 +11,7 @@ Bottom navigation bar mobile (375px) mostra labels truncados: "Hist." e "Dash" e
 
 ## Acceptance Criteria
 
-- [ ] AC1: Bottom nav usa apenas ícones sem labels OU labels que cabem sem truncamento
-- [ ] AC2: Considerar "Histórico" → ícone relógio sem texto, "Dashboard" → ícone grid sem texto
-- [ ] AC3: Landing mobile: reduzir espaço vertical entre seções
-- [ ] AC4: Carrossel testimonials: adicionar indicadores de swipe (dots ou arrows)
+- [x] AC1: Bottom nav usa apenas ícones sem labels OU labels que cabem sem truncamento
+- [x] AC2: Considerar "Histórico" → ícone relógio sem texto, "Dashboard" → ícone grid sem texto
+- [x] AC3: Landing mobile: reduzir espaço vertical entre seções
+- [x] AC4: Carrossel testimonials: adicionar indicadores de swipe (dots ou arrows)

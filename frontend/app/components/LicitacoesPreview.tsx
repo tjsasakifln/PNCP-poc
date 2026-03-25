@@ -533,14 +533,51 @@ function BidCard({
               <p className="text-sm text-ink-secondary">
                 <span className="font-medium text-ink">Órgão:</span> {item.orgao}
               </p>
+              {/* UX-418 AC2: CNPJ do órgão */}
+              {item.cnpj_orgao && (
+                <p className="text-sm text-ink-secondary">
+                  <span className="font-medium text-ink">CNPJ:</span> {item.cnpj_orgao}
+                </p>
+              )}
+              {/* UX-418 AC1: Número do processo */}
+              {item.numero_compra && (
+                <p className="text-sm text-ink-secondary">
+                  <span className="font-medium text-ink">Processo:</span> {item.numero_compra}
+                </p>
+              )}
               {item.modalidade && (
                 <p className="text-sm text-ink-secondary">
                   <span className="font-medium text-ink">Modalidade:</span> {item.modalidade}
                 </p>
               )}
+              {/* UX-418 AC4: Data de publicação */}
+              {item.data_publicacao && (
+                <p className="text-sm text-ink-secondary">
+                  <span className="font-medium text-ink">Publicação:</span> {formatDate(item.data_publicacao)}
+                </p>
+              )}
               {item.data_abertura && (
                 <p className="text-sm text-ink-secondary">
-                  <span className="font-medium text-ink">Propostas desde:</span> {formatDate(item.data_abertura)}
+                  <span className="font-medium text-ink">Abertura de propostas:</span> {formatDate(item.data_abertura)}
+                </p>
+              )}
+              {/* UX-418 AC3: Prazo de encerramento */}
+              {item.data_encerramento && (
+                <p className="text-sm text-ink-secondary">
+                  <span className="font-medium text-ink">Encerramento:</span> {formatDate(item.data_encerramento)}
+                  {item.dias_restantes != null && item.dias_restantes >= 0 && (
+                    <span className="text-ink-muted ml-1">({item.dias_restantes}d restantes)</span>
+                  )}
+                </p>
+              )}
+              {/* UX-418 AC5: Valor estimado */}
+              <p className="text-sm text-ink-secondary">
+                <span className="font-medium text-ink">Valor estimado:</span> {formatCurrency(item.valor)}
+              </p>
+              {/* UX-418 AC7: Fonte do dado */}
+              {item._source && (
+                <p className="text-sm text-ink-muted text-xs">
+                  Fonte: {item._source === 'pncp' ? 'PNCP' : item._source === 'pcp' ? 'Portal de Compras Públicas' : item._source === 'compras_gov' ? 'ComprasGov' : item._source}
                 </p>
               )}
               <div className="flex flex-wrap gap-2 mt-1">

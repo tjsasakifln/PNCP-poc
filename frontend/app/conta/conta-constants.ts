@@ -4,17 +4,17 @@
 
 export const ATESTADOS_CATALOG: Array<{ id: string; label: string }> = [
   { id: "crea", label: "CREA (Engenharia)" },
-  { id: "crf", label: "CRF (Farmacia)" },
+  { id: "crf", label: "CRF (Farmácia)" },
   { id: "inmetro", label: "INMETRO" },
   { id: "iso_9001", label: "ISO 9001 (Qualidade)" },
   { id: "iso_14001", label: "ISO 14001 (Ambiental)" },
-  { id: "pgr_pcmso", label: "PGR/PCMSO (Seguranca do Trabalho)" },
-  { id: "alvara_sanitario", label: "Alvara Sanitario" },
+  { id: "pgr_pcmso", label: "PGR/PCMSO (Segurança do Trabalho)" },
+  { id: "alvara_sanitario", label: "Alvará Sanitário" },
   { id: "registro_anvisa", label: "Registro ANVISA" },
-  { id: "habilitacao_antt", label: "Habilitacao ANTT" },
-  { id: "registro_cfq", label: "Registro CRQ (Quimica)" },
-  { id: "licenca_ambiental", label: "Licenca Ambiental" },
-  { id: "crt", label: "CRT (Tecnico)" },
+  { id: "habilitacao_antt", label: "Habilitação ANTT" },
+  { id: "registro_cfq", label: "Registro CRQ (Química)" },
+  { id: "licenca_ambiental", label: "Licença Ambiental" },
+  { id: "crt", label: "CRT (Técnico)" },
 ];
 
 export const PORTE_OPTIONS = [
