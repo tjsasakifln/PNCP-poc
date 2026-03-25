@@ -574,6 +574,8 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
       }
 
       clearPartialSearch(newSearchId);
+      // P4-FIX: Clean up sessionStorage partial count on successful completion
+      try { sessionStorage.removeItem(`partial_search_${newSearchId}`); } catch {}
 
       if (data.licitacoes?.length > 0) {
         saveLastSearch(data);
@@ -630,6 +632,18 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
           setLoading(false);
           toast.info("Mostrando resultados parciais salvos");
         } else {
+          // P4-FIX: Try recovering SSE partial count from sessionStorage
+          try {
+            const partialKey = `partial_search_${newSearchId}`;
+            const partialRaw = sessionStorage.getItem(partialKey);
+            if (partialRaw) {
+              const partialData = JSON.parse(partialRaw) as { rawCount: number; timestamp: number };
+              if (partialData.rawCount > 0 && Date.now() - partialData.timestamp < 300000) {
+                toast.info(`${partialData.rawCount.toLocaleString("pt-BR")} licitações foram encontradas antes do timeout. Tente novamente — os resultados estarão em cache.`);
+                sessionStorage.removeItem(partialKey);
+              }
+            }
+          } catch { /* ignore */ }
           // CRIT-070 AC2: Abort without partial must show error, never return silently
           const abortError: SearchError = {
             message: "A análise demorou mais que o esperado. Tente com menos estados.",
@@ -680,6 +694,18 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
             toast.info("Mostrando resultados parciais salvos");
             return;
           }
+          // P4-FIX: Try recovering SSE partial count from sessionStorage
+          try {
+            const partialKey = `partial_search_${newSearchId}`;
+            const partialRaw = sessionStorage.getItem(partialKey);
+            if (partialRaw) {
+              const partialData = JSON.parse(partialRaw) as { rawCount: number; timestamp: number };
+              if (partialData.rawCount > 0 && Date.now() - partialData.timestamp < 300000) {
+                toast.info(`${partialData.rawCount.toLocaleString("pt-BR")} licitações foram encontradas antes do timeout. Tente novamente — os resultados estarão em cache.`);
+                sessionStorage.removeItem(partialKey);
+              }
+            }
+          } catch { /* ignore */ }
         }
         // CRIT-005 AC23: On error, if we have previous results, show them with error toast
         if (previousResultFallback && previousResultFallback.licitacoes?.length > 0) {

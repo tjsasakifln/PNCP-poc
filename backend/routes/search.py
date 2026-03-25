@@ -398,9 +398,9 @@ async def buscar_licitacoes(
         except HTTPException:
             raise
         except Exception as quota_err:
-            logger.warning(f"STORY-363: Quota check failed, falling through to sync: {quota_err}")
-            # Fall through to sync/cache-first path below
-            force_sync = True
+            logger.warning(f"STORY-363: Quota check failed — proceeding async (allow-through): {quota_err}")
+            # P1-FIX: Never force sync on quota failure — async is safer for heavy queries.
+            # Matches TimeoutError behavior on line 393-397 (allow-through).
 
         if not force_sync:
             # STORY-363 AC14: Check concurrent search limit per user
@@ -480,8 +480,9 @@ async def buscar_licitacoes(
     # NOTE: Cache-first check moved to CRIT-CORE-001 block above (before async decision)
     # CRIT-072 AC9: Count sync mode searches
     # -----------------------------------------------------------------------
-    from metrics import SEARCH_MODE_TOTAL
+    from metrics import SEARCH_MODE_TOTAL, SYNC_FALLBACK_TOTAL
     SEARCH_MODE_TOTAL.labels(mode="sync").inc()
+    SYNC_FALLBACK_TOTAL.labels(reason="explicit_force_sync").inc()
     pipeline = SearchPipeline(deps)
     ctx = SearchContext(
         request=request,

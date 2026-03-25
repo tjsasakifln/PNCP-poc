@@ -370,6 +370,21 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     cleanupExpiredPartials();
   }, []);
 
+  // P4-FIX: Persist running UF raw count to sessionStorage during SSE progress.
+  // Enables timeout recovery — if search times out, the AbortError handler can
+  // show the user how many results were found before the timeout.
+  useEffect(() => {
+    if (execution.loading && execution.searchId && ufTotalFound > 0) {
+      try {
+        sessionStorage.setItem(`partial_search_${execution.searchId}`, JSON.stringify({
+          timestamp: Date.now(),
+          rawCount: ufTotalFound,
+          searchId: execution.searchId,
+        }));
+      } catch { /* ignore quota errors */ }
+    }
+  }, [execution.loading, execution.searchId, ufTotalFound]);
+
   // ── Computed ──
   const humanizedError: HumanizedError | null = error
     ? getHumanizedError(error.httpStatus, error.rawMessage)

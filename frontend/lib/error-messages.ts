@@ -323,6 +323,7 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
   SOURCE_UNAVAILABLE: "As fontes de dados estão temporariamente em manutenção. Tente novamente em breve.",
   ALL_SOURCES_FAILED: "Nenhuma fonte respondeu a tempo. Tente novamente em 2-3 minutos.",
   TIMEOUT: "A análise demorou mais que o esperado. Tente com menos estados ou um período menor.",
+  CLIENT_TIMEOUT: "A análise demorou mais que o esperado. Tente reduzir o número de estados ou usar um período menor.",
   RATE_LIMIT: "Muitas análises em sequência. Aguarde 1 minuto e tente novamente.",
   QUOTA_EXCEEDED: "Suas análises deste mês foram utilizadas. Faça upgrade para continuar.",
   VALIDATION_ERROR: "Verifique os filtros selecionados e tente novamente.",

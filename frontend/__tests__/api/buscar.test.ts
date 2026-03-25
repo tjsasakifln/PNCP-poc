@@ -386,10 +386,10 @@ describe("POST /api/buscar", () => {
 
     await POST(request);
 
-    // CRIT-082: Verify setTimeout was called with 60s (60000ms)
+    // CRIT-082/P2-FIX: Verify setTimeout was called with 90s (90000ms)
     expect(setTimeoutSpy).toHaveBeenCalledWith(
       expect.any(Function),
-      60 * 1000
+      90 * 1000
     );
 
     setTimeoutSpy.mockRestore();

@@ -356,6 +356,12 @@ SEARCH_MODE_TOTAL = _create_counter(
     labelnames=["mode"],
 )
 
+SYNC_FALLBACK_TOTAL = _create_counter(
+    "smartlic_sync_fallback_total",
+    "Searches that fell back to synchronous mode",
+    ["reason"],
+)
+
 # STORY-267 AC16: Term search quality metrics
 TERM_SEARCH_LLM_ACCEPTS = _create_counter(
     "smartlic_term_search_llm_accepts_total",

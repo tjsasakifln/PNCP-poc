@@ -127,10 +127,10 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // CRIT-082: Proxy timeout reduced to 60s to prevent retry amplification.
-        // Chain: Client(65s) > Proxy(60s). Railway/Gunicorn handle async via 202.
+        // CRIT-082/P2-FIX: Proxy timeout 90s as safety net for sync fallback edge cases.
+        // Chain: Client(95s) > Proxy(90s) > Gunicorn(120s). Primary path is 202 async (<2s).
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 60 * 1000);
+        const timeout = setTimeout(() => controller.abort(), 90 * 1000);
 
         response = await fetch(`${backendUrl}/v1/buscar`, {
           method: "POST",
@@ -191,7 +191,10 @@ export async function POST(request: NextRequest) {
           // Timeout: keep specific message; Network error: use sanitizer
           if (isTimeout) {
             return NextResponse.json(
-              { message: "A análise demorou mais que o esperado. Tente com menos estados ou um período menor." },
+              {
+                message: "A análise demorou mais que o esperado. Tente reduzir o número de estados ou usar um período menor.",
+                error_code: "CLIENT_TIMEOUT",
+              },
               { status: 524 }
             );
           }
