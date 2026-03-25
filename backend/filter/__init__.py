@@ -35,3 +35,12 @@ from filter.core import aplicar_todos_filtros  # noqa: F401
 # Private names used by tests/other modules
 from filter.keywords import _strip_org_context, _strip_org_context_with_detail, _get_tracker  # noqa: F401
 from filter.core import _filter_stats_tracker  # noqa: F401
+from filter.core import (  # noqa: F401
+    GLOBAL_EXCLUSION_OVERRIDES,
+    GLOBAL_EXCLUSIONS,
+    GLOBAL_EXCLUSIONS_NORMALIZED,
+    _INFRA_EXEMPT_SECTORS,
+    _MEDICAL_EXEMPT_SECTORS,
+    _ADMIN_EXEMPT_SECTORS,
+    RED_FLAGS_PER_SECTOR,
+)

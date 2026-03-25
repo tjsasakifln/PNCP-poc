@@ -633,7 +633,15 @@ describe("T11-T13: BackendStatusIndicator", () => {
       render(<TestIndicator />);
     });
 
-    // Let the initial health check resolve
+    // Let the initial health check resolve (1st failure — not yet offline due to threshold=2)
+    await act(async () => {
+      jest.advanceTimersByTime(10);
+    });
+
+    // Advance to next poll (30s) for 2nd consecutive failure → offline
+    await act(async () => {
+      jest.advanceTimersByTime(30_000);
+    });
     await act(async () => {
       jest.advanceTimersByTime(10);
     });
@@ -655,14 +663,14 @@ describe("T11-T13: BackendStatusIndicator", () => {
     let callCount = 0;
     global.fetch = jest.fn().mockImplementation(() => {
       callCount++;
-      if (callCount <= 1) {
-        // First call: unhealthy (to put in offline state)
+      if (callCount <= 2) {
+        // First 2 calls: unhealthy (consecutive failures → offline threshold=2)
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ status: "healthy", backend: "unhealthy" }),
         });
       }
-      // Second call onwards: healthy (recovery)
+      // Third call onwards: healthy (recovery)
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ status: "healthy", backend: "healthy" }),
@@ -687,7 +695,15 @@ describe("T11-T13: BackendStatusIndicator", () => {
       render(<TestIndicator />);
     });
 
-    // Wait for initial check to resolve (offline)
+    // Wait for initial check to resolve (1st failure — not yet offline)
+    await act(async () => {
+      jest.advanceTimersByTime(10);
+    });
+
+    // Advance to next poll (30s) for 2nd consecutive failure → offline
+    await act(async () => {
+      jest.advanceTimersByTime(30_000);
+    });
     await act(async () => {
       jest.advanceTimersByTime(10);
     });

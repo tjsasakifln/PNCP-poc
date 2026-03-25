@@ -51,6 +51,9 @@ export function useBackendStatus() {
   const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousStatusRef = useRef<BackendStatus>("online");
+  // BUG-003 fix: require 2 consecutive failures before showing offline
+  const consecutiveFailuresRef = useRef(0);
+  const OFFLINE_THRESHOLD = 2;
 
   const checkHealth = useCallback(async () => {
     try {
@@ -60,7 +63,10 @@ export function useBackendStatus() {
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        setStatus("offline");
+        consecutiveFailuresRef.current += 1;
+        if (consecutiveFailuresRef.current >= OFFLINE_THRESHOLD) {
+          setStatus("offline");
+        }
         return false;
       }
 
@@ -68,6 +74,7 @@ export function useBackendStatus() {
       const isHealthy = data.backend === "healthy";
 
       if (isHealthy) {
+        consecutiveFailuresRef.current = 0;
         // Was offline → now online = recovering
         if (previousStatusRef.current === "offline") {
           setStatus("recovering");
@@ -82,11 +89,17 @@ export function useBackendStatus() {
         }
         return true;
       } else {
-        setStatus("offline");
+        consecutiveFailuresRef.current += 1;
+        if (consecutiveFailuresRef.current >= OFFLINE_THRESHOLD) {
+          setStatus("offline");
+        }
         return false;
       }
     } catch {
-      setStatus("offline");
+      consecutiveFailuresRef.current += 1;
+      if (consecutiveFailuresRef.current >= OFFLINE_THRESHOLD) {
+        setStatus("offline");
+      }
       return false;
     }
   }, []);
