@@ -22,7 +22,7 @@ export function AlertNotificationBell() {
   const [loading, setLoading] = useState(false);
   const [featureDisabled, setFeatureDisabled] = useState(() => {
     try {
-      return sessionStorage.getItem("smartlic_alerts_disabled") === "true";
+      return localStorage.getItem("smartlic_alerts_disabled") === "true";
     } catch {
       return false;
     }
@@ -38,7 +38,7 @@ export function AlertNotificationBell() {
       });
       // UX-434: 404 means alerts feature disabled — stop polling
       if (res.status === 404) {
-        try { sessionStorage.setItem("smartlic_alerts_disabled", "true"); } catch { /* ignore */ }
+        try { localStorage.setItem("smartlic_alerts_disabled", "true"); } catch { /* ignore */ }
         setFeatureDisabled(true);
         return;
       }

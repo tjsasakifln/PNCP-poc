@@ -4,81 +4,81 @@ Use this checklist for UX audit track validation.
 
 ## Core Search Flow
 
-- [ ] Landing → Login → Search navigable
-- [ ] UF selector: single, multi, "Todo o Brasil"
-- [ ] Date range: default 10 days, custom works
-- [ ] Sector selector: all 15 sectors displayed
-- [ ] Submit: triggers search with progress
-- [ ] Results: displayed in readable format
-- [ ] Download: Excel generates and downloads
-- [ ] Empty: helpful message with suggestions
+- [x] Landing → Login → Search navigable
+- [x] UF selector: single, multi, "Todo o Brasil"
+- [x] Date range: default 10 days, custom works
+- [x] Sector selector: all 15 sectors displayed
+- [x] Submit: triggers search with progress
+- [x] Results: displayed in readable format
+- [x] Download: Excel generates and downloads
+- [x] Empty: helpful message with suggestions
 
 ## Progress & Feedback
 
-- [ ] Progress bar starts within 2s of submit
-- [ ] Progress advances smoothly (no long freezes)
-- [ ] Per-UF status visible during search
-- [ ] Source badges show which APIs responded
-- [ ] Estimated time reasonable
-- [ ] Completion celebration/transition smooth
+- [x] Progress bar starts within 2s of submit
+- [x] Progress advances smoothly (no long freezes)
+- [x] Per-UF status visible during search
+- [x] Source badges show which APIs responded
+- [x] Estimated time reasonable
+- [x] Completion celebration/transition smooth
 
 ## Error Handling
 
-- [ ] Single error message per error (no doubles)
-- [ ] Network error: clear, actionable message
-- [ ] Timeout: suggests fewer UFs
-- [ ] Partial results: shown with explanation
-- [ ] Auth expired: redirect to login
-- [ ] Server error: apologetic, suggests retry
-- [ ] All errors in Portuguese
+- [x] Single error message per error (no doubles)
+- [x] Network error: clear, actionable message
+- [x] Timeout: suggests fewer UFs
+- [x] Partial results: shown with explanation
+- [x] Auth expired: redirect to login
+- [x] Server error: apologetic, suggests retry
+- [x] All errors in Portuguese
 
 ## Onboarding
 
-- [ ] New user redirected to onboarding
-- [ ] Each step has clear instructions
-- [ ] CNAE: helper text or optional
-- [ ] Skip/later option available
-- [ ] Completion → first search guided
+- [x] New user redirected to onboarding
+- [x] Each step has clear instructions
+- [x] CNAE: helper text or optional
+- [x] Skip/later option available
+- [x] Completion → first search guided
 
 ## Navigation & Layout
 
-- [ ] Header: logo, nav links, user menu
-- [ ] Footer: legal links, contact
-- [ ] Breadcrumbs or clear location
-- [ ] Mobile hamburger menu works
-- [ ] All pages load under 3s
-- [ ] No broken links (404s)
+- [x] Header: logo, nav links, user menu
+- [x] Footer: legal links, contact
+- [x] Breadcrumbs or clear location
+- [x] Mobile hamburger menu works
+- [x] All pages load under 3s
+- [x] No broken links (404s)
 
 ## Visual Consistency
 
-- [ ] Color scheme consistent
-- [ ] Typography hierarchy clear
-- [ ] Spacing and padding consistent
-- [ ] Icons render correctly
-- [ ] Emojis display cross-platform
-- [ ] Dark/light theme works (if applicable)
+- [x] Color scheme consistent
+- [x] Typography hierarchy clear
+- [x] Spacing and padding consistent
+- [x] Icons render correctly
+- [x] Emojis display cross-platform
+- [x] Dark/light theme works (if applicable)
 
 ## Accessibility
 
-- [ ] Semantic HTML (headings, landmarks)
-- [ ] Alt text on images
-- [ ] Focus visible on interactive elements
-- [ ] Color contrast meets WCAG AA
-- [ ] Keyboard navigation functional
-- [ ] Screen reader compatible (basic)
+- [x] Semantic HTML (headings, landmarks)
+- [x] Alt text on images
+- [x] Focus visible on interactive elements
+- [x] Color contrast meets WCAG AA
+- [x] Keyboard navigation functional
+- [x] Screen reader compatible (basic)
 
 ## Mobile Specific
 
-- [ ] Touch targets >= 44px
-- [ ] No horizontal scroll
-- [ ] Forms usable on small screens
-- [ ] Modals don't overflow viewport
-- [ ] Pinch-to-zoom not disabled
+- [x] Touch targets >= 44px
+- [x] No horizontal scroll
+- [x] Forms usable on small screens
+- [x] Modals don't overflow viewport
+- [x] Pinch-to-zoom not disabled
 
 ## Quick UX Check
 
 For rapid validation:
-- [ ] Can complete a search in under 2 minutes
-- [ ] Can download results
-- [ ] No confusing error messages
-- [ ] Works on mobile phone
+- [x] Can complete a search in under 2 minutes
+- [x] Can download results
+- [x] No confusing error messages
+- [x] Works on mobile phone

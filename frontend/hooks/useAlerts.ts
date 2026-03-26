@@ -46,12 +46,17 @@ const fetchAlertsWithAuth = async (url: string, token: string) => {
   return Array.isArray(data) ? data : data.alerts || [];
 };
 
+// UX-434: Check persistent flag to avoid repeated 404s when alerts feature is disabled
+function isAlertsDisabled(): boolean {
+  try { return localStorage.getItem("smartlic_alerts_disabled") === "true"; } catch { return false; }
+}
+
 export function useAlerts() {
   const { session } = useAuth();
   const accessToken = session?.access_token;
 
   const { data, error, isLoading, mutate } = useSWR(
-    accessToken ? ["/api/alerts", accessToken] : null,
+    accessToken && !isAlertsDisabled() ? ["/api/alerts", accessToken] : null,
     ([url, token]: [string, string]) => fetchAlertsWithAuth(url, token),
     {
       revalidateOnFocus: false,

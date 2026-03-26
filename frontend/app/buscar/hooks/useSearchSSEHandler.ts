@@ -56,6 +56,14 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
       sseTerminalReceivedRef.current = true;
     }
 
+    // GTM-CHECK: Discard SSE events from a previous search to prevent stale data injection
+    const eventSearchId = event.detail?.search_id as string | undefined;
+    const activeSearchId = asyncSearchIdRef.current || searchId;
+    if (eventSearchId && activeSearchId && eventSearchId !== activeSearchId) {
+      console.debug('[SSE] Discarding stale event for search_id:', eventSearchId, 'current:', activeSearchId);
+      return;
+    }
+
     if (event.stage === 'search_complete' && event.detail.has_results) {
       // GTM-ARCH-001 AC3: Async search completed — fetch results from /buscar-results
       const sid = event.detail.search_id || asyncSearchIdRef.current;
