@@ -11,10 +11,8 @@ Tests cover:
 """
 import os
 import re
-import time
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
-from types import SimpleNamespace
 
 MIGRATIONS_DIR = os.path.join(
     os.path.dirname(__file__), "..", "..", "supabase", "migrations"
@@ -359,7 +357,7 @@ class TestSearchStateMachineUserIdPropagation:
         )
 
         with patch("supabase_client.get_supabase", return_value=mock_sb):
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:  # noqa: F841
                 await _persist_transition(transition)
 
                 # Verify insert was called
@@ -386,7 +384,7 @@ class TestSearchStateMachineUserIdPropagation:
         )
 
         with patch("supabase_client.get_supabase", return_value=mock_sb):
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:  # noqa: F841
                 await _persist_transition(transition)
 
                 row = mock_table.insert.call_args[0][0]

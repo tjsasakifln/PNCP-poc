@@ -7,10 +7,8 @@ AC17: Pipeline returns cache stale when all sources OPEN
 AC18: Existing tests pass (verified separately)
 """
 
-import asyncio
 import time
-from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

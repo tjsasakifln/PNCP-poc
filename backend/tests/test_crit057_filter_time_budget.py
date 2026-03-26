@@ -5,9 +5,7 @@ marking unclassified items as pending_review instead of blocking the pipeline.
 """
 
 import time
-from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
-import pytest
 
 
 def _make_lic(objeto: str = "Aquisicao de equipamentos de construcao civil para obras publicas", valor: float = 100_000.0) -> dict:

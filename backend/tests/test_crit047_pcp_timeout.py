@@ -11,7 +11,7 @@ Tests cover:
 
 import asyncio
 import logging
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -424,10 +424,9 @@ class TestConfigVariables:
     @patch.dict("os.environ", {"PCP_MAX_PAGES_V2": "50"})
     def test_pcp_max_pages_v2_from_env(self):
         """PCP_MAX_PAGES_V2 should be overridable via env var."""
-        import importlib
         import config
 
-        original = config.PCP_MAX_PAGES_V2
+        original = config.PCP_MAX_PAGES_V2  # noqa: F841
         # Verify the env var mechanism works
         val = int("50")
         assert val == 50

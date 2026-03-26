@@ -11,8 +11,7 @@ Test coverage:
 """
 
 import os
-import time
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -276,7 +275,7 @@ class TestFilterBatchIntegration:
     @patch("config.LLM_ZERO_MATCH_ENABLED", True)
     def test_50_items_completes_via_batch(self, mock_get_client):
         """Integration: 50 zero-match items processed via batch (mocked LLM)."""
-        call_count = [0]
+        call_count = [0]  # noqa: F841
 
         # Pre-build responses for 3 batches: 20, 20, 10
         responses = [

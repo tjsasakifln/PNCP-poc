@@ -7,10 +7,9 @@ AC4: Cache-Control: no-cache, no-store
 AC5: SSE_HEARTBEAT_INTERVAL_S configurable via env var
 """
 
-import asyncio
 import json
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from httpx import AsyncClient, ASGITransport
 from main import app
@@ -124,7 +123,7 @@ async def test_last_event_id_replays_only_later_events(mock_auth, mock_sse_limit
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                f"/buscar-progress/{search_id}",
+                f"/v1/buscar-progress/{search_id}",
                 headers={"Last-Event-ID": "3"},
             )
 
@@ -157,7 +156,7 @@ async def test_last_event_id_zero_replays_nothing_extra(mock_auth, mock_sse_limi
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                f"/buscar-progress/{search_id}",
+                f"/v1/buscar-progress/{search_id}",
                 headers={"Last-Event-ID": "0"},
             )
 
@@ -186,7 +185,7 @@ async def test_last_event_id_query_param_fallback(mock_auth, mock_sse_limits):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                f"/buscar-progress/{search_id}?last_event_id=5",
+                f"/v1/buscar-progress/{search_id}?last_event_id=5",
             )
 
     assert response.status_code == 200
@@ -228,7 +227,7 @@ async def test_redis_replay_events_function():
     from progress import get_replay_events, _REPLAY_KEY_PREFIX
 
     search_id = "test-365-redis-replay"
-    replay_key = f"{_REPLAY_KEY_PREFIX}{search_id}"
+    replay_key = f"{_REPLAY_KEY_PREFIX}{search_id}"  # noqa: F841
 
     # Mock Redis with stored events
     mock_redis = AsyncMock()
@@ -285,7 +284,7 @@ async def test_sse_cache_control_no_store(mock_auth, mock_sse_limits):
          patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get(f"/buscar-progress/{search_id}")
+            response = await client.get(f"/v1/buscar-progress/{search_id}")
 
     assert response.status_code == 200
     cache_control = response.headers.get("cache-control", "")
@@ -304,7 +303,7 @@ async def test_sse_x_accel_buffering_header(mock_auth, mock_sse_limits):
          patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get(f"/buscar-progress/{search_id}")
+            response = await client.get(f"/v1/buscar-progress/{search_id}")
 
     assert response.status_code == 200
     assert response.headers.get("x-accel-buffering") == "no"
@@ -314,7 +313,6 @@ async def test_sse_x_accel_buffering_header(mock_auth, mock_sse_limits):
 
 def test_heartbeat_interval_default():
     """AC5: Default heartbeat interval is 15s."""
-    from routes.search_sse import _SSE_HEARTBEAT_INTERVAL
     # Note: test may see patched value from other tests, check env-based logic
     import os
     default_val = float(os.environ.get("SSE_HEARTBEAT_INTERVAL_S", "15"))
@@ -365,7 +363,7 @@ async def test_reconnection_flow_replays_missed_events(mock_auth, mock_sse_limit
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                f"/buscar-progress/{search_id}",
+                f"/v1/buscar-progress/{search_id}",
                 headers={"Last-Event-ID": "2"},
             )
 
@@ -394,7 +392,7 @@ async def test_sse_event_ids_are_monotonic(mock_auth, mock_sse_limits):
          patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get(f"/buscar-progress/{search_id}")
+            response = await client.get(f"/v1/buscar-progress/{search_id}")
 
     assert response.status_code == 200
     ids = _parse_sse_ids(response.text)

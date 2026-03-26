@@ -5,7 +5,6 @@ Tests AC1 (periodic loop), AC5 (metric), AC6 (unit validation).
 
 import asyncio
 import time
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest

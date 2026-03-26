@@ -5,9 +5,8 @@ on collections of procurement bids.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-from filter_keywords import normalize_text
 
 # Configure logging
 logger = logging.getLogger(__name__)

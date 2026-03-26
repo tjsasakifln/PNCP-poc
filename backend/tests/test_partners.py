@@ -8,7 +8,6 @@ AC23: Zero regressions (implicitly via full test suite)
 """
 
 import pytest
-from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock, AsyncMock
 from types import SimpleNamespace
 
@@ -296,7 +295,7 @@ class TestPartnerRoutes:
         with patch("routes.partners.check_user_roles", new_callable=AsyncMock) as mock_roles, \
              patch("routes.partners.list_partners", new_callable=AsyncMock) as mock_list, \
              patch("supabase_client.get_supabase") as mock_sb_factory, \
-             patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+             patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:  # noqa: F841
 
             mock_roles.return_value = (True, True)
             mock_list.return_value = [

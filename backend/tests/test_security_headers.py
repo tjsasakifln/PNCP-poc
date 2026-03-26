@@ -377,7 +377,7 @@ class TestTermParserInputLimit:
         assert len(result) >= 1
 
     def test_oversized_input_truncated(self):
-        from term_parser import parse_search_terms, MAX_INPUT_LENGTH
+        from term_parser import parse_search_terms
         long_input = "a" * 500
         result = parse_search_terms(long_input)
         assert isinstance(result, list)

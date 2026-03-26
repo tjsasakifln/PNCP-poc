@@ -5,7 +5,6 @@ STORY-331 AC3: Defensive guard — PGRST205 → HTTP 503.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel

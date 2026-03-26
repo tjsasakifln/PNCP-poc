@@ -7,7 +7,6 @@ AC3: Contract test for retry endpoint (POST /v1/search/{id}/retry)
 AC4: Contract test for status endpoint (GET /v1/search/{id}/status)
 """
 
-import asyncio
 import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -487,9 +486,6 @@ class TestBackwardCompatImports:
         from routes.search import (
             store_background_results,
             get_background_results,
-            get_background_results_async,
-            get_background_results_count,
-            _cleanup_stale_results,
         )
         assert callable(store_background_results)
         assert callable(get_background_results)
@@ -498,22 +494,12 @@ class TestBackwardCompatImports:
         """AC10: Persistence functions importable from routes.search."""
         from routes.search import (
             _persist_results_to_redis,
-            _persist_results_to_supabase,
-            _safe_persist_results,
-            _persist_done_callback,
-            _get_results_from_redis,
-            _get_results_from_supabase,
         )
         assert callable(_persist_results_to_redis)
 
     def test_can_import_async_search_functions(self):
         """AC10: Async search functions importable from routes.search."""
         from routes.search import (
-            _run_async_search,
-            _execute_background_fetch,
-            _apply_trial_paywall,
-            _update_session_on_error,
-            _update_session_on_complete,
             _ASYNC_SEARCH_TIMEOUT,
         )
         assert _ASYNC_SEARCH_TIMEOUT == 120
@@ -522,9 +508,6 @@ class TestBackwardCompatImports:
         """AC10: Status endpoint functions importable from routes.search."""
         from routes.search import (
             search_status_endpoint,
-            retry_search,
-            cancel_search,
-            buscar_progress_stream,
         )
         assert callable(search_status_endpoint)
 
@@ -533,9 +516,6 @@ class TestBackwardCompatImports:
         from routes.search import (
             _background_results,
             _active_background_tasks,
-            _RESULTS_TTL,
-            _MAX_BACKGROUND_TASKS,
-            _MAX_BACKGROUND_RESULTS,
         )
         assert isinstance(_background_results, dict)
         assert isinstance(_active_background_tasks, dict)
@@ -544,9 +524,6 @@ class TestBackwardCompatImports:
         """AC10: SearchPipeline helper re-exports still work."""
         from routes.search import (
             _build_pncp_link,
-            _calcular_urgencia,
-            _calcular_dias_restantes,
-            _convert_to_licitacao_items,
         )
         assert callable(_build_pncp_link)
 

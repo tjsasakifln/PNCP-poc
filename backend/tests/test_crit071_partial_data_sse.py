@@ -4,7 +4,6 @@ AC8: Tests for ProgressTracker.emit_partial_data, add_partial_licitacoes,
 truncation logic, and feature flag gating in search_pipeline stages.
 """
 
-import asyncio
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 

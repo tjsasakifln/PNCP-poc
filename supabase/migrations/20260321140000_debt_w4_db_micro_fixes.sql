@@ -125,6 +125,17 @@ END $$;
 -- NULL is allowed (no error = no code).
 -- ============================================================================
 
+-- Clean up non-conforming error_code values before adding constraint
+UPDATE public.search_sessions
+SET error_code = NULL
+WHERE error_code IS NOT NULL
+  AND error_code NOT IN (
+    'SOURCE_UNAVAILABLE', 'ALL_SOURCES_FAILED', 'TIMEOUT', 'RATE_LIMIT',
+    'QUOTA_EXCEEDED', 'VALIDATION_ERROR', 'INTERNAL_ERROR',
+    'AUTH_ERROR', 'FORBIDDEN', 'NOT_FOUND', 'CONFLICT',
+    'SERVICE_UNAVAILABLE', 'BILLING_ERROR'
+  );
+
 DO $$
 BEGIN
     IF NOT EXISTS (

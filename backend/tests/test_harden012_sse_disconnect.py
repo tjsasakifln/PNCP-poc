@@ -6,7 +6,6 @@ and performs proper cleanup (release_sse_connection + metric increment).
 """
 
 import asyncio
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -243,7 +242,7 @@ async def test_disconnect_during_supabase_fallback():
             user={"id": "test-user-id", "sub": "test-user-id"},
         )
 
-        events = await _collect_sse_events(response.body_iterator)
+        events = await _collect_sse_events(response.body_iterator)  # noqa: F841
 
         mock_release.assert_awaited_once_with("test-user-id")
         mock_metric.inc.assert_called()

@@ -127,7 +127,7 @@ class TestAC1Returns202:
 
                 client = TestClient(app)
                 response = client.post(
-                    "/buscar",
+                    "/v1/buscar",
                     json={
                         "ufs": ["SP"],
                         "data_inicial": "2026-02-01",
@@ -196,7 +196,7 @@ class TestAC2LocationHeader:
 
                 client = TestClient(app)
                 response = client.post(
-                    "/buscar",
+                    "/v1/buscar",
                     json={
                         "ufs": ["SP"],
                         "data_inicial": "2026-02-01",
@@ -343,7 +343,7 @@ class TestAC9Timeout:
         from routes.search import _run_async_search, _ASYNC_SEARCH_TIMEOUT
         from schemas import BuscaRequest
 
-        assert _ASYNC_SEARCH_TIMEOUT == 120  # Verify constant
+        assert _ASYNC_SEARCH_TIMEOUT == 240  # Raised from 120s to accommodate tamanhoPagina=50
 
         request = BuscaRequest(
             ufs=["SP"],
@@ -376,15 +376,15 @@ class TestAC9Timeout:
             # Timeout error emitted via SSE
             mock_tracker.emit_error.assert_called_once()
             error_msg = mock_tracker.emit_error.call_args[0][0]
-            assert "120 segundos" in error_msg
+            assert "240 segundos" in error_msg
 
             # State machine transitioned to timeout
             mock_state_machine.timeout.assert_called_once()
 
-    def test_timeout_constant_is_120(self):
-        """_ASYNC_SEARCH_TIMEOUT must be 120 seconds."""
+    def test_timeout_constant_is_240(self):
+        """_ASYNC_SEARCH_TIMEOUT must be 240 seconds (raised from 120 for tamanhoPagina=50)."""
         from routes.search import _ASYNC_SEARCH_TIMEOUT
-        assert _ASYNC_SEARCH_TIMEOUT == 120
+        assert _ASYNC_SEARCH_TIMEOUT == 240
 
 
 # ============================================================================
@@ -426,7 +426,7 @@ class TestAC14BackwardCompat:
 
                 client = TestClient(app, raise_server_exceptions=False)
                 response = client.post(
-                    "/buscar",
+                    "/v1/buscar",
                     json={
                         "ufs": ["SP"],
                         "data_inicial": "2026-02-01",
@@ -473,7 +473,7 @@ class TestAC14BackwardCompat:
 
                 client = TestClient(app, raise_server_exceptions=False)
                 response = client.post(
-                    "/buscar?sync=true",
+                    "/v1/buscar?sync=true",
                     json={
                         "ufs": ["SP"],
                         "data_inicial": "2026-02-01",
@@ -536,7 +536,7 @@ class TestQuotaInPOST:
 
                 client = TestClient(app)
                 response = client.post(
-                    "/buscar",
+                    "/v1/buscar",
                     json={
                         "ufs": ["SP"],
                         "data_inicial": "2026-02-01",
@@ -568,6 +568,6 @@ class TestConfigDefaults:
         assert config.SEARCH_ASYNC_ENABLED is False  # conftest forces this
 
     def test_async_search_timeout_constant(self):
-        """_ASYNC_SEARCH_TIMEOUT is 120s (replaces SEARCH_ASYNC_WAIT_TIMEOUT)."""
+        """_ASYNC_SEARCH_TIMEOUT is 240s (raised from 120s to accommodate tamanhoPagina=50)."""
         from routes.search import _ASYNC_SEARCH_TIMEOUT
-        assert _ASYNC_SEARCH_TIMEOUT == 120
+        assert _ASYNC_SEARCH_TIMEOUT == 240

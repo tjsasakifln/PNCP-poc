@@ -11,10 +11,8 @@ AC8 tests covering:
 """
 
 import time
-from dataclasses import field as dataclass_field
 from unittest.mock import patch, MagicMock
 
-import pytest
 
 from consolidation import SourceResult, ConsolidationResult
 from search_context import SearchContext

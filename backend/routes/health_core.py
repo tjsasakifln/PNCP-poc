@@ -9,7 +9,7 @@ import logging
 import os
 import time
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Response
 
 import startup.state as _state
 
@@ -95,7 +95,6 @@ async def health_ready(response: Response):
 async def health():
     """Comprehensive health check with dependency status, circuit breakers, bulkheads."""
     from datetime import datetime, timezone
-    from fastapi import Request
 
     dependencies = {"supabase": "unconfigured", "openai": "unconfigured", "redis": "unconfigured"}
 

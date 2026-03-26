@@ -403,7 +403,7 @@ def render_trial_last_day_email(user_name: str, stats: dict, unsubscribe_url: st
         unsubscribe_url: URL for one-click unsubscribe.
     """
     value = stats.get("total_value_estimated", 0.0)
-    opps = stats.get("opportunities_found", 0)
+    opps = stats.get("opportunities_found", 0)  # noqa: F841
 
     if value > 0:
         preheader_text = f"Amanhã você perde acesso a {_format_brl(value)} em oportunidades."
@@ -481,7 +481,7 @@ def render_trial_expired_email(
             headline = f"Suas {pipeline} oportunidades estão esperando por você"
         else:
             headline = f"Suas {opps} oportunidades estão esperando por você"
-        preheader_text = f"Sentimos sua falta. Volte com 20% off."
+        preheader_text = "Sentimos sua falta. Volte com 20% off."
     else:
         headline = "Sentimos sua falta"
         preheader_text = "As oportunidades continuam surgindo. Volte com 20% off."

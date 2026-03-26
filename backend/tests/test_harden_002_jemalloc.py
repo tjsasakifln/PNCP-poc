@@ -6,7 +6,6 @@ AC4: Validated by successful Railway deploy.
 """
 
 import platform
-import pytest
 
 
 def test_process_resident_memory_bytes_available_on_linux():

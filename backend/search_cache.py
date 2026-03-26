@@ -707,7 +707,6 @@ async def save_to_cache_per_uf(
     Also saves the combined entry (retrocompatibility with old hash).
     Returns dict with {level, success, ufs_saved}.
     """
-    from metrics import CACHE_COMPOSITION_TOTAL
 
     # Group results by UF
     results_by_uf: dict[str, list] = {}

@@ -516,6 +516,68 @@ def gate4_completeness(
                 analise["recomendacao_acao"] = "NAO PARTICIPAR"
                 _fix(f"Corrigido: empresa sancionada -> NAO PARTICIPAR em {eid}")
 
+        # 4. Compatibilidade CNAE = 0% must be NAO PARTICIPAR
+        cnae_conf = edital.get("_cnae_confidence")
+        if cnae_conf is not None:
+            try:
+                cnae_pct = float(cnae_conf)
+            except (TypeError, ValueError):
+                cnae_pct = -1
+            if cnae_pct == 0 and "nao participar" not in rec_norm:
+                issue = f"{eid}: Compatibilidade CNAE 0% mas recomendacao e PARTICIPAR"
+                result["issues"].append(issue)
+                result["passed"] = False
+                _fail(issue)
+                if do_fix:
+                    analise["recomendacao_acao"] = "NAO PARTICIPAR"
+                    obs = analise.get("observacoes_criticas", "")
+                    note = "Objeto incompatível com atividade da empresa (Compatibilidade CNAE 0%)."
+                    analise["observacoes_criticas"] = f"{note} {obs}" if obs else note
+                    _fix(f"Corrigido: CNAE 0% -> NAO PARTICIPAR em {eid}")
+
+        # 5. Compatibilidade CNAE < 20% AND aderência Baixa must be NAO PARTICIPAR
+        victory_fit = edital.get("_victory_fit")
+        if cnae_conf is not None and victory_fit is not None:
+            try:
+                cnae_pct = float(cnae_conf)
+                fit_val = float(victory_fit)
+            except (TypeError, ValueError):
+                cnae_pct, fit_val = -1, -1
+            if cnae_pct < 20 and fit_val < 0.15 and "nao participar" not in rec_norm:
+                issue = (
+                    f"{eid}: Compatibilidade {cnae_pct:.0f}% + Aderência {fit_val:.0%} "
+                    f"mas recomendacao e PARTICIPAR"
+                )
+                result["issues"].append(issue)
+                result["passed"] = False
+                _fail(issue)
+                if do_fix:
+                    analise["recomendacao_acao"] = "NAO PARTICIPAR"
+                    obs = analise.get("observacoes_criticas", "")
+                    note = (
+                        f"Duplo sinal de incompatibilidade: Compatibilidade {cnae_pct:.0f}% "
+                        f"e Aderência {fit_val:.0%}."
+                    )
+                    analise["observacoes_criticas"] = f"{note} {obs}" if obs else note
+                    _fix(f"Corrigido: CNAE {cnae_pct:.0f}%+fit {fit_val:.0%} -> NAO PARTICIPAR em {eid}")
+
+        # 6. Bid score < 0.20 must be NAO PARTICIPAR
+        bid_score = edital.get("_bid_score") or {}
+        bid_composite = bid_score.get("_composite")
+        if bid_composite is not None:
+            try:
+                comp_val = float(bid_composite)
+            except (TypeError, ValueError):
+                comp_val = -1
+            if comp_val < 0.20 and "nao participar" not in rec_norm:
+                issue = f"{eid}: bid_score {comp_val:.0%} mas recomendacao e PARTICIPAR"
+                result["issues"].append(issue)
+                result["passed"] = False
+                _fail(issue)
+                if do_fix:
+                    analise["recomendacao_acao"] = "NAO PARTICIPAR"
+                    _fix(f"Corrigido: bid_score {comp_val:.0%} -> NAO PARTICIPAR em {eid}")
+
         # nivel_dificuldade: accept dict (v2) or string (legacy)
         dif = analise.get("nivel_dificuldade")
         if isinstance(dif, dict):

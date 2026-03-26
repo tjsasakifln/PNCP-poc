@@ -7,7 +7,6 @@ POST /v1/metrics/sse-fallback — Increment SSE fallback counter (STORY-359 AC4)
 
 import logging
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 
 from fastapi import APIRouter, Query, Response
 from pydantic import BaseModel

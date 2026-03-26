@@ -44,13 +44,13 @@ async def executar_busca_completa(
     tracker=None,
     quota_pre_consumed: bool = False,
     deadline_ts: float | None = None,
-) -> "BuscaResponse":
+) -> "BuscaResponse":  # noqa: F821
     """GTM-ARCH-001 AC2 + CRIT-072 AC8: Execute full search pipeline.
 
     Designed for ARQ Worker. Reconstructs BuscaRequest and SearchContext
     from serializable dicts, builds default deps, and runs the 7-stage pipeline.
     """
-    from schemas import BuscaRequest, BuscaResponse
+    from schemas import BuscaRequest
     from search_context import SearchContext
     from progress import get_tracker, create_tracker
     import time as _time

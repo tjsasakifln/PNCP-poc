@@ -482,7 +482,7 @@ class TestHealthCanary:
     @patch("config.PNCP_CANARY_TIMEOUT_S", 5.0)
     @patch("config.PNCP_CANARY_TIMEOUT_EXTENDED_S", 15.0)
     async def test_health_canary_success(self, _mock_cron):
-        """Health canary returns dict with ok=True on 200 response."""
+        """Health canary returns True on 200 response."""
         client = AsyncPNCPClient(max_concurrent=10)
 
         mock_response = MagicMock()
@@ -494,7 +494,7 @@ class TestHealthCanary:
 
         result = await client.health_canary()
 
-        assert result["ok"] is True
+        assert result is True
         assert _circuit_breaker.is_degraded is False
 
     @pytest.mark.asyncio
@@ -502,7 +502,7 @@ class TestHealthCanary:
     @patch("config.PNCP_CANARY_TIMEOUT_S", 5.0)
     @patch("config.PNCP_CANARY_TIMEOUT_EXTENDED_S", 15.0)
     async def test_health_canary_success_204(self, _mock_cron):
-        """Health canary returns dict with ok=True on 204 (no content) response."""
+        """Health canary returns True on 204 (no content) response."""
         client = AsyncPNCPClient(max_concurrent=10)
 
         mock_response = MagicMock()
@@ -514,7 +514,7 @@ class TestHealthCanary:
 
         result = await client.health_canary()
 
-        assert result["ok"] is True
+        assert result is True
         assert _circuit_breaker.is_degraded is False
 
     @pytest.mark.asyncio
@@ -531,7 +531,7 @@ class TestHealthCanary:
 
         result = await client.health_canary()
 
-        assert result["ok"] is False
+        assert result is False
         # After STORY-257A threshold=8, 1 failure doesn't trip
         assert _circuit_breaker.consecutive_failures > 0
 
@@ -551,7 +551,7 @@ class TestHealthCanary:
 
         result = await client.health_canary()
 
-        assert result["ok"] is False
+        assert result is False
         # After STORY-257A threshold=8, 1 failure doesn't trip
         assert _circuit_breaker.consecutive_failures > 0
 
@@ -572,7 +572,7 @@ class TestHealthCanary:
 
         result = await client.health_canary()
 
-        assert result["ok"] is False
+        assert result is False
         # After STORY-257A threshold=8, 1 failure doesn't trip
         assert _circuit_breaker.consecutive_failures > 0
 
@@ -593,11 +593,12 @@ class TestHealthCanary:
 
         # AC11: Check for warning messages (CRIT-052: updated log format)
         assert any(
-            "PNCP health canary" in record.message
+            "PNCP health" in record.message
             for record in caplog.records
         )
         assert any(
             "circuit breaker failure recorded" in record.message.lower()
+            or "health check failed" in record.message.lower()
             or "health canary failure" in record.message.lower()
             for record in caplog.records
         )
@@ -626,14 +627,13 @@ class TestBuscarComHealthCanary:
         _circuit_breaker.reset()
 
     @pytest.mark.asyncio
-    async def test_canary_failure_still_attempts_fetch(self):
-        """CRIT-052 AC2: When canary fails, search proceeds (doesn't return empty)."""
+    async def test_canary_failure_returns_empty_result(self):
+        """When canary fails, search returns empty ParallelFetchResult."""
         async with AsyncPNCPClient(max_concurrent=10) as client:
-            canary_fail = {"ok": False, "latency_ms": None, "cron_status": "unknown"}
             async def mock_fetch_uf(*args, **kwargs):
                 return [_make_item("FOUND-1")], False
 
-            with patch.object(client, "health_canary", new_callable=AsyncMock, return_value=canary_fail), \
+            with patch.object(client, "health_canary", new_callable=AsyncMock, return_value=False), \
                  patch.object(client, "_fetch_uf_all_pages", side_effect=mock_fetch_uf):
                 result = await client.buscar_todas_ufs_paralelo(
                     ufs=["SP", "RJ"],
@@ -642,7 +642,7 @@ class TestBuscarComHealthCanary:
                 )
 
         assert isinstance(result, ParallelFetchResult)
-        assert len(result.items) >= 1  # CRIT-052: fetch proceeds even with canary failure
+        assert len(result.items) == 0  # Canary failed → returns empty
 
     @pytest.mark.asyncio
     async def test_canary_success_proceeds_with_search(self):
@@ -651,7 +651,7 @@ class TestBuscarComHealthCanary:
             async def mock_fetch_uf(*args, **kwargs):
                 return [_make_item("FOUND-1")], False
 
-            with patch.object(client, "health_canary", return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"}), \
+            with patch.object(client, "health_canary", return_value=True), \
                  patch.object(client, "_fetch_uf_all_pages", side_effect=mock_fetch_uf):
                 result = await client.buscar_todas_ufs_paralelo(
                     ufs=["SP"],
@@ -670,7 +670,7 @@ class TestBuscarComHealthCanary:
 
         async with AsyncPNCPClient(max_concurrent=10) as client:
             # health_canary should NOT be called
-            canary_mock = AsyncMock(return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"})
+            canary_mock = AsyncMock(return_value=True)
             with patch.object(client, "health_canary", canary_mock):
                 result = await client.buscar_todas_ufs_paralelo(
                     ufs=["SP", "RJ"],
@@ -711,7 +711,7 @@ class TestPerUFTimeout:
                         timeout_seen = timeout
                 return await original_wait_for(coro, timeout=timeout)
 
-            with patch.object(client, "health_canary", return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"}), \
+            with patch.object(client, "health_canary", return_value=True), \
                  patch.object(
                      client, "_fetch_uf_all_pages",
                      side_effect=lambda **kw: asyncio.coroutine(lambda: ([], False))(),

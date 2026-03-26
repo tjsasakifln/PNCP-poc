@@ -12,7 +12,6 @@ Tests:
 """
 import os
 import re
-import pytest
 
 
 MIGRATIONS_DIR = os.path.join(

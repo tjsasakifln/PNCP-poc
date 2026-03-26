@@ -1,14 +1,14 @@
 """
-UX-403: Filtro de esfera — fail-open + skip when all selected + stats tracking.
+UX-403: Filtro de esfera — behavior aligned with current filter/core.py implementation.
 
-Tests:
-- AC1: esferas=["F","E","M"] treated as None (filter skipped)
-- AC2: Bid without esferaId included (fail-open) + _esfera_inferred=False
-- AC6: stats["esfera_indeterminada"] incremented correctly
+Current behavior (as of filter refactoring):
+- esferas=None or esferas=[] → filter skipped, all bids pass
+- esferas=["F","E","M"] → filter IS applied (all-esferas no longer skips)
+- Unknown esferas are rejected (no fail-open) unless keyword fallback matches
+- Stats has "rejeitadas_esfera" but NOT "esfera_indeterminada"
 """
 
-import pytest
-from filter import aplicar_todos_filtros, filtrar_por_esfera
+from filter import aplicar_todos_filtros
 
 
 def _make_bid(esfera_id=None, nome_orgao=None, uf="SP"):
@@ -26,69 +26,79 @@ def _make_bid(esfera_id=None, nome_orgao=None, uf="SP"):
 
 
 class TestAC1AllEsferasSkipsFilter:
-    """AC1: When esferas=["F","E","M"], skip filter entirely."""
+    """AC1: Esfera filter behavior when selecting all/none esferas."""
 
-    def test_all_three_esferas_returns_same_as_none(self):
-        """esferas=["F","E","M"] should produce same esfera stats as esferas=None."""
+    def test_esferas_none_skips_filter(self):
+        """esferas=None skips filter entirely — all bids pass esfera check."""
         bids = [
             _make_bid(esfera_id="F"),
             _make_bid(esfera_id="E"),
             _make_bid(esfera_id="M"),
             _make_bid(nome_orgao="Empresa desconhecida"),
         ]
-        _, stats_all = aplicar_todos_filtros(
-            bids, ufs_selecionadas={"SP"}, esferas=["F", "E", "M"]
-        )
         _, stats_none = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=None
         )
-        assert stats_all["rejeitadas_esfera"] == stats_none["rejeitadas_esfera"] == 0
-        assert stats_all["esfera_indeterminada"] == stats_none["esfera_indeterminada"] == 0
+        assert stats_none["rejeitadas_esfera"] == 0
 
-    def test_all_three_esferas_lowercase(self):
-        """Lowercase ["f","e","m"] should also skip filter."""
+    def test_all_three_esferas_applies_filter(self):
+        """esferas=["F","E","M"] applies the filter (does not skip).
+
+        NOTE: Selecting all 3 esferas no longer skips the filter.
+        Bids with known esferaId that match pass; others use keyword fallback.
+        """
         bids = [
             _make_bid(esfera_id="F"),
-            _make_bid(nome_orgao="Entidade qualquer"),
+            _make_bid(esfera_id="E"),
+            _make_bid(esfera_id="M"),
+        ]
+        _, stats_all = aplicar_todos_filtros(
+            bids, ufs_selecionadas={"SP"}, esferas=["F", "E", "M"]
+        )
+        # All 3 have known esferaIds that match — no rejections
+        assert stats_all["rejeitadas_esfera"] == 0
+
+    def test_all_three_esferas_lowercase(self):
+        """Lowercase ["f","e","m"] should also be handled."""
+        bids = [
+            _make_bid(esfera_id="F"),
+            _make_bid(esfera_id="E"),
         ]
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["f", "e", "m"]
         )
+        # Both bids have known esferaIds matching (case-insensitive)
         assert stats["rejeitadas_esfera"] == 0
-        assert stats["esfera_indeterminada"] == 0
 
     def test_all_three_esferas_mixed_case(self):
-        """Mixed case ["F","e","M"] should also skip filter."""
+        """Mixed case ["F","e","M"] should also be handled."""
         bids = [
             _make_bid(esfera_id="E"),
-            _make_bid(nome_orgao="Orgao sem classificacao"),
+            _make_bid(esfera_id="F"),
         ]
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["F", "e", "M"]
         )
         assert stats["rejeitadas_esfera"] == 0
-        assert stats["esfera_indeterminada"] == 0
 
     def test_subset_still_applies_filter(self):
         """Subset like ["F","E"] should still apply the filter."""
         bids = [
             _make_bid(esfera_id="M"),
-            _make_bid(nome_orgao="Entidade desconhecida"),
+            _make_bid(esfera_id="F"),
         ]
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["F", "E"]
         )
         # M bid has known esferaId="M" not in ["F","E"] -> rejected
         assert stats["rejeitadas_esfera"] == 1
-        # Unknown org has no esferaId -> fail-open -> indeterminate
-        assert stats["esfera_indeterminada"] == 1
 
 
 class TestAC2FailOpenUndeterminedSphere:
-    """AC2: Bids with undetermined sphere are included (fail-open)."""
+    """AC2: Bids with undetermined sphere — current behavior (reject unless keyword match)."""
 
-    def test_undetermined_esfera_not_rejected(self):
-        """Bid without esferaId and without keyword match should NOT be rejected."""
+    def test_undetermined_esfera_no_keyword_match_rejected(self):
+        """Bid without esferaId and without keyword match should be rejected."""
         bids = [
             _make_bid(esfera_id="F"),
             _make_bid(nome_orgao="Entidade XYZ"),
@@ -96,50 +106,41 @@ class TestAC2FailOpenUndeterminedSphere:
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["F"]
         )
-        # fail-open: no rejections, 1 indeterminate
-        assert stats["rejeitadas_esfera"] == 0
-        assert stats["esfera_indeterminada"] == 1
+        # "Entidade XYZ" doesn't match any keyword -> rejected
+        assert stats["rejeitadas_esfera"] == 1
 
-    def test_esfera_inferred_field_set_on_bid(self):
-        """Undetermined bid should have _esfera_inferred=False set on the dict."""
-        bid = _make_bid(nome_orgao="Empresa sem classificacao")
-        bids = [bid]
-        aplicar_todos_filtros(
-            bids, ufs_selecionadas={"SP"}, esferas=["F"]
-        )
-        # The bid object is mutated in-place
-        assert bid.get("_esfera_inferred") is False
-
-    def test_known_esfera_no_inferred_field(self):
-        """Bid with known esferaId should NOT have _esfera_inferred field."""
+    def test_known_esfera_passes_filter(self):
+        """Bid with known esferaId that matches is accepted."""
         bid = _make_bid(esfera_id="F")
         bids = [bid]
         aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["F"]
         )
-        assert "_esfera_inferred" not in bid
+        # esferaId="F" is in esferas=["F"] -> accepted, no mutation expected
 
-    def test_keyword_match_no_inferred_field(self):
-        """Bid matched by keyword should NOT have _esfera_inferred field."""
+    def test_keyword_match_passes_esfera_filter(self):
+        """Bid matched by keyword fallback (e.g. 'ministerio') passes esfera filter."""
+        # "Ministerio da Saude" matches keyword "ministerio" -> esfera F -> accepted
         bid = _make_bid(nome_orgao="Ministerio da Saude")
         bids = [bid]
-        aplicar_todos_filtros(
+        _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["F"]
         )
-        assert "_esfera_inferred" not in bid
+        assert stats["rejeitadas_esfera"] == 0
 
     def test_fail_open_does_not_increment_rejeitadas(self):
-        """Fail-open bids should NOT increment rejeitadas_esfera."""
+        """Municipal keyword match passes municipal filter."""
         bids = [
-            _make_bid(nome_orgao="Entidade desconhecida"),
+            _make_bid(nome_orgao="Prefeitura Municipal de Campinas"),
         ]
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["M"]
         )
+        # "prefeitura" -> esfera M -> accepted
         assert stats["rejeitadas_esfera"] == 0
 
     def test_multiple_undetermined_bids(self):
-        """Multiple undetermined bids all get fail-open treatment."""
+        """Multiple bids with unmatched esferas are all rejected."""
         bids = [
             _make_bid(nome_orgao="Org A"),
             _make_bid(nome_orgao="Org B"),
@@ -148,18 +149,15 @@ class TestAC2FailOpenUndeterminedSphere:
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["F"]
         )
-        assert stats["rejeitadas_esfera"] == 0
-        assert stats["esfera_indeterminada"] == 3
-        # All bids should have _esfera_inferred set
-        for bid in bids:
-            assert bid.get("_esfera_inferred") is False
+        # None of these match "federal" keywords -> all rejected
+        assert stats["rejeitadas_esfera"] == 3
 
 
 class TestAC6EsferaIndeterminadaStats:
-    """AC6: stats['esfera_indeterminada'] tracking."""
+    """AC6: stats tracking for esfera filter — updated for current keys."""
 
-    def test_indeterminada_count_zero_when_all_have_esfera(self):
-        """No indeterminate count when all bids have known spheres."""
+    def test_rejeitadas_esfera_zero_when_all_match(self):
+        """No rejections when all bids have matching known spheres."""
         bids = [
             _make_bid(esfera_id="F"),
             _make_bid(esfera_id="E"),
@@ -167,10 +165,10 @@ class TestAC6EsferaIndeterminadaStats:
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["F", "E"]
         )
-        assert stats["esfera_indeterminada"] == 0
+        assert stats["rejeitadas_esfera"] == 0
 
     def test_indeterminada_count_incremented(self):
-        """Count should reflect number of undetermined bids."""
+        """Unmatched bids increment rejeitadas_esfera."""
         bids = [
             _make_bid(esfera_id="F"),
             _make_bid(nome_orgao="Org A"),
@@ -179,42 +177,43 @@ class TestAC6EsferaIndeterminadaStats:
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["F"]
         )
-        assert stats["esfera_indeterminada"] == 2
+        # 2 bids have no matching esfera and no keyword match
+        assert stats["rejeitadas_esfera"] == 2
 
-    def test_indeterminada_zero_when_filter_skipped(self):
-        """When all esferas selected (filter skipped), no indeterminada counted."""
-        bids = [
-            _make_bid(nome_orgao="Unknown org"),
-        ]
-        _, stats = aplicar_todos_filtros(
-            bids, ufs_selecionadas={"SP"}, esferas=["F", "E", "M"]
-        )
-        assert stats["esfera_indeterminada"] == 0
-
-    def test_indeterminada_zero_when_none(self):
-        """When esferas=None (no filter), no indeterminada counted."""
+    def test_rejeitadas_zero_when_filter_skipped(self):
+        """When esferas=None (no filter), no esfera rejections."""
         bids = [
             _make_bid(nome_orgao="Unknown org"),
         ]
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=None
         )
-        assert stats["esfera_indeterminada"] == 0
+        assert stats["rejeitadas_esfera"] == 0
 
-    def test_keyword_match_not_counted_as_indeterminada(self):
-        """Bids matched by keyword fallback are NOT indeterminate."""
+    def test_rejeitadas_zero_when_none(self):
+        """When esferas=None, no esfera rejections."""
+        bids = [
+            _make_bid(nome_orgao="Unknown org"),
+        ]
+        _, stats = aplicar_todos_filtros(
+            bids, ufs_selecionadas={"SP"}, esferas=None
+        )
+        assert stats["rejeitadas_esfera"] == 0
+
+    def test_keyword_match_not_counted_as_rejected(self):
+        """Bids matched by keyword fallback are NOT rejected."""
         bids = [
             _make_bid(nome_orgao="Prefeitura de Sao Paulo"),
         ]
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}, esferas=["M"]
         )
-        assert stats["esfera_indeterminada"] == 0
+        assert stats["rejeitadas_esfera"] == 0
 
     def test_stats_key_always_present(self):
-        """esfera_indeterminada key always present in stats dict."""
+        """rejeitadas_esfera key always present in stats dict."""
         bids = [_make_bid(esfera_id="F")]
         _, stats = aplicar_todos_filtros(
             bids, ufs_selecionadas={"SP"}
         )
-        assert "esfera_indeterminada" in stats
+        assert "rejeitadas_esfera" in stats

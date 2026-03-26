@@ -90,7 +90,7 @@ async def create_checkout(
     if not plan_result.data:
         raise HTTPException(status_code=404, detail="Plano nao encontrado")
 
-    plan = plan_result.data
+    plan = plan_result.data  # noqa: F841
 
     # DEBT-114 AC1: Use plan_billing_periods as sole source of truth for stripe_price_id
     bp_result = await sb_execute(
@@ -132,7 +132,7 @@ async def create_checkout(
     session_params["customer_email"] = user["email"]
 
     # STORY-323 AC5: Apply partner coupon if partner_slug provided
-    partner_slug = None
+    partner_slug = None  # noqa: F841
     try:
         # Check query param (passed from frontend partner cookie)
         # Note: partner_slug comes as an additional query param

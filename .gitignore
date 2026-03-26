@@ -408,3 +408,7 @@ node_modules
 *.local.json
 local.config.*
 nul
+
+# AIOX Local (AIOX)
+.aiox-core/local/
+.aiox/install-log.txt

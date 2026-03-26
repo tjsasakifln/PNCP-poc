@@ -6,10 +6,8 @@ and canary-failure-doesn't-block behavior.
 
 import asyncio
 import time
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
-from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 
 

@@ -38,7 +38,7 @@ cannot use FastAPI's Depends() mechanism.
 
 from typing import Optional
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from supabase_client import get_supabase, get_user_supabase

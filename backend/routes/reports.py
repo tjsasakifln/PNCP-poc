@@ -109,7 +109,7 @@ async def generate_diagnostico(
         )
         setor = getattr(results, "setor", "")
         ufs_busca = list(getattr(results, "ufs", []))
-        termos = list(getattr(results, "termos", []))
+        termos = list(getattr(results, "termos", []))  # noqa: F841
 
     # 4. Apply viability scores if not already present
     has_viability = any("_viability_score" in bid for bid in licitacoes)

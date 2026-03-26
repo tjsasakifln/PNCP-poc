@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from progress import ProgressTracker, ProgressEvent
+from progress import ProgressTracker
 
 
 @pytest.fixture

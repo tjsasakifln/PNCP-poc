@@ -5,11 +5,8 @@ AAL checking, and brute force protection.
 """
 
 import pytest
-import time
 from unittest.mock import patch, MagicMock, AsyncMock
-from datetime import datetime, timezone, timedelta
 from fastapi.testclient import TestClient
-from types import SimpleNamespace
 
 
 # ─── Fixtures ──────────────────────────────────────────────────────────────────

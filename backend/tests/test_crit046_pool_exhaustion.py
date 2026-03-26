@@ -9,8 +9,7 @@ AC6: Existing tests pass without regression (full suite)
 """
 
 import asyncio
-import time
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 
 import pytest
 

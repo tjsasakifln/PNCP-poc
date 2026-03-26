@@ -1,6 +1,6 @@
 """Admin response schemas."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
 

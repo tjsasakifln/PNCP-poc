@@ -3,11 +3,11 @@
 AC9: Mock business hours vs weekends, test cron job, SLA endpoint, reply tracking.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch, AsyncMock
 import pytest
 
-from business_hours import BRT, calculate_business_hours, is_within_business_hours
+from business_hours import calculate_business_hours, is_within_business_hours
 
 
 # ============================================================================

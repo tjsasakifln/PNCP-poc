@@ -8,7 +8,6 @@ Tests cover:
 """
 
 import pytest
-from unittest.mock import patch
 
 from filter import (
     _strip_org_context,
@@ -18,7 +17,7 @@ from filter import (
     GLOBAL_EXCLUSIONS_NORMALIZED,
     GLOBAL_EXCLUSION_OVERRIDES,
 )
-from sectors import SECTORS, get_sector
+from sectors import get_sector
 
 
 # ============================================================================

@@ -6,7 +6,7 @@ instead of propagating as HTTP 500.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
 
 from main import app

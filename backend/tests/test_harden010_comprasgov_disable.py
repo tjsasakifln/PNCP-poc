@@ -5,9 +5,8 @@ to be skipped in consolidation, logged at startup, and easily re-enabled.
 """
 
 import logging
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
-import pytest
 
 
 # ---------------------------------------------------------------------------

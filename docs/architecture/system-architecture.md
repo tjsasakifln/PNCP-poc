@@ -1,7 +1,7 @@
 # SmartLic -- System Architecture Document
 
-**Date:** 2026-03-21 | **Author:** @architect (Atlas) | **Phase:** Brownfield Discovery Phase 2
-**Codebase:** `main` branch HEAD | **Version:** 4.0 (supersedes v3.0 from 2026-03-20)
+**Date:** 2026-03-23 | **Author:** @architect (Aria) | **Phase:** Brownfield Discovery Phase 1 (refresh)
+**Codebase:** `main` branch HEAD | **Version:** 5.0 (supersedes v4.0 from 2026-03-21)
 
 ---
 
@@ -143,7 +143,7 @@ SmartLic is a B2G (Business-to-Government) intelligence platform that automates 
 
 ```
 backend/
-├── main.py              (1212 LOC) — App entrypoint, Sentry, routers
+├── main.py              (103 LOC) — Thin entrypoint, delegates to startup/ (DEBT-107 SYS-020)
 ├── schemas.py           (2121 LOC) — All Pydantic models
 ├── config/              — Decomposed config (DEBT-015)
 │   ├── base.py          — Core utilities, logging
@@ -170,7 +170,15 @@ backend/
 ├── models/              — Domain models (cache, search_state, stripe)
 ├── webhooks/            — Stripe webhook handler (1192 LOC)
 ├── templates/emails/    — HTML email templates
-├── startup/             — App factory decomposition
+├── startup/             — App factory decomposition (DEBT-107)
+│   ├── app_factory.py   — create_app() builds FastAPI instance (94 LOC)
+│   ├── routes.py        — register_routes() wires 36 routers (71 LOC)
+│   ├── middleware_setup.py — 6 middlewares + Prometheus mount (143 LOC)
+│   ├── lifespan.py      — Startup/shutdown lifecycle (cache schema, sessions)
+│   ├── sentry.py        — Sentry SDK initialization
+│   ├── endpoints.py     — Root endpoints (/, /v1/setores, /debug/pncp-test)
+│   ├── exception_handlers.py — Global exception handlers
+│   └── state.py         — Module-level state (shutting_down, startup_time)
 ├── utils/               — cnae_mapping, date_parser, phone_normalizer
 ├── source_config/       — Data source configuration
 ├── unified_schemas/     — Cross-source schema normalization
@@ -187,9 +195,31 @@ backend/
 └── ...69 total top-level .py files
 ```
 
-### 3.2 Search Pipeline (Core Architecture)
+### 3.2 Middleware Stack (startup/middleware_setup.py:38-141)
 
-The search pipeline is a 7-stage orchestrator defined in `search_pipeline.py` (143 LOC thin wrapper) with stage logic in `pipeline/stages/`:
+Order matters -- last added is outermost:
+
+| Layer | Middleware | Source | Purpose |
+|-------|-----------|--------|---------|
+| 1 (outermost) | `metrics_auth` | middleware_setup.py:131 | Protect /metrics with Bearer token |
+| 2 | `track_legacy_routes` | middleware_setup.py:102 | Track non-/v1/ calls (Prometheus counter) |
+| 3 | `http_response_counter` | middleware_setup.py:87 | SLO availability metric by status class |
+| 4 | `docs_access_guard` | middleware_setup.py:72 | Gate /docs behind DOCS_ACCESS_TOKEN |
+| 5 | `shutdown_drain_middleware` | middleware_setup.py:55 | 503 + Retry-After during graceful shutdown |
+| 6 | `RateLimitMiddleware` | middleware.py | Redis token-bucket rate limiting |
+| 7 | `DeprecationMiddleware` | middleware.py | Deprecation header for sunset endpoints |
+| 8 | `SecurityHeadersMiddleware` | middleware.py | X-Content-Type-Options, etc. |
+| 9 | `CorrelationIDMiddleware` | middleware.py | X-Request-ID + search_id + correlation_id propagation |
+| 10 (innermost) | `CORSMiddleware` | Starlette built-in | CORS policy enforcement |
+
+Context variables for distributed tracing (middleware.py:26-30):
+- `request_id_var`: Per-request UUID
+- `search_id_var`: End-to-end search journey (CRIT-004)
+- `correlation_id_var`: Browser per-tab session ID
+
+### 3.3 Search Pipeline (Core Architecture)
+
+The search pipeline is a 7-stage orchestrator defined in `search_pipeline.py` (thin wrapper, `_STAGE_TABLE` at line 24) with stage logic in `pipeline/stages/`. All stages communicate through `SearchContext` (`search_context.py`), a `@dataclass` with ~40+ fields of intermediate state (raw results, filtered results, scores, tracker, deadline, etc.):
 
 ```
 [1] VALIDATE   → Input validation, auth, quota check
@@ -222,7 +252,9 @@ ARQ Job(300s) > Pipeline(110s) > Consolidation(100s) > PerSource(80s) > PerUF(30
 | **PCP v2** | `clients/portal_compras_client.py` | 2 | None (public) | 10/page | Client-side UF filtering only. `valor_estimado=0.0` always |
 | **ComprasGov v3** | `clients/compras_gov_client.py` | 3 | None | varies | Dual-endpoint (legacy + Lei 14.133). Currently down since Mar 2026 |
 
-Each source has independent circuit breakers (sliding window, configurable thresholds and cooldowns) and per-source bulkhead concurrency limits.
+Each source has independent circuit breakers (sliding window, configurable thresholds and cooldowns -- all defined in `pncp_client.py:48-71`) and per-source bulkhead concurrency limits (`bulkhead.py`). Source adapters implement `SourceAdapter` ABC from `clients/base.py`, producing `UnifiedProcurement` dataclass with standardized fields and `dedup_key` generation. Source health registry in `source_config/sources.py` tracks `SourceHealthStatus` (healthy/degraded/down) with 5-minute TTL.
+
+Available sources (from `source_config/sources.py:40-50` `SourceCode` enum): PNCP, Portal (PCP), Licitar, ComprasGov, PortalTransparencia, BLL (disabled), BNC (disabled), QueridoDiario (experimental).
 
 ### 3.4 Cache Architecture (Two-Level SWR)
 
@@ -268,6 +300,15 @@ The worker process runs ARQ for async tasks:
 - Alert matching and delivery
 
 SSE events (`llm_ready`, `excel_ready`) push updates to the frontend in real-time.
+
+### 3.8.1 SSE Progress Tracking (progress.py)
+
+Dual-mode real-time progress system:
+
+- **Redis Streams mode** (horizontal scaling, STORY-276): Append-only log per `search_id`. Cross-worker SSE: Worker A creates tracker, Worker B reads from Streams. Terminal events trigger `EXPIRE` (5min TTL, `_STREAM_EXPIRE_TTL` at progress.py:38). Last-Event-ID resumption support (STORY-297): replay list with 10min TTL, max 200 events (`_REPLAY_MAX_EVENTS` at progress.py:42).
+- **In-memory fallback** (single instance): `asyncio.Queue` per search_id when Redis unavailable.
+- **Events:** `connecting`, `fetching`, `filtering`, `llm`, `excel`, `complete`, `degraded`, `error`, `llm_ready`, `excel_ready`, `shutdown` (DEBT-124 graceful shutdown).
+- **Heartbeat:** 15s interval. Wait-for-tracker yields `: waiting\n\n` comments every 5s to prevent undici BodyTimeoutError (CRIT-012).
 
 ### 3.8 Observability Stack
 
@@ -478,7 +519,7 @@ The `middleware.ts` implements comprehensive security:
 
 | ID | Category | Description | Impact | Est. Effort |
 |----|----------|-------------|--------|-------------|
-| DEBT-310 | Maintainability | `main.py` at 1,212 LOC still contains 7 endpoints, Sentry init, PII scrubbing, health checks, and startup/shutdown logic despite startup/ decomposition existing | Entrypoint does too much; startup/ module exists but isn't fully used | 4h |
+| DEBT-310 | Maintainability | `main.py` reduced to 103 LOC (DEBT-107 completed) but retains ~75 lines of backward-compat re-exports and proxy classes for test compatibility (`main.py:28-102`). Tests should import from actual module locations (`startup.state`, `startup.lifespan`, etc.) | Test coupling to legacy import paths, confusing proxy classes | 3h |
 | DEBT-311 | Testing | Backend test LOC (140,199) is 1.8x the source LOC (77,364). While high coverage is good, the test-to-source ratio suggests potential test duplication or over-specification | Slower CI, test maintenance burden, brittle tests that break on refactoring | 8h (audit) |
 | DEBT-312 | Maintainability | 11 filter_*.py files + filter.py creates ambiguity about which file owns which filtering responsibility. `filter.py` header says "Keyword matching engine for uniform/apparel procurement" but it's used for all sectors | Confusing module naming, stale docstrings | 3h |
 | DEBT-313 | Infrastructure | ComprasGov v3 data source has been down since March 2026. The client code (838 LOC) and circuit breaker config remain active. Priority should be formally demoted or the source should be disabled | Wasted timeout budget on dead source, confusing source health dashboard | 2h |
@@ -493,8 +534,12 @@ The `middleware.ts` implements comprehensive security:
 | DEBT-317 | Maintainability | `backend/clients/` has 5 client modules with varying structure. No shared base class despite `base.py` existing | Inconsistent error handling across data sources | 4h |
 | DEBT-318 | Documentation | Backend has `docs/` and `examples/` directories. Content currency is unknown | Potentially stale documentation | 2h (audit) |
 | DEBT-319 | Testing | Backend `scripts/` contains 12 utility scripts, some with their own test files (`test_audit_pipeline.py`). These aren't part of the main test suite | Script quality not validated in CI | 2h |
-| DEBT-320 | Architecture | `startup/` module (app_factory.py, endpoints.py, etc.) exists as a decomposition target but `main.py` still does most initialization directly | Incomplete refactoring, two ways to do the same thing | 3h |
+| DEBT-320 | Architecture | `startup/` decomposition is COMPLETE (DEBT-107). `main.py` now delegates all init to `startup/app_factory.py:create_app()`. Remaining issue: `main.py:82-102` has a `track_legacy_routes()` shim that duplicates logic from `startup/middleware_setup.py:103-119` for backward-compat tests | Minor duplication, test coupling | 1h |
 | DEBT-321 | Performance | `blog.ts` at 785 LOC in the frontend lib suggests blog content may be hardcoded or statically defined rather than CMS-driven | Content updates require code deployments | N/A (design choice) |
+| DEBT-322 | Architecture | Circuit breaker configs for PCP and ComprasGov are defined in `pncp_client.py:56-71` despite those sources having their own client modules in `clients/`. Should live in `source_config/sources.py` or respective client files | Misleading code location, maintenance confusion | 1h |
+| DEBT-323 | Security | `_plan_status_cache` in `quota.py:44` is an unbounded `dict`. Unlike `_token_cache` (LRU 1000 entries) and `_arbiter_cache` (LRU 5000), this grows without limit. Under high user count, memory exhaustion possible | Memory safety gap | 1h |
+| DEBT-324 | Architecture | Dual Stripe webhook router registration in `startup/routes.py:62+70` -- included both at `/v1/` prefix (line 62 via `_v1_routers`) and at root (line 70). Creates ambiguous routing | Potential double-processing of webhooks | 1h |
+| DEBT-325 | Maintainability | `llm_arbiter.py:73` hardcodes `_USD_TO_BRL = 5.0` for cost estimation. Should be configurable or fetched | Inaccurate cost tracking as exchange rate drifts | 0.5h |
 
 ---
 
@@ -652,5 +697,6 @@ Stripe payment → Webhook → POST /v1/stripe/webhook
 
 ---
 
-*Document generated 2026-03-21 by @architect (Atlas) during Brownfield Discovery Phase 2.*
-*Codebase analysis based on actual file reads — all numbers verified against source.*
+*Document v5.0 updated 2026-03-23 by @architect (Aria) during Brownfield Discovery Phase 1 refresh.*
+*Codebase analysis based on actual file reads -- all numbers and file:line references verified against source.*
+*Previous version: v4.0 (2026-03-21, Atlas). Changes in v5.0: corrected main.py LOC (103, not 1212), added startup/ decomposition detail, added middleware stack section, added SSE progress tracking detail, added source adapter pattern, added 4 new DEBT items (322-325), updated DEBT-310/320 to reflect DEBT-107 completion.*

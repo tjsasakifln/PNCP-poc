@@ -7,7 +7,6 @@ GET /search/{id}/zero-match, POST /search/{id}/regenerate-excel,
 GET /search/{id}/timeline, POST /search/{id}/retry, POST /search/{id}/cancel.
 """
 
-import asyncio
 import time as sync_time
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -18,7 +17,7 @@ from excel import create_excel
 from log_sanitizer import get_sanitized_logger
 from progress import get_tracker, remove_tracker
 from rate_limiter import require_rate_limit
-from schemas import BuscaResponse, SearchStatusResponse
+from schemas import SearchStatusResponse
 from search_state_manager import (
     get_search_status,
     get_state_machine,

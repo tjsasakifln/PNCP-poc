@@ -6,8 +6,7 @@ AC3: All billing tests pass (verified by running full test suite)
 """
 
 import os
-import pytest
-from unittest.mock import AsyncMock, Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -36,7 +35,7 @@ def _mock_db_for_checkout(plan_data, bp_data):
     """
     db = Mock()
 
-    call_count = [0]
+    call_count = [0]  # noqa: F841
 
     def table_side_effect(table_name):
         chain = Mock()

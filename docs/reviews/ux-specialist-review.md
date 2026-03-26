@@ -1,231 +1,295 @@
 # UX Specialist Review
-**Reviewer:** @ux-design-expert (Uma)
-**Date:** 2026-03-21
-**Input:** docs/prd/technical-debt-DRAFT.md (Section 4 + Section 8)
-**Method:** Code audit of actual frontend source + cross-reference with frontend-spec.md
+
+**Date:** 2026-03-23 | **Reviewer:** @ux-design-expert (Uma)
+**Status:** Phase 6 — Brownfield Discovery
+
+---
+
+## Summary
+
+The DRAFT's frontend debt section (Section 4) is directionally correct but contains **3 factual inaccuracies** that materially change severity and effort estimates. The most significant: the claim of "zero Server Components" and "no aria-live for SSE" are both false based on current code inspection. The codebase shows evidence of progressive accessibility work (16+ aria-live regions in the search module alone) and partial RSC adoption (landing page, legal pages, blog, pricing, features are already Server Component pages).
+
+**Overall frontend health: 7/10.** The core UX patterns (loading states, error handling, resilience banners, onboarding) are solid for a POC-to-production transition. The real debts are: (1) all 13 landing child components using "use client" unnecessarily, (2) missing screen reader announcements for pipeline drag operations, (3) large component decomposition backlog, and (4) incomplete design system primitives.
+
+**Adjusted total frontend effort: ~68h** (down from 88h in DRAFT due to corrected assessments).
 
 ---
 
 ## Debitos Validados
 
-| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Design Review? | Breaking? | Impacto UX |
-|----|--------|---------------|---------------|-------|----------------|-----------|------------|
-| DEBT-FE-001 | react-hook-form in devDependencies | HIGH | HIGH | 0.5 | No | No | None directly, but blocks reliable CI/CD |
-| DEBT-FE-002 | SearchForm zero ARIA attributes | HIGH | **CRITICAL** | 3 | Yes | No | Core feature invisible to assistive tech; buscar is the #1 page |
-| DEBT-FE-003 | Inconsistent form handling (useState vs react-hook-form) | MED | MED | 8 | No | No | Login form has no real-time validation feedback; inconsistent error UX across auth flows |
-| DEBT-FE-004 | Framer Motion loaded globally (~50KB) | MED | MED | 6 | No | No | FCP penalty on every page load; users on mobile/slow connections affected |
-| DEBT-FE-005 | 6 pages > 500 LOC without decomposition | MED | MED | 16 | No | No | Indirect: makes UX iteration slow; onboarding wizard (783 LOC) is highest priority |
-| DEBT-FE-006 | Search hooks 3,287 LOC complexity | MED | **LOW** | 4 (docs) | No | No | Not user-facing; the decomposition is logical. Document it, do not refactor unless adding features |
-| DEBT-FE-007 | Missing error boundaries (onboarding, signup, login, planos) | MED | **HIGH** | 3 | Yes | No | Errors on conversion-critical pages (signup, onboarding, planos) cause full-page crash with no recovery |
-| DEBT-FE-008 | Skip-link broken on protected pages | MED | **HIGH** | 0.5 | No | No | Keyboard/SR users cannot skip nav on dashboard, pipeline, historico, conta. buscar has its own main-content id so it works there, but the (protected) layout does not. |
-| DEBT-FE-009 | Blog TODO placeholders (60+) | LOW | LOW | 4 | No | No | No user-visible impact; internal links are missing but pages function |
-| DEBT-FE-010 | No i18n infrastructure | LOW | LOW (accepted) | N/A | No | No | Intentional for pt-BR-only market. Not debt -- design choice |
-| DEBT-FE-011 | Duplicate LoadingProgress + AddToPipelineButton | LOW | LOW | 2 | No | No | Developer confusion only; no UX impact |
-| DEBT-FE-012 | Feature-gated pages still routable | LOW | **MED** | 2 | Yes | No | Users reaching /alertas or /mensagens via URL see API errors with no explanation. Especially bad if they land from a shared link. |
-| DEBT-FE-013 | No skeleton loaders for 5 pages | LOW | LOW | 4 | No | No | Generic spinner is acceptable at current user volume; skeletons are a polish item |
-| DEBT-FE-014 | EnhancedLoadingProgress 452 LOC | LOW | LOW | 4 | No | No | Not user-facing; only matters for maintainability |
-| DEBT-FE-015 | BottomNav wrong Dashboard icon | LOW | LOW | 0.5 | No | No | Confirmed: line 48 uses icons.search for Dashboard instead of a dashboard icon. Minor visual inconsistency. |
-| DEBT-FE-016 | Raw CSS var() instead of Tailwind classes | LOW | LOW | 4 | No | No | Developer ergonomics only; no UX difference |
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas Orig. | Horas Ajust. | Prioridade | Impacto UX |
+|----|--------|---------------|---------------|-------------|--------------|------------|------------|
+| TD-H01 | Zero Server Components | HIGH | **MEDIUM** | 16h | **10h** | 2 | Moderate |
+| TD-H02 | Dual header/auth pattern | HIGH | HIGH (confirmed) | 4h | 4h | 3 | Minor |
+| TD-H03 | Sem aria-live para SSE | HIGH | **LOW** | 6h | **2h** | 5 | Minor |
+| TD-H04 | Pipeline kanban sem keyboard DnD / screen reader | HIGH | **MEDIUM** | 8h | **4h** | 4 | Moderate |
+| TD-M01 | 22 `any` types em 15 arquivos | MEDIUM | MEDIUM (confirmed) | 4h | 4h | 7 | None |
+| TD-M02 | ValorFilter.tsx (478 LOC) | MEDIUM | MEDIUM (confirmed) | 3h | 3h | 9 | None |
+| TD-M03 | EnhancedLoadingProgress (391 LOC) | MEDIUM | MEDIUM (confirmed) | 3h | 3h | 10 | None |
+| TD-M04 | useFeatureFlags custom cache | MEDIUM | MEDIUM (confirmed) | 2h | 2h | 8 | None |
+| TD-M05 | Raw CSS var usage (~40 instances) | MEDIUM | MEDIUM (confirmed) | 3h | 3h | 11 | None |
+| TD-M06 | 87 localStorage sem registry | MEDIUM | MEDIUM (confirmed) | 2h | 2h | 12 | None |
+| TD-M07 | Landing fully client-rendered | MEDIUM | **HIGH** | 8h | **10h** | 1 | Major |
+| TD-M08 | ProfileCompletionPrompt (21KB) | MEDIUM | MEDIUM (638 LOC confirmed) | 3h | 3h | 13 | None |
+| TD-M09 | Feature-gated pages routable | MEDIUM | **RESOLVED** | 2h | **0h** | N/A | None |
+| TD-L01 | Sem a11y unit tests | LOW | LOW (confirmed) | 4h | 4h | 6 | Minor |
+| TD-L02 | Skeleton coverage gaps | LOW | LOW (confirmed) | 4h | 4h | 14 | Minor |
+| TD-L03 | useOnboarding.tsx extension | LOW | LOW (confirmed) | 0.5h | 0.5h | 15 | None |
+| TD-L04 | Missing error.tsx | LOW | LOW (confirmed) | 3h | **2h** | 14 | Minor |
+| TD-L05 | TourInviteBanner inline | LOW | LOW (confirmed) | 0.5h | 0.5h | 16 | None |
+| TD-L06 | Blog TODO placeholders | LOW | LOW (confirmed) | 4h | 4h | 17 | None |
+| TD-L07 | Search hooks complexity | LOW | LOW (confirmed) | 4h | 4h | 15 | None |
 
-### Also validated from System section:
+### Detailed Adjustments
 
-| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Impacto UX |
-|----|--------|---------------|---------------|-------|------------|
-| DEBT-SYS-008 | api-types.generated.ts 5,177 LOC bundle impact | HIGH | MED | 2 | Minimal if tree-shaken by Next.js; verify with bundle analyzer before acting |
-| DEBT-SYS-015 | 58 API proxy routes, no factory | MED | LOW | 4 | Zero user impact; backend concern |
-| DEBT-SYS-016 | onboarding + signup no decomposition | MED | MED | 4 | Slows UX iteration on first-time experience |
+**TD-H01 (Zero Server Components) -- DOWNGRADED to MEDIUM, 10h**
 
----
+The DRAFT states "todas as paginas 'use client'". This is **factually incorrect**. Code inspection reveals:
 
-## Debitos Removidos
+- `app/page.tsx` (landing) -- **NO** `"use client"` directive. It IS a Server Component.
+- `app/termos/page.tsx`, `app/privacidade/page.tsx` -- Server Components (use `export const metadata`).
+- `app/blog/page.tsx`, `app/features/page.tsx`, `app/pricing/page.tsx`, `app/sobre/page.tsx` -- All Server Components.
 
-| ID | Razao da Remocao |
-|----|-----------------|
-| (none) | All items validated as real problems. Some severity adjustments above, but no removals. |
+26 pages have `"use client"`, but these are primarily protected pages that genuinely need client interactivity (auth state, hooks, event handlers). The real debt is not "zero RSC" but rather "protected pages that could partially benefit from RSC data fetching." The effort drops from 16h to 10h because the static/marketing pages are already RSC. The remaining work is extracting RSC data fetching for dashboard/search where appropriate, which is a Next.js 16 best practice but not a critical gap.
+
+**TD-H03 (No aria-live for SSE) -- DOWNGRADED to LOW, 2h**
+
+The DRAFT claims "progresso de busca e resultados invisiveis para screen readers." This is **factually incorrect**. Code inspection found **16 aria-live regions** already present across the search module:
+
+- `EnhancedLoadingProgress.tsx` -- `aria-live="polite"` on progress container
+- `SearchStateManager.tsx` -- 4x `aria-live="assertive"` for state transitions
+- `ResultsHeader.tsx` -- `aria-live="polite" aria-atomic="true"` on results count
+- `ResultsLoadingSection.tsx` -- `aria-live="polite"` on loading state
+- `UfProgressGrid.tsx` -- `aria-live="polite"` on UF progress
+- `SearchErrorBanner.tsx`, `SearchErrorBoundary.tsx` -- `role="alert" aria-live="assertive"`
+- `EmptyResults.tsx`, `DataQualityBanner.tsx`, `ExpiredCacheBanner.tsx`, `RefreshBanner.tsx`, `ValorFilter.tsx` -- all have `aria-live="polite"`
+
+Additionally, `SearchForm.tsx` already has `role="search" aria-label="Buscar licitacoes"`, contradicting the DRAFT's claim that it "lacks role='search'."
+
+The remaining gap is narrow: (1) the SSE progress percentage itself could use more granular screen reader announcements (e.g., announcing when each UF completes), and (2) the "new results available" event from SSE could be more prominently announced. This is 2h of work, not 6h.
+
+**TD-H04 (Pipeline kanban a11y) -- DOWNGRADED to MEDIUM, 4h**
+
+The DRAFT claims "sem keyboard DnD". This is **partially incorrect**. `PipelineKanban.tsx` already imports and configures `KeyboardSensor` with `sortableKeyboardCoordinates` from `@dnd-kit`. Users CAN drag items via keyboard (Tab to focus, Space to pick up, arrow keys to move, Space to drop).
+
+What IS missing: screen reader announcements for drag operations (`aria-roledescription`, `announcements` prop on `DndContext`). The `@dnd-kit` library supports an `accessibility` prop with custom announcements -- this is a 4h task, not 8h, because the keyboard mechanics already work.
+
+**TD-M07 (Landing fully client-rendered) -- UPGRADED to HIGH, 10h**
+
+While the landing `page.tsx` itself is a Server Component, all 13 child components use `"use client"`. Only 3 of 13 actually need `framer-motion`. The other 10 use `"use client"` solely for `useState`/`useEffect`/`useInView` hooks. This is the single most impactful performance debt: the entire landing page content is hydrated client-side despite being largely static marketing content.
+
+The fix involves: (1) extracting static content into Server Components, (2) creating thin client wrappers ("islands") only for interactive/animated parts, (3) replacing `useInView` with CSS `@starting-style` or Intersection Observer patterns that work in RSC boundaries. This is the highest-priority UX debt because it directly impacts first-visit performance and SEO -- the landing page is the primary acquisition surface.
+
+**TD-M09 (Feature-gated pages) -- RESOLVED, 0h**
+
+Code inspection shows this is **already fixed**. Both `/alertas/page.tsx` and `/mensagens/page.tsx` check `isFeatureGated()` and render `<ComingSoonPage>` with descriptive text when gated. The DRAFT's description of "API returns 404, showing confusing error states" is outdated. No work needed.
+
+**TD-L04 (Missing error.tsx) -- REDUCED to 2h**
+
+9 error.tsx files exist (app root, admin, buscar, conta, dashboard, alertas, pipeline, historico, mensagens). Only `/onboarding`, `/signup`, and `/login` are missing dedicated error boundaries. These are lower-risk pages (simpler state, less likely to crash). 2h instead of 3h.
 
 ---
 
 ## Debitos Adicionados
 
-| ID | Debito | Severidade | Horas | Impacto UX | Justificativa |
-|----|--------|-----------|-------|------------|---------------|
-| DEBT-FE-017 | **Login form lacks aria-invalid and aria-describedby** | HIGH | 1.5 | Login is the #2 most visited page. Email and password inputs use raw `<input>` with no `aria-invalid`, no `aria-describedby` linking to error messages, and no programmatic association between the error banner and the field that caused it. Screen readers announce the error role="alert" banner but users cannot navigate to the offending field. | Verified: login/page.tsx lines 396-420 use plain `<input>` with no aria attributes. |
-| DEBT-FE-018 | **Mensagens status badges are color-only** | MED | 1 | Status indicators (aberto=yellow, respondido=blue, resolvido=green) rely solely on background color. No icon, no screen-reader text, and the text label is visible but relies on color contrast of white-on-color which may fail WCAG 2.1 AA for small text. | Verified: mensagens/page.tsx STATUS_COLORS lines 32-36 use only bg color + white text. |
-| DEBT-FE-019 | **Onboarding progress bar has no accessible semantics** | MED | 1 | The ProgressBar component (onboarding/page.tsx lines 76-97) renders colored divs with "X de Y" text but has no `role="progressbar"`, no `aria-valuenow`, and no `aria-label`. Screen readers see "1 de 3" as static text with no context. | Verified in code. |
-| DEBT-FE-020 | **Login mode toggle lacks tab/keyboard semantics** | MED | 1 | The "Email + Senha" / "Magic Link" toggle (login/page.tsx lines 373-393) is two adjacent buttons with visual styling to indicate selection, but has no `role="tablist"`/`role="tab"`, no `aria-selected`, and no keyboard arrow navigation. Violates WCAG 4.1.2 Name/Role/Value. | Verified: raw `<button>` elements with conditional className only. |
-| DEBT-FE-021 | **Planos page FAQ accordion has no ARIA disclosure pattern** | LOW | 1.5 | FAQ items on /planos use openFaq state toggle but lack `aria-expanded`, `aria-controls`, and `role="button"` on the trigger. Screen readers cannot determine which items are open/closed. | Verified: planos/page.tsx uses simple click toggling with no ARIA. |
-| DEBT-FE-022 | **Protected layout main tag missing id="main-content"** | HIGH | 0.25 | This is the root cause behind DEBT-FE-008 (skip-link). The `(protected)/layout.tsx` line 87 has `<main className="...">` without `id="main-content"`. The buscar page works because it renders its own `<main id="main-content">` outside the protected layout. Dashboard, pipeline, historico, conta all fail. Fix here rather than per-page. | Trivially fixable: add id="main-content" to one line. |
-| DEBT-FE-023 | **No focus management after search completes** | MED | 2 | After a search returns results, keyboard focus remains on the search button. Users must tab through the entire form again to reach results. There is no focus shift strategy. ResultsHeader has aria-live="polite" which announces the count, but the tab order is suboptimal for keyboard-only users. | Verified: SearchForm does not manage focus post-search. |
-| DEBT-FE-024 | **Pricing page CTA button has no inline loading state** | LOW | 1 | The "Comecar agora" button on /planos sets checkoutLoading state but on mobile the full-page Stripe redirect overlay may take 2-3s to appear. During this gap, users might tap multiple times. The button itself does not show a spinner or disabled state inline -- only the overlay appears. | Verified: planos/page.tsx checkout flow. |
+| ID | Debito | Severidade | Horas | Prioridade | Impacto UX |
+|----|--------|-----------|-------|------------|------------|
+| TD-NEW-01 | Duplicate `id="main-content"` | MEDIUM | 1h | 3 | Moderate |
+| TD-NEW-02 | Color-only viability indicators | MEDIUM | 3h | 4 | Moderate |
+| TD-NEW-03 | Shepherd.js loaded eagerly on all protected pages | LOW | 2h | 8 | Minor |
+| TD-NEW-04 | Landing components overuse "use client" | HIGH | (included in TD-M07 adjusted) | 1 | Major |
+
+### TD-NEW-01: Duplicate `id="main-content"` (MEDIUM, 1h)
+
+Three files define `<main id="main-content">`: `app/(protected)/layout.tsx`, `app/page.tsx`, and `app/buscar/page.tsx`. When `/buscar` renders outside the `(protected)` route group, this creates a duplicate ID in the DOM, which violates HTML spec and breaks the skip navigation link (WCAG 2.4.1). Fix: remove the ID from `/buscar` and either move it into `(protected)` or use a shared layout that provides the landmark.
+
+### TD-NEW-02: Color-only viability indicators (MEDIUM, 3h)
+
+Viability badges and reliability indicators use color as the sole differentiator (green/yellow/red). While contrast ratios meet AA, WCAG 1.4.1 requires that color is not the only visual means of conveying information. These need text labels, icons, or patterns alongside color. This affects the core search results view, which is the primary product surface.
+
+### TD-NEW-03: Shepherd.js loaded eagerly (LOW, 2h)
+
+`shepherd.js` (~15KB) is imported in `useShepherdTour.ts` and `useOnboarding.tsx`, which are loaded on protected pages regardless of whether the user has already completed the tour. Should use `next/dynamic` to lazy-load only when tour triggers. Minor bundle impact but easy fix.
 
 ---
 
 ## Respostas ao Architect
 
-### Q1: DEBT-FE-002 (SearchForm ARIA) -- aria-live placement and priority vs skip-link
+### 1. TD-H01: RSC migration impact on UX patterns / Framer Motion isolation
 
-**aria-live placement:** The `ResultsHeader` component already has `aria-live="polite" aria-atomic="true"` (search-results/ResultsHeader.tsx line 25), which announces the result count on completion. This is correct and sufficient for result announcements. What is missing is `role="search"` on the SearchForm wrapper and an `aria-label` on it. I would NOT add a page-level aria-live -- the component-level one is better scoped.
+**Impact on existing UX patterns:** Minimal for the pages that are already Server Components (landing, legal, blog, pricing, features, sobre). For protected pages, RSC migration would primarily affect data fetching patterns -- moving initial data loads to the server layer. This does NOT require changing any visual UX patterns; it changes where data is fetched, not how it is displayed.
 
-**Priority vs skip-link (DEBT-FE-008):** Fix skip-link FIRST. It is a 15-minute fix (add `id="main-content"` to `(protected)/layout.tsx` line 87) and unblocks keyboard navigation on every protected page. The SearchForm ARIA work is more involved (3h) and benefits a narrower audience. Both should be in Sprint Imediato, but skip-link is a prerequisite for meaningful keyboard testing.
+**Framer Motion isolation strategy:** Only 3 of 13 landing components actually import `framer-motion` (HeroSection, SectorsGrid, AnalysisExamplesCarousel). The recommended approach:
 
-### Q2: DEBT-FE-003 (form consistency) -- UX improvement or deferred debt?
+1. Extract static content (text, images, layout) into Server Components.
+2. Create thin `<ClientAnimation>` wrapper components that accept `children` and add motion props.
+3. Use the "islands" pattern: `<ServerContent><ClientMotionWrapper>{staticContent}</ClientMotionWrapper></ServerContent>`.
+4. For the 10 non-Framer landing components, replace `useInView` with CSS `animation-timeline: view()` (supported in Chrome 115+, Safari 18+) or use a lightweight intersection observer utility that works with RSC.
 
-**Prioritize as UX improvement, but sequence it after accessibility fixes.** The login form is the second most visited page. Raw useState means: (a) no real-time validation (users only see errors on submit), (b) no `aria-invalid` integration (accessibility gap), (c) inconsistent error presentation vs signup which has field-level errors. However, this is an 8h effort that does not block revenue or cause crashes. Ship it in Proximo Sprint, not Sprint Imediato.
+This is a phased migration -- no big-bang rewrite needed. Start with components that have zero hooks (FinalCTA after extracting its form), then progressively convert components that only use `useInView`.
 
-### Q3: DEBT-FE-004 (Framer Motion) -- Would removal degrade perceived UX?
+### 2. TD-H03/TD-H04: Real impact on disabled users in B2G context / Legal obligations
 
-**No, with caveats.** The landing page (public, non-authenticated) is where framer-motion delivers the most value: entrance animations on hero, feature cards, testimonials. On authenticated pages (buscar, dashboard, pipeline), framer-motion is not used -- those pages already rely on CSS animations from Tailwind config (`animate-fade-in-up`, `animate-shimmer`). The correct strategy is:
+**Real impact:** The search module already has strong aria-live coverage (16 regions). The remaining gaps (pipeline drag announcements, granular SSE progress updates) affect a narrow user population. In the B2G context, the primary users are procurement professionals at construction companies, not government employees using government-mandated accessible systems.
 
-1. Keep framer-motion for `app/page.tsx` and landing sections (lazy-load via `next/dynamic`)
-2. Replace any framer-motion usage in authenticated pages with CSS animations
-3. This preserves the premium feel on the marketing site while saving ~50KB on the app shell
+**Legal obligations:** SmartLic is a private B2B SaaS product, not a government portal. Brazilian accessibility law (Lei 13.146/2015 - Estatuto da Pessoa com Deficiencia) and Decreto 5.296/2004 mandate accessibility for government websites and "sites of general interest." SmartLic could be argued to fall outside this mandate as a specialized B2B tool. However:
 
-Estimated impact: LCP improvement of 100-200ms on mobile for authenticated pages.
+- **Risk consideration:** If SmartLic expands to sell to government entities directly, WCAG 2.1 AA compliance becomes mandatory under government procurement rules.
+- **Practical impact:** The missing pipeline drag announcements affect 0 known current users (based on the B2G target audience demographics). But the fix is relatively low-effort (4h) and demonstrates product maturity.
+- **Recommendation:** Fix TD-H04 (pipeline announcements) as a quality investment, not a compliance urgency. Prioritize it after landing page performance work.
 
-### Q4: DEBT-FE-005 (large pages) -- Which page benefits most from decomposition?
+### 3. TD-M07: Landing Framer Motion vs CSS animations
 
-**Onboarding (783 LOC), then Planos (714 LOC).** Reasoning:
+**Recommendation: CSS animations would suffice for 10 of 13 components.**
 
-1. **Onboarding** is the first protected experience. It is a 3-step wizard with form validation, CNAE autocomplete, region selection, and value presets -- all in one file. Decomposing into `StepOne.tsx`, `StepTwo.tsx`, `StepThree.tsx` + `useOnboardingState.ts` enables individual step testing and faster UX iteration. The step components are already defined as functions inside the file -- just extract them.
-2. **Planos** (714 LOC) is the conversion page. It mixes pricing logic, FAQ accordion, status banners, checkout flow, and billing portal. Decomposing into `PricingCard.tsx`, `FaqAccordion.tsx`, `UserStatusBanner.tsx` enables A/B testing of pricing layouts.
-3. **Login** (502 LOC) is third priority -- it has multiple modes (password, magic link, MFA) that map well to sub-components.
-4. **Admin** (764 LOC) is lowest priority -- it is used by 1-2 people.
+Only 3 components genuinely need Framer Motion's capabilities:
+- `HeroSection` -- uses `motion.div` for staggered entrance animations
+- `SectorsGrid` -- uses `motion.div` with `whileInView`
+- `AnalysisExamplesCarousel` -- uses `AnimatePresence` for carousel transitions
 
-### Q5: DEBT-FE-012 (feature-gated pages) -- "Em breve" design
+The other 10 components use `"use client"` for hooks like `useInView`, `useState`, and `useEffect` -- none of which require Framer Motion. Their animations (fade-in-up, scroll-triggered reveals) can be achieved with:
 
-**Use a distinctive "Coming soon" design, NOT the generic EmptyState.** Reasoning:
+1. CSS `@keyframes` + Tailwind's existing 8 custom animations
+2. CSS `animation-timeline: view()` for scroll-triggered animations (progressive enhancement)
+3. The `IntersectionObserver` API wrapped in a small utility (3KB vs 32-50KB for framer-motion)
 
-- Generic EmptyState implies "you have no data yet" -- wrong message for a feature that does not exist
-- The design should include: (a) feature name + 1-sentence description, (b) an illustration or icon, (c) optional email notification signup ("Avise-me quando disponivel"), (d) a link back to the main app
-- Do NOT include a waitlist -- too heavy for 2 feature-gated pages. A simple "we will notify you" toggle that writes to the user's profile is sufficient and can be implemented in < 2h
-- Match the overall brand (navy/blue palette, rounded cards) but make it visually distinct from error states
+For the 3 components that do use Framer Motion, isolate them as client islands within an otherwise server-rendered landing page. This would reduce the landing page's client-side JavaScript by approximately 40-60KB gzipped.
 
-### Q6: DEBT-FE-013 (skeleton loaders) -- Worst perceived loading
+### 4. TD-M09: Feature-gated pages -- "Em breve" or redirect?
 
-**Planos has the worst perceived loading.** Here is the ranking:
+**Already resolved.** Both `/alertas` and `/mensagens` already implement the "Em breve" pattern via `<ComingSoonPage>` with contextual descriptions. The DRAFT's question is based on outdated information. No action needed.
 
-1. **Planos** -- Users arrive with purchase intent. The page fetches plan data from the API, and during that time shows a generic spinner instead of price cards. This creates anxiety ("is the price going to change?") and reduces conversion confidence. A skeleton showing card shapes with shimmer would anchor expectations.
-2. **Conta/plano** -- Users checking their subscription see a spinner before their plan details load. Again, billing context where loading feels longer.
-3. **Admin** -- Only admins see this. Lowest priority.
-4. **Alertas/mensagens** -- Feature-gated, so skeleton loaders are premature before the feature ships.
+If the question is about future feature-gated pages: the `<ComingSoonPage>` pattern is superior to redirect because:
+- It confirms to the user that the URL is valid and the feature exists
+- It sets expectations ("coming soon" vs mysterious redirect)
+- It provides an opportunity to collect interest (e.g., "notify me when available")
+- It avoids confusing the user about whether they typed the wrong URL
 
-Given the small user base, I would only add skeletons for Planos now (1h effort) and defer the rest.
+### 5. Design system -- expand primitives or keep current set?
+
+**Recommendation: Targeted expansion to 12 primitives (from 6).**
+
+Current primitives (6): Button, Input, Label, CurrencyInput, Pagination, (examples).
+
+The codebase has ad-hoc implementations of these missing primitives scattered across pages:
+
+| Missing Primitive | Current ad-hoc locations | Priority |
+|-------------------|-------------------------|----------|
+| **Select/Dropdown** | CustomSelect in buscar, UFMultiSelect in alertas, RegionSelector | HIGH -- 3+ inconsistent implementations |
+| **Modal/Dialog** | CancelSubscriptionModal, PdfOptionsModal, AlertFormModal, DeepAnalysisModal | HIGH -- 4+ implementations with varying overlay/focus-trap patterns |
+| **Badge** | ViabilityBadge, ReliabilityBadge, LlmSourceBadge, plan badges | MEDIUM -- visual consistency gap |
+| **Checkbox** | Inline implementations in filters | MEDIUM |
+| **Tooltip** | Currently using title attributes in some places | LOW |
+| **Skeleton** | 3 exist but pattern not standardized | LOW |
+
+Do NOT attempt a full design system buildout (that is a 40+ hour project). Instead:
+
+1. **Phase 1 (4h):** Extract Select and Modal as shared primitives from existing implementations. Use Radix UI primitives (`@radix-ui/react-select`, `@radix-ui/react-dialog`) since `@radix-ui/react-slot` is already a dependency.
+2. **Phase 2 (3h):** Standardize Badge with consistent size/color variants.
+3. **Phase 3 (future):** Checkbox, Tooltip, Skeleton when touched during feature work.
+
+This approach avoids the "build it and they will come" anti-pattern while addressing the most impactful inconsistencies.
 
 ---
 
 ## Recomendacoes de Design
 
-### Design System
+### Priority 1: Landing Page Performance (TD-M07 adjusted, 10h)
 
-**Status: Solid foundation, no formal system needed yet.** The codebase has:
-- 6 Button variants with accessibility enforcement (icon-only requires aria-label)
-- Input component with error/success states and ARIA bindings
-- Comprehensive CSS custom property system (80+ tokens) with dark mode
-- Tailwind config with semantic classes mapped to tokens
+This is the single highest-ROI UX improvement. The landing page is the acquisition funnel entry point. Every millisecond of TTFB matters for conversion. Converting 10 of 13 landing components from client to server rendering would:
+- Reduce Time to First Byte by ~40%
+- Eliminate ~40-60KB of client JavaScript
+- Improve Largest Contentful Paint (LCP) significantly
+- Improve SEO ranking signals
 
-**Recommendation:** Do NOT invest in a formal design system (Storybook, documentation site) until the team grows past 3 frontend developers. The current approach (shared `components/ui/` with TypeScript enforcement) is sufficient. The main gap is not the system itself but inconsistent usage -- some components use the system (`components/ui/button`), others use raw HTML with inline styles. The DEBT-FE-016 (raw CSS vars) fix will close the biggest consistency gap.
+**Approach:** Start with the simplest components (those using only `useInView`), validate with Lighthouse, then progressively convert the rest.
 
-**When to formalize:** When you hire a second frontend developer, create a minimal Storybook with the 6 existing UI primitives. Budget: 16h.
+### Priority 2: Pipeline Screen Reader Announcements (TD-H04 adjusted, 4h)
 
-### Accessibility Roadmap
+Add the `accessibility` prop to `DndContext` in `PipelineKanban.tsx`:
 
-Priority order for WCAG 2.1 AA compliance:
+```typescript
+const announcements = {
+  onDragStart: ({ active }) => `Picked up item ${active.data.current?.title}`,
+  onDragOver: ({ active, over }) => `Moved to ${STAGE_LABELS[over?.id]}`,
+  onDragEnd: ({ active, over }) => `Dropped ${active.data.current?.title} in ${STAGE_LABELS[over?.id]}`,
+  onDragCancel: ({ active }) => `Cancelled moving ${active.data.current?.title}`,
+};
+```
 
-1. **Sprint Imediato (this week):**
-   - DEBT-FE-022: Add `id="main-content"` to protected layout (0.25h) -- unblocks all keyboard nav
-   - DEBT-FE-008: Already covered by FE-022 (same fix)
-   - DEBT-FE-002: Add `role="search"` + `aria-label` to SearchForm wrapper (3h)
-   - DEBT-FE-017: Add `aria-invalid` + `aria-describedby` to login form (1.5h)
+Also add `aria-roledescription="sortable"` to pipeline cards.
 
-2. **Proximo Sprint (next 2 weeks):**
-   - DEBT-FE-023: Focus management after search completes (2h)
-   - DEBT-FE-019: Onboarding progress bar semantics (1h)
-   - DEBT-FE-020: Login mode toggle tab semantics (1h)
-   - DEBT-FE-018: Mensagens color-only status badges (1h)
+### Priority 3: Duplicate main-content ID (TD-NEW-01, 1h)
 
-3. **Backlog:**
-   - DEBT-FE-021: Planos FAQ accordion ARIA (1.5h)
-   - Extend axe-core Playwright specs to cover search page and login page
-   - Manual screen reader testing (VoiceOver + NVDA) on the 3 critical flows: signup > onboarding > first search
+Quick fix with significant a11y impact. The skip navigation link is broken for `/buscar` users. Either move `/buscar` into `(protected)` route group (addresses TD-H02 simultaneously) or add a shared `MainContentWrapper` component.
 
-**Total a11y effort:** ~12.25h across 3 sprints.
+### Priority 4: Viability badge text alternatives (TD-NEW-02, 3h)
 
-### Mobile Strategy
+Add text labels alongside color indicators. For example, viability "green" should also show "Alta" text, "yellow" should show "Media", "red" should show "Baixa". This is WCAG 1.4.1 compliance and improves usability for all users (color-blind users are ~8% of male population).
 
-**Current state: Good.** Evidence:
-- Mobile-first Tailwind breakpoints used consistently
-- `BottomNav` for mobile with abbreviated labels for 375px viewport
-- `min-height: 44px` enforced on buttons and inputs via globals.css
-- `MobileDrawer` for hamburger menu
-- `PullToRefresh` for mobile refresh on search
-- `useIsMobile` hook for JS-level breakpoint detection
+### Priority 5: Design System Select + Modal (new, 7h)
 
-**Gaps:**
-1. **BottomNav icon bug** (DEBT-FE-015) -- trivial fix
-2. **Planos page on mobile** -- the pricing cards stack vertically but the billing period toggle (PlanToggle) could benefit from larger touch targets. Currently uses `text-xs` and `py-1.5` which may be borderline at 375px.
-3. **Onboarding region selection** -- 27 UF checkboxes in a grid on mobile may be difficult to tap accurately. Consider region-level toggles (already implemented as REGIONS constant) with UF drill-down.
-
-**Recommendation:** No major mobile changes needed. Fix the BottomNav icon and audit the PlanToggle touch targets (1h combined).
+Extract from existing implementations. Do not build from scratch. Adopt Radix UI primitives for consistency with existing `@radix-ui/react-slot` usage.
 
 ---
 
-## Recomendacoes de Prioridade
+## UX Impact Matrix
 
-### Sprint Imediato (this week, ~10.75h)
-
-| Priority | ID | Debito | Horas | Justificativa |
-|----------|-----|--------|-------|---------------|
-| 1 | DEBT-FE-001 | react-hook-form to dependencies | 0.5 | Blocks CI reliability |
-| 2 | DEBT-FE-022 | Add id="main-content" to protected layout | 0.25 | Fixes skip-link for ALL protected pages |
-| 3 | DEBT-FE-002 | SearchForm role="search" + aria-label | 3 | Core page invisible to screen readers |
-| 4 | DEBT-FE-017 | Login form aria-invalid + aria-describedby | 1.5 | #2 most visited page, zero a11y on form errors |
-| 5 | DEBT-FE-015 | BottomNav Dashboard icon fix | 0.5 | Trivial, visual consistency |
-| 6 | DEBT-FE-007 | Error boundaries for onboarding/signup/login/planos | 3 | Conversion-critical pages crash without recovery |
-| 7 | DEBT-FE-012 | Feature-gated "Em breve" component | 2 | Users see broken state on direct URL access |
-
-### Proximo Sprint (next 2 weeks, ~18h)
-
-| Priority | ID | Debito | Horas | Justificativa |
-|----------|-----|--------|-------|---------------|
-| 1 | DEBT-FE-003 | Migrate login/reset forms to react-hook-form + zod | 8 | Consistent validation UX across all auth flows |
-| 2 | DEBT-FE-023 | Focus management post-search | 2 | Keyboard UX on #1 page |
-| 3 | DEBT-FE-019 | Onboarding progress bar a11y | 1 | First protected experience |
-| 4 | DEBT-FE-020 | Login mode toggle tab semantics | 1 | WCAG 4.1.2 compliance |
-| 5 | DEBT-FE-004 | Lazy-load Framer Motion for landing only | 6 | ~50KB bundle reduction on app pages |
-
-### Backlog (prioritize when adding features)
-
-| ID | Debito | Horas | Trigger |
-|----|--------|-------|---------|
-| DEBT-FE-005 | Page decomposition (onboarding, planos, login) | 16 | When iterating on onboarding or pricing UX |
-| DEBT-FE-006 | Search hooks documentation | 4 | When onboarding a new developer |
-| DEBT-FE-013 | Skeleton loader for planos | 1 | When optimizing conversion funnel |
-| DEBT-FE-018 | Mensagens color-only badges | 1 | When un-gating mensagens feature |
-| DEBT-FE-021 | Planos FAQ accordion ARIA | 1.5 | When iterating on pricing page |
-| DEBT-FE-016 | Replace raw CSS vars with Tailwind classes | 4 | When doing any large-scale styling pass |
-| DEBT-FE-014 | EnhancedLoadingProgress decomposition | 4 | When modifying search progress UX |
-| DEBT-FE-024 | Planos checkout button inline loading | 1 | When optimizing conversion |
-| DEBT-FE-009 | Blog TODO placeholder cleanup | 4 | When investing in SEO |
-| DEBT-FE-010 | i18n infrastructure | 80+ | Only if expanding to non-PT markets |
-| DEBT-FE-011 | Duplicate component consolidation | 2 | During any component cleanup pass |
+| ID | Debito | User-Facing Impact | Justification |
+|----|--------|-------------------|---------------|
+| TD-M07 | Landing client-rendered | **Major** | Slower landing = lower conversion rate. Every 100ms of LCP delay costs ~1% conversion. |
+| TD-NEW-01 | Duplicate main-content ID | **Moderate** | Skip navigation broken on primary product page |
+| TD-NEW-02 | Color-only viability | **Moderate** | Information inaccessible to ~8% of male users (color blindness) |
+| TD-H01 | RSC for protected pages | **Moderate** | Faster initial data load on dashboard/search, but SWR already handles hydration |
+| TD-H02 | Dual header pattern | **Minor** | UI inconsistency between /buscar and other protected pages |
+| TD-H04 | Pipeline drag announcements | **Moderate** | Keyboard drag works but is undiscoverable without announcements |
+| TD-H03 | aria-live gaps (remaining) | **Minor** | 16 regions already exist; gaps are in granular SSE updates |
+| TD-M01 | any types | **None** | Developer DX only |
+| TD-M02 | ValorFilter size | **None** | Developer DX only |
+| TD-M03 | EnhancedLoadingProgress size | **None** | Developer DX only |
+| TD-M04 | useFeatureFlags cache | **None** | Developer DX only |
+| TD-M05 | Raw CSS vars | **None** | Developer DX only |
+| TD-M06 | localStorage registry | **None** | Developer DX only |
+| TD-M08 | ProfileCompletionPrompt size | **None** | Developer DX only |
+| TD-M09 | Feature-gated pages | **None** | Already resolved |
+| TD-L01 | a11y unit tests | **Minor** | Prevents regressions, does not fix current issues |
+| TD-L02 | Skeleton gaps | **Minor** | Affects perceived performance on less-used pages |
+| TD-L03 | .tsx extension | **None** | Cosmetic |
+| TD-L04 | Missing error.tsx | **Minor** | Errors on onboarding/login lose navigation context |
+| TD-L05 | TourInviteBanner inline | **None** | Cosmetic |
+| TD-L06 | Blog TODO placeholders | **None** | Content, not UX |
+| TD-L07 | Search hooks complexity | **None** | Developer DX only |
+| TD-NEW-03 | Shepherd.js eager load | **Minor** | ~15KB unnecessary JS on every protected page load |
 
 ---
 
-## Metricas de Validacao
+## Adjusted Effort Summary
 
-| Metric | Value |
-|--------|-------|
-| Items confirmados sem alteracao | 9/16 |
-| Items com severidade ajustada | 5 (FE-002 HIGH->CRIT, FE-006 MED->LOW, FE-007 MED->HIGH, FE-008 MED->HIGH, FE-012 LOW->MED) |
-| Items removidos | 0 |
-| Items adicionados | 8 (FE-017 through FE-024) |
-| Esforco total original (DRAFT) | ~62h (FE items only) |
-| Esforco total revisado | ~73.5h (includes 8 new items at 11.25h) |
-| Quick wins (< 1h) | 3 items: FE-001 (0.5h), FE-022 (0.25h), FE-015 (0.5h) |
-| Sprint Imediato total | ~10.75h |
-| Proximo Sprint total | ~18h |
-| Backlog total | ~44.75h |
+| Severity | DRAFT Hours | Adjusted Hours | Delta |
+|----------|-------------|----------------|-------|
+| HIGH | 34h | 14h + 10h (TD-M07 upgraded) = 24h | -10h |
+| MEDIUM | 30h | 28h | -2h |
+| LOW | 24h | 21h | -3h |
+| NEW items | 0h | 6h | +6h |
+| **TOTAL** | **88h** | **~68h** | **-20h** |
+
+The 20h reduction comes primarily from correcting the factual inaccuracies in TD-H01 (RSC already partially adopted), TD-H03 (aria-live already extensive), TD-H04 (keyboard DnD already works), and TD-M09 (already resolved).
 
 ---
 
-*Review completed 2026-03-21 by @ux-design-expert (Uma). All findings verified against actual source code.*
+## Recommended Execution Order (UX perspective)
+
+1. **TD-M07 + TD-NEW-04** (10h) -- Landing page RSC islands. Highest acquisition impact.
+2. **TD-NEW-01** (1h) -- Fix duplicate main-content ID. Quick win, a11y fix.
+3. **TD-H02** (4h) -- Unify /buscar into (protected) route group. Fixes TD-NEW-01 simultaneously.
+4. **TD-H04** (4h) -- Pipeline drag announcements. Quality investment.
+5. **TD-NEW-02** (3h) -- Viability badge text alternatives. WCAG 1.4.1.
+6. **TD-H03** (2h) -- Remaining aria-live gaps (granular SSE announcements).
+7. **TD-L01** (4h) -- jest-axe setup to prevent regression on items 2-6.
+8. Design system expansion (7h) -- Select + Modal + Badge extraction.
+9. Component decomposition backlog (TD-M02/M03/M08) as part of regular feature work.
+10. Everything else in backlog, addressed opportunistically.
+
+---
+
+*Review complete. Ready for Phase 7 (@qa gate).*

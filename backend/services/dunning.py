@@ -14,14 +14,12 @@ Also handles:
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timezone
 from typing import Optional
 
 from email_service import send_email_async
 from log_sanitizer import get_sanitized_logger, mask_user_id
 from metrics import (
-    DUNNING_CHURNED,
     DUNNING_EMAILS_SENT,
     DUNNING_RECOVERY,
     PAYMENT_FAILURE,

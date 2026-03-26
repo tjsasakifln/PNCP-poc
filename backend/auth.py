@@ -32,7 +32,7 @@ import hashlib
 import jwt
 from collections import OrderedDict
 from jwt import PyJWKClient
-from typing import Any, Optional, Dict, Tuple
+from typing import Any, Optional, Tuple
 
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials

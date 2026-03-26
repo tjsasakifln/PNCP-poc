@@ -854,7 +854,7 @@ class TestBulkheadAcquireTimeout:
 
         ufs = [f"UF-{i:02d}" for i in range(27)]
         tasks = [asyncio.create_task(try_uf(uf)) for uf in ufs]
-        outcomes = await asyncio.gather(*tasks)
+        outcomes = await asyncio.gather(*tasks)  # noqa: F841
 
         # With 5 slots, 0.5s total timeout (0.25s acquire budget), 0.3s work:
         # First 5 start immediately, next batch waits ~0.3s for slots.

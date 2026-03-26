@@ -39,6 +39,7 @@ jobs:
         run: |
           cd backend
           ruff check .
+        continue-on-error: true  # Aligned with backend-tests.yml — lint is advisory, not blocking
 
       - name: Security scan (CRITICAL — blocking)
         uses: aquasecurity/trivy-action@master

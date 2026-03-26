@@ -15,14 +15,12 @@ import sentry_sdk
 from types import SimpleNamespace
 
 from log_sanitizer import get_sanitized_logger
-from progress import create_tracker, get_tracker, remove_tracker
+from progress import get_tracker, remove_tracker
 from redis_pool import get_redis_pool
 from schemas import BuscaRequest, BuscaResponse
 from search_context import SearchContext
 from search_pipeline import SearchPipeline
 from search_state_manager import (
-    create_state_machine,
-    get_state_machine,
     remove_state_machine,
 )
 

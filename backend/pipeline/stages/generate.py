@@ -5,11 +5,10 @@ Extracted from SearchPipeline.stage_generate + _enrich_with_sanctions (DEBT-015 
 
 import asyncio
 import logging
-import time as sync_time_module
 from datetime import datetime, timezone as _tz
 
 from search_context import SearchContext
-from schemas import BuscaResponse, FilterStats, ResumoEstrategico, DataSourceStatus
+from schemas import BuscaResponse, FilterStats, ResumoEstrategico
 from sectors import get_sector
 from telemetry import get_tracer, optional_span
 from pipeline.helpers import (
@@ -25,9 +24,9 @@ logger = logging.getLogger(__name__)
 _tracer = get_tracer("search_pipeline")
 
 
-import quota
-from storage import upload_excel
-from llm import gerar_resumo, gerar_resumo_fallback
+import quota  # noqa: E402
+from storage import upload_excel  # noqa: E402
+from llm import gerar_resumo, gerar_resumo_fallback  # noqa: E402
 
 
 async def stage_generate(pipeline, ctx: SearchContext) -> None:

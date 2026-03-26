@@ -1,599 +1,674 @@
 # SmartLic Frontend Specification & UX Audit
 
-**Date:** 2026-03-21
-**Auditor:** @ux-design-expert (Uma) — Brownfield Discovery
-**Stack:** Next.js 16.1, React 18.3, TypeScript 5.9, Tailwind CSS 3.4, Framer Motion 12
+**Date:** 2026-03-23 (updated from 2026-03-21 audit)
+**Auditor:** @ux-design-expert (Uma) -- Brownfield Discovery Phase 3
+**Stack:** Next.js 16, React 18, TypeScript 5.9, Tailwind CSS 3, Framer Motion, Recharts, Supabase SSR, @dnd-kit, Shepherd.js
 **Language:** pt-BR (user-facing), English (code/docs)
 
 ---
 
-## 1. App Structure Overview
+## 1. Architecture Overview
 
-### 1.1 Directory Layout
+### 1.1 Rendering Strategy
 
-```
-frontend/
-  app/                    # Next.js App Router (335 TS/TSX files, ~56,700 LOC)
-    (protected)/          # Route group — auth guard, AppHeader, Breadcrumbs
-    admin/                # Admin pages (dashboard, cache, emails, metrics, partners, SLO)
-    ajuda/                # Help / FAQ
-    alertas/              # Alert configuration (feature-gated)
-    api/                  # 57 API proxy routes
-    auth/                 # OAuth callback
-    blog/                 # 30 editorial articles + programmatic SEO pages
-    buscar/               # Core search page — 47 components, 9 hooks, 270 LOC page
-    como-*/               # 4 SEO content pages
-    components/           # App-level shared components (66 files)
-    conta/                # Account settings (5 sub-pages: dados, equipe, perfil, plano, seguranca)
-    dashboard/            # Analytics dashboard (10 component files)
-    features/             # Features marketing page
-    historico/            # Search history
-    licitacoes/           # Programmatic SEO sector pages
-    login/                # Login (502 LOC, password + magic link + MFA)
-    mensagens/            # Messaging (feature-gated)
-    onboarding/           # 3-step wizard (783 LOC)
-    pipeline/             # Kanban opportunity pipeline (5 component files)
-    planos/               # Pricing + thank-you page
-    pricing/              # Alternative pricing route
-    privacidade/          # Privacy policy
-    recuperar-senha/      # Password recovery
-    redefinir-senha/      # Password reset
-    signup/               # Registration (703 LOC, react-hook-form + zod)
-    sobre/                # About page
-    status/               # Public status page (uptime chart, incidents)
-    termos/               # Terms of service
-  components/             # Global shared components (49 files)
-  contexts/               # UserContext.tsx (unified auth+plan+quota+trial)
-  hooks/                  # 27 global custom hooks
-  lib/                    # 37 utility modules
-  styles/                 # (empty — globals.css is in app/)
-  __tests__/              # 306 unit test files
-  e2e-tests/              # 31 Playwright spec files
-```
+All pages use **client-side rendering** (`"use client"` directive). Zero Server Components found (`"use server"` not present in any file). The root layout (`app/layout.tsx`) is async only to read the CSP nonce header from middleware. This is a significant optimization opportunity: landing, blog, legal, and pricing pages could use RSC for better TTFB and SEO.
 
-### 1.2 Route Map (47 pages)
-
-| Route | Type | Auth | LOC | Notes |
-|-------|------|------|-----|-------|
-| `/` | Landing | Public | 35 | Server component, 7 sections |
-| `/login` | Auth | Public | 502 | Password + magic link + TOTP MFA |
-| `/signup` | Auth | Public | 703 | react-hook-form + zod validation |
-| `/auth/callback` | Auth | Public | ~80 | OAuth/magic-link callback |
-| `/recuperar-senha` | Auth | Public | ~120 | Password recovery |
-| `/redefinir-senha` | Auth | Public | ~150 | Password reset |
-| `/onboarding` | Wizard | Protected | 783 | 3-step (CNAE > UFs > Confirm) |
-| `/buscar` | Core | Protected | 270 | Main search — SSE, filters, results |
-| `/dashboard` | Analytics | Protected | 279 | Charts, stat cards, insights |
-| `/pipeline` | Kanban | Protected | 376 | Drag-and-drop with @dnd-kit |
-| `/historico` | History | Protected | 426 | Saved search sessions |
-| `/conta` | Account | Protected | 22 | Tab router to 5 sub-pages |
-| `/conta/dados` | Account | Protected | ~200 | Personal data |
-| `/conta/perfil` | Account | Protected | ~250 | Profile (react-hook-form) |
-| `/conta/plano` | Account | Protected | ~300 | Subscription management |
-| `/conta/seguranca` | Account | Protected | ~200 | Password change, MFA |
-| `/conta/equipe` | Account | Protected | ~250 | Team / organization |
-| `/mensagens` | Messaging | Protected | 547 | Feature-gated |
-| `/alertas` | Alerts | Protected | 222 | Feature-gated |
-| `/planos` | Pricing | Public | 714 | Plan cards, billing periods |
-| `/planos/obrigado` | Post-purchase | Protected | ~100 | Thank-you page |
-| `/admin` | Admin | Protected | 764 | Admin dashboard |
-| `/admin/cache` | Admin | Protected | ~200 | Cache management |
-| `/admin/emails` | Admin | Protected | ~200 | Email management |
-| `/admin/metrics` | Admin | Protected | ~200 | Prometheus metrics |
-| `/admin/partners` | Admin | Protected | ~200 | Partner management |
-| `/admin/slo` | Admin | Protected | ~200 | SLO monitoring |
-| `/ajuda` | Help | Public | ~300 | FAQ with structured data |
-| `/blog` | SEO | Public | ~200 | Blog index |
-| `/blog/[slug]` | SEO | Public | ~150 | 30 article pages |
-| `/blog/licitacoes` | SEO | Public | ~100 | Programmatic index |
-| `/blog/licitacoes/[setor]/[uf]` | SEO | Public | ~100 | Programmatic pages |
-| `/blog/panorama/[setor]` | SEO | Public | ~100 | Sector panorama |
-| `/blog/programmatic/[setor]` | SEO | Public | ~100 | Programmatic sector |
-| `/blog/programmatic/[setor]/[uf]` | SEO | Public | ~100 | Programmatic sector+UF |
-| `/licitacoes` | SEO | Public | ~150 | Sector listing |
-| `/licitacoes/[setor]` | SEO | Public | ~150 | Sector detail |
-| `/features` | Marketing | Public | ~300 | Features page |
-| `/pricing` | Marketing | Public | ~200 | Alternative pricing |
-| `/sobre` | Institutional | Public | ~200 | About page |
-| `/status` | Public | Public | ~200 | Status page with uptime |
-| `/termos` | Legal | Public | ~100 | Terms of service |
-| `/privacidade` | Legal | Public | ~100 | Privacy policy |
-| `/como-avaliar-licitacao` | SEO | Public | ~200 | Content page |
-| `/como-evitar-prejuizo-licitacao` | SEO | Public | ~200 | Content page |
-| `/como-filtrar-editais` | SEO | Public | ~200 | Content page |
-| `/como-priorizar-oportunidades` | SEO | Public | ~200 | Content page |
-
-### 1.3 Layout Hierarchy
+### 1.2 Provider Hierarchy (app/layout.tsx)
 
 ```
-RootLayout (app/layout.tsx) — lang="pt-BR", fonts, providers
-  ├── AnalyticsProvider (Mixpanel)
-  │   └── AuthProvider (Supabase auth)
-  │       └── SWRProvider (global SWR config)
-  │           └── UserProvider (unified auth+plan+quota+trial context)
-  │               └── ThemeProvider (dark/light mode)
-  │                   └── NProgressProvider (route transition bar)
-  │                       └── BackendStatusProvider (health polling)
-  │                           ├── SessionExpiredBanner
-  │                           ├── PaymentFailedBanner
-  │                           └── NavigationShell (conditional sidebar/bottomnav)
-  │                               └── {children}
-  │
-  ├── (protected)/layout.tsx — Auth guard, AppHeader, Breadcrumbs
-  │   └── Suspense + loading.tsx skeleton
-  │
-  └── Per-route layouts: login, signup, ajuda, planos, dashboard, pipeline, historico, conta
+<html lang="pt-BR" suppressHydrationWarning>
+  <body>
+    <AnalyticsProvider>             -- Mixpanel + GA4 event tracking
+      <AuthProvider>                -- Supabase auth session management
+        <SWRProvider>               -- SWR global configuration
+          <UserProvider>            -- Unified user context (auth + plan + quota + trial)
+            <ThemeProvider>         -- Dark/light mode (localStorage-persisted)
+              <NProgressProvider>   -- Page transition progress bar
+                <BackendStatusProvider>   -- Backend health polling (30s interval)
+                  <SessionExpiredBanner />
+                  <PaymentFailedBanner />
+                  <NavigationShell>       -- Sidebar + BottomNav (protected routes only)
+                    {children}
+                  </NavigationShell>
+                  <Toaster position="bottom-center" richColors closeButton />
+                  <CookieConsentBanner />
 ```
 
-### 1.4 Middleware
+Provider nesting depth is **9 levels**. Each provider serves a distinct purpose. `UserContext` (DEBT-011 FE-006) consolidates 4 hooks (auth + plan + quota + trial) into one context.
 
-`middleware.ts` (274 LOC) handles:
-- **CSP enforcement** with per-request nonce (DEBT-108 completed)
-- **Route protection** — 8 protected route prefixes redirect to `/login` with reason codes
-- **Canonical domain redirect** — `*.railway.app` -> `smartlic.tech` (301)
-- **Security headers**: HSTS preload, X-Frame-Options DENY, COOP same-origin, X-DNS-Prefetch-Control off, Permissions-Policy
-- **Auth validation**: Uses `supabase.auth.getUser()` (server-side, secure) not `getSession()`
+Additional root-level elements:
+- Skip navigation link (`Pular para conteudo principal`) targeting `#main-content` (WCAG 2.4.1)
+- Google Analytics 4 with nonce-based CSP compliance
+- Microsoft Clarity for heatmaps/session recordings
+- Schema.org structured data
+- RSS feed discovery link
+- Theme initialization script (nonce-based, migrates legacy `bidiq-theme` key)
+
+### 1.3 Navigation Architecture
+
+`NavigationShell` (`components/NavigationShell.tsx`) conditionally renders navigation chrome:
+
+- **Public routes** (`/`, `/login`, `/signup`, `/planos`, `/ajuda`, etc.): No sidebar or bottom nav.
+- **Protected routes** (`/buscar`, `/dashboard`, `/pipeline`, `/historico`, `/conta`, `/admin`): Desktop sidebar + mobile bottom nav.
+- Feature-gated routes (`/alertas`, `/mensagens`) removed from nav (SHIP-002 AC9) but still accessible via direct URL.
+
+The protected layout (`app/(protected)/layout.tsx`) provides: auth guard (redirect to `/` if unauthenticated), `AppHeader` with Breadcrumbs, first-time onboarding redirect to `/onboarding`.
+
+**Architecture note:** The `/buscar` page bypasses the `(protected)` route group and implements its own header and auth guard directly. This creates a dual-header pattern inconsistency.
+
+### 1.4 Security (middleware.ts)
+
+- **CSP enforcement** with per-request nonce (`'nonce-{uuid}'` + `'strict-dynamic'`)
+- **Route protection** via `supabase.auth.getUser()` (server-validated, not `getSession()`)
+- **Security headers:** HSTS preload, X-Frame-Options DENY, COOP same-origin, X-DNS-Prefetch-Control off, Permissions-Policy
+- **CSP violation reporting** to `/api/csp-report` endpoint
+- **Canonical domain redirect:** `*.railway.app` -> `smartlic.tech` (301)
 - Distinguishes "never logged in" vs "session expired" via cookie inspection
+- Accepted risk: `style-src 'unsafe-inline'` required by Tailwind/Next.js runtime (DEBT-116)
 
 ---
 
-## 2. Component Inventory
+## 2. Page Inventory
 
-### 2.1 Component Count Summary
+### 2.1 Public Pages (15+)
 
-| Location | Files | Purpose |
-|----------|-------|---------|
-| `app/buscar/components/` | 47 | Search-specific (forms, filters, results, banners) |
-| `app/components/` | 66 | App-level shared (auth, landing, UI primitives) |
-| `app/components/landing/` | 13 | Landing page sections |
-| `app/components/ui/` | 6 | UI primitives (Tooltip, BentoGrid, GlassCard, etc.) |
-| `app/dashboard/components/` | 10 | Dashboard widgets |
-| `app/pipeline/` | 4 | Pipeline kanban components |
-| `app/alertas/components/` | 8 | Alert management |
-| `app/status/components/` | 3 | Status page widgets |
-| `components/` | 49 | Global shared (Button, Input, Sidebar, etc.) |
-| `components/ui/` | 6 | Design system primitives |
-| `components/billing/` | 4 | Billing UI |
-| `components/auth/` | 3 | MFA components |
-| `components/subscriptions/` | 6 | Plan cards, toggles |
-| `components/blog/` | 3 | Blog components |
-| **Total** | **~239** | |
+| Route | Purpose | Notable |
+|-------|---------|---------|
+| `/` | Landing page | 13 landing components (HeroSection, HowItWorks, SectorsGrid, etc.) |
+| `/login` | Authentication | Password + magic link + TOTP MFA, react-hook-form + zod |
+| `/signup` | Registration | react-hook-form + zod, InstitutionalSidebar |
+| `/auth/callback` | OAuth callback | Supabase auth code exchange |
+| `/recuperar-senha` | Password recovery | Email form |
+| `/redefinir-senha` | Password reset | New password form |
+| `/planos` | Pricing | PlanCard, billing period selector (monthly/semiannual/annual) |
+| `/planos/obrigado` | Post-checkout | Thank you page |
+| `/pricing` | Alternative pricing | Marketing layout |
+| `/features` | Feature showcase | FeaturesContent with Framer Motion |
+| `/sobre` | About page | Company info |
+| `/termos` | Terms of service | Legal text |
+| `/privacidade` | Privacy policy | Legal text |
+| `/ajuda` | Help center | FAQ with structured data |
+| `/status` | System status | Backend health + source availability |
 
-### 2.2 Design System Primitives (`components/ui/`)
+### 2.2 Protected Pages (8 core + sub-routes)
 
-| Component | Variants | A11y |
-|-----------|----------|------|
-| `Button` | 6 variants (primary, secondary, destructive, ghost, link, outline) x 4 sizes | Icon-only requires aria-label (TypeScript enforced), focus-visible ring, loading state spinner |
-| `Input` | 3 sizes x 3 states (default, error, success) | aria-invalid, aria-describedby, error role="alert" |
-| `Label` | Standard | htmlFor association |
-| `Pagination` | Standard | aria-label |
-| `CurrencyInput` | Standard | Formatted number input |
-| `Tooltip` | Standard | Accessible tooltip |
+| Route | Purpose | Key Pattern |
+|-------|---------|-------------|
+| `/buscar` | **Main search** (primary feature) | 44 components, 9 hooks, SSE dual-connection, pull-to-refresh |
+| `/dashboard` | Analytics dashboard | useFetchWithBackoff, Recharts (dynamic import), InsightCards |
+| `/pipeline` | Opportunity kanban | @dnd-kit (dynamic import), 5-stage drag-and-drop, mobile tabs |
+| `/historico` | Search history | Session list, result replay |
+| `/onboarding` | 3-step wizard | react-hook-form + zod, auto-search launch |
+| `/conta` | Account hub | Tab router: perfil, dados, plano, equipe, seguranca |
+| `/conta/plano` | Plan management | Subscription status, AlertPreferences |
+| `/conta/seguranca` | Security settings | MFA TOTP setup (MfaSetupWizard) |
+| `/mensagens` | Messaging | Feature-gated (hidden in nav, SHIP-002) |
+| `/alertas` | Alert management | Feature-gated (hidden in nav, SHIP-002) |
 
-### 2.3 Key Business Components
+### 2.3 Admin Pages (6)
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| `SearchForm` | buscar/components | Search input orchestrator (125 LOC, delegates to 3 sub-components) |
-| `SearchResults` | buscar/components | Results display with counters, badges (249 LOC) |
-| `ResultCard` | buscar/components/search-results | Individual bid card (200 LOC) |
-| `EnhancedLoadingProgress` | buscar/components | SSE progress with UF grid (452 LOC) |
-| `FilterPanel` | buscar/components | Post-search result filtering (119 LOC) |
-| `PipelineKanban` | pipeline/ | Drag-and-drop kanban board |
-| `NavigationShell` | components/ | Conditional sidebar/bottom nav wrapper |
-| `Sidebar` | components/ | Desktop left navigation (collapsible, persisted state) |
-| `BottomNav` | components/ | Mobile bottom tab bar |
+| Route | Purpose |
+|-------|---------|
+| `/admin` | Admin dashboard |
+| `/admin/cache` | Cache management |
+| `/admin/emails` | Email management |
+| `/admin/metrics` | System metrics |
+| `/admin/partners` | Partner management |
+| `/admin/slo` | SLO monitoring |
+
+### 2.4 SEO/Content Pages (12+)
+
+| Route | Type |
+|-------|------|
+| `/blog`, `/blog/[slug]` | Blog index + 30 articles |
+| `/blog/licitacoes`, `/blog/licitacoes/[setor]/[uf]` | Programmatic procurement pages |
+| `/blog/panorama/[setor]` | Sector panorama |
+| `/blog/programmatic/[setor]`, `/blog/programmatic/[setor]/[uf]` | Programmatic SEO |
+| `/licitacoes`, `/licitacoes/[setor]` | Sector listing pages |
+| `/como-avaliar-licitacao`, `/como-evitar-prejuizo-licitacao`, `/como-filtrar-editais`, `/como-priorizar-oportunidades` | Content marketing |
+
+**Total: ~47 unique route patterns** across public, protected, admin, and content categories.
 
 ---
 
-## 3. State Management
+## 3. Component Architecture
 
-### 3.1 Context Providers (4 layers)
+### 3.1 Component Organization
 
-| Provider | Location | State |
-|----------|----------|-------|
-| `AuthProvider` | app/components/ | Supabase session, user, isAdmin, sessionExpired, signOut |
-| `UserProvider` | contexts/ | Unified: auth + plan + quota + trial (DEBT-011 FE-006) |
-| `ThemeProvider` | app/components/ | Dark/light mode with localStorage persistence |
-| `BackendStatusProvider` | app/components/ | Backend health polling (30s, visibility-gated) |
+```
+app/components/           (49 app-level components)
+  landing/                (13 landing-page sections)
+  AuthProvider.tsx         Supabase auth context
+  BackendStatusIndicator.tsx  Health polling, context provider
+  LicitacaoCard.tsx        Search result display
+  ...
 
-### 3.2 Custom Hooks (27 global + 9 search-specific)
+components/               (35+ shared components)
+  ui/                     (6 primitives: Button, Input, Label, CurrencyInput, Pagination, examples)
+  auth/                   (3: MfaEnforcementBanner, MfaSetupWizard, TotpVerificationScreen)
+  billing/                (4: PaymentFailedBanner, PaymentRecoveryModal, TrialPaywall, TrialUpsellCTA)
+  account/                (1: CancelSubscriptionModal)
+  reports/                (1: PdfOptionsModal)
+  skeletons/              (3: AdminPageSkeleton, ContaPageSkeleton, PlanosPageSkeleton)
+  layout/                 (layout primitives)
+  blog/                   (blog-specific components)
+  org/                    (organization management, InviteMemberModal)
+  subscriptions/          (plan cards, toggles)
+  Sidebar.tsx             Desktop nav (collapsible, lucide-react icons, state persisted)
+  BottomNav.tsx           Mobile nav (5 tabs)
+  MobileDrawer.tsx        Slide-over menu
+  ErrorBoundary.tsx       Class component with Sentry integration
+  PageErrorBoundary.tsx   Page-level error wrapper
+  ErrorStateWithRetry.tsx Reusable error display with retry
+  EmptyState.tsx          Generic empty state
+  FeedbackButtons.tsx     Thumbs up/down per result
+  DeepAnalysisModal.tsx   Detailed bid analysis modal
+  ProfileCompletionPrompt.tsx  Progressive profiling (21,930 bytes)
+  ...
 
-**Global hooks (`hooks/`):**
+app/buscar/               (LARGEST feature module)
+  page.tsx                (270 lines, orchestrator)
+  hooks/                  (9 custom hooks, 3,287 LOC total)
+  components/             (44 components)
+    search-results/       (9 sub-components: ResultCard, ResultsList, etc.)
+  types/                  (2 type definition files)
+```
+
+**Total estimated: ~240 components across all directories.**
+
+### 3.2 Search Module (app/buscar/) -- Deep Dive
+
+The search page is the core product feature and the most complex module.
+
+**Hook Architecture (9 hooks composing the search lifecycle):**
+
+| Hook | LOC | Responsibility |
+|------|-----|---------------|
+| `useSearchOrchestration` | ~600 | Top-level orchestrator: composes all other hooks + trial/tour/keyboard state |
+| `useSearchExecution` | ~770 | Core search logic: API call, SSE, retry, error handling |
+| `useSearchFilters` | ~600 | Filter state: sector, UF, value, modalidade, date range, sector fetch |
+| `useSearch` | ~398 | Composes execution + SSE + retry + export |
+| `useSearchExport` | ~304 | Excel download + Google Sheets export |
+| `useSearchSSEHandler` | ~229 | SSE event parsing, state machine updates |
+| `useSearchPersistence` | ~193 | localStorage save/restore of search state |
+| `useSearchRetry` | ~144 | Auto-retry with countdown timer (3 attempts: 10s, 20s, 30s) |
+| `useUfProgress` | ~49 | Per-UF progress tracking from SSE events |
+
+**Component Decomposition (TD-007):**
+`SearchResults` (259 lines) delegates to well-structured sub-components: ResultsHeader, ResultsToolbar, ResultsFilters, ResultCard, ResultsList, ResultsLoadingSection, ResultsFooter, ResultsPagination.
+
+**Large components (potential refactoring targets):**
+- `ValorFilter.tsx` (478 lines) -- dual-slider with currency formatting, presets, validation
+- `EnhancedLoadingProgress.tsx` (391 lines) -- multi-phase loading with SSE progress visualization
+- `SearchFormHeader.tsx` (294 lines) -- form header with filter toggles and search configuration
+
+### 3.3 Dashboard Module (app/dashboard/)
+
+8 sub-components with clear separation:
+- `DashboardStatCards` -- KPI cards (searches, pipeline items, value analyzed)
+- `DashboardTimeSeriesChart` -- Recharts time series (dynamic import)
+- `DashboardDimensionsWidget` -- Recharts bar/pie charts (dynamic import)
+- `DashboardProfileSection` -- Profile completion with Framer Motion (dynamic import)
+- `DashboardQuickLinks` -- Action shortcuts
+- `InsightCards` -- Pipeline alerts + new opportunities
+- `DashboardErrorStates` -- 6 exported state components (full error, retrying, skeleton, not auth, empty, stale banner)
+- `DashboardViewToggle` -- Period selector (week/month/quarter)
+
+Uses `useFetchWithBackoff` for resilient data fetching with exponential backoff.
+
+### 3.4 Pipeline Module (app/pipeline/)
+
+- `@dnd-kit` code-split via `next/dynamic` to reduce initial bundle
+- Two variants: `PipelineKanban` (full drag-and-drop) and `ReadOnlyKanban` (trial expired)
+- `PipelineMobileTabs` for mobile-friendly stage navigation
+- 5-stage workflow: Novas > Em Analise > Preparando > Submetidas > Arquivadas
+- `usePipeline` hook uses SWR with optimistic updates
+- Shepherd.js tour (3 steps) for first-time users
+- Pipeline limit (5 items) for `limited_access` trial phase
+
+---
+
+## 4. State Management
+
+### 4.1 Strategy Summary
+
+| Layer | Tool | Usage |
+|-------|------|-------|
+| **Global Auth** | React Context (`AuthProvider`) | Session, user, isAdmin, signOut, sessionExpired |
+| **Global User** | React Context (`UserContext`) | Unified auth + plan + quota + trial (composes 4 hooks) |
+| **Global Theme** | React Context (`ThemeProvider`) | Dark/light mode with localStorage |
+| **Global Backend Health** | React Context (`BackendStatusProvider`) | Polls `/api/health` every 30s (visibility-gated) |
+| **Server Data** | SWR (`useSWR`) | Pipeline, dashboard, plan info, quota, profile |
+| **Feature Flags** | Custom hook (`useFeatureFlags`) | In-memory cache (5min TTL), manual fetch |
+| **Search State** | 9 custom hooks | Complex composition via `useSearchOrchestration` |
+| **SSE Progress** | Custom hook (`useSearchSSE`) | EventSource with reconnect backoff |
+| **Form State** | react-hook-form + zod | Onboarding (2 steps), login, signup |
+| **Persistent State** | localStorage (via `safeSetItem/safeGetItem`) | Theme, sidebar, onboarding, plan cache, saved searches, last search, feedback |
+| **URL State** | `useSearchParams` | Search params (auto=true, search_id) |
+| **Cross-Tab** | `useBroadcastChannel` | Auth state sync between tabs |
+
+### 4.2 Custom Hooks (29 global + 9 search-specific = 38 total)
+
+**Global hooks (hooks/):**
 
 | Hook | Purpose | Data Source |
 |------|---------|-------------|
-| `usePlan` | Current user plan info with localStorage cache (1hr TTL) | `/api/subscription-status` |
+| `useSearchSSE` | SSE with backoff [1s, 2s, 4s], max 3 retries, polling fallback, 120s inactivity timeout | EventSource |
+| `useFetchWithBackoff` | Generic fetch: backoff [2s, 4s, 8s, 16s, 30s cap], max 5 retries, abort on unmount | Custom fetch |
+| `usePipeline` | SWR-based CRUD for pipeline items (optimistic updates) | `/api/pipeline` |
+| `usePlan` | Plan info with localStorage cache (1hr TTL) | `/api/subscription-status` |
 | `useQuota` | Search quota remaining | `/api/me` |
-| `useTrialPhase` | Trial days remaining, phase | Derived from plan |
-| `usePipeline` | Pipeline CRUD | `/api/pipeline` |
-| `useConversations` | Message threads | `/api/messages/conversations` |
-| `useAlerts` | Alert CRUD | `/api/alerts` |
-| `useAlertPreferences` | Alert notification prefs | `/api/alert-preferences` |
-| `useOrganization` | Org/team management | `/api/organizations` |
-| `useUserProfile` | User profile data | `/api/me` |
-| `useProfileContext` | Profile context (sector, UFs) | `/api/profile-context` |
-| `useProfileCompleteness` | Profile completion % | `/api/profile-completeness` |
+| `useTrialPhase` | Trial lifecycle phase detection (active/limited/expired) | Derived from plan |
 | `useAnalytics` | Mixpanel event tracking | Mixpanel SDK |
-| `useFeatureFlags` | Feature flag checks | Local config |
+| `useFeatureFlags` | Feature flags with in-memory cache (5min TTL) | Local config |
+| `useOnboarding` | Onboarding wizard state + Shepherd.js | Local state |
+| `useShepherdTour` | Tour step management | Shepherd.js |
 | `useKeyboardShortcuts` | Global keyboard shortcuts | Event listeners |
-| `useIsMobile` | Responsive breakpoint | Window resize |
-| `useNavigationGuard` | Prevent accidental navigation | beforeunload |
-| `useSessions` | Session history | `/api/sessions` |
-| `useSavedSearches` | Saved search management | localStorage |
-| `useSearchPolling` | Async search status polling | `/api/search-status` |
-| `useSearchSSE` | SSE connection management | EventSource |
+| `useNavigationGuard` | Warn on unsaved changes before navigation | beforeunload |
+| `useIsMobile` | Media query responsive breakpoint | Window resize |
 | `useBroadcastChannel` | Cross-tab communication | BroadcastChannel API |
-| `useFetchWithBackoff` | Exponential backoff fetch | Custom fetch |
-| `useShepherdTour` | Product tour (Shepherd.js) | Local state |
-| `useServiceWorker` | SW registration | ServiceWorker API |
-| `usePublicMetrics` | Public landing page metrics | `/api/metrics/*` |
+| `useSavedSearches` | Saved search CRUD | localStorage |
+| `useSearchPolling` | Polling fallback for SSE failures | `/api/search-status` |
+| `useServiceWorker` | Service worker registration | ServiceWorker API |
+| `useSessions` | Session history | `/api/sessions` |
+| `useUserProfile` | User profile data | `/api/me` |
+| `useProfileCompleteness` | Profile completion percentage | `/api/profile-completeness` |
+| `useProfileContext` | User profile context data | `/api/profile-context` |
+| `useAlertPreferences` | Alert configuration | `/api/alert-preferences` |
+| `useAlerts` | Alert notifications | `/api/alerts` |
+| `useConversations` | Message conversations | `/api/messages/conversations` |
 | `useUnreadCount` | Unread message count | `/api/messages/unread-count` |
-| `usePlans` | All available plans | `/api/plans` |
+| `useOrganization` | Organization management | `/api/organizations` |
+| `usePlans` | Plan listing | `/api/plans` |
+| `usePublicMetrics` | Public landing page metrics | `/api/metrics/*` |
 
-**Search-specific hooks (`app/buscar/hooks/`):**
+### 4.3 localStorage Usage
 
-| Hook | LOC | Purpose |
-|------|-----|---------|
-| `useSearchOrchestration` | 600 | Top-level orchestrator (trial, tour, keyboard, persistence) |
-| `useSearchExecution` | 770 | Core search logic (API call, SSE, retry, error handling) |
-| `useSearchFilters` | 600 | Sector fetch, UF state, date ranges, validation |
-| `useSearch` | 398 | Composes execution + SSE + retry + export |
-| `useSearchExport` | 304 | Excel download, Google Sheets export |
-| `useSearchSSEHandler` | 229 | SSE event parsing and state updates |
-| `useSearchPersistence` | 193 | localStorage save/restore of search state |
-| `useSearchRetry` | 144 | Auto-retry with countdown timer |
-| `useUfProgress` | 49 | Per-UF progress tracking from SSE |
-| **Total** | **3,287** | |
+87 occurrences across 20 files, all through `safeSetItem`/`safeGetItem`/`safeRemoveItem` wrappers from `lib/storage.ts`. Key patterns:
 
-### 3.3 Data Flow Patterns
+| Key | Purpose | TTL |
+|-----|---------|-----|
+| `smartlic-theme` | Theme preference | Permanent |
+| `smartlic-sidebar-collapsed` | Sidebar state | Permanent |
+| `smartlic-onboarding-completed` | Onboarding flag | Permanent |
+| `smartlic-profile-context` | Cached profile context | Permanent |
+| Plan cache | Subscription status | 1hr |
+| Last search result cache | Search results | Session |
+| Saved searches | User-saved search configurations | Permanent |
+| Feedback state | Per-item thumbs up/down | Permanent |
+| Tour completion | Shepherd tour completion flags | Permanent |
 
-- **SWR**: Global provider with `revalidateOnFocus: false`, `dedupingInterval: 5s`, `errorRetryCount: 3`
-- **localStorage**: Safe wrappers (`safeSetItem/safeGetItem/safeRemoveItem`) with quota eviction. Used for theme, sidebar state, onboarding status, plan cache, saved searches, last search results, search state persistence
-- **SSE**: Dual-connection pattern — `POST /buscar` (initiates search) + `GET /buscar-progress/{id}` (SSE stream for real-time UF progress)
-- **BroadcastChannel**: Cross-tab auth state sync
+No centralized key registry exists -- risk of key collisions.
 
 ---
 
-## 4. API Layer
+## 5. API Integration
 
-### 4.1 API Proxy Routes (57 routes)
+### 5.1 Proxy Architecture
 
-All backend calls go through Next.js API routes in `app/api/` which:
-- Forward Supabase auth tokens
-- Add correlation IDs
-- Handle error translation
-- Rate-limit sensitive endpoints
+All backend calls go through Next.js API routes (`app/api/`) which proxy to `BACKEND_URL`. This pattern hides the backend URL from clients, injects Supabase auth tokens server-side, enables structured error handling, and adds correlation IDs.
 
-**Key proxy routes:**
+**58 API proxy routes organized by domain:**
 
-| Route | Methods | Backend Target |
-|-------|---------|----------------|
-| `/api/buscar` | POST | `/buscar` — main search |
-| `/api/buscar-progress` | GET | `/buscar-progress/{id}` — SSE stream |
-| `/api/buscar-results/[searchId]` | GET | `/v1/search/{id}/status` |
-| `/api/pipeline` | GET, POST, PATCH, DELETE | `/pipeline` |
-| `/api/analytics` | GET | Multiple analytics endpoints |
-| `/api/subscription-status` | GET | `/subscription/status` |
-| `/api/plans` | GET | `/plans` |
-| `/api/download` | GET | Excel file download |
-| `/api/feedback` | POST, DELETE | `/feedback` |
-| `/api/alerts` | GET, POST | `/v1/alerts` |
-| `/api/alerts/[id]` | PATCH, DELETE | `/v1/alerts/{id}` |
-| `/api/messages/conversations` | GET, POST | Messaging endpoints |
-| `/api/auth/*` | Various | Auth flows (login, signup, OAuth, MFA) |
-| `/api/admin/[...path]` | Various | Admin wildcard proxy |
-| `/api/health` | GET | Always 200 (frontend-only check) |
-| `/api/csp-report` | POST | CSP violation collector |
+| Category | Count | Key Endpoints |
+|----------|-------|---------------|
+| **Search** | 6 | `POST /api/buscar`, `GET /api/buscar-progress` (SSE), `/api/buscar-results/[searchId]`, `/api/search-status`, `/api/search-history`, `/api/search-zero-match/[searchId]` |
+| **Auth** | 8 | `/api/auth/login`, `/api/auth/signup`, `/api/auth/google(+callback)`, `/api/auth/check-email`, `/api/auth/check-phone`, `/api/auth/resend-confirmation`, `/api/auth/status`, `/api/mfa` |
+| **Billing** | 6 | `/api/plans`, `/api/billing-portal`, `/api/subscription-status`, `/api/subscriptions/cancel(+feedback)`, `/api/trial-status` |
+| **Pipeline** | 1 | `/api/pipeline` (GET/POST/PATCH/DELETE) |
+| **Analytics** | 1 | `/api/analytics` (multiplexed via `endpoint` param) |
+| **User** | 5 | `/api/me(+export)`, `/api/profile-context`, `/api/profile-completeness`, `/api/onboarding`, `/api/change-password` |
+| **Messages** | 5 | `/api/messages/conversations(+[id]+reply+status)`, `unread-count` |
+| **Alerts** | 4 | `/api/alerts(+[id]+preview)`, `/api/alert-preferences` |
+| **Export** | 3 | `/api/download`, `/api/export/google-sheets`, `/api/regenerate-excel/[searchId]` |
+| **Admin** | 3 | `/api/admin/[...path]`, `/api/admin/metrics`, `/api/health/cache` |
+| **Misc** | 12 | `/api/health`, `/api/setores`, `/api/sessions`, `/api/feedback`, `/api/first-analysis`, `/api/bid-analysis/[bidId]`, `/api/organizations(+[id])`, `/api/status`, `/api/reports/diagnostico` |
+| **Observability** | 4 | `/api/csp-report`, `/api/metrics/daily-volume`, `/api/metrics/discard-rate`, `/api/metrics/sse-fallback` |
 
-### 4.2 SSE Handling
+### 5.2 SSE Dual-Connection Pattern
 
-- **Backend**: `progress.py` uses `asyncio.Queue` per `search_id`
-- **Frontend proxy**: `undici.Agent({ bodyTimeout: 0 })` to prevent timeout, AbortController for cleanup
-- **Client**: `useSearchSSE` hook manages EventSource lifecycle, heartbeat monitoring
-- **Fallback**: If SSE fails, `EnhancedLoadingProgress` uses time-based simulation
-- **Events**: `uf_complete`, `llm_ready`, `excel_ready`, `search_complete`, `search_error`
+The search flow uses a dual-connection architecture:
+
+1. `POST /api/buscar` -- Initiates search, returns `search_id` (202 Accepted)
+2. `GET /api/buscar-progress?search_id=X` -- SSE stream for real-time progress
+
+**SSE resilience (useSearchSSE hook):**
+
+| Parameter | Value | Source |
+|-----------|-------|--------|
+| Reconnect backoff | [1s, 2s, 4s] | STORY-365 |
+| Max retries | 3 | STAB-006 |
+| Polling fallback | Every 5s via GET `/v1/search/{id}/status` | STORY-365 |
+| Last-Event-ID | Forwarded on reconnect | STORY-297 |
+| High-water mark | Progress never decreases (monotonic) | CRIT-052 |
+| Inactivity timeout | 120s | CRIT-072 |
+| Terminal stages | complete, error, degraded, refresh_available, search_complete | -- |
+
+**Frontend proxy:** Uses `undici.Agent({ bodyTimeout: 0 })` via dynamic import to prevent SSE timeout. AbortController linked to `request.signal` for client disconnect cleanup.
+
+### 5.3 Error Handling Patterns
+
+- `proxy-error-handler.ts` -- Centralized proxy error formatting
+- `error-messages.ts` -- User-friendly message mapping + `getUserFriendlyError()` + `getMessageFromErrorCode()`
+- Structured `SearchError` interface with `error_code`, `correlation_id`, `search_id` fields
+- ErrorDetail component renders 7 conditional fields based on error metadata
+- `isTransientError()` detects 502/503/504 + network errors for auto-retry
 
 ---
 
-## 5. Styling & Design System
+## 6. Design System
 
-### 5.1 Design Tokens
+### 6.1 Color System (globals.css, 615 lines)
 
-**globals.css** (615 LOC) defines a comprehensive CSS custom property system:
+CSS custom properties with WCAG contrast ratios documented inline:
 
-- **Canvas & Ink**: 5-level text hierarchy (ink, ink-secondary, ink-muted, ink-faint) with documented WCAG contrast ratios
-- **Brand**: Navy (#0a1e3f) + Blue (#116dff) + Hover + Subtle
-- **Surfaces**: 4-level hierarchy (surface-0 through surface-elevated)
-- **Semantic**: Success, Error, Warning with subtle backgrounds
-- **Gem palette**: Sapphire, Emerald, Amethyst, Ruby (translucent accents)
-- **Chart palette**: 10 colors for Recharts data visualization
-- **Shadows**: 7 levels (sm through 2xl + glow variants)
-- **Fluid typography**: clamp()-based (hero: 40-72px, h1: 32-56px, h2: 24-40px)
+**Core palette:**
+- `--brand-navy: #0a1e3f` (14.8:1 vs white -- AAA)
+- `--brand-blue: #116dff` (4.8:1 vs white -- AA)
+- Ink hierarchy: `--ink` (12.6:1), `--ink-secondary` (5.5:1), `--ink-muted` (5.1:1), `--ink-faint` (1.9:1, decorative)
+- Surface hierarchy: `--surface-0` (base), `--surface-1`, `--surface-2`, `--surface-elevated`
+- Semantic: success (#16a34a), error (#dc2626), warning (#ca8a04) -- all AA compliant
+- Gem palette: sapphire, emerald, amethyst, ruby (translucent overlays with dedicated shadows)
+- Chart palette: 10 colors for Recharts data visualization
+- WhatsApp brand color
 
-**Dark mode**: Full `:root` / `.dark` dual token system with recalculated contrast ratios.
+**Dark mode:** Full `:root` / `.dark` dual token system. Theme toggled via class on `<html>`, persisted in localStorage.
 
-### 5.2 Tailwind Configuration
+### 6.2 Typography
 
-`tailwind.config.ts` (158 LOC) extends defaults with:
-- All CSS custom properties mapped to Tailwind classes
-- Custom border-radius tokens: `input: 4px`, `button: 6px`, `card: 8px`, `modal: 12px`
-- 3 font families: body (DM Sans), display (Fahkwang), data (DM Mono)
-- 8 custom animations: fade-in-up, gradient, shimmer, float, slide-up, scale-in, slide-in-right, bounce-gentle
-- `darkMode: "class"` — manual toggle with localStorage persistence
-- `@tailwindcss/typography` plugin
+| Token | Font | Weights | Preload | Usage |
+|-------|------|---------|---------|-------|
+| `--font-body` | DM Sans | Variable | Yes | Body text, primary font |
+| `--font-display` | Fahkwang | 400-700 | No (FE-020) | Headings, display text |
+| `--font-data` | DM Mono | 400-500 | No (FE-020) | Data tables, code |
 
-### 5.3 Typography
+All fonts use `display: "swap"` to prevent FOIT.
 
-| Font | Role | Weight | Preload |
-|------|------|--------|---------|
-| DM Sans | Body text | Variable | Yes |
-| Fahkwang | Display headings | 400-700 | No (FE-020) |
-| DM Mono | Data/code | 400-500 | No (FE-020) |
+Fluid typography scale via `clamp()`:
+- Hero: 40-72px
+- H1: 32-56px
+- H2: 24-40px
+- H3: 20-28px
+- Body-lg: 18-20px
 
-### 5.4 Animation Patterns
+### 6.3 Tailwind Configuration (tailwind.config.ts)
 
-- **Framer Motion**: Used in 9 files (landing sections, carousels, comparison tables)
-- **CSS animations**: 8 keyframe animations in Tailwind config
-- **NProgress**: Route transition progress bar
-- **Skeleton loaders**: Dedicated `loading.tsx` files for buscar, dashboard, pipeline, historico, protected layout
+- Custom border-radius: input (4px), button (6px), card (8px), modal (12px)
+- 3 font families mapped to CSS vars
+- 8 custom keyframe animations: fade-in-up, gradient, shimmer, float, slide-up, scale-in, slide-in-right, bounce-gentle
+- `darkMode: "class"` with manual toggle
+- `@tailwindcss/typography` plugin for blog content
+- Semantic aliases: primary, secondary, accent mapped to brand tokens
+- Max-width: `landing: 1200px`
 
-### 5.5 Responsive Design
+### 6.4 Component Primitives (components/ui/)
 
-- Mobile-first approach with Tailwind breakpoints (sm/md/lg/xl)
-- `BottomNav` for mobile (visible `md:hidden`)
-- `Sidebar` for desktop (visible `hidden md:block`)
-- `MobileDrawer` for hamburger menu on search page
+6 primitives built with `class-variance-authority` (cva) and `@radix-ui/react-slot`:
+
+| Component | Details |
+|-----------|---------|
+| `Button` | 6 variants (primary, secondary, destructive, ghost, link, outline), 4 sizes (sm, default, lg, icon). Icon-only buttons enforce `aria-label` via TypeScript discriminated union. Loading state with spinner. |
+| `Input` | Standard text input |
+| `Label` | Form label |
+| `CurrencyInput` | Brazilian Real formatting |
+| `Pagination` | Page navigation |
+
+### 6.5 Responsive Design
+
+- Mobile-first with Tailwind breakpoints (sm:640, md:768, lg:1024, xl:1280)
 - `useIsMobile` hook for JavaScript-level breakpoint detection
-- Minimum touch targets: `min-height: 44px` on buttons and form inputs (globals.css)
-- `react-simple-pull-to-refresh` for mobile pull-to-refresh on search
+- Mobile: BottomNav (5 tabs) + MobileDrawer (hamburger menu)
+- Desktop: Collapsible Sidebar (state persisted in localStorage)
+- Touch targets: `min-w-[44px] min-h-[44px]` on mobile interactive elements
+- `react-simple-pull-to-refresh` for mobile pull-to-refresh on search page
+- Content widths: `max-w-5xl` (search), `max-w-7xl` (protected pages), `max-w-landing` (landing)
+
+### 6.6 Animation
+
+**Framer Motion (framer-motion):** Used in 6 production components:
+- `SearchStateManager` -- Search state transitions
+- `HeroSection`, `SectorsGrid`, `AnalysisExamplesCarousel`, `ComparisonTable`, `ValuePropSection` -- Landing page
+- `DashboardProfileSection` -- Profile completion
+- `FeaturesContent` -- Features page
+- `lib/icons/` -- Animated icon components
+
+**CSS animations (Tailwind):** 8 keyframe animations for lighter use cases (skeleton loading, shimmer, gentle bouncing).
+
+**NProgress:** Route transition progress bar at page top.
 
 ---
 
-## 6. Testing
+## 7. UX Patterns Analysis
 
-### 6.1 Test Coverage
+### 7.1 Loading States
 
-| Type | Files | Tests | Passing | Failing | Framework |
-|------|-------|-------|---------|---------|-----------|
-| Unit/Integration | 306 | ~5,583 | ~5,580 | ~3 pre-existing | Jest + Testing Library |
-| E2E | 31 | ~60 | Varies | - | Playwright |
-| Accessibility E2E | 2 | - | - | - | @axe-core/playwright |
-| **Total** | **339** | | | | |
+**Comprehensive coverage with 8 loading.tsx files:**
+- Route-level suspense: `(protected)`, admin, buscar, conta, dashboard, historico, pipeline, planos
+- 3 dedicated skeleton components: AdminPageSkeleton, ContaPageSkeleton, PlanosPageSkeleton
+- `EnhancedLoadingProgress` (391 lines) -- Multi-phase search progress with UF grid
+- `AuthLoadingScreen` -- Full-page spinner during auth verification
+- `LoadingResultsSkeleton` -- Search results placeholder
+- Pipeline kanban skeleton during @dnd-kit dynamic import load
+- `DashboardLoadingSkeleton` + `DashboardRetryingState` for dashboard states
+- 10-second loading timeout on dashboard (`LOADING_TIMEOUT_MS`)
 
-### 6.2 Test Patterns
+### 7.2 Error States
 
-- `jest.setup.js` polyfills: `crypto.randomUUID`, `EventSource` (jsdom lacks both)
-- Mock strategies: Auth via `useAuth` mock, API via fetch mock, Supabase via client mock
-- `@jest-environment node` for API route tests (provides Request global)
-- Module name mapper: `@/` maps to `<rootDir>/` (NOT `<rootDir>/app/`)
-- Coverage threshold: 60% (CI gate)
+**Multi-layer error handling:**
 
-### 6.3 E2E Tests
+| Layer | Component | Coverage |
+|-------|-----------|----------|
+| Root | `global-error.tsx` | Layout crashes (standalone HTML, no Tailwind) |
+| App | `error.tsx` | App-level errors (Sentry + analytics tracking) |
+| Page | `PageErrorBoundary` | Per-page wrapping |
+| Search | `SearchErrorBoundary` | Search-specific recovery |
+| Reusable | `ErrorStateWithRetry` | Generic retry UI |
+| Dashboard | `DashboardErrorStates` | 6 state variants |
+| Results | `EmptyResults`, `ZeroResultsSuggestions`, `SearchEmptyState` | Zero/pre-search states |
+| Banner | `SearchErrorBanner`, `ExpiredCacheBanner`, `PartialResultsPrompt`, `SourcesUnavailable` | Degraded operation states |
 
-31 Playwright specs covering:
-- Happy path search flow, validation errors, error handling
-- Authentication UX, signup consent
-- Pipeline kanban, dashboard flows
-- Landing page, institutional pages
-- Billing checkout, plan display
-- Mobile viewport, theme switching
-- SSE failure modes, performance
-- Accessibility audit (axe-core)
-- SEO schema validation, CTA validation
+### 7.3 Form Patterns
 
----
+- **react-hook-form + zod:** Used in onboarding (2 step forms) and login/signup
+- **Schemas:** Centralized in `lib/schemas/forms.ts` (onboardingStep1Schema, onboardingStep2Schema, loginSchema, loginPasswordSchema)
+- **Specialized inputs:** CurrencyInput (Brazilian Real), CustomSelect, CustomDateInput, RegionSelector, EsferaFilter, MunicipioFilter, OrgaoFilter
+- **Toast notifications:** Sonner (bottom-center, rich colors, close button)
+- **Confirmation modals:** CancelSubscriptionModal, Dialog component
 
-## 7. Dependencies Analysis
+### 7.4 Onboarding
 
-### 7.1 Key Production Dependencies
+**3-step wizard (`/onboarding`):**
+1. CNAE + Objective selection (react-hook-form + zod)
+2. UFs + Value range (react-hook-form + zod)
+3. Confirmation + auto-search launch via `POST /v1/first-analysis`
 
-| Package | Version | Purpose | Bundle Impact |
-|---------|---------|---------|---------------|
-| next | 16.1.6 | Framework | Core |
-| react / react-dom | 18.3.1 | UI library | Core |
-| @supabase/ssr + supabase-js | 0.8 / 2.95 | Auth + DB | Medium |
-| swr | 2.4.1 | Data fetching | Small |
-| framer-motion | 12.33.0 | Animations | **Large (~50KB)** |
-| recharts | 3.7.0 | Charts | **Large (~80KB)** |
-| @dnd-kit/* | 6.3/10.0/3.2 | Drag-and-drop | Medium |
-| lucide-react | 0.563.0 | Icons (tree-shakeable) | Small per icon |
-| shepherd.js | 14.5.1 | Product tour | Medium |
-| zod | 4.3.6 | Schema validation | Small |
-| date-fns | 4.1.0 | Date utils (tree-shakeable) | Small |
-| sonner | 2.0.7 | Toast notifications | Small |
-| mixpanel-browser | 2.74.0 | Analytics | Medium |
-| @sentry/nextjs | 10.38.0 | Error monitoring | Medium |
-| react-day-picker | 9.13.0 | Date picker | Small |
-| react-simple-pull-to-refresh | 1.3.4 | Pull to refresh | Small |
-| class-variance-authority | 0.7.1 | Variant styling | Tiny |
-| clsx / tailwind-merge | 2.1/3.5 | Class merging | Tiny |
-| focus-trap-react | 12.0.0 | Focus management | Small |
-| nprogress | 0.2.0 | Route progress bar | Tiny |
-| uuid | 13.0.0 | UUID generation | Tiny |
-| use-debounce | 10.1.0 | Debounce hook | Tiny |
+**Guided tours (Shepherd.js):**
+- Search page tour: SEARCH_TOUR_STEPS + RESULTS_TOUR_STEPS
+- Pipeline page tour: 3 steps (kanban columns, card details, alerts/deadlines)
+- `TourInviteBanner`: Appears on first results view, auto-dismiss after 10s or scroll
+- `OnboardingTourButton` for manual tour restart (in UserMenu)
+- `ContextualTutorialTooltip` for contextual help
 
-### 7.2 Observations
+### 7.5 Navigation and Information Architecture
 
-- **framer-motion** and **recharts** are the two heaviest dependencies. framer-motion is only used in 9 files (mostly landing page) but is loaded globally.
-- **shepherd.js** is loaded for product tours but could be lazy-loaded.
-- **react-hook-form** is in devDependencies (should be in dependencies since it is used in production pages: signup, onboarding, profile).
+**Primary nav (desktop sidebar + mobile bottom nav):**
+Buscar > Dashboard > Pipeline > Historico
 
----
+**Secondary nav (sidebar only):**
+Minha Conta > Ajuda > Sair (logout)
 
-## 8. UX / Frontend Technical Debt
+**Feature-gated (hidden from nav):** Alertas, Mensagens (SHIP-002 AC9)
 
-### FE-DEBT-001 — react-hook-form in devDependencies
-- **Category:** Maintainability
-- **Severity:** High
-- **Description:** `react-hook-form` is listed under `devDependencies` in `package.json` but is imported and used in production pages (`signup/page.tsx`, `onboarding/page.tsx`, `conta/perfil/page.tsx`). This works only because `next build` bundles it regardless, but it is semantically wrong and could break in certain deployment scenarios.
-- **Impact:** Potential build failures in strict dependency resolution environments.
-- **Recommendation:** Move `react-hook-form` from devDependencies to dependencies.
-- **Effort:** 0.5h
+**Breadcrumbs:** Shown on all protected pages via `(protected)/layout.tsx`.
 
-### FE-DEBT-002 — Inconsistent form handling patterns
-- **Category:** Consistency
-- **Severity:** Medium
-- **Description:** Only 3 pages use `react-hook-form` + `zod`. The login page (502 LOC) uses raw `useState` for email/password with no schema validation. The recuperar-senha and redefinir-senha pages also use raw `useState`. Meanwhile signup and onboarding use proper form libraries.
-- **Impact:** Inconsistent validation UX; login form lacks real-time validation feedback.
-- **Recommendation:** Migrate remaining forms (login, recuperar-senha, redefinir-senha, conta/dados, conta/seguranca) to react-hook-form + zod. This was partially noted as STORY-203 FE-M03 (pending).
-- **Effort:** 8h
+### 7.6 Accessibility
 
-### FE-DEBT-003 — SearchForm has zero ARIA attributes
-- **Category:** Accessibility
-- **Severity:** High
-- **Description:** `SearchForm.tsx` (125 LOC) contains no `aria-*` attributes. It delegates to sub-components, but the form wrapper itself lacks `role="search"`, `aria-label`, or `aria-live` regions for announcing results. The search input and sector selector have no programmatic labels visible to screen readers in the composed form context.
-- **Impact:** Screen reader users cannot identify the search form purpose or receive search result announcements.
-- **Recommendation:** Add `role="search"` to the form container, `aria-label="Buscar licitacoes"`, and `aria-live="polite"` on the results count area.
-- **Effort:** 3h
+**Strengths:**
+- Skip navigation link targeting `#main-content` (WCAG 2.4.1)
+- `aria-label` enforced at TypeScript level for icon-only buttons
+- `aria-hidden="true"` on decorative icons (Sidebar uses lucide-react with aria-hidden)
+- `role="status"` on loading/tour banners
+- WCAG contrast ratios documented inline in CSS (all text colors AA or better)
+- Focus ring (`focus-visible:ring-2`) on interactive elements
+- `lang="pt-BR"` on html element
+- `aria-label` on footer landmark
+- 83 `aria-*` attribute usages across shared components
 
-### FE-DEBT-004 — Framer Motion loaded globally, used in 9 files
-- **Category:** Performance
-- **Severity:** Medium
-- **Description:** `framer-motion` (~50KB gzipped) is a production dependency loaded in the global bundle. It is only used in 9 files, primarily landing page sections and a few app components. Pages that never animate (buscar, dashboard, pipeline, historico) still pay the bundle cost.
-- **Impact:** Increased initial bundle size for all pages by ~50KB.
-- **Recommendation:** Lazy-load framer-motion via `dynamic()` or use CSS animations (already defined in Tailwind config) for simpler animations. Consider `next/dynamic` with `ssr: false` for landing page sections.
-- **Effort:** 6h
-
-### FE-DEBT-005 — Large monolithic page files
-- **Category:** Maintainability
-- **Severity:** Medium
-- **Description:** Several page files exceed 500 LOC: `onboarding/page.tsx` (783), `admin/page.tsx` (764), `planos/page.tsx` (714), `signup/page.tsx` (703), `mensagens/page.tsx` (547), `login/page.tsx` (502). These pages mix layout, state management, and business logic in a single file.
-- **Impact:** Difficult to maintain, test, and review. Higher cognitive load for developers.
-- **Recommendation:** Extract sub-components and hooks. For example, onboarding could have `OnboardingStep1.tsx`, `OnboardingStep2.tsx`, `OnboardingStep3.tsx` + `useOnboardingForm.ts`.
-- **Effort:** 16h
-
-### FE-DEBT-006 — Search hooks complexity (3,287 LOC in 9 hooks)
-- **Category:** Maintainability
-- **Severity:** Medium
-- **Description:** The search functionality is split across 9 hooks totaling 3,287 LOC. `useSearchExecution` alone is 770 LOC and `useSearchOrchestration` is 600 LOC. While the decomposition is logical, the deep hook composition tree makes debugging and testing difficult.
-- **Impact:** High onboarding cost for new developers; difficult to trace state flow.
-- **Recommendation:** Document the hook dependency graph. Consider a state machine approach (XState) for the search lifecycle instead of scattered useState across 9 hooks.
-- **Effort:** 24h (refactor) or 4h (documentation)
-
-### FE-DEBT-007 — Blog TODO placeholders (60+ instances)
-- **Category:** Consistency
-- **Severity:** Low
-- **Description:** All 30 blog articles contain identical TODO comments: `{/* TODO: Link para pagina programatica de setor -- MKT-003 */}` and `{/* TODO: Link para pagina programatica de cidade -- MKT-005 */}`. These are rendered as empty JSX but indicate incomplete internal linking.
-- **Impact:** Missing internal links reduce SEO value and user navigation in blog content.
-- **Recommendation:** Implement the programmatic page linking or remove TODOs if pages already exist at `/blog/programmatic/[setor]`.
-- **Effort:** 4h
-
-### FE-DEBT-008 — Missing error boundaries on some protected pages
-- **Category:** UX
-- **Severity:** Medium
-- **Description:** Error boundaries (`error.tsx`) exist for: admin, alertas, buscar, conta, dashboard, historico, mensagens, pipeline, and root. However, the following protected pages lack dedicated error boundaries: onboarding, planos/obrigado, signup, login. The root error boundary catches these, but it loses the navigation context.
-- **Impact:** Errors on onboarding or signup result in a full-page error with no navigation, potentially losing the user.
-- **Recommendation:** Add `error.tsx` to onboarding/, signup/, and login/ directories with appropriate recovery actions.
-- **Effort:** 3h
-
-### FE-DEBT-009 — No i18n/l10n infrastructure
-- **Category:** Consistency
-- **Severity:** Low
-- **Description:** All user-facing strings are hardcoded in Portuguese throughout the codebase. There is no i18n library (next-intl, react-i18next) or string extraction pattern. The `lang="pt-BR"` is set correctly in the root layout.
-- **Impact:** Internationalization would require touching every file. Not critical for current pt-BR-only market.
-- **Recommendation:** Accept as intentional for current market. If internationalization is needed, adopt `next-intl` and extract strings incrementally.
-- **Effort:** 80h+ (full i18n)
-
-### FE-DEBT-010 — Duplicate LoadingProgress components
-- **Category:** Consistency
-- **Severity:** Low
-- **Description:** Two LoadingProgress components exist: `app/components/LoadingProgress.tsx` (app-level) and `components/LoadingProgress.tsx` (global). Similarly, `AddToPipelineButton` exists in both `app/components/` and `components/`. This creates confusion about which to import.
-- **Impact:** Developer confusion, potential inconsistency if one is updated but not the other.
-- **Recommendation:** Audit for actual usage, consolidate duplicates, and establish a clear convention (app/components for page-specific, components/ for truly shared).
-- **Effort:** 2h
-
-### FE-DEBT-011 — Missing skip-link target on some pages
-- **Category:** Accessibility
-- **Severity:** Medium
-- **Description:** The root layout includes a "Pular para conteudo principal" skip link targeting `#main-content`. The landing page has `<main id="main-content">`, but the `(protected)/layout.tsx` uses `<main>` without an `id`. This means the skip link does not work on any protected page.
-- **Impact:** Keyboard/screen reader users cannot bypass navigation on the most-used pages (buscar, dashboard, pipeline).
-- **Recommendation:** Add `id="main-content"` to the `<main>` tag in `(protected)/layout.tsx`.
-- **Effort:** 0.5h
-
-### FE-DEBT-012 — Feature-gated pages still routable
-- **Category:** UX
-- **Severity:** Low
-- **Description:** `/alertas` and `/mensagens` are feature-gated (SHIP-002 AC9) — hidden from navigation but still accessible via direct URL. The pages render but API calls return 404, showing error states without explanation.
-- **Impact:** Users who discover these URLs see broken pages with no context about why.
-- **Recommendation:** Add a feature-gate wrapper component that shows "Em breve" (Coming soon) message when feature flags are off.
-- **Effort:** 2h
-
-### FE-DEBT-013 — No skeleton loaders for some pages
-- **Category:** UX
-- **Severity:** Low
-- **Description:** Loading skeletons exist for buscar, dashboard, pipeline, historico, and the protected layout. Pages without dedicated skeletons: admin (all sub-pages), conta, alertas, mensagens, planos. These show a generic spinner.
-- **Impact:** Perceived performance is worse on pages without content-shaped skeletons.
-- **Recommendation:** Add `loading.tsx` with content-shaped skeletons for admin, conta, and planos pages.
-- **Effort:** 4h
-
-### FE-DEBT-014 — EnhancedLoadingProgress is 452 LOC
-- **Category:** Maintainability
-- **Severity:** Low
-- **Description:** `EnhancedLoadingProgress.tsx` (452 LOC) is the largest single component. It handles SSE progress visualization, UF grid, phase transitions, and fallback simulation all in one file.
-- **Impact:** Difficult to test and maintain individual behaviors.
-- **Recommendation:** Extract sub-components: `ProgressPhaseIndicator`, `UfProgressMap`, `FallbackSimulation`.
-- **Effort:** 4h
-
-### FE-DEBT-015 — BottomNav uses wrong icon for Dashboard
-- **Category:** UX
-- **Severity:** Low
-- **Description:** In `BottomNav.tsx` line 48, the Dashboard item uses `icons.search` instead of a dashboard-specific icon (should be `LayoutDashboard` like in Sidebar).
-- **Impact:** Visual inconsistency between mobile bottom nav and desktop sidebar.
-- **Recommendation:** Change Dashboard icon to `LayoutDashboard` in MAIN_ITEMS.
-- **Effort:** 0.5h
-
-### FE-DEBT-016 — Raw CSS variable usage in some components
-- **Category:** Consistency
-- **Severity:** Low
-- **Description:** Some components use raw CSS variables (`text-[var(--ink-secondary)]`, `bg-[var(--surface-0)]`) instead of the Tailwind semantic classes (`text-ink-secondary`, `bg-surface-0`). DEBT-012 in tailwind.config.ts notes this as a known issue. The buscar/page.tsx header alone has 6 instances of `var(--...)` in className.
-- **Impact:** Inconsistent styling approach, harder to search/refactor, no Tailwind intellisense.
-- **Recommendation:** Replace `text-[var(--ink-secondary)]` with `text-ink-secondary` across all components. Use a codemod or search-and-replace.
-- **Effort:** 4h
+**Gaps identified:**
+- No `aria-live` regions for dynamic search results updates (SSE progress, new results count) -- WCAG 4.1.3
+- `SearchForm` wrapper lacks `role="search"` and form-level `aria-label`
+- Pipeline kanban: no keyboard-accessible drag, no screen reader announcements for item moves
+- `(protected)/layout.tsx` has `<main id="main-content">` but `/buscar` has its own `<main id="main-content">` -- duplicate ID when both render
+- Color-only indicators (viability badges) may need text alternatives
+- No automated a11y testing (jest-axe or similar) in unit test suite (Playwright has 2 axe-core specs)
 
 ---
 
-## 9. Security
+## 8. Performance Assessment
 
-### 9.1 Implemented
+### 8.1 Code Splitting (Dynamic Imports)
 
-- CSP enforcement with per-request nonce (DEBT-108 completed)
-- HSTS preload with 1-year max-age
-- X-Frame-Options DENY (clickjacking prevention)
-- COOP same-origin (Spectre mitigation)
-- Auth via `getUser()` not `getSession()` (server-validated)
-- Supabase RLS on all tables
-- API proxy pattern (backend URL not exposed to client)
-- CSP violation reporting to `/api/csp-report`
-- Rate limiting on auth endpoints
-- Cookie consent banner (LGPD compliance)
+9 dynamic import occurrences across 7 files:
 
-### 9.2 Accepted Risks
+| Component | Reason | SSR |
+|-----------|--------|-----|
+| `PipelineKanban` / `ReadOnlyKanban` | Heavy @dnd-kit | No |
+| `SearchStateManager` | Framer Motion | No |
+| `TotpVerificationScreen` | Supabase import isolation | No |
+| `DashboardDimensionsWidget` | Recharts | No |
+| `DashboardTimeSeriesChart` | Recharts | No |
+| `DashboardProfileSection` | Framer Motion | No |
+| Blog content (`blog/[slug]`) | Article content | -- |
 
-- `style-src 'unsafe-inline'` — required by Tailwind/Next.js runtime styles (DEBT-116)
-- localStorage used for non-sensitive caching (plan info, theme, search state)
+### 8.2 Font Optimization
+
+- DM Sans preloaded (primary, critical path)
+- Fahkwang and DM Mono deferred (`preload: false`) -- correct prioritization
+- All use `display: "swap"` to prevent FOIT
+
+### 8.3 Static Asset Caching (next.config.js)
+
+| Path | Cache-Control |
+|------|--------------|
+| `/_next/static/*` | `public, max-age=2592000, immutable` (30 days) |
+| `/images/*` | `public, max-age=604800` (7 days) |
+| `/fonts/*` | `public, max-age=31536000, immutable` (1 year) |
+
+Standalone output mode for Railway deployment. Unique build ID generated per deploy to force cache invalidation.
+
+### 8.4 Bundle Size Concerns
+
+| Concern | Size Impact | Mitigation |
+|---------|------------|------------|
+| `framer-motion` | ~32-50KB gzipped | Used in 6 prod files; not code-split at import level for landing |
+| `recharts` | ~80KB gzipped | Dynamic imported in dashboard (good) |
+| `@dnd-kit` | ~20KB gzipped | Dynamic imported in pipeline (good) |
+| `shepherd.js` | ~15KB | Loaded on protected pages regardless of tour usage |
+| `lucide-react` | Tree-shakeable | Individual icons imported (good) |
+| `api-types.generated.ts` | 163KB source | Compile-time only, zero runtime cost |
+| `globals.css` | 615 lines | Moderate, includes full design system |
+
+### 8.5 Missed Optimizations
+
+- All pages use `"use client"` -- static/marketing pages should be Server Components
+- Landing page (13 components) is fully client-rendered including static marketing content
+- Framer Motion forces client rendering of entire component tree (should be isolated to `motion.div` islands)
+- `useFeatureFlags` implements its own cache instead of using SWR (already available)
 
 ---
 
-## 10. Summary Metrics
+## 9. Technical Debt Inventory
+
+### HIGH Severity
+
+| ID | Issue | Files | Est. Hours |
+|----|-------|-------|------------|
+| **TD-H01** | **Zero Server Components.** Every page uses `"use client"`. Landing, blog, legal, pricing pages should be RSC for better TTFB/SEO. ~40% TTFB improvement expected for landing page. | All `page.tsx` files | 16h |
+| **TD-H02** | **Dual header/auth pattern.** `/buscar` bypasses `(protected)/layout.tsx` and implements its own header+auth guard. Duplicated logic, inconsistent UI. | `app/buscar/page.tsx`, `app/(protected)/layout.tsx` | 4h |
+| **TD-H03** | **No `aria-live` for dynamic content.** SSE search progress and results updates invisible to screen readers. WCAG 4.1.3 violation. | `useSearchSSE.ts`, search components | 6h |
+| **TD-H04** | **Missing a11y for drag-and-drop.** Pipeline kanban has no keyboard drag, no screen reader announcements. | `PipelineKanban.tsx` | 8h |
+
+### MEDIUM Severity
+
+| ID | Issue | Files | Est. Hours |
+|----|-------|-------|------------|
+| **TD-M01** | **22 `any` type occurrences** across 15 files (excluding generated). SavedSearchesDropdown, OrgaoFilter, MunicipioFilter, AnalyticsProvider, LoginForm, ErrorDetail. | Multiple | 4h |
+| **TD-M02** | **ValorFilter.tsx (478 lines).** Mixing currency formatting, dual-slider logic, and preset buttons in one file. | `buscar/components/ValorFilter.tsx` | 3h |
+| **TD-M03** | **EnhancedLoadingProgress.tsx (391 lines).** Multi-phase loading + UF grid + fallback simulation in one component. | `buscar/components/EnhancedLoadingProgress.tsx` | 3h |
+| **TD-M04** | **useFeatureFlags has custom cache instead of SWR.** Implements its own in-memory cache + manual TTL despite SWR being globally available. Comment in file acknowledges this. | `hooks/useFeatureFlags.ts` | 2h |
+| **TD-M05** | **Raw CSS var usage in classNames.** ~40+ instances of `bg-[var(--surface-0)]` instead of `bg-surface-0`. DEBT-012 in tailwind.config.ts notes this. Breaks Tailwind intellisense. | Multiple components | 3h |
+| **TD-M06** | **87 localStorage usages with no key registry.** Safe wrappers exist but no centralized key constants -- risk of collisions or stale orphan data. | 20 files | 2h |
+| **TD-M07** | **Landing page fully client-rendered.** 13 static marketing components forced to client by Framer Motion in HeroSection. Could isolate motion to client islands. | `app/components/landing/` | 8h |
+| **TD-M08** | **ProfileCompletionPrompt.tsx (21,930 bytes).** Very large single component needing decomposition. | `components/ProfileCompletionPrompt.tsx` | 3h |
+| **TD-M09** | **Feature-gated pages still routable.** `/alertas` and `/mensagens` hidden from nav but accessible via direct URL. API returns 404, showing confusing error states. | `app/alertas/`, `app/mensagens/` | 2h |
+
+### LOW Severity
+
+| ID | Issue | Files | Est. Hours |
+|----|-------|-------|------------|
+| **TD-L01** | **No automated a11y unit tests.** Neither jest-axe nor similar in Jest suite. Only 2 Playwright axe-core E2E specs. | Test infrastructure | 4h |
+| **TD-L02** | **Skeleton coverage gaps.** Admin sub-pages, alertas, mensagens show generic spinner instead of content-shaped skeletons. | Various loading.tsx | 4h |
+| **TD-L03** | **useOnboarding.tsx has .tsx extension.** File is a hook with no JSX; should be `.ts`. | `hooks/useOnboarding.tsx` | 0.5h |
+| **TD-L04** | **Missing error.tsx in onboarding, signup, login.** Errors fall through to root boundary, losing navigation context. | Missing files | 3h |
+| **TD-L05** | **TourInviteBanner defined inside SearchResults.tsx** (line 53). Should be its own file. | `buscar/components/SearchResults.tsx` | 0.5h |
+| **TD-L06** | **Blog TODO placeholders.** 60+ identical TODO comments for internal linking across 30 articles (MKT-003/MKT-005). | Blog article files | 4h |
+| **TD-L07** | **Search hooks complexity (3,287 LOC in 9 hooks).** Deep composition tree makes debugging difficult. Needs at minimum a documented dependency graph. | `app/buscar/hooks/` | 4h (docs) |
+
+---
+
+## 10. Recommendations
+
+### 10.1 Critical Path (Next Sprint)
+
+1. **Adopt Server Components for static pages** (TD-H01, TD-M07). Convert landing, blog, legal, pricing to RSC. Extract Framer Motion into isolated client component islands. Expected: ~40% TTFB improvement for landing, better SEO.
+
+2. **Add `aria-live` regions for search** (TD-H03). Add `aria-live="polite"` to results container and progress area. Add `role="search"` to SearchForm wrapper. Low effort, high a11y impact.
+
+3. **Unify /buscar auth pattern** (TD-H02). Move `/buscar` into the `(protected)` route group. Extract the custom header into a shared component.
+
+### 10.2 Near-Term (1-2 Sprints)
+
+4. **Migrate useFeatureFlags to SWR** (TD-M04). Eliminate custom cache, leverage SWR deduplication.
+
+5. **Enforce Tailwind tokens** (TD-M05). Run codemod to replace `bg-[var(--X)]` with `bg-X`. Consider `eslint-plugin-tailwindcss` to prevent regression.
+
+6. **Add jest-axe for a11y testing** (TD-L01). Install `jest-axe`, add render+axe assertion to existing component tests.
+
+7. **Decompose large components** (TD-M02, TD-M03, TD-M08). Extract sub-components from ValorFilter, EnhancedLoadingProgress, ProfileCompletionPrompt.
+
+8. **Feature-gate URLs** (TD-M09). Wrap `/alertas` and `/mensagens` pages with a feature flag check that renders "Em breve" instead of broken API errors.
+
+### 10.3 Design System Evolution
+
+9. **Expand ui/ primitives.** Currently 6 primitives. Many components (Select, Checkbox, Modal, Tooltip, Badge, Dropdown) exist as ad-hoc implementations. Consolidate into `components/ui/`.
+
+10. **Create localStorage key registry.** Centralize all keys as constants in `lib/storage.ts` with typed getters/setters.
+
+### 10.4 Performance
+
+11. **Lazy-load Shepherd.js.** Currently loaded on all protected pages. Use `next/dynamic` to load only when tour is triggered.
+
+12. **Audit Framer Motion.** Consider `motion/react` (lighter build) or CSS-only alternatives for simple transitions. The full `framer-motion` package is 32-50KB gzipped.
+
+13. **Document search hook dependency graph** (TD-L07). The 9-hook composition in `/buscar` is the application's most complex state management. A visual dependency graph would significantly reduce developer onboarding time.
+
+---
+
+## Summary Metrics
 
 | Metric | Value |
 |--------|-------|
-| Total pages | 47 |
-| Total components | ~239 |
-| Total hooks | 36 (27 global + 9 search) |
-| API proxy routes | 57 |
-| Unit test files | 306 |
-| E2E test files | 31 |
-| Blog articles | 30 |
-| App TSX/TS files | 335 |
-| App total LOC | ~56,700 |
-| globals.css LOC | 615 |
+| Total page routes | ~47 |
+| Total components | ~240 |
+| Total custom hooks | 38 (29 global + 9 search) |
+| API proxy routes | 58 |
+| Unit test files | ~306 |
+| E2E test files | ~31 |
+| globals.css lines | 615 |
 | Design tokens (CSS vars) | ~80 |
-| Custom animations | 8 |
-| Technical debt items | 16 |
-| Critical debt | 0 |
-| High severity debt | 2 (FE-DEBT-001, FE-DEBT-003) |
-| Medium severity debt | 6 |
-| Low severity debt | 8 |
-| Estimated total fix effort | ~157h |
+| Custom animations | 8 Tailwind + Framer Motion |
+| Technical debt items | 20 |
+| High severity debt | 4 |
+| Medium severity debt | 9 |
+| Low severity debt | 7 |
+| Estimated total fix effort | ~88h |

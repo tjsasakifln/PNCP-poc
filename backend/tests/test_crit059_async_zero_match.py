@@ -11,10 +11,7 @@ Tests:
 - Zero regressions in filter.py
 """
 
-import asyncio
-import json
 import time
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

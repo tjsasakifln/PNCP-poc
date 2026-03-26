@@ -4,14 +4,11 @@ AC5: Backend emits filter_summary event with breakdown after filtering.
 AC6: Integration test: 100 raw → 15 filtered → verify counters.
 """
 
-import asyncio
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from progress import (
-    ProgressEvent,
     ProgressTracker,
     _active_trackers,
 )

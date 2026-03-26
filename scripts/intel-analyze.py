@@ -692,6 +692,55 @@ def _build_override_rules(edital: dict[str, Any], empresa: dict[str, Any]) -> st
             "observacoes_criticas DEVE alertar fragilidade logistica."
         )
 
+    # ── Compatibilidade CNAE / Aderência ao Perfil ──
+    cnae_conf = edital.get("_cnae_confidence")
+    if cnae_conf is not None:
+        try:
+            cnae_pct = float(cnae_conf)
+        except (TypeError, ValueError):
+            cnae_pct = -1
+        if cnae_pct == 0:
+            rules.append(
+                "REGRA OBRIGATORIA: Compatibilidade CNAE = 0% — o objeto deste edital "
+                "NAO corresponde a nenhum CNAE da empresa. "
+                "recomendacao_acao DEVE ser 'NAO PARTICIPAR'. "
+                "observacoes_criticas DEVE explicar a incompatibilidade setorial."
+            )
+        elif 0 < cnae_pct < 20:
+            rules.append(
+                f"ALERTA: Compatibilidade CNAE muito baixa ({cnae_pct}%). "
+                "Avaliar cuidadosamente se o objeto e genuinamente compativel "
+                "com a atividade da empresa antes de recomendar PARTICIPAR."
+            )
+
+    victory_fit = edital.get("_victory_fit")
+    if victory_fit is not None:
+        try:
+            fit_val = float(victory_fit)
+        except (TypeError, ValueError):
+            fit_val = -1
+        if fit_val < 0.1:
+            rules.append(
+                f"ALERTA: Aderencia ao perfil de vitoria muito baixa ({fit_val:.0%}). "
+                "A empresa nao tem historico de contratos similares a este edital."
+            )
+
+    # ── Bid Score composite ──
+    bid_score = edital.get("_bid_score") or {}
+    composite = bid_score.get("_composite")
+    if composite is not None:
+        try:
+            comp_val = float(composite)
+        except (TypeError, ValueError):
+            comp_val = -1
+        if comp_val < 0.25:
+            rules.append(
+                f"REGRA OBRIGATORIA: Score bid/no-bid = {comp_val:.0%} (muito abaixo do "
+                f"threshold {bid_score.get('_threshold', 0.45):.0%}). "
+                "recomendacao_acao DEVE ser 'NAO PARTICIPAR' a menos que haja razao "
+                "estrategica excepcional justificada em observacoes_criticas."
+            )
+
     if not rules:
         return ""
 
@@ -778,7 +827,7 @@ def _call_llm(
     return result
 
 
-def _validate_analysis(analysis: dict[str, Any]) -> dict[str, Any]:
+def _validate_analysis(analysis: dict[str, Any], edital: dict[str, Any] | None = None) -> dict[str, Any]:
     """Validate and normalize analysis fields to match expected schema."""
     # Ensure all required fields exist
     for field in ANALYSIS_FIELDS:
@@ -828,6 +877,55 @@ def _validate_analysis(analysis: dict[str, Any]) -> dict[str, Any]:
     else:
         # Default to NAO PARTICIPAR if unclear (zero noise philosophy)
         analysis["recomendacao_acao"] = "NAO PARTICIPAR"
+
+    # ── Programmatic override: force NAO PARTICIPAR on hard signals ──
+    # These override LLM recommendation regardless of what it said
+    _force_nao = False
+    _force_reason = ""
+
+    # 1. Compatibilidade CNAE = 0% → always NAO PARTICIPAR
+    cnae_conf = edital.get("_cnae_confidence") if edital else None
+    if cnae_conf is not None:
+        try:
+            if float(cnae_conf) == 0:
+                _force_nao = True
+                _force_reason = "Compatibilidade CNAE 0% — objeto incompatível com atividade da empresa"
+        except (TypeError, ValueError):
+            pass
+
+    # 2. Bid score < 0.20 (catastrophically low) → always NAO PARTICIPAR
+    bid_score = (edital or {}).get("_bid_score") or {}
+    composite = bid_score.get("_composite")
+    if composite is not None:
+        try:
+            if float(composite) < 0.20:
+                _force_nao = True
+                _force_reason = f"Score bid/no-bid {float(composite):.0%} — abaixo do mínimo viável"
+        except (TypeError, ValueError):
+            pass
+
+    # 3. Compatibilidade CNAE < 20% AND aderência < 0.15 → always NAO PARTICIPAR
+    victory_fit = (edital or {}).get("_victory_fit")
+    if cnae_conf is not None and victory_fit is not None:
+        try:
+            cnae_val = float(cnae_conf)
+            fit_val = float(victory_fit)
+            if cnae_val < 20 and fit_val < 0.15:
+                _force_nao = True
+                _force_reason = (
+                    f"Compatibilidade {cnae_val:.0f}% + Aderência {fit_val:.0%} — "
+                    "duplo sinal de incompatibilidade"
+                )
+        except (TypeError, ValueError):
+            pass
+
+    if _force_nao and analysis["recomendacao_acao"] == "PARTICIPAR":
+        analysis["recomendacao_acao"] = "NAO PARTICIPAR"
+        obs = analysis.get("observacoes_criticas", "")
+        override_note = f"[OVERRIDE PROGRAMÁTICO] {_force_reason}."
+        analysis["observacoes_criticas"] = (
+            f"{override_note} {obs}" if obs else override_note
+        )
 
     # Ensure lists are actually lists
     for list_field in ("requisitos_tecnicos", "requisitos_habilitacao", "indices_contabeis_exigidos", "atestados_especificos"):
@@ -936,7 +1034,7 @@ def analyze_edital(
     for attempt in range(1, RETRY_ATTEMPTS + 1):
         try:
             raw = _call_llm(client, model, SYSTEM_PROMPT, user_prompt)
-            analysis = _validate_analysis(raw)
+            analysis = _validate_analysis(raw, edital=edital)
 
             # Add metadata
             analysis["_source"] = "llm" if not limited else "llm_limited"
@@ -1264,7 +1362,7 @@ def save_analysis_mode(input_path: Path, output_path: str | None) -> None:
     for ed in top20:
         analise = ed.get("analise")
         if analise:
-            ed["analise"] = _validate_analysis(analise)
+            ed["analise"] = _validate_analysis(analise, edital=ed)
             # Add metadata if not present
             if "_source" not in ed["analise"]:
                 ed["analise"]["_source"] = "claude"
@@ -1608,7 +1706,7 @@ def main() -> None:
             # Re-validate after corrections
             for ed in reviewed_editais:
                 if ed.get("analise", {}).get("_review_corrections", 0) > 0:
-                    ed["analise"] = _validate_analysis(ed["analise"])
+                    ed["analise"] = _validate_analysis(ed["analise"], edital=ed)
 
     # Compute compliance matrix for each analyzed edital (v2)
     for ed in to_analyze:

@@ -2,7 +2,7 @@
 
 import pytest
 from pydantic import ValidationError
-from schemas import BuscaRequest, BuscaResponse, ResumoLicitacoes
+from schemas import BuscaRequest, BuscaResponse, ResumoLicitacoes, ResumoEstrategico
 
 
 class TestBuscaRequest:
@@ -166,7 +166,7 @@ class TestBuscaResponse:
 
     def test_valid_response(self):
         """Valid response should be accepted."""
-        resumo = ResumoLicitacoes(
+        resumo = ResumoEstrategico(
             resumo_executivo="Test summary",
             total_oportunidades=10,
             valor_total=1500000.0,
@@ -178,6 +178,9 @@ class TestBuscaResponse:
             excel_base64="UEsDBBQABgAIAAAAIQA=",  # Sample base64
             total_raw=523,
             total_filtrado=10,
+            excel_available=True,
+            quota_used=1,
+            quota_remaining=999,
         )
 
         assert response.total_raw == 523
@@ -219,7 +222,7 @@ class TestBuscaResponse:
 
     def test_empty_excel_base64_accepted(self):
         """Empty excel_base64 string should be accepted (edge case)."""
-        resumo = ResumoLicitacoes(
+        resumo = ResumoEstrategico(
             resumo_executivo="Test", total_oportunidades=0, valor_total=0.0
         )
 
@@ -228,6 +231,9 @@ class TestBuscaResponse:
             excel_base64="",  # Empty but valid string
             total_raw=0,
             total_filtrado=0,
+            excel_available=False,
+            quota_used=0,
+            quota_remaining=1000,
         )
         assert response.excel_base64 == ""
 
@@ -265,12 +271,18 @@ class TestSchemaJSONSerialization:
 
     def test_busca_response_nested_json(self):
         """BuscaResponse with nested objects should serialize correctly."""
-        resumo = ResumoLicitacoes(
+        resumo = ResumoEstrategico(
             resumo_executivo="Test", total_oportunidades=10, valor_total=500000.0
         )
 
         response = BuscaResponse(
-            resumo=resumo, excel_base64="ABC123", total_raw=100, total_filtrado=10
+            resumo=resumo,
+            excel_base64="ABC123",
+            total_raw=100,
+            total_filtrado=10,
+            excel_available=True,
+            quota_used=5,
+            quota_remaining=995,
         )
 
         json_data = response.model_dump()

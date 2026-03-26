@@ -5,7 +5,7 @@ and monthly reporting.
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Optional
 
 from supabase_client import get_supabase, sb_execute

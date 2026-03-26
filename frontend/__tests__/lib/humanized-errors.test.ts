@@ -11,7 +11,7 @@ describe("getHumanizedError (STAB-006 AC2)", () => {
     expect(result.suggestReduceScope).toBe(true);
     expect(result.actionLabel).toBe("Tentar novamente");
     expect(result.secondaryActionLabel).toBe("Reduzir escopo");
-    expect(result.message).toContain("demorou");
+    expect(result.message).toContain("excedeu o tempo limite");
   });
 
   test("504 timeout returns yellow tone", () => {

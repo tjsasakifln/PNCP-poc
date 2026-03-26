@@ -6,7 +6,6 @@ AC3: Called before each write + in cleanup
 AC4: Unit tests (this file)
 """
 
-import json
 import os
 import time
 from pathlib import Path

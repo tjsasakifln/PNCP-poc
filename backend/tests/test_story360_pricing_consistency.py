@@ -5,7 +5,7 @@ AC3: Stripe price verification — billing_periods data matches expected values.
 AC7: PRICING consistency checks.
 """
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 

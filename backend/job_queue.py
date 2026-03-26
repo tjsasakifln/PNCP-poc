@@ -2006,7 +2006,6 @@ async def classify_zero_match_job(
 
     # Classify using LLM
     from llm_arbiter import _classify_zero_match_batch as _classify_batch
-    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     approved: list[dict] = []
     rejected_count = 0

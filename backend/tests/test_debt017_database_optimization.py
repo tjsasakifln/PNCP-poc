@@ -15,8 +15,6 @@ Tests cover:
 import os
 import re
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
-from types import SimpleNamespace
 
 
 MIGRATIONS_DIR = os.path.join(
@@ -239,7 +237,7 @@ class TestAC7ConversationsQueryJoin:
         # New pattern uses LEFT JOIN LATERAL, so COUNT should be in the FROM clause
         select_sections = re.findall(r'SELECT\s+.*?FROM', func_body, re.DOTALL)
         # The main SELECT (not the lateral) should not have COUNT(*) from messages
-        main_select = select_sections[-1] if select_sections else ""
+        main_select = select_sections[-1] if select_sections else ""  # noqa: F841
         assert "uc.unread" in func_body, "Should reference lateral alias uc.unread"
 
     def test_function_comment_updated(self):

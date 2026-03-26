@@ -88,13 +88,13 @@ async def test_dunning_email_attempt_1_sends_friendly(mock_profile_result, base_
 
     # Mock get_days_since_failure to return 0 (first failure)
     days_result = SimpleNamespace(data=[{"first_failed_at": None}])
-    mock_sb_days = _make_supabase_chain_mock(days_result)
+    mock_sb_days = _make_supabase_chain_mock(days_result)  # noqa: F841
 
     with patch("services.dunning.get_supabase", return_value=mock_sb), \
          patch("services.dunning.send_email_async") as mock_send, \
          patch("services.dunning.DUNNING_EMAILS_SENT") as mock_metric, \
          patch("services.dunning.PAYMENT_FAILURE") as mock_pf, \
-         patch("services.dunning.get_days_since_failure", return_value=0):
+         patch("services.dunning.get_days_since_failure", return_value=0):  # noqa: F841
 
         from services.dunning import send_dunning_email
 
@@ -116,7 +116,7 @@ async def test_dunning_email_attempt_2_sends_reminder(mock_profile_result, base_
          patch("services.dunning.send_email_async") as mock_send, \
          patch("services.dunning.DUNNING_EMAILS_SENT") as mock_metric, \
          patch("services.dunning.PAYMENT_FAILURE"), \
-         patch("services.dunning.get_days_since_failure", return_value=3):
+         patch("services.dunning.get_days_since_failure", return_value=3):  # noqa: F841
 
         from services.dunning import send_dunning_email
 
@@ -139,7 +139,7 @@ async def test_dunning_email_attempt_3_sends_urgent(mock_profile_result, base_in
          patch("services.dunning.send_email_async") as mock_send, \
          patch("services.dunning.DUNNING_EMAILS_SENT") as mock_metric, \
          patch("services.dunning.PAYMENT_FAILURE"), \
-         patch("services.dunning.get_days_since_failure", return_value=7):
+         patch("services.dunning.get_days_since_failure", return_value=7):  # noqa: F841
 
         from services.dunning import send_dunning_email
 
@@ -161,7 +161,7 @@ async def test_dunning_email_attempt_4_sends_final(mock_profile_result, base_inv
          patch("services.dunning.send_email_async") as mock_send, \
          patch("services.dunning.DUNNING_EMAILS_SENT") as mock_metric, \
          patch("services.dunning.PAYMENT_FAILURE"), \
-         patch("services.dunning.get_days_since_failure", return_value=14):
+         patch("services.dunning.get_days_since_failure", return_value=14):  # noqa: F841
 
         from services.dunning import send_dunning_email
 
@@ -766,7 +766,7 @@ async def test_dunning_email_attempt_5_uses_final_template(mock_profile_result, 
          patch("services.dunning.send_email_async") as mock_send, \
          patch("services.dunning.DUNNING_EMAILS_SENT") as mock_metric, \
          patch("services.dunning.PAYMENT_FAILURE"), \
-         patch("services.dunning.get_days_since_failure", return_value=21):
+         patch("services.dunning.get_days_since_failure", return_value=21):  # noqa: F841
 
         from services.dunning import send_dunning_email
 

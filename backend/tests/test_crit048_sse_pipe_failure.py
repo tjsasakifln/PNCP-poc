@@ -43,7 +43,6 @@ class TestRedisTimeoutGraceful:
     async def test_timeout_error_emits_connecting_event(self, mock_auth, mock_sse_limits):
         """AC3: TimeoutError during Redis XREAD emits 'connecting' stage event."""
         from main import app
-        from types import SimpleNamespace
 
         mock_tracker = MagicMock()
         mock_tracker._use_redis = True
@@ -69,7 +68,7 @@ class TestRedisTimeoutGraceful:
                 assert response.status_code == 200
 
                 lines = response.text.strip().split("\n")
-                data_lines = [l for l in lines if l.startswith("data:")]
+                data_lines = [l for l in lines if l.startswith("data:")]  # noqa: E741
 
                 # Should have a 'connecting' event (graceful TimeoutError handling)
                 found_connecting = False
@@ -108,7 +107,7 @@ class TestRedisTimeoutGraceful:
                 )
                 assert response.status_code == 200
 
-                data_lines = [l for l in response.text.split("\n") if l.startswith("data:")]
+                data_lines = [l for l in response.text.split("\n") if l.startswith("data:")]  # noqa: E741
                 events = [json.loads(dl.replace("data: ", "")) for dl in data_lines]
                 stages = [e.get("stage") for e in events]
                 assert "connecting" in stages
@@ -180,7 +179,7 @@ class TestSupabasePollingFallback:
                 )
                 assert response.status_code == 200
 
-                data_lines = [l for l in response.text.split("\n") if l.startswith("data:")]
+                data_lines = [l for l in response.text.split("\n") if l.startswith("data:")]  # noqa: E741
                 events = [json.loads(dl.replace("data: ", "")) for dl in data_lines]
 
                 # Should have terminal 'complete' event from Supabase polling
@@ -214,7 +213,7 @@ class TestSupabasePollingFallback:
                 )
                 assert response.status_code == 200
 
-                data_lines = [l for l in response.text.split("\n") if l.startswith("data:")]
+                data_lines = [l for l in response.text.split("\n") if l.startswith("data:")]  # noqa: E741
                 events = [json.loads(dl.replace("data: ", "")) for dl in data_lines]
                 error_events = [e for e in events if e.get("stage") == "error"]
                 assert len(error_events) >= 1
@@ -255,7 +254,7 @@ class TestSupabasePollingFallback:
                 assert response.status_code == 200
 
                 lines = response.text.split("\n")
-                heartbeats = [l for l in lines if l.strip() == ": heartbeat"]
+                heartbeats = [l for l in lines if l.strip() == ": heartbeat"]  # noqa: E741
                 assert len(heartbeats) >= 1
 
 
@@ -332,7 +331,7 @@ class TestCircuitBreakerSupabaseFallback:
                 )
                 assert response.status_code == 200
 
-                data_lines = [l for l in response.text.split("\n") if l.startswith("data:")]
+                data_lines = [l for l in response.text.split("\n") if l.startswith("data:")]  # noqa: E741
                 events = [json.loads(dl.replace("data: ", "")) for dl in data_lines]
 
                 # Should have 'complete' from Supabase polling

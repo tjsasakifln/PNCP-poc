@@ -14,9 +14,6 @@ from datetime import datetime, timezone
 
 from redis_pool import get_fallback_cache
 from search_cache import (
-    save_to_cache as _supabase_save_cache,
-    get_from_cache as _supabase_get_cache,
-    get_from_cache_cascade,
     _dedup_cross_uf,
 )
 from schemas import DataSourceStatus

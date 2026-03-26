@@ -6,7 +6,7 @@ Shared across all schema submodules.
 import re
 from enum import Enum, IntEnum
 from pydantic import BaseModel, Field, field_validator
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 
 # ============================================================================

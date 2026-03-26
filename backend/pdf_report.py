@@ -348,7 +348,7 @@ class _FooterCanvas:
     def on_page(self, canvas, doc):
         """Called on each page to draw footer."""
         canvas.saveState()
-        page_num = doc.page
+        page_num = doc.page  # noqa: F841
 
         # Footer line
         y = MARGIN - 10 * mm
@@ -731,11 +731,11 @@ def _build_opportunities_table(
     rows = [header]
 
     # Build conditional style commands for viability coloring
-    viability_styles: list[tuple] = []
+    viability_styles: list[tuple] = []  # noqa: F841
 
     for idx, lic in enumerate(display_lics, 1):
         score = _safe_int(lic.get("_viability_score"))
-        level = lic.get("_viability_level", "")
+        level = lic.get("_viability_level", "")  # noqa: F841
 
         # Determine score display color
         if score > 70:

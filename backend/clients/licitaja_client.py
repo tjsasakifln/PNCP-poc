@@ -20,7 +20,7 @@ import asyncio
 import logging
 import random
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Dict, List, Optional, Set
+from typing import Any, AsyncGenerator, Dict, Optional, Set
 
 import httpx
 
@@ -189,7 +189,7 @@ class LicitaJaAdapter(SourceAdapter):
                         )
                         raise SourceAuthError(
                             self.code,
-                            f"IP not whitelisted by LicitaJá — contact provider to add server IP"
+                            "IP not whitelisted by LicitaJá — contact provider to add server IP"
                         )
                     raise SourceAuthError(
                         self.code,

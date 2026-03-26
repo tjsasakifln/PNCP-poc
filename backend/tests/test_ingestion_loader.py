@@ -1,7 +1,7 @@
 """Unit tests for ingestion/loader.py — bulk_upsert, purge_old_bids, _chunk."""
 
 import logging
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

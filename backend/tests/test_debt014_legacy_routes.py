@@ -50,7 +50,7 @@ class TestLegacyRouteMiddleware:
         with patch("metrics.LEGACY_ROUTE_CALLS") as mock_counter:
             mock_label = MagicMock()
             mock_counter.labels = MagicMock(return_value=mock_label)
-            result = await track_legacy_routes(mock_request, call_next)
+            result = await track_legacy_routes(mock_request, call_next)  # noqa: F841
 
             mock_counter.labels.assert_called_once_with(method="POST", path="/buscar")
             mock_label.inc.assert_called_once()

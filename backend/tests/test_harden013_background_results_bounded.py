@@ -6,7 +6,6 @@ AC3: Integrated with periodic cleanup (HARDEN-004) — tested in test_harden004
 AC4: Unit tests validate eviction
 """
 import time
-from unittest.mock import MagicMock
 
 import pytest
 

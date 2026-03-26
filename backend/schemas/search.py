@@ -2,7 +2,7 @@
 
 from datetime import date
 from pydantic import BaseModel, Field, model_validator, field_validator
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from schemas.common import (
     StatusLicitacao,

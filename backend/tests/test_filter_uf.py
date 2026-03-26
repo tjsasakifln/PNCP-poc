@@ -5,7 +5,6 @@ filtrar_por_orgao, filtrar_por_municipio.
 """
 
 import pytest
-from unittest.mock import patch
 import sys
 import os
 

@@ -11,8 +11,6 @@ AC6: railway.toml health check grace period >= 30s
 """
 
 import logging
-import subprocess
-import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 

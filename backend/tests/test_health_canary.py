@@ -1,10 +1,6 @@
 """STORY-316 AC19-AC21: Tests for health canary, uptime calculation, and incident detection."""
 
-import asyncio
-import json
-import time
-from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from types import SimpleNamespace
 
 import pytest

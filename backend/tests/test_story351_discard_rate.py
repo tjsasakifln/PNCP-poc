@@ -8,7 +8,7 @@ Tests:
 
 import pytest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from filter_stats import DiscardRateTracker
 

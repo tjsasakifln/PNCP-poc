@@ -14,10 +14,10 @@ import random
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from filter_keywords import _strip_org_context
-from filter_utils import parse_valor, get_valor_from_lic
+from filter_utils import get_valor_from_lic
 
 logger = logging.getLogger(__name__)
 

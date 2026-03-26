@@ -10,7 +10,7 @@ by keyword filters through 4 layers:
 """
 
 import logging
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 from filter_keywords import _strip_org_context
 from filter_utils import parse_valor

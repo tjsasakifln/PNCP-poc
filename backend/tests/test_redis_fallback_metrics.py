@@ -23,13 +23,12 @@ for _mod_name in ("openai",):
     if _mod_name not in sys.modules:
         sys.modules[_mod_name] = MagicMock()
 
-import redis_pool
-from redis_pool import (
+import redis_pool  # noqa: E402
+from redis_pool import (  # noqa: E402
     get_redis_pool,
     get_redis_status,
     get_fallback_duration_seconds,
     is_redis_available,
-    _mark_fallback_started,
     _mark_redis_connected,
     _update_redis_metrics,
     _emit_fallback_warning_if_needed,

@@ -10,12 +10,10 @@ Tests:
 7. quality_score propagated correctly to L1 and per-UF entries
 """
 
-import json
 import pytest
 import threading
 from datetime import datetime, timezone
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
 
 from pipeline.cache_manager import (
     _read_cache,
@@ -24,7 +22,6 @@ from pipeline.cache_manager import (
     _write_cache_per_uf,
     _compute_cache_key,
     _compute_cache_key_per_uf,
-    SEARCH_CACHE_TTL,
 )
 from redis_pool import get_fallback_cache
 

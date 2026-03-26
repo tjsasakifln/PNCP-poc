@@ -1,236 +1,238 @@
 # Database Specialist Review
 
-**Reviewer:** @data-engineer (Delta)
-**Date:** 2026-03-21
-**Input:** docs/prd/technical-debt-DRAFT.md (Brownfield Discovery Phase 5)
-**Reference:** supabase/docs/DB-AUDIT.md, supabase/docs/SCHEMA.md, backend source code
-**Supersedes:** db-specialist-review.md v2.0 (2026-03-20)
+**Date:** 2026-03-23 | **Reviewer:** @data-engineer (Dara)
+**Status:** Phase 5 -- Brownfield Discovery
+**Inputs:** `docs/prd/technical-debt-DRAFT.md`, `supabase/docs/DB-AUDIT.md`, `supabase/docs/SCHEMA.md`, 96 migration files in `supabase/migrations/`
+
+---
+
+## Summary
+
+The database debt section in the DRAFT is **largely accurate** but contains **3 significant factual errors** where migrations already applied are listed as open debts. The architect's assessment of 7/10 database health is correct. After adjustments, the true remaining database debt is **~2.4h of effort across 8 items** (down from the DRAFT's ~4h across 17 items).
+
+Key finding: migration `20260304100000_fk_standardization_to_profiles.sql` and `20260304120000_rls_policies_trigger_consolidation.sql` already addressed DB-C01 (FK fix), DB-H01 (auth.role() fix), and DB-H03 (trigger consolidation). These were listed as open in both the DB-AUDIT and the DRAFT, but the migration files prove they were resolved. The DRAFT was built from the audit, which appears to have been written before those migrations were applied.
 
 ---
 
 ## Debitos Validados
 
-| ID | Debito | Severidade Original | Severidade Ajustada | Horas | Complexidade | Notas |
-|----|--------|---------------------|---------------------|-------|--------------|-------|
-| DEBT-DB-001 | Dual subscription_status tracking (profiles vs user_subscriptions) | HIGH | **HIGH** (confirmed) | 3-4h | Medium | Real problem. `profiles.subscription_status` uses "canceling"/"trial" while `user_subscriptions` uses "canceled"/"trialing". No sync trigger since migration 030 removed it. `quota.py` reads from `profiles.plan_type` (not subscription_status) for gating decisions, but the drift still risks stale billing UI states. |
-| DEBT-DB-002 | classification_feedback FK references auth.users on fresh install | HIGH | **HIGH** (confirmed) | 1h | Simple | Verified: DEBT-002 bridge migration CREATE TABLE has `REFERENCES auth.users(id)`. DEBT-113 fixes at runtime but is fragile. A single idempotent migration that unconditionally rewrites the FK is the correct fix. |
-| DEBT-DB-003 | profiles table 20+ columns (wide table) | MEDIUM | **LOW** (downgraded) | 8-12h | Complex | At <1K users this is a non-issue. The `select("*")` pattern on profiles appears in ~8 backend call sites but all are single-row lookups by PK (index scan). No measurable perf impact. Splitting billing/marketing columns creates migration complexity and breaks 15+ backend modules. Defer to post-10K users. |
-| DEBT-DB-004 | pipeline_items.search_id TEXT vs search_sessions.search_id UUID | MEDIUM | **MEDIUM** (confirmed) | 1-2h | Simple | Confirmed: `pipeline_items.search_id` is TEXT (DEBT-120), `search_sessions.search_id` is UUID. No FK possible. The TEXT type was intentional (may hold non-UUID values from PCP source), but this should be documented or enforced with a CHECK constraint for UUID format. |
-| DEBT-DB-005 | user_subscriptions active index missing created_at for ORDER BY | MEDIUM | **LOW** (downgraded) | 0.5h | Simple | Confirmed pattern in billing.py: `ORDER BY created_at DESC LIMIT 1`. But with <1K users and typically 1-2 active subs per user, the sort-after-index-scan is sub-millisecond. The index improvement is correct but priority is negligible until 10K+ subscriptions. |
-| DEBT-DB-006 | trial_email_log RLS enabled but no explicit policies | MEDIUM | **MEDIUM** (confirmed) | 0.5h | Simple | Confirmed: table has RLS ON but zero policies. Backend uses service_role (bypasses RLS) so no functional bug. But violates the project convention and could silently return empty results if any authenticated-role query touches this table. Quick fix, worth doing for consistency. |
-| DEBT-DB-007 | handle_new_user() TOCTOU race on phone uniqueness | MEDIUM | **LOW** (downgraded) | 1h | Simple | The UNIQUE partial index `idx_profiles_phone_whatsapp_unique` is the real guard. The COUNT(*) check in the trigger is defense-in-depth. The TOCTOU race outcome is a constraint violation error (not data corruption). The only improvement is better error messaging. Low priority. |
-| DEBT-DB-008 | 85 migrations with 7 handle_new_user redefinitions | MEDIUM | **MEDIUM** (confirmed) | 4-6h | Medium | Real problem for disaster recovery. Fresh replay is risky. A squash baseline is the right approach. Recommend CI validation (see below). |
-| DEBT-DB-009 | Stripe price IDs hardcoded in 4 migrations | MEDIUM | **MEDIUM** (confirmed) | 3-4h | Medium | Verified: migrations 015, 029, 20260226120000, 20260301300000 contain production Stripe price IDs. The `plan_billing_periods` table is already the source of truth at runtime, so the migration values only matter on fresh install. The fix is to seed from env vars in a deployment script. |
-| DEBT-DB-010 | JSONB columns without size governance | MEDIUM | **MEDIUM** (confirmed) | 2h | Simple | Confirmed: `stripe_webhook_events.payload`, `audit_events.details`, `alerts.filters`, `search_sessions.resumo_executivo` have no size constraints. The highest risk is `stripe_webhook_events.payload` -- Stripe events can be large (especially `invoice.payment_succeeded` with line items). Backend validation is primary defense but DB CHECK provides defense-in-depth. |
-| DEBT-DB-011 | search_sessions 24 columns (wide table) | LOW | **LOW** (confirmed) | 16+h | Complex | Confirmed wide but acceptable. The `sessions.py` route does `select("*", count="exact")` which pulls all 24 columns for the history page. This is the only `SELECT *` on search_sessions in production routes; analytics routes use column projections. At current volume (<50K rows), this is not a problem. Deferring is correct. |
-| DEBT-DB-012 | organizations.plan_type CHECK overly permissive | LOW | **LOW** (confirmed) | 0.5h | Simple | Feature not active in production. Fix when organizations feature ships. |
-| DEBT-DB-013 | reconciliation_log no pg_cron retention | LOW | **LOW** (confirmed) | 0.5h | Simple | ~30 rows/month. Would take 3+ years to reach 1K rows. Negligible. |
-| DEBT-DB-014 | backend/migrations/ directory redundant | LOW | **LOW** (confirmed) | 0.5h | Simple | Add a README.md or delete. Trivial. |
-| DEBT-DB-015 | Legacy plans ON DELETE RESTRICT | LOW | **LOW** (confirmed) | 0.5h | Simple | Intentional design. The `is_active = false` filter works. No change needed. |
-| DEBT-DB-016 | No CHECK on search_sessions.error_code | LOW | **LOW** (confirmed) | 1h | Simple | Confirmed: error_code accepts freeform text. Backend `SearchErrorCode` enum has 7 values. Adding a CHECK is good hygiene but low urgency. |
-| DEBT-DB-017 | pg_cron scheduling collision at 4:00 UTC | LOW | **LOW** (confirmed) | 0.5h | Simple | Negligible at current volume. Two DELETEs on different tables at 4:00 UTC is not meaningful contention. |
-
----
-
-## Debitos Removidos
-
-| ID | Razao da Remocao |
-|----|------------------|
-| (none) | All 17 DEBT-DB items from the DRAFT are validated as real issues, though 3 were downgraded in severity. No items are false positives. |
+| ID | Debito | Sev. Original | Sev. Ajustada | Horas | Prioridade | Notas |
+|----|--------|---------------|---------------|-------|------------|-------|
+| DB-C01 | 3 tabelas FK para auth.users | CRITICAL | **RESOLVED** | 0 | N/A | Migration `20260304100000` already repoints `search_results_store`, `mfa_recovery_codes`, `mfa_recovery_attempts` to `profiles(id)`. VALIDATE constraints also applied in same file. Migration `20260311100000` (DEBT-113) AC1 runs a verification loop that raises EXCEPTION if any auth.users FKs remain. **This debt is closed.** |
+| DB-H01 | auth.role() em 6 RLS policies | HIGH | **RESOLVED** | 0 | N/A | Migration `20260304200000` replaces all 8 tables (alert_preferences, reconciliation_log, organizations, organization_members, partners, partner_referrals, search_results_store, classification_feedback). Migration `20260311100000` AC7 runs verification that RAISES EXCEPTION if any auth.role() remains. Migration `20260308300000` (DEBT-009) did a second pass. **This debt is closed.** |
+| DB-H02 | health/incidents sem user RLS | HIGH | **MEDIUM** | 0.25 | 3 | Migration `20260304120000` added `service_role_all` to both tables. However, no authenticated user SELECT policy exists. Downgraded to MEDIUM because: (a) these tables only contain operational data, (b) no frontend status page currently exists, (c) service_role backend access works. Fix when status page feature ships. |
+| DB-H03 | 3 duplicate updated_at functions | HIGH | **RESOLVED** | 0 | N/A | Migration `20260304120000` (lines 37-59) drops all 3 duplicates (`update_pipeline_updated_at`, `update_alert_preferences_updated_at`, `update_alerts_updated_at`) and re-points triggers to canonical `set_updated_at()`. **This debt is closed.** |
+| DB-H04 | Missing NOT NULL em created_at | HIGH | HIGH | 0.25 | 1 | CONFIRMED OPEN. `classification_feedback.created_at` (migration debt002 line 116: `TIMESTAMPTZ DEFAULT now()` without NOT NULL) and `user_oauth_tokens.created_at`/`updated_at` (migration 013 lines 16-17: same pattern). No subsequent migration added NOT NULL to these specific columns. DEBT-017 fixed `google_sheets_exports` and `partners` but missed these two tables. |
+| DB-M02 | organizations.owner_id FK design | MEDIUM | **LOW** | 0 | Backlog | Migration `20260304100000` line 55 already migrated this to `profiles(id) ON DELETE RESTRICT`. The FK is correctly pointing to profiles, not auth.users. The RESTRICT behavior is intentional and correct -- prevents deleting a user who owns an org. Document only. |
+| DB-M03 | partner_referrals FK behavior | MEDIUM | **LOW** | 0.17 | 5 | Migration `20260304100000` line 77 explicitly sets `ON DELETE SET NULL` to profiles(id). Migration `20260308100000` (DEBT-001) drops NOT NULL on referred_user_id. Current state is consistent: nullable column with SET NULL FK to profiles. This is correct for the business case (preserving referral revenue data even after user churns). Only needs a verification query in production. |
+| DB-M04 | Sem CHECK em response_state | MEDIUM | MEDIUM | 0.17 | 2 | CONFIRMED OPEN. No migration adds a CHECK constraint on `search_sessions.response_state`. The column accepts arbitrary strings. W4 migration added CHECK on `error_code` and `status` but missed `response_state`. |
+| DB-M05 | Sem CHECK em pipeline_stage | MEDIUM | MEDIUM | 0.17 | 2 | CONFIRMED OPEN. Same issue. No CHECK constraint on `search_sessions.pipeline_stage`. The COMMENT documents valid values but does not enforce them. |
+| DB-M07 | subscription_status enum mapping | MEDIUM | LOW | 0.17 | 6 | The trigger `sync_subscription_status_to_profile()` handles the mapping correctly (created by `20260321100000`). Risk is low because the trigger exists and is tested. Adding a COMMENT documenting the mapping is sufficient. |
+| DB-L01 | Migration naming inconsistency | LOW | LOW | 0.08 | 7 | CONFIRMED. Two naming patterns coexist. The `.bak` file (`008_rollback.sql.bak`) is still present. Cosmetic but should be cleaned. |
+| DB-L02 | Redundant update_updated_at() | LOW | **RESOLVED** | 0 | N/A | Migration `20260304120000` drops the duplicate functions. Migration `20260309200000` (DEBT-100) may have recreated `update_updated_at()` temporarily but the final trigger re-points to `set_updated_at()`. Regardless, even if the function still exists with 0 dependents, it is harmless dead code. |
+| DB-L03 | Missing COMMENTs em tabelas | LOW | LOW | 0.25 | 8 | CONFIRMED. Older tables (profiles, user_subscriptions, monthly_quota, conversations, messages) lack COMMENT ON TABLE. Newer tables have thorough comments. |
+| DB-L04 | alert_runs RLS granularity | LOW | LOW | 0 | Backlog | Future optimization. alert_runs currently has < 500 rows. Monitor. |
+| DB-L05 | Cache cleanup limit 5 vs 10 | LOW | MEDIUM | 0.17 | 4 | CONFIRMED OPEN. Migration 032 set limit to 10 with priority-aware eviction. DEBT-017 (migration `20260309100000`) reverted to 5 with a short-circuit optimization but dropped the priority-aware ordering (lines 44-65 use simple `ORDER BY created_at DESC OFFSET 5` instead of priority ordering). This means the priority system (hot/warm/cold) from 032 is partially bypassed by DEBT-017's simpler FIFO. This is a real regression. |
 
 ---
 
 ## Debitos Adicionados
 
-| ID | Debito | Severidade | Horas | Impacto | Justificativa |
-|----|--------|-----------|-------|---------|---------------|
-| DEBT-DB-018 | **Account deletion cascade misses tables.** `routes/user.py` delete_account() manually deletes from 5 tables (search_sessions, monthly_quota, user_subscriptions, user_oauth_tokens, messages) + profiles, then auth user. But it misses: `pipeline_items`, `conversations`, `classification_feedback`, `alerts`, `alert_preferences`, `search_results_cache`, `search_results_store`, `search_state_transitions`, `google_sheets_exports`, `audit_events`, `trial_email_log`. These rely on `ON DELETE CASCADE` from profiles FK, which fires when profiles row is deleted. **However**, the code deletes profiles BEFORE auth user, and deletes from individual tables BEFORE profiles. If the profiles delete succeeds but auth delete fails, orphan rows remain in auth.users. If profiles delete fails after partial table deletes, data is inconsistent. The entire operation lacks transaction wrapping. | HIGH | 3h | **Data integrity risk.** Non-transactional multi-table deletion can leave partially deleted accounts. The CASCADE from profiles FK handles most cases, but the manual per-table deletion before profiles delete is redundant AND potentially error-prone (partial failure mid-loop raises 500 and stops, leaving partial state). Fix: delete profiles row (CASCADE handles children), THEN delete auth user. Only manually delete user_subscriptions (to cancel Stripe first) and messages (non-FK path via conversations). |
-| DEBT-DB-019 | **`select("*")` on search_sessions in sessions.py.** The `/sessions` endpoint fetches all 24 columns when users only need ~10 for the history UI (id, search_id, sectors, ufs, data_inicial, data_final, total_filtered, valor_total, status, created_at, resumo_executivo). The `resumo_executivo` TEXT column can be several KB of LLM output per row, and this is fetched for every row in the paginated list. | LOW | 1h | **Performance (future).** At current scale this is fine. When search_sessions passes 100K rows, the extra column bandwidth on paginated list queries will matter. Column projection is a 15-minute fix. |
-| DEBT-DB-020 | **No index on `search_sessions(user_id, created_at DESC)` composite.** The most common query pattern across analytics.py and sessions.py is `WHERE user_id = X ORDER BY created_at DESC`. There is an individual index on user_id but the ORDER BY requires a sort step. | MEDIUM | 0.5h | **Performance.** This is the single most frequently executed query pattern in the application (every search history load, every analytics call). A composite index eliminates the sort step. Quick win. |
-| DEBT-DB-021 | **`select("*")` on profiles in 8+ call sites.** `supabase_client.py` (lines 448, 451), `routes/user.py` (line 601), `routes/export_sheets.py`, `oauth.py`, and others all do `select("*")` on profiles when they typically need only 2-3 columns (plan_type, email, full_name). With 20+ columns, this transfers unnecessary data on every auth-gated request. | LOW | 2h | **Performance (future).** Each profiles `select("*")` pulls ~20 columns when callers need 2-3. Negligible now but becomes a pattern problem as more columns are added. Fix by creating query-specific projections: `select("id, plan_type, is_admin")` for auth, `select("id, email, full_name, company")` for user display, etc. |
-| DEBT-DB-022 | **`quota.py` last-resort upsert fallback is not truly atomic.** Lines 567-579: when both RPC functions fail, the code does an upsert with `searches_count: 1` followed by a separate `get_monthly_quota_used()` read. The upsert always sets count to 1 on INSERT (correct) but on conflict does nothing useful -- it updates `updated_at` but does not increment. The subsequent read returns the current count, not the incremented count. Under concurrent requests with both RPCs unavailable, quota counting is unreliable. | MEDIUM | 2h | **Data integrity.** The two RPC functions are the real guards and work correctly. This last-resort path only activates when PostgreSQL functions are unavailable (fresh install without migrations). But the code is misleading -- it logs "incremented" but may not have incremented. Fix: make the upsert use raw SQL `ON CONFLICT DO UPDATE SET searches_count = monthly_quota.searches_count + 1` via a third RPC, or remove the misleading log. |
+### DA-01: DEBT-017 cache cleanup regressed priority-aware eviction (MEDIUM)
+
+**Severity:** MEDIUM | **Effort:** 0.5h | **Priority:** 4
+
+Migration 032 introduced priority-aware eviction (`ORDER BY CASE priority WHEN 'cold' THEN 0...`). Migration `20260309100000` (DEBT-017) replaced this with simple FIFO (`ORDER BY created_at DESC OFFSET 5`), losing the priority ordering while also reducing the limit from 10 to 5. The short-circuit optimization (skip if <= 5) is good, but the eviction should preserve priority ordering.
+
+**Fix:** Merge both improvements: keep the short-circuit from DEBT-017, restore the priority-aware ordering from 032, and decide on 5 vs 10 limit (see Respostas section).
+
+### DA-02: user_oauth_tokens.updated_at lacks NOT NULL (LOW)
+
+**Severity:** LOW | **Effort:** included in DB-H04 fix | **Priority:** included in H04
+
+Noted in SCHEMA.md but not called out explicitly in the DRAFT. Migration 013 creates both `created_at` and `updated_at` as `TIMESTAMPTZ DEFAULT NOW()` without NOT NULL. The DEBT-104 migration fixed the FK but did NOT add NOT NULL to timestamps. Bundle with DB-H04 fix.
+
+### DA-03: organization_members FK still documented as auth.users in SCHEMA.md (LOW)
+
+**Severity:** LOW (documentation only) | **Effort:** 0.08h | **Priority:** 8
+
+SCHEMA.md line 291 states `organization_members: user_id (FK auth.users CASCADE)`. Migration `20260304100000` already migrated this to profiles(id). The documentation is stale.
+
+### DA-04: partners.created_at has NOT NULL (from DEBT-017) but partners.updated_at column may not exist (LOW)
+
+**Severity:** LOW | **Effort:** 0.17h | **Priority:** 7
+
+The original `20260301200000_create_partners.sql` creates `created_at TIMESTAMPTZ DEFAULT now()` but no `updated_at` column. DEBT-017 added NOT NULL to created_at. If a future migration adds `updated_at`, it should include NOT NULL + DEFAULT + trigger. Currently partners has no auto-updated timestamp for row modifications. Low priority since partner data changes infrequently (admin-only).
 
 ---
 
 ## Respostas ao Architect
 
-### Question 1: DEBT-DB-001 (subscription status) -- Unify, sync trigger, or deprecate profiles.subscription_status?
+### 1. DB-C01: Is NOT VALID + VALIDATE safe for the 3 remaining tables?
 
-**Recommendation: Option (c) with a migration path.**
+**Answer: The fix is ALREADY APPLIED.** Migration `20260304100000_fk_standardization_to_profiles.sql` already executed the NOT VALID + VALIDATE pattern for all 3 tables. Migration `20260311100000` (DEBT-113) verified with a loop that raises EXCEPTION if any auth.users FKs remain. No further action needed.
 
-Designate `user_subscriptions.subscription_status` as the canonical source for Stripe-originated state. However, do NOT remove `profiles.subscription_status` immediately -- it serves as a fast-read cache for the quota system.
+For the record, the pattern IS safe for these tables because:
+- `search_results_store`: Low volume (24h TTL + pg_cron purge). Typically < 1000 rows.
+- `mfa_recovery_codes`: Very low volume. MFA is not widely adopted yet.
+- `mfa_recovery_attempts`: Very low volume. 30-day retention.
+- The NOT VALID approach takes a `SHARE UPDATE EXCLUSIVE` lock (allows concurrent reads/writes) during ADD CONSTRAINT. VALIDATE takes a `SHARE UPDATE EXCLUSIVE` lock but does a sequential scan -- acceptable for tables this small.
 
-Concrete plan:
-1. **Unify enum values** (2h): Migrate `profiles.subscription_status` to use the same values as `user_subscriptions` ("trialing" not "trial", "canceled" not "canceling"). This requires a one-time UPDATE + ALTER CHECK.
-2. **Add a sync trigger** (1h): ON UPDATE of `user_subscriptions.subscription_status`, propagate to `profiles.subscription_status`. This is lighter than removing the column (which touches quota.py, auth.py, and 5+ test files).
-3. **Document**: `user_subscriptions` is source of truth. `profiles.subscription_status` is a denormalized cache, kept in sync by trigger. `profiles.plan_type` remains the primary field for quota gating (different purpose -- plan identity vs subscription lifecycle).
+### 2. DB-M03: partner_referrals.referred_user_id -- CASCADE or SET NULL?
 
-Why not pure option (c): `quota.py:check_quota()` reads `profiles.plan_type` (not subscription_status), so the quota system is already independent of subscription_status. But the frontend `/conta` page reads `profiles.subscription_status` directly for display. Removing it requires a join to user_subscriptions, which is feasible but adds a query hop to every account page load.
+**Answer: SET NULL is correct.** The current state (migration `20260304100000` line 77) is `ON DELETE SET NULL`, which is the right choice because:
+- When a referred user churns/deletes their account, the referral record must be preserved for revenue accounting (`monthly_revenue`, `revenue_share_amount`, `churned_at`).
+- CASCADE would delete the referral record, losing financial audit trail.
+- SET NULL preserves the referral with `referred_user_id = NULL`, and the `churned_at` timestamp remains for reporting.
+- DEBT-001 correctly dropped the NOT NULL constraint on `referred_user_id` to allow this.
 
-### Question 2: DEBT-DB-003 (profiles wide table) -- Extract now or defer?
+**Recommendation:** Add a COMMENT on the FK documenting this decision:
+```sql
+COMMENT ON CONSTRAINT partner_referrals_referred_user_id_fkey ON partner_referrals IS
+    'ON DELETE SET NULL: preserves referral revenue data when user deletes account. churned_at + monthly_revenue remain for financial reporting.';
+```
 
-**Defer.** At <1K users with all queries being PK lookups, there is zero measurable slowness today. I queried the actual patterns:
-- `supabase_client.py` does `select("*").eq("id", uid)` -- single row by PK, <1ms regardless of column count.
-- `routes/user.py` does the same for profile display.
-- `quota.py` reads `profiles.plan_type` specifically (not `select("*")`).
+### 3. DB-L05: Cache cleanup limit -- 5 or 10?
 
-The 8-12h effort would touch 15+ backend files and require migration + data backfill. The ROI is negative at current scale. **Revisit at 10K users or when profiles exceeds 30 columns.**
+**Answer: 10, with the priority-aware ordering restored.**
 
-However, I DO recommend adding column projections to the most frequent call sites (DEBT-DB-021 above) as a lightweight optimization that takes 2h and prevents the wide-table problem from worsening.
+Rationale:
+- The priority system (hot/warm/cold from 032) exists precisely to allow more entries (10) without penalty -- cold entries are evicted first.
+- Reverting to 5 with FIFO means a user who runs 6 searches loses their oldest cached result, even if it was recently accessed (hot).
+- With 10 + priority ordering, a user can have 10 cached results. Cold entries (never re-accessed) are evicted first. Hot entries (frequently accessed) survive.
+- The short-circuit optimization from DEBT-017 (`IF entry_count <= 10 THEN RETURN NEW`) is still valid and should be kept.
 
-### Question 3: DEBT-DB-008 (migration squash) -- Stale squash risk? CI validation?
+**Recommended fix:**
+```sql
+CREATE OR REPLACE FUNCTION cleanup_search_cache_per_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    entry_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO entry_count
+    FROM search_results_cache
+    WHERE user_id = NEW.user_id;
 
-**Yes, the squash will become stale.** But that is acceptable because it serves two purposes:
-1. **Disaster recovery baseline** -- if we ever need to recreate the DB from scratch, the squash gives a known-good starting point.
-2. **Developer onboarding** -- reading 1 file vs 85.
+    IF entry_count <= 10 THEN
+        RETURN NEW;  -- short-circuit from DEBT-017
+    END IF;
 
-**CI validation approach (recommended):**
-Add a GitHub Action that:
-1. Spins up a clean PostgreSQL 17 container.
-2. Applies `000_squashed_baseline.sql`.
-3. Applies all migrations after the squash timestamp.
-4. Runs `pg_dump --schema-only` and diffs against current production schema (obtained via `supabase db pull`).
-5. Fails if diff is non-empty.
+    DELETE FROM search_results_cache
+    WHERE id IN (
+        SELECT id FROM search_results_cache
+        WHERE user_id = NEW.user_id
+        ORDER BY
+            CASE priority
+                WHEN 'cold' THEN 0
+                WHEN 'warm' THEN 1
+                WHEN 'hot'  THEN 2
+                ELSE 0
+            END ASC,
+            COALESCE(last_accessed_at, created_at) ASC
+        LIMIT (entry_count - 10)
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
 
-This runs weekly (not on every PR) to catch drift. Estimated effort: 3h for the CI job, included in the 4-6h total.
+### 4. DB-M02: organizations.owner_id -- keep RESTRICT to auth.users or migrate to profiles?
 
-### Question 4: DEBT-DB-009 (Stripe price IDs) -- Staging Stripe account?
+**Answer: Already migrated to profiles.** Migration `20260304100000` line 55 set `REFERENCES profiles(id) ON DELETE RESTRICT`. The RESTRICT behavior is correct and intentional -- an org owner cannot be deleted while they own an organization. The admin must transfer ownership first.
 
-**Current staging workflow: there is none.** The project runs directly against production Supabase and production Stripe. This is a known gap.
+No further action needed. The DRAFT's description is outdated.
 
-Recommendation:
-1. Create a Stripe test mode configuration (Stripe already provides test/live toggle -- no separate account needed). Generate test price IDs.
-2. Modify the seed migrations to use `COALESCE(current_setting('app.stripe_price_monthly', true), 'price_test_default')` pattern, reading from PostgreSQL session variables set at migration time.
-3. Alternatively (simpler): move all Stripe price ID seeding to a `scripts/seed_stripe_prices.py` that reads from env vars. Remove the INSERT statements from migrations entirely. The `plan_billing_periods` table exists -- seed it at deploy time, not migration time.
+### 5. Any slow queries not captured?
 
-**Option 3 is fastest** (2h) and cleanest. Migrations should define schema, not data that varies by environment.
+**Answer: One potential concern, one resolved.**
 
-### Question 5: DEBT-DB-010 (JSONB limits) -- Measure before setting limits?
+**Resolved:** The `get_conversations_with_unread_count()` function was rewritten in DEBT-017 to use `LEFT JOIN LATERAL` instead of correlated subquery. This was the most likely slow query candidate. Currently performing well.
 
-**Yes, measure first.** But I can give educated estimates:
+**Potential concern:** The `alert_runs` correlated subquery in its RLS policy (user reads alert_runs through alert -> user_id join) could become slow at scale. This is already tracked as DB-L04. With current volume (< 500 rows), it is not a problem. Recommend adding a `user_id` column directly to `alert_runs` (like the `search_state_transitions` optimization from DEBT-009) when the table exceeds 10K rows.
 
-- `stripe_webhook_events.payload`: Stripe events range from 2KB (customer.created) to 50KB (invoice.finalized with line items). A 256KB limit is safe with 5x headroom. **No existing payloads would violate this.**
-- `audit_events.details`: Our audit logger (audit.py) constructs details dicts in-code with ~5 fields each. Max realistic size is ~2KB. A 64KB limit is extremely generous.
-- `alerts.filters`: Schema is `{setor, ufs[], valor_min, valor_max, keywords[]}`. Max realistic size is ~1KB. 16KB limit is fine.
-- `search_sessions.resumo_executivo`: LLM output with `max_summary_tokens=10000`. At ~4 chars/token, max is ~40KB. A 50KB limit with 25% headroom is safe.
-
-**Recommendation:** Apply the CHECK constraints as documented in the audit. If any existing row violates (unlikely), the migration will fail cleanly and we adjust. Add `NOT VALID` to the CHECK for zero-downtime application on large tables (PostgreSQL validates new rows only, then `VALIDATE CONSTRAINT` in a follow-up).
+**Not captured previously:** The `partners_self_read` RLS policy on `partners` table (migration `20260301200000` line 73-77) does a subquery to `auth.users` to get the current user's email. This is fine for the current 0 partners in production, but if the partners table grows and this policy is evaluated frequently, it would benefit from a materialized email check or denormalization.
 
 ---
 
-## Dependencias Tecnicas
+## Recomendacoes
 
-```
-DEBT-DB-001 (subscription status enum unification)
-  --> Must complete BEFORE DEBT-DB-008 (migration squash)
-  --> Informational dependency on DEBT-SYS-007 (Stripe webhook -- writes subscription_status)
-  --> Informational dependency on DEBT-SYS-009 (quota.py -- reads plan_type, not subscription_status)
+### Recommended resolution order (from DB perspective: Security > Performance > Integrity > Maintenance)
 
-DEBT-DB-002 (classification_feedback FK fix)
-  --> Must complete BEFORE DEBT-DB-008 (migration squash)
-  --> Independent of all other items
+| Priority | ID | Debito | Sev. | Horas | Justificativa |
+|----------|-----|--------|------|-------|---------------|
+| 1 | DB-H04 + DA-02 | NOT NULL em created_at/updated_at (3 columns) | HIGH | 0.25 | Integrity -- NULL timestamps break ORDER BY, pg_cron retention, and analytics queries |
+| 2 | DB-M04 + DB-M05 | CHECK constraints em response_state + pipeline_stage | MEDIUM | 0.34 | Integrity -- unbounded string columns risk data corruption from typos or bugs |
+| 3 | DB-H02 | health/incidents user SELECT policy | MEDIUM | 0.25 | Security -- pre-emptive for future status page feature |
+| 4 | DA-01 + DB-L05 | Cache cleanup: restore priority ordering + limit 10 | MEDIUM | 0.5 | Performance -- current FIFO eviction contradicts priority system design |
+| 5 | DB-M03 | partner_referrals FK verification + COMMENT | LOW | 0.17 | Integrity -- verify production state matches migration intent |
+| 6 | DB-M07 | subscription_status enum mapping COMMENT | LOW | 0.17 | Maintenance -- document the trigger mapping for future developers |
+| 7 | DA-04 + DB-L01 | partners.updated_at + .bak file cleanup | LOW | 0.25 | Maintenance |
+| 8 | DB-L03 + DA-03 | Missing COMMENTs + SCHEMA.md correction | LOW | 0.33 | Maintenance -- documentation accuracy |
 
-DEBT-DB-004 (pipeline_items.search_id type)
-  --> Independent (no blockers, no dependents)
-
-DEBT-DB-008 (migration squash)
-  --> BLOCKED BY: DEBT-DB-001, DEBT-DB-002, DEBT-DB-009
-  --> Should be the LAST database debt item resolved (captures clean state)
-
-DEBT-DB-009 (Stripe price IDs in migrations)
-  --> Must complete BEFORE DEBT-DB-008 (migration squash)
-  --> Requires decision on staging environment
-
-DEBT-DB-018 (account deletion cascade)
-  --> Independent but should be reviewed alongside DEBT-SYS-007 (Stripe webhook)
-  --> Benefits from DEBT-DB-001 (clean subscription state before deletion)
-
-DEBT-DB-020 (search_sessions composite index)
-  --> Independent (pure DDL, no code changes)
-
-DEBT-DB-022 (quota upsert fallback)
-  --> Independent but touches same module as DEBT-SYS-009 (quota.py split)
-  --> Recommend fixing BEFORE the quota.py restructuring (fix the bug, then refactor)
-```
-
-**Execution order (critical path):**
-```
-DEBT-DB-002 (1h) --> DEBT-DB-001 (3h) --> DEBT-DB-009 (3h) --> DEBT-DB-008 (5h)
-                                                                     ^
-                                                                     |
-All other items are independent and can run in parallel ──────────────┘
-```
+**Total remaining effort: ~2.26h** (not 4h as estimated in DRAFT)
 
 ---
 
-## Recomendacoes de Prioridade
+## Migration Plan
 
-### Sprint Imediato (esta semana)
+### Migration Batch 1: Integrity Quick Wins (single migration, ~1h including testing)
 
-| Rank | ID | Debito | Horas | Justificativa |
-|------|----|--------|-------|---------------|
-| 1 | DEBT-DB-018 | Account deletion non-transactional cascade | 3h | **Data integrity.** Partial account deletion leaves ghost data. Fix is straightforward: restructure to use CASCADE, wrap Stripe cancel + profiles delete in try/finally. |
-| 2 | DEBT-DB-002 | classification_feedback FK to auth.users | 1h | **Disaster recovery.** Single migration, zero risk, blocks the squash. |
-| 3 | DEBT-DB-020 | search_sessions composite index (user_id, created_at DESC) | 0.5h | **Performance quick win.** Most-executed query pattern. Single CREATE INDEX CONCURRENTLY. |
-| 4 | DEBT-DB-006 | trial_email_log missing RLS policy | 0.5h | **Security consistency.** 5-minute migration. |
-| 5 | DEBT-DB-001 | Dual subscription_status enum unification | 3h | **Data integrity.** Enum mismatch is a ticking bomb for billing bugs. |
+**File:** `supabase/migrations/YYYYMMDD100000_debt_db_integrity_phase5.sql`
 
-**Sprint total: ~8h**
+Contains:
+1. **DB-H04 + DA-02:** Backfill NULLs + add NOT NULL on `classification_feedback.created_at`, `user_oauth_tokens.created_at`, `user_oauth_tokens.updated_at`
+2. **DB-M04:** CHECK constraint on `search_sessions.response_state` (values: live, cached, degraded, empty_failure)
+3. **DB-M05:** CHECK constraint on `search_sessions.pipeline_stage` (values: validate, prepare, execute, filter, enrich, generate, persist, consolidating)
+4. **DA-01 + DB-L05:** Restore priority-aware eviction with limit 10 + short-circuit optimization
+5. **DB-M03:** COMMENT on partner_referrals FK documenting SET NULL rationale
+6. **DB-M07:** COMMENT on subscription_status CHECK constraints documenting enum mapping
 
-### Proximo Sprint
+All statements are idempotent (IF NOT EXISTS, DO $$ blocks). Zero downtime. No table locks beyond `SHARE UPDATE EXCLUSIVE` for the NOT NULL additions (sub-second on tables with < 10K rows).
 
-| Rank | ID | Debito | Horas | Justificativa |
-|------|----|--------|-------|---------------|
-| 6 | DEBT-DB-010 | JSONB size constraints | 2h | Defense-in-depth for unbounded columns. |
-| 7 | DEBT-DB-009 | Stripe price IDs in migrations | 3h | Blocks squash. Requires staging env decision. |
-| 8 | DEBT-DB-022 | quota.py upsert fallback not atomic | 2h | Misleading code path, low-frequency but real bug. |
-| 9 | DEBT-DB-004 | pipeline_items.search_id TEXT vs UUID | 1h | Document or enforce with CHECK. |
-| 10 | DEBT-DB-019 | select("*") on search_sessions in sessions.py | 1h | Column projection, easy win. |
+### Migration Batch 2: Future status page prep (separate migration, ship with feature)
 
-**Sprint total: ~9h**
+**File:** Ship alongside the status page feature story.
 
-### Backlog
+Contains:
+1. **DB-H02:** Add `SELECT` policy for authenticated users on `health_checks` and `incidents` (read-only, non-sensitive operational data)
 
-| ID | Debito | Horas | Justificativa |
-|----|--------|-------|---------------|
-| DEBT-DB-008 | Migration squash baseline | 5h | Wait until DB-001, DB-002, DB-009 are done. Then squash captures clean state. |
-| DEBT-DB-021 | select("*") on profiles in 8+ sites | 2h | Low urgency, good hygiene. |
-| DEBT-DB-016 | No CHECK on error_code | 1h | Nice to have. |
-| DEBT-DB-017 | pg_cron collision at 4:00 UTC | 0.5h | Trivial, negligible impact. |
-| DEBT-DB-013 | reconciliation_log retention | 0.5h | 30 rows/month, years from mattering. |
-| DEBT-DB-014 | backend/migrations/ redundant directory | 0.5h | Add README or delete. |
-| DEBT-DB-015 | Legacy plans ON DELETE RESTRICT | 0.5h | Working as designed. |
-| DEBT-DB-012 | organizations.plan_type CHECK | 0.5h | Fix when feature ships. |
-| DEBT-DB-003 | profiles wide table extraction | 10h | Defer to post-10K users. |
-| DEBT-DB-011 | search_sessions 24 columns | 16h | Defer to post-1M rows. |
-| DEBT-DB-005 | user_subscriptions index optimization | 0.5h | Defer to post-10K subscriptions. |
-| DEBT-DB-007 | handle_new_user TOCTOU race | 1h | UNIQUE index is the real guard. |
+### Non-migration cleanup (git commit only)
+
+1. **DB-L01:** Delete `supabase/migrations/008_rollback.sql.bak`
+2. **DA-03:** Update `supabase/docs/SCHEMA.md` to reflect `organization_members.user_id` references `profiles(id)` (not auth.users)
+3. **DB-L03:** Batch COMMENT additions can go in Batch 1 or a separate cleanup migration
 
 ---
 
-## Metricas de Validacao
+## Corrections to DRAFT
 
-- Items confirmados sem ajuste: **12/17**
-- Items com severidade ajustada: **3** (DB-003 MEDIUM->LOW, DB-005 MEDIUM->LOW, DB-007 MEDIUM->LOW)
-- Items removidos: **0**
-- Items adicionados: **5** (DB-018 through DB-022)
-- **Total de items revisados: 22** (17 original + 5 novos)
-- **Esforco total revisado: ~56h** (was ~43h for original 17 items, now ~56h with 5 new items)
-- **Esforco sprint imediato: ~8h** (5 items, highest ROI)
-- **Quick wins (< 1h): 7 items** totaling ~4.5h
+The following items in the DRAFT Section 3 and Section 6 should be updated:
+
+| DRAFT Item | Correction |
+|------------|------------|
+| DB-C01 listed as CRITICAL, 0.5h | **REMOVE** -- already resolved by migration `20260304100000` + verified by `20260311100000` |
+| DB-H01 listed as HIGH, 0.33h | **REMOVE** -- already resolved by migrations `20260304200000` + `20260308300000` + verified by `20260311100000` |
+| DB-H03 listed as HIGH, 0.33h | **REMOVE** -- already resolved by migration `20260304120000` |
+| DB-M02 described as "FK to auth.users" | **UPDATE** -- FK already points to profiles(id) since `20260304100000`. Keep as LOW (documentation note about RESTRICT being intentional) |
+| DB-L02 listed as open | **REMOVE** -- resolved by `20260304120000` |
+| Top 10 Quick Wins #1 (DB-C01) | **REPLACE** with DB-H04 (NOT NULL timestamps) |
+| Top 10 Quick Wins #5 (DB-H01) | **REPLACE** with DA-01 (cache eviction regression) |
+| Top 10 Quick Wins #7 (DB-H03) | **REPLACE** with DB-M04+M05 (CHECK constraints) |
+| Section 5 XC-01 about FK standardization | **UPDATE** -- FKs are standardized. Remove cross-cutting concern or mark resolved. |
+| Section 6 Batch 1 "1 migration, ~4h" | **UPDATE** to "1 migration, ~2.3h" (fewer items, 3 debts already resolved) |
+| DRAFT total DB estimate ~4h | **UPDATE** to ~2.3h |
 
 ---
 
-## Notas Finais
+## DRAFT Summary Assessment
 
-### O que o architect acertou
-The DRAFT accurately captures the core database debt. The severity assignments were mostly correct, and the dependency chain analysis (Section 6) correctly identifies that DB-001, DB-002, and DB-009 must precede DB-008 (squash).
+| Metric | DRAFT Value | Adjusted Value |
+|--------|-------------|----------------|
+| Total DB debits | 17 | 8 (3 RESOLVED, 2 REMOVED as duplicates, 4 new added) |
+| CRITICAL | 1 | 0 (DB-C01 resolved) |
+| HIGH | 4 | 1 (DB-H04 only) |
+| MEDIUM | 5 | 4 (DB-H02, DB-M04, DB-M05, DA-01/DB-L05) |
+| LOW | 7 | 3 (DB-M03, DB-M07, DB-L01+L03+DA-03+DA-04) |
+| Total effort | ~4h | ~2.3h |
 
-### O que o architect subestimou
-1. **Account deletion safety (DEBT-DB-018)** -- this is the most significant missing item. Non-transactional multi-table deletion with partial failure handling is a data integrity risk that should be HIGH priority.
-2. **Query pattern inefficiencies (DEBT-DB-019, DB-020, DB-021)** -- not critical now but establish bad patterns that compound as data grows.
-
-### O que o architect superestimou
-1. **profiles wide table (DEBT-DB-003)** -- at <1K users with PK lookups, extracting columns into separate tables is negative ROI.
-2. **user_subscriptions index (DEBT-DB-005)** -- sub-millisecond sort on <100 rows is not worth optimizing now.
-3. **handle_new_user TOCTOU (DEBT-DB-007)** -- the UNIQUE index is the real guard; the trigger check is redundant defense.
+The database is in better shape than the DRAFT suggests. The three resolved items (DB-C01, DB-H01, DB-H03) were the highest-severity items. What remains is integrity hardening (NOT NULL, CHECK constraints) and the cache eviction regression -- all straightforward fixes with well-established patterns in this codebase.

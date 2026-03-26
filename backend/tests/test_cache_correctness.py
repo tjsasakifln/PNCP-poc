@@ -7,10 +7,9 @@ Covers:
   AC17: SWR triggers background revalidation when serving stale
 """
 
-import json
 import pytest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 
 from search_cache import (
     compute_search_hash,
@@ -202,7 +201,7 @@ class TestCacheFallbackFlag:
         }
 
         # Exact key (with dates) → miss; Legacy key (without dates) → hit
-        exact_hash = compute_search_hash(params)
+        exact_hash = compute_search_hash(params)  # noqa: F841
         legacy_hash = compute_search_hash_without_dates(params)
 
         async def mock_supabase(user_id, params_hash):

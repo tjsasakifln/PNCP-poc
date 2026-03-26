@@ -11,7 +11,6 @@ source modules and re-exports them. Tests that patch at the handler module
 level (`webhooks.handlers._shared.redis_cache`) will also work.
 """
 
-import stripe
 from cache import redis_cache
 from log_sanitizer import get_sanitized_logger
 from quota import invalidate_plan_status_cache, clear_plan_capabilities_cache

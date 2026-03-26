@@ -5,9 +5,8 @@ items marked as pending_review, and the LLM_BATCH_TIMEOUT metric is incremented.
 """
 
 import threading
-from concurrent.futures import wait as _real_wait, FIRST_COMPLETED as _REAL_FC
+from concurrent.futures import wait as _real_wait
 from unittest.mock import patch
-import pytest
 
 
 def _make_lic(objeto: str = "Aquisicao de equipamentos de construcao civil para obras publicas", valor: float = 100_000.0) -> dict:

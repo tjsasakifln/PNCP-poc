@@ -14,11 +14,9 @@ All tests use @pytest.mark.integration so they don't run in regular CI.
 import json
 import os
 import sys
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -843,7 +841,7 @@ class TestCrossSourceContractCompatibility:
         """
         from pncp_client import PNCPClient
 
-        client = PNCPClient.__new__(PNCPClient)
+        client = PNCPClient.__new__(PNCPClient)  # noqa: F841
         # The fetch_page method strips hyphens from dates via replace("-", "")
         # Verify this behavior by checking the code pattern exists
         import inspect

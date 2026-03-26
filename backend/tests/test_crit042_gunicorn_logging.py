@@ -10,10 +10,8 @@ import io
 import json
 import logging
 import logging.config
-import sys
 from unittest.mock import patch
 
-import pytest
 
 
 class TestLogconfigDictStructure:

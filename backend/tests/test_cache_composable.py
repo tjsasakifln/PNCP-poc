@@ -8,12 +8,10 @@ Tests:
 5. dedup cross-UF funciona
 """
 
-import hashlib
-import json
 import pytest
 from datetime import datetime, timezone
 from types import SimpleNamespace
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch
 
 from search_cache import (
     compute_search_hash_per_uf,
@@ -29,7 +27,6 @@ from pipeline.cache_manager import (
     _write_cache_per_uf,
     _write_cache,
     _read_cache,
-    SEARCH_CACHE_TTL,
 )
 from redis_pool import get_fallback_cache
 
@@ -212,7 +209,7 @@ class TestInMemoryPerUfCache:
         """Some UFs cached → returns if above threshold."""
         req = _make_request(ufs=["SP", "RJ"])
         # Only cache SP
-        sp_req = _make_request(ufs=["SP"])
+        sp_req = _make_request(ufs=["SP"])  # noqa: F841
         sp_key = _compute_cache_key_per_uf(req, "SP")
         _write_cache(sp_key, {
             "licitacoes": [_make_bid("SP", "P001")],
@@ -457,8 +454,6 @@ class TestThresholdConfiguration:
     def test_custom_threshold_via_env(self):
         with patch.dict("os.environ", {"CACHE_PARTIAL_HIT_THRESHOLD": "0.3"}):
             # Re-import to pick up env change
-            import importlib
-            import search_cache
             # The module-level constant won't change, but the env var is read
             # This test documents the configuration mechanism
             val = float("0.3")

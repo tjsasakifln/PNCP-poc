@@ -94,7 +94,7 @@ class TestRunSynonymRecovery:
         resultado_valor = [{"id": 2, "objetoCompra": "fardamento militar"}]
 
         with patch("filter_recovery._run_llm_recovery") as mock_llm:
-            result = run_synonym_recovery(
+            result = run_synonym_recovery(  # noqa: F841
                 aprovadas, resultado_valor,
                 setor="vestuario", custom_terms=None,
                 stats=stats, llm_zero_match_active=False,
@@ -124,7 +124,7 @@ class TestRunSynonymRecovery:
     def test_stats_initialized(self):
         """Stats keys are always initialized even if FLUXO 2 is skipped."""
         stats = {}
-        result = run_synonym_recovery(
+        result = run_synonym_recovery(  # noqa: F841
             [], [], setor=None, custom_terms=None,
             stats=stats, llm_zero_match_active=False,
         )
@@ -164,7 +164,7 @@ class TestRunSynonymRecovery:
         """When LLM_ZERO_MATCH_ENABLED=True but llm_zero_match_active=False, FLUXO 2 runs."""
         stats = _make_stats()
         # With no sector and no custom terms, still skips
-        result = run_synonym_recovery(
+        result = run_synonym_recovery(  # noqa: F841
             [], [{"objetoCompra": "test"}],
             setor=None, custom_terms=None,
             stats=stats, llm_zero_match_active=False,

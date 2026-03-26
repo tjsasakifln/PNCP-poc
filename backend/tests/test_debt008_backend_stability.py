@@ -12,9 +12,6 @@ Test baseline: 0 failures expected.
 
 import asyncio
 import os
-import subprocess
-import sys
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -317,7 +314,7 @@ class TestStripeWebhookTimeout:
         mock_sb = MagicMock()
         upsert_result = MagicMock(data=[{"id": "evt_timeout_test"}])
         mock_sb.table.return_value.upsert.return_value.execute.return_value = upsert_result
-        update_chain = MagicMock()
+        update_chain = MagicMock()  # noqa: F841
         mock_sb.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock(data=[])
 
         with patch("webhooks.stripe.stripe.Webhook.construct_event", return_value=event), \
@@ -440,7 +437,7 @@ class TestNamingCleanup:
                 except (UnicodeDecodeError, OSError):
                     pass
 
-        assert violations == [], f"BidIQ found in production code:\n" + "\n".join(violations)
+        assert violations == [], "BidIQ found in production code:\n" + "\n".join(violations)
 
     def test_offline_html_uses_smartlic(self):
         """AC5: offline.html title uses SmartLic, not BidIQ."""

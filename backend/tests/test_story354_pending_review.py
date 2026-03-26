@@ -19,11 +19,8 @@ Test coverage:
  12. emit_pending_review_complete emits SSE event with correct data
 """
 
-import asyncio
 import json
-import os
 import time
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest

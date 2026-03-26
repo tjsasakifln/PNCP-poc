@@ -11,7 +11,7 @@ import hashlib
 import json
 import os
 import time
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -74,7 +74,7 @@ class TestDualHashTransition:
     @pytest.mark.asyncio
     async def test_dual_hash_finds_legacy_cached_entry(self):
         """During transition, a session cached under legacy hash is found."""
-        from auth import _token_cache, _cache_store_memory, get_current_user
+        from auth import _cache_store_memory, get_current_user
 
         token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLWxlZ2FjeSJ9.sig"
         legacy_hash = hashlib.sha256(token[:16].encode("utf-8")).hexdigest()
@@ -97,7 +97,7 @@ class TestDualHashTransition:
     @pytest.mark.asyncio
     async def test_outside_transition_window_no_legacy_lookup(self):
         """After transition window expires, legacy hash is NOT checked."""
-        from auth import _token_cache, _cache_store_memory
+        from auth import _cache_store_memory
 
         token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLW91dHNpZGUifQ.sig"
         legacy_hash = hashlib.sha256(token[:16].encode("utf-8")).hexdigest()
@@ -112,7 +112,6 @@ class TestDualHashTransition:
         creds.credentials = token
 
         secret = "test-secret-key-for-testing-12345678"
-        import jwt as pyjwt
         # Since token is fake, it will fail JWT validation → 401
         # The point is that it does NOT find legacy cache
         with patch("auth._deploy_timestamp", past_deploy), \
@@ -209,7 +208,7 @@ class TestFaulthandlerProduction:
             content = f.read()
         assert "uvicorn[standard]" in content, "uvicorn[standard] must be in requirements.txt"
         # Should NOT have bare uvicorn== without [standard]
-        lines = [l.strip() for l in content.splitlines() if l.strip().startswith("uvicorn") and not l.strip().startswith("#")]
+        lines = [l.strip() for l in content.splitlines() if l.strip().startswith("uvicorn") and not l.strip().startswith("#")]  # noqa: E741
         for line in lines:
             assert "[standard]" in line, f"uvicorn line must include [standard]: {line}"
 

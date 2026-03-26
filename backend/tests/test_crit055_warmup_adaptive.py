@@ -13,7 +13,6 @@ AC6 tests:
 """
 
 import asyncio
-from datetime import date, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

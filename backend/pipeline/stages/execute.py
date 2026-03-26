@@ -34,9 +34,9 @@ from pipeline.cache_manager import (
 logger = logging.getLogger(__name__)
 
 
-import quota
-from status_inference import enriquecer_com_status_inferido
-from search_cache import get_from_cache_cascade
+import quota  # noqa: E402
+from status_inference import enriquecer_com_status_inferido  # noqa: E402
+from search_cache import get_from_cache_cascade  # noqa: E402
 
 
 async def stage_execute(pipeline, ctx: SearchContext) -> None:

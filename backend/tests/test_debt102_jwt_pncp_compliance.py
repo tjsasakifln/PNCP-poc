@@ -4,12 +4,11 @@ SYS-005: ES256/JWKS JWT signing + HS256 backward compat
 SYS-003: PNCP API page size compliance (max 50)
 """
 
-import hashlib
 import os
 import time
 import pytest
 import jwt as pyjwt
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
 
@@ -90,7 +89,7 @@ class TestDebt102JwtEs256:
             import auth
             auth._jwks_client = None
             auth._jwks_init_attempted = False
-            result = _get_jwks_client()
+            result = _get_jwks_client()  # noqa: F841
             # May return None if URL is empty — that's correct
             # The point is it doesn't crash
 

@@ -10,7 +10,6 @@ DB-032: pg_cron cleanup (already in 20260304110000)
 DB-047: CHECK constraint (already in 20260304110000)
 """
 
-import os
 import re
 import pytest
 from pathlib import Path

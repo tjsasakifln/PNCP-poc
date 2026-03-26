@@ -18,6 +18,17 @@ from auth import require_auth
 _ORG_SVC_GET_SUPABASE = "services.organization_service.get_supabase"
 
 
+@pytest.fixture(autouse=True)
+def _enable_organizations():
+    """Enable ORGANIZATIONS_ENABLED for the duration of each test.
+
+    Routes guard with ``if not ORGANIZATIONS_ENABLED: raise 404``; patching
+    True here lets tests exercise the actual handler logic.
+    """
+    with patch("routes.organizations.ORGANIZATIONS_ENABLED", True):
+        yield
+
+
 # ── Auth fixtures ─────────────────────────────────────────────────────────────
 
 

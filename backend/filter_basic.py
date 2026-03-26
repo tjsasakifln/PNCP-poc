@@ -11,7 +11,7 @@ import logging
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from typing import Dict, List
 
 from filter_keywords import (
     KEYWORDS_UNIFORMES,
@@ -409,7 +409,7 @@ def apply_keyword_filters(
                 pass
 
     # Proximity Context Filter (Camada 1B.3)
-    from config import get_feature_flag, PROXIMITY_WINDOW_SIZE
+    from config import get_feature_flag
     stats["proximity_rejections"] = 0
     _skip_proximity = bool(custom_terms) and get_feature_flag("TERM_SEARCH_FILTER_CONTEXT")
     if get_feature_flag("PROXIMITY_CONTEXT_ENABLED") and setor and not _skip_proximity:
@@ -523,7 +523,7 @@ def apply_item_inspection(resultado_keyword, setor, keywords, stats) -> List[dic
         from item_inspector import inspect_bids_in_filter
         from sectors import get_sector as _get_sector_insp
 
-        kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
+        kw = keywords if keywords is not None else KEYWORDS_UNIFORMES  # noqa: F841
         setor_config_insp = _get_sector_insp(setor)
         ds = setor_config_insp.domain_signals
 

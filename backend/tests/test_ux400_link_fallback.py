@@ -4,7 +4,6 @@ AC1: Backend builds fallback link from orgaoCnpj/anoCompra/sequencialCompra.
 AC2: link_edital / link is never empty string — valid URL or None.
 """
 
-import pytest
 
 from pipeline.helpers import _build_pncp_link, _convert_to_licitacao_items
 

@@ -7,7 +7,7 @@ network issues, rate limits, or missing API keys.
 """
 
 from datetime import datetime, timedelta, timezone
-from schemas import ResumoLicitacoes, ResumoEstrategico
+from schemas import ResumoLicitacoes
 from llm import gerar_resumo_fallback
 
 

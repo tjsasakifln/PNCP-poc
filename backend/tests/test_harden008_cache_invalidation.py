@@ -9,7 +9,6 @@ AC4: Validate invalidation on upgrade (checkout completed → plan_pro)
 AC5: Zero regressions (covered by full test suite run)
 """
 
-import time
 import pytest
 from unittest.mock import Mock, MagicMock, AsyncMock, patch
 
@@ -19,7 +18,6 @@ from quota import (
     invalidate_plan_status_cache,
     _cache_plan_status,
     _get_cached_plan_status,
-    clear_plan_capabilities_cache,
 )
 
 

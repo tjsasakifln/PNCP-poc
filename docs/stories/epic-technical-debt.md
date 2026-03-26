@@ -1,116 +1,119 @@
-# Epic: Resolucao de Debitos Tecnicos -- SmartLic v2.0
+# EPIC: Resolucao de Debitos Tecnicos -- SmartLic
 
-**Epic ID:** DEBT-EPIC-001
-**Data:** 2026-03-21
-**Owner:** @architect (Atlas)
-**Status:** PLANNED
-**Source:** `docs/prd/technical-debt-assessment.md` (FINAL v2.0, 76 items)
+**ID:** EPIC-DEBT-2026
+**Data:** 2026-03-23
+**Owner:** @pm (Morgan)
+**Status:** Draft
+**Source:** `docs/prd/technical-debt-assessment.md` (FINAL v1.0, 54 items, ~196h, 6 batches)
+**Supersedes:** Previous epic (76 items / 5 waves / ~259h) -- assessment was re-reviewed by specialists (Phases 5-7), 18% error rate corrected, 6 items removed as already resolved.
 
 ---
 
 ## Objetivo
 
-Eliminar todos os debitos tecnicos CRITICAL e HIGH do SmartLic antes do scale-up de clientes (meta: 10K usuarios). O debito acumulado durante o POC (v0.1-v0.5) impede a velocidade de entrega de features, aumenta o risco de bugs em billing/auth, e viola WCAG 2.1 AA na pagina principal (/buscar). Esta epic resolve 69 itens acionaveis em 5 waves progressivas, partindo de uma safety net de testes ate polish final.
+Resolver 54 debitos tecnicos identificados na avaliacao formal de divida tecnica (Brownfield Discovery Phase 10), eliminando riscos de seguranca, memory leaks em producao, gaps de acessibilidade, e monolitos de codigo que impedem onboarding de desenvolvedores e aumentam risco de regressao.
 
-**Conexao com objetivos de negocio:**
-- **Confiabilidade:** Account deletion atomica, subscription status unificado, RLS policies completas
-- **Acessibilidade:** WCAG 2.1 AA compliance nas paginas core (buscar, login, onboarding, planos)
-- **Velocidade de desenvolvimento:** Backend monolitos decompostos (filter.py 3,871 LOC -> <500 LOC), schemas.py split por dominio
-- **Escalabilidade:** Migration squash, composite indexes, dead source removal
+**Justificativa de negocio:**
+- **Seguranca:** Dual Stripe webhook router pode causar double-processing de pagamentos (DEBT-324)
+- **Estabilidade:** `_plan_status_cache` sem limite cresce indefinidamente em producao (DEBT-323, CRITICAL)
+- **Aquisicao:** Landing page renderiza 13 componentes client-side, prejudicando LCP e SEO (TD-M07)
+- **Compliance:** Gaps de acessibilidade (WCAG 2.1) bloqueiam expansao para clientes governamentais (XC-06)
+- **Velocidade de desenvolvimento:** 6 arquivos backend >1500 LOC dificultam manutencao e code review
 
 ## Escopo
 
-- **Total:** 76 debt items across 5 categories (SYS, DB, FE, QA, CI)
-- **Actionable:** 69 items (excluding 2 design choices + 1 informational + 4 deferred/scale-dependent)
-- **Estimated effort:** ~259h
-- **Timeline:** 13 weeks (5 waves)
-- **Severities:** 4 CRITICAL, 14 HIGH, 25 MEDIUM, 27 LOW, 1 INFO, 2 N/A
+### Incluido
+- Todos os 54 debitos catalogados no assessment FINAL
+- 6 batches de resolucao (0-5), ordenados por risco e ROI
+- Migrations de banco (NOT NULL, CHECK constraints, cache eviction fix)
+- Decomposicao de monolitos backend (filter, schemas, webhooks, jobs, quota, cache)
+- Conversao RSC da landing page (islands pattern)
+- Fixes de acessibilidade (screen reader, viability badges, duplicate IDs)
+- Cleanup de dead code (ComprasGov, feature flags, compat shims)
+
+### Excluido
+- Rewrite completo de arquitetura (apenas decomposicao incremental com facade pattern)
+- Mudancas de stack (permanece FastAPI + Next.js)
+- DEBT-311 (test LOC ratio 1.87x -- aceito como normal pelo QA)
+- DEBT-321 (blog.ts hardcoded -- decisao intencional de design)
+- Novas features -- este epic e puramente de debt reduction
 
 ## Criterios de Sucesso
 
-- [ ] All CRITICAL items resolved (4/4: SYS-001, SYS-002, SYS-003, FE-002)
-- [ ] All HIGH items resolved (14/14: SYS-004/005/006/007/009, DB-001/002/018, FE-001/007/008/017/022, QA-001/002)
-- [ ] Backend test coverage >= 70% (existing CI gate)
-- [ ] Frontend test coverage >= 60% (existing CI gate)
-- [ ] Backend test count >= 7,500 (baseline 7,332 + Wave 0 safety net)
-- [ ] No untested production-critical modules (cron_jobs, supabase_client, filter_*, webhooks)
-- [ ] WCAG 2.1 AA: 0 critical axe-core violations on /buscar, /login, /onboarding
-- [ ] Skip-link functional on all protected pages
-- [ ] filter.py reduced to < 500 LOC (orchestration/re-export only)
-- [ ] schemas.py split into domain-specific files with backward-compat re-exports
-- [ ] No restructured backend file exceeds 1,000 LOC
-- [ ] Account deletion is fully transactional (integration test proves atomicity)
-- [ ] ComprasGov v3 disabled, pipeline source count = 2 (PNCP + PCP)
-- [ ] Migration squash replays cleanly on fresh PostgreSQL 17
+| Metrica | Antes | Depois (target) |
+|---------|-------|-----------------|
+| Backend monolith files >1500 LOC | 6 | 0 |
+| Frontend HIGH debt items | 2 | 0 |
+| CRITICAL items abertos | 1 | 0 |
+| WCAG a11y violations (axe-core) | Desconhecido | 0 (paginas primarias) |
+| Landing page LCP | >3s (estimado) | <2.5s |
+| Client JS bundle (landing) | Baseline | -40KB+ gzipped |
+| Open DB integrity items | 4 | 0 |
+| Backend tests pass | 7656 | 7656 (zero regressions) |
+| Frontend tests pass | 5733 | 5733 (zero regressions) |
+| OpenAPI schema | Baseline | Unchanged after decomposition |
 
-## Waves
+## Timeline
 
-| Wave | Nome | Story | Items | Esforco | Timeline | Parallelizable |
-|------|------|-------|-------|---------|----------|----------------|
-| 0 | Safety Net | DEBT-W0 | 6 | ~24h | Week 1 | Yes, with Wave 1 |
-| 1 | Quick Wins + Critical | DEBT-W1 | 15 | ~26.25h | Weeks 2-3 | Yes, with Wave 0 |
-| 2 | High Priority | DEBT-W2 | 12 | ~35.5h | Weeks 4-5 | FE/DB in parallel |
-| 3 | Structural Refactoring | DEBT-W3 | 11 | ~76h | Weeks 6-9 | FE/BE parallel, BE sequential |
-| 4 | Polish + Optimization | DEBT-W4 | ~25 | ~97h | Weeks 10-13 (interleaved) | All items independent |
-| **Total** | | | **69** | **~258.75h** | **~13 weeks** | |
+Assumindo 1 desenvolvedor full-time (~6h/dia produtivas):
 
-## Stories Index
+| Batch | Story | Horas | Duracao | Inicio (relativo) | Dependencias |
+|-------|-------|-------|---------|-------------------|--------------|
+| 0 | STORY-DEBT-0: Stripe Webhook Audit | 3h | 0.5 dia | Dia 1 | Nenhuma |
+| 1 | STORY-DEBT-1: Quick Wins (DB + Backend) | 5h | 1 dia | Dia 2 | Nenhuma |
+| 2 | STORY-DEBT-2: Landing Performance | 10h | 2 dias | Dia 3 | Independente |
+| 3 | STORY-DEBT-3: Security + A11y | 17h | 3 dias | Dia 5 | Batch 0 (DEBT-324 -> DEBT-307) |
+| 4 | STORY-DEBT-4: Architecture Decomposition | 32h | 5.5 dias | Dia 8 | Pode paralelizar com Batch 3 |
+| 5 | STORY-DEBT-5: Polish + Cleanup | 73h | 12 dias | Dia 14 | Batches 1-4 concluidos |
+| | **Total** | **~140h core** | **~25 dias** | | |
 
-| Story ID | Title | Wave | Effort | File |
-|----------|-------|------|--------|------|
-| DEBT-W0 | Safety Net -- Testes para Modulos Descobertos | 0 | ~24h | [story-DEBT-W0-safety-net.md](story-DEBT-W0-safety-net.md) |
-| DEBT-W1 | Quick Wins + Critical Fixes | 1 | ~26.25h | [story-DEBT-W1-quick-wins-critical.md](story-DEBT-W1-quick-wins-critical.md) |
-| DEBT-W2 | High Priority -- DB Hygiene + Accessibility | 2 | ~35.5h | [story-DEBT-W2-high-priority.md](story-DEBT-W2-high-priority.md) |
-| DEBT-W3 | Structural Refactoring | 3 | ~76h | [story-DEBT-W3-structural-refactoring.md](story-DEBT-W3-structural-refactoring.md) |
-| DEBT-W4 | Polish + Optimization | 4 | ~97h | [story-DEBT-W4-polish-optimization.md](story-DEBT-W4-polish-optimization.md) |
+**Nota:** Batch 5 inclui ~27h de items LOW/backlog que podem ser priorizados oportunisticamente durante feature work ao inves de blocos dedicados.
 
-## Dependency Graph
+## Budget
 
-```
-Wave 0 (Safety Net) ──────────────────────────────> Wave 3 (Structural)
-    |                                                     |
-    | (runs in parallel)                                  |
-    v                                                     v
-Wave 1 (Quick Wins) ───> Wave 2 (High Priority) ───> Wave 4 (Polish)
+| Item | Valor |
+|------|-------|
+| Esforco total estimado | ~196h (140h core batches 0-4 + 56h backlog batch 5) |
+| Custo estimado (R$150/h dev) | R$29.400 |
+| Custo minimo (Batches 0-4 only) | R$10.050 (67h) |
+| Timeline minima (Batches 0-4) | ~12 dias uteis |
 
-Critical paths within Waves:
-  Wave 1: DB-002 (FK fix) ──────────────────────────> feeds Wave 2
-  Wave 2: DB-001 (from W1) ──> DB-009 (price IDs) ──> DB-008 (squash, LAST)
-  Wave 3: SYS-020 ──> SYS-004 ──> SYS-001/002/005/006/009/010
+## Stories
 
-Key blockers:
-  Wave 0 incomplete ──> ALL of Wave 3 BLOCKED
-  QA-DEBT-005 (filter tests) ──> SYS-001 (filter decomposition)
-  QA-DEBT-001 (cron tests) ──> SYS-005 (job split)
-  QA-DEBT-006 (webhook tests) ──> SYS-007 (webhook split)
-  DB-022 (quota fix) ──> SYS-009 (quota split)
-  CI-001 (CI clarity) ──> Wave 3 confidence
-```
+| ID | Titulo | Batch | Prioridade | Horas | Arquivo |
+|----|--------|-------|------------|-------|---------|
+| STORY-DEBT-0 | Stripe Webhook Audit + Fix | 0 | P0 | 3h | [story-debt-0-webhook-audit.md](story-debt-0-webhook-audit.md) |
+| STORY-DEBT-1 | Quick Wins (DB Integrity + Backend Fixes) | 1 | P0 | 5h | [story-debt-1-quick-wins.md](story-debt-1-quick-wins.md) |
+| STORY-DEBT-2 | Landing Page RSC + Performance | 2 | P1 | 10h | [story-debt-2-landing-performance.md](story-debt-2-landing-performance.md) |
+| STORY-DEBT-3 | Security Decomposition + Accessibility | 3 | P1 | 17h | [story-debt-3-security-a11y.md](story-debt-3-security-a11y.md) |
+| STORY-DEBT-4 | Backend Module Decomposition | 4 | P2 | 32h | [story-debt-4-architecture.md](story-debt-4-architecture.md) |
+| STORY-DEBT-5 | Polish, Cleanup + DX Improvements | 5 | P3 | 73h | [story-debt-5-polish.md](story-debt-5-polish.md) |
 
-## Riscos (Top 5)
+## Riscos
 
-| # | Risco | Probabilidade | Impacto | Mitigacao |
-|---|-------|---------------|---------|-----------|
-| 1 | **Backend restructuring breaks 344 test files** (Wave 3) | HIGH during W3 | HIGH | Wave 0 safety net. Per-step test count validation. Separate PRs. Backward-compat re-exports. Import path CI guard. |
-| 2 | **Billing status drift causes access bugs** (DB-001 + SYS-007 + QA-006) | MEDIUM | CRITICAL | Unify enums in Wave 1. Complete webhook test matrix in Wave 0. Integration test for sync trigger. |
-| 3 | **Account deletion leaves partial state** (DB-018) | LOW | HIGH | Transaction wrap in Wave 1 PR 1. Integration test with simulated auth.users delete failure. |
-| 4 | **Filter decomposition without submodule tests** (SYS-001 + QA-005) | HIGH if W0 skipped | MEDIUM | Hard gate: no SYS-001 PR without QA-005 complete. |
-| 5 | **Feature work blocked by debt resolution** (Wave 3 = 4 weeks dedicated) | MEDIUM | MEDIUM | Waves 0+1 parallel. Wave 4 interleaves with features. Only Wave 3 requires feature freeze. |
+| Risco | Severidade | Mitigacao |
+|-------|------------|-----------|
+| Monolith decomposition quebra imports de teste | HIGH | Decomposicao incremental (1 arquivo por vez). Full test suite (7656 tests) apos cada move. Facade `__init__.py` preserva imports existentes. |
+| Double-processing de webhooks corrompeu dados de billing | HIGH | Batch 0 audit primeiro. Verificar logs de producao, Stripe Dashboard URL, idempotency keys. |
+| filter/core.py decomposition regressao | HIGH | Maior risco: 3871 LOC + 14 test files (3704 LOC). Preservar `from filter import X`. Coverage >80% antes de iniciar. |
+| Landing RSC migration quebra Framer Motion animations | MEDIUM | Islands pattern: RSC wrapper + client animation children. Build-time error detection (`npm run build` fails on RSC import errors). Visual regression tests com Playwright screenshots. |
+| Feature flag cleanup remove flag ativa em producao | MEDIUM | Grep usage em FE + BE antes de remover qualquer flag. Cross-reference ambos codebases. |
+| Redis failure modes nao avaliadas neste assessment | MEDIUM | Gap reconhecido. Avaliar durante proximo incident review (CB fail open/closed, rate limit behavior, reconnection). |
 
-## Definition of Done (Epic Level)
+## Dependencias
 
-- [ ] All 5 stories completed and accepted
-- [ ] All backend tests passing: `python scripts/run_tests_safe.py --parallel 4` (0 failures)
-- [ ] All frontend tests passing: `npm test` (0 failures, excluding 3 pre-existing)
-- [ ] E2E tests passing: `npm run test:e2e`
-- [ ] No regression in existing functionality (manual smoke test on smartlic.tech)
-- [ ] Documentation updated (CLAUDE.md architecture section, CHANGELOG.md)
-- [ ] No CRITICAL or HIGH debt items remaining in assessment
-- [ ] CI run time < 15 minutes
-- [ ] Bundle size stable or improved vs pre-epic baseline
+| Dependencia | Tipo | Impacto |
+|-------------|------|---------|
+| DEBT-324 audit -> DEBT-307 decomp | Interna (Batch 0 -> Batch 3) | Nao decompor webhooks antes de auditar duplicacao |
+| jest-axe setup (TD-L01) -> a11y fixes | Interna (Batch 5 -> Batch 3) | Recomendacao: iniciar Batch 3 com setup jest-axe para prevenir regressao |
+| DEBT-301/302/305 decomp -> DEBT-304 packaging | Interna (Batch 4) | Decompor modulos individuais antes de reorganizar packages |
+| TD-H02 (auth unification) -> TD-NEW-01 (duplicate IDs) | Interna (Batch 3) | Resolver duplicate IDs durante unificacao de auth |
+| Stripe Dashboard access | Externa | Necessario para Batch 0 webhook URL audit |
+| Railway production logs | Externa | Necessario para Batch 0 log analysis |
+| Supabase migration pipeline | Externa | Batches 1, 4 requerem `supabase db push` |
 
 ---
 
-*Gerado 2026-03-21 por @pm durante Brownfield Discovery Phase 10.*
-*Baseado no Technical Debt Assessment FINAL v2.0 (76 items, ~259h, 5 waves, 13 weeks).*
-*Supersedes previous epic (81 items / 4 sprints / ~280h) based on specialist-reviewed assessment.*
+*Gerado 2026-03-23 por @pm (Morgan) durante Brownfield Discovery Phase 10.*
+*Baseado no Technical Debt Assessment FINAL v1.0 (54 items, ~196h, 6 batches).*
+*Supersedes previous epic (76 items / 5 waves / ~259h) based on specialist-reviewed assessment with 18% error correction.*

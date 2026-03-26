@@ -15,7 +15,7 @@ Tests for:
 
 import re
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import FastAPI

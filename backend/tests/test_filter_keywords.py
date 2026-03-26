@@ -18,10 +18,8 @@ from filter_keywords import (
     has_red_flags,
     KEYWORDS_UNIFORMES,
     KEYWORDS_EXCLUSAO,
-    STOPWORDS_PT,
     RED_FLAGS_MEDICAL,
     RED_FLAGS_ADMINISTRATIVE,
-    RED_FLAGS_INFRASTRUCTURE,
 )
 
 

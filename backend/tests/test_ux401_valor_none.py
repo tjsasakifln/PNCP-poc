@@ -8,8 +8,6 @@ Tests:
 - _convert_to_licitacao_items propagates None valor
 """
 
-import pytest
-from unittest.mock import MagicMock
 
 
 class TestPCPValorNone:

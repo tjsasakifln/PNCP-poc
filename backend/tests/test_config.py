@@ -80,7 +80,7 @@ class TestSetupLogging:
         formatter = handler.formatter
 
         assert (
-            formatter._fmt == "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+            formatter._fmt == "%(asctime)s | %(levelname)-8s | req=%(request_id)s | search=%(search_id)s | %(name)s | %(message)s"
         )
 
     def test_formatter_datefmt(self):
@@ -274,18 +274,18 @@ class TestRetryConfig:
         """Test that RetryConfig has correct default values."""
         config = RetryConfig()
 
-        assert config.max_retries == 5
-        assert config.base_delay == 2.0
-        assert config.max_delay == 60.0
+        assert config.max_retries == 1  # PNCP_MAX_RETRIES default
+        assert config.base_delay == 1.5
+        assert config.max_delay == 15.0
         assert config.exponential_base == 2
         assert config.jitter is True
-        assert config.timeout == 30
+        assert config.timeout == 15  # PNCP_READ_TIMEOUT default
 
     def test_retryable_status_codes_default(self):
         """Test default retryable HTTP status codes."""
         config = RetryConfig()
 
-        expected_codes = (408, 429, 500, 502, 503, 504)
+        expected_codes = (408, 422, 429, 500, 502, 503, 504)
         assert config.retryable_status_codes == expected_codes
 
     def test_retryable_exceptions_default(self):

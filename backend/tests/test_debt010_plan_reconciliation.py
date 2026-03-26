@@ -565,7 +565,7 @@ class TestTableSizeMetrics:
         with patch("supabase_client.get_supabase", return_value=mock_supabase), \
              patch("supabase_client.sb_execute_direct", side_effect=mock_sb_execute_direct), \
              patch("metrics.DB_TABLE_SIZE_BYTES", mock_gauge):
-            from cron_jobs import update_table_size_metrics, _MONITORED_TABLES
+            from cron_jobs import update_table_size_metrics
             result = await update_table_size_metrics()
 
         assert result["status"] == "ok"
@@ -583,7 +583,7 @@ class TestTableSizeMetrics:
         with patch("supabase_client.get_supabase", return_value=mock_supabase), \
              patch("supabase_client.sb_execute_direct", side_effect=mock_sb_execute_direct), \
              patch("metrics.DB_TABLE_SIZE_BYTES", mock_gauge):
-            from cron_jobs import update_table_size_metrics, _MONITORED_TABLES
+            from cron_jobs import update_table_size_metrics
             result = await update_table_size_metrics()
 
         # When result.data is None, the gauge is NOT set (condition: `if result and result.data is not None`)

@@ -10,7 +10,6 @@ Tests cover:
 """
 
 import asyncio
-from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
 import pytest

@@ -9,7 +9,6 @@ Covers:
   - Format helpers (_format_brl, _viability_badge)
 """
 
-import pytest
 
 
 # ---------------------------------------------------------------------------

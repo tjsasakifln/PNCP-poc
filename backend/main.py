@@ -52,19 +52,10 @@ _startup_time = _state.startup_time
 
 
 # startup.lifespan — used by test_schema_validation.py, test_search_session_lifecycle.py
-from startup.lifespan import (  # noqa: E402
-    lifespan,
-    _check_cache_schema,
-    _mark_inflight_sessions_timed_out,
-    _periodic_saturation_metrics,
-    _SATURATION_INTERVAL,
-)
 
 # startup.middleware_setup — used by test_debt014_legacy_routes.py
-from startup.middleware_setup import _ALLOWED_ROOT_PATHS  # noqa: E402
 
 # PNCPClient — used in debug endpoint, kept importable from main
-from pncp_client import PNCPClient  # noqa: E402
 
 # track_legacy_routes — used by test_debt014_legacy_routes.py
 # This middleware is registered inside setup_middleware(); expose the reference

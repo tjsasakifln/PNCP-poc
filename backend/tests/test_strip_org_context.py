@@ -9,9 +9,8 @@ Tests cover:
 - AC21: 20+ variations of org context clauses
 """
 
-import pytest
 
-from filter import _strip_org_context, _strip_org_context_with_detail, normalize_text
+from filter import _strip_org_context, _strip_org_context_with_detail
 
 
 # ============================================================================

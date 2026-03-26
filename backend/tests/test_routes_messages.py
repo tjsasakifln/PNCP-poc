@@ -3,6 +3,7 @@
 STORY-224 Track 4 (AC24): Message/conversation route coverage.
 """
 
+import pytest
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
@@ -10,6 +11,17 @@ from fastapi import FastAPI
 from auth import require_auth
 from admin import require_admin
 from routes.messages import router
+
+
+@pytest.fixture(autouse=True)
+def _enable_messages():
+    """Enable MESSAGES_ENABLED for the duration of each test.
+
+    Routes guard with ``if not MESSAGES_ENABLED: raise 404``; patching True
+    here lets tests exercise the actual handler logic.
+    """
+    with patch("routes.messages.MESSAGES_ENABLED", True):
+        yield
 
 
 MOCK_USER = {"id": "user-123-uuid", "email": "test@example.com", "role": "authenticated"}

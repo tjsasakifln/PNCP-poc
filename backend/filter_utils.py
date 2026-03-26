@@ -5,7 +5,6 @@ across filter_llm.py, filter_recovery.py, and filter.py.
 """
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

@@ -32,7 +32,7 @@
     "codigoSituacaoEdital": "int",
     "codigoTratamentoDiferenciado": "int",
     "comprador": "NoneType",
-    "dataHoraFinalLances": "NoneType",
+    "dataHoraFinalLances": "str",
     "dataHoraFinalPropostas": "str",
     "dataHoraInicioLances": "str",
     "dataHoraInicioPropostas": "str",
@@ -78,13 +78,13 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 461898,
+    "codigoLicitacao": 467677,
     "numeroLicitacao": null,
-    "identificacao": "Dispensa nº 05/2026",
-    "numero": "Dispensa nº 05/2026",
-    "resumo": "Contratação de pessoa física ou jurídica para execução do serviço de ornamentação e/ou produção de eventos e solenidades da Câmara Municipal de Curvelo a se realizarem no exercício 2026.",
-    "razaoSocial": "Câmara Municipal de Curvelo",
-    "nomeUnidade": "Câmara Municipal de Curvelo",
+    "identificacao": "CD 274924",
+    "numero": "CD 274924/2026",
+    "resumo": "Compra Direta: gestão dos resíduos sólidos recicláveis, que envolve a coleta, transporte, transbordo, tratamento e destinação ou disposição final ambientalmente adequada dos resíduos sólidos gerados pelo SEBRAE",
+    "razaoSocial": "Serviço Brasileiro de Apoio às Micro e Pequenas Empresas - SEBRAE/NA",
+    "nomeUnidade": "SEBRAE NACIONAL",
     "status": {
       "codigo": 1,
       "descricao": "Recebendo Propostas"
@@ -95,39 +95,39 @@
     },
     "tipoLicitacao": {
       "codigoModalidadeLicitacao": 0,
-      "modalidadeLicitacao": "Dispensa",
-      "codigoTipoLicitacao": 34,
-      "siglaTipoLicitacao": null,
-      "tipoLicitacao": "Dispensa Presencial",
-      "tipoRealizacao": "Presencial",
+      "modalidadeLicitacao": "Cotação",
+      "codigoTipoLicitacao": 11,
+      "siglaTipoLicitacao": "CFP",
+      "tipoLicitacao": "Cotação para Formação de Preços",
+      "tipoRealizacao": "Eletrônico",
       "tipoJulgamento": "Menor Preço"
     },
     "codigoSituacaoEdital": 5,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-03-12T02:59:00Z",
-    "dataHoraInicioPropostas": "2026-03-06T16:35:00Z",
-    "dataHoraFinalPropostas": "2026-03-12T02:59:00Z",
-    "dataHoraFinalLances": null,
-    "dataHoraPublicacao": "2026-03-06T15:31:00Z",
+    "dataHoraInicioLances": "2026-03-25T22:36:00Z",
+    "dataHoraInicioPropostas": "2026-03-25T22:36:00Z",
+    "dataHoraFinalPropostas": "2026-04-01T03:00:00Z",
+    "dataHoraFinalLances": "2026-04-01T03:00:00Z",
+    "dataHoraPublicacao": "2026-03-25T22:37:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 4980,
-      "nomeUnidadeCompradora": "Câmara Municipal de Curvelo",
-      "codigoComprador": 2748,
+      "codigoUnidadeCompradora": 6924,
+      "nomeUnidadeCompradora": "SEBRAE NACIONAL",
+      "codigoComprador": 3946,
       "nomeComprador": null,
-      "cidade": "Curvelo",
+      "cidade": "Brasília",
       "codigoMunicipioIbge": null,
-      "uf": "MG"
+      "uf": "DF"
     },
     "comprador": null,
-    "urlReferencia": "/mg/camara-municipal-de-curvelo-2748/dp-dispensa-no-05-2026-2026-461898",
+    "urlReferencia": "/df/servico-brasileiro-de-apoio-as-micro-e-pequenas-empresas-sebrae-na-3946/cfp-cd-274924-2026-2026-467677",
     "statusProcessoPublico": {
       "codigo": 1,
       "descricao": "Recebendo Propostas"
     },
     "isExclusivoME": false,
-    "isBeneficoLocal": true
+    "isBeneficoLocal": false
   },
-  "captured_at": "2026-03-11T18:55:46.633107+00:00"
+  "captured_at": "2026-03-25T22:59:23.670215+00:00"
 }

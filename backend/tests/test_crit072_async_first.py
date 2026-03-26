@@ -11,7 +11,6 @@ Tests:
 8. Fallback to sync when flags disabled (AC10)
 """
 
-import asyncio
 import time
 import uuid
 from unittest.mock import patch, Mock, MagicMock, AsyncMock
@@ -94,7 +93,6 @@ class TestAsyncSearchDefault:
 
     def test_config_default_is_true(self):
         """ASYNC_SEARCH_DEFAULT defaults to True in config.py."""
-        import config
         # Note: conftest sets ASYNC_SEARCH_DEFAULT=False for test isolation.
         # We verify the production default by checking the source code logic.
         from config import str_to_bool

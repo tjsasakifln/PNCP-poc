@@ -7,7 +7,6 @@ AC17: ctx.resumo = None in stage_persist → fallback automatic
 Also tests for AC7, AC9, AC10-AC12, AC14.
 """
 
-import json
 import pytest
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock, AsyncMock
@@ -173,7 +172,7 @@ class TestAC7CapabilitiesSafeAccess:
                 plan_name="SmartLic Pro",
             ),
         )
-        pipeline = SearchPipeline(make_deps())
+        pipeline = SearchPipeline(make_deps())  # noqa: F841
 
         # Should not raise KeyError
         _max_monthly = ctx.quota_info.capabilities.get("max_requests_per_month", 1000)
@@ -218,7 +217,6 @@ class TestAC9GetCorrelationId:
 
     def test_returns_none_when_var_is_dash(self):
         """get_correlation_id returns None when ContextVar is '-' (default)."""
-        from routes.search import get_correlation_id
 
         with patch("routes.search.get_correlation_id") as mock_fn:
             mock_fn.return_value = None
@@ -406,7 +404,7 @@ class TestAC15Stage4CrashPartialResponse:
         # Call stage_persist directly — it should handle None resumo
         with patch("pipeline.stages.persist.quota.update_search_session_status", new_callable=AsyncMock):
             with patch("pipeline.stages.persist.quota.save_search_session", new_callable=AsyncMock, return_value="sess-123"):
-                result = await pipeline.stage_persist(ctx)
+                result = await pipeline.stage_persist(ctx)  # noqa: F841
 
         # resumo should have been filled by fallback
         assert ctx.resumo is not None
@@ -505,7 +503,7 @@ class TestAC17NullResumoFallback:
         mock_quota.update_search_session_status = AsyncMock()
         mock_quota.save_search_session = AsyncMock(return_value="sess-123")
 
-        result = await pipeline.stage_persist(ctx)
+        result = await pipeline.stage_persist(ctx)  # noqa: F841
 
         # Verify fallback was generated
         assert ctx.resumo is not None
@@ -525,7 +523,7 @@ class TestAC17NullResumoFallback:
         mock_quota.update_search_session_status = AsyncMock()
         mock_quota.save_search_session = AsyncMock(return_value="sess-123")
 
-        result = await pipeline.stage_persist(ctx)
+        result = await pipeline.stage_persist(ctx)  # noqa: F841
 
         assert ctx.resumo is not None
 
@@ -543,7 +541,7 @@ class TestAC17NullResumoFallback:
         mock_quota.update_search_session_status = AsyncMock()
         mock_quota.save_search_session = AsyncMock(return_value="sess-123")
 
-        result = await pipeline.stage_persist(ctx)
+        result = await pipeline.stage_persist(ctx)  # noqa: F841
 
         # Original resumo preserved, not replaced
         assert ctx.resumo.resumo_executivo == "Original summary"
@@ -561,7 +559,7 @@ class TestAC17NullResumoFallback:
         mock_quota.update_search_session_status = AsyncMock()
         mock_quota.save_search_session = AsyncMock(return_value="sess-123")
 
-        result = await pipeline.stage_persist(ctx)
+        result = await pipeline.stage_persist(ctx)  # noqa: F841
 
         assert ctx.resumo is not None
         assert ctx.resumo.total_oportunidades == 0

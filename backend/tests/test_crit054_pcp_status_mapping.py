@@ -15,8 +15,6 @@ from unittest.mock import patch
 import pytest
 
 from status_inference import (
-    PCP_V2_STATUS_MAP,
-    _inferir_status_pcp_v2,
     inferir_status_licitacao,
     enriquecer_com_status_inferido,
 )

@@ -1,6 +1,6 @@
 """HARDEN-001 / DEBT-103 AC1: Verify OpenAI client uses timeout=5s and max_retries=1."""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 

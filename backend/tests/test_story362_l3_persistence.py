@@ -164,7 +164,7 @@ class TestAC5SupabasePersist:
         """AC5: Supabase record includes sector, ufs, total_filtered."""
         from routes.search import _persist_results_to_supabase
 
-        captured_data = {}
+        captured_data = {}  # noqa: F841
 
         async def capture_upsert(query):
             # Extract the upsert data from the mock chain

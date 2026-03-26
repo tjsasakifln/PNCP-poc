@@ -1,263 +1,217 @@
-# Relatório de Débito Técnico — SmartLic
+# Relatorio de Debito Tecnico — SmartLic
 
 **Projeto:** SmartLic (smartlic.tech)
-**Data:** 2026-03-21
-**Versão:** 2.0
-**Preparado por:** AIOS Technical Assessment Team
-**Classificação:** Interno — Diretoria e Gestão de Produto
+**Empresa:** CONFENGE Avaliacoes e Inteligencia Artificial LTDA
+**Data:** 2026-03-23
+**Versao:** 3.0
+**Preparado por:** @analyst (Alex) — Phase 9, Brownfield Discovery
 
 ---
 
 ## Executive Summary
 
-### Situação Atual
+### Situacao Atual
 
-O SmartLic é a plataforma de inteligência em licitações públicas da CONFENGE, que automatiza a descoberta, análise e qualificação de oportunidades para empresas que vendem ao governo. O produto está em produção como POC avançado (v0.5), operando em fase beta com trials gratuitos de 14 dias e modelo de assinatura SmartLic Pro a partir de R$1.599/mês. A URL pública é smartlic.tech.
+O SmartLic esta em um estagio saudavel para um produto POC v0.5 em producao. A plataforma funciona, atende usuarios em trial, e os pilares fundamentais — busca multi-fonte, classificacao por IA, cache resiliente, pipeline de oportunidades — estao operacionais. Seis problemas tecnicos que haviam sido identificados ja foram resolvidos em sprints anteriores, incluindo o unico item critico de banco de dados (padronizacao de chaves estrangeiras). Isso demonstra que a equipe tem historico de tratar divida tecnica com eficacia.
 
-A plataforma já funciona — possui busca multi-fonte, classificação por inteligência artificial, pipeline de oportunidades e geração de relatórios. Porém, o ritmo acelerado de desenvolvimento para atingir o mercado primeiro resultou em acúmulo de débito técnico: arquivos monolíticos que dificultam manutenção, lacunas de acessibilidade que excluem usuários com deficiência, e pontos cegos de testes que elevam o risco de introduzir defeitos em cada nova funcionalidade.
+No entanto, 54 debitos tecnicos permanecem abertos, sendo 1 critico e 9 de alta prioridade. O problema mais urgente e um vazamento de memoria no sistema de cobranca que pode derrubar o servidor sob alto volume de usuarios — exatamente o cenario de sucesso que se espera atingir com a conversao de trials. Alem disso, uma vulnerabilidade no roteamento de webhooks do Stripe pode estar causando processamento duplicado de eventos de pagamento, o que representa risco direto a receita.
 
-Esta avaliação foi conduzida por quatro especialistas (arquitetura, banco de dados, experiência do usuário e qualidade) e identificou 76 itens de débito técnico. O objetivo é dar visibilidade ao custo de resolver versus o custo de não resolver, permitindo uma decisão informada sobre investimento.
+O custo de inacao e desproporcional ao custo de resolucao. Enquanto a correcao completa representa ~196 horas de trabalho (R$ 29.400), os riscos nao tratados incluem perda de receita por falha de cobranca, degradacao de performance que afeta conversao de visitantes, e acumulo de complexidade que vai desacelerar progressivamente a entrega de novas funcionalidades. Para um produto pre-revenue buscando product-market fit, velocidade de iteracao e sobrevivencia sao sinonimos.
 
-### Números Chave
+### Numeros Chave
 
-| Métrica | Valor |
+| Metrica | Valor |
 |---------|-------|
-| Total de Débitos Identificados | 76 |
-| Débitos Acionáveis | 69 |
-| Débitos Críticos (risco imediato) | 4 |
-| Débitos de Alta Prioridade | 14 |
-| Esforço Total Estimado | ~259 horas |
-| Custo Estimado de Resolução | R$ 38.850 |
-| Timeline Estimado | 13 semanas |
-| Quick Wins Disponíveis (< 4h cada) | 22 itens, ~30h |
+| Total de debitos abertos | 54 |
+| Debitos CRITICOS | 1 |
+| Debitos de alta prioridade | 9 |
+| Debitos de media prioridade | 27 |
+| Debitos de baixa prioridade | 17 |
+| Esforco total estimado | ~196 horas |
+| Custo total estimado (R$150/h) | R$ 29.400 |
+| Items ja resolvidos em sprints anteriores | 6 |
+| Taxa de erro do assessment inicial (corrigida) | 18% (10 de 56 items) |
 
-### Recomendação
+### Recomendacao
 
-Recomendamos a **Opção B (Resolução Parcial)** — investir R$ 12.863 em 5 semanas para resolver os 33 itens mais críticos (Waves 0, 1 e 2), mitigando aproximadamente 85% do risco acumulado com 33% do investimento total. A reestruturação profunda (Waves 3-4) pode ser intercalada com desenvolvimento de funcionalidades ao longo dos meses seguintes.
+Executar a resolucao em 6 batches ao longo de 10-12 semanas, comecando imediatamente pelo Batch 0 (auditoria de seguranca de cobranca, 3 horas) e Batch 1 (quick wins, 5 horas). Estes dois batches sozinhos eliminam o unico item critico, corrigem a vulnerabilidade de cobranca, e resolvem 8 debitos com apenas R$ 1.200 de investimento. Os batches subsequentes devem ser intercalados com feature work, priorizando performance da landing page (Batch 2) para maximizar conversao de visitantes em trials.
 
 ---
 
-## Análise de Custos
+## Analise de Custos
 
 ### Custo de RESOLVER
 
-| Wave | Descrição | Itens | Horas | Custo (R$150/h) | Timeline |
-|------|-----------|-------|-------|-----------------|----------|
-| Wave 0 | Rede de Segurança (testes) | 6 | 24h | R$ 3.600 | 1 semana |
-| Wave 1 | Quick Wins + Correções Críticas | 15 | 26,25h | R$ 3.938 | 2 semanas |
-| Wave 2 | Alta Prioridade | 12 | 35,5h | R$ 5.325 | 2 semanas |
-| Wave 3 | Reestruturação de Código | 11 | 76h | R$ 11.400 | 4 semanas |
-| Wave 4 | Polimento e Otimização | 25 | 97h | R$ 14.550 | 4 semanas |
-| **TOTAL** | | **69** | **~259h** | **R$ 38.850** | **13 semanas** |
+| Categoria | Items | Horas | Custo (R$150/h) |
+|-----------|-------|-------|------------------|
+| Sistema (Backend) | 18 | ~82h | R$ 12.300 |
+| Frontend/UX | 22 | ~74h | R$ 11.100 |
+| Cross-cutting | 6 | ~38h | R$ 5.700 |
+| Database | 8 | ~2,3h | R$ 345 |
+| **TOTAL** | **54** | **~196h** | **R$ 29.400** |
 
-**Nota:** Wave 0 e Wave 1 podem rodar em paralelo (semanas 1-3). Wave 4 pode ser intercalada com desenvolvimento de novas funcionalidades.
+Para contexto: R$ 29.400 equivale a 74 assinaturas mensais do SmartLic Pro (R$ 397/mes). Com a base de usuarios crescendo, esse investimento se paga com a retencao de poucos clientes que seriam perdidos por problemas de performance ou cobranca.
 
-### Custo de NÃO RESOLVER (Risco Acumulado em 12 Meses)
+### Custo de NAO RESOLVER (Risco Acumulado)
 
-| Risco | Probabilidade | Impacto | Custo Potencial (12 meses) |
-|-------|---------------|---------|---------------------------|
-| **Exclusão de dados de conta incompleta** — deleção de conta sem transação pode deixar dados órfãos, gerando reclamações LGPD | 30% | R$ 50.000 | R$ 15.000 |
-| **Inacessibilidade digital** — formulário principal sem ARIA, navegação por teclado quebrada. Risco de processos (LBI 13.146/2015) e perda de clientes B2G que exigem conformidade | 25% | R$ 80.000 | R$ 20.000 |
-| **Drift de cobrança** — status de assinatura rastreado em dois lugares sem sincronização. Cliente pagante perde acesso ou inadimplente mantém acesso | 20% | R$ 30.000 | R$ 6.000 |
-| **Perda de produtividade do time** — arquivos monolíticos (3.800+ linhas) causam conflitos, onboarding lento de novos devs, e tempo gasto navegando código | 90% | R$ 45.000 | R$ 40.500 |
-| **Regressões em produção** — módulos críticos sem testes (cron jobs, circuit breaker, filtros) significam que mudanças podem quebrar funcionalidades silenciosamente | 40% | R$ 25.000 | R$ 10.000 |
-| **Fonte de dados morta consumindo recursos** — ComprasGov v3 fora do ar desde março/2026 mas ainda ativa no pipeline, gerando timeouts desnecessários | 80% | R$ 5.000 | R$ 4.000 |
+| Risco | Probabilidade | Impacto | Custo Potencial |
+|-------|---------------|---------|-----------------|
+| **Falha de cobranca por webhook duplicado** (DEBT-324) | Media (40%) | Clientes cobrados 2x, chargebacks, perda de confianca | R$ 5.000-20.000/incidente (chargebacks + suporte + dano reputacional) |
+| **Queda do servidor por vazamento de memoria** (DEBT-323) | Alta (70% em 6 meses com crescimento) | Downtime, perda de trials ativos, dados de busca perdidos | R$ 2.000-10.000/incidente (receita perdida + recuperacao) |
+| **Landing page lenta afasta visitantes** (TD-M07) | Certa (100%) | Cada 1s adicional de carregamento reduz conversao em ~7%* | R$ 500-2.000/mes em trials nao convertidos |
+| **Inacessibilidade impede venda para governo** (XC-06) | Media (30% se expandir para governo) | Bloqueio de contratos publicos que exigem WCAG 2.1 AA | R$ 10.000-50.000/ano em contratos perdidos |
+| **Complexidade desacelera desenvolvimento** (XC-02) | Certa (100%) | 6 arquivos com >1.500 linhas cada = onboarding lento, bugs mais frequentes | R$ 1.000-3.000/mes em produtividade perdida |
+| **ComprasGov timeout desperdicado** (DEBT-313) | Certa (100%) | Fonte fora do ar consome budget de timeout em cada busca | R$ 200-500/mes em experiencia degradada |
 
-**Custo potencial de não agir em 12 meses: R$ 95.500**
+*Fonte: Google/Deloitte, "Milliseconds Make Millions", 2020.
 
-Isto representa 2,5x o custo de resolução total (R$ 38.850). Mesmo considerando que nem todos os riscos se materializarão simultaneamente, a expectativa matemática de perdas supera significativamente o investimento de correção.
+**Custo anualizado de inacao estimado: R$ 40.000 - 120.000**, considerando cenario de crescimento moderado (50-200 usuarios pagantes).
 
 ---
 
-## Impacto no Negócio
+## Impacto no Negocio
 
-### Segurança e Compliance
+### Performance — A Porta de Entrada Esta Lenta
 
-Foram identificados **4 itens críticos** que afetam diretamente a segurança e conformidade legal do produto:
+A landing page do SmartLic (smartlic.tech) e o primeiro contato de potenciais clientes. Atualmente, 13 componentes sao carregados no navegador do usuario quando apenas 3 precisam disso. Os outros 10 poderiam ser renderizados no servidor, reduzindo o JavaScript enviado ao visitante em 40-60KB e melhorando significativamente o tempo de carregamento.
 
-- **Deleção de conta não é atômica** — Se o processo de exclusão de conta falhar no meio, dados parciais ficam no banco. Com a LGPD em vigor, qualquer reclamação de titular pode expor a empresa a sanções da ANPD.
-- **Política de acesso ausente em tabela de emails** — A tabela `trial_email_log` tem controle de acesso habilitado mas sem regras definidas, o que pode permitir acesso indevido a dados de comunicação com usuários.
-- **Dependência com padrão duplicado** — O cliente principal de dados (PNCP) usa simultaneamente duas bibliotecas de comunicação, uma síncrona e outra assíncrona, criando superfície de ataque desnecessária e comportamento imprevisível.
+Para um produto B2G onde decisores frequentemente acessam de redes corporativas ou dispositivos moveis em campo, cada segundo conta. Um LCP (Largest Contentful Paint) acima de 2,5 segundos penaliza o posicionamento no Google e aumenta a taxa de rejeicao.
 
-**Custo de correção: R$ 6.000 (Wave 1) | Risco se não corrigir: multas LGPD podem chegar a 2% do faturamento ou R$ 50M por infração**
+**Resolucao:** Batch 2 (10h, R$ 1.500) — conversao para Server Components com islands pattern.
 
-### Experiência do Usuário
+### Seguranca — O Sistema de Cobranca Tem Dois Riscos
 
-A auditoria de acessibilidade revelou que a **página principal do produto (busca) é invisível para tecnologias assistivas** — leitores de tela não conseguem identificar o formulário de busca. Adicionalmente:
+**Risco 1 — Processamento duplicado de webhooks (DEBT-324):** O Stripe envia notificacoes de pagamento ao SmartLic via webhooks. Atualmente, o sistema registra o receptor de webhooks em DOIS enderecos diferentes (`/v1/` e root). Se ambos estiverem ativos no Stripe Dashboard, cada evento de pagamento pode ser processado duas vezes — resultando em assinaturas duplicadas, cobrancas duplas, ou estados inconsistentes.
 
-- Navegação por teclado está quebrada em todas as páginas protegidas (dashboard, pipeline, histórico)
-- Formulário de login não comunica erros de validação para leitores de tela
-- Páginas de conversão (cadastro, onboarding, planos) não possuem recuperação de erro — um crash exibe tela branca
+**Risco 2 — Vazamento de memoria no cache de planos (DEBT-323):** O sistema que verifica se um usuario tem plano ativo armazena resultados em um dicionario sem limite. Com o crescimento da base de usuarios, esse dicionario cresce indefinidamente ate consumir toda a memoria do servidor, causando queda.
 
-Para um produto B2G, acessibilidade não é diferencial — é requisito. Órgãos públicos estão cada vez mais exigindo conformidade com WCAG em suas licitações e ferramentas contratadas.
+**Resolucao:** Batch 0 (3h, R$ 450) para auditoria + Batch 1 (1h, R$ 150) para correcao do cache.
 
-**Custo de correção: R$ 2.663 (itens de acessibilidade nas Waves 1-2) | Impacto: conversão + compliance**
+### Experiencia do Usuario — Acessibilidade Incompleta
 
-### Velocidade de Desenvolvimento
+Tres problemas de acessibilidade foram identificados:
+1. **IDs duplicados na pagina** quebram navegacao por teclado (afeta usuarios com deficiencia motora)
+2. **Indicadores de viabilidade usam apenas cor** — ~8% dos homens tem algum grau de daltonismo e nao conseguem distinguir "Alta" de "Baixa" viabilidade
+3. **Pipeline kanban sem anuncios para leitores de tela** — usuarios de tecnologia assistiva nao conseguem usar o arrasta-e-solta
 
-O acúmulo de código monolítico reduz diretamente a velocidade de entrega de novas funcionalidades:
+Para expansao no mercado governamental, conformidade com WCAG 2.1 AA pode ser exigencia contratual (Lei 13.146/2015 — Lei Brasileira de Inclusao).
 
-- **4 arquivos backend ultrapassam 2.000 linhas** — cada alteração exige navegar milhares de linhas, com alto risco de conflito quando dois desenvolvedores editam o mesmo arquivo
-- **69 arquivos Python soltos na raiz** sem organização em pacotes — encontrar a função certa é como procurar agulha no palheiro
-- **40+ feature flags** sem auditoria — flags permanentemente ligadas ou desligadas poluem o código com caminhos nunca executados
+**Resolucao:** Batch 3 (17h, R$ 2.550) — correcoes de acessibilidade + seguranca.
 
-Estimamos que o time perde **~50 horas por mês** em produtividade por conta dessa dívida estrutural (navegação, conflitos, debugging em código entrelaçado). Após a reestruturação (Wave 3), essa perda cairia para ~10 horas/mês.
+### Manutenibilidade — A Velocidade de Desenvolvimento Vai Cair
 
-**Custo de correção: R$ 11.400 (Wave 3) | Economia anual: ~R$ 36.000 em produtividade recuperada**
+Seis arquivos no backend ultrapassam 1.500 linhas de codigo cada. O maior (filter/core.py) tem 3.871 linhas. Arquivos desse tamanho sao:
 
-### Confiabilidade do Produto
+- **Dificeis de entender** — um novo desenvolvedor precisa de dias para se orientar
+- **Dificeis de testar** — 14 arquivos de teste com 3.704 linhas dependem apenas do filter/core.py
+- **Dificeis de modificar** — qualquer mudanca no filtro de busca (funcionalidade central) tem alto risco de regressao
 
-Módulos críticos do sistema operam sem rede de segurança:
+Isso nao e critico hoje com uma equipe pequena onde todos conhecem o codigo. Mas se torna bloqueante no momento de contratar, terceirizar, ou acelerar entregas para aproveitar uma janela de mercado.
 
-- **Tarefas agendadas (cron jobs)** — 2.039 linhas de código executando diariamente sem nenhum teste automatizado. Se uma mudança quebrar o agendamento de emails de trial ou a limpeza de cache, ninguém saberá até um cliente reclamar.
-- **Circuit breaker do banco de dados** — mecanismo que protege o sistema quando o banco está sobrecarregado, mas sem testes. Se falhar, todas as requisições podem ficar bloqueadas.
-- **11 submódulos de filtros** — a lógica que decide quais licitações são relevantes para cada setor opera sem testes individuais.
-
-**Custo de correção: R$ 3.600 (Wave 0) | Benefício: confiança para evoluir o produto sem medo de quebrar**
+**Resolucao:** Batch 4 (32h, R$ 4.800) — decomposicao arquitetural com preservacao de interfaces.
 
 ---
 
 ## Timeline Recomendado
 
-### Wave 0: Rede de Segurança (Semana 1)
+### Batch 0: Auditoria de Cobranca — 1 dia (3h)
 
-Antes de mexer em qualquer código existente, criamos testes automatizados para os módulos críticos que hoje operam sem cobertura. Isto é a fundação que permite todas as melhorias subsequentes sem risco de regressão.
+**Investimento:** R$ 450
+**Items:** DEBT-324 (auditoria + correcao de webhook duplicado do Stripe)
+**Objetivo:** Verificar se houve processamento duplicado de pagamentos em producao.
+**Acoes:** Verificar URL configurada no Stripe Dashboard, analisar logs de producao buscando event_ids duplicados, verificar chaves de idempotencia, remover registro duplicado.
+**ROI:** Elimina risco de cobranca dupla. Se um unico incidente for evitado, paga o investimento 10x.
 
-- **Custo:** R$ 3.600
-- **ROI:** Previne regressões durante toda a resolução. Estimativa de 20+ bugs evitados ao longo das Waves 1-3.
+### Batch 1: Quick Wins — 1 semana (5h)
 
-### Wave 1: Correções Críticas + Quick Wins (Semanas 2-3)
+**Investimento:** R$ 750
+**Items:** DEBT-323 (cache ilimitado), DB-H04 (integridade de timestamps), DB-M04/M05 (constraints), DA-01 (cache eviction), DEBT-322 (configs deslocadas), DEBT-325 (taxa de cambio hardcoded), TD-NEW-01 (IDs duplicados)
+**Objetivo:** Eliminar o unico item CRITICO e 7 correcoes rapidas.
+**ROI:** O item DEBT-323 sozinho previne queda do servidor. As correcoes de banco previnem corrupcao silenciosa de dados. Total: 8 debitos eliminados em ~5 horas.
 
-Resolve os 4 itens críticos (acessibilidade, segurança de dados, integridade de cobrança) e colhe 11 quick wins que melhoram imediatamente a experiência do produto. Organizado em 3 entregas temáticas para facilitar revisão e reversão se necessário.
+### Batch 2: Performance da Landing Page — 2 semanas (10h)
 
-- **Custo:** R$ 3.938
-- **ROI:** Elimina riscos legais (LGPD, acessibilidade), corrige bugs visuais, desativa fonte de dados morta que causa lentidão.
-- **Entregas visíveis:** formulário de busca acessível, navegação por teclado funcionando, ícone do dashboard corrigido, páginas "Em breve" com design adequado.
+**Investimento:** R$ 1.500
+**Items:** TD-M07 (conversao de 10 componentes para Server Components)
+**Objetivo:** Reduzir JavaScript da landing page em 40-60KB, atingir LCP < 2.5 segundos.
+**ROI:** A landing page e o funil de aquisicao. Cada melhoria de velocidade impacta diretamente a taxa de conversao visitante-para-trial. Melhora tambem o SEO organico (Core Web Vitals sao fator de ranking do Google).
 
-### Wave 2: Alta Prioridade (Semanas 4-5)
+### Batch 3: Seguranca e Acessibilidade — 2 semanas (17h)
 
-Resolve 12 itens de prioridade alta que afetam a qualidade do código e a experiência do usuário: migração de formulários para validação moderna, otimização de carregamento, e limpeza do pipeline de integração contínua.
+**Investimento:** R$ 2.550
+**Items:** DEBT-307 (decomposicao de webhooks), TD-H04 (screen reader no pipeline), TD-NEW-02 (indicadores de viabilidade), TD-H02 (autenticacao unificada)
+**Pre-requisito:** Instalar jest-axe (4h) para testes automatizados de acessibilidade.
+**Objetivo:** Webhook handlers auditoraveis + conformidade basica de acessibilidade.
+**ROI:** Webhooks decompostos permitem auditar logica de billing com confianca. Acessibilidade habilita venda para setor publico e demonstra compromisso com inclusao.
 
-- **Custo:** R$ 5.325
-- **ROI:** Formulários de autenticação com experiência consistente, animações carregadas apenas onde necessário (economia de banda), banco de dados com migrações limpas e validadas.
+### Batch 4: Arquitetura — 3-4 semanas (32h)
 
-### Wave 3: Reestruturação (Semanas 6-9)
+**Investimento:** R$ 4.800
+**Items:** DEBT-301 (filter/core.py 3.871 LOC), DEBT-304 (68 arquivos top-level), DEBT-302 (schemas.py 2.121 LOC), DEBT-305 (job_queue + cron_jobs 4.370 LOC combinados)
+**Objetivo:** Nenhum arquivo com mais de 1.500 linhas. Estrutura de packages no backend.
+**ROI:** Reducao de 30-50% no tempo de onboarding de novos desenvolvedores. Reduz risco de regressao em mudancas no filtro de busca. Viabiliza contratacao e terceirizacao.
 
-Reorganiza a base de código: arquivos monolíticos são divididos em módulos focados, código é agrupado em pacotes por domínio (filtros, busca, cobrança, tarefas). Esta é a wave que mais impacta a velocidade de desenvolvimento futuro.
+### Batch 5: Melhoria Continua — 2-3 semanas (~47h)
 
-- **Custo:** R$ 11.400
-- **ROI:** Nenhum arquivo acima de 1.000 linhas. Novos desenvolvedores produtivos em dias ao invés de semanas. Conflitos de merge reduzidos drasticamente. Estimativa de +40% na velocidade de entrega de funcionalidades.
+**Investimento:** R$ 7.050
+**Items:** 12 items de media prioridade (decomposicao de quota/cache, RSC em paginas protegidas, eliminacao de tipos `any`, padronizacao de proxies, limpeza de fonte morta ComprasGov, auditoria de feature flags)
+**Objetivo:** Polimento geral e reducao de atrito no desenvolvimento.
+**ROI:** Produtividade incremental. Pode ser intercalado com feature work.
 
-### Wave 4: Polimento (Semanas 10-13)
+### Batch 6: Polimento — Backlog continuo (~27h)
 
-Itens de menor prioridade tratados oportunisticamente, intercalados com desenvolvimento de funcionalidades normais. Inclui otimizações de banco que só fazem sentido com escala (10K+ usuários), testes de páginas secundárias, e limpeza cosmética.
-
-- **Custo:** R$ 14.550
-- **ROI:** Produto com acabamento profissional em todos os aspectos. Cobertura de testes acima dos gates de integração contínua (70% backend, 60% frontend). Zero itens críticos ou de alta prioridade pendentes.
+**Investimento:** R$ 4.050
+**Items:** 13 items de baixa prioridade (skeletons, error boundaries, documentacao, lazy loading)
+**Objetivo:** Items oportunisticos, priorizados quando ha capacidade ociosa ou quando coincidem com feature work na mesma area.
+**ROI:** Marginal individualmente, cumulativo no longo prazo.
 
 ---
 
-## ROI da Resolução
+## ROI da Resolucao
+
+| | Valor |
+|---|-------|
+| **Investimento total** | R$ 29.400 (196h x R$ 150/h) |
+| **Risco anual evitado (conservador)** | R$ 40.000 |
+| **Risco anual evitado (otimista)** | R$ 120.000 |
+| **Payback no cenario conservador** | ~9 meses |
+| **Payback no cenario otimista** | ~3 meses |
 
 | Investimento | Retorno Esperado |
 |--------------|------------------|
-| R$ 38.850 (resolução total, 259h) | R$ 95.500 em riscos evitados nos próximos 12 meses |
-| R$ 12.863 (Waves 0-2 apenas, 86h) | R$ 81.500 em riscos evitados (85% do total) |
-| 13 semanas de foco | Produto sustentável para escalar de beta para receita recorrente |
-| Wave 3 (4 semanas) | +40% velocidade de entrega = ~R$ 36.000/ano em produtividade |
+| R$ 450 (Batch 0) | Elimina risco de cobranca dupla — protege receita e confianca |
+| R$ 750 (Batch 1) | Elimina risco de queda por memoria + integridade de dados |
+| R$ 1.500 (Batch 2) | Melhora conversao da landing page — mais trials, mais receita |
+| R$ 2.550 (Batch 3) | Habilita venda para governo + webhook auditavel |
+| R$ 4.800 (Batch 4) | Reduz tempo de onboarding 30-50% — viabiliza crescimento da equipe |
+| R$ 7.050 (Batch 5) | Produtividade incremental — features entregues mais rapido |
+| R$ 4.050 (Batch 6) | Polimento — reduz atrito acumulado |
 
-**ROI da resolução total: 2,5:1** (cada R$1 investido evita R$2,46 em riscos)
-
-**ROI da resolução parcial (Opção B): 6,3:1** (melhor relação custo-benefício)
-
----
-
-## Opções de Execução
-
-### Opção A: Resolução Completa (13 semanas, R$ 38.850)
-
-Resolve TODOS os 69 itens acionáveis. O produto fica com base limpa, testada e organizada para escalar. Nenhum item crítico ou de alta prioridade remanescente. Indicada se há recursos dedicados disponíveis e a prioridade é preparar o produto para escala agressiva.
-
-| | |
-|---|---|
-| **Investimento** | R$ 38.850 (259h) |
-| **Timeline** | 13 semanas |
-| **Risco mitigado** | 100% dos itens identificados |
-| **Trade-off** | 4 semanas de feature freeze (Wave 3) |
-
-### Opção B: Resolução Parcial — Waves 0-2 (5 semanas, R$ 12.863)
-
-Resolve todos os itens Críticos + Alta Prioridade + Quick Wins. Mitiga ~85% do risco com 33% do investimento. A reestruturação profunda (Wave 3) fica para quando houver janela de feature freeze. **Recomendada para o momento atual do produto.**
-
-| | |
-|---|---|
-| **Investimento** | R$ 12.863 (85,75h) |
-| **Timeline** | 5 semanas (3 efetivas, Waves 0+1 em paralelo) |
-| **Risco mitigado** | ~85% (todos os Critical e High) |
-| **Trade-off** | Arquivos monolíticos permanecem, impactando produtividade |
-
-### Opção C: Mínimo Viável — Waves 0-1 (3 semanas, R$ 7.538)
-
-Resolve apenas os 4 itens Críticos e os Quick Wins mais urgentes. Mitiga riscos imediatos de segurança e acessibilidade. Rede de segurança de testes incluída. Indicada se o orçamento é muito restrito.
-
-| | |
-|---|---|
-| **Investimento** | R$ 7.538 (50,25h) |
-| **Timeline** | 3 semanas (Wave 0 e 1 em paralelo) |
-| **Risco mitigado** | ~60% (Critical + parte dos High) |
-| **Trade-off** | Débitos de alta prioridade permanecem, reestruturação fica distante |
-
-### Recomendação: Opção B
-
-A Opção B oferece o melhor equilíbrio entre investimento e retorno. Com R$ 12.863 e 5 semanas de trabalho, eliminamos todos os riscos críticos e de alta prioridade, incluindo acessibilidade (requisito legal), integridade de dados (LGPD), e confiabilidade de cobrança (receita). O produto sai dessas 5 semanas significativamente mais robusto e em posição de converter trials em assinaturas com confiança.
-
-A Wave 3 (reestruturação, R$ 11.400) pode ser planejada para um momento em que haja 4 semanas disponíveis sem pressão de lançamento — idealmente antes de escalar o time de desenvolvimento.
+**Nota sobre priorizacao:** Os Batches 0, 1 e 2 representam apenas R$ 2.700 (9% do custo total) mas eliminam os maiores riscos (seguranca de cobranca, estabilidade do servidor, performance de aquisicao). Se o orcamento for limitado, estes tres batches sao o investimento minimo recomendado.
 
 ---
 
-## Próximos Passos
+## Proximos Passos
 
-1. [ ] Aprovar orçamento para Opção A, B ou C
-2. [ ] Definir data de início da Wave 0 + Wave 1
-3. [ ] Alocar desenvolvedor(es) — estimativa: 1 dev senior por 5 semanas (Opção B) ou 2 devs por 7 semanas (Opção A)
-4. [ ] Iniciar Wave 0 (criação de testes para módulos críticos)
-5. [ ] Review de progresso ao final de cada Wave
-6. [ ] Decisão sobre Wave 3 ao concluir Wave 2
-
----
-
-## Distribuição por Área
-
-| Área | Itens | Horas | % do Esforço |
-|------|-------|-------|--------------|
-| Sistema / Arquitetura | 21 | ~91h | 35% |
-| Banco de Dados | 22 | ~54h | 21% |
-| Frontend / UX | 24 | ~68h | 26% |
-| Qualidade / Testes | 9 | ~34h | 13% |
-| CI/CD | 2 | ~5h | 2% |
-| Design Choice (sem ação) | 3 | 0h | -- |
-
-## Distribuição por Severidade
-
-| Severidade | Itens | Horas | Custo |
-|------------|-------|-------|-------|
-| CRITICAL | 4 | 21h | R$ 3.150 |
-| HIGH | 14 | 58h | R$ 8.700 |
-| MEDIUM | 25 | 109h | R$ 16.350 |
-| LOW | 27 | 71h | R$ 10.650 |
-| INFO / N/A | 3 | 0h | R$ 0 |
+1. [ ] **Aprovar Batch 0 + 1** — R$ 1.200, 8 horas, execucao imediata
+2. [ ] **Executar auditoria de webhook do Stripe** (Batch 0) — verificar se houve double-processing
+3. [ ] **Aplicar quick wins** (Batch 1) — correcao de memoria, integridade de banco, IDs duplicados
+4. [ ] **Agendar Batch 2** para proxima sprint — landing page performance
+5. [ ] **Aprovar orcamento completo** (R$ 29.400) ou definir limite por quarter
+6. [ ] **Criar epic de resolucao** com stories por batch no backlog
+7. [ ] **Definir cadencia de revisao** — reavaliar progresso a cada 2 semanas
+8. [ ] **Estabelecer metricas de baseline** — Lighthouse score da landing, tempo medio de deploy, cobertura de testes
 
 ---
 
 ## Anexos
 
-- [Assessment Técnico Completo](../prd/technical-debt-assessment.md) — Inventário detalhado com 76 itens, dependências e critérios de sucesso
-- [Arquitetura do Sistema](../architecture/system-architecture.md)
-- [Auditoria de Banco de Dados](../../supabase/docs/DB-AUDIT.md)
-- [Especificação Frontend](../frontend/frontend-spec.md)
+- **Assessment Tecnico Completo:** `docs/prd/technical-debt-assessment.md` (54 items, dependencias, criterios de sucesso, riscos e mitigacoes)
+- **Inventario de Banco de Dados:** Secao 2.2 do assessment (8 items, 2.3h, saude geral 7/10)
+- **Revisao de Frontend/UX:** Secao 2.3 do assessment (22 items, 74h, saude geral 7/10)
+- **Items Ja Resolvidos:** Secao 8 do assessment (6 items confirmados como corrigidos, incluindo o unico CRITICAL de DB)
+- **Gaps Conhecidos:** Secao 9 do assessment (4 areas nao cobertas: Redis resilience, error handling em jobs, security headers em proxies, rollback strategy)
 
 ---
 
-*Relatório gerado em 2026-03-21 pela equipe AIOS Technical Assessment.*
-*Baseado no Technical Debt Assessment v2.0 FINAL (76 itens, 5 waves, 13 semanas).*
-*Custo hora base: R$150/h. Valores em reais brasileiros.*
+*Este relatorio foi preparado com base na avaliacao tecnica conduzida por 4 especialistas (@architect, @data-engineer, @ux-design-expert, @qa) ao longo das Phases 4-7 do Brownfield Discovery. A taxa de erro de 18% identificada no draft inicial foi corrigida antes da publicacao, resultando em estimativas confiaveis e acionaveis.*

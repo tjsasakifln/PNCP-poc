@@ -23,7 +23,6 @@ Logging (CRIT-044):
 
 import logging
 import os
-import sys
 
 # ---------------------------------------------------------------------------
 # CRIT-044: logconfig_dict — redirect Gunicorn logs stderr → stdout

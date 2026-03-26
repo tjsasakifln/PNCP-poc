@@ -21,7 +21,6 @@ from quota import (
     get_trial_phase,
     TrialPhaseInfo,
 )
-import schemas
 from schemas import (
     BuscaResponse,
     ResumoEstrategico,

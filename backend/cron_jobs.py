@@ -957,7 +957,6 @@ async def run_search_alerts() -> dict:
 
     try:
         from services.alert_matcher import match_alerts, finalize_matched_alert
-        from services.alert_service import get_sent_item_ids
         from templates.emails.alert_digest import (
             render_alert_digest_email,
             get_alert_digest_subject,

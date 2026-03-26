@@ -2,7 +2,6 @@
 
 import hashlib
 import logging
-from unittest.mock import patch
 
 import pytest
 

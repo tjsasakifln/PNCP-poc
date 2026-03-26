@@ -5,8 +5,6 @@ AC14: Trial expires in 14 days (not 30).
 AC15: Grandfather clause for existing users.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime, timedelta, timezone
 
 
@@ -29,7 +27,6 @@ class TestTrialDuration14Days:
 
     def test_trial_user_blocked_after_14_days(self):
         """Trial user with expired 14-day trial should be blocked."""
-        from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
 
         # Simulate a trial that expired 1 day ago (after 14 days)
         expired_at = datetime.now(timezone.utc) - timedelta(days=1)

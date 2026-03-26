@@ -362,7 +362,7 @@ def gerar_resumo_fallback(
             oportunidade=f"{orgao} - {objeto}",
             valor=valor,
             urgencia=urgencia,
-            acao_sugerida=f"Avaliar edital e preparar documentação.",
+            acao_sugerida="Avaliar edital e preparar documentação.",
             justificativa=f"Valor estimado de R$ {_fmt_brl(valor)}.",
         ))
 

@@ -461,7 +461,7 @@ class TestPipelineOptimisticLocking:
 
         client = _create_pipeline_client()
         resp = client.patch(
-            f"/pipeline/nonexistent-id",
+            "/pipeline/nonexistent-id",
             json={"stage": "analise", "version": 1},
         )
 
@@ -516,7 +516,6 @@ class TestQuotaAtomicity:
     def setup_method(self):
         """Clear plan capabilities cache between tests."""
         try:
-            from quota import _plan_capabilities_cache
             import quota
             quota._plan_capabilities_cache = None
             quota._plan_capabilities_cache_time = 0

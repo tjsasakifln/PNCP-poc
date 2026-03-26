@@ -5,8 +5,6 @@ Tests each template renders correctly, contains expected content,
 handles zero stats, and includes unsubscribe links.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
 
 from templates.emails.trial import (
     render_trial_welcome_email,

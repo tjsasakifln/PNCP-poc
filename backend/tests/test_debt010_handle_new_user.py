@@ -8,7 +8,6 @@ Verifies that the trigger produces profiles matching the expected schema:
 - ON CONFLICT (id) DO NOTHING for re-signups
 """
 
-import pytest
 import re
 
 

@@ -119,6 +119,13 @@ railway variables                             # List env variables
 railway variables set KEY=value               # Set env variable
 ```
 
+**CRITICAL — Railway Deploy Rules:**
+- **NEVER run `railway up` from inside `backend/` or `frontend/`** — always from project root. Running from a subdirectory uploads wrong structure → `Could not find root directory` build failure.
+- **Prefer GitHub auto-deploy over `railway up`** — push to `main` triggers deploys automatically with correct monorepo structure.
+- **If deploy is stuck SKIPPED:** Commits that don't touch files inside `backend/` or `frontend/` are skipped by Railway watch patterns. To force a rebuild, bump the cache bust in `backend/Dockerfile` (`LABEL build.timestamp` + `ARG CACHEBUST`).
+- **`railway up` from root may fail with 413 Payload Too Large** if repo exceeds ~300MB. Use `.railwayignore` to exclude `docs/`, `data/`, `scripts/`, `frontend/` (for backend deploy) or just rely on GitHub auto-deploy.
+- **Monorepo config:** `RAILWAY_SERVICE_ROOT_DIRECTORY=backend` (backend), `=frontend` (frontend). Each service has its own `railway.toml` + `Dockerfile`.
+
 ### GitHub CLI
 
 ```bash

@@ -10,27 +10,24 @@ import json as _json
 import os
 import uuid as _uuid
 
-import sentry_sdk
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from starlette.responses import StreamingResponse
 
 from auth import require_auth
 from log_sanitizer import get_sanitized_logger
-from progress import create_tracker, get_tracker, remove_tracker, get_replay_events, is_search_terminal
+from progress import get_tracker, get_replay_events, is_search_terminal
 from rate_limiter import (
-    require_rate_limit,
     acquire_sse_connection,
     release_sse_connection,
     SSE_RECONNECT_RATE_LIMIT,
     SSE_RECONNECT_WINDOW_SECONDS,
     _flexible_limiter,
 )
-from redis_pool import get_redis_pool, get_sse_redis_pool
+from redis_pool import get_sse_redis_pool
 from search_state_manager import (
     get_search_status,
     get_current_state,
-    get_state_machine,
 )
 
 logger = get_sanitized_logger(__name__)

@@ -1,9 +1,8 @@
 """HARDEN-028 AC4: Tests for Stripe webhook events purge (> 90 days)."""
 
-import asyncio
 from datetime import datetime, timezone, timedelta
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -31,7 +30,7 @@ async def test_purge_deletes_old_events(mock_supabase):
         return SimpleNamespace(data=result_data, count=None)
 
     with patch("cron_jobs.get_supabase" if False else "supabase_client.get_supabase", return_value=sb), \
-         patch("cron_jobs.sb_execute" if False else "supabase_client.sb_execute", side_effect=fake_execute) as mock_exec:
+         patch("cron_jobs.sb_execute" if False else "supabase_client.sb_execute", side_effect=fake_execute) as mock_exec:  # noqa: F841
         from cron_jobs import purge_old_stripe_events
         result = await purge_old_stripe_events()
 
@@ -90,7 +89,7 @@ async def test_purge_cutoff_is_90_days():
     with patch("supabase_client.get_supabase", return_value=sb), \
          patch("supabase_client.sb_execute", side_effect=fake_execute):
         from cron_jobs import purge_old_stripe_events
-        result = await purge_old_stripe_events()
+        result = await purge_old_stripe_events()  # noqa: F841
 
     assert captured_cutoff is not None
     cutoff_dt = datetime.fromisoformat(captured_cutoff)

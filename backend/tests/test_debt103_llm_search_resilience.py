@@ -12,13 +12,10 @@ Tests for all 9 acceptance criteria:
 - AC9: Config variables: OPENAI_TIMEOUT_S, LRU_MAX_SIZE, PNCP_BATCH_SIZE, PNCP_BATCH_DELAY_S
 """
 
-import asyncio
 import os
 import time
-from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
-from types import SimpleNamespace
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -180,7 +177,7 @@ class TestAC3LRUCacheBounds:
         with patch.dict("os.environ", {"LRU_MAX_SIZE": "100"}):
             import importlib
             import llm_arbiter
-            original = llm_arbiter._ARBITER_CACHE_MAX
+            original = llm_arbiter._ARBITER_CACHE_MAX  # noqa: F841
             importlib.reload(llm_arbiter)
             assert llm_arbiter._ARBITER_CACHE_MAX == 100
             importlib.reload(llm_arbiter)

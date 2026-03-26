@@ -11,7 +11,6 @@
 import asyncio
 import json
 import logging
-import os
 import random
 import time
 from dataclasses import dataclass, field
@@ -508,7 +507,7 @@ _comprasgov_circuit_breaker = _CBClass(
     cooldown_seconds=COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN,
 )
 # LicitaJá circuit breaker
-from config import LICITAJA_CIRCUIT_BREAKER_THRESHOLD, LICITAJA_CIRCUIT_BREAKER_COOLDOWN
+from config import LICITAJA_CIRCUIT_BREAKER_THRESHOLD, LICITAJA_CIRCUIT_BREAKER_COOLDOWN  # noqa: E402
 _licitaja_circuit_breaker = _CBClass(
     name="licitaja",
     threshold=LICITAJA_CIRCUIT_BREAKER_THRESHOLD,

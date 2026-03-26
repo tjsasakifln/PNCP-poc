@@ -3,8 +3,7 @@
 AC7: Verify on_progress callback fires every 50 items or 5% of total.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from filter import aplicar_todos_filtros
 

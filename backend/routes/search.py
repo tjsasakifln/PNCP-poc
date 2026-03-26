@@ -15,23 +15,20 @@ When cache exists, returns immediately and spawns background live fetch.
 """
 
 import asyncio
-import os
 import time as sync_time
-import uuid as _uuid
 
 import sentry_sdk
 
 from types import SimpleNamespace
-from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Response
-from starlette.responses import StreamingResponse, JSONResponse as StarletteJSONResponse
+from starlette.responses import JSONResponse as StarletteJSONResponse
 
 # === Module-level imports preserved for test mock compatibility (AC11) ===
 # Tests use @patch("routes.search.X") to mock these names.
 # The thin wrapper passes them to SearchPipeline as deps.
 from config import ENABLE_NEW_PRICING
-from schemas import BuscaRequest, BuscaResponse, SearchErrorCode, SearchStatusResponse
+from schemas import BuscaRequest, BuscaResponse, SearchErrorCode
 from pncp_client import PNCPClient, buscar_todas_ufs_paralelo
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import (
@@ -47,25 +44,15 @@ from authorization import check_user_roles
 from rate_limiter import (
     rate_limiter,
     require_rate_limit,
-    acquire_sse_connection,
-    release_sse_connection,
     SEARCH_RATE_LIMIT_PER_MINUTE,
-    SSE_RECONNECT_RATE_LIMIT,
-    SSE_RECONNECT_WINDOW_SECONDS,
-    _flexible_limiter,
 )
-from progress import create_tracker, get_tracker, remove_tracker, get_replay_events, is_search_terminal
-from redis_pool import get_redis_pool, get_sse_redis_pool
+from progress import create_tracker, remove_tracker
 from log_sanitizer import get_sanitized_logger
 from search_pipeline import SearchPipeline
 from search_context import SearchContext
 from search_state_manager import (
     create_state_machine,
-    get_state_machine,
     remove_state_machine,
-    get_search_status,
-    get_timeline,
-    get_current_state,
 )
 
 logger = get_sanitized_logger(__name__)
