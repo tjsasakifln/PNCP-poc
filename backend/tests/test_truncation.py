@@ -114,7 +114,7 @@ class TestFetchUfAllPagesTruncation:
         client._client = MagicMock()
 
         async def mock_fetch_single(uf, data_inicial, data_final, modalidade,
-                                     status=None, max_pages=500):
+                                     status=None, max_pages=500, **kwargs):
             if modalidade == 6:
                 return [_make_item("MOD6-1")], True  # Truncated
             return [_make_item(f"MOD{modalidade}-1")], False
@@ -140,7 +140,7 @@ class TestFetchUfAllPagesTruncation:
         client._client = MagicMock()
 
         async def mock_fetch_single(uf, data_inicial, data_final, modalidade,
-                                     status=None, max_pages=500):
+                                     status=None, max_pages=500, **kwargs):
             return [_make_item(f"MOD{modalidade}-1")], False
 
         with patch.object(client, "_fetch_single_modality", side_effect=mock_fetch_single):

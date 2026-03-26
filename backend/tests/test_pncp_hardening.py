@@ -223,7 +223,7 @@ class TestPerModalityTimeout:
         call_count = 0
 
         async def mock_fetch_single(uf, data_inicial, data_final, modalidade,
-                                     status=None, max_pages=500):
+                                     status=None, max_pages=500, **kwargs):
             nonlocal call_count
             call_count += 1
             if modalidade == 4:
@@ -318,7 +318,7 @@ class TestModalityRetry:
         attempt_count = 0
 
         async def mock_fetch_single(uf, data_inicial, data_final, modalidade,
-                                     status=None, max_pages=500):
+                                     status=None, max_pages=500, **kwargs):
             nonlocal attempt_count
             attempt_count += 1
             if attempt_count == 1:
@@ -355,7 +355,7 @@ class TestModalityRetry:
         attempt_count = 0
 
         async def mock_fetch_single(uf, data_inicial, data_final, modalidade,
-                                     status=None, max_pages=500):
+                                     status=None, max_pages=500, **kwargs):
             nonlocal attempt_count
             attempt_count += 1
             await asyncio.sleep(999)  # always hang
@@ -747,7 +747,7 @@ class TestModalityParallelism:
         start_times = {}
 
         async def mock_fetch_single(uf, data_inicial, data_final, modalidade,
-                                     status=None, max_pages=500):
+                                     status=None, max_pages=500, **kwargs):
             start_times[modalidade] = asyncio.get_running_loop().time()
             await asyncio.sleep(0.05)  # simulate small work
             return [_make_item(f"MOD-{modalidade}-1")], False

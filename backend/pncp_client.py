@@ -112,6 +112,21 @@ class ParallelFetchResult:
     truncated_ufs: List[str] = field(default_factory=list)  # GTM-FIX-004: UFs that hit max_pages limit
 
 
+@dataclass
+class ModalityFetchState:
+    """Shared mutable state for partial accumulation during modality fetch.
+
+    Passed into _fetch_single_modality so that items accumulated before a
+    timeout cancellation are preserved. Thread-safe in asyncio (single-threaded
+    event loop — no locks needed).
+    """
+    items: List[Dict[str, Any]] = field(default_factory=list)
+    seen_ids: set = field(default_factory=set)
+    pages_fetched: int = 0
+    was_truncated: bool = False
+    timed_out: bool = False
+
+
 class PNCPCircuitBreaker:
     """Circuit breaker for API sources to prevent cascading failures.
 
@@ -1813,14 +1828,16 @@ class AsyncPNCPClient:
         modalidade: int,
         status: str | None = None,
         max_pages: int | None = None,
+        state: ModalityFetchState | None = None,
     ) -> tuple[List[Dict[str, Any]], bool]:
         """Fetch all pages for a single UF + single modality.
 
         This is the inner loop extracted from ``_fetch_uf_all_pages`` so that
         each modality can be wrapped with its own timeout (STORY-252 AC6).
 
-        STORY-282 AC2: Default max_pages reduced from 500 to PNCP_MAX_PAGES (5).
-        SP/mod6 has 1463 items (30 pages) — 5 pages = 250 items covers the most recent.
+        Uses a shared ``ModalityFetchState`` when provided so that items
+        accumulated before a timeout cancellation are preserved (partial
+        accumulation pattern).
 
         Args:
             uf: State code (e.g. "SP").
@@ -1829,18 +1846,23 @@ class AsyncPNCPClient:
             modalidade: Modality code.
             status: Optional PNCP status filter value.
             max_pages: Maximum pages per modality (default from PNCP_MAX_PAGES env).
+            state: Optional shared mutable state for partial accumulation.
 
         Returns:
             Tuple of (items, was_truncated). was_truncated is True when
-            max_pages was hit while more pages remained (GTM-FIX-004).
+            max_pages was hit while more pages remained (GTM-FIX-004),
+            or when the fetch was interrupted by timeout with partial data.
         """
         from config import PNCP_MAX_PAGES
         if max_pages is None:
             max_pages = PNCP_MAX_PAGES
-        items: List[Dict[str, Any]] = []
-        seen_ids: set[str] = set()
-        pagina = 1
-        was_truncated = False
+
+        # Use shared state if provided (for partial accumulation on timeout),
+        # otherwise create local state (backward-compatible).
+        if state is None:
+            state = ModalityFetchState()
+
+        pagina = state.pages_fetched + 1
 
         while pagina <= max_pages:
             try:
@@ -1861,10 +1883,12 @@ class AsyncPNCPClient:
 
                 for item in data:
                     item_id = item.get("numeroControlePNCP", "")
-                    if item_id and item_id not in seen_ids:
-                        seen_ids.add(item_id)
+                    if item_id and item_id not in state.seen_ids:
+                        state.seen_ids.add(item_id)
                         normalized = PNCPClient._normalize_item(item)
-                        items.append(normalized)
+                        state.items.append(normalized)
+
+                state.pages_fetched = pagina
 
                 if paginas_restantes <= 0:
                     break
@@ -1872,10 +1896,10 @@ class AsyncPNCPClient:
                 # STORY-282 AC2 + GTM-FIX-004: Detect truncation when max_pages reached
                 total_records = response.get("totalRegistros", 0)
                 if pagina >= max_pages and paginas_restantes > 0:
-                    was_truncated = True
+                    state.was_truncated = True
                     logger.warning(
                         f"STORY-282: MAX_PAGES ({max_pages}) reached for UF={uf}, "
-                        f"modalidade={modalidade}. Fetched {len(items)}/{total_records} items. "
+                        f"modalidade={modalidade}. Fetched {len(state.items)}/{total_records} items. "
                         f"Remaining pages: {paginas_restantes}. "
                         f"Truncating to cap latency (set PNCP_MAX_PAGES to increase)."
                     )
@@ -1901,7 +1925,7 @@ class AsyncPNCPClient:
                     )
                 break
 
-        return items, was_truncated
+        return state.items, state.was_truncated
 
     async def _fetch_modality_with_timeout(
         self,
@@ -1912,20 +1936,25 @@ class AsyncPNCPClient:
         status: str | None = None,
         max_pages: int | None = None,
     ) -> tuple[List[Dict[str, Any]], bool]:
-        """Fetch a single modality with per-modality timeout and 1 retry (STORY-252 AC6/AC9).
+        """Fetch a single modality with per-modality timeout and partial accumulation.
 
-        Wraps ``_fetch_single_modality`` with:
-        - ``PNCP_TIMEOUT_PER_MODALITY`` second timeout (default 15s, AC6)
-        - 1 retry after ``PNCP_MODALITY_RETRY_BACKOFF`` seconds on timeout (AC9)
+        Uses a shared ``ModalityFetchState`` so that items accumulated before a
+        timeout cancellation are preserved instead of being discarded.
 
-        On final timeout the circuit breaker records a failure but other
-        modalities continue independently.
+        When a timeout occurs and partial items exist, they are returned with
+        ``was_truncated=True`` immediately (no retry needed — we already have
+        useful data). If timeout fires with 0 items, a retry is attempted
+        (STORY-252 AC9) since page 1 may have been transiently slow.
 
         Returns:
-            Tuple of (items, was_truncated). Empty list + False if timed out.
+            Tuple of (items, was_truncated). Partial items + True if timed out
+            with accumulated data; empty list + False only if both attempts
+            yielded nothing.
         """
         per_modality_timeout = PNCP_TIMEOUT_PER_MODALITY
         retry_backoff = PNCP_MODALITY_RETRY_BACKOFF
+
+        state = ModalityFetchState()
 
         for attempt in range(2):  # 0 = first try, 1 = retry
             try:
@@ -1937,23 +1966,41 @@ class AsyncPNCPClient:
                         modalidade=modalidade,
                         status=status,
                         max_pages=max_pages,
+                        state=state,
                     ),
                     timeout=per_modality_timeout,
                 )
                 return result
             except asyncio.TimeoutError:
+                state.timed_out = True
+                partial_count = len(state.items)
                 await _circuit_breaker.record_failure()
+
+                if partial_count > 0:
+                    # Partial accumulation: return what we have instead of discarding
+                    state.was_truncated = True
+                    logger.warning(
+                        f"UF={uf} modalidade={modalidade} timed out after "
+                        f"{per_modality_timeout}s on attempt {attempt + 1} — "
+                        f"returning {partial_count} partial items "
+                        f"({state.pages_fetched} pages fetched)"
+                    )
+                    return state.items, True
+
+                # Zero items: worth retrying (could be transient slowness on page 1)
                 if attempt == 0:
                     logger.warning(
                         f"UF={uf} modalidade={modalidade} timed out after "
-                        f"{per_modality_timeout}s — retrying in {retry_backoff}s "
-                        f"(attempt 1/1)"
+                        f"{per_modality_timeout}s with 0 items — "
+                        f"retrying in {retry_backoff}s (attempt 1/1)"
                     )
                     await asyncio.sleep(retry_backoff)
+                    # Reset state for retry attempt
+                    state = ModalityFetchState()
                 else:
                     logger.warning(
                         f"UF={uf} modalidade={modalidade} timed out after retry "
-                        f"— skipping this modality"
+                        f"with 0 items — skipping this modality"
                     )
         return [], False
 
