@@ -1,0 +1,161 @@
+squad:
+  id: squad-check-gtm
+  name: "Check GTM — Production Verification Squad"
+  version: "1.0"
+  icon: "🔍"
+  description: >-
+    Squad de verificação sequencial do GTM Production Checklist.
+    Percorre item a item, validando em produção até encontrar a primeira falha.
+    Ao encontrar falha, interrompe a verificação e produz diagnóstico de causa raiz
+    com nível de detalhe suficiente para um dev corrigir definitivamente.
+
+  mode: verification  # read-only verification + root cause diagnosis
+  invocation: "/check-gtm"
+
+  # =========================================================================
+  #                         AGENTS
+  # =========================================================================
+
+  agents:
+    verifier:
+      role: qa
+      persona: Quinn
+      responsibility: >-
+        Verificador principal. Executa cada item do checklist contra produção
+        usando browser (Playwright MCP), API calls (curl/httpx), e inspeção de
+        código. Determina PASS ou FAIL com evidência concreta.
+
+    diagnostician:
+      role: architect
+      persona: Aria
+      responsibility: >-
+        Ativada SOMENTE quando um item FAIL. Investiga causa raiz na arquitetura,
+        código, configuração ou infra. Produz diagnóstico estruturado com
+        localização exata do problema.
+
+    fixer_spec:
+      role: dev
+      persona: Dex
+      responsibility: >-
+        Ativado SOMENTE após diagnóstico. Traduz a causa raiz em spec de fix
+        acionável: arquivos a alterar, lógica esperada, testes a adicionar.
+        NÃO implementa — apenas especifica.
+
+  # =========================================================================
+  #                         CHECKLISTS (ORDEM DE EXECUÇÃO)
+  # =========================================================================
+
+  checklists:
+    - id: go-nogo
+      path: "squads/gtm-readiness-squad/checklists/go-nogo-checklist.md"
+      priority: P0-first
+      description: "26 itens: P0 Blockers (6) → P1 Critical (10) → P2 Important (10)"
+
+    - id: security
+      path: "squads/gtm-readiness-squad/checklists/security-compliance-checklist.md"
+      priority: sequential
+      description: "43 itens: Auth, Data Protection, Input Validation, Deps, Secrets, LGPD"
+
+    - id: ux
+      path: "squads/gtm-readiness-squad/checklists/ux-production-checklist.md"
+      priority: sequential
+      description: "53 itens: Search Flow, Progress, Errors, Onboarding, Nav, Visual, A11y, Mobile"
+
+  # =========================================================================
+  #                         VERIFICATION PROTOCOL
+  # =========================================================================
+
+  protocol:
+    # Resumption: itens já marcados [x] são pulados
+    resume_from_last: true
+    skip_checked: true
+
+    # Stop-on-fail: ao encontrar FAIL, interrompe e entra em modo diagnóstico
+    stop_on_first_fail: true
+
+    # Verificação por item
+    verification_methods:
+      browser: "Playwright MCP — navegar em https://smartlic.tech e verificar UI/UX"
+      api: "curl/httpx — testar endpoints da API de produção"
+      code: "Grep/Read — inspecionar código-fonte para confirmar implementação"
+      infra: "Railway CLI, Supabase CLI — verificar configuração de infra"
+      security: "Headers, TLS, CVEs — verificar configuração de segurança"
+
+    # Formato de evidência por item
+    item_result_format: |
+      ### [LABEL] — PASS ✅ / FAIL ❌
+      **Método:** {browser|api|code|infra|security}
+      **Evidência:** {o que foi verificado e resultado observado}
+      **Timestamp:** {ISO 8601}
+
+  # =========================================================================
+  #                         DIAGNOSIS PROTOCOL (ON FAIL)
+  # =========================================================================
+
+  diagnosis:
+    trigger: "first_fail"
+    depth: "root_cause"
+
+    output_format: |
+      ---
+      ## 🔴 FALHA: [ITEM_LABEL] — [ITEM_DESCRIPTION]
+
+      ### Sintoma Observado
+      {O que foi visto em produção — screenshot/resposta/comportamento}
+
+      ### Causa Raiz
+      {Explicação técnica precisa da causa}
+
+      ### Localização no Código
+      | Arquivo | Linha(s) | Problema |
+      |---------|----------|----------|
+      | {path}  | {lines}  | {issue}  |
+
+      ### Contexto Arquitetural
+      {Por que isso acontece — dependências, fluxo de dados, configuração}
+
+      ### Fix Spec (para @dev)
+      **Complexidade:** {Trivial | Simples | Moderada | Complexa}
+      **Arquivos a alterar:**
+      1. `{file}` — {o que mudar e por quê}
+
+      **Lógica esperada:**
+      ```python/typescript
+      {pseudocódigo ou código real do fix}
+      ```
+
+      **Testes a adicionar:**
+      1. `{test_file}` — {cenário a testar}
+
+      **Riscos/Side-effects:**
+      - {risco 1}
+
+      ### Próximo Passo
+      Corrigir este item e re-executar `/check-gtm` para continuar a verificação.
+      ---
+
+  # =========================================================================
+  #                         STATE MANAGEMENT
+  # =========================================================================
+
+  state:
+    file: "docs/gtm-checks/check-gtm-state.md"
+    format: |
+      # GTM Check State
+      **Last run:** {timestamp}
+      **Checklist:** {go-nogo|security|ux}
+      **Last passed item:** {LABEL}
+      **Next item:** {LABEL}
+      **Total:** {passed}/{total} PASS, {failed} FAIL
+      **Status:** {in-progress|blocked-on-fix|complete}
+
+  # =========================================================================
+  #                         PRODUCTION TARGETS
+  # =========================================================================
+
+  targets:
+    frontend_url: "https://smartlic.tech"
+    backend_url: "https://smartlic.tech/api"
+    health_endpoint: "/health"
+    admin_email: "tiago.sasaki@gmail.com"
+    admin_password_env: "SEED_ADMIN_PASSWORD"
