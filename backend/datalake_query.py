@@ -179,97 +179,97 @@ def _keyword_to_tstoken(keyword: str) -> str:
 
 
 def _row_to_normalized(row: dict) -> dict:
-    """Map a pncp_raw_bids DB row back to the flat dict produced by _normalize_item().
+    """Map a search_datalake RPC row to the flat dict produced by _normalize_item().
 
-    The pncp_raw_bids table stores the original PNCP API payload in a `raw_data`
-    JSONB column, plus extracted columns for fast querying.  We prefer the
-    extracted columns (authoritative, indexed) and fall back to raw_data for
-    fields that are not extracted.
+    The search_datalake RPC returns columns directly from pncp_raw_bids (no
+    raw_data JSONB — the table doesn't store it to stay within Supabase FREE
+    tier limits).
 
-    Column → flat key mapping (mirrors _normalize_item() output):
-
-    DB column               | Flat key
+    RPC column              | Flat key
     ----------------------- | ---------------------------
-    numero_controle_pncp    | numeroControlePNCP + codigoCompra
+    pncp_id                 | numeroControlePNCP + codigoCompra
     uf                      | uf
-    municipio_nome          | municipio
-    nome_orgao              | nomeOrgao
+    municipio               | municipio
+    orgao_razao_social      | nomeOrgao
+    orgao_cnpj              | orgaoCnpj
     objeto_compra           | objetoCompra
     valor_total_estimado    | valorTotalEstimado
     modalidade_id           | codigoModalidadeContratacao
     modalidade_nome         | modalidadeNome
-    situacao_id             | situacaoCompraId
-    data_publicacao         | dataPublicacaoFormatted (used by filter_status)
+    situacao_compra         | situacaoCompraId
+    data_publicacao         | dataPublicacaoFormatted
     data_abertura           | dataAberturaProposta
-    link_sistema_origem     | linkSistemaOrigem
+    data_encerramento       | dataEncerramentoProposta
+    link_pncp               | linkSistemaOrigem
     esfera_id               | esferaId
-    raw_data                | merged last (provides any remaining fields)
     """
-    # Start with raw_data as base (provides all original PNCP fields)
-    raw: dict = {}
-    raw_data = row.get("raw_data")
-    if isinstance(raw_data, dict):
-        raw = dict(raw_data)
+    result: dict = {}
 
-    # Override/set extracted columns (these are authoritative)
-    numero_controle = row.get("numero_controle_pncp") or raw.get("numeroControlePNCP", "")
-    if numero_controle:
-        raw["numeroControlePNCP"] = numero_controle
-        # _normalize_item() sets codigoCompra = numeroControlePNCP
-        raw["codigoCompra"] = numero_controle
+    pncp_id = row.get("pncp_id") or ""
+    if pncp_id:
+        result["numeroControlePNCP"] = pncp_id
+        result["codigoCompra"] = pncp_id
 
-    uf = row.get("uf") or raw.get("uf", "")
+    uf = row.get("uf") or ""
     if uf:
-        raw["uf"] = uf
+        result["uf"] = uf
 
-    municipio = row.get("municipio_nome") or raw.get("municipio", "")
+    municipio = row.get("municipio") or ""
     if municipio:
-        raw["municipio"] = municipio
+        result["municipio"] = municipio
 
-    nome_orgao = row.get("nome_orgao") or raw.get("nomeOrgao", "")
-    if nome_orgao:
-        raw["nomeOrgao"] = nome_orgao
+    orgao = row.get("orgao_razao_social") or ""
+    if orgao:
+        result["nomeOrgao"] = orgao
 
-    objeto_compra = row.get("objeto_compra") or raw.get("objetoCompra", "")
+    orgao_cnpj = row.get("orgao_cnpj") or ""
+    if orgao_cnpj:
+        result["orgaoCnpj"] = orgao_cnpj
+
+    objeto_compra = row.get("objeto_compra") or ""
     if objeto_compra:
-        raw["objetoCompra"] = objeto_compra
+        result["objetoCompra"] = objeto_compra
 
     valor = row.get("valor_total_estimado")
     if valor is not None:
         try:
-            raw["valorTotalEstimado"] = float(valor)
+            result["valorTotalEstimado"] = float(valor)
         except (TypeError, ValueError):
             pass
 
     modalidade_id = row.get("modalidade_id")
     if modalidade_id is not None:
-        raw["codigoModalidadeContratacao"] = int(modalidade_id)
+        result["codigoModalidadeContratacao"] = int(modalidade_id)
 
-    modalidade_nome = row.get("modalidade_nome") or raw.get("modalidadeNome", "")
+    modalidade_nome = row.get("modalidade_nome") or ""
     if modalidade_nome:
-        raw["modalidadeNome"] = modalidade_nome
+        result["modalidadeNome"] = modalidade_nome
 
-    situacao_id = row.get("situacao_id")
-    if situacao_id is not None:
-        raw["situacaoCompraId"] = situacao_id
+    situacao = row.get("situacao_compra") or ""
+    if situacao:
+        result["situacaoCompraId"] = situacao
 
-    data_publicacao = row.get("data_publicacao") or raw.get("dataPublicacaoFormatted")
+    data_publicacao = row.get("data_publicacao")
     if data_publicacao:
-        raw["dataPublicacaoFormatted"] = str(data_publicacao)
+        result["dataPublicacaoFormatted"] = str(data_publicacao)
 
-    data_abertura = row.get("data_abertura") or raw.get("dataAberturaProposta")
+    data_abertura = row.get("data_abertura")
     if data_abertura:
-        raw["dataAberturaProposta"] = str(data_abertura)
+        result["dataAberturaProposta"] = str(data_abertura)
 
-    link = row.get("link_sistema_origem") or raw.get("linkSistemaOrigem", "")
+    data_encerramento = row.get("data_encerramento")
+    if data_encerramento:
+        result["dataEncerramentoProposta"] = str(data_encerramento)
+
+    link = row.get("link_pncp") or ""
     if link:
-        raw["linkSistemaOrigem"] = link
+        result["linkSistemaOrigem"] = link
 
-    esfera_id = row.get("esfera_id") or raw.get("esferaId")
+    esfera_id = row.get("esfera_id")
     if esfera_id is not None:
-        raw["esferaId"] = esfera_id
+        result["esferaId"] = esfera_id
 
     # Tag as datalake source for observability (does not affect downstream logic)
-    raw["_source"] = "datalake"
+    result["_source"] = "datalake"
 
-    return raw
+    return result

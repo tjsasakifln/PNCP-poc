@@ -170,7 +170,7 @@ class TestSaveCheckpoint:
         payload = upsert_call.call_args[0][0]
 
         assert payload["uf"] == "RS"
-        assert payload["modalidade"] == 5
+        assert payload["modalidade_id"] == 5
         assert payload["last_date"] == "2026-03-20"
         assert payload["records_fetched"] == 42
         assert payload["crawl_batch_id"] == "batch_xyz"
@@ -195,7 +195,7 @@ class TestSaveCheckpoint:
 
         upsert_call = mock_sb.table.return_value.upsert
         _, kwargs = upsert_call.call_args
-        assert kwargs.get("on_conflict") == "uf,modalidade,source"
+        assert kwargs.get("on_conflict") == "source,uf,modalidade_id,crawl_batch_id"
 
     @pytest.mark.asyncio
     @patch("ingestion.checkpoint.get_supabase")
@@ -307,23 +307,23 @@ class TestCompleteIngestionRun:
         await complete_ingestion_run(
             "batch_abc",
             status="completed",
-            records_fetched=500,
-            records_inserted=300,
-            records_updated=100,
-            records_unchanged=100,
-            ufs_crawled=27,
-            ufs_failed=0,
+            total_fetched=500,
+            inserted=300,
+            updated=100,
+            unchanged=100,
+            ufs_completed=["SP", "RJ", "MG"],
+            ufs_failed=[],
         )
 
         update_call = mock_sb.table.return_value.update
         payload = update_call.call_args[0][0]
         assert payload["status"] == "completed"
-        assert payload["records_fetched"] == 500
-        assert payload["records_inserted"] == 300
-        assert payload["records_updated"] == 100
-        assert payload["records_unchanged"] == 100
-        assert payload["ufs_crawled"] == 27
-        assert payload["ufs_failed"] == 0
+        assert payload["total_fetched"] == 500
+        assert payload["inserted"] == 300
+        assert payload["updated"] == 100
+        assert payload["unchanged"] == 100
+        assert payload["ufs_completed"] == ["SP", "RJ", "MG"]
+        assert payload["ufs_failed"] == []
 
     @pytest.mark.asyncio
     @patch("ingestion.checkpoint.get_supabase")

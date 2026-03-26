@@ -13,23 +13,22 @@ from datalake_query import _build_tsquery, _row_to_normalized, query_datalake
 # ---------------------------------------------------------------------------
 
 SAMPLE_DB_ROW = {
-    "numero_controle_pncp": "12345678000100-1-000001/2026",
+    "pncp_id": "12345678000100-1-000001/2026",
     "uf": "SP",
-    "municipio_nome": "São Paulo",
-    "nome_orgao": "Prefeitura Municipal de São Paulo",
+    "municipio": "São Paulo",
+    "orgao_razao_social": "Prefeitura Municipal de São Paulo",
+    "orgao_cnpj": "12345678000100",
     "objeto_compra": "Obra de pavimentação asfáltica",
     "valor_total_estimado": 1500000.0,
     "modalidade_id": 6,
     "modalidade_nome": "Pregão - Eletrônico",
-    "situacao_id": 2,
+    "situacao_compra": "Divulgada",
     "data_publicacao": "2026-03-20T10:00:00Z",
     "data_abertura": "2026-04-01T09:00:00Z",
-    "link_sistema_origem": "https://compras.gov.br/edital/12345",
+    "data_encerramento": "2026-04-15T18:00:00Z",
+    "link_pncp": "https://pncp.gov.br/app/editais/12345678000100-1-000001/2026",
     "esfera_id": "M",
-    "raw_data": {
-        "extraField": "should be preserved",
-        "orgaoEntidade": {"razaoSocial": "Prefeitura Municipal de São Paulo"},
-    },
+    "ts_rank": 0.5,
 }
 
 
@@ -144,7 +143,7 @@ class TestQueryDatalake:
         )
 
         assert len(result) == 1
-        assert result[0]["numeroControlePNCP"] == "12345678000100-1-000001/2026"
+        assert result[0]["numeroControlePNCP"] == "12345678000100-1-000001/2026"  # mapped from pncp_id
         assert result[0]["uf"] == "SP"
 
     @pytest.mark.asyncio
@@ -280,7 +279,7 @@ class TestQueryDatalake:
     @patch("supabase_client.get_supabase")
     async def test_multiple_rows_all_normalized(self, mock_get_sb):
         """All RPC rows must be normalized and returned."""
-        row2 = dict(SAMPLE_DB_ROW, numero_controle_pncp="99999999000100-1-000002/2026")
+        row2 = dict(SAMPLE_DB_ROW, pncp_id="99999999000100-1-000002/2026")
         mock_sb = MagicMock()
         mock_sb.rpc.return_value.execute.return_value.data = [SAMPLE_DB_ROW, row2]
         mock_get_sb.return_value = mock_sb
@@ -301,8 +300,8 @@ class TestQueryDatalake:
 class TestRowToNormalized:
     """Tests for _row_to_normalized()."""
 
-    def test_maps_numero_controle_to_pncp_id_fields(self):
-        """numero_controle_pncp must be mapped to both numeroControlePNCP and codigoCompra."""
+    def test_maps_pncp_id_to_normalized_fields(self):
+        """pncp_id must be mapped to both numeroControlePNCP and codigoCompra."""
         result = _row_to_normalized(SAMPLE_DB_ROW)
         assert result["numeroControlePNCP"] == "12345678000100-1-000001/2026"
         assert result["codigoCompra"] == "12345678000100-1-000001/2026"
@@ -310,11 +309,11 @@ class TestRowToNormalized:
     def test_maps_uf(self):
         assert _row_to_normalized(SAMPLE_DB_ROW)["uf"] == "SP"
 
-    def test_maps_municipio_nome_to_municipio(self):
+    def test_maps_municipio(self):
         result = _row_to_normalized(SAMPLE_DB_ROW)
         assert result["municipio"] == "São Paulo"
 
-    def test_maps_nome_orgao(self):
+    def test_maps_orgao_razao_social_to_nome_orgao(self):
         result = _row_to_normalized(SAMPLE_DB_ROW)
         assert result["nomeOrgao"] == "Prefeitura Municipal de São Paulo"
 
@@ -336,9 +335,9 @@ class TestRowToNormalized:
         result = _row_to_normalized(SAMPLE_DB_ROW)
         assert result["modalidadeNome"] == "Pregão - Eletrônico"
 
-    def test_maps_situacao_id(self):
+    def test_maps_situacao_compra(self):
         result = _row_to_normalized(SAMPLE_DB_ROW)
-        assert result["situacaoCompraId"] == 2
+        assert result["situacaoCompraId"] == "Divulgada"
 
     def test_maps_data_publicacao_to_data_publicacao_formatted(self):
         result = _row_to_normalized(SAMPLE_DB_ROW)
@@ -348,9 +347,9 @@ class TestRowToNormalized:
         result = _row_to_normalized(SAMPLE_DB_ROW)
         assert result["dataAberturaProposta"] == "2026-04-01T09:00:00Z"
 
-    def test_maps_link_sistema_origem(self):
+    def test_maps_link_pncp_to_link_sistema_origem(self):
         result = _row_to_normalized(SAMPLE_DB_ROW)
-        assert result["linkSistemaOrigem"] == "https://compras.gov.br/edital/12345"
+        assert result["linkSistemaOrigem"] == "https://pncp.gov.br/app/editais/12345678000100-1-000001/2026"
 
     def test_maps_esfera_id(self):
         result = _row_to_normalized(SAMPLE_DB_ROW)
@@ -361,46 +360,26 @@ class TestRowToNormalized:
         result = _row_to_normalized(SAMPLE_DB_ROW)
         assert result["_source"] == "datalake"
 
-    def test_raw_data_fields_merged_as_base(self):
-        """Fields from raw_data that are not extracted columns must be present."""
-        result = _row_to_normalized(SAMPLE_DB_ROW)
-        assert result.get("extraField") == "should be preserved"
-
-    def test_extracted_columns_override_raw_data(self):
-        """DB columns must override raw_data values when both present."""
-        row = dict(SAMPLE_DB_ROW)
-        row["raw_data"] = {
-            "municipio": "Old City",
-            "uf": "RJ",
-            "objetoCompra": "Old description",
-        }
-        row["municipio_nome"] = "São Paulo"
-        row["uf"] = "SP"
-        row["objeto_compra"] = "New description"
-
-        result = _row_to_normalized(row)
-        assert result["municipio"] == "São Paulo"
-        assert result["uf"] == "SP"
-        assert result["objetoCompra"] == "New description"
-
-    def test_none_raw_data_handled(self):
-        """Row without raw_data must not crash."""
-        row = dict(SAMPLE_DB_ROW, raw_data=None)
-        result = _row_to_normalized(row)
-        assert result["uf"] == "SP"
-        assert result["_source"] == "datalake"
-
     def test_missing_optional_columns_do_not_crash(self):
         """Row missing optional columns must not raise."""
         minimal_row = {
-            "numero_controle_pncp": "11111111000100-1-000001/2026",
+            "pncp_id": "11111111000100-1-000001/2026",
             "uf": "AC",
-            "raw_data": None,
         }
         result = _row_to_normalized(minimal_row)
         assert result["numeroControlePNCP"] == "11111111000100-1-000001/2026"
         assert result["uf"] == "AC"
         assert result["_source"] == "datalake"
+
+    def test_maps_data_encerramento(self):
+        """data_encerramento must be mapped to dataEncerramentoProposta."""
+        result = _row_to_normalized(SAMPLE_DB_ROW)
+        assert result["dataEncerramentoProposta"] == "2026-04-15T18:00:00Z"
+
+    def test_maps_orgao_cnpj(self):
+        """orgao_cnpj must be mapped to orgaoCnpj."""
+        result = _row_to_normalized(SAMPLE_DB_ROW)
+        assert result["orgaoCnpj"] == "12345678000100"
 
     def test_valor_string_coerced_to_float(self):
         """String valor_total_estimado (from Supabase) must be cast to float."""
@@ -409,13 +388,8 @@ class TestRowToNormalized:
         assert result["valorTotalEstimado"] == 250000.50
         assert isinstance(result["valorTotalEstimado"], float)
 
-    def test_numero_controle_falls_back_to_raw_data(self):
-        """When numero_controle_pncp column is None, raw_data.numeroControlePNCP is used."""
-        row = {
-            "numero_controle_pncp": None,
-            "uf": None,
-            "raw_data": {"numeroControlePNCP": "from_raw_data_id"},
-        }
+    def test_empty_pncp_id_omits_key(self):
+        """When pncp_id is empty, numeroControlePNCP should not be set."""
+        row = {"pncp_id": "", "uf": "SP"}
         result = _row_to_normalized(row)
-        assert result["numeroControlePNCP"] == "from_raw_data_id"
-        assert result["codigoCompra"] == "from_raw_data_id"
+        assert "numeroControlePNCP" not in result

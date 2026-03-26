@@ -262,6 +262,8 @@ async def crawl_full(
 
     run_start = datetime.utcnow()
     totals = _empty_run_stats()
+    ufs_completed_list: list[str] = []
+    ufs_failed_list: list[str] = []
     semaphore = asyncio.Semaphore(INGESTION_CONCURRENT_UFS)
 
     async with AsyncPNCPClient() as client:
@@ -286,8 +288,12 @@ async def crawl_full(
 
             batch_results = await asyncio.gather(*tasks, return_exceptions=False)
 
-            for result in batch_results:
+            for uf, result in zip(uf_batch, batch_results):
                 _accumulate(totals, result)
+                if result.get("ufs_failed", 0) > 0 and result.get("ufs_crawled", 0) == 0:
+                    ufs_failed_list.append(uf)
+                else:
+                    ufs_completed_list.append(uf)
 
     # Purge old rows after successful crawl
     deleted = await purge_old_bids(INGESTION_RETENTION_DAYS)
@@ -295,9 +301,9 @@ async def crawl_full(
 
     # Determine final status
     final_status = "completed"
-    if totals["ufs_failed"] > 0 and totals["ufs_crawled"] == 0:
+    if len(ufs_failed_list) > 0 and len(ufs_completed_list) == 0:
         final_status = "failed"
-    elif totals["ufs_failed"] > 0:
+    elif len(ufs_failed_list) > 0:
         final_status = "partial"
 
     elapsed = (datetime.utcnow() - run_start).total_seconds()
@@ -306,12 +312,12 @@ async def crawl_full(
     await complete_ingestion_run(
         crawl_batch_id,
         status=final_status,
-        records_fetched=totals["fetched"],
-        records_inserted=totals["inserted"],
-        records_updated=totals["updated"],
-        records_unchanged=totals["unchanged"],
-        ufs_crawled=totals["ufs_crawled"],
-        ufs_failed=totals["ufs_failed"],
+        total_fetched=totals["fetched"],
+        inserted=totals["inserted"],
+        updated=totals["updated"],
+        unchanged=totals["unchanged"],
+        ufs_completed=ufs_completed_list,
+        ufs_failed=ufs_failed_list,
     )
 
     logger.info(
@@ -326,8 +332,8 @@ async def crawl_full(
         totals["updated"],
         totals["unchanged"],
         totals["purged"],
-        totals["ufs_crawled"],
-        totals["ufs_failed"],
+        len(ufs_completed_list),
+        len(ufs_failed_list),
     )
     return totals
 
@@ -370,6 +376,8 @@ async def crawl_incremental(
 
     run_start = datetime.utcnow()
     totals = _empty_run_stats()
+    ufs_completed_list: list[str] = []
+    ufs_failed_list: list[str] = []
     semaphore = asyncio.Semaphore(INGESTION_CONCURRENT_UFS)
 
     async with AsyncPNCPClient() as client:
@@ -394,13 +402,17 @@ async def crawl_incremental(
 
             batch_results = await asyncio.gather(*tasks, return_exceptions=False)
 
-            for result in batch_results:
+            for uf, result in zip(uf_batch, batch_results):
                 _accumulate(totals, result)
+                if result.get("ufs_failed", 0) > 0 and result.get("ufs_crawled", 0) == 0:
+                    ufs_failed_list.append(uf)
+                else:
+                    ufs_completed_list.append(uf)
 
     final_status = "completed"
-    if totals["ufs_failed"] > 0 and totals["ufs_crawled"] == 0:
+    if len(ufs_failed_list) > 0 and len(ufs_completed_list) == 0:
         final_status = "failed"
-    elif totals["ufs_failed"] > 0:
+    elif len(ufs_failed_list) > 0:
         final_status = "partial"
 
     elapsed = (datetime.utcnow() - run_start).total_seconds()
@@ -409,12 +421,12 @@ async def crawl_incremental(
     await complete_ingestion_run(
         crawl_batch_id,
         status=final_status,
-        records_fetched=totals["fetched"],
-        records_inserted=totals["inserted"],
-        records_updated=totals["updated"],
-        records_unchanged=totals["unchanged"],
-        ufs_crawled=totals["ufs_crawled"],
-        ufs_failed=totals["ufs_failed"],
+        total_fetched=totals["fetched"],
+        inserted=totals["inserted"],
+        updated=totals["updated"],
+        unchanged=totals["unchanged"],
+        ufs_completed=ufs_completed_list,
+        ufs_failed=ufs_failed_list,
     )
 
     logger.info(
@@ -428,8 +440,8 @@ async def crawl_incremental(
         totals["inserted"],
         totals["updated"],
         totals["unchanged"],
-        totals["ufs_crawled"],
-        totals["ufs_failed"],
+        len(ufs_completed_list),
+        len(ufs_failed_list),
     )
     return totals
 

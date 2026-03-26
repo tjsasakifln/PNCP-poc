@@ -41,7 +41,7 @@ async def get_last_checkpoint(
             .table("ingestion_checkpoints")
             .select("last_date")
             .eq("uf", uf)
-            .eq("modalidade", modalidade)
+            .eq("modalidade_id", modalidade)
             .eq("source", source)
             .eq("status", "completed")
             .order("last_date", desc=True)
@@ -85,7 +85,7 @@ async def save_checkpoint(
     try:
         payload: dict[str, Any] = {
             "uf": uf,
-            "modalidade": modalidade,
+            "modalidade_id": modalidade,
             "source": source,
             "last_date": last_date.isoformat(),
             "records_fetched": records_fetched,
@@ -96,7 +96,7 @@ async def save_checkpoint(
         (
             supabase
             .table("ingestion_checkpoints")
-            .upsert(payload, on_conflict="uf,modalidade,source")
+            .upsert(payload, on_conflict="source,uf,modalidade_id,crawl_batch_id")
             .execute()
         )
         logger.debug(
@@ -132,7 +132,7 @@ async def mark_checkpoint_failed(
     try:
         payload: dict[str, Any] = {
             "uf": uf,
-            "modalidade": modalidade,
+            "modalidade_id": modalidade,
             "source": source,
             "crawl_batch_id": crawl_batch_id,
             "status": "failed",
@@ -141,7 +141,7 @@ async def mark_checkpoint_failed(
         (
             supabase
             .table("ingestion_checkpoints")
-            .upsert(payload, on_conflict="uf,modalidade,source")
+            .upsert(payload, on_conflict="source,uf,modalidade_id,crawl_batch_id")
             .execute()
         )
         logger.warning(
@@ -205,12 +205,12 @@ async def complete_ingestion_run(
     crawl_batch_id: str,
     *,
     status: str = "completed",
-    records_fetched: int = 0,
-    records_inserted: int = 0,
-    records_updated: int = 0,
-    records_unchanged: int = 0,
-    ufs_crawled: int = 0,
-    ufs_failed: int = 0,
+    total_fetched: int = 0,
+    inserted: int = 0,
+    updated: int = 0,
+    unchanged: int = 0,
+    ufs_completed: list[str] | None = None,
+    ufs_failed: list[str] | None = None,
     error_message: str | None = None,
 ) -> None:
     """Update ingestion_runs with final statistics after a crawl completes.
@@ -218,24 +218,24 @@ async def complete_ingestion_run(
     Args:
         crawl_batch_id: Run identifier to update.
         status: Final status — "completed", "failed", or "partial".
-        records_fetched: Total raw records received from the API.
-        records_inserted: New rows inserted into pncp_raw_bids.
-        records_updated: Existing rows updated (content_hash changed).
-        records_unchanged: Rows with no change (deduplicated).
-        ufs_crawled: Number of UFs successfully processed.
-        ufs_failed: Number of UFs that encountered errors.
+        total_fetched: Total raw records received from the API.
+        inserted: New rows inserted into pncp_raw_bids.
+        updated: Existing rows updated (content_hash changed).
+        unchanged: Rows with no change (deduplicated).
+        ufs_completed: List of UF codes successfully processed.
+        ufs_failed: List of UF codes that encountered errors.
         error_message: Optional error string for failed/partial runs.
     """
     supabase = get_supabase()
     try:
         payload: dict[str, Any] = {
             "status": status,
-            "records_fetched": records_fetched,
-            "records_inserted": records_inserted,
-            "records_updated": records_updated,
-            "records_unchanged": records_unchanged,
-            "ufs_crawled": ufs_crawled,
-            "ufs_failed": ufs_failed,
+            "total_fetched": total_fetched,
+            "inserted": inserted,
+            "updated": updated,
+            "unchanged": unchanged,
+            "ufs_completed": ufs_completed or [],
+            "ufs_failed": ufs_failed or [],
         }
         if error_message:
             payload["error_message"] = error_message[:2000]
@@ -250,15 +250,15 @@ async def complete_ingestion_run(
         logger.info(
             "complete_ingestion_run: batch_id=%s status=%s "
             "fetched=%d inserted=%d updated=%d unchanged=%d "
-            "ufs_ok=%d ufs_fail=%d",
+            "ufs_ok=%s ufs_fail=%s",
             crawl_batch_id,
             status,
-            records_fetched,
-            records_inserted,
-            records_updated,
-            records_unchanged,
-            ufs_crawled,
-            ufs_failed,
+            total_fetched,
+            inserted,
+            updated,
+            unchanged,
+            ufs_completed or [],
+            ufs_failed or [],
         )
     except Exception as exc:
         logger.warning(
