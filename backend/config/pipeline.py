@@ -119,7 +119,7 @@ HEALTH_CHECKS_RETENTION_DAYS: int = int(os.getenv("HEALTH_CHECKS_RETENTION_DAYS"
 
 # SHIP-002: Feature gates for incomplete features
 ORGANIZATIONS_ENABLED: bool = str_to_bool(os.getenv("ORGANIZATIONS_ENABLED", "false"))
-MESSAGES_ENABLED: bool = str_to_bool(os.getenv("MESSAGES_ENABLED", "false"))
+MESSAGES_ENABLED: bool = str_to_bool(os.getenv("MESSAGES_ENABLED", "true"))
 ALERTS_SYSTEM_ENABLED: bool = str_to_bool(os.getenv("ALERTS_SYSTEM_ENABLED", "false"))
 PARTNERS_ENABLED: bool = str_to_bool(os.getenv("PARTNERS_ENABLED", "false"))
 

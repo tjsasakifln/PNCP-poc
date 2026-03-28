@@ -9,7 +9,6 @@
 
 export const GATED_FEATURES = new Set([
   "alertas",
-  "mensagens",
 ]);
 
 export function isFeatureGated(feature: string): boolean {
