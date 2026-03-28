@@ -50,9 +50,9 @@ def _create_client(user=None, mock_user_db=None):
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[require_auth] = lambda: (user or MOCK_TRIAL_USER)
-    if mock_user_db is None:
-        mock_user_db = _mock_sb()
-    app.dependency_overrides[get_user_db] = lambda: mock_user_db
+    # Only inject get_user_db for GET tests (SYS-023). POST uses get_supabase().
+    if mock_user_db is not None:
+        app.dependency_overrides[get_user_db] = lambda: mock_user_db
     return TestClient(app)
 
 
@@ -156,14 +156,14 @@ class TestTrialPipelineLimit:
             allowed=True,
             capabilities={"allow_pipeline": True},
         )
-        # _check_pipeline_limit uses get_supabase() for the count query
-        sb_limit = _mock_sb(count=4)
-        mock_get_sb.return_value = sb_limit
-
-        # The POST handler uses user_db (get_user_db) for the insert
-        sb_insert = _mock_sb()
-        sb_insert.execute.return_value = Mock(data=[SAMPLE_ITEM])
-        client = _create_client(MOCK_TRIAL_USER, mock_user_db=sb_insert)
+        # get_supabase() is used by both _check_pipeline_limit (count) and POST handler (insert)
+        sb = _mock_sb(count=4)
+        sb.execute.side_effect = [
+            Mock(data=[], count=4),  # count query in _check_pipeline_limit
+            Mock(data=[SAMPLE_ITEM]),  # insert query in POST handler
+        ]
+        mock_get_sb.return_value = sb
+        client = _create_client(MOCK_TRIAL_USER)
 
         resp = client.post("/pipeline", json=PIPELINE_ITEM_PAYLOAD)
 
@@ -217,10 +217,11 @@ class TestPaidUserNoPipelineLimit:
             allowed=True,
             capabilities={"allow_pipeline": True},
         )
-        # Paid users skip _check_pipeline_limit count query; insert goes via user_db
-        sb_insert = _mock_sb()
-        sb_insert.execute.return_value = Mock(data=[SAMPLE_ITEM])
-        client = _create_client(MOCK_PAID_USER, mock_user_db=sb_insert)
+        # Paid users skip _check_pipeline_limit; insert goes via get_supabase()
+        sb = _mock_sb()
+        sb.execute.return_value = Mock(data=[SAMPLE_ITEM])
+        mock_get_sb.return_value = sb
+        client = _create_client(MOCK_PAID_USER)
 
         resp = client.post("/pipeline", json=PIPELINE_ITEM_PAYLOAD)
 
@@ -239,10 +240,11 @@ class TestPaidUserNoPipelineLimit:
             allowed=True,
             capabilities={"allow_pipeline": True},
         )
-        # Paid users skip _check_pipeline_limit count query; insert goes via user_db
-        sb_insert = _mock_sb()
-        sb_insert.execute.return_value = Mock(data=[SAMPLE_ITEM])
-        client = _create_client(MOCK_PAID_USER, mock_user_db=sb_insert)
+        # Paid users skip _check_pipeline_limit; insert goes via get_supabase()
+        sb = _mock_sb()
+        sb.execute.return_value = Mock(data=[SAMPLE_ITEM])
+        mock_get_sb.return_value = sb
+        client = _create_client(MOCK_PAID_USER)
 
         resp = client.post("/pipeline", json=PIPELINE_ITEM_PAYLOAD)
 
@@ -261,10 +263,11 @@ class TestPaidUserNoPipelineLimit:
             allowed=True,
             capabilities={"allow_pipeline": True},
         )
-        # Paid users skip _check_pipeline_limit count query; insert goes via user_db
-        sb_insert = _mock_sb()
-        sb_insert.execute.return_value = Mock(data=[SAMPLE_ITEM])
-        client = _create_client(MOCK_PAID_USER, mock_user_db=sb_insert)
+        # Paid users skip _check_pipeline_limit; insert goes via get_supabase()
+        sb = _mock_sb()
+        sb.execute.return_value = Mock(data=[SAMPLE_ITEM])
+        mock_get_sb.return_value = sb
+        client = _create_client(MOCK_PAID_USER)
 
         resp = client.post("/pipeline", json=PIPELINE_ITEM_PAYLOAD)
 
@@ -280,13 +283,15 @@ class TestMasterBypassPipelineLimit:
     """Master users bypass pipeline limit entirely."""
 
     @patch("routes.pipeline._check_pipeline_write_access", _noop_write_access)
+    @patch("routes.pipeline.get_supabase")
     @patch("authorization.has_master_access", new_callable=AsyncMock, return_value=True)
-    def test_master_bypasses_limit(self, mock_has_master):
+    def test_master_bypasses_limit(self, mock_has_master, mock_get_sb):
         """Master user can add items regardless of count."""
-        # Masters bypass _check_pipeline_limit entirely; insert goes via user_db
-        sb_insert = _mock_sb()
-        sb_insert.execute.return_value = Mock(data=[SAMPLE_ITEM])
-        client = _create_client(MOCK_MASTER_USER, mock_user_db=sb_insert)
+        # Masters bypass _check_pipeline_limit entirely; insert goes via get_supabase()
+        sb = _mock_sb()
+        sb.execute.return_value = Mock(data=[SAMPLE_ITEM])
+        mock_get_sb.return_value = sb
+        client = _create_client(MOCK_MASTER_USER)
 
         resp = client.post("/pipeline", json=PIPELINE_ITEM_PAYLOAD)
 

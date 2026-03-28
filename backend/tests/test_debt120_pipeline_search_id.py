@@ -55,9 +55,9 @@ def _create_client(user=None, mock_user_db=None):
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[require_auth] = lambda: (user or MOCK_USER)
-    if mock_user_db is None:
-        mock_user_db = _mock_sb()
-    app.dependency_overrides[get_user_db] = lambda: mock_user_db
+    # Only inject get_user_db for GET tests (SYS-023). POST uses get_supabase().
+    if mock_user_db is not None:
+        app.dependency_overrides[get_user_db] = lambda: mock_user_db
     return TestClient(app)
 
 
@@ -93,12 +93,14 @@ class TestPipelineSearchIdTraceability:
     @patch("routes.pipeline._check_pipeline_limit", _noop_check_pipeline_limit)
     @patch("routes.pipeline._check_pipeline_write_access", _noop_check_pipeline_write_access)
     @patch("routes.pipeline._check_pipeline_read_access", _noop_check_pipeline_read_access)
-    def test_ac6_create_with_search_id(self):
+    @patch("routes.pipeline.get_supabase")
+    def test_ac6_create_with_search_id(self, mock_get_sb):
         """AC6: search_id is saved when adding item to pipeline."""
         sb = _mock_sb()
         sb.execute.return_value = Mock(data=[SAMPLE_ITEM_WITH_SEARCH_ID])
+        mock_get_sb.return_value = sb
 
-        client = _create_client(mock_user_db=sb)
+        client = _create_client()
         resp = client.post("/pipeline", json={
             "pncp_id": "99999999-1-000001/2026",
             "objeto": "Serviço de manutenção predial",
@@ -121,12 +123,14 @@ class TestPipelineSearchIdTraceability:
     @patch("routes.pipeline._check_pipeline_limit", _noop_check_pipeline_limit)
     @patch("routes.pipeline._check_pipeline_write_access", _noop_check_pipeline_write_access)
     @patch("routes.pipeline._check_pipeline_read_access", _noop_check_pipeline_read_access)
-    def test_ac6_create_without_search_id(self):
+    @patch("routes.pipeline.get_supabase")
+    def test_ac6_create_without_search_id(self, mock_get_sb):
         """AC6: search_id defaults to None when not provided."""
         sb = _mock_sb()
         sb.execute.return_value = Mock(data=[SAMPLE_ITEM_NO_SEARCH_ID])
+        mock_get_sb.return_value = sb
 
-        client = _create_client(mock_user_db=sb)
+        client = _create_client()
         resp = client.post("/pipeline", json={
             "pncp_id": "88888888-1-000001/2026",
             "objeto": "Serviço de manutenção predial",
@@ -144,12 +148,14 @@ class TestPipelineSearchIdTraceability:
     @patch("routes.pipeline._check_pipeline_limit", _noop_check_pipeline_limit)
     @patch("routes.pipeline._check_pipeline_write_access", _noop_check_pipeline_write_access)
     @patch("routes.pipeline._check_pipeline_read_access", _noop_check_pipeline_read_access)
-    def test_ac7_response_includes_search_id(self):
+    @patch("routes.pipeline.get_supabase")
+    def test_ac7_response_includes_search_id(self, mock_get_sb):
         """AC7: PipelineItemResponse includes search_id field."""
         sb = _mock_sb()
         sb.execute.return_value = Mock(data=[SAMPLE_ITEM_WITH_SEARCH_ID])
+        mock_get_sb.return_value = sb
 
-        client = _create_client(mock_user_db=sb)
+        client = _create_client()
         resp = client.post("/pipeline", json={
             "pncp_id": "99999999-1-000001/2026",
             "objeto": "Serviço de manutenção predial",

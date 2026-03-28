@@ -980,9 +980,14 @@ def _build_zero_match_batch_prompt_terms(
 
     items_text = "\n".join(item_lines)
 
-    return f"""Você classifica licitações públicas em lote. Analise cada contrato e determine se é RELEVANTE para os termos buscados.
+    return f"""Você classifica licitações públicas em lote. Analise cada contrato e determine se trata ESPECIFICAMENTE do assunto buscado.
 
-Termos buscados: {termos_display}
+Termos buscados pelo usuário: {termos_display}
+
+REGRA ESTRITA: Responda YES somente se o objeto do contrato está DIRETAMENTE relacionado aos termos buscados. O contrato deve tratar do mesmo tipo de serviço, obra ou aquisição indicado nos termos.
+- Se o contrato é sobre um assunto completamente diferente (ex: termos="pavimentação" mas contrato é sobre "quadros digitais"), responda NO.
+- Se o contrato menciona o termo apenas no nome do órgão ou endereço, responda NO.
+- Se o contrato é genérico (material de escritório, informática) e não trata especificamente dos termos, responda NO.
 
 CONTRATOS:
 {items_text}

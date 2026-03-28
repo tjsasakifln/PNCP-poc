@@ -1023,8 +1023,7 @@ def has_red_flags(
 
     # ISSUE-017: When user explicitly searched for a term, it cannot be a red flag
     if custom_terms and all_matched:
-        from filter.text_utils import normalize_text as _norm_rf
-        custom_norms = {_norm_rf(t) for t in custom_terms}
+        custom_norms = {normalize_text(t) for t in custom_terms}
         all_matched = [flag for flag in all_matched if not any(cn in flag or flag in cn for cn in custom_norms)]
 
     return len(all_matched) > 0, all_matched
@@ -2703,8 +2702,7 @@ def aplicar_todos_filtros(
 
     # ISSUE-017: When custom_terms are the search basis, exclude them from global exclusions
     if custom_terms and _effective_global_exc:
-        from filter.text_utils import normalize_text as _norm_ge
-        _custom_norms = {_norm_ge(t) for t in custom_terms}
+        _custom_norms = {normalize_text(t) for t in custom_terms}
         _effective_global_exc = _effective_global_exc - _custom_norms
 
     # STORY-329 AC1: Progress tracking for keyword matching loop
@@ -2740,11 +2738,14 @@ def aplicar_todos_filtros(
             lic["_org_context_stripped"] = False
 
         # STORY-328 AC7-AC8: Check global exclusions before keyword matching
+        # ISSUE-025 fix: Use word-boundary matching instead of substring to prevent
+        # over-filtering (e.g., "material de escritorio" substring-matching inside
+        # longer text that mentions "escritorio de engenharia").
         if _effective_global_exc:
             objeto_norm_ge = normalize_text(objeto_for_matching)
             _hit_global_exc = False
             for ge in _effective_global_exc:
-                if ge in objeto_norm_ge:
+                if re.search(rf'\b{re.escape(ge)}\b', objeto_norm_ge):
                     _hit_global_exc = True
                     logger.debug(
                         f"STORY-328: Global exclusion hit '{ge}' in "

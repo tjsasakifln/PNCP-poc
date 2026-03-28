@@ -63,22 +63,33 @@ async def stage_enrich(pipeline, ctx: SearchContext) -> None:
             conf = lic.get("_confidence_score", 50)
             valor = float(lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0)
 
+            # ISSUE-017 fix: Relevance boost for keyword-matched results.
+            # Results matched by actual keywords should rank above LLM-only matches,
+            # especially for custom_terms searches where relevance > viability.
+            relevance_boost = 0
+            if lic.get("_relevance_source") == "keyword":
+                relevance_boost += 20
+            density = lic.get("_term_density", 0)
+            if density and density > 0.03:
+                relevance_boost += min(15, int(density * 200))
+
             if viability_active:
                 # D-04 AC9: combined_score = confidence * 0.6 + viability * 0.4
                 viab = lic.get("_viability_score", 50)
-                combined = conf * 0.6 + viab * 0.4
+                combined = conf * 0.6 + viab * 0.4 + relevance_boost
                 lic["_combined_score"] = round(combined)
                 return (-combined, -valor)
 
             # Fallback for simplified searches without viability scores
             # Band: 0=high(>=80), 1=medium(50-79), 2=low(<50)
-            if conf >= 80:
+            boosted_conf = conf + relevance_boost
+            if boosted_conf >= 80:
                 band = 0
-            elif conf >= 50:
+            elif boosted_conf >= 50:
                 band = 1
             else:
                 band = 2
-            return (band, -conf, -valor)
+            return (band, -boosted_conf, -valor)
 
         ctx.licitacoes_filtradas.sort(key=_confidence_sort_key)
         logger.debug(

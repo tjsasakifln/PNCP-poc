@@ -172,11 +172,12 @@ async def _check_pipeline_limit(user: dict) -> None:
 async def create_pipeline_item(
     item: PipelineItemCreate,
     user: dict = Depends(require_auth),
-    user_db=Depends(get_user_db),
 ):
     """Add a procurement opportunity to the user's pipeline (AC2).
 
-    ISSUE-021: Uses user-scoped client (get_user_db) for RLS consistency with GET.
+    ISSUE-021 fix: Reverted to admin client (get_supabase) — user-scoped client
+    caused HTTP 500 due to fragile session header mutation in get_user_db.
+    Defense-in-depth: .eq("user_id", user_id) prevents cross-user access.
     STORY-265 AC2: Trial expired cannot add items.
     STORY-356: Enforce pipeline item limit (trial: 5 items max).
     Returns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).
@@ -188,7 +189,7 @@ async def create_pipeline_item(
 
     try:
         result = await sb_execute(
-            user_db.table("pipeline_items")
+            get_supabase().table("pipeline_items")
             .insert({
                 "user_id": user_id,
                 "pncp_id": item.pncp_id,
@@ -286,11 +287,11 @@ async def update_pipeline_item(
     item_id: str,
     update: PipelineItemUpdate,
     user: dict = Depends(require_auth),
-    user_db=Depends(get_user_db),
 ):
     """Update stage and/or notes of a pipeline item (AC4).
 
-    ISSUE-021: Uses user-scoped client for RLS consistency.
+    ISSUE-021 fix: Reverted to admin client — user-scoped client caused HTTP 500.
+    Defense-in-depth: .eq("user_id", user_id) prevents cross-user access.
     STORY-265 AC2: Trial expired cannot modify items.
     Validates that stage is a valid enum value.
     Returns 404 if item doesn't exist or doesn't belong to user.
@@ -298,7 +299,7 @@ async def update_pipeline_item(
     await _check_pipeline_write_access(user)
 
     user_id = user["id"]
-    sb = user_db
+    sb = get_supabase()
 
     # Build update payload (only non-None fields)
     payload = {}
@@ -376,18 +377,18 @@ async def update_pipeline_item(
 async def delete_pipeline_item(
     item_id: str,
     user: dict = Depends(require_auth),
-    user_db=Depends(get_user_db),
 ):
     """Remove an item from the pipeline (AC5).
 
-    ISSUE-021: Uses user-scoped client for RLS consistency.
+    ISSUE-021 fix: Reverted to admin client — user-scoped client caused HTTP 500.
+    Defense-in-depth: .eq("user_id", user_id) prevents cross-user access.
     STORY-265 AC2: Trial expired cannot delete items.
     Returns 404 if item doesn't exist or doesn't belong to user.
     """
     await _check_pipeline_write_access(user)
 
     user_id = user["id"]
-    sb = user_db
+    sb = get_supabase()
 
     try:
         result = await sb_execute(
