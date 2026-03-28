@@ -169,13 +169,23 @@ describe("usePipeline (isolated)", () => {
     // Wait for initial SWR fetch to complete
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    // Mock the POST call
-    mockFetch.mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        json: async () => newItem,
-      })
-    );
+    // Mock the POST call, then the SWR revalidation GET that follows
+    mockFetch
+      .mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => newItem,
+        })
+      )
+      .mockImplementation((url: string) => {
+        if (typeof url === "string" && url.includes("limit=200") && !url.includes("_path")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ items: [newItem], total: 1 }),
+          });
+        }
+        return Promise.resolve(emptyOk());
+      });
 
     let returned: any;
     await act(async () => {
@@ -193,7 +203,7 @@ describe("usePipeline (isolated)", () => {
     });
 
     expect(returned).toEqual(newItem);
-    expect(result.current.items).toContainEqual(newItem);
+    await waitFor(() => expect(result.current.items).toContainEqual(newItem));
     expect(mockFetch).toHaveBeenCalledWith("/api/pipeline", expect.objectContaining({
       method: "POST",
     }));
@@ -349,15 +359,26 @@ describe("usePipeline (isolated)", () => {
     const { result } = renderHook(() => usePipeline(), { wrapper });
     await waitFor(() => expect(result.current.items).toHaveLength(2));
 
-    mockFetch.mockImplementationOnce(() =>
-      Promise.resolve({ ok: true, json: async () => ({}) })
-    );
+    // Mock the DELETE call, then the SWR revalidation GET that follows
+    mockFetch
+      .mockImplementationOnce(() =>
+        Promise.resolve({ ok: true, json: async () => ({}) })
+      )
+      .mockImplementation((url: string) => {
+        if (typeof url === "string" && url.includes("limit=200") && !url.includes("_path")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ items: [item2], total: 1 }),
+          });
+        }
+        return Promise.resolve(emptyOk());
+      });
 
     await act(async () => {
       await result.current.removeItem("item-1");
     });
 
-    expect(result.current.items).toHaveLength(1);
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
     expect(result.current.items[0].id).toBe("item-2");
   });
 
