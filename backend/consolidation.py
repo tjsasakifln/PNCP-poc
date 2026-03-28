@@ -6,8 +6,11 @@ compatible with the existing filter/excel/llm pipeline.
 """
 
 import asyncio
+import hashlib
 import logging
+import re
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Set
 
@@ -520,9 +523,10 @@ class ConsolidationService:
         if not has_data and source_errors and self._fail_on_all_errors:
             raise AllSourcesFailedError(source_errors)
 
-        # Deduplicate
+        # Deduplicate: exact key match then fuzzy similarity
         total_before = len(all_records)
         deduped = self._deduplicate(all_records)
+        deduped = self._deduplicate_fuzzy(deduped)
         total_after = len(deduped)
 
         # Convert to legacy format
@@ -859,6 +863,109 @@ class ConsolidationService:
                     f"[DEDUP-MERGE] key={dedup_key} field={field_name} "
                     f"filled from {loser.source_name} (winner={winner.source_name})"
                 )
+
+    # --- Fuzzy dedup (ISSUE-027) ---
+
+    # Portuguese stopwords irrelevant for tender object comparison
+    _FUZZY_STOPWORDS = frozenset({
+        "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
+        "para", "por", "com", "e", "a", "o", "um", "uma", "ao", "pelo",
+        "pela", "que", "se", "ou", "os", "as", "este", "esta", "essa",
+    })
+
+    @staticmethod
+    def _tokenize_objeto(texto: str) -> frozenset:
+        """Tokenize and normalize procurement object for Jaccard similarity."""
+        texto = re.sub(r"[^\w\s]", " ", texto.lower())
+        return frozenset(
+            t for t in texto.split()
+            if len(t) > 2 and t not in ConsolidationService._FUZZY_STOPWORDS
+        )
+
+    @staticmethod
+    def _jaccard(a: frozenset, b: frozenset) -> float:
+        if not a or not b:
+            return 0.0
+        return len(a & b) / len(a | b)
+
+    def _deduplicate_fuzzy(
+        self, records: List[UnifiedProcurement]
+    ) -> List[UnifiedProcurement]:
+        """Second dedup layer: same procurement with different edital numbers.
+
+        Blocking: group by cnpj_orgao (avoids O(n²) global comparisons).
+        Match: Jaccard >= 0.85 on objeto tokens AND valor within 5%.
+        Winner: higher-priority source, or first encountered if same priority.
+
+        ISSUE-027: Addresses duplicates like "Pavimentação da rua Reinhold
+        Schroeder" appearing twice from the same orgão with different edital
+        numbers (e.g., /000061/2026 vs /000059/2026).
+        """
+        if len(records) < 2:
+            return records
+
+        # Phase 1: Block by normalized CNPJ
+        blocks: Dict[str, List[int]] = defaultdict(list)
+        for idx, rec in enumerate(records):
+            cnpj = re.sub(r"[^\d]", "", rec.cnpj_orgao)
+            if cnpj:
+                blocks[cnpj].append(idx)
+
+        # Phase 2: Intra-block pairwise comparison
+        to_remove: set = set()
+        removed_count = 0
+
+        # Pre-compute tokens for all records (avoids recomputation)
+        tokens_cache: Dict[int, frozenset] = {}
+
+        for cnpj, indices in blocks.items():
+            if len(indices) < 2:
+                continue
+
+            for i_pos in range(len(indices)):
+                idx_a = indices[i_pos]
+                if idx_a in to_remove:
+                    continue
+
+                if idx_a not in tokens_cache:
+                    tokens_cache[idx_a] = self._tokenize_objeto(records[idx_a].objeto)
+
+                for j_pos in range(i_pos + 1, len(indices)):
+                    idx_b = indices[j_pos]
+                    if idx_b in to_remove:
+                        continue
+
+                    if idx_b not in tokens_cache:
+                        tokens_cache[idx_b] = self._tokenize_objeto(records[idx_b].objeto)
+
+                    sim = self._jaccard(tokens_cache[idx_a], tokens_cache[idx_b])
+                    if sim < 0.85:
+                        continue
+
+                    # Value proximity check (within 5%, or both zero/missing)
+                    val_a = records[idx_a].valor_estimado or 0
+                    val_b = records[idx_b].valor_estimado or 0
+                    if val_a > 0 and val_b > 0:
+                        diff = abs(val_a - val_b) / max(val_a, val_b)
+                        if diff > 0.05:
+                            continue  # Different values = likely different lots
+
+                    # Match confirmed — remove the later one (keep first/higher-priority)
+                    to_remove.add(idx_b)
+                    removed_count += 1
+                    logger.info(
+                        f"[FUZZY-DEDUP] Merged duplicate (Jaccard={sim:.2f}): "
+                        f"cnpj={cnpj}, kept={records[idx_a].source_id}, "
+                        f"removed={records[idx_b].source_id}"
+                    )
+
+        if removed_count > 0:
+            logger.info(
+                f"[FUZZY-DEDUP] Removed {removed_count} fuzzy duplicates "
+                f"from {len(records)} records"
+            )
+
+        return [rec for idx, rec in enumerate(records) if idx not in to_remove]
 
     async def health_check_all(self) -> Dict[str, Dict[str, Any]]:
         """

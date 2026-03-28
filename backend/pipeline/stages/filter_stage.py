@@ -350,10 +350,13 @@ async def stage_filter(pipeline, ctx: SearchContext) -> None:
             )
 
         if _sector_relaxed:
-            # Cap at top 20 by estimated value to avoid noise
+            # Cap at top 20: prioritize keyword density, then value (ISSUE-025 refinement)
             _sector_relaxed_sorted = sorted(
                 _sector_relaxed,
-                key=lambda bid: float(bid.get("valorTotalEstimado") or bid.get("valorEstimado") or 0),
+                key=lambda bid: (
+                    float(bid.get("_term_density", 0)),
+                    float(bid.get("valorTotalEstimado") or bid.get("valorEstimado") or 0),
+                ),
                 reverse=True,
             )[:20]
             ctx.licitacoes_filtradas = _sector_relaxed_sorted

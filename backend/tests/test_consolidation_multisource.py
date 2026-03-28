@@ -228,8 +228,9 @@ async def test_different_procurements_from_different_sources_both_kept():
 @pytest.mark.asyncio
 async def test_same_cnpj_different_edital_both_kept():
     """
-    AC30: Same CNPJ but different edital → both kept.
+    AC30: Same CNPJ but different edital with DIFFERENT objects → both kept.
     Dedup key includes numero_edital, so these are distinct procurements.
+    Fuzzy dedup also keeps them because objects are different (different lots).
     """
     record1 = create_procurement(
         source_id="PNCP-100",
@@ -237,6 +238,7 @@ async def test_same_cnpj_different_edital_both_kept():
         cnpj="12.345.678/0001-90",
         numero_edital="001/2025",
         ano="2025",
+        objeto="Aquisição de materiais de construção para reforma do prédio sede",
     )
     record2 = create_procurement(
         source_id="PNCP-200",
@@ -244,6 +246,7 @@ async def test_same_cnpj_different_edital_both_kept():
         cnpj="12.345.678/0001-90",
         numero_edital="002/2025",  # Different edital
         ano="2025",
+        objeto="Contratação de serviços de engenharia para pavimentação urbana",
     )
 
     pncp_adapter = MockSourceAdapter(code="PNCP", name="PNCP", records=[record1, record2])
@@ -254,7 +257,7 @@ async def test_same_cnpj_different_edital_both_kept():
         data_inicial="2025-01-01", data_final="2025-01-31"
     )
 
-    # Assert: Both records kept (different dedup keys)
+    # Assert: Both records kept (different dedup keys AND different objects)
     assert result.total_before_dedup == 2
     assert result.total_after_dedup == 2
     assert result.duplicates_removed == 0
