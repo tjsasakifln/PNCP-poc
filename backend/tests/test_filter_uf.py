@@ -16,6 +16,7 @@ from filter_uf import (
     filtrar_por_orgao,
     filtrar_por_municipio,
 )
+from filter import KEYWORDS_UNIFORMES
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -45,7 +46,8 @@ class TestFilterLicitacao:
     @pytest.mark.timeout(30)
     def test_no_keyword_match_rejected(self):
         bid = {"uf": "SP", "objetoCompra": "Aquisicao de computadores e monitores"}
-        result, reason = filter_licitacao(bid, {"SP"})
+        # RC1-FIX: Must pass keywords explicitly (empty keywords = accept all)
+        result, reason = filter_licitacao(bid, {"SP"}, keywords=KEYWORDS_UNIFORMES)
         assert result is False
         assert "keyword" in reason.lower()
 
@@ -115,7 +117,8 @@ class TestFilterBatch:
             {"uf": "SP", "objetoCompra": "Aquisicao de computadores"},
             {"uf": "SP", "objetoCompra": "Servicos de limpeza"},
         ]
-        approved, stats = filter_batch(bids, {"SP"})
+        # RC1-FIX: Must pass keywords explicitly
+        approved, stats = filter_batch(bids, {"SP"}, keywords=KEYWORDS_UNIFORMES)
         assert len(approved) == 0
         assert stats["rejeitadas_keyword"] == 2
 
@@ -126,7 +129,8 @@ class TestFilterBatch:
             {"uf": "RJ", "objetoCompra": "Uniformes"},
             {"uf": "SP", "objetoCompra": "Computadores"},
         ]
-        approved, stats = filter_batch(bids, {"SP"})
+        # RC1-FIX: Must pass keywords explicitly
+        approved, stats = filter_batch(bids, {"SP"}, keywords=KEYWORDS_UNIFORMES)
         total_accounted = (
             stats["aprovadas"]
             + stats["rejeitadas_uf"]

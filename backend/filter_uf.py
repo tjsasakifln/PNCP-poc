@@ -71,10 +71,13 @@ def filter_licitacao(
     # Now returns ALL results regardless of value to maximize opportunities
 
     # 2. Keyword Filter (most expensive - regex matching)
-    kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
-    exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
+    kw = keywords if keywords else set()
+    exc = exclusions if exclusions else set()
     objeto = licitacao.get("objetoCompra", "")
-    match, keywords_found = match_keywords(objeto, kw, exc, context_required)
+    if not kw:
+        match, keywords_found = True, []  # RC1-FIX: no keywords = accept
+    else:
+        match, keywords_found = match_keywords(objeto, kw, exc, context_required)
 
     if not match:
         return False, "Não contém keywords do setor"

@@ -311,8 +311,8 @@ async def stage_filter(pipeline, ctx: SearchContext) -> None:
             valor_max=request.valor_maximo,
             esferas=esferas_values,
             municipios=request.municipios,
-            keywords=None,       # P0-FIX: remove keyword filter
-            exclusions=None,     # P0-FIX: remove exclusion filter
+            keywords=set(),      # RC1-FIX: empty set skips keyword filter entirely
+            exclusions=set(),    # RC1-FIX: empty set skips exclusion filter
             context_required=None,
             min_match_floor=None,
             setor=None,          # P0-FIX: remove sector filter to bypass classification

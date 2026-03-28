@@ -21,7 +21,7 @@ LLM_ARBITER_TEMPERATURE: float = float(os.getenv("LLM_ARBITER_TEMPERATURE", "0")
 # Term density thresholds (STORY-248 reviewed 2026-02-14 — kept unchanged)
 TERM_DENSITY_HIGH_THRESHOLD: float = float(os.getenv("TERM_DENSITY_HIGH_THRESHOLD", "0.05"))
 TERM_DENSITY_MEDIUM_THRESHOLD: float = float(os.getenv("TERM_DENSITY_MEDIUM_THRESHOLD", "0.02"))
-TERM_DENSITY_LOW_THRESHOLD: float = float(os.getenv("TERM_DENSITY_LOW_THRESHOLD", "0.01"))
+TERM_DENSITY_LOW_THRESHOLD: float = float(os.getenv("TERM_DENSITY_LOW_THRESHOLD", "0.003"))
 
 # Filter Debugging & QA
 FILTER_DEBUG_MODE: bool = str_to_bool(os.getenv("FILTER_DEBUG_MODE", "false"))

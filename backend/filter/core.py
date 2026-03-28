@@ -1217,10 +1217,14 @@ def filter_licitacao(
     # Now returns ALL results regardless of value to maximize opportunities
 
     # 2. Keyword Filter (most expensive - regex matching)
-    kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
-    exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
+    # RC1-FIX: Empty keywords = skip keyword filter (accept all)
+    kw = keywords if keywords else set()
+    exc = exclusions if exclusions else set()
     objeto = licitacao.get("objetoCompra", "")
-    match, keywords_found = match_keywords(objeto, kw, exc, context_required)
+    if not kw:
+        match, keywords_found = True, []  # RC1-FIX: no keywords = accept
+    else:
+        match, keywords_found = match_keywords(objeto, kw, exc, context_required)
 
     if not match:
         return False, "Não contém keywords do setor"
@@ -2676,161 +2680,185 @@ def aplicar_todos_filtros(
             logger.warning(f"Setor '{setor}' não encontrado - pulando Camada 1A")
 
     # Etapa 8: Filtro de Keywords (mais lento - regex)
-    # AC9.1: Pre-compile regex patterns once for the batch
-    kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
-    exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
+    # RC1-FIX: When keywords is empty/None, skip keyword filter entirely.
+    # Previously defaulted to KEYWORDS_UNIFORMES (vestuário) which caused
+    # P0-FIX sector relaxation to filter engineering bids by clothing keywords.
+    kw = keywords if keywords else set()
+    exc = exclusions if exclusions else set()
 
-    compiled_patterns: Dict[str, re.Pattern] = {}
-    for keyword in kw:
-        try:
-            # ISSUE-017: Normalize keyword before compiling regex.
-            # match_keywords() searches against normalize_text(objeto) which strips
-            # accents, so the compiled pattern must also be accent-free.
-            kw_normalized = normalize_text(keyword)
-            escaped = re.escape(kw_normalized)
-            compiled_patterns[keyword] = re.compile(
-                rf'\b{escaped}\b', re.IGNORECASE | re.UNICODE
-            )
-        except re.error:
-            logger.warning(f"Failed to compile regex for keyword: {keyword}")
-
-    # STORY-328 AC7-AC8: Compute effective global exclusions for this sector
-    _effective_global_exc: Set[str] = set()
-    if setor:
-        _sector_overrides = GLOBAL_EXCLUSION_OVERRIDES.get(setor, set())
-        _effective_global_exc = GLOBAL_EXCLUSIONS_NORMALIZED - _sector_overrides
-
-    # ISSUE-017: When custom_terms are the search basis, exclude them from global exclusions
-    if custom_terms and _effective_global_exc:
-        _custom_norms = {normalize_text(t) for t in custom_terms}
-        _effective_global_exc = _effective_global_exc - _custom_norms
-
-    # STORY-329 AC1: Progress tracking for keyword matching loop
-    _kw_total = len(resultado_valor)
-    _kw_progress_step = min(50, max(1, int(_kw_total * 0.05))) if on_progress and _kw_total > 0 else 0
-
-    resultado_keyword: List[dict] = []
-    for _kw_idx, lic in enumerate(resultado_valor):
-        # STORY-329 AC1: Emit progress every N items
-        if _kw_progress_step > 0 and (_kw_idx + 1) % _kw_progress_step == 0:
-            on_progress(_kw_idx + 1, _kw_total, "filter")
-
-        objeto = lic.get("objetoCompra", "")
-
-        # STORY-328 AC1/AC5: Strip org context BEFORE keyword matching
-        objeto_for_matching = _strip_org_context(objeto)
-
-        # STORY-328 AC23-AC24: Track stripping for metrics/logging
-        if objeto_for_matching != objeto.strip():
-            lic["_org_context_stripped"] = True
-            removed_clause = objeto[len(objeto_for_matching):].strip() if len(objeto_for_matching) < len(objeto) else ""
-            logger.debug(
-                f"STORY-328: Stripped org context from bid "
-                f"{lic.get('pncpId', lic.get('id', '?'))}: "
-                f"'{removed_clause[:120]}'"
-            )
-            try:
-                from metrics import ORG_CONTEXT_STRIPPED
-                ORG_CONTEXT_STRIPPED.labels(sector=setor or "unknown").inc()
-            except Exception:
-                pass
-        else:
+    # RC1-FIX: When no keywords provided, accept ALL bids from previous stages.
+    # This is used by P0-FIX sector relaxation (filter_stage.py) to return
+    # UF+status+value-only results when sector keyword matching is too strict.
+    # RC1-FIX: When no keywords provided, accept ALL bids from previous stages.
+    # This is used by P0-FIX sector relaxation (filter_stage.py) to return
+    # UF+status+value-only results when sector keyword matching is too strict.
+    if not kw:
+        resultado_keyword: List[dict] = []
+        for lic in resultado_valor:
+            lic["_term_density"] = 1.0  # Bypass Camada 2A density check
+            lic["_matched_terms"] = []
+            lic["_relevance_source"] = "sector_relaxation"
             lic["_org_context_stripped"] = False
+            resultado_keyword.append(lic)
+        logger.info(
+            f"RC1-FIX: Keywords empty — skipping keyword filter, "
+            f"accepting all {len(resultado_keyword)} bids from prior stages"
+        )
 
-        # STORY-328 AC7-AC8: Check global exclusions before keyword matching
-        # ISSUE-025 fix: Use word-boundary matching instead of substring to prevent
-        # over-filtering (e.g., "material de escritorio" substring-matching inside
-        # longer text that mentions "escritorio de engenharia").
-        if _effective_global_exc:
-            objeto_norm_ge = normalize_text(objeto_for_matching)
-            _hit_global_exc = False
-            for ge in _effective_global_exc:
-                if re.search(rf'\b{re.escape(ge)}\b', objeto_norm_ge):
-                    _hit_global_exc = True
-                    logger.debug(
-                        f"STORY-328: Global exclusion hit '{ge}' in "
-                        f"objeto={objeto[:80]}"
-                    )
-                    break
-            if _hit_global_exc:
-                stats["rejeitadas_keyword"] = stats.get("rejeitadas_keyword", 0) + 1
+    # Normal keyword matching when keywords are provided
+    if kw:
+        # AC9.1: Pre-compile regex patterns once for the batch
+        compiled_patterns: Dict[str, re.Pattern] = {}
+        for keyword in kw:
+            try:
+                # ISSUE-017: Normalize keyword before compiling regex.
+                # match_keywords() searches against normalize_text(objeto) which strips
+                # accents, so the compiled pattern must also be accent-free.
+                kw_normalized = normalize_text(keyword)
+                escaped = re.escape(kw_normalized)
+                compiled_patterns[keyword] = re.compile(
+                    rf'\b{escaped}\b', re.IGNORECASE | re.UNICODE
+                )
+            except re.error:
+                logger.warning(f"Failed to compile regex for keyword: {keyword}")
+
+        # STORY-328 AC7-AC8: Compute effective global exclusions for this sector
+        _effective_global_exc: Set[str] = set()
+        if setor:
+            _sector_overrides = GLOBAL_EXCLUSION_OVERRIDES.get(setor, set())
+            _effective_global_exc = GLOBAL_EXCLUSIONS_NORMALIZED - _sector_overrides
+
+        # ISSUE-017: When custom_terms are the search basis, exclude them from global exclusions
+        if custom_terms and _effective_global_exc:
+            _custom_norms = {normalize_text(t) for t in custom_terms}
+            _effective_global_exc = _effective_global_exc - _custom_norms
+
+        # STORY-329 AC1: Progress tracking for keyword matching loop
+        _kw_total = len(resultado_valor)
+        _kw_progress_step = min(50, max(1, int(_kw_total * 0.05))) if on_progress and _kw_total > 0 else 0
+
+        resultado_keyword = []
+        for _kw_idx, lic in enumerate(resultado_valor):
+            # STORY-329 AC1: Emit progress every N items
+            if _kw_progress_step > 0 and (_kw_idx + 1) % _kw_progress_step == 0:
+                on_progress(_kw_idx + 1, _kw_total, "filter")
+
+            objeto = lic.get("objetoCompra", "")
+
+            # STORY-328 AC1/AC5: Strip org context BEFORE keyword matching
+            objeto_for_matching = _strip_org_context(objeto)
+
+            # STORY-328 AC23-AC24: Track stripping for metrics/logging
+            if objeto_for_matching != objeto.strip():
+                lic["_org_context_stripped"] = True
+                removed_clause = objeto[len(objeto_for_matching):].strip() if len(objeto_for_matching) < len(objeto) else ""
+                logger.debug(
+                    f"STORY-328: Stripped org context from bid "
+                    f"{lic.get('pncpId', lic.get('id', '?'))}: "
+                    f"'{removed_clause[:120]}'"
+                )
+                try:
+                    from metrics import ORG_CONTEXT_STRIPPED
+                    ORG_CONTEXT_STRIPPED.labels(sector=setor or "unknown").inc()
+                except Exception:
+                    pass
+            else:
+                lic["_org_context_stripped"] = False
+
+            # STORY-328 AC7-AC8: Check global exclusions before keyword matching
+            # ISSUE-025 fix: Use word-boundary matching instead of substring to prevent
+            # over-filtering (e.g., "material de escritorio" substring-matching inside
+            # longer text that mentions "escritorio de engenharia").
+            if _effective_global_exc:
+                objeto_norm_ge = normalize_text(objeto_for_matching)
+                _hit_global_exc = False
+                for ge in _effective_global_exc:
+                    if re.search(rf'\b{re.escape(ge)}\b', objeto_norm_ge):
+                        _hit_global_exc = True
+                        logger.debug(
+                            f"STORY-328: Global exclusion hit '{ge}' in "
+                            f"objeto={objeto[:80]}"
+                        )
+                        break
+                if _hit_global_exc:
+                    stats["rejeitadas_keyword"] = stats.get("rejeitadas_keyword", 0) + 1
+                    try:
+                        _get_tracker().record_rejection(
+                            "global_exclusion",
+                            sector=setor,
+                            description_preview=objeto[:100],
+                        )
+                    except Exception:
+                        pass
+                    continue
+
+            # STORY-328 AC6: Cross-validate with nomeOrgao
+            nome_orgao = lic.get("nomeOrgao", "") or lic.get("orgaoEntidade", {}).get("razaoSocial", "") or ""
+            nome_orgao_norm = normalize_text(nome_orgao) if nome_orgao else ""
+
+            match, matched_terms = match_keywords(
+                objeto_for_matching, kw, exc, context_required,
+                compiled_patterns=compiled_patterns,
+            )
+
+            # AC6: Discount keywords that appear ONLY in the org name (not in stripped object)
+            if match and nome_orgao_norm and matched_terms:
+                objeto_stripped_norm = normalize_text(objeto_for_matching)
+                real_terms = []
+                for term in matched_terms:
+                    term_norm = normalize_text(term)
+                    if term_norm in objeto_stripped_norm:
+                        real_terms.append(term)
+                    elif term_norm in nome_orgao_norm:
+                        logger.debug(
+                            f"STORY-328 AC6: Discounting keyword '{term}' — "
+                            f"found in orgName but not in stripped objeto"
+                        )
+                if real_terms:
+                    matched_terms = real_terms
+                else:
+                    match = False
+
+            if match:
+                # Store matched terms on the bid for later scoring
+                lic["_matched_terms"] = matched_terms
+
+                # STORY-179 AC2.1: Calculate term density ratio
+                # Count how many times matched terms appear in the text
+                # STORY-328: Use stripped text for density calculation
+                objeto_norm = normalize_text(objeto_for_matching)
+                total_words = len(objeto_norm.split())
+                term_count = 0
+                for term in matched_terms:
+                    term_norm = normalize_text(term)
+                    # Count exact occurrences of this term in the text
+                    term_count += objeto_norm.count(term_norm)
+
+                term_density = term_count / total_words if total_words > 0 else 0
+                lic["_term_density"] = term_density
+
+                resultado_keyword.append(lic)
+                try:
+                    from metrics import FILTER_DECISIONS_BY_SETOR
+                    FILTER_DECISIONS_BY_SETOR.labels(setor=setor or "unknown", decision="keyword_approved").inc()
+                except Exception:
+                    pass
+            else:
+                stats["rejeitadas_keyword"] += 1
+                # STORY-248 AC9: Record keyword miss
                 try:
                     _get_tracker().record_rejection(
-                        "global_exclusion",
+                        "keyword_miss",
                         sector=setor,
                         description_preview=objeto[:100],
                     )
                 except Exception:
                     pass
-                continue
-
-        # STORY-328 AC6: Cross-validate with nomeOrgao
-        nome_orgao = lic.get("nomeOrgao", "") or lic.get("orgaoEntidade", {}).get("razaoSocial", "") or ""
-        nome_orgao_norm = normalize_text(nome_orgao) if nome_orgao else ""
-
-        match, matched_terms = match_keywords(
-            objeto_for_matching, kw, exc, context_required,
-            compiled_patterns=compiled_patterns,
-        )
-
-        # AC6: Discount keywords that appear ONLY in the org name (not in stripped object)
-        if match and nome_orgao_norm and matched_terms:
-            objeto_stripped_norm = normalize_text(objeto_for_matching)
-            real_terms = []
-            for term in matched_terms:
-                term_norm = normalize_text(term)
-                if term_norm in objeto_stripped_norm:
-                    real_terms.append(term)
-                elif term_norm in nome_orgao_norm:
-                    logger.debug(
-                        f"STORY-328 AC6: Discounting keyword '{term}' — "
-                        f"found in orgName but not in stripped objeto"
-                    )
-            if real_terms:
-                matched_terms = real_terms
-            else:
-                match = False
-
-        if match:
-            # Store matched terms on the bid for later scoring
-            lic["_matched_terms"] = matched_terms
-
-            # STORY-179 AC2.1: Calculate term density ratio
-            # Count how many times matched terms appear in the text
-            # STORY-328: Use stripped text for density calculation
-            objeto_norm = normalize_text(objeto_for_matching)
-            total_words = len(objeto_norm.split())
-            term_count = 0
-            for term in matched_terms:
-                term_norm = normalize_text(term)
-                # Count exact occurrences of this term in the text
-                term_count += objeto_norm.count(term_norm)
-
-            term_density = term_count / total_words if total_words > 0 else 0
-            lic["_term_density"] = term_density
-
-            resultado_keyword.append(lic)
-            try:
-                from metrics import FILTER_DECISIONS_BY_SETOR
-                FILTER_DECISIONS_BY_SETOR.labels(setor=setor or "unknown", decision="keyword_approved").inc()
-            except Exception:
-                pass
-        else:
-            stats["rejeitadas_keyword"] += 1
-            # STORY-248 AC9: Record keyword miss
-            try:
-                _get_tracker().record_rejection(
-                    "keyword_miss",
-                    sector=setor,
-                    description_preview=objeto[:100],
-                )
-            except Exception:
-                pass
-            try:
-                from metrics import FILTER_DECISIONS_BY_SETOR
-                FILTER_DECISIONS_BY_SETOR.labels(setor=setor or "unknown", decision="keyword_rejected").inc()
-            except Exception:
-                pass
+                try:
+                    from metrics import FILTER_DECISIONS_BY_SETOR
+                    FILTER_DECISIONS_BY_SETOR.labels(setor=setor or "unknown", decision="keyword_rejected").inc()
+                except Exception:
+                    pass
 
     # ========================================================================
     # SECTOR-PROX: Camada 1B.3 — Proximity Context Filter

@@ -313,8 +313,8 @@ def apply_keyword_filters(
     custom_terms, on_progress, stats,
 ) -> List[dict]:
     """Phase 2: Keyword matching + org context stripping + proximity + co-occurrence."""
-    kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
-    exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
+    kw = keywords if keywords else set()
+    exc = exclusions if exclusions else set()
 
     # Pre-compile regex patterns
     compiled_patterns: Dict[str, re.Pattern] = {}
@@ -523,7 +523,7 @@ def apply_item_inspection(resultado_keyword, setor, keywords, stats) -> List[dic
         from item_inspector import inspect_bids_in_filter
         from sectors import get_sector as _get_sector_insp
 
-        kw = keywords if keywords is not None else KEYWORDS_UNIFORMES  # noqa: F841
+        kw = keywords if keywords else set()  # noqa: F841
         setor_config_insp = _get_sector_insp(setor)
         ds = setor_config_insp.domain_signals
 

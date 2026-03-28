@@ -341,15 +341,26 @@ class TestFilterLicitacao:
         assert aprovada is False
 
     def test_rejects_missing_keywords(self):
-        """Should reject bid without uniform keywords."""
+        """Should reject bid without uniform keywords when keywords are provided."""
         licitacao = {
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
             "objetoCompra": "Aquisição de notebooks e impressoras",
         }
-        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        # RC1-FIX: Must pass keywords explicitly (empty keywords = accept all)
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"}, keywords=KEYWORDS_UNIFORMES)
         assert aprovada is False
         assert "keywords" in motivo.lower()
+
+    def test_accepts_all_when_no_keywords(self):
+        """RC1-FIX: When keywords is None/empty, all bids should be accepted."""
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Aquisição de notebooks e impressoras",
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"}, keywords=None)
+        assert aprovada is True
 
     def test_accepts_with_uniform_keywords(self):
         """Should accept bid with uniform keywords."""
@@ -485,7 +496,7 @@ class TestFilterBatch:
                 "dataAberturaProposta": future_date,
             }
         ]
-        aprovadas, stats = filter_batch(licitacoes, {"SP"})
+        aprovadas, stats = filter_batch(licitacoes, {"SP"}, keywords=KEYWORDS_UNIFORMES)
 
         assert len(aprovadas) == 1
         assert stats["total"] == 1
@@ -518,7 +529,8 @@ class TestFilterBatch:
                 "dataAberturaProposta": future_date,
             },
         ]
-        aprovadas, stats = filter_batch(licitacoes, {"SP", "MG"})
+        # RC1-FIX: Pass keywords explicitly
+        aprovadas, stats = filter_batch(licitacoes, {"SP", "MG"}, keywords=KEYWORDS_UNIFORMES)
 
         assert len(aprovadas) == 2
         assert stats["total"] == 3
@@ -549,7 +561,8 @@ class TestFilterBatch:
             },
         ]
 
-        aprovadas, stats = filter_batch(licitacoes, {"SP"})
+        # RC1-FIX: Pass keywords explicitly (empty keywords = accept all)
+        aprovadas, stats = filter_batch(licitacoes, {"SP"}, keywords=KEYWORDS_UNIFORMES)
 
         assert stats["total"] == 4
         assert stats["rejeitadas_uf"] == 1
@@ -646,7 +659,7 @@ class TestFilterBatch:
             for i in range(1000)
         ]
 
-        aprovadas, stats = filter_batch(licitacoes, {"SP"})
+        aprovadas, stats = filter_batch(licitacoes, {"SP"}, keywords=KEYWORDS_UNIFORMES)
 
         # All should be approved (all meet criteria)
         assert len(aprovadas) == 1000
