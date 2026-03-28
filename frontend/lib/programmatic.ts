@@ -199,7 +199,7 @@ export function generateSectorFAQs(
     },
     {
       question: `Preciso pagar para ver licitações de ${sectorName}?`,
-      answer: `Você pode testar o SmartLic grátis por 30 dias, sem cartão de crédito. O teste inclui busca com IA, análise de viabilidade e exportação de relatórios.`,
+      answer: `Você pode testar o SmartLic grátis por 14 dias, sem cartão de crédito. O teste inclui busca com IA, análise de viabilidade e exportação de relatórios.`,
     },
     {
       question: `Como receber alertas de novas licitações de ${sectorName}?`,
@@ -295,7 +295,7 @@ export function generatePanoramaFAQs(
     },
     {
       question: `Posso acompanhar licitações de ${sectorName} em tempo real?`,
-      answer: `Sim. O SmartLic monitora automaticamente PNCP, Portal de Compras Públicas e ComprasGov, atualizando dados a cada 24 horas. Teste grátis por 30 dias e receba alertas personalizados de novas oportunidades no seu setor.`,
+      answer: `Sim. O SmartLic monitora automaticamente PNCP, Portal de Compras Públicas e ComprasGov, atualizando dados a cada 24 horas. Teste grátis por 14 dias e receba alertas personalizados de novas oportunidades no seu setor.`,
     },
   ];
 }
@@ -556,7 +556,7 @@ export function generateLicitacoesFAQs(
     },
     {
       question: `Posso testar o SmartLic para buscar licitações de ${sectorName}?`,
-      answer: `Sim, o SmartLic oferece teste grátis de 30 dias sem necessidade de cartão de crédito. Durante o teste você tem acesso completo à busca com IA, análise de viabilidade por 4 fatores, pipeline de oportunidades e exportação de relatórios em Excel.`,
+      answer: `Sim, o SmartLic oferece teste grátis de 14 dias sem necessidade de cartão de crédito. Durante o teste você tem acesso completo à busca com IA, análise de viabilidade por 4 fatores, pipeline de oportunidades e exportação de relatórios em Excel.`,
     },
   ];
 }

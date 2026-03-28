@@ -331,9 +331,9 @@ describe('MKT-003 — programmatic.ts helpers', () => {
       expect(answerText).toContain('SmartLic');
     });
 
-    it('mentions "30 dias" free trial in at least one answer', () => {
+    it('mentions "14 dias" free trial in at least one answer', () => {
       const answerText = faqs.map((f) => f.answer).join(' ');
-      expect(answerText).toContain('30 dias');
+      expect(answerText).toContain('14 dias');
     });
 
     it('mentions PNCP in at least one answer', () => {
@@ -1193,11 +1193,11 @@ describe('MKT-003 — BlogCTA component (unit)', () => {
       expect(screen.getByText('Comece Agora')).toBeInTheDocument();
     });
 
-    it('includes "teste grátis 30 dias" in text', () => {
+    it('includes "teste grátis 14 dias" in text', () => {
       render(
         <RealBlogCTA variant="inline" setor="Saúde" uf="SP" count={0} slug="saude-sp" />,
       );
-      expect(screen.getByText(/teste grátis 30 dias/)).toBeInTheDocument();
+      expect(screen.getByText(/teste grátis 14 dias/)).toBeInTheDocument();
     });
   });
 
@@ -1237,11 +1237,11 @@ describe('MKT-003 — BlogCTA component (unit)', () => {
       expect(href).toContain('saude-sp');
     });
 
-    it('mentions "30 dias" free trial in body text', () => {
+    it('mentions "14 dias" free trial in body text', () => {
       render(
         <RealBlogCTA variant="final" setor="Saúde" uf="São Paulo" count={42} slug="saude-sp" />,
       );
-      expect(screen.getByText(/30 dias/)).toBeInTheDocument();
+      expect(screen.getByText(/14 dias/)).toBeInTheDocument();
     });
 
     it('renders "Começar Teste Grátis" CTA button', () => {

@@ -9,7 +9,7 @@ import StatusContent from "./components/StatusContent";
  * fetched and rendered client-side via StatusContent ("use client").
  */
 export const metadata: Metadata = {
-  title: "Status do Sistema | SmartLic",
+  title: "Status do Sistema",
   description: "Acompanhe o status em tempo real dos sistemas e fontes de dados do SmartLic.",
 };
 

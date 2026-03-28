@@ -498,7 +498,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
       {/* CTA Section — STORY-262 AC18/AC19 — BEFORE FAQ */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Experimente a triagem inteligente do SmartLic -- 30 dias grátis
+          Experimente a triagem inteligente do SmartLic -- 14 dias grátis
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           O SmartLic analisa cada edital com base em 4 fatores de viabilidade e

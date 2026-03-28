@@ -40,7 +40,7 @@ function buildCTAText(setor?: string, uf?: string, count?: number): string {
     parts[0] += ` em ${uf}`;
   }
 
-  parts.push('teste grátis 30 dias');
+  parts.push('teste grátis 14 dias');
   return parts.join(' — ');
 }
 
@@ -75,7 +75,7 @@ function FinalCTA({ setor, uf, count, slug }: Omit<BlogCTAProps, 'variant'>) {
       </h3>
       <p className="text-white/80 mb-6 max-w-xl mx-auto">
         Filtre por viabilidade real, receba alertas automáticos e exporte relatórios.
-        Teste grátis 30 dias — sem cartão de crédito.
+        Teste grátis 14 dias — sem cartão de crédito.
       </p>
       <Link
         href={href}

@@ -11,6 +11,7 @@
  */
 
 import Footer from '../components/Footer';
+import LandingNavbar from '../components/landing/LandingNavbar';
 import { FeaturesContent } from './FeaturesContent';
 
 
@@ -26,6 +27,8 @@ export const metadata = {
 export default function FeaturesPage() {
   return (
     <>
+      <LandingNavbar />
+
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-brand-blue to-brand-blue/80 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

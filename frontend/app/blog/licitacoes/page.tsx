@@ -122,7 +122,7 @@ export default function LicitacoesIndexPage() {
             </h3>
             <p className="text-white/80 mb-6 max-w-xl mx-auto">
               O SmartLic monitora todos os 15 setores em todos os 27 estados do Brasil, com dados ao vivo.
-              Teste grátis 30 dias — sem cartão de crédito.
+              Teste grátis 14 dias — sem cartão de crédito.
             </p>
             <Link
               href="/signup?source=blog&utm_source=blog&utm_medium=programmatic&utm_content=licitacoes-index"

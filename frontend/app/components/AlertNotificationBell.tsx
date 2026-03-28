@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthProvider";
 import Link from "next/link";
 import { Bell } from "lucide-react";
+import { useAlerts } from "../../hooks/useAlerts";
 
 /**
  * STORY-315 AC18+AC19: Notification bell icon with badge count and dropdown.
@@ -11,61 +12,18 @@ import { Bell } from "lucide-react";
  * Shows unread alert count as a red badge over a bell icon.
  * Clicking opens a dropdown with recent alert notifications.
  * Placed in PageHeader between extraControls and ThemeToggle.
+ *
+ * Refactored: Uses shared useAlerts() hook (SWR-based, deduped, 404-safe).
+ * Eliminates redundant manual fetch + timer that caused console 404s (ISSUE-004).
  */
 export function AlertNotificationBell() {
   const { session } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [recentAlerts, setRecentAlerts] = useState<
-    Array<{ id: string; name: string; total_count: number; run_at: string }>
-  >([]);
+  const { alerts } = useAlerts();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch unread alert count
-  const fetchNotifications = useCallback(async () => {
-    if (!session?.access_token) return;
-    try {
-      const res = await fetch("/api/alerts", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      // 401/403: auth not ready yet — skip silently
-      if (res.status === 401 || res.status === 403) return;
-      // 404: no alerts configured — treat as empty, keep polling
-      if (res.status === 404) {
-        setUnreadCount(0);
-        return;
-      }
-      if (!res.ok) return;
-      const data = await res.json();
-      const alerts = Array.isArray(data) ? data : data.alerts || [];
-      const activeCount = alerts.filter(
-        (a: { active: boolean }) => a.active,
-      ).length;
-      setUnreadCount(activeCount > 0 ? activeCount : 0);
-      setRecentAlerts(
-        alerts.slice(0, 5).map((a: { id: string; name: string; active: boolean }) => ({
-          id: a.id,
-          name: a.name,
-          total_count: 0,
-          run_at: "",
-        })),
-      );
-    } catch {
-      // silent
-    }
-  }, [session?.access_token]);
-
-  useEffect(() => {
-    // Delay first fetch by 2s to avoid racing with AuthProvider initialization
-    const initial = setTimeout(() => fetchNotifications(), 2000);
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
-    return () => {
-      clearTimeout(initial);
-      clearInterval(interval);
-    };
-  }, [fetchNotifications]);
+  const unreadCount = alerts.filter((a) => a.active).length;
+  const recentAlerts = alerts.slice(0, 5);
 
   // Close dropdown on outside click
   useEffect(() => {

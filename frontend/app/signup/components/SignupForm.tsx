@@ -251,12 +251,12 @@ export function SignupForm({ form, loading, error, onSubmit, isFormValid }: Sign
 
         {/* Password — SAB-007 AC3 */}
         <div>
-          <Label htmlFor="password" required>
+          <Label htmlFor="new-password" required>
             Senha
           </Label>
           <div className="relative">
             <Input
-              id="password"
+              id="new-password"
               type={showPassword ? "text" : "password"}
               inputSize="lg"
               className="pr-12"
