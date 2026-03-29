@@ -26,7 +26,17 @@ export function AdminSourceHealth({ sourceHealth, sourceHealthLoading, onRefresh
       {sourceHealthLoading && Object.keys(sourceHealth).length === 0 ? (
         <div className="h-12 bg-[var(--surface-1)] rounded animate-pulse" />
       ) : Object.keys(sourceHealth).length === 0 ? (
-        <p className="text-sm text-[var(--ink-muted)]">Não disponível — backend indisponível ou sem dados de fontes</p>
+        <div className="flex items-center justify-between py-2">
+          <p className="text-sm text-[var(--ink-muted)]">
+            Dados de fontes serão exibidos após o primeiro ciclo de monitoramento.
+          </p>
+          <button
+            onClick={onRefresh}
+            className="text-xs px-3 py-1 border border-[var(--border)] rounded-button hover:bg-[var(--surface-1)] text-[var(--ink-secondary)] ml-4 flex-shrink-0"
+          >
+            Tentar novamente
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Object.entries(sourceHealth).map(([code, info]) => {

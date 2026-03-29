@@ -246,7 +246,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <AdminUptimeWidget uptimePct30d={uptimePct30d} loading={uptimeLoading} />
+        <AdminUptimeWidget uptimePct30d={uptimePct30d} loading={uptimeLoading} onRetry={fetchSourceHealth} />
 
         <AdminSourceHealth
           sourceHealth={sourceHealth}

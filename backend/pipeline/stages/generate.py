@@ -200,6 +200,7 @@ async def stage_generate(pipeline, ctx: SearchContext) -> None:
             ctx.sector.name if ctx.sector else "licitações",
             ctx.request.termos_busca,  # GTM-FIX-041
             _job_id=f"llm:{search_id}",
+            setor_id=ctx.request.setor_id if hasattr(ctx.request, "setor_id") else None,
         )
         if llm_enqueued is None:
             # CRIT-033: Enqueue failed — mark as fallback, not "processing"
@@ -267,10 +268,12 @@ async def stage_generate(pipeline, ctx: SearchContext) -> None:
         }) as llm_span:
             try:
                 _sector = ctx.sector.name if ctx.sector else "licitações"
+                _setor_id = ctx.request.setor_id if hasattr(ctx.request, "setor_id") else None
                 ctx.resumo = gerar_resumo(
                     ctx.licitacoes_filtradas,
                     sector_name=_sector,
                     termos_busca=ctx.request.termos_busca if hasattr(ctx.request, "termos_busca") else None,
+                    setor_id=_setor_id,
                 )
                 llm_span.set_attribute("llm.status", "success")
                 logger.debug("LLM summary generated successfully")
@@ -309,6 +312,8 @@ async def stage_generate(pipeline, ctx: SearchContext) -> None:
             )
         ctx.resumo.total_oportunidades = actual_total
         ctx.resumo.valor_total = actual_valor
+        ctx.resumo.outlier_count = _outlier_count
+        ctx.resumo.valor_sanitizado = _used_sanitized
         ctx.llm_status = "ready"
 
         # SSE: Starting Excel

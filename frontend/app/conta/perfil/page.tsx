@@ -120,8 +120,24 @@ export default function PerfilPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-[var(--ink-secondary)]">Carregando...</p>
+      <div className="space-y-6 animate-pulse">
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card">
+          <div className="h-5 w-36 bg-[var(--surface-1)] rounded mb-4" />
+          <div className="space-y-3">
+            <div className="h-4 w-24 bg-[var(--surface-1)] rounded" />
+            <div className="h-4 w-48 bg-[var(--surface-1)] rounded" />
+            <div className="h-4 w-24 bg-[var(--surface-1)] rounded" />
+            <div className="h-4 w-40 bg-[var(--surface-1)] rounded" />
+          </div>
+        </div>
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card">
+          <div className="h-5 w-40 bg-[var(--surface-1)] rounded mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-[var(--surface-1)] rounded" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

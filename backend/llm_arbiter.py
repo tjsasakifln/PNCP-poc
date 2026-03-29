@@ -357,7 +357,7 @@ def _build_conservative_prompt(
         return _build_standard_sector_prompt(setor_name, objeto_truncated, valor, structured)
 
     description = config.description or setor_name
-    keywords = sorted(config.keywords)[:3]
+    keywords = sorted(config.keywords, key=len, reverse=True)[:3]
     sim_lines = "\n".join(f'- "Aquisição de {kw} para órgão público"' for kw in keywords)
     exclusions = sorted(config.exclusions)[:3]
     nao_section = ""
@@ -472,7 +472,7 @@ Objeto: {objeto_truncated}
 Este contrato é sobre {setor_name}?{suffix}"""
 
     description = config.description or setor_name
-    keywords = sorted(config.keywords)[:5]
+    keywords = sorted(config.keywords, key=len, reverse=True)[:5]
     sim_lines = "\n".join(f'- "{kw}"' for kw in keywords)
     exclusions = sorted(config.exclusions)[:3]
     nao_section = ""
@@ -920,7 +920,7 @@ def _build_zero_match_batch_prompt(
         try:
             config = get_sector(setor_id)
             description = config.description or setor_name
-            keywords = sorted(config.keywords)[:5]
+            keywords = sorted(config.keywords, key=len, reverse=True)[:5]
             keywords_section = "\nPalavras-chave do setor: " + ", ".join(keywords)
             exclusions = sorted(config.exclusions)[:3]
             if exclusions:

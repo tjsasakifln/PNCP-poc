@@ -442,7 +442,7 @@ class TestLlmSummaryJob:
                 with patch("progress.get_tracker", new_callable=lambda: AsyncMock(return_value=None)):
                     result = await llm_summary_job({}, "search-1", licitacoes, "vestuario")
 
-        mock_gerar.assert_called_once_with(licitacoes, sector_name="vestuario", termos_busca=None)
+        mock_gerar.assert_called_once_with(licitacoes, sector_name="vestuario", termos_busca=None, setor_id=None)
         assert result is not None
 
     @pytest.mark.asyncio

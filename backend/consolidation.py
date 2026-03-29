@@ -903,6 +903,21 @@ class ConsolidationService:
                 return None
         return None
 
+    _LOT_PATTERN = re.compile(
+        r'\b(?:lote|item|grupo|lotes?)\s*(?:n[.ºo°]?\s*)?(\d+)\b',
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def _extract_lot_number(obj_text: str) -> str | None:
+        """Extract lot/item/group number from objetoCompra text.
+
+        ISSUE-027: Bids with the same object but different lot numbers are
+        legitimate separate procurements and must NOT be deduplicated.
+        """
+        m = ConsolidationService._LOT_PATTERN.search(obj_text or "")
+        return m.group(1) if m else None
+
     def _deduplicate_fuzzy(
         self, records: List[UnifiedProcurement]
     ) -> List[UnifiedProcurement]:
@@ -957,12 +972,28 @@ class ConsolidationService:
                     if sim < 0.70:
                         continue
 
-                    # Value proximity check (within 5%, or both zero/missing)
+                    # ISSUE-027: Lot detection — same object with different lot numbers
+                    # are legitimate separate procurements, never deduplicate them.
+                    lot_a = self._extract_lot_number(records[idx_a].objeto)
+                    lot_b = self._extract_lot_number(records[idx_b].objeto)
+                    if sim >= 0.85 and lot_a is not None and lot_b is not None and lot_a != lot_b:
+                        continue  # Different lots of the same procurement — keep both
+
+                    # Annotate bids with lot info for future frontend grouping
+                    if lot_a is not None:
+                        records[idx_a]._lot_number = lot_a  # type: ignore[attr-defined]
+                    if lot_b is not None:
+                        records[idx_b]._lot_number = lot_b  # type: ignore[attr-defined]
+
+                    # Value proximity check.
+                    # For high-confidence matches (Jaccard >= 0.85, same/no lot): allow up to 20%.
+                    # For lower-confidence matches (0.70-0.85): keep the stricter 5% threshold.
                     val_a = records[idx_a].valor_estimado or 0
                     val_b = records[idx_b].valor_estimado or 0
                     if val_a > 0 and val_b > 0:
                         diff = abs(val_a - val_b) / max(val_a, val_b)
-                        if diff > 0.05:
+                        value_threshold = 0.20 if sim >= 0.85 else 0.05
+                        if diff > value_threshold:
                             continue  # Different values = likely different lots
 
                     # ISSUE-027: For Jaccard 0.70-0.85, require edital number proximity

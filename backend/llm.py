@@ -33,7 +33,7 @@ def _fmt_brl(value: float) -> str:
     return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def gerar_resumo(licitacoes: list[dict[str, Any]], *, sector_name: str = "licitações", termos_busca: str | None = None) -> ResumoLicitacoes:
+def gerar_resumo(licitacoes: list[dict[str, Any]], *, sector_name: str = "licitações", termos_busca: str | None = None, setor_id: str | None = None) -> ResumoLicitacoes:
     """
     Generate AI-powered executive summary of procurement bids using GPT-4.1-nano.
 
@@ -117,10 +117,27 @@ def gerar_resumo(licitacoes: list[dict[str, Any]], *, sector_name: str = "licita
     # Initialize OpenAI client
     client = OpenAI(api_key=api_key)
 
+    # ISSUE-026: Load sector keywords for contextual summary if setor_id provided
+    _sector_context_line = ""
+    if setor_id and not termos_busca:
+        try:
+            from sectors import get_sector as _get_sector_llm
+            _sec = _get_sector_llm(setor_id)
+            _sec_kws = sorted(getattr(_sec, "keywords", []), key=len, reverse=True)[:10]
+            if _sec_kws:
+                _sector_context_line = (
+                    f"\nSETOR ALVO: {sector_name}\n"
+                    f"Palavras-chave relevantes: {', '.join(_sec_kws)}\n"
+                    f"- Foque o resumo nos itens mais relevantes para o setor {sector_name}. "
+                    f"Ignore itens claramente fora do escopo do setor.\n"
+                )
+        except Exception:
+            pass
+
     # System prompt with expert persona and rules
     system_prompt = f"""Você é um analista de licitações.
 Analise as licitações fornecidas e gere um resumo executivo.
-
+{_sector_context_line}
 REGRAS:
 - Seja direto e objetivo
 - Destaque as maiores oportunidades por valor

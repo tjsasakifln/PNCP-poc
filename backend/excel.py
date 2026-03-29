@@ -25,6 +25,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from utils.value_sanitizer import sanitize_valor, compute_robust_total
+
 # Regex matching illegal XML characters that openpyxl rejects
 # Includes: \x00-\x08, \x0b-\x0c, \x0e-\x1f (control chars except tab, LF, CR)
 ILLEGAL_CHARACTERS_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
@@ -237,7 +239,9 @@ def create_excel(licitacoes: list[dict], paywall_preview: bool = False, total_be
     ws_meta[f"B{meta_row}"] = len(licitacoes)
     meta_row += 1
     ws_meta[f"A{meta_row}"] = "Valor total estimado:"
-    ws_meta[f"B{meta_row}"] = sum(lic.get("valorTotalEstimado", 0) or 0 for lic in licitacoes)
+    raw_values = [sanitize_valor(lic.get("valorTotalEstimado", 0) or 0) for lic in licitacoes]
+    valor_total, _median, outlier_count, _used_sanitized = compute_robust_total(raw_values)
+    ws_meta[f"B{meta_row}"] = valor_total
     ws_meta[f"B{meta_row}"].number_format = currency_format
 
     # STORY-320 AC4: Upsell sheet when paywall preview is active

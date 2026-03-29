@@ -274,6 +274,7 @@ export default function PlanosPage() {
           hasFullAccess={hasFullAccess}
           checkoutLoading={checkoutLoading}
           portalLoading={portalLoading}
+          planLoading={planLoading || authLoading}
           onCheckout={handleCheckout}
           onManageSubscription={handleManageSubscription}
         />

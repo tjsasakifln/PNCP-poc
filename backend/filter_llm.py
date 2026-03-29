@@ -79,6 +79,15 @@ def classify_zero_match_pool(
     if not (LLM_ZERO_MATCH_ENABLED and setor):
         return resultado_llm_zero, resultado_pending_review
 
+    # ISSUE-029: Load sector negative_keywords for pre-filter
+    _sector_negative_kws: List[str] = []
+    try:
+        from sectors import get_sector as _get_sector_neg
+        _neg_sec = _get_sector_neg(setor)
+        _sector_negative_kws = [kw.lower() for kw in getattr(_neg_sec, "negative_keywords", [])]
+    except Exception:
+        pass
+
     # Collect bids rejected by keyword gate
     keyword_approved_ids = {id(lic) for lic in resultado_keyword}
     raw_pool: List[dict] = []
@@ -90,6 +99,27 @@ def classify_zero_match_pool(
                 logger.debug(f"LLM zero_match: SKIP (objeto < 20 chars) objeto={objeto!r}")
                 continue
             raw_pool.append(lic)
+
+    # ISSUE-029: Pre-filter bids whose objetoCompra contains negative_keywords
+    if _sector_negative_kws and raw_pool:
+        _neg_filtered = []
+        _neg_rejected = 0
+        for lic in raw_pool:
+            _obj_lower = (lic.get("objetoCompra") or "").lower()
+            if any(neg_kw in _obj_lower for neg_kw in _sector_negative_kws):
+                _neg_rejected += 1
+                logger.debug(
+                    f"LLM zero_match: PRE-FILTER (negative_keyword match) "
+                    f"objeto={lic.get('objetoCompra', '')[:80]}"
+                )
+            else:
+                _neg_filtered.append(lic)
+        if _neg_rejected > 0:
+            logger.info(
+                f"[ISSUE-029] Zero-match negative_keyword pre-filter: "
+                f"removed {_neg_rejected}/{len(raw_pool)} bids before LLM"
+            )
+        raw_pool = _neg_filtered
 
     # CRIT-058: Cap + prioritize zero-match pool
     from config import MAX_ZERO_MATCH_ITEMS, ZERO_MATCH_VALUE_RATIO
@@ -126,6 +156,25 @@ def classify_zero_match_pool(
         approved, pending = _run_zero_match_llm(
             raw_pool, setor, custom_terms, _use_term_prompt_zm, on_progress, stats
         )
+
+        # ISSUE-029: Acceptance ratio circuit breaker — >30% accepted is suspicious
+        _total_classified = len(approved) + stats.get("llm_zero_match_rejeitadas", 0)
+        if _total_classified > 0 and len(approved) / _total_classified > 0.30:
+            _accept_ratio = len(approved) / _total_classified
+            _demoted_count = len(approved)
+            logger.warning(
+                f"[ISSUE-029] Zero-match acceptance ratio {_accept_ratio:.1%} exceeds 30% "
+                f"({_demoted_count}/{_total_classified}) — demoting to pending_review "
+                f"to prevent false positive flood"
+            )
+            for _lic in approved:
+                _lic["_relevance_source"] = "pending_review"
+                _lic["_pending_review"] = True
+                _lic["_pending_review_reason"] = "zero_match_high_acceptance_ratio"
+            pending = list(pending) + approved
+            approved = []
+            stats["pending_review_count"] += _demoted_count
+
         resultado_llm_zero.extend(approved)
         resultado_pending_review.extend(pending)
 

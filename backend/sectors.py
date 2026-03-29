@@ -81,6 +81,9 @@ class SectorConfig:
     viability_value_range: Optional[tuple] = None
     # SECTOR-PROX: Signature terms for proximity context cross-sector disambiguation
     signature_terms: Set[str] = field(default_factory=set)
+    # ISSUE-029: Terms that should NEVER be the primary subject in this sector's results.
+    # Used by filter_llm.py to pre-filter zero-match pool before sending to LLM.
+    negative_keywords: List[str] = field(default_factory=list)
 
 
 def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
@@ -146,6 +149,9 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
         # SECTOR-PROX: Parse signature_terms list → set
         signature_terms = set(cfg.get("signature_terms", []))
 
+        # ISSUE-029: Parse negative_keywords list (optional — backwards compatible)
+        negative_keywords = cfg.get("negative_keywords", [])
+
         sectors[sector_id] = SectorConfig(
             id=sector_id,
             name=cfg["name"],
@@ -158,6 +164,7 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
             domain_signals=domain_signals,
             viability_value_range=viability_vr,
             signature_terms=signature_terms,
+            negative_keywords=negative_keywords,
         )
 
     return sectors

@@ -413,6 +413,14 @@ class ResumoLicitacoes(BaseModel):
         description="Optional urgency alert for time-sensitive opportunities",
         examples=["⚠️ 5 licitações encerram em 24 horas"],
     )
+    outlier_count: int = Field(
+        default=0,
+        description="Number of outlier values excluded from valor_total computation",
+    )
+    valor_sanitizado: bool = Field(
+        default=False,
+        description="Whether outlier-robust sanitization was applied to valor_total",
+    )
 
     class Config:
         """Pydantic configuration."""
@@ -427,6 +435,8 @@ class ResumoLicitacoes(BaseModel):
                     "Maior valor: R$ 500k em SP",
                 ],
                 "alerta_urgencia": "⚠️ 5 licitações encerram em 24 horas",
+                "outlier_count": 0,
+                "valor_sanitizado": False,
             }
         }
 

@@ -163,6 +163,9 @@ export default function StatusContent() {
       <section className="mb-8">
         <h3 className="text-lg font-semibold text-ink mb-4">Fontes de Dados</h3>
         <div className="space-y-2">
+          {(!statusData?.sources || Object.keys(statusData.sources).length === 0) && (
+            <p className="text-sm text-muted-foreground">Informação de fontes indisponível no momento.</p>
+          )}
           {statusData?.sources && Object.entries(statusData.sources).map(([key, source]) => (
             <div key={key} className="flex items-center justify-between p-3 bg-surface-1 rounded-lg border border-border">
               <span className="text-sm font-medium text-ink">

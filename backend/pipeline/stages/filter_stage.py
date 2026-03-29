@@ -282,12 +282,30 @@ async def stage_filter(pipeline, ctx: SearchContext) -> None:
     # Root cause: status filter rejects ALL bids before keywords even execute.
     # The PNCP returns bids with mixed statuses (encerrada, em_julgamento, etc.) but
     # the default frontend filter is "recebendo_proposta" — rejecting everything.
+    #
+    # ISSUE-033 FIX: Do NOT relax if user explicitly selected a non-default status.
+    # When the user picked a specific status (not "todos" or "recebendo_proposta"),
+    # honour their choice and skip auto-relaxation entirely.
+    user_selected_explicit_status = (
+        request.status and request.status.value not in ("todos", "recebendo_proposta")
+    )
+    if user_selected_explicit_status and len(ctx.licitacoes_filtradas) == 0 and len(ctx.licitacoes_raw) > 0:
+        # Log status distribution for debugging (no relaxation will happen)
+        _diag_statuses_explicit = {}
+        for _d in ctx.licitacoes_raw[:200]:
+            _s = _d.get("_status_inferido", _d.get("situacaoCompraItemNome", "unknown"))
+            _diag_statuses_explicit[_s] = _diag_statuses_explicit.get(_s, 0) + 1
+        logger.info(
+            f"[ISSUE-033] User selected explicit status={request.status.value!r} — "
+            f"skipping auto-relaxation. Status distribution in raw pool: {_diag_statuses_explicit}"
+        )
     if (
         not ctx.custom_terms
         and ctx.request.setor_id
         and len(ctx.licitacoes_filtradas) == 0
         and len(ctx.licitacoes_raw) > 0
         and ctx.relaxation_level == 0
+        and not user_selected_explicit_status
     ):
         # ISSUE-025 DIAG: Log pre-filter distribution to understand rejection patterns
         _diag_statuses = {}

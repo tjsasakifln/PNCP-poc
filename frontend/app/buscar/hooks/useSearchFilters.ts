@@ -554,8 +554,14 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
       ? `"${termosArray.join('", "')}"`
       : "Licitações";
 
+  const statusQualifier =
+    status === "recebendo_proposta" ? "abertas para proposta"
+    : status === "em_julgamento" ? "em fase de julgamento"
+    : status === "encerrada" ? "encerradas"
+    : "";
+
   const dateLabel = modoBusca === "abertas"
-    ? "Mostrando licitações abertas para proposta"
+    ? `Mostrando licitações${statusQualifier ? ` ${statusQualifier}` : ""}`
     : "Período de publicação";
 
   // STORY-246 AC1-AC4: Compute smart defaults state

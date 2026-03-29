@@ -459,8 +459,10 @@ async def llm_summary_job(ctx: dict, search_id: str, licitacoes: list, sector_na
 
     logger.info(f"[LLM Job] search_id={search_id}, bids={len(licitacoes)}, sector={sector_name}")
 
+    _setor_id = kwargs.get("setor_id")
+
     try:
-        resumo = gerar_resumo(licitacoes, sector_name=sector_name, termos_busca=termos_busca)
+        resumo = gerar_resumo(licitacoes, sector_name=sector_name, termos_busca=termos_busca, setor_id=_setor_id)
         logger.info(f"[LLM Job] AI summary generated for {search_id}")
     except Exception as e:
         logger.warning(f"[LLM Job] LLM failed ({type(e).__name__}), using fallback: {e}")

@@ -23,6 +23,7 @@ interface PlanProCardProps {
   hasFullAccess: boolean;
   checkoutLoading: boolean;
   portalLoading: boolean;
+  planLoading?: boolean;
   onCheckout: () => void;
   onManageSubscription: () => void;
 }
@@ -35,6 +36,7 @@ export function PlanProCard({
   hasFullAccess,
   checkoutLoading,
   portalLoading,
+  planLoading,
   onCheckout,
   onManageSubscription,
 }: PlanProCardProps) {
@@ -103,6 +105,8 @@ export function PlanProCard({
         >
           {checkoutLoading || portalLoading
             ? "Processando..."
+            : planLoading
+            ? "Carregando..."
             : userStatus === "subscriber"
             ? "Gerenciar assinatura"
             : userStatus === "privileged"

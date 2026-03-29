@@ -81,6 +81,17 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
     },
     tier: 4,
   },
+  consultoria: {
+    id: "consultoria",
+    displayName: "Consultoria",
+    displayNamePt: "Consultoria",
+    price: "R$ 997/mês",
+    badge: {
+      bg: "bg-brand-navy",
+      icon: "star",
+    },
+    tier: 5,
+  },
 };
 
 /**

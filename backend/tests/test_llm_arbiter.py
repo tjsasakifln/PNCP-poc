@@ -668,7 +668,7 @@ class TestDynamicConservativePrompt:
         )
 
         assert config.description in prompt
-        expected_keywords = sorted(config.keywords)[:3]
+        expected_keywords = sorted(config.keywords, key=len, reverse=True)[:3]
         for kw in expected_keywords:
             assert kw in prompt, f"Expected keyword '{kw}' not found in prompt for {setor_id}"
 

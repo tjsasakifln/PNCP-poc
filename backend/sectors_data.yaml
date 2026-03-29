@@ -125,6 +125,32 @@ sectors:
       - "fornecimento de vestuario"
       - "aquisição de fardamento"
       - "fornecimento de fardamento"
+    negative_keywords:
+      # Terms that should NEVER appear as the primary subject in vestuário results
+      - "combustivel"
+      - "diesel"
+      - "ambulancia"
+      - "ambulância"
+      - "pavimentacao"
+      - "pavimentação"
+      - "software"
+      - "obras civis"
+      - "poco artesiano"
+      - "poço artesiano"
+      - "biodescontaminacao"
+      - "biodescontaminação"
+      - "asfalto"
+      - "drenagem"
+      - "terraplanagem"
+      - "elevador"
+      - "medicamento"
+      - "medicamentos"
+      - "informatica"
+      - "informática"
+      - "veiculos"
+      - "veículos"
+      - "combustiveis"
+      - "combustíveis"
     exclusions:
       # "uniforme/uniformização" in non-clothing context
       - "uniformização de procedimento"
@@ -621,6 +647,13 @@ sectors:
       - "produto alimenticio"
       - "gênero de primeira necessidade"
       - "genero de primeira necessidade"
+    negative_keywords:
+      # Terms that should NEVER appear as primary subject in alimentos results
+      - "pavimentacao"
+      - "pavimentação"
+      - "asfalto"
+      - "medicamento"
+      - "software"
     exclusions:
       # "alimentação" in non-food context
       - "alimentação de dados"
@@ -2085,6 +2118,13 @@ sectors:
       - "memorial descritivo"
       - "memorial de cálculo"
       - "memorial de calculo"
+    negative_keywords:
+      # Terms that should NEVER appear as primary subject in engenharia results
+      - "medicamento"
+      - "medicamentos"
+      - "vestuario"
+      - "uniformes"
+      - "alimentos"
     exclusions:
       - "engenharia de software"
       - "engenharia de dados"
@@ -3577,6 +3617,13 @@ sectors:
       - "oxigênio medicinal"
       - "oxigenio medicinal"
       - "gases medicinais"
+    negative_keywords:
+      # Terms that should NEVER appear as primary subject in saude results
+      - "pavimentacao"
+      - "pavimentação"
+      - "asfalto"
+      - "construcao civil"
+      - "terraplanagem"
     exclusions:
       # "saúde" in non-medical procurement context
       - "saúde do trabalhador"

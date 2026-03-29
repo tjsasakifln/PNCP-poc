@@ -254,8 +254,9 @@ describe('PerfilPage', () => {
   describe('Loading states', () => {
     it('should show loading state when auth is loading', () => {
       mockUserData = { ...mockUserData, authLoading: true };
-      render(<PerfilPage />);
-      expect(screen.getByText(/Carregando/i)).toBeInTheDocument();
+      const { container } = render(<PerfilPage />);
+      // Skeleton renders animated placeholder blocks, not text
+      expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
     });
   });
 
