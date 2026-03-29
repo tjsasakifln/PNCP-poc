@@ -221,6 +221,17 @@ def _filter_status_inline(resultado_uf, status, setor, stats):
                     FILTER_PASSTHROUGH_TOTAL.labels(reason="unknown_status").inc()
                 except Exception:
                     pass
+            elif status_inferido == "todos":
+                # ISSUE-036 FIX: Bids with truly unknown status (no dates at all) are included
+                # in any non-default status filter rather than being silently rejected.
+                # Marked with _status_uncertain so UI can display a visual cue.
+                lic["_status_uncertain"] = True
+                resultado_status.append(lic)
+                try:
+                    from metrics import FILTER_PASSTHROUGH_TOTAL
+                    FILTER_PASSTHROUGH_TOTAL.labels(reason="unknown_status").inc()
+                except Exception:
+                    pass
             else:
                 stats["rejeitadas_status"] += 1
                 try:

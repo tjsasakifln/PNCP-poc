@@ -523,10 +523,11 @@ class ConsolidationService:
         if not has_data and source_errors and self._fail_on_all_errors:
             raise AllSourcesFailedError(source_errors)
 
-        # Deduplicate: exact key match then fuzzy similarity
+        # Deduplicate: exact key match → fuzzy similarity → process-number
         total_before = len(all_records)
         deduped = self._deduplicate(all_records)
         deduped = self._deduplicate_fuzzy(deduped)
+        deduped = self._deduplicate_by_process_number(deduped)
         total_after = len(deduped)
 
         # Convert to legacy format
@@ -937,7 +938,9 @@ class ConsolidationService:
         # Phase 1: Block by normalized CNPJ
         blocks: Dict[str, List[int]] = defaultdict(list)
         for idx, rec in enumerate(records):
-            cnpj = re.sub(r"[^\d]", "", rec.cnpj_orgao)
+            cnpj = re.sub(r"[^\d]", "", rec.cnpj_orgao or "")
+            if cnpj and len(cnpj) < 14:
+                cnpj = cnpj.zfill(14)
             if cnpj:
                 blocks[cnpj].append(idx)
 
@@ -972,10 +975,19 @@ class ConsolidationService:
                     if sim < 0.70:
                         continue
 
+                    # Diagnostic log — help trace why high-sim pairs aren't deduped
+                    lot_a_diag = self._extract_lot_number(records[idx_a].objeto)
+                    lot_b_diag = self._extract_lot_number(records[idx_b].objeto)
+                    logger.debug(
+                        f"[FUZZY-DEDUP-DIAG] sim={sim:.3f} lot_a={lot_a_diag} lot_b={lot_b_diag} "
+                        f"val_a={records[idx_a].valor_estimado} val_b={records[idx_b].valor_estimado} "
+                        f"src_a={records[idx_a].source_id[:40]} src_b={records[idx_b].source_id[:40]}"
+                    )
+
                     # ISSUE-027: Lot detection — same object with different lot numbers
                     # are legitimate separate procurements, never deduplicate them.
-                    lot_a = self._extract_lot_number(records[idx_a].objeto)
-                    lot_b = self._extract_lot_number(records[idx_b].objeto)
+                    lot_a = lot_a_diag
+                    lot_b = lot_b_diag
                     if sim >= 0.85 and lot_a is not None and lot_b is not None and lot_a != lot_b:
                         continue  # Different lots of the same procurement — keep both
 
@@ -1018,6 +1030,141 @@ class ConsolidationService:
         if removed_count > 0:
             logger.info(
                 f"[FUZZY-DEDUP] Removed {removed_count} fuzzy duplicates "
+                f"from {len(records)} records"
+            )
+
+        return [rec for idx, rec in enumerate(records) if idx not in to_remove]
+
+    # Process-number pattern — PNCP source_id format:
+    # "{cnpj}-{seq}-{edital_number}/{year}" e.g. "12345678000195-2026-000065/2026"
+    # We extract the numeric edital component before the year suffix as the
+    # "process base" so that minor sequential gaps (000065 vs 000066) from the
+    # same orgão can be collapsed.
+    _PROCESS_NUMBER_PATTERN = re.compile(r"-(\d{4,6})/(\d{4})$")
+
+    @staticmethod
+    def _extract_process_base(source_id: str, cnpj: str) -> str | None:
+        """Return a (cnpj, year) key if this source_id looks like a PNCP edital.
+
+        Two records share the same process base when they have the same orgão
+        CNPJ and the same publication year. The edital sequence number is NOT
+        included so that adjacent numbers (000065 / 000066) from the same org
+        in the same year are grouped and the lower-priority duplicate removed.
+
+        Returns None when source_id doesn't match the expected PNCP pattern.
+        """
+        if not source_id or not cnpj:
+            return None
+        m = ConsolidationService._PROCESS_NUMBER_PATTERN.search(source_id)
+        if m:
+            year = m.group(2)
+            return f"{cnpj}|{year}"
+        return None
+
+    def _deduplicate_by_process_number(
+        self, records: List[UnifiedProcurement]
+    ) -> List[UnifiedProcurement]:
+        """Third dedup layer: same org + same year with very similar objects.
+
+        ISSUE-027: Addresses cases like "Amparo ETA V" appearing twice because
+        PNCP returned adjacent edital numbers (/000065 and /000066) for the same
+        procurement. Fuzzy dedup handles high Jaccard pairs but may miss pairs
+        that have slightly different description wording yet are the same process.
+
+        Strategy:
+        - Group by (cnpj, year) — same org, same publication year
+        - Within each group compare objeto Jaccard (>= 0.80) + valor proximity (20%)
+        - Keep the record from the highest-priority source; if same source keep first
+        """
+        if len(records) < 2:
+            return records
+
+        # Build process-base groups
+        groups: Dict[str, List[int]] = defaultdict(list)
+        for idx, rec in enumerate(records):
+            cnpj = re.sub(r"[^\d]", "", rec.cnpj_orgao or "")
+            if cnpj and len(cnpj) < 14:
+                cnpj = cnpj.zfill(14)
+            base = self._extract_process_base(rec.source_id or "", cnpj)
+            if base:
+                groups[base].append(idx)
+
+        # Source priority for winner selection
+        source_priority: Dict[str, int] = {}
+        for code, adapter in self._adapters.items():
+            adapter_code = getattr(adapter, "code", code)
+            adapter_meta = getattr(adapter, "metadata", None)
+            if adapter_meta is not None:
+                source_priority[adapter_code] = adapter_meta.priority
+
+        to_remove: set = set()
+        removed_count = 0
+
+        tokens_cache: Dict[int, frozenset] = {}
+
+        for base, indices in groups.items():
+            if len(indices) < 2:
+                continue
+
+            for i_pos in range(len(indices)):
+                idx_a = indices[i_pos]
+                if idx_a in to_remove:
+                    continue
+
+                if idx_a not in tokens_cache:
+                    tokens_cache[idx_a] = self._tokenize_objeto(records[idx_a].objeto)
+
+                for j_pos in range(i_pos + 1, len(indices)):
+                    idx_b = indices[j_pos]
+                    if idx_b in to_remove:
+                        continue
+
+                    if idx_b not in tokens_cache:
+                        tokens_cache[idx_b] = self._tokenize_objeto(records[idx_b].objeto)
+
+                    sim = self._jaccard(tokens_cache[idx_a], tokens_cache[idx_b])
+                    if sim < 0.80:
+                        continue
+
+                    # Different lot numbers are distinct procurements — skip
+                    lot_a = self._extract_lot_number(records[idx_a].objeto)
+                    lot_b = self._extract_lot_number(records[idx_b].objeto)
+                    if lot_a is not None and lot_b is not None and lot_a != lot_b:
+                        continue
+
+                    # Value proximity (20%)
+                    val_a = records[idx_a].valor_estimado or 0
+                    val_b = records[idx_b].valor_estimado or 0
+                    if val_a > 0 and val_b > 0:
+                        diff = abs(val_a - val_b) / max(val_a, val_b)
+                        if diff > 0.20:
+                            continue
+
+                    # Decide winner: lower priority number wins; ties keep first
+                    pri_a = source_priority.get(records[idx_a].source_name, 999)
+                    pri_b = source_priority.get(records[idx_b].source_name, 999)
+                    if pri_b < pri_a:
+                        # b is higher-priority — remove a and keep b
+                        to_remove.add(idx_a)
+                        removed_count += 1
+                        logger.info(
+                            f"[PROCESS-DEDUP] Merged duplicate (Jaccard={sim:.2f}): "
+                            f"base={base}, kept={records[idx_b].source_id}, "
+                            f"removed={records[idx_a].source_id}"
+                        )
+                        break  # idx_a is gone, no need to compare further
+                    else:
+                        to_remove.add(idx_b)
+                        removed_count += 1
+                        logger.info(
+                            f"[PROCESS-DEDUP] Merged duplicate (Jaccard={sim:.2f}): "
+                            f"base={base}, kept={records[idx_a].source_id}, "
+                            f"removed={records[idx_b].source_id}"
+                        )
+
+        if removed_count > 0:
+            logger.info(
+                f"[PROCESS-DEDUP] Removed {removed_count} process-number duplicates "
                 f"from {len(records)} records"
             )
 

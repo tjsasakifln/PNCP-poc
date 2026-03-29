@@ -188,7 +188,13 @@ export default function SearchCustomizePanel({
                   {dateLabel}
                 </p>
                 <p className="text-xs text-ink-secondary mt-1">
-                  Oportunidades recentes — somente licitações com prazo aberto
+                  {status === "encerrada"
+                    ? "Buscando licitações encerradas — processos finalizados ou homologados"
+                    : status === "em_julgamento"
+                    ? "Buscando licitações em julgamento — propostas encerradas, em análise"
+                    : status === "todos"
+                    ? "Oportunidades recentes — todos os status incluídos"
+                    : "Oportunidades recentes — somente licitações com prazo aberto"}
                 </p>
               </div>
             ) : (

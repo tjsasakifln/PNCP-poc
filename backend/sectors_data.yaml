@@ -31,11 +31,9 @@ sectors:
       - "roupas"
       - "roupa profissional"
       - "vestuario profissional"
-      # Textile / manufacturing (ambiguous — guarded by exclusions)
-      - "confecção"
-      - "confecções"
-      - "confeccao"
-      - "confeccoes"
+      # Textile / manufacturing (ambiguous — only compound phrases, not standalone)
+      # ISSUE-029: Removed standalone "confecção"/"confecções" — too broad, matches
+      # "confecção de fossas sépticas" and other construction terms.
       - "costura"
       # Specific clothing pieces
       - "jaleco"
@@ -125,6 +123,7 @@ sectors:
       - "fornecimento de vestuario"
       - "aquisição de fardamento"
       - "fornecimento de fardamento"
+    zero_match_acceptance_cap: 0.10
     negative_keywords:
       # Terms that should NEVER appear as the primary subject in vestuário results
       - "combustivel"
@@ -151,6 +150,33 @@ sectors:
       - "veículos"
       - "combustiveis"
       - "combustíveis"
+      # ISSUE-029: Construction/infrastructure terms added
+      - "fossa"
+      - "fossas"
+      - "poço"
+      - "pocos"
+      - "concreto"
+      - "laje"
+      - "tubulação"
+      - "tubulacao"
+      - "sondagem"
+      - "terraplanagem"
+      - "coleta de resíduos"
+      - "coleta de residuos"
+      - "prótese"
+      - "protese"
+      - "comunicação visual"
+      - "comunicacao visual"
+      - "limpeza predial"
+      - "conservação predial"
+      - "conservacao predial"
+      - "resíduos sólidos"
+      - "residuos solidos"
+      - "construção civil"
+      - "construcao civil"
+      - "obra de engenharia"
+      - "serviço de engenharia"
+      - "servico de engenharia"
     exclusions:
       # "uniforme/uniformização" in non-clothing context
       - "uniformização de procedimento"

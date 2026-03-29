@@ -10,6 +10,7 @@ interface ResultsFooterProps {
   rawCount: number;
   searchMode: "setor" | "termos";
   sectorName: string;
+  setorId?: string | null;
   ufsSelecionadas: Set<string>;
   termosArray: string[];
   // Download
@@ -34,7 +35,7 @@ interface ResultsFooterProps {
  * TD-007: Footer section — export CTAs, stats, source badges, timestamps, upsell CTAs.
  */
 export function ResultsFooter({
-  result, rawCount, searchMode, sectorName, ufsSelecionadas, termosArray,
+  result, rawCount, searchMode, sectorName, setorId, ufsSelecionadas, termosArray,
   onDownload, downloadLoading, downloadError, downloadCompleted,
   planInfo, session, isTrialExpired, paywallApplied, totalBeforePaywall,
   onShowUpgradeModal,
@@ -58,7 +59,7 @@ export function ResultsFooter({
 
       {/* Alert creation */}
       {session?.access_token && result && (
-        <a href={`/alertas?from_search=1&setor=${encodeURIComponent(searchMode === "setor" ? (result as BuscaResult & { setor_id?: string }).setor_id || "" : "")}&ufs=${encodeURIComponent(Array.from(ufsSelecionadas).join(","))}&keywords=${encodeURIComponent(searchMode === "termos" ? termosArray.join(",") : "")}`} className="w-full bg-surface-0 border-2 border-brand-navy text-brand-navy py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold hover:bg-brand-blue-subtle transition-all duration-200 flex items-center justify-center gap-3"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>Criar alerta a partir desta análise</a>
+        <a href={`/alertas?from_search=1&setor=${encodeURIComponent(searchMode === "setor" ? setorId || "" : "")}&ufs=${encodeURIComponent(Array.from(ufsSelecionadas).join(","))}&keywords=${encodeURIComponent(searchMode === "termos" ? termosArray.join(",") : "")}`} className="w-full bg-surface-0 border-2 border-brand-navy text-brand-navy py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold hover:bg-brand-blue-subtle transition-all duration-200 flex items-center justify-center gap-3"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>Criar alerta a partir desta análise</a>
       )}
 
       {/* Download Error */}

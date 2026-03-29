@@ -296,9 +296,35 @@ def inferir_status_licitacao(licitacao: dict) -> str:
         logger.debug(f"Status inferido: recebendo_proposta (situação: '{situacao_nome}')")
         return "recebendo_proposta"
 
-    # 8. FALLBACK: Não foi possível determinar com certeza
+    # 8. HEURÍSTICA DE DATA: Publicações antigas sem status explícito
+    # Bids publicados há mais de 30 dias quase certamente estão encerrados.
+    # Bids publicados há 5 dias ou menos provavelmente ainda estão abertos.
+    # Esse heurístico resolve o caso em que PNCP retorna bids sem status
+    # (ex: "Divulgada no PNCP") para filtros "encerrada" / "em_julgamento".
+    data_pub_str = licitacao.get("dataPublicacaoPncp") or licitacao.get("dataPublicacao")
+    if data_pub_str:
+        try:
+            data_pub = datetime.fromisoformat(data_pub_str.replace("Z", "+00:00"))
+            agora_pub = datetime.now(data_pub.tzinfo) if data_pub.tzinfo else datetime.now()
+            dias_desde_pub = (agora_pub - data_pub).days
+            if dias_desde_pub > 30:
+                logger.debug(
+                    f"Status inferido: encerrada "
+                    f"(data-based heuristic: publicado há {dias_desde_pub} dias)"
+                )
+                return "encerrada"
+            elif dias_desde_pub <= 5:
+                logger.debug(
+                    f"Status inferido: recebendo_proposta "
+                    f"(data-based heuristic: publicado há {dias_desde_pub} dias)"
+                )
+                return "recebendo_proposta"
+        except (ValueError, AttributeError, TypeError):
+            pass
+
+    # 9. FALLBACK: Não foi possível determinar com certeza
     # Retorna "todos" para não filtrar essa licitação fora
-    # NOTA: "Divulgada no PNCP" e "Publicada" caem aqui — status indeterminado
+    # NOTA: Apenas bids sem datas de publicação chegam aqui
     logger.debug(
         f"Status inferido: todos (fallback - dados insuficientes). "
         f"Situação: '{situacao_nome}', Abertura: '{data_abertura_str}', "

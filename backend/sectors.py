@@ -84,6 +84,10 @@ class SectorConfig:
     # ISSUE-029: Terms that should NEVER be the primary subject in this sector's results.
     # Used by filter_llm.py to pre-filter zero-match pool before sending to LLM.
     negative_keywords: List[str] = field(default_factory=list)
+    # ISSUE-029: Maximum acceptance ratio for zero-match LLM classification circuit breaker.
+    # Narrow sectors (e.g. vestuario) should use ~0.10; broad sectors can use 0.30 (default).
+    # None falls back to the global 0.30 default in filter_llm.py.
+    zero_match_acceptance_cap: Optional[float] = None
 
 
 def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
@@ -152,6 +156,11 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
         # ISSUE-029: Parse negative_keywords list (optional — backwards compatible)
         negative_keywords = cfg.get("negative_keywords", [])
 
+        # ISSUE-029: Parse zero_match_acceptance_cap (optional float, default None → 0.30)
+        zero_match_acceptance_cap = cfg.get("zero_match_acceptance_cap")
+        if zero_match_acceptance_cap is not None:
+            zero_match_acceptance_cap = float(zero_match_acceptance_cap)
+
         sectors[sector_id] = SectorConfig(
             id=sector_id,
             name=cfg["name"],
@@ -165,6 +174,7 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
             viability_value_range=viability_vr,
             signature_terms=signature_terms,
             negative_keywords=negative_keywords,
+            zero_match_acceptance_cap=zero_match_acceptance_cap,
         )
 
     return sectors

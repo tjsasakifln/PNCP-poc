@@ -157,13 +157,24 @@ def classify_zero_match_pool(
             raw_pool, setor, custom_terms, _use_term_prompt_zm, on_progress, stats
         )
 
-        # ISSUE-029: Acceptance ratio circuit breaker — >30% accepted is suspicious
+        # ISSUE-029: Acceptance ratio circuit breaker — sector-aware threshold.
+        # Narrow sectors (e.g. vestuario) use a tighter cap via zero_match_acceptance_cap.
+        _cb_threshold = 0.30
+        try:
+            from sectors import get_sector as _get_sector_cb
+            _sec_cfg = _get_sector_cb(setor)
+            if hasattr(_sec_cfg, "zero_match_acceptance_cap") and _sec_cfg.zero_match_acceptance_cap is not None:
+                _cb_threshold = _sec_cfg.zero_match_acceptance_cap
+        except Exception:
+            pass
+
         _total_classified = len(approved) + stats.get("llm_zero_match_rejeitadas", 0)
-        if _total_classified > 0 and len(approved) / _total_classified > 0.30:
+        if _total_classified > 0 and len(approved) / _total_classified > _cb_threshold:
             _accept_ratio = len(approved) / _total_classified
             _demoted_count = len(approved)
             logger.warning(
-                f"[ISSUE-029] Zero-match acceptance ratio {_accept_ratio:.1%} exceeds 30% "
+                f"[ISSUE-029] Zero-match acceptance ratio {_accept_ratio:.1%} exceeds "
+                f"{_cb_threshold:.0%} threshold for setor={setor!r} "
                 f"({_demoted_count}/{_total_classified}) — demoting to pending_review "
                 f"to prevent false positive flood"
             )
@@ -232,12 +243,52 @@ def _cap_zero_match_pool(
 
                 def _sector_affinity(lic: dict) -> int:
                     obj = (lic.get("objetoCompra") or lic.get("objeto") or "").lower()
-                    return sum(1 for kw in sector_kws if kw in obj)
+                    # ISSUE-029: Use word-boundary matching to avoid substring false
+                    # positives (e.g. "confecção" matching "confecção de fossas sépticas").
+                    # Multi-word keywords get higher weight (more specific = more confident).
+                    score = 0
+                    obj_padded = f" {obj} "
+                    for kw in sector_kws:
+                        kw_lower = kw.lower()
+                        matched = (
+                            f" {kw_lower} " in obj_padded
+                            or obj.startswith(f"{kw_lower} ")
+                            or obj.endswith(f" {kw_lower}")
+                            or obj == kw_lower
+                        )
+                        if matched:
+                            score += len(kw_lower.split())
+                    return score
 
                 remainder.sort(key=_sector_affinity, reverse=True)
             except Exception:
                 pass  # Keep value-based order as fallback
         semantic_sample = remainder[:n_random]
+
+        # ISSUE-029: Second negative_keywords pass — remove construction/infra
+        # bids that slipped through value-based selection into the affinity pool.
+        if setor:
+            try:
+                from sectors import get_sector as _get_sec_neg2
+                _neg2_cfg = _get_sec_neg2(setor)
+                _neg2_kws = [k.lower() for k in getattr(_neg2_cfg, "negative_keywords", [])]
+                if _neg2_kws:
+                    _before = len(semantic_sample)
+                    semantic_sample = [
+                        lic for lic in semantic_sample
+                        if not any(
+                            neg in (lic.get("objetoCompra") or lic.get("objeto") or "").lower()
+                            for neg in _neg2_kws
+                        )
+                    ]
+                    _removed = _before - len(semantic_sample)
+                    if _removed > 0:
+                        logger.info(
+                            f"[ISSUE-029] Affinity-pool negative_keyword pass: "
+                            f"removed {_removed}/{_before} bids from semantic_sample"
+                        )
+            except Exception:
+                pass
     else:
         semantic_sample = []
 
