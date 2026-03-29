@@ -163,6 +163,9 @@ sectors:
       - "terraplanagem"
       - "coleta de resíduos"
       - "coleta de residuos"
+      - "coleta de lixo"
+      - "destinacao final"
+      - "destinação final"
       - "prótese"
       - "protese"
       - "comunicação visual"
@@ -177,6 +180,22 @@ sectors:
       - "obra de engenharia"
       - "serviço de engenharia"
       - "servico de engenharia"
+      # ISSUE-029 session-017: Additional gaps found in bid-by-bid verification
+      - "enfermagem"
+      - "calcada"
+      - "calçada"
+      - "calcadas"
+      - "calçadas"
+      - "balistico"
+      - "balístico"
+      - "balisticos"
+      - "balísticos"
+      - "tatico"
+      - "tático"
+      - "taticos"
+      - "táticos"
+      - "caminhao"
+      - "caminhão"
     exclusions:
       # "uniforme/uniformização" in non-clothing context
       - "uniformização de procedimento"
@@ -264,6 +283,9 @@ sectors:
       # "avental" in non-clothing context
       - "avental plumbifero"
       - "avental plumbífero"
+      - "avental tnt"
+      - "avental descartavel"
+      - "avental descartável"
       # "chapéu/boné" in non-clothing context
       - "chapéu pensador"
       - "chapeu pensador"
@@ -313,6 +335,8 @@ sectors:
       - "colete salva vida"
       - "colete balistico"
       - "colete balístico"
+      - "coletes balisticos"
+      - "coletes balísticos"
       # "bota" in non-footwear context (expanded)
       - "bota de borracha para construcao"
       # Construction / infrastructure that matches "bota", "colete" etc.
@@ -483,6 +507,83 @@ sectors:
         - "profissional"
         - "identificacao"
         - "refletivo"
+      # ISSUE-029: Broad standalone clothing words that match non-clothing contexts.
+      # Require at least one context keyword confirming clothing/uniform procurement.
+      costura:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "roupa"
+        - "textil"
+        - "confeccao"
+      "calça":
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "profissional"
+        - "escolar"
+        - "kit"
+      "calças":
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "profissional"
+        - "escolar"
+        - "kit"
+      camisa:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "escolar"
+        - "polo"
+        - "camiseta"
+        - "kit"
+      camisas:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "escolar"
+        - "polo"
+        - "camiseta"
+        - "kit"
+      roupa:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "profissional"
+        - "escolar"
+        - "servidor"
+      roupas:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "profissional"
+        - "escolar"
+        - "servidor"
+      sapato:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "profissional"
+        - "escolar"
+      sapatos:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "profissional"
+        - "escolar"
+      blusa:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "escolar"
+        - "kit"
+      blusas:
+        - "uniforme"
+        - "fardamento"
+        - "vestuario"
+        - "escolar"
+        - "kit"
 
     # GTM-RESILIENCE-D03: Co-occurrence rules for false positive detection.
     # Each rule: trigger keyword + negative_contexts (reject) + positive_signals (rescue).
@@ -523,7 +624,22 @@ sectors:
           - "camisa"
           - "camiseta"
           - "jaleco"
-      # Rule 4: "costura" + non-clothing items
+      # Rule 4: "uniform*" + events/entertainment context (ISSUE-029 session-017)
+      - trigger: "uniform"
+        negative_contexts:
+          - "bilheteria"
+          - "ingressos"
+          - "espetaculo"
+          - "espetáculos"
+          - "eventos"
+          - "teatro"
+          - "show"
+        positive_signals:
+          - "fardamento"
+          - "vestimenta"
+          - "kit uniforme"
+          - "aquisicao de uniforme"
+      # Rule 5: "costura" + non-clothing items
       - trigger: "costura"
         negative_contexts:
           - "cortina"

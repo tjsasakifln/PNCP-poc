@@ -281,7 +281,16 @@ async def list_pipeline_items(
 
         result = await sb_execute(query.range(offset, offset + limit - 1))
 
-        items = [PipelineItemResponse(**row) for row in (result.data or [])]
+        items = []
+        for row in (result.data or []):
+            try:
+                items.append(PipelineItemResponse(**row))
+            except Exception as row_err:
+                # ISSUE-038: Skip malformed rows instead of failing the entire request
+                logger.warning(
+                    f"Skipping malformed pipeline row for user {mask_user_id(user_id)}: "
+                    f"pncp_id={row.get('pncp_id', '?')}, error={row_err}"
+                )
         total = result.count if result.count is not None else len(items)
 
         return PipelineListResponse(items=items, total=total, limit=limit, offset=offset)
@@ -289,6 +298,15 @@ async def list_pipeline_items(
     except HTTPException:
         raise
     except Exception as e:
+        # ISSUE-038: Distinguish transient DB errors from unexpected failures.
+        # For read-only pipeline listing, return empty instead of 500 when
+        # Supabase is temporarily unavailable (CB open, timeout, etc.)
+        from supabase_client import CircuitBreakerOpenError
+        if isinstance(e, CircuitBreakerOpenError):
+            logger.warning(
+                f"Pipeline list returning empty (CB open) for user {mask_user_id(user_id)}: {e}"
+            )
+            return PipelineListResponse(items=[], total=0, limit=limit, offset=offset)
         logger.error(f"Error listing pipeline for user {mask_user_id(user_id)}: {e}")
         raise HTTPException(status_code=500, detail="Erro ao listar pipeline.")
 

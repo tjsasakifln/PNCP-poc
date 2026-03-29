@@ -2613,7 +2613,9 @@ def aplicar_todos_filtros(
     # Etapa 7.5: Filtro de Prazo Aberto (STORY-240 AC4)
     # When modo_busca="abertas", reject bids whose proposal deadline has passed.
     # Applied BEFORE keywords filter (fail-fast: eliminates closed bids before heavy regex).
-    if modo_busca == "abertas":
+    # ISSUE-036: Skip for encerrada/em_julgamento — user explicitly wants closed/judging bids.
+    _status_lower = status.lower() if status else "todos"
+    if modo_busca == "abertas" and _status_lower not in ("encerrada", "em_julgamento"):
         resultado_valor, rejeitadas_prazo = filtrar_por_prazo_aberto(resultado_valor)
         stats["rejeitadas_prazo_aberto"] = rejeitadas_prazo
         logger.debug(
@@ -3018,6 +3020,38 @@ def aplicar_todos_filtros(
                     continue
                 zero_match_pool.append(lic)
 
+        # ISSUE-029: Pre-filter bids whose objetoCompra contains sector negative_keywords.
+        # Ported from filter_llm.py — the extracted version was NOT on the production path.
+        if zero_match_pool and setor:
+            _sector_negative_kws: list = []
+            try:
+                from sectors import get_sector as _get_sector_neg
+                _neg_sec = _get_sector_neg(setor)
+                _sector_negative_kws = [kw.lower() for kw in getattr(_neg_sec, "negative_keywords", [])]
+            except Exception:
+                pass
+
+            if _sector_negative_kws:
+                _neg_filtered = []
+                _neg_rejected = 0
+                for lic in zero_match_pool:
+                    _obj_lower = (lic.get("objetoCompra") or "").lower()
+                    if any(neg_kw in _obj_lower for neg_kw in _sector_negative_kws):
+                        _neg_rejected += 1
+                        logger.debug(
+                            f"LLM zero_match: PRE-FILTER (negative_keyword) "
+                            f"objeto={lic.get('objetoCompra', '')[:80]}"
+                        )
+                    else:
+                        _neg_filtered.append(lic)
+                if _neg_rejected > 0:
+                    logger.info(
+                        f"[ISSUE-029] Zero-match negative_keyword pre-filter: "
+                        f"removed {_neg_rejected}/{len(zero_match_pool)} bids before LLM"
+                    )
+                    stats["llm_zero_match_neg_prefilter"] = _neg_rejected
+                zero_match_pool = _neg_filtered
+
         if zero_match_pool:
             from llm_arbiter import classify_contract_primary_match as _classify_zm
             from sectors import get_sector as _get_sector_zm
@@ -3135,6 +3169,32 @@ def aplicar_todos_filtros(
                         # AC9: Fallback on LLM failure = REJECT
                         stats["llm_zero_match_rejeitadas"] += 1
                         logger.error(f"LLM zero_match: FAILED (REJECT fallback): {e}")
+
+            # ISSUE-029: Acceptance ratio circuit breaker — narrow sectors cap acceptance.
+            # If LLM accepted too many zero-match bids, demote all to pending_review
+            # to prevent false positive flood (e.g. vestuario cap = 10%).
+            if resultado_llm_zero and setor:
+                _cb_threshold = 0.30  # Default 30%
+                try:
+                    _sec_cfg_cb = _get_sector_zm(setor)
+                    if hasattr(_sec_cfg_cb, "zero_match_acceptance_cap") and _sec_cfg_cb.zero_match_acceptance_cap is not None:
+                        _cb_threshold = _sec_cfg_cb.zero_match_acceptance_cap
+                except Exception:
+                    pass
+
+                _total_classified = stats["llm_zero_match_aprovadas"] + stats["llm_zero_match_rejeitadas"]
+                if _total_classified > 0 and stats["llm_zero_match_aprovadas"] / _total_classified > _cb_threshold:
+                    _accept_ratio = stats["llm_zero_match_aprovadas"] / _total_classified
+                    _demoted = len(resultado_llm_zero)
+                    logger.warning(
+                        f"[ISSUE-029] Zero-match acceptance ratio {_accept_ratio:.1%} exceeds "
+                        f"{_cb_threshold:.0%} for setor={setor!r} — demoting {_demoted} to pending_review"
+                    )
+                    for _lic in resultado_llm_zero:
+                        _lic["_relevance_source"] = "pending_review"
+                        _lic["_pending_review"] = True
+                        _lic["_pending_review_reason"] = "zero_match_high_acceptance_ratio"
+                    resultado_llm_zero = []
 
             logger.info(
                 f"GTM-FIX-028 LLM Zero Match: "

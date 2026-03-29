@@ -20,11 +20,15 @@ async def stage_prepare(pipeline, ctx: SearchContext) -> None:
     if ctx.request.modo_busca == "abertas":
         from datetime import timedelta, timezone, datetime as dt
         today = dt.now(timezone.utc).date()  # AC3.2: explicit UTC
-        ctx.request.data_inicial = (today - timedelta(days=10)).isoformat()
+        # ISSUE-036: Expand date range for encerrada/em_julgamento — recently published
+        # bids (10 days) are overwhelmingly still open. Use 60 days for closed/judging.
+        _status_val = ctx.request.status.value if ctx.request.status else "todos"
+        _days = 60 if _status_val in ("encerrada", "em_julgamento") else 10
+        ctx.request.data_inicial = (today - timedelta(days=_days)).isoformat()
         ctx.request.data_final = today.isoformat()
         logger.info(
             f"modo_busca='abertas': date range overridden to "
-            f"{ctx.request.data_inicial} → {ctx.request.data_final} (10 days, UTC)"
+            f"{ctx.request.data_inicial} → {ctx.request.data_final} ({_days} days, UTC)"
         )
 
     # GTM-FIX-032 AC3.1: Normalize all dates to canonical YYYY-MM-DD
