@@ -156,6 +156,13 @@ export default function HistoricoPage() {
   const [page, setPage] = useState(0);
   // UX-433: Filter to hide failures — default to showing only completed
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'failed'>('completed');
+
+  // ISSUE-040: Reset page to 0 when filter changes to ensure consistent counts
+  const handleStatusFilterChange = useCallback((newFilter: 'all' | 'completed' | 'failed') => {
+    setPage(0);
+    setStatusFilter(newFilter);
+  }, []);
+
   const limit = 20;
 
   // TD-008 AC7/AC13: SWR-based sessions with auto-polling for active sessions
@@ -269,7 +276,7 @@ export default function HistoricoPage() {
           ]).map(opt => (
             <button
               key={opt.value}
-              onClick={() => { setStatusFilter(opt.value); setPage(0); }}
+              onClick={() => handleStatusFilterChange(opt.value)}
               className={`px-3 py-1.5 text-xs font-medium rounded-button border transition-colors ${
                 statusFilter === opt.value
                   ? 'bg-[var(--brand-navy)] text-white border-[var(--brand-navy)]'
@@ -312,7 +319,7 @@ export default function HistoricoPage() {
             {filteredSessions.length === 0 && statusFilter !== 'all' && (
               <div className="text-center py-8 text-[var(--ink-secondary)]">
                 <p className="text-sm">Nenhuma análise {statusFilter === 'completed' ? 'concluída' : 'com falha'} neste período.</p>
-                <button onClick={() => setStatusFilter('all')} className="text-sm text-[var(--brand-blue)] hover:underline mt-2">
+                <button onClick={() => handleStatusFilterChange('all')} className="text-sm text-[var(--brand-blue)] hover:underline mt-2">
                   Ver todas as análises
                 </button>
               </div>

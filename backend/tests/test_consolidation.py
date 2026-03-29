@@ -69,8 +69,8 @@ class FakeAdapter(SourceAdapter):
 @pytest.mark.asyncio
 async def test_two_sources_no_overlap():
     """Test with 2 sources returning different records → all appear."""
-    records_a = [_make_record("SOURCE_A", "a1", cnpj="111", numero_edital="001")]
-    records_b = [_make_record("SOURCE_B", "b1", cnpj="222", numero_edital="002")]
+    records_a = [_make_record("SOURCE_A", "a1", cnpj="111", numero_edital="001", objeto="Material de limpeza predial")]
+    records_b = [_make_record("SOURCE_B", "b1", cnpj="222", numero_edital="002", objeto="Aquisição de equipamentos de informática")]
 
     adapters = {
         "SOURCE_A": FakeAdapter("SOURCE_A", 1, records_a),

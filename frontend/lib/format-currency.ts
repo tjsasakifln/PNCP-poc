@@ -19,3 +19,17 @@ export function formatCurrencyBR(value: number): string {
     maximumFractionDigits: 0,
   }).format(value).replace(/\u00A0/g, " ");
 }
+
+/**
+ * Full-precision BRL formatter (always 2 decimal places).
+ * ISSUE-041: Use for summary stats, totals, and financial contexts.
+ * Example: 116306396.2 → "R$ 116.306.396,20"
+ */
+export function formatCurrencyFull(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value).replace(/\u00A0/g, " ");
+}

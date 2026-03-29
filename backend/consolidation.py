@@ -523,11 +523,12 @@ class ConsolidationService:
         if not has_data and source_errors and self._fail_on_all_errors:
             raise AllSourcesFailedError(source_errors)
 
-        # Deduplicate: exact key match → fuzzy similarity → process-number
+        # Deduplicate: exact key match → fuzzy similarity → process-number → title-prefix
         total_before = len(all_records)
         deduped = self._deduplicate(all_records)
         deduped = self._deduplicate_fuzzy(deduped)
         deduped = self._deduplicate_by_process_number(deduped)
+        deduped = self._deduplicate_by_title_prefix(deduped)
         total_after = len(deduped)
 
         # Convert to legacy format
@@ -1194,6 +1195,87 @@ class ConsolidationService:
             )
 
         return [rec for idx, rec in enumerate(records) if idx not in to_remove]
+
+    def _deduplicate_by_title_prefix(
+        self, records: List[UnifiedProcurement]
+    ) -> List[UnifiedProcurement]:
+        """Fourth dedup layer: same title prefix across different orgs.
+
+        ISSUE-027: Catches cross-org duplicates where the same procurement
+        appears from PNCP and PCP with different CNPJs (e.g., consortia,
+        republications). Blocks by first 60 chars of normalized objeto
+        (avoids O(n²)). Within each block, dedup if Jaccard >= 0.85
+        and valor within 20%.
+        """
+        if len(records) < 2:
+            return records
+
+        # Build title-prefix blocks
+        blocks: Dict[str, List[int]] = defaultdict(list)
+        for idx, rec in enumerate(records):
+            texto = re.sub(r"[^\w\s]", " ", (rec.objeto or "").lower())
+            texto = " ".join(texto.split())  # normalize whitespace
+            prefix = texto[:60].strip()
+            if prefix and len(prefix) > 15:
+                blocks[prefix].append(idx)
+
+        to_remove: set = set()
+        tokens_cache: Dict[int, frozenset] = {}
+
+        # Source priority for winner selection
+        source_priority: Dict[str, int] = {}
+        for code, adapter in self._adapters.items():
+            adapter_code = getattr(adapter, "code", code)
+            adapter_meta = getattr(adapter, "metadata", None)
+            if adapter_meta is not None:
+                source_priority[adapter_code] = adapter_meta.priority
+
+        for prefix, indices in blocks.items():
+            if len(indices) < 2:
+                continue
+            for i_pos in range(len(indices)):
+                idx_a = indices[i_pos]
+                if idx_a in to_remove:
+                    continue
+                if idx_a not in tokens_cache:
+                    tokens_cache[idx_a] = self._tokenize_objeto(records[idx_a].objeto)
+
+                for j_pos in range(i_pos + 1, len(indices)):
+                    idx_b = indices[j_pos]
+                    if idx_b in to_remove:
+                        continue
+                    if idx_b not in tokens_cache:
+                        tokens_cache[idx_b] = self._tokenize_objeto(records[idx_b].objeto)
+
+                    sim = self._jaccard(tokens_cache[idx_a], tokens_cache[idx_b])
+                    if sim < 0.85:
+                        continue
+
+                    # Different lot numbers → distinct procurements, skip
+                    lot_a = self._extract_lot_number(records[idx_a].objeto)
+                    lot_b = self._extract_lot_number(records[idx_b].objeto)
+                    if lot_a is not None and lot_b is not None and lot_a != lot_b:
+                        continue
+
+                    # Valor proximity check (20%)
+                    va = records[idx_a].valor_estimado or 0
+                    vb = records[idx_b].valor_estimado or 0
+                    if va > 0 and vb > 0:
+                        diff = abs(va - vb) / max(va, vb)
+                        if diff > 0.20:
+                            continue
+
+                    # Remove lower-priority source
+                    pa = source_priority.get(records[idx_a].source_name, 999)
+                    pb = source_priority.get(records[idx_b].source_name, 999)
+                    loser = idx_b if pa <= pb else idx_a
+                    to_remove.add(loser)
+
+        if to_remove:
+            logger.info(
+                f"[TITLE-PREFIX-DEDUP] Removed {len(to_remove)} cross-org duplicates"
+            )
+        return [r for i, r in enumerate(records) if i not in to_remove]
 
     async def health_check_all(self) -> Dict[str, Dict[str, Any]]:
         """

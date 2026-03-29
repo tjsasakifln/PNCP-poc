@@ -175,6 +175,14 @@ Data atual: {datetime.now().strftime("%d/%m/%Y")}
     if not resumo:
         raise ValueError("OpenAI API returned empty response")
 
+    # ISSUE-039: Ground summary stats on actual data, not LLM counts.
+    # The LLM may independently re-analyze relevance and report a different
+    # count/value than what the pipeline actually returns to the frontend.
+    resumo.total_oportunidades = len(licitacoes)
+    resumo.valor_total = sum(
+        float(lic.get("valorTotalEstimado") or 0) for lic in licitacoes
+    )
+
     return resumo
 
 

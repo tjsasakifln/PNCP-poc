@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { BuscaResult } from "../../../types";
 import { LlmSourceBadge } from "../LlmSourceBadge";
+import { formatCurrencyBR } from "../../../../lib/format-currency";
 
 interface ResultCardProps {
   result: BuscaResult;
@@ -63,7 +64,7 @@ export function ResultCard({
         </div>
         <div>
           <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
-            {result.resumo.valor_total > 0 ? `R$ ${result.resumo.valor_total.toLocaleString("pt-BR")}` : "Valor não divulgado"}
+            {result.resumo.valor_total > 0 ? formatCurrencyBR(result.resumo.valor_total) : "Valor não divulgado"}
           </span>
           <span className="text-sm sm:text-base text-ink-secondary block mt-1">{result.resumo.valor_total > 0 ? "valor total" : "valor não disponível nas fontes"}</span>
         </div>
