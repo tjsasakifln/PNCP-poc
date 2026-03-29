@@ -153,10 +153,29 @@ def inferir_status_licitacao(licitacao: dict) -> str:
     data_encerramento_str = licitacao.get("dataEncerramentoProposta")
 
     # 2. REGRA #1: ENCERRADA (prioridade máxima)
-    # Licitação homologada (tem valor final definido)
+    # Licitação homologada (tem valor final definido) — adjudicação é definitiva
     if valor_homologado is not None and valor_homologado > 0:
         logger.debug(f"Status inferido: encerrada (valor homologado: R$ {valor_homologado})")
         return "encerrada"
+
+    # REGRA #0 (GOLDEN RULE): Data de encerramento é a verdade absoluta.
+    # Se dataEncerramentoProposta > agora → está recebendo propostas, ponto final.
+    # Nenhuma heurística textual (situacaoCompraNome, etc.) pode contradizer a data.
+    # Exceção: homologação (acima) já retornou "encerrada" se aplicável.
+    if data_encerramento_str:
+        try:
+            _data_enc = datetime.fromisoformat(
+                data_encerramento_str.replace("Z", "+00:00")
+            )
+            _agora = datetime.now(_data_enc.tzinfo)
+            if _agora < _data_enc:
+                logger.debug(
+                    f"Status inferido: recebendo_proposta "
+                    f"(GOLDEN RULE: prazo {_data_enc.date()} é futuro)"
+                )
+                return "recebendo_proposta"
+        except (ValueError, AttributeError):
+            pass
 
     # IMPORTANTE: Verificar "propostas encerradas" ANTES de "encerrada"
     # "Propostas encerradas" significa julgamento, não finalização

@@ -35,6 +35,7 @@ class TestFilterProgressCallback:
         aplicar_todos_filtros(
             bids,
             ufs_selecionadas={"SP"},
+            keywords={"uniformes"},
             on_progress=on_progress,
         )
 
@@ -57,6 +58,7 @@ class TestFilterProgressCallback:
         aplicar_todos_filtros(
             bids,
             ufs_selecionadas={"SP"},
+            keywords={"uniformes"},
             on_progress=on_progress,
         )
 
@@ -77,6 +79,7 @@ class TestFilterProgressCallback:
         aplicar_todos_filtros(
             bids,
             ufs_selecionadas={"SP"},
+            keywords={"uniformes"},
             on_progress=on_progress,
         )
 
@@ -89,6 +92,7 @@ class TestFilterProgressCallback:
         result, stats = aplicar_todos_filtros(
             bids,
             ufs_selecionadas={"SP"},
+            keywords={"uniformes"},
             on_progress=None,
         )
         assert stats["total"] == 100
@@ -120,6 +124,7 @@ class TestFilterProgressCallback:
         aplicar_todos_filtros(
             bids,
             ufs_selecionadas={"SP"},
+            keywords={"uniformes"},
             on_progress=on_progress,
         )
 

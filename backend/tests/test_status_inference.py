@@ -164,7 +164,8 @@ class TestInferirStatusLicitacao:
         assert inferir_status_licitacao(lic) == "encerrada"
 
     def test_fallback_publicacao_antiga_com_prazo_futuro(self):
-        """Publicação >90 dias atrás com prazo futuro deve ser em_julgamento."""
+        """GOLDEN RULE: prazo futuro → recebendo_proposta, mesmo com publicação antiga.
+        Licitações de grande porte podem ser publicadas meses antes com prazo longo."""
         agora = datetime.now()
         encerramento_futuro = (agora + timedelta(days=30)).isoformat()
         publicacao_antiga = (agora - timedelta(days=120)).isoformat()
@@ -175,7 +176,7 @@ class TestInferirStatusLicitacao:
             "valorTotalHomologado": None,
         }
 
-        assert inferir_status_licitacao(lic) == "em_julgamento"
+        assert inferir_status_licitacao(lic) == "recebendo_proposta"
 
     def test_fallback_publicacao_recente_com_prazo_futuro(self):
         """Publicação recente com prazo futuro deve ser recebendo_proposta."""
