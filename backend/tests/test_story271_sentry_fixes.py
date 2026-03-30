@@ -125,7 +125,7 @@ class TestAC2WorkerTimeout:
         assert isinstance(EARLY_RETURN_TIME_S, float)
         assert isinstance(EARLY_RETURN_THRESHOLD_PCT, float)
         assert EARLY_RETURN_TIME_S == 80.0
-        assert EARLY_RETURN_THRESHOLD_PCT == 0.8
+        assert EARLY_RETURN_THRESHOLD_PCT == 0.66
 
 
 # ---------------------------------------------------------------------------

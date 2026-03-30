@@ -49,7 +49,7 @@ const CB_COLORS: Record<string, string> = {
 };
 
 export default function AdminMetricsPage() {
-  const { session, loading: authLoading, isAdmin } = useAuth();
+  const { session, loading: authLoading, isAdmin, isAdminLoading } = useAuth();
   const [data, setData] = useState<MetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,10 +84,10 @@ export default function AdminMetricsPage() {
   useEffect(() => {
     if (session?.access_token && isAdmin) {
       fetchMetrics();
-    } else if (!authLoading) {
+    } else if (!authLoading && !isAdminLoading) {
       setLoading(false);
     }
-  }, [session?.access_token, isAdmin, authLoading, fetchMetrics]);
+  }, [session?.access_token, isAdmin, isAdminLoading, authLoading, fetchMetrics]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {

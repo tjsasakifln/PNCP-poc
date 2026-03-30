@@ -2278,10 +2278,8 @@ sectors:
       - "revitalização urbana"
       - "revitalizacao urbana"
       # COMPOUND TERMS ADDED (Issue #all-sectors-expansion - 2026-02-06)
-      - "material de construção"
-      - "material de construcao"
-      - "materiais de construção"
-      - "materiais de construcao"
+      # NOTE: "material(is) de construção" moved to context_required_keywords (ISSUE-055/ICP-01)
+      # to avoid matching pure material procurement without engineering context
       - "obra de construção civil"
       - "obra de construcao civil"
       - "reforma de prédio"
@@ -2430,6 +2428,13 @@ sectors:
       - "servicos de borracharia"
       # Sports context matching "areia" (sand courts)
       - "arbitragem"
+      # Material-only procurement (not engineering services) — ISSUE-055/ICP-01
+      - "registro de preços para aquisição de materiais de construção"
+      - "registro de precos para aquisicao de materiais de construcao"
+      - "aquisição de materiais de construção para atender"
+      - "aquisicao de materiais de construcao para atender"
+      - "fornecimento de materiais de construção"
+      - "fornecimento de materiais de construcao"
     context_required_keywords:
       # CRIT-021: "reforma" is generic (car reform, agrarian reform, etc.)
       # Context ensures it matches only construction/building renovation
@@ -2554,6 +2559,52 @@ sectors:
         - "concreto"
         - "aterro"
         - "terraplanagem"
+      # ISSUE-055/ICP-01: "material(is) de construção" alone matches pure procurement
+      # Context ensures it matches only when combined with engineering/execution terms
+      "material de construção":
+        - "execução"
+        - "execucao"
+        - "obra"
+        - "construção de"
+        - "construcao de"
+        - "reforma"
+        - "pavimentação"
+        - "pavimentacao"
+        - "serviços de engenharia"
+        - "servicos de engenharia"
+      "material de construcao":
+        - "execução"
+        - "execucao"
+        - "obra"
+        - "construção de"
+        - "construcao de"
+        - "reforma"
+        - "pavimentação"
+        - "pavimentacao"
+        - "serviços de engenharia"
+        - "servicos de engenharia"
+      "materiais de construção":
+        - "execução"
+        - "execucao"
+        - "obra"
+        - "construção de"
+        - "construcao de"
+        - "reforma"
+        - "pavimentação"
+        - "pavimentacao"
+        - "serviços de engenharia"
+        - "servicos de engenharia"
+      "materiais de construcao":
+        - "execução"
+        - "execucao"
+        - "obra"
+        - "construção de"
+        - "construcao de"
+        - "reforma"
+        - "pavimentação"
+        - "pavimentacao"
+        - "serviços de engenharia"
+        - "servicos de engenharia"
       # CRIT-021: "piso" is ambiguous (piso salarial, piso tátil)
       # Context ensures it matches only flooring/construction use
       piso:

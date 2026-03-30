@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isAdminLoading: boolean;
   sessionExpired: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, fullName?: string, company?: string, sector?: string, phoneWhatsApp?: string, whatsappConsent?: boolean) => Promise<void>;
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
 
   // UX-408 AC1: isMounted ref prevents setState after unmount
@@ -37,10 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Skip admin check if backend URL not configured (avoids localhost fallback in production)
     if (!backendUrl) {
-      if (isMountedRef.current) setIsAdmin(false);
+      if (isMountedRef.current) {
+        setIsAdmin(false);
+        setIsAdminLoading(false);
+      }
       return;
     }
 
+    if (isMountedRef.current) setIsAdminLoading(true);
     try {
       const res = await fetch(`${backendUrl}/v1/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -54,6 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       if (isMountedRef.current) setIsAdmin(false);
+    } finally {
+      if (isMountedRef.current) setIsAdminLoading(false);
     }
   }, []);
 
@@ -340,6 +348,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         loading,
         isAdmin,
+        isAdminLoading,
         sessionExpired,
         signInWithEmail,
         signUpWithEmail,

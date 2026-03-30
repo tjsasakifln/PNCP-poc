@@ -44,7 +44,7 @@ interface SLOResponse {
 // ============================================================================
 
 export default function AdminSLOPage() {
-  const { session, loading: authLoading, isAdmin } = useAuth();
+  const { session, loading: authLoading, isAdmin, isAdminLoading } = useAuth();
   const [data, setData] = useState<SLOResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,10 +79,10 @@ export default function AdminSLOPage() {
   useEffect(() => {
     if (session?.access_token && isAdmin) {
       fetchSLOs();
-    } else if (!authLoading) {
+    } else if (!authLoading && !isAdminLoading) {
       setLoading(false);
     }
-  }, [session?.access_token, isAdmin, authLoading, fetchSLOs]);
+  }, [session?.access_token, isAdmin, isAdminLoading, authLoading, fetchSLOs]);
 
   // Auto-refresh every 60 seconds
   useEffect(() => {

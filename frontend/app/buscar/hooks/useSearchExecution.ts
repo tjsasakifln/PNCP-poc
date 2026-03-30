@@ -607,6 +607,12 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
           hidden_by_min_match: data.hidden_by_min_match || 0,
           filter_relaxed: data.filter_relaxed || false,
         });
+      } else if (data.licitacoes && data.licitacoes.length > 20) {
+        // ISSUE-055: Auto-sort by relevance when majority of results are low confidence
+        const lowCount = data.licitacoes.filter((l: { confidence?: string }) => l.confidence === "low").length;
+        if (lowCount > data.licitacoes.length * 0.5) {
+          filters.setOrdenacao("relevancia");
+        }
       }
 
       if (session?.access_token) await refreshQuota();

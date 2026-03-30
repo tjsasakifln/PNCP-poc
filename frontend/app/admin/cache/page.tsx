@@ -67,7 +67,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminCachePage() {
-  const { session, loading: authLoading, isAdmin } = useAuth();
+  const { session, loading: authLoading, isAdmin, isAdminLoading } = useAuth();
   const [metrics, setMetrics] = useState<CacheMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,10 +114,10 @@ export default function AdminCachePage() {
     if (session?.access_token && isAdmin) {
       fetchMetrics();
       fetchCacheHealth();
-    } else if (!authLoading) {
+    } else if (!authLoading && !isAdminLoading) {
       setLoading(false);
     }
-  }, [session?.access_token, isAdmin, authLoading, fetchMetrics, fetchCacheHealth]);
+  }, [session?.access_token, isAdmin, isAdminLoading, authLoading, fetchMetrics, fetchCacheHealth]);
 
   const handleInspect = async (hash: string) => {
     if (!session?.access_token) return;
