@@ -151,16 +151,16 @@ function HomePageContent() {
             {orch.showOnboardingBanner && !orch.autoSearchDismissed && orch.search.loading && (
               <OnboardingBanner />
             )}
-            {orch.showOnboardingBanner && !orch.autoSearchDismissed && !orch.search.loading && orch.search.result && orch.search.result.resumo.total_oportunidades > 0 && (
+            {orch.showOnboardingBanner && !orch.autoSearchDismissed && !orch.search.loading && orch.search.result && (orch.search.result?.resumo?.total_oportunidades ?? 0) > 0 && (
               <OnboardingSuccessBanner
-                count={orch.search.result.resumo.total_oportunidades}
+                count={orch.search.result?.resumo?.total_oportunidades ?? 0}
                 onDismiss={() => {
                   orch.setAutoSearchDismissed(true);
                   orch.setShowOnboardingBanner(false);
                 }}
               />
             )}
-            {orch.showOnboardingBanner && !orch.autoSearchDismissed && !orch.search.loading && orch.search.result && orch.search.result.resumo.total_oportunidades === 0 && (
+            {orch.showOnboardingBanner && !orch.autoSearchDismissed && !orch.search.loading && orch.search.result && (orch.search.result?.resumo?.total_oportunidades ?? 0) === 0 && (
               <OnboardingEmptyState
                 onAdjustFilters={() => {
                   orch.setAutoSearchDismissed(true);

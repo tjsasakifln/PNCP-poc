@@ -58,6 +58,34 @@ def _ground_truth_summary(resumo: "ResumoLicitacoes") -> None:
         flags=_re_llm.IGNORECASE,
     )
 
+    # 1b. ISSUE-041: Clean up remaining abbreviated monetary values
+    # Matches patterns like "R$ 1.2M", "R$ 500 mil", "R$ 2,3 milhões"
+    def _normalize_money(match: "_re_llm.Match[str]") -> str:
+        raw = match.group(0)
+        # Extract numeric part (before suffix)
+        num_str = _re_llm.search(r"R\$\s*([\d.,]+)", raw)
+        if not num_str:
+            return raw
+        num_part = num_str.group(1).replace(".", "").replace(",", ".")
+        try:
+            value = float(num_part)
+        except ValueError:
+            return raw
+        suffix_lower = raw.lower()
+        if "bilh" in suffix_lower or suffix_lower.rstrip().endswith("bi"):
+            value *= 1_000_000_000
+        elif "milh" in suffix_lower or suffix_lower.rstrip().endswith("m"):
+            value *= 1_000_000
+        elif "mil" in suffix_lower:
+            value *= 1_000
+        return f"R$ {_fmt_brl(value)}"
+
+    _abbrev_money_pat = r"R\$\s*[\d.,]+\s*(?:mil|milh[oõ]es?|bilh[oõ]es?|bi|M)\b"
+    resumo.resumo_executivo = _re_llm.sub(
+        _abbrev_money_pat, _normalize_money, resumo.resumo_executivo,
+        flags=_re_llm.IGNORECASE,
+    )
+
     # 2. Replace bid count in resumo_executivo (ISSUE-046: singular/plural)
     # ISSUE-039 v3: Also match "N oportunidades" — LLM sometimes uses this word
     _count_pat = r"\b(\d+)\s+(?:licita[çc][oõã]es?|oportunidades?)\b"
@@ -68,6 +96,25 @@ def _ground_truth_summary(resumo: "ResumoLicitacoes") -> None:
         resumo.resumo_executivo,
         count=1,
         flags=_re_llm.IGNORECASE,
+    )
+
+    # 3. ISSUE-042: Remove stale absolute dates from resumo_executivo
+    # Detect DD/MM/YYYY patterns and replace past dates with "[data encerrada]"
+    _abs_date_pat = r"\b(\d{2})/(\d{2})/(\d{4})\b"
+    _now = datetime.now()
+
+    def _replace_stale_date(match: "_re_llm.Match[str]") -> str:
+        try:
+            day, month, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
+            dt = datetime(year, month, day)
+            if dt < _now:
+                return "[data encerrada]"
+        except (ValueError, OverflowError):
+            pass
+        return match.group(0)
+
+    resumo.resumo_executivo = _re_llm.sub(
+        _abs_date_pat, _replace_stale_date, resumo.resumo_executivo
     )
 
 
@@ -260,7 +307,8 @@ REGRAS:
 - Alerte sobre prazos próximos (< 7 dias)
 - Mencione a distribuição geográfica
 - Use linguagem profissional, não técnica demais
-- Valores sempre em reais (R$) formatados
+- Valores sempre em reais (R$) no formato R$ 1.234.567,89 (com centavos, sem abreviações como 'M' ou 'mil')
+- NÃO mencione datas absolutas de encerramento no resumo. Use prazos relativos como 'nos próximos X dias'
 - IMPORTANTE: NÃO afirme que todas as licitações são sobre um tema específico a menos que realmente sejam. Descreva o que os objetos REALMENTE tratam, baseado nos textos fornecidos.
 - Se os objetos tratam de assuntos variados, diga isso explicitamente.
 """

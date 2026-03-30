@@ -230,7 +230,12 @@ class UnifiedProcurement:
         if self.valor_estimado and self.valor_estimado > 0:
             discriminator = str(int(self.valor_estimado))
         elif self.data_publicacao:
-            discriminator = self.data_publicacao.strftime("%Y%m%d")
+            # ISSUE-027: Normalize to date-only to prevent datetime vs date
+            # divergence between sources (datalake vs live API)
+            if hasattr(self.data_publicacao, 'date'):
+                discriminator = self.data_publicacao.date().strftime("%Y%m%d")
+            else:
+                discriminator = self.data_publicacao.strftime("%Y%m%d")
         else:
             discriminator = self.source_id or "0"
         return f"{cnpj_clean}:{objeto_hash}:{discriminator}"

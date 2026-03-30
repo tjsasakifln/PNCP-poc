@@ -523,9 +523,11 @@ class ConsolidationService:
         if not has_data and source_errors and self._fail_on_all_errors:
             raise AllSourcesFailedError(source_errors)
 
-        # Deduplicate: exact key match → fuzzy similarity → process-number → title-prefix
+        # Deduplicate: source_id → exact key → fuzzy similarity → process-number → title-prefix
         total_before = len(all_records)
-        deduped = self._deduplicate(all_records)
+        # ISSUE-027: Pre-dedup by source_id (same PNCP ID from datalake + live API)
+        deduped = self._deduplicate_by_source_id(all_records)
+        deduped = self._deduplicate(deduped)
         deduped = self._deduplicate_fuzzy(deduped)
         deduped = self._deduplicate_by_process_number(deduped)
         deduped = self._deduplicate_by_title_prefix(deduped)
@@ -765,6 +767,49 @@ class ConsolidationService:
 
     # HARDEN-006: Fields eligible for merge-enrichment from lower-priority duplicate
     _MERGE_FIELDS = ("valor_estimado", "modalidade", "orgao", "objeto")
+
+    def _deduplicate_by_source_id(
+        self, records: List[UnifiedProcurement]
+    ) -> List[UnifiedProcurement]:
+        """ISSUE-027: Deduplicate by source_id when same ID appears from multiple paths.
+
+        When datalake and live API return the same bid, they share the same
+        source_id (e.g., PNCP contract ID). This layer catches those before
+        the more expensive dedup_key-based dedup runs.
+        """
+        if not records:
+            return []
+
+        seen: Dict[str, UnifiedProcurement] = {}
+        no_id: list[UnifiedProcurement] = []
+
+        for record in records:
+            sid = record.source_id
+            if not sid:
+                no_id.append(record)
+                continue
+
+            existing = seen.get(sid)
+            if existing is None:
+                seen[sid] = record
+            else:
+                # Keep the one from higher-priority source
+                existing_priority = getattr(
+                    getattr(self._adapters.get(existing.source_name), "metadata", None),
+                    "priority", 999,
+                )
+                new_priority = getattr(
+                    getattr(self._adapters.get(record.source_name), "metadata", None),
+                    "priority", 999,
+                )
+                if new_priority < existing_priority:
+                    seen[sid] = record
+
+        result = list(seen.values()) + no_id
+        removed = len(records) - len(result)
+        if removed > 0:
+            logger.info(f"[DEDUP] source_id dedup removed {removed} duplicates")
+        return result
 
     def _deduplicate(
         self, records: List[UnifiedProcurement]

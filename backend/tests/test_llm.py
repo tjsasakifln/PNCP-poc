@@ -304,7 +304,7 @@ def test_format_resumo_html_basic():
     assert "resumo-container" in html
     assert "Encontradas 15 licitações" in html
     assert "15" in html  # Total count
-    assert "2,300,000.00" in html  # Formatted value (Python default uses commas)
+    assert "2.300.000,00" in html  # Formatted value (pt-BR format via _fmt_brl)
     assert "3 urgentes" in html
     assert "Maior valor: R$ 500k" in html
 

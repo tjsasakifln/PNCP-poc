@@ -264,7 +264,7 @@ export default function HistoricoPage() {
       />
       <div className="max-w-4xl mx-auto py-8 px-4">
         <p className="text-[var(--ink-secondary)] mb-2">
-          {`${total} análise${total !== 1 ? "s" : ""} ${statusFilter === 'completed' ? 'concluída' : statusFilter === 'failed' ? 'com falha' : 'realizada'}${total !== 1 ? "s" : ""}`}
+          {`${total} ${total !== 1 ? 'análises' : 'análise'} ${statusFilter === 'completed' ? (total !== 1 ? 'concluídas' : 'concluída') : statusFilter === 'failed' ? 'com falha' : (total !== 1 ? 'realizadas' : 'realizada')}`}
         </p>
 
         {/* UX-433: Status filter */}
@@ -338,7 +338,7 @@ export default function HistoricoPage() {
                           {s.sectors.map(getSectorDisplayName).join(", ")}
                         </span>
                         {/* CRIT-002 AC20: Status badge */}
-                        <StatusBadge status={s.status || "completed"} />
+                        <StatusBadge status={s.status} />
                         <span className="text-xs text-[var(--ink-muted)]">
                           {formatDate(s.created_at)}
                         </span>

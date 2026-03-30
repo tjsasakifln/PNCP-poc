@@ -39,10 +39,11 @@ async def get_sessions(
                 # "failed" filter includes both failed and timed_out
                 query = query.in_("status", ["failed", "timed_out"])
             elif status == "completed":
-                # ISSUE-040: Sessions with NULL status are legacy completed sessions
-                # (created before session lifecycle tracking was added).
-                # Include both explicit 'completed' and NULL status.
-                query = query.or_("status.eq.completed,status.is.null")
+                # ISSUE-040: Sessions with NULL status are legacy completed sessions.
+                # Sessions with total_filtered > 0 but non-terminal status are
+                # pipeline sessions that completed but didn't get status updated.
+                # Include: status=completed, status=null, or has results (total_filtered > 0).
+                query = query.or_("status.eq.completed,status.is.null,total_filtered.gt.0")
             else:
                 query = query.eq("status", status)
 

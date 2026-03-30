@@ -40,7 +40,11 @@ export class SearchErrorBoundary extends Component<Props, State> {
   }
 
   handleRetry = () => {
+    // ISSUE-050: Also clear the broken result that caused the crash.
+    // Without this, the same broken data re-renders and crashes again,
+    // forcing a page refresh that resets form state (sector → default).
     this.setState({ hasError: false, error: null });
+    this.props.onReset?.();
   };
 
   handleReset = () => {
