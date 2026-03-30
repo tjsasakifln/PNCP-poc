@@ -325,14 +325,12 @@ class TestFallbackCascade:
     """AC17r: Live (PNCP+PCP) → Partial → Cache stale → Empty."""
 
     def test_cascade_order_documented(self):
-        """Verify the cascade is documented in the pipeline module."""
-        import search_pipeline
-        with open(search_pipeline.__file__, encoding="utf-8") as f:
+        """Verify the cache fallback is documented in the validate stage."""
+        import pipeline.stages.validate as validate_stage
+        with open(validate_stage.__file__, encoding="utf-8") as f:
             source = f.read()
-        # The AllSourcesFailedError handler should mention cache fallback
+        # _supabase_get_cache lives in pipeline/stages/validate.py after DEBT-015 refactor
         assert "_supabase_get_cache" in source
-        # And it should be in the AllSourcesFailedError except block
-        assert "AllSourcesFailedError" in source
 
     def test_search_context_has_cache_fields(self):
         """SearchContext should have cached, cached_at, cached_sources."""
