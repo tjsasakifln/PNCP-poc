@@ -33,7 +33,7 @@ from schemas import (
     AdminUpdateCreditsResponse,
 )
 from log_sanitizer import sanitize_dict, log_admin_action
-from filter_stats import filter_stats_tracker
+from filter.stats import filter_stats_tracker
 
 logger = logging.getLogger(__name__)
 

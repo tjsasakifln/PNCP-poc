@@ -444,13 +444,13 @@ class TestCoOccurrenceFilterStats:
 
     def test_reason_code_exists(self):
         """AC4: REASON_CO_OCCURRENCE is in ALL_REASON_CODES."""
-        from filter_stats import REASON_CO_OCCURRENCE, ALL_REASON_CODES
+        from filter.stats import REASON_CO_OCCURRENCE, ALL_REASON_CODES
         assert REASON_CO_OCCURRENCE == "co_occurrence"
         assert "co_occurrence" in ALL_REASON_CODES
 
     def test_tracker_records_co_occurrence(self):
         """AC4: FilterStatsTracker accepts co_occurrence reason."""
-        from filter_stats import FilterStatsTracker
+        from filter.stats import FilterStatsTracker
         tracker = FilterStatsTracker()
         tracker.record_rejection(
             "co_occurrence",

@@ -9,7 +9,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from filter_value import filtrar_por_valor, paginar_resultados
+from filter.value import filtrar_por_valor, paginar_resultados
 
 
 # ──────────────────────────────────────────────────────────────────────

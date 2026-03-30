@@ -577,7 +577,7 @@ async def _cache_cleanup_loop() -> None:
 
             # DEBT-014 SYS-010: Cleanup filter stats trackers
             try:
-                from filter_stats import filter_stats_tracker, discard_rate_tracker
+                from filter.stats import filter_stats_tracker, discard_rate_tracker
                 fs_removed = filter_stats_tracker.cleanup_old()
                 dr_removed = discard_rate_tracker.cleanup_old()
                 if fs_removed or dr_removed:

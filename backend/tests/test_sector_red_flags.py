@@ -264,19 +264,19 @@ class TestSectorRedFlagsStats:
     """AC5: rejeitadas_red_flags_setorial stat tracking."""
 
     def test_reason_code_exists(self):
-        from filter_stats import REASON_RED_FLAGS_SECTOR, ALL_REASON_CODES
+        from filter.stats import REASON_RED_FLAGS_SECTOR, ALL_REASON_CODES
         assert REASON_RED_FLAGS_SECTOR == "red_flags_sector"
         assert REASON_RED_FLAGS_SECTOR in ALL_REASON_CODES
 
     def test_tracker_records_sector_red_flag(self):
-        from filter_stats import FilterStatsTracker
+        from filter.stats import FilterStatsTracker
         tracker = FilterStatsTracker()
         tracker.record_rejection("red_flags_sector", sector="software", description_preview="test")
         stats = tracker.get_stats(days=1)
         assert stats["red_flags_sector"] == 1
 
     def test_tracker_multiple_rejections(self):
-        from filter_stats import FilterStatsTracker
+        from filter.stats import FilterStatsTracker
         tracker = FilterStatsTracker()
         tracker.record_rejection("red_flags_sector", sector="software")
         tracker.record_rejection("red_flags_sector", sector="alimentos")

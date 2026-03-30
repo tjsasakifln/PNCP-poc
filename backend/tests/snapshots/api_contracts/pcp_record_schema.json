@@ -32,7 +32,7 @@
     "codigoSituacaoEdital": "int",
     "codigoTratamentoDiferenciado": "int",
     "comprador": "NoneType",
-    "dataHoraFinalLances": "NoneType",
+    "dataHoraFinalLances": "str",
     "dataHoraFinalPropostas": "str",
     "dataHoraInicioLances": "str",
     "dataHoraInicioPropostas": "str",
@@ -78,13 +78,13 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 468167,
+    "codigoLicitacao": 468862,
     "numeroLicitacao": null,
-    "identificacao": "711/2026",
-    "numero": "4/2026",
-    "resumo": "Chamamento Público para Credenciamento para Contratação de Projetos de Arquitetura, Engenharia, Infraestrutura e Geotecnia no Município de São Francisco de Paula/RS",
-    "razaoSocial": "Prefeitura Municipal de São Francisco de Paula",
-    "nomeUnidade": "Prefeitura Municipal de São Francisco de Paula",
+    "identificacao": "CD276173",
+    "numero": "CD276173/2026",
+    "resumo": "Aquisição de Papel A4 210x297mm em resmas com 500 folhas./ Papel  A3 297x420mm em resmas com 500 folhas./ Papel  Colorido A4 210x297mm em pacote  com 100 folhas e 5 cores distintas e Papel Diplomata Branco 210 x 297 com 180 gr/m²",
+    "razaoSocial": "Serviço Brasileiro de Apoio às Micro e Pequenas Empresas - SEBRAE/NA",
+    "nomeUnidade": "SEBRAE NACIONAL",
     "status": {
       "codigo": 1,
       "descricao": "Recebendo Propostas"
@@ -95,33 +95,33 @@
     },
     "tipoLicitacao": {
       "codigoModalidadeLicitacao": 0,
-      "modalidadeLicitacao": "Credenciamento",
-      "codigoTipoLicitacao": 17,
-      "siglaTipoLicitacao": "CRED",
-      "tipoLicitacao": "Credenciamento",
+      "modalidadeLicitacao": "Cotação",
+      "codigoTipoLicitacao": 11,
+      "siglaTipoLicitacao": "CFP",
+      "tipoLicitacao": "Cotação para Formação de Preços",
       "tipoRealizacao": "Eletrônico",
-      "tipoJulgamento": "Simples informação"
+      "tipoJulgamento": "Menor Preço"
     },
     "codigoSituacaoEdital": 5,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-03-27T20:00:00Z",
-    "dataHoraInicioPropostas": "2026-03-27T20:00:00Z",
-    "dataHoraFinalPropostas": "2027-03-26T20:00:00Z",
-    "dataHoraFinalLances": null,
-    "dataHoraPublicacao": "2026-03-27T13:26:00Z",
+    "dataHoraInicioLances": "2026-03-30T22:41:00Z",
+    "dataHoraInicioPropostas": "2026-03-30T22:41:00Z",
+    "dataHoraFinalPropostas": "2026-04-03T03:00:00Z",
+    "dataHoraFinalLances": "2026-04-03T03:00:00Z",
+    "dataHoraPublicacao": "2026-03-30T22:42:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 5916,
-      "nomeUnidadeCompradora": "Prefeitura Municipal de São Francisco de Paula",
-      "codigoComprador": 3324,
+      "codigoUnidadeCompradora": 6924,
+      "nomeUnidadeCompradora": "SEBRAE NACIONAL",
+      "codigoComprador": 3946,
       "nomeComprador": null,
-      "cidade": "São Francisco de Paula",
+      "cidade": "Brasília",
       "codigoMunicipioIbge": null,
-      "uf": "RS"
+      "uf": "DF"
     },
     "comprador": null,
-    "urlReferencia": "/rs/prefeitura-municipal-de-sao-francisco-de-paula-3324/cred-4-2026-2026-468167",
+    "urlReferencia": "/df/servico-brasileiro-de-apoio-as-micro-e-pequenas-empresas-sebrae-na-3946/cfp-cd276173-2026-2026-468862",
     "statusProcessoPublico": {
       "codigo": 1,
       "descricao": "Recebendo Propostas"
@@ -129,5 +129,5 @@
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-03-30T00:15:22.570921+00:00"
+  "captured_at": "2026-03-30T23:19:56.835690+00:00"
 }

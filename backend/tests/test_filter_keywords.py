@@ -10,7 +10,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from filter_keywords import (
+from filter.keywords import (
     normalize_text,
     validate_terms,
     remove_stopwords,

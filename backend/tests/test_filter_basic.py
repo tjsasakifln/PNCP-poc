@@ -12,7 +12,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from filter_basic import (
+from filter.basic import (
     apply_basic_filters,
     apply_deadline_safety_net,
 )
@@ -47,7 +47,7 @@ class TestApplyBasicFilters:
     """Tests for Phase 1 basic filtering."""
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_uf_filter(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [
@@ -63,7 +63,7 @@ class TestApplyBasicFilters:
         assert stats["rejeitadas_uf"] == 1
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_valor_min_filter(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [
@@ -79,7 +79,7 @@ class TestApplyBasicFilters:
         assert stats["rejeitadas_valor"] == 1
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_all_pass(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [
@@ -94,7 +94,7 @@ class TestApplyBasicFilters:
         assert len(result) == 2
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_empty_input(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         stats = _make_stats()
@@ -105,7 +105,7 @@ class TestApplyBasicFilters:
         assert result == []
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_modalidade_filter(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [
@@ -121,7 +121,7 @@ class TestApplyBasicFilters:
         assert stats["rejeitadas_modalidade"] == 1
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_municipio_filter(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [
@@ -279,7 +279,7 @@ class TestApplyBasicFiltersEdgeCases:
     """Additional edge case tests for basic filters."""
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_valor_max_filter(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [
@@ -295,7 +295,7 @@ class TestApplyBasicFiltersEdgeCases:
         assert result[0]["valorTotalEstimado"] == 50000
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_valor_string_format(self, mock_tracker):
         """Brazilian-format value strings (1.000.000,50) are parsed."""
         mock_tracker.return_value = MagicMock()
@@ -308,7 +308,7 @@ class TestApplyBasicFiltersEdgeCases:
         assert len(result) == 1
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_orgao_filter(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [
@@ -323,7 +323,7 @@ class TestApplyBasicFiltersEdgeCases:
         assert len(result) == 1
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_esfera_filter_all_selected(self, mock_tracker):
         """When all 3 esferas selected, filter is bypassed."""
         mock_tracker.return_value = MagicMock()
@@ -340,7 +340,7 @@ class TestApplyBasicFiltersEdgeCases:
         assert len(result) == 3
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_status_filter_recebendo(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [
@@ -356,7 +356,7 @@ class TestApplyBasicFiltersEdgeCases:
         assert stats["rejeitadas_status"] == 1
 
     @pytest.mark.timeout(30)
-    @patch("filter_basic._get_tracker")
+    @patch("filter.basic._get_tracker")
     def test_status_todos_returns_all(self, mock_tracker):
         mock_tracker.return_value = MagicMock()
         bids = [

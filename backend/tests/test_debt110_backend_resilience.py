@@ -236,32 +236,32 @@ class TestFilterDecomposition:
         assert callable(match_keywords)
 
     def test_normalize_text_importable_from_filter_keywords(self):
-        """from filter_keywords import normalize_text works without error."""
-        from filter_keywords import normalize_text
+        """from filter.keywords import normalize_text works without error."""
+        from filter.keywords import normalize_text
 
         assert callable(normalize_text)
 
     def test_check_proximity_context_importable_from_filter_density(self):
-        """from filter_density import check_proximity_context works without error."""
-        from filter_density import check_proximity_context
+        """from filter.density import check_proximity_context works without error."""
+        from filter.density import check_proximity_context
 
         assert callable(check_proximity_context)
 
     def test_filtrar_por_status_importable_from_filter_status(self):
-        """from filter_status import filtrar_por_status works without error."""
-        from filter_status import filtrar_por_status
+        """from filter.status import filtrar_por_status works without error."""
+        from filter.status import filtrar_por_status
 
         assert callable(filtrar_por_status)
 
     def test_filtrar_por_valor_importable_from_filter_value(self):
-        """from filter_value import filtrar_por_valor works without error."""
-        from filter_value import filtrar_por_valor
+        """from filter.value import filtrar_por_valor works without error."""
+        from filter.value import filtrar_por_valor
 
         assert callable(filtrar_por_valor)
 
     def test_filter_licitacao_importable_from_filter_uf(self):
-        """from filter_uf import filter_licitacao works without error."""
-        from filter_uf import filter_licitacao
+        """from filter.uf import filter_licitacao works without error."""
+        from filter.uf import filter_licitacao
 
         assert callable(filter_licitacao)
 
@@ -305,7 +305,7 @@ class TestFilterDecomposition:
 
     def test_filtrar_por_valor_functional(self):
         """filtrar_por_valor filters bids by value range."""
-        from filter_value import filtrar_por_valor
+        from filter.value import filtrar_por_valor
 
         bids = [
             {"valorTotalEstimado": 50_000.0},

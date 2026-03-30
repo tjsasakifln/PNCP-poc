@@ -12,7 +12,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from filter_status import (
+from filter.status import (
     filtrar_por_status,
     filtrar_por_modalidade,
     filtrar_por_esfera,

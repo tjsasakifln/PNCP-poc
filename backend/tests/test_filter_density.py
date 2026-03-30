@@ -11,7 +11,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from filter_density import (
+from filter.density import (
     analisar_contexto_setor,
     obter_setor_dominante,
     check_proximity_context,

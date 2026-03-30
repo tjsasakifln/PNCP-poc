@@ -10,7 +10,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
-from filter_stats import DiscardRateTracker
+from filter.stats import DiscardRateTracker
 
 
 # ============================================================================
@@ -104,7 +104,7 @@ class TestDiscardRateTracker:
 
     def test_structured_logging(self):
         """Verify structured log is emitted on record."""
-        with patch("filter_stats.logger") as mock_logger:
+        with patch("filter.stats.logger") as mock_logger:
             self.tracker.record(
                 input_count=100, output_count=13, sector="uniformes", search_id="abc-123"
             )
@@ -142,7 +142,7 @@ class TestDiscardRateEndpoint:
         """Fresh app client with discard_rate_tracker reset."""
         from main import app
         from fastapi.testclient import TestClient
-        from filter_stats import discard_rate_tracker
+        from filter.stats import discard_rate_tracker
 
         # Reset tracker
         discard_rate_tracker._records.clear()

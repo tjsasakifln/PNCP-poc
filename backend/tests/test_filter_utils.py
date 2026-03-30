@@ -11,7 +11,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from filter_utils import parse_valor, get_valor_from_lic, get_setor_config
+from filter.utils import parse_valor, get_valor_from_lic, get_setor_config
 
 
 # ──────────────────────────────────────────────────────────────────────

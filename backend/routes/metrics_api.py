@@ -23,7 +23,7 @@ async def get_discard_rate(days: int = Query(30, ge=1, le=90)):
     Public endpoint (no authentication required). Used by the landing page
     to display a verified discard rate instead of a hardcoded number.
     """
-    from filter_stats import discard_rate_tracker
+    from filter.stats import discard_rate_tracker
 
     data = discard_rate_tracker.get_discard_rate(days=days)
     logger.debug(

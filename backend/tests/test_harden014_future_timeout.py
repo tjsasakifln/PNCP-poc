@@ -63,7 +63,7 @@ class TestHarden014BatchFutureTimeout:
         with patch("llm_arbiter._classify_zero_match_batch", classify_batch_with_hang), \
              patch("llm_arbiter.classify_contract_primary_match", return_value={"is_primary": False}), \
              patch("sectors.get_sector") as mock_sector, \
-             patch("filter_llm.wait", side_effect=_fast_wait):
+             patch("filter.llm.wait", side_effect=_fast_wait):
             mock_sector.return_value = _fake_sector()
 
             resultado, stats = aplicar_todos_filtros(
@@ -151,7 +151,7 @@ class TestHarden014ArbiterFutureTimeout:
                 return {"is_primary": False}
 
         with patch("llm_arbiter.classify_contract_primary_match", classify_with_hang), \
-             patch("filter_llm.wait", side_effect=_fast_wait):
+             patch("filter.llm.wait", side_effect=_fast_wait):
 
             resultado, stats = aplicar_todos_filtros(
                 licitacoes=licitacoes,

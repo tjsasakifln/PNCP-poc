@@ -5,7 +5,7 @@ Tests the FilterStatsTracker class and the /admin/filter-stats endpoint.
 
 from datetime import datetime, timedelta
 
-from filter_stats import (
+from filter.stats import (
     FilterStatsTracker,
     filter_stats_tracker,
     REASON_KEYWORD_MISS,

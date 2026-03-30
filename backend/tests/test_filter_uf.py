@@ -10,7 +10,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from filter_uf import (
+from filter.uf import (
     filter_licitacao,
     filter_batch,
     filtrar_por_orgao,

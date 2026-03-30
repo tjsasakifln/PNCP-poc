@@ -22,7 +22,7 @@ def _get_tracker():
     """Lazy-load the filter stats tracker singleton."""
     global _filter_stats_tracker
     if _filter_stats_tracker is None:
-        from filter_stats import filter_stats_tracker
+        from filter.stats import filter_stats_tracker
         _filter_stats_tracker = filter_stats_tracker
     return _filter_stats_tracker
 
@@ -3007,7 +3007,7 @@ def aplicar_todos_filtros(
     if setor and resultado_keyword:
         try:
             from sectors import get_sector as _get_sector_negpost
-            from filter_keywords import normalize_text as _normalize_negpost
+            from filter.keywords import normalize_text as _normalize_negpost
             _neg_post_sec = _get_sector_negpost(setor)
             _neg_post_kws = [
                 _normalize_negpost(kw)
@@ -3021,7 +3021,7 @@ def aplicar_todos_filtros(
             _filtered_keyword = []
             for lic in resultado_keyword:
                 obj_raw = lic.get("objetoCompra", "")
-                from filter_keywords import normalize_text as _norm_np
+                from filter.keywords import normalize_text as _norm_np
                 obj_norm = _norm_np(obj_raw)
                 head = obj_norm[:80]
                 if any(neg in head for neg in _neg_post_kws):

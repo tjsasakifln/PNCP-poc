@@ -197,7 +197,7 @@ async def stage_filter(pipeline, ctx: SearchContext) -> None:
         FILTER_DISCARD_RATE.labels(sector=_sector).observe(_discard_ratio)
 
     # STORY-351 AC9+AC3: Record for discard rate endpoint (30-day moving average)
-    from filter_stats import discard_rate_tracker
+    from filter.stats import discard_rate_tracker
     discard_rate_tracker.record(
         input_count=_input_count,
         output_count=_output_count,

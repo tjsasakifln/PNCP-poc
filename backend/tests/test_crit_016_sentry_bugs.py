@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, Mock, patch
 
 
-from filter_stats import FilterStatsTracker, REASON_UF_MISMATCH, REASON_KEYWORD_MISS
+from filter.stats import FilterStatsTracker, REASON_UF_MISMATCH, REASON_KEYWORD_MISS
 from source_config.sources import SourceConfig
 
 

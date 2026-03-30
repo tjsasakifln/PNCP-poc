@@ -10,7 +10,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from filter_recovery import run_synonym_recovery
+from filter.recovery import run_synonym_recovery
 
 
 def _make_stats():
@@ -93,7 +93,7 @@ class TestRunSynonymRecovery:
         aprovadas = []
         resultado_valor = [{"id": 2, "objetoCompra": "fardamento militar"}]
 
-        with patch("filter_recovery._run_llm_recovery") as mock_llm:
+        with patch("filter.recovery._run_llm_recovery") as mock_llm:
             result = run_synonym_recovery(  # noqa: F841
                 aprovadas, resultado_valor,
                 setor="vestuario", custom_terms=None,
