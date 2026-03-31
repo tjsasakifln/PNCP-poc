@@ -6,7 +6,7 @@
 - **Prioridade:** P3 (Baixa)
 - **Esforco:** 16.5h
 - **Agente:** @data-engineer
-- **Status:** PLANNED
+- **Status:** DONE
 
 ## Descricao
 
@@ -29,34 +29,34 @@ Como equipe de banco de dados, queremos padronizar nomenclatura de triggers e po
 ## Criterios de Aceite
 
 ### Nomenclatura de Triggers (2h)
-- [ ] Todos os triggers padronizados com prefixo `trg_` (ex: `trg_update_timestamp`)
-- [ ] Migration de rename criada (nao drop + recreate — preservar logica)
-- [ ] Nenhum trigger com prefixo `tr_` ou `trigger_` restante
+- [x] Todos os triggers padronizados com prefixo `trg_` (ex: `trg_update_timestamp`)
+- [x] Migration de rename criada (nao drop + recreate — preservar logica)
+- [x] Nenhum trigger com prefixo `tr_` ou `trigger_` restante
 
 ### RLS Policy Naming (3h)
-- [ ] Convencao definida: `{action}_{table}_{role}` (ex: `select_profiles_owner`, `insert_pipeline_items_authenticated`)
-- [ ] Policies existentes renomeadas via migration
-- [ ] Documentacao da convencao em `supabase/docs/CONVENTIONS.md`
+- [x] Convencao definida: `{action}_{table}_{role}` (ex: `select_profiles_owner`, `insert_pipeline_items_authenticated`)
+- [x] Policies existentes renomeadas via migration
+- [x] Documentacao da convencao em `supabase/docs/CONVENTIONS.md`
 
 ### Stripe Seed Documentation (2h)
-- [ ] `supabase/docs/STRIPE-SEED.md` criado com instrucoes de onboarding
-- [ ] Seed script existente documentado (como rodar, pre-requisitos)
-- [ ] Price IDs hardcoded mapeados para nomes legiveis
+- [x] `supabase/docs/STRIPE-SEED.md` criado com instrucoes de onboarding
+- [x] Seed script existente documentado (como rodar, pre-requisitos)
+- [x] Price IDs hardcoded mapeados para nomes legiveis
 
 ### Semantica Soft/Hard Delete (1h)
-- [ ] Documentacao atualizada para refletir comportamento real (purge = hard delete)
-- [ ] COMMENTs de colunas corrigidos se necessario
+- [x] Documentacao atualizada para refletir comportamento real (purge = hard delete)
+- [x] COMMENTs de colunas corrigidos se necessario
 
 ### FK Checkpoint (1h)
-- [ ] Decidir: enforced FK ou monitoring de orfaos via cron
-- [ ] Se FK: migration criada
-- [ ] Se monitoring: query de deteccao de orfaos criada como cron job
+- [x] Decidir: enforced FK ou monitoring de orfaos via cron
+- [x] Se FK: migration criada
+- [x] Se monitoring: query de deteccao de orfaos criada como cron job
 
 ## Testes Requeridos
 
-- [ ] Verificar que triggers renomeados disparam corretamente
-- [ ] Verificar que RLS policies renomeadas manteem mesmo comportamento
-- [ ] `pytest --timeout=30 -q` apos cada migration aplicada
+- [x] Verificar que triggers renomeados disparam corretamente
+- [x] Verificar que RLS policies renomeadas manteem mesmo comportamento
+- [x] `pytest --timeout=30 -q` apos cada migration aplicada
 
 ## Notas Tecnicas
 

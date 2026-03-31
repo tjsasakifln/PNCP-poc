@@ -767,7 +767,7 @@
 | updated_at | timestamptz | NOT NULL, DEFAULT now() | |
 | source | text | NOT NULL, DEFAULT 'pncp' | |
 | crawl_batch_id | text | | Link para ingestion_runs |
-| is_active | boolean | NOT NULL, DEFAULT true | Soft delete |
+| is_active | boolean | NOT NULL, DEFAULT true | Flag de atividade. FALSE = marcado para purge. purge_old_bids() executa hard DELETE periodicamente (12 dias de retencao). |
 
 - **Indexes:** idx_pncp_raw_bids_fts (GIN full-text Portuguese), idx_pncp_raw_bids_uf_date (parcial WHERE is_active), idx_pncp_raw_bids_modalidade (parcial), idx_pncp_raw_bids_valor (parcial), idx_pncp_raw_bids_esfera (parcial), idx_pncp_raw_bids_encerramento (parcial), idx_pncp_raw_bids_content_hash, idx_pncp_raw_bids_ingested_at (DESC)
 - **RLS:** pncp_raw_bids_select_authenticated (SELECT authenticated -- dados publicos), pncp_raw_bids_insert/update/delete_service (service_role)
