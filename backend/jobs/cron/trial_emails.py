@@ -1,0 +1,35 @@
+"""jobs.cron.trial_emails — Trial sequence, billing, alerts, and notification crons.
+
+DEBT-204: Logical grouping facade. Implementation lives in cron_jobs.
+"""
+from cron_jobs import (  # noqa: F401
+    start_trial_sequence_task,
+    _trial_sequence_loop,
+    start_pre_dunning_task,
+    check_pre_dunning_cards,
+    _pre_dunning_loop,
+    start_reconciliation_task,
+    run_reconciliation,
+    _reconciliation_loop,
+    start_revenue_share_task,
+    run_revenue_share_report,
+    _revenue_share_loop,
+    start_alerts_task,
+    run_search_alerts,
+    _alerts_loop,
+    start_support_sla_task,
+    check_unanswered_messages,
+    _support_sla_loop,
+    start_daily_volume_task,
+    record_daily_volume,
+    _daily_volume_loop,
+    start_sector_stats_task,
+    _sector_stats_loop,
+    start_plan_reconciliation_task,
+    run_plan_reconciliation,
+    update_table_size_metrics,
+    _plan_reconciliation_loop,
+    start_stripe_events_purge_task,
+    purge_old_stripe_events,
+    _stripe_events_purge_loop,
+)

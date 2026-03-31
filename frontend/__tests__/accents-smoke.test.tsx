@@ -76,6 +76,7 @@ describe("GTM-FIX-034: Portuguese accents smoke test", () => {
 
     it("SearchResults should use accented 'licitações' in user-facing text", () => {
       // TD-007: SearchResults decomposed — check orchestrator + sub-components
+      // DEBT-204: Banner content moved to SearchResultsBanners
       const orchestrator = fs.readFileSync(
         require.resolve("../app/buscar/components/SearchResults.tsx"),
         "utf-8"
@@ -84,7 +85,11 @@ describe("GTM-FIX-034: Portuguese accents smoke test", () => {
         require.resolve("../app/buscar/components/search-results/ResultsFilters.tsx"),
         "utf-8"
       );
-      const combined = orchestrator + filters;
+      const banners = fs.readFileSync(
+        require.resolve("../app/buscar/components/SearchResultsBanners.tsx"),
+        "utf-8"
+      );
+      const combined = orchestrator + filters + banners;
       expect(combined).toContain("Licitações abertas");
       expect(combined).not.toMatch(/Licitacoes abertas/);
       expect(combined).toContain("licitações adicionais");

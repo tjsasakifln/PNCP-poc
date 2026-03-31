@@ -149,18 +149,24 @@ describe("CRIT-027 AC7: Live fetch banner lifecycle", () => {
   it("SearchResults source guards live fetch banner with loading check", () => {
     const fs = require("fs");
     const path = require("path");
+    // DEBT-204: Live fetch banner moved to SearchResultsBanners; check both files
     const source = fs.readFileSync(
       path.join(__dirname, "../app/buscar/components/SearchResults.tsx"),
       "utf8"
     );
+    const bannerSource = fs.readFileSync(
+      path.join(__dirname, "../app/buscar/components/SearchResultsBanners.tsx"),
+      "utf8"
+    );
+    const combined = source + bannerSource;
 
     // The "Atualizando dados em tempo real" banner should be guarded by loading
-    const bannerIndex = source.indexOf("Atualizando dados em tempo real");
+    const bannerIndex = combined.indexOf("Atualizando dados em tempo real");
     expect(bannerIndex).toBeGreaterThan(-1);
 
     // The banner section should have a loading guard somewhere before it
     // Look back up to 1000 chars to find the enclosing conditional
-    const nearbySource = source.substring(Math.max(0, bannerIndex - 1000), bannerIndex);
+    const nearbySource = combined.substring(Math.max(0, bannerIndex - 1000), bannerIndex);
     expect(nearbySource).toMatch(/loading/);
   });
 });

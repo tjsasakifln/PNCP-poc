@@ -45,6 +45,9 @@ import { ResultsList } from "./search-results/ResultsList";
 import { ResultsLoadingSection } from "./search-results/ResultsLoadingSection";
 import { ResultsFooter } from "./search-results/ResultsFooter";
 
+// DEBT-FE-004: BannerStack integration
+import { SearchResultsBanners } from "./SearchResultsBanners";
+
 // Re-exports for backward compatibility
 export type { SearchResultsProps } from "../types/search-results";
 export type { SearchResultsData, SearchLoadingState, SearchResultsFilters, SearchResultsActions, SearchDisplayState, SearchAuthState, SearchFeedbackState, SearchResultsGroupedProps } from "../types/search-results";
@@ -200,13 +203,21 @@ export default function SearchResults(props: SearchResultsProps) {
         </div>
       )}
       {!loading && result && !result.is_partial && result.response_state !== "empty_failure" && result.resumo.total_oportunidades === 0 && (!result.sources_degraded || result.sources_degraded.length === 0) && (result.total_filtrado === 0 && (result.total_raw || 0) > 0 ? <EmptyResults totalRaw={result.total_raw} sectorName={sectorName} ufCount={ufsSelecionadas.size} onScrollToTop={() => window.scrollTo({ top: 0, behavior: "smooth" })} /> : <ZeroResultsSuggestions sectorName={sectorName} ufCount={ufsSelecionadas.size} ufNames={Array.from(ufsSelecionadas)} dayRange={30} onAdjustPeriod={props.onAdjustPeriod} onAddNeighborStates={props.onAddNeighborStates} onChangeSector={() => window.scrollTo({ top: 0, behavior: "smooth" })} nearbyResultsCount={props.nearbyResultsCount} onViewNearbyResults={props.onViewNearbyResults} totalFromSources={result.total_raw} filterStats={result.filter_stats} />)}
-      {!loading && result && result.filter_relaxed && result.resumo.total_oportunidades > 0 && <FilterRelaxedBanner relaxationLevel={result.hidden_by_min_match != null && result.hidden_by_min_match > 0 ? "min_match_lowered" : undefined} originalCount={0} relaxedCount={result.resumo.total_oportunidades} />}
-      {!loading && refreshAvailable && props.onRefreshResults && <div className="mt-4"><RefreshBanner refreshInfo={refreshAvailable} onRefresh={props.onRefreshResults} /></div>}
-      {!loading && liveFetchInProgress && !liveFetchTimedOut && !refreshAvailable && result && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200" role="status">
-          <svg className="h-4 w-4 animate-spin flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-          <span>Atualizando dados em tempo real...</span>
-        </div>
+      {/* DEBT-FE-004: Pre-results info banners consolidated via BannerStack */}
+      {!loading && result && result.resumo.total_oportunidades === 0 && (
+        <SearchResultsBanners
+          result={result}
+          loading={loading}
+          ufsSelecionadas={ufsSelecionadas}
+          onSearch={onSearch}
+          onRetryForceFresh={onRetryForceFresh}
+          onRefreshResults={props.onRefreshResults}
+          refreshAvailable={refreshAvailable}
+          liveFetchInProgress={liveFetchInProgress}
+          liveFetchTimedOut={liveFetchTimedOut}
+          pendingReviewCount={pendingReviewCount}
+          pendingReviewUpdate={pendingReviewUpdate}
+        />
       )}
 
       {/* === Results === */}
@@ -218,33 +229,26 @@ export default function SearchResults(props: SearchResultsProps) {
               <Link href="/planos" className="text-sm font-bold bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded-button transition-colors whitespace-nowrap" data-testid="trial-paywall-banner-cta">Ver planos</Link>
             </div>
           )}
-          {result.response_state !== "degraded_expired" && renderDataQualityBanner()}
-          {(pendingReviewCount > 0 || (pendingReviewUpdate && pendingReviewUpdate.reclassifiedCount > 0)) && (
-            <div className={`flex items-start gap-3 p-3 rounded-lg border ${pendingReviewUpdate && pendingReviewUpdate.reclassifiedCount > 0 ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800" : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"}`} data-testid="pending-review-banner">
-              <svg className={`w-5 h-5 mt-0.5 flex-shrink-0 ${pendingReviewUpdate && pendingReviewUpdate.reclassifiedCount > 0 ? "text-emerald-500" : "text-blue-500"}`} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-              <div className="text-sm">{pendingReviewUpdate && pendingReviewUpdate.reclassifiedCount > 0 ? <p className="text-emerald-800 dark:text-emerald-300">Reclassificação concluída: {pendingReviewUpdate.acceptedCount} oportunidades confirmadas{pendingReviewUpdate.rejectedCount > 0 && `, ${pendingReviewUpdate.rejectedCount} descartadas`}.</p> : <p className="text-blue-800 dark:text-blue-300">{pendingReviewCount} {pendingReviewCount === 1 ? 'oportunidade aguarda' : 'oportunidades aguardam'} reclassificação (IA temporariamente indisponível)</p>}</div>
-            </div>
-          )}
 
           <ZeroMatchBadge progress={zeroMatchProgress ?? null} />
           <ResultsHeader ref={resultsHeadingRef} result={result} rawCount={rawCount} isProfileComplete={isProfileComplete} filterSummary={filterSummary} />
           <TourInviteBanner isCompleted={isResultsTourCompleted} onStartTour={onStartResultsTour} />
           <ResultsToolbar result={result} ordenacao={ordenacao} onOrdenacaoChange={onOrdenacaoChange} loading={loading} onDownload={onDownload} downloadLoading={downloadLoading} onRegenerateExcel={onRegenerateExcel} excelFailCount={excelFailCount} excelTimedOut={excelTimedOut} planInfo={planInfo} session={session} isTrialExpired={isTrialExpired} paywallApplied={paywallApplied} totalBeforePaywall={totalBeforePaywall} sectorName={sectorName} ufsSelecionadas={ufsSelecionadas} onGeneratePdf={onGeneratePdf} pdfLoading={pdfLoading} onSearch={onSearch} />
 
-          {result.filter_stats && (result.filter_stats.llm_zero_match_calls ?? 0) > 0 && (
-            <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-card text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              <span>IA analisou {result.filter_stats.llm_zero_match_calls} licitações adicionais{(result.filter_stats.llm_zero_match_aprovadas ?? 0) > 0 && <> — {result.filter_stats.llm_zero_match_aprovadas} aprovadas</>}</span>
-            </div>
-          )}
-
-          {/* CRIT-057 AC5: Inform user when zero-match budget was exceeded */}
-          {result.filter_stats && (result.filter_stats.zero_match_budget_exceeded ?? 0) > 0 && (
-            <div className="px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-card text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <span>Algumas oportunidades estão em revisão e podem aparecer em breve</span>
-            </div>
-          )}
+          {/* DEBT-FE-004: Result-area informational banners via BannerStack (max 2 visible) */}
+          <SearchResultsBanners
+            result={result}
+            loading={loading}
+            ufsSelecionadas={ufsSelecionadas}
+            onSearch={onSearch}
+            onRetryForceFresh={onRetryForceFresh}
+            onRefreshResults={props.onRefreshResults}
+            refreshAvailable={refreshAvailable}
+            liveFetchInProgress={liveFetchInProgress}
+            liveFetchTimedOut={liveFetchTimedOut}
+            pendingReviewCount={pendingReviewCount}
+            pendingReviewUpdate={pendingReviewUpdate}
+          />
 
           <ResultsFilters ufsSelecionadas={ufsSelecionadas} searchMode={searchMode} sectorName={sectorName} status={status} />
 
