@@ -1,0 +1,88 @@
+squad:
+  id: squad-debt-v3-surgery
+  name: "Pre-GTM Technical Surgery Squad"
+  version: "1.0"
+  created: "2026-03-31"
+  epic: DEBT-v3
+
+  philosophy: |
+    Cirurgia, nao inventario. Deletar > reorganizar. Medir reducao, nao reorganizacao.
+    Regra de ouro: nenhum PR cria mais LOC do que deleta (exceto testes).
+
+  sprints:
+    - id: S1
+      name: "Seguranca"
+      duration: "2-3 dias"
+      hours: 15
+      story: story-debt-v3-S1-seguranca.md
+      agents:
+        - agent: data-engineer
+          role: lead
+          scope: "Definir migration, retention policies, pg_cron schedules"
+        - agent: dev
+          role: executor
+          scope: "Implementar migration SQL, testar em staging"
+        - agent: qa
+          role: gate
+          scope: "Validar ACs, rodar suite, confirmar 0 funcoes vulneraveis"
+
+    - id: S2
+      name: "Conversao"
+      duration: "1 semana"
+      hours: 40
+      story: story-debt-v3-S2-conversao.md
+      parallel_tracks:
+        - track: backend
+          agent: dev
+          scope: "Prometheus LLM counters, SSE filtering events"
+          hours: 10
+        - track: frontend
+          agent: ux-design-expert
+          scope: "Landing RSC, search UX, error humanization, banners, mobile"
+          hours: 30
+      agents:
+        - agent: qa
+          role: gate
+          scope: "Lighthouse LCP, E2E mobile, zero codigos tecnicos"
+
+    - id: S3
+      name: "Simplificacao"
+      duration: "2 semanas"
+      hours: 60
+      story: story-debt-v3-S3-simplificacao.md
+      feature_freeze: true
+      agents:
+        - agent: architect
+          role: lead-decisions
+          scope: "Decidir o que deletar vs manter. Aprovar cada eliminacao."
+        - agent: dev
+          role: lead-execution
+          scope: "Fase 1: eliminacoes diretas. Fase 2: decomposicoes com reducao."
+        - agent: qa
+          role: gate
+          scope: "Suite completa entre cada batch. Validar LOC reduction >=15%."
+
+  rules:
+    - "Cada AC e binario (passa/falha) e medivel por CLI"
+    - "Nenhum PR cria mais LOC do que deleta (exceto testes)"
+    - "QA roda suite completa entre sprints e entre batches de S3"
+    - "Feature freeze durante S3"
+    - "Se S1+S2 passam e S3 esta em progresso, GTM pode iniciar em paralelo"
+    - "Proibido criar facades, helpers, utils, ou camadas de abstracao"
+    - "Proibido rodar brownfield discovery v4"
+
+  success_criteria:
+    security_definer_vulnerable: { baseline: 10, target: 0 }
+    retention_cron_jobs: { baseline: 0, target: ">=5" }
+    landing_lcp_mobile: { baseline: "~3.5s", target: "<2.5s" }
+    search_stuck_45s: { baseline: "~10%", target: "0%" }
+    backend_loc_reduction: { baseline: "measure", target: ">=15%" }
+    modules_over_1000loc: { baseline: "10+", target: "<=3" }
+    feature_flags_active: { baseline: 45, target: "<20" }
+    test_regressions: { target: 0 }
+
+  total:
+    hours: 115
+    cost: "R$17.250"
+    duration: "18 dias uteis (~3.5 semanas)"
+    stories: 3

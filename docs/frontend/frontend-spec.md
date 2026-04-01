@@ -1,7 +1,8 @@
 # SmartLic Frontend Specification & UX Audit
 
-**Data:** 2026-03-30 | **Versao:** 2.0 | **Autor:** @ux-design-expert (Uma) — Brownfield Discovery Phase 3
+**Data:** 2026-03-31 | **Versao:** 3.0 | **Autor:** @ux-design-expert (Uma) — Brownfield Discovery Phase 3
 **Stack:** Next.js 16 + React 18 + TypeScript 5.9 + Tailwind CSS 3 + Framer Motion + Recharts + Supabase SSR + @dnd-kit + Shepherd.js
+**Codebase Stats:** 537 source files (TSX/TS), 313 test files, 28 page routes, 60+ API proxy routes, 29 custom hooks, 3533 lines in hooks alone
 
 ---
 
@@ -135,8 +136,9 @@ O frontend SmartLic e uma SPA (Single-Page Application) com SSR seletivo, constr
 - **Componentes:** BlogCTA, RelatedPages, SchemaMarkup
 
 #### Paginas SEO Programaticas
-- `/como-avaliar-licitacao`, `/como-evitar-prejuizo-licitacao`, `/como-filtrar-editais`, `/como-priorizar-oportunidades`, `/licitacoes`, `/sobre`
+- `/como-avaliar-licitacao` (316 lines), `/como-evitar-prejuizo-licitacao` (317 lines), `/como-filtrar-editais` (319 lines), `/como-priorizar-oportunidades` (349 lines), `/licitacoes`, `/sobre` (427 lines)
 - **Proposito:** SEO long-tail para captura organica
+- **Concern:** Line counts suggest substantial content, but structurally similar — risk of thin/duplicate content penalty from search engines
 
 ### 2.2 Paginas Protegidas (autenticadas)
 
@@ -485,6 +487,50 @@ Implementado via `class` strategy (Tailwind `darkMode: "class"`). Toggle manual 
 - Fluid typography na landing page
 - Breakpoints Tailwind: sm (640px), md (768px), lg (1024px)
 
+### 6.8 UX Issues from Visual Audit (Screenshots)
+
+Based on analysis of 51 screenshots in `ux-audit/`, the following UX issues were identified:
+
+#### UX-CRIT-001: Search Stuck at 78% (screenshot 20-busca-stuck-130s.png)
+- **Observed:** Search progress bar reached 78% with "Filtrando resultados" message and appeared stuck for 130+ seconds
+- **Impact:** User has no indication if the search is still working or has silently failed
+- **Root cause:** SSE progress stalls when backend enters filtering/LLM phase (no granular progress events for post-fetch stages)
+- **Recommendation:** Add intermediate progress events for filtering, LLM classification, and viability assessment phases. Add "taking longer than expected" message after 60s with option to cancel or view partial results
+
+#### UX-CRIT-002: Error 524 Exposes Technical Details (screenshot 06-busca-erro-524.png)
+- **Observed:** Red error banner shows "Nao foi possivel conectar ao servidor. Tente novamente em alguns minutos." with a "1 tentativa de 3" counter and red "Tentar novamente" button
+- **Impact:** The retry counter and technical phrasing create anxiety. The error recovery is manual-only
+- **Recommendation:** Auto-retry should happen silently (first 2 attempts). Only show error banner after all automatic retries exhausted. Remove attempt counter — it signals fragility
+
+#### UX-MED-001: Dark Mode Contrast on Search Page (screenshot 30-dark-mode.png)
+- **Observed:** The search form in dark mode shows low contrast between the sector dropdown and surrounding dark surfaces. The "Buscar" CTA button maintains good contrast
+- **Impact:** Reduced readability of form elements in dark mode
+- **Recommendation:** Increase `--surface-2` separation from `--surface-0` in dark mode, or add stronger border-accent to form inputs
+
+#### UX-MED-002: Mobile Search — Limited Vertical Space (screenshot 31-mobile-busca.png)
+- **Observed:** On mobile (dark mode), the search form occupies nearly the entire viewport with "Busca de Licitacoes" title, description text, sector selector, and CTA. The "Personalizar busca" accordion is collapsed below the fold
+- **Impact:** Users must scroll to access advanced filters. No results visible above the fold
+- **Recommendation:** Consider collapsing the page title/description after first visit (returning user pattern). Make the sector selector more compact on mobile
+
+#### UX-MED-003: Dashboard Data Density (screenshot 22-dashboard.png)
+- **Observed:** Dashboard shows 5 stat cards in a row (32 buscas, 1826 oportunidades, R$3495.1M, 64h horas economizadas, 34.4% taxa de acervo). The "Buscas ao longo do tempo" chart has a single data series with minimal data points
+- **Impact:** Stat cards have good visual hierarchy but the chart appears sparse for users with few searches
+- **Recommendation:** For users with < 10 searches, consider showing an insight card instead of the sparse chart
+
+#### UX-MED-004: Pipeline Empty State Usability (screenshot 25-pipeline.png)
+- **Observed:** Pipeline shows a centered empty state with icon, text instructions (3 bullet points), and a "Buscar oportunidades" CTA. The page title "Pipeline de Oportunidades" has a search icon on the right
+- **Impact:** Good empty state design, but the 3-step instructions are wordy
+- **Recommendation:** Reduce to 2 steps maximum. The "Busque" -> "Acompanhe" -> "Arraste" flow could be a single sentence
+
+#### UX-LOW-001: Landing Page Hero — Dual CTA Hierarchy (screenshot 01-landing-hero.png)
+- **Observed:** Hero section has two CTAs side by side: "Ver oportunidades para meu setor" (filled, blue) and "Ver como funciona" (outlined). The filled CTA is correctly the primary action
+- **Assessment:** Good CTA hierarchy. No issue — noted as positive pattern
+
+#### UX-LOW-002: Footer Overlap on Search Page
+- **Observed:** The buscar page renders its own footer (with Sobre/Planos/Suporte/Legal links) below results, in addition to the NavigationShell's potential footer context
+- **Impact:** Two footer areas can appear depending on scroll position
+- **Recommendation:** DEBT-105 — consolidate footers
+
 ---
 
 ## 7. Accessibility Audit
@@ -553,6 +599,19 @@ O projeto demonstra esforco consciente de acessibilidade, mas tem lacunas em are
 - `next/image` configurado com remote patterns (Wix)
 - Favicon: `/favicon.ico`
 - OG Image: `/api/og` (server-generated)
+- Landing page hero screenshot: appears to be a static image — no lazy loading visible in markup
+- **Gap:** No `loading="lazy"` audit done for below-fold images in landing sections
+
+### 8.3 Security Headers
+
+Middleware (`middleware.ts`) implements comprehensive security headers:
+- **CSP nonce-based:** Per-request nonce generated, passed via x-nonce header, used in layout.tsx for inline scripts
+- **strict-dynamic:** Propagates trust from nonced scripts to their children
+- **COOP:** Cross-Origin-Opener-Policy: same-origin
+- **HSTS:** Strict-Transport-Security with preload
+- **style-src unsafe-inline:** Accepted risk — Tailwind injects inline styles at runtime
+- **CSP reporting:** Violations sent to `/api/csp-report`
+- **Whitelisted domains:** Stripe, Sentry, Supabase, Mixpanel, Cloudflare, Clarity, Google Tag Manager
 
 ### 8.3 Code Splitting
 
@@ -568,13 +627,24 @@ O projeto demonstra esforco consciente de acessibilidade, mas tem lacunas em are
 | **Server Component** | Landing, features, status, blog, termos, privacidade, SEO pages |
 | **Client Component** | Buscar, dashboard, pipeline, historico, conta, admin, mensagens, alertas, login, signup, onboarding, planos |
 
-### 8.5 Caching
+### 8.6 Caching
 
 - Static assets: `Cache-Control: public, max-age=2592000, immutable` (_next/static)
 - Images: `Cache-Control: public, max-age=604800`
 - Fonts: `Cache-Control: public, max-age=31536000, immutable`
 - Build ID unico por deploy (previne stale bundles)
 - Standalone output para Railway
+
+### 8.7 API Proxy Layer Performance
+
+The proxy factory (`create-proxy-route.ts`) handles 60+ routes and implements:
+- Token refresh via `getRefreshedToken()` (server-side, avoids client round-trip)
+- Correlation ID forwarding (X-Correlation-ID)
+- Error sanitization (never leaks backend error internals to client)
+- Query parameter forwarding
+- JSON body forwarding
+- **Concern:** Each API call goes through Next.js server -> backend, adding latency. No edge caching for cacheable endpoints (e.g., /setores, /plans)
+- **Recommendation:** Add `Cache-Control` headers to stable endpoints like `/api/setores` and `/api/plans` to leverage CDN edge caching
 
 ---
 
@@ -596,6 +666,12 @@ O projeto demonstra esforco consciente de acessibilidade, mas tem lacunas em are
 | TD-007 | SearchResults.tsx re-exporta tipos para backward compatibility — indica refactor incompleto | Baixa | Nenhum | Baixo |
 | TD-008 | `ViabilityBadge` usa `title` attr para dados criticos — inacessivel em mobile | Alta | A11y gap | Baixo |
 | TD-009 | Nenhum `aria-live` region para anunciar resultados de busca dinamicamente | Media | A11y gap | Baixo |
+| TD-010 | `mensagens/page.tsx` is the largest page at 591 lines — needs decomposition into sub-components | Media | Maintainability | Medio |
+| TD-011 | Two auth guard patterns coexist: `(protected)/layout.tsx` for route-group pages AND manual `useEffect` redirect in `/buscar` (which bypasses the route group). Risk of auth bypass if patterns diverge | Alta | Security | Medio |
+| TD-012 | `app/components/` (50+ files) vs `components/` (33+ files) — two component directories with unclear separation criteria. Some shared components live in `app/components/` (e.g., BackendStatusIndicator, AuthProvider) while others are in root `components/` (e.g., NavigationShell, Sidebar) | Media | DX confusion | Alto |
+| TD-013 | 60+ API proxy routes — many are simple GET/POST wrappers. The `create-proxy-route.ts` factory handles most, but there are still custom implementations (buscar SSE, download) that duplicate error handling logic | Baixa | Maintenance | Medio |
+| TD-014 | `prefers-reduced-motion` not systematically respected. Framer Motion animations and CSS keyframes (8 custom animations) run regardless of user preference | Media | A11y/comfort | Baixo |
+| TD-015 | No error boundary wrapping the SWRProvider/UserProvider — if these throw during initialization, the entire app crashes with no recovery UI | Media | Resilience | Baixo |
 
 ---
 
@@ -634,11 +710,25 @@ O projeto demonstra esforco consciente de acessibilidade, mas tem lacunas em are
 
 12. **Otimizar chart palette para daltonismo** — As 10 cores de chart dependem de hue para diferenciar series. Considerar patterns/shapes adicionais ou validar com simulador de daltonismo.
 
+### 10.4 Architecture Improvements
+
+13. **TD-011: Unify auth guard pattern** — The `/buscar` page manually checks auth via `useSearchOrchestration` while other protected pages use the `(protected)/layout.tsx` route group. Move `/buscar` into the route group or extract the auth guard into a shared hook to prevent divergence. Currently, a bug in one pattern would not be caught by the other.
+
+14. **TD-012: Consolidate component directories** — Define a clear rule: `components/` for truly shared/reusable components, `app/components/` for app-shell components (providers, layout chrome). Move providers (AuthProvider, ThemeProvider, etc.) to a `providers/` directory. Move landing-specific components to `app/(public)/components/`.
+
+15. **TD-010: Decompose mensagens/page.tsx** — At 591 lines, this is the largest page file. Extract ConversationList, ConversationDetail, and MessageComposer into separate components. Apply the same SWR pattern used in dashboard.
+
+16. **UX-CRIT-001: Search progress stall mitigation** — Add a "longer than expected" UI state at 60s that offers: (a) view partial results now, (b) continue waiting, (c) cancel. This prevents the user from staring at a stuck progress bar for 2+ minutes.
+
+17. **Edge caching for stable endpoints** — `/api/setores` and `/api/plans` change infrequently (monthly at most). Adding `Cache-Control: public, s-maxage=3600` headers enables Railway/CDN edge caching and reduces backend load.
+
+18. **Error boundary at provider level** — Wrap the SWRProvider + UserProvider + ThemeProvider stack in an ErrorBoundary that shows a minimal recovery UI. Currently, a thrown error in any provider crashes the entire app with the generic global-error.tsx.
+
 ---
 
 ## Apendice A: API Proxy Routes
 
-27 proxy routes em `frontend/app/api/` que encaminham requests para o backend com auth token:
+60+ proxy routes em `frontend/app/api/` que encaminham requests para o backend com auth token. Most are built using the `create-proxy-route.ts` factory. Key routes:
 
 | Route | Backend Endpoint |
 |-------|-----------------|
@@ -669,6 +759,20 @@ O projeto demonstra esforco consciente de acessibilidade, mas tem lacunas em are
 | `/api/mfa` | `POST /mfa/*` |
 | `/api/csp-report` | `POST /csp-report` |
 | `/api/first-analysis` | `POST /first-analysis` |
+| `/api/feature-flags` | `GET /feature-flags` |
+| `/api/buscar-results/[searchId]` | `GET /v1/search/{id}/results` |
+| `/api/search-zero-match/[searchId]` | `POST /v1/search/{id}/zero-match` |
+| `/api/bid-analysis/[bidId]` | `GET /v1/bid-analysis/{id}` |
+| `/api/regenerate-excel/[searchId]` | `POST /v1/regenerate-excel/{id}` |
+| `/api/export/google-sheets` | `POST /export/google-sheets` |
+| `/api/messages/*` | `GET/POST conversations, replies, status` |
+| `/api/reports/diagnostico` | `GET /reports/diagnostico` |
+| `/api/metrics/*` | `GET /metrics/daily-volume, discard-rate, sse-fallback` |
+| `/api/subscriptions/*` | `POST /subscriptions/cancel, cancel-feedback` |
+| `/api/auth/*` | login, signup, check-email, check-phone, google OAuth, resend-confirmation |
+| `/api/og` | Server-generated Open Graph image |
+| `/api/admin/[...path]` | Catch-all admin API proxy |
+| `/api/admin/metrics` | Admin metrics endpoint |
 
 ---
 
@@ -718,4 +822,87 @@ O projeto demonstra esforco consciente de acessibilidade, mas tem lacunas em are
 | `useSearchExport` | Export Excel/Sheets/PDF |
 | `useSearchPersistence` | Persistencia de estado em localStorage |
 | `useSearchRetry` | Logica de retry |
+| `useSearchBillingState` | Trial/plan/billing state for search gating |
+| `useSearchComputedProps` | Derived/computed props from search state |
+| `useSearchState` | UI state management (modals, drawers, panels) |
+| `useSearchSSE` | SSE connection with reconnect backoff [1s,2s,4s], max 3 retries, 120s inactivity timeout |
 | `useUfProgress` | Progresso por UF individual |
+
+---
+
+## Appendix C: Middleware & Security Layer
+
+### Route Protection
+
+`middleware.ts` intercepts all requests and:
+1. Creates Supabase server client with cookie-based auth (getAll/setAll pattern)
+2. Validates session for protected routes: `/buscar`, `/historico`, `/conta`, `/admin/*`, `/dashboard`, `/mensagens`
+3. Redirects unauthenticated users to `/login`
+4. Applies security headers to all responses
+
+### CSP Configuration
+
+The Content Security Policy is nonce-based (DEBT-108):
+- Per-request nonce generated via `crypto.randomUUID()` + base64 encoding
+- Nonce passed to layout.tsx via `x-nonce` response header
+- `strict-dynamic` propagates trust to scripts loaded by nonced parent scripts
+- `style-src 'unsafe-inline'` is an accepted risk (Tailwind CSS runtime injection)
+
+### Protected Routes
+
+| Group | Routes | Auth Method |
+|-------|--------|-------------|
+| Route group `(protected)/` | Dashboard, historico, conta sub-pages | `layout.tsx` auth guard with redirect |
+| Direct guard | `/buscar` | `useSearchOrchestration` manual check |
+| Middleware | All protected paths | Server-side session validation |
+| Admin guard | `/admin` | `isAdmin` role check in page component |
+
+### Analytics & Monitoring
+
+| Tool | Purpose | Integration |
+|------|---------|-------------|
+| Google Analytics 4 | Page views, conversions | `<GoogleAnalytics nonce={nonce} />` with LGPD compliance |
+| Microsoft Clarity | Heatmaps, session recordings | `<ClarityAnalytics nonce={nonce} />` |
+| Mixpanel | Custom event tracking | `useAnalytics` hook, `AnalyticsProvider` |
+| Sentry | Error tracking | `@sentry/nextjs`, ErrorBoundary integration |
+
+---
+
+## Appendix D: File Organization Summary
+
+```
+frontend/
+  app/
+    (protected)/layout.tsx    -- Auth guard for route-group pages
+    api/                      -- 60+ proxy routes to backend
+    buscar/
+      components/             -- 42+ search-specific components
+        search-results/       -- 9 result display components
+      hooks/                  -- 13 search-specific hooks
+      constants/              -- Tour steps, search config
+    components/               -- 50+ app-shell components
+      landing/                -- 14 landing page sections
+      ui/                     -- 6 glassmorphism/premium UI components
+    dashboard/components/     -- 10 dashboard-specific components
+    pipeline/                 -- Kanban + mobile tabs
+    layout.tsx                -- Root layout with 10 providers
+    globals.css               -- Design tokens (CSS vars) + dark mode
+  components/                 -- 33+ shared components
+    billing/                  -- 4 billing components
+    skeletons/                -- 3 page skeletons
+    ui/                       -- 7 UI primitives (Button, Input, etc.)
+    auth/                     -- MFA enforcement
+    layout/                   -- MobileMenu
+    reports/                  -- PdfOptionsModal
+    org/                      -- Organization components
+    account/                  -- Account sub-page components
+    subscriptions/            -- Subscription management
+  hooks/                      -- 29 global custom hooks (3533 LOC)
+  contexts/                   -- UserContext.tsx (unified context)
+  lib/                        -- Utilities, config, error messages
+    constants/                -- UF names, sector names, stopwords
+    schemas/                  -- Zod form schemas
+    animations/               -- Framer Motion presets
+  e2e-tests/                  -- 20+ Playwright E2E specs
+  __tests__/                  -- 313 Jest unit/integration tests
+```
