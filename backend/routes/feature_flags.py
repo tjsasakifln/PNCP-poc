@@ -183,7 +183,6 @@ _FLAG_DESCRIPTIONS: dict[str, str] = {
     # Data Sources
     "COMPRASGOV_ENABLED": "ComprasGov v3 data source (offline since 2026-03-03)",
     "PCP_V2_ENABLED": "Portal de Compras Publicas v2 data source",
-    "LICITAJA_ENABLED": "LicitaJa data source integration",
     "DATALAKE_ENABLED": "ETL ingestion pipeline (pncp_raw_bids)",
     "DATALAKE_QUERY_ENABLED": "Query local datalake instead of live APIs",
     # Cache & Warming
@@ -246,7 +245,6 @@ _FLAG_LIFECYCLE: dict[str, dict] = {
     # Data Sources
     "COMPRASGOV_ENABLED": {"owner": "data", "category": "source", "lifecycle": "ops-toggle", "created": "2025-10"},
     "PCP_V2_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2025-10"},
-    "LICITAJA_ENABLED": {"owner": "data", "category": "source", "lifecycle": "experimental", "created": "2026-02"},
     "DATALAKE_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2026-01"},
     "DATALAKE_QUERY_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2026-01"},
     # Cache & Warming

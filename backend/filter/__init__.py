@@ -6,23 +6,17 @@ continues to work (facade pattern).
 Architecture:
   - filter/pipeline.py: Main orchestrator (aplicar_todos_filtros)
   - filter/keywords.py: Keyword matching engine (match_keywords, normalize_text, etc.)
-  - filter/density.py: Term density scoring + proximity/co-occurrence checks
+  - filter/density.py: Proximity/co-occurrence checks
   - filter/status.py: Status inference + prazo aberto filter
   - filter/uf.py: UF filtering
   - filter/value.py: Value range filtering
-  - filter/basic.py: Basic filter helpers (status, esfera, proximity, red flags)
-  - filter/llm.py: LLM zero-match classification
-  - filter/recovery.py: Zero-results recovery (relaxation, LLM recovery)
   - filter/stats.py: Filter statistics tracking
   - filter/utils.py: Shared filter utilities
 """
 
 # Sub-modules (decomposed filter package)
-from filter.basic import *  # noqa: F401,F403
 from filter.keywords import *  # noqa: F401,F403
 from filter.density import *  # noqa: F401,F403
-from filter.llm import *  # noqa: F401,F403
-from filter.recovery import *  # noqa: F401,F403
 from filter.stats import *  # noqa: F401,F403
 from filter.status import *  # noqa: F401,F403
 from filter.uf import *  # noqa: F401,F403

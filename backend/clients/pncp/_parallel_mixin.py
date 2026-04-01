@@ -242,7 +242,7 @@ class _PNCPParallelMixin:
             1523
         """
         from config import PNCP_MAX_PAGES
-        from clients.pncp.sync_client import STATUS_PNCP_MAP
+        from clients.pncp.async_client import STATUS_PNCP_MAP
 
         start_time = sync_time.time()
 

@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 import quota  # noqa: E402
 from status_inference import enriquecer_com_status_inferido  # noqa: E402
-from search_cache import get_from_cache_cascade  # noqa: E402
+from cache.cascade import get_from_cache_cascade  # noqa: E402
 
 
 async def stage_execute(pipeline, ctx: SearchContext) -> None:
@@ -136,7 +136,7 @@ async def stage_execute(pipeline, ctx: SearchContext) -> None:
                 # CRIT-056 AC2: Quality-stale -> serve but trigger revalidation
                 if composed.get("_swr_stale") and ctx.user and ctx.user.get("id"):
                     from metrics import CACHE_QUALITY_REVALIDATION_TOTAL
-                    from search_cache import trigger_background_revalidation as _trigger_reval
+                    from cache.swr import trigger_background_revalidation as _trigger_reval
                     CACHE_QUALITY_REVALIDATION_TOTAL.inc()
                     _cache_params = _build_cache_params(request)
                     _request_data = {
@@ -176,7 +176,7 @@ async def stage_execute(pipeline, ctx: SearchContext) -> None:
             # CRIT-056 AC2: Quality-stale -> serve but trigger revalidation
             if cached.get("_swr_stale") and ctx.user and ctx.user.get("id"):
                 from metrics import CACHE_QUALITY_REVALIDATION_TOTAL
-                from search_cache import trigger_background_revalidation as _trigger_reval
+                from cache.swr import trigger_background_revalidation as _trigger_reval
                 CACHE_QUALITY_REVALIDATION_TOTAL.inc()
                 _cache_params = _build_cache_params(request)
                 _request_data = {
@@ -202,7 +202,7 @@ async def stage_execute(pipeline, ctx: SearchContext) -> None:
         # If stale cache exists, return it IMMEDIATELY and dispatch background refresh
         if ctx.user and ctx.user.get("id"):
             try:
-                from search_cache import trigger_background_revalidation
+                from cache.swr import trigger_background_revalidation
                 _cache_params = {
                     "setor_id": request.setor_id,
                     "ufs": request.ufs,
@@ -339,7 +339,7 @@ async def stage_execute(pipeline, ctx: SearchContext) -> None:
     # CRIT-051 AC3: Merge cached results with fresh results (hybrid fetch)
     _composed_cached = getattr(ctx, "_composed_cached_results", None)
     if _composed_cached:
-        from search_cache import _dedup_cross_uf
+        from cache.manager import _dedup_cross_uf
         _cached_count = len(_composed_cached)
         _fresh_count = len(ctx.licitacoes_raw)
         ctx.licitacoes_raw = _dedup_cross_uf(_composed_cached + ctx.licitacoes_raw)
@@ -423,7 +423,7 @@ async def stage_execute(pipeline, ctx: SearchContext) -> None:
             }
             try:
                 # CRIT-051 AC1: Save per-UF to Supabase (also saves combined for retrocompat)
-                from search_cache import save_to_cache_per_uf
+                from cache.manager import save_to_cache_per_uf
                 await save_to_cache_per_uf(
                     user_id=ctx.user["id"],
                     params=_cache_params,
@@ -515,23 +515,6 @@ async def _execute_multi_source(
             adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
                 timeout=source_config.portal.timeout,
             )
-
-    # LicitaJá: commercial aggregator (requires API key + LICITAJA_ENABLED flag)
-    if source_config.licitaja.enabled and source_config.licitaja.is_available():
-        from config import LICITAJA_ENABLED
-        if not LICITAJA_ENABLED:
-            logger.info("[MULTI-SOURCE] LicitaJá DISABLED via LICITAJA_ENABLED flag — skipping")
-            skipped_sources.append("LICITAJA")
-        else:
-            licitaja_cb = get_circuit_breaker("licitaja")
-            if licitaja_cb.is_degraded:
-                logger.warning("[MULTI-SOURCE] LicitaJá circuit breaker OPEN — skipping source")
-                skipped_sources.append("LICITAJA")
-            else:
-                from clients.licitaja_client import LicitaJaAdapter
-                adapters["LICITAJA"] = LicitaJaAdapter(
-                    timeout=source_config.licitaja.timeout,
-                )
 
     # STORY-305 AC10: If ALL sources are CB OPEN, pipeline will get no adapters.
     # ConsolidationService handles empty adapters -> AllSourcesFailedError -> cache stale path.
@@ -1059,34 +1042,32 @@ async def _execute_pncp_only(
             except PNCPDegradedError:
                 raise  # Re-raise to be handled by outer try/except
             except Exception as e:
-                logger.warning(f"Parallel fetch failed, falling back to sequential: {e}")
-                # GTM-INFRA-001 AC1/AC3: Wrap sync PNCPClient in asyncio.to_thread()
-                # to prevent blocking the event loop with requests.Session + time.sleep()
-                client = deps.PNCPClient()
-                return await asyncio.to_thread(
-                    lambda: list(
-                        client.fetch_all(
-                            data_inicial=request.data_inicial,
-                            data_final=request.data_final,
-                            ufs=request.ufs,
-                            modalidades=modalidades_to_fetch,
-                        )
-                    )
+                logger.warning(f"Parallel fetch failed, falling back to sequential async: {e}")
+                # DEBT-v3-S3 Phase 1.2: Replaced sync PNCPClient + asyncio.to_thread()
+                # with native async buscar_todas_ufs_paralelo — no thread overhead.
+                fetch_result = await deps.buscar_todas_ufs_paralelo(
+                    ufs=request.ufs,
+                    data_inicial=request.data_inicial,
+                    data_final=request.data_final,
+                    modalidades=modalidades_to_fetch,
                 )
+                from pncp_client import ParallelFetchResult
+                if isinstance(fetch_result, ParallelFetchResult):
+                    return fetch_result.items
+                return list(fetch_result)
         else:
-            # GTM-INFRA-001 AC1/AC3: Wrap sync PNCPClient in asyncio.to_thread()
-            # to prevent blocking the event loop with requests.Session + time.sleep()
-            client = deps.PNCPClient()
-            return await asyncio.to_thread(
-                lambda: list(
-                    client.fetch_all(
-                        data_inicial=request.data_inicial,
-                        data_final=request.data_final,
-                        ufs=request.ufs,
-                        modalidades=modalidades_to_fetch,
-                    )
-                )
+            # DEBT-v3-S3 Phase 1.2: Replaced sync PNCPClient + asyncio.to_thread()
+            # with native async buscar_todas_ufs_paralelo — no thread overhead.
+            fetch_result = await deps.buscar_todas_ufs_paralelo(
+                ufs=request.ufs,
+                data_inicial=request.data_inicial,
+                data_final=request.data_final,
+                modalidades=modalidades_to_fetch,
             )
+            from pncp_client import ParallelFetchResult
+            if isinstance(fetch_result, ParallelFetchResult):
+                return fetch_result.items
+            return list(fetch_result)
 
     try:
         ctx.licitacoes_raw = await asyncio.wait_for(_do_fetch(), timeout=fetch_timeout)

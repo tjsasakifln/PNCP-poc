@@ -178,7 +178,7 @@ def _check_local_cache() -> dict:
     """Probe local file cache directory."""
     start = time.monotonic()
     try:
-        from search_cache import get_local_cache_stats
+        from cache.local_file import get_local_cache_stats
         stats = get_local_cache_stats()
         latency_ms = round((time.monotonic() - start) * 1000)
 

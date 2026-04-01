@@ -167,19 +167,17 @@ class TestCriticalCombinations:
             assert get_feature_flag("RATE_LIMITING_ENABLED") is True
 
     def test_combo4_all_sources_off(self):
-        """COMPRASGOV_ENABLED=false + LICITAJA_ENABLED=false + DATALAKE_ENABLED=false.
+        """COMPRASGOV_ENABLED=false + DATALAKE_ENABLED=false.
 
         All non-PNCP sources disabled. System should still work via PNCP fallback.
         """
         _feature_flag_cache.clear()
         with patch.dict("os.environ", {
             "COMPRASGOV_ENABLED": "false",
-            "LICITAJA_ENABLED": "false",
             "DATALAKE_ENABLED": "false",
         }):
             _feature_flag_cache.clear()
             assert get_feature_flag("COMPRASGOV_ENABLED") is False
-            assert get_feature_flag("LICITAJA_ENABLED") is False
             assert get_feature_flag("DATALAKE_ENABLED") is False
 
     def test_combo5_llm_arbiter_off_zero_match_off(self):

@@ -115,8 +115,8 @@ class TestPhasedExecution:
             AsyncPNCPClient, "health_canary",
             new_callable=AsyncMock,
             return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"},
-        ), patch("pncp_client.PNCP_BATCH_SIZE", 2), \
-             patch("pncp_client.PNCP_BATCH_DELAY_S", 0.01):
+        ), patch("clients.pncp._parallel_mixin.PNCP_BATCH_SIZE", 2), \
+             patch("clients.pncp._parallel_mixin.PNCP_BATCH_DELAY_S", 0.01):
 
             client = AsyncPNCPClient(max_concurrent=10)
             await client.buscar_todas_ufs_paralelo(
@@ -145,8 +145,8 @@ class TestPhasedExecution:
             AsyncPNCPClient, "health_canary",
             new_callable=AsyncMock,
             return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"},
-        ), patch("pncp_client.PNCP_BATCH_SIZE", 5), \
-             patch("pncp_client.PNCP_BATCH_DELAY_S", 5.0):
+        ), patch("clients.pncp._parallel_mixin.PNCP_BATCH_SIZE", 5), \
+             patch("clients.pncp._parallel_mixin.PNCP_BATCH_DELAY_S", 5.0):
 
             client = AsyncPNCPClient(max_concurrent=10)
             await client.buscar_todas_ufs_paralelo(
@@ -176,8 +176,8 @@ class TestPhasedExecution:
             AsyncPNCPClient, "health_canary",
             new_callable=AsyncMock,
             return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"},
-        ), patch("pncp_client.PNCP_BATCH_SIZE", 2), \
-             patch("pncp_client.PNCP_BATCH_DELAY_S", 0.01):
+        ), patch("clients.pncp._parallel_mixin.PNCP_BATCH_SIZE", 2), \
+             patch("clients.pncp._parallel_mixin.PNCP_BATCH_DELAY_S", 0.01):
 
             client = AsyncPNCPClient(max_concurrent=10)
             result = await client.buscar_todas_ufs_paralelo(

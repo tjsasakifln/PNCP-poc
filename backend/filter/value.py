@@ -15,26 +15,7 @@ def filtrar_por_valor(
     valor_min: float | None = None,
     valor_max: float | None = None
 ) -> List[dict]:
-    """
-    Filtra licitações por faixa de valor estimado.
-
-    Args:
-        licitacoes: Lista de licitações
-        valor_min: Valor mínimo (None = sem limite inferior)
-        valor_max: Valor máximo (None = sem limite superior)
-
-    Returns:
-        Lista filtrada de licitações
-
-    Examples:
-        >>> bids = [
-        ...     {"valorTotalEstimado": 50000},
-        ...     {"valorTotalEstimado": 200000},
-        ...     {"valorTotalEstimado": 1000000},
-        ... ]
-        >>> filtrar_por_valor(bids, valor_min=100000, valor_max=500000)
-        [{'valorTotalEstimado': 200000}]
-    """
+    """Filter bids by estimated value range (None = no limit). Bids with None/0 value pass through."""
     if valor_min is None and valor_max is None:
         logger.debug("filtrar_por_valor: sem limites, retornando todas")
         return licitacoes
@@ -89,37 +70,7 @@ def paginar_resultados(
     pagina: int = 1,
     itens_por_pagina: int = 20
 ) -> Tuple[List[dict], Dict[str, int]]:
-    """
-    Pagina os resultados de licitações.
-
-    Args:
-        licitacoes: Lista completa de licitações
-        pagina: Número da página (1-indexed). Padrão: 1.
-        itens_por_pagina: Quantidade de itens por página. Padrão: 20.
-
-    Returns:
-        Tuple contendo:
-        - List[dict]: Licitações da página solicitada
-        - Dict[str, int]: Metadados de paginação com:
-            - total: Total de itens
-            - pagina: Página atual
-            - itens_por_pagina: Itens por página
-            - total_paginas: Total de páginas
-            - inicio: Índice do primeiro item (0-indexed)
-            - fim: Índice do último item (exclusivo)
-
-    Examples:
-        >>> bids = [{"id": i} for i in range(100)]
-        >>> page, meta = paginar_resultados(bids, pagina=2, itens_por_pagina=20)
-        >>> len(page)
-        20
-        >>> meta["total"]
-        100
-        >>> meta["total_paginas"]
-        5
-        >>> meta["inicio"]
-        20
-    """
+    """Paginate results. Returns (page_items, metadata_dict)."""
     total = len(licitacoes)
 
     if total == 0:

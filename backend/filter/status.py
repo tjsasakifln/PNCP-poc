@@ -16,34 +16,7 @@ def filtrar_por_status(
     licitacoes: List[dict],
     status: str = "todos"
 ) -> List[dict]:
-    """
-    Filtra licitações por status do processo licitatório.
-
-    IMPORTANTE: Esta função usa INFERÊNCIA DE STATUS baseada em múltiplos campos
-    (datas, valores, situação textual) porque a API PNCP não retorna um campo
-    de status padronizado. Ver status_inference.py para detalhes da lógica.
-
-    Args:
-        licitacoes: Lista de licitações da API PNCP (deve ter `_status_inferido`)
-        status: Status desejado:
-            - "recebendo_proposta": Licitações abertas para envio de propostas
-            - "em_julgamento": Propostas encerradas, em análise
-            - "encerrada": Processo finalizado
-            - "todos": Sem filtro (retorna todas)
-
-    Returns:
-        Lista filtrada de licitações
-
-    Examples:
-        >>> from status_inference import enriquecer_com_status_inferido
-        >>> bids = [
-        ...     {"dataEncerramentoProposta": "2026-12-31T10:00:00"},
-        ...     {"valorTotalHomologado": 100000},
-        ... ]
-        >>> enriquecer_com_status_inferido(bids)  # Adiciona _status_inferido
-        >>> filtrar_por_status(bids, "recebendo_proposta")
-        [{'dataEncerramentoProposta': '2026-12-31T10:00:00', '_status_inferido': 'recebendo_proposta'}]
-    """
+    """Filter bids by inferred status. Uses _status_inferido field if present, else raw API fields."""
     if not status or status == "todos":
         logger.debug("filtrar_por_status: status='todos', retornando todas")
         return licitacoes
@@ -85,36 +58,7 @@ def filtrar_por_modalidade(
     licitacoes: List[dict],
     modalidades: List[int] | None
 ) -> List[dict]:
-    """
-    Filtra licitações por modalidade de contratação.
-
-    Códigos de modalidade conforme PNCP:
-        1 - Pregão Eletrônico
-        2 - Pregão Presencial
-        3 - Concorrência
-        4 - Tomada de Preços
-        5 - Convite
-        6 - Dispensa de Licitação
-        7 - Inexigibilidade
-        8 - Credenciamento
-        9 - Leilão
-        10 - Diálogo Competitivo
-
-    Args:
-        licitacoes: Lista de licitações
-        modalidades: Lista de códigos de modalidade (None = todas)
-
-    Returns:
-        Lista filtrada de licitações
-
-    Examples:
-        >>> bids = [
-        ...     {"modalidadeId": 1, "objeto": "Pregão"},
-        ...     {"modalidadeId": 6, "objeto": "Dispensa"},
-        ... ]
-        >>> filtrar_por_modalidade(bids, [1, 2])
-        [{'modalidadeId': 1, 'objeto': 'Pregão'}]
-    """
+    """Filter bids by modalidade ID list. None = all."""
     if not modalidades:
         logger.debug("filtrar_por_modalidade: modalidades=None, retornando todas")
         return licitacoes
@@ -149,27 +93,7 @@ def filtrar_por_esfera(
     licitacoes: List[dict],
     esferas: List[str] | None
 ) -> List[dict]:
-    """
-    Filtra licitações por esfera governamental.
-
-    Args:
-        licitacoes: Lista de licitações
-        esferas: Lista de códigos de esfera:
-            - "F" = Federal (União, autarquias federais, empresas públicas federais)
-            - "E" = Estadual (Estados, DF, autarquias estaduais)
-            - "M" = Municipal (Prefeituras, câmaras, autarquias municipais)
-
-    Returns:
-        Lista filtrada de licitações
-
-    Examples:
-        >>> bids = [
-        ...     {"esferaId": "F", "orgao": "Ministério da Saúde"},
-        ...     {"esferaId": "M", "orgao": "Prefeitura de SP"},
-        ... ]
-        >>> filtrar_por_esfera(bids, ["M"])
-        [{'esferaId': 'M', 'orgao': 'Prefeitura de SP'}]
-    """
+    """Filter bids by government sphere (F/E/M). None = all. Falls back to organ-name heuristics."""
     if not esferas:
         logger.debug("filtrar_por_esfera: esferas=None, retornando todas")
         return licitacoes
@@ -236,17 +160,9 @@ def filtrar_por_esfera(
 def filtrar_por_prazo_aberto(
     licitacoes: List[dict],
 ) -> Tuple[List[dict], int]:
-    """
-    STORY-240 AC3: Filter out bids whose proposal deadline has already passed.
+    """Reject bids with past dataEncerramentoProposta. Bids without deadline are kept.
 
-    Rejects bids where dataEncerramentoProposta <= now().
-    Bids without a deadline date are KEPT (conservative approach).
-
-    Args:
-        licitacoes: List of raw PNCP bid dictionaries
-
-    Returns:
-        Tuple of (approved bids list, count of rejected bids)
+    Returns (approved_list, rejected_count).
     """
     from datetime import datetime, timezone
 

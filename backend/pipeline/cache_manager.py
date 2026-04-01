@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timezone
 
 from redis_pool import get_fallback_cache
-from search_cache import (
+from cache.manager import (
     _dedup_cross_uf,
 )
 from schemas import DataSourceStatus
@@ -95,7 +95,7 @@ def _read_cache_composed(request) -> dict | None:
 
     Returns composed dict with cached_ufs/missing_ufs, or None if insufficient coverage.
     """
-    from search_cache import CACHE_PARTIAL_HIT_THRESHOLD
+    from cache.manager import CACHE_PARTIAL_HIT_THRESHOLD
     from metrics import CACHE_COMPOSITION_TOTAL, CACHE_COMPOSITION_COVERAGE
 
     ufs = sorted(request.ufs) if request.ufs else []

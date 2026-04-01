@@ -32,26 +32,11 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# PNCP Degraded Error (STORY-252 AC8)
+# PNCP Degraded Error + Status Map — re-exported from async_client
+# (DEBT-v3-S3 Phase 1.2: canonical definitions moved to async_client.py)
 # ============================================================================
 
-class PNCPDegradedError(PNCPAPIError):
-    """Raised when PNCP circuit breaker is in degraded state."""
-    pass
-
-
-# ============================================================================
-# Status Mapping for PNCP API
-# ============================================================================
-
-# Mapping from StatusLicitacao enum values to PNCP API parameter values
-# Note: Import StatusLicitacao at runtime to avoid circular imports
-STATUS_PNCP_MAP = {
-    "recebendo_proposta": "recebendo_proposta",
-    "em_julgamento": "propostas_encerradas",
-    "encerrada": "encerrada",
-    "todos": None,  # Don't send status parameter - return all
-}
+from clients.pncp.async_client import PNCPDegradedError, STATUS_PNCP_MAP  # noqa: E402, F401
 
 
 class PNCPClient:

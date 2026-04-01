@@ -28,11 +28,16 @@ from clients.pncp.circuit_breaker import (  # noqa: F401
     _circuit_breaker,
     _pcp_circuit_breaker,
     _comprasgov_circuit_breaker,
-    _licitaja_circuit_breaker,
     PNCP_CIRCUIT_BREAKER_THRESHOLD,
     PNCP_CIRCUIT_BREAKER_COOLDOWN,
     PCP_CIRCUIT_BREAKER_THRESHOLD,
     PCP_CIRCUIT_BREAKER_COOLDOWN,
+)
+from config.pncp import (  # noqa: F401
+    PNCP_BATCH_SIZE,
+    PNCP_BATCH_DELAY_S,
+    USE_REDIS_CIRCUIT_BREAKER,
+    CB_REDIS_TTL,
 )
 from clients.pncp.retry import (  # noqa: F401
     ParallelFetchResult,

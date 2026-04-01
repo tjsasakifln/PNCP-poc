@@ -232,7 +232,7 @@ async def buscar_licitacoes(
     # -----------------------------------------------------------------------
     if not request.force_fresh and request.search_id:
         try:
-            from search_cache import get_from_cache_cascade
+            from cache.cascade import get_from_cache_cascade
             from pipeline.cache_manager import _build_cache_params
 
             cache_params = _build_cache_params(request)

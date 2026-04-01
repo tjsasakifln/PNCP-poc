@@ -684,7 +684,7 @@ async def get_cache_metrics_endpoint(
     total_entries, priority_distribution, age_distribution, degraded_keys,
     avg_fetch_duration_ms, and top_keys.
     """
-    from search_cache import get_cache_metrics
+    from cache.admin import get_cache_metrics
 
     metrics = await get_cache_metrics()
 
@@ -710,7 +710,7 @@ async def inspect_cache_entry_endpoint(
     priority, fail_streak, degraded_until, coverage, access_count,
     last_accessed_at, age_hours, cache_status.
     """
-    from search_cache import inspect_cache_entry
+    from cache.admin import inspect_cache_entry
 
     # Validate hash is hex
     if not re.match(r"^[a-f0-9]+$", params_hash):
@@ -741,7 +741,7 @@ async def delete_cache_entry_endpoint(
     Deletes from Supabase, Redis/InMemory, and local file.
     Returns {"deleted_levels": ["supabase", "redis", "local"]}.
     """
-    from search_cache import invalidate_cache_entry
+    from cache.admin import invalidate_cache_entry
 
     if not re.match(r"^[a-f0-9]+$", params_hash):
         raise HTTPException(status_code=400, detail="Invalid params_hash format (hex only)")
@@ -769,7 +769,7 @@ async def delete_all_cache_endpoint(
     Requires X-Confirm: delete-all header for safety.
     Without header, returns 400 Bad Request.
     """
-    from search_cache import invalidate_all_cache
+    from cache.admin import invalidate_all_cache
 
     confirm = request.headers.get("x-confirm", "")
     if confirm != "delete-all":

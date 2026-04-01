@@ -53,54 +53,10 @@ def aplicar_todos_filtros(
     on_progress: Optional[Callable[[int, int, str], None]] = None,  # STORY-329 AC1: (processed, total, phase)
     pncp_degraded: bool = False,  # CRIT-054 AC4: flag for PNCP source degradation
 ) -> Tuple[List[dict], Dict[str, int]]:
-    """
-    Aplica todos os filtros em sequência otimizada (fail-fast).
+    """Apply all filters sequentially (fail-fast: UF → Status → Esfera → Modalidade →
+    Municipio → Orgao → Valor → Keywords → LLM → Recovery).
 
-    A ordem dos filtros é otimizada para descartar licitações o mais cedo
-    possível, priorizando filtros rápidos (O(1)) antes dos lentos (regex):
-
-    1. UF (O(1) - set lookup) - mais rápido
-    2. Status (O(1) - string comparison)
-    3. Esfera (O(1) - string comparison)
-    4. Modalidade (O(1) - int comparison)
-    5. Município (O(1) - string comparison)
-    6. Órgão (O(n) - string contains) - P2 filter
-    7. Valor (O(1) - numeric comparison)
-    8. Keywords (O(n) - regex matching) - mais lento
-
-    Args:
-        licitacoes: Lista de licitações da API PNCP
-        ufs_selecionadas: Set de UFs selecionadas (ex: {"SP", "RJ"})
-        status: Status desejado ("recebendo_proposta", "em_julgamento", "encerrada", "todos")
-        modalidades: Lista de códigos de modalidade (None = todas)
-        valor_min: Valor mínimo (None = sem limite)
-        valor_max: Valor máximo (None = sem limite)
-        esferas: Lista de esferas ("F", "E", "M") (None = todas)
-        municipios: Lista de códigos IBGE (None = todos)
-        orgaos: Lista de nomes de órgãos para filtrar (None = todos)
-        keywords: Set de keywords para matching (None = usa KEYWORDS_UNIFORMES)
-        exclusions: Set de exclusões (None = usa KEYWORDS_EXCLUSAO)
-
-    Returns:
-        Tuple contendo:
-        - List[dict]: Licitações aprovadas em todos os filtros
-        - Dict[str, int]: Estatísticas detalhadas de rejeição
-
-    Examples:
-        >>> bids = [
-        ...     {"uf": "SP", "valorTotalEstimado": 100000, "objetoCompra": "Uniformes"},
-        ...     {"uf": "RJ", "valorTotalEstimado": 500000, "objetoCompra": "Outros"},
-        ... ]
-        >>> aprovadas, stats = aplicar_todos_filtros(
-        ...     bids,
-        ...     ufs_selecionadas={"SP"},
-        ...     valor_min=50000,
-        ...     valor_max=200000
-        ... )
-        >>> stats["total"]
-        2
-        >>> stats["aprovadas"]
-        1
+    Returns (aprovadas, stats_dict).
     """
     stats: Dict[str, int] = {
         "total": len(licitacoes),

@@ -191,8 +191,8 @@ class TestT4BatchDelayConfigurable:
             AsyncPNCPClient, "health_canary",
             new_callable=AsyncMock,
             return_value={"ok": True, "latency_ms": 50.0, "cron_status": "healthy"},
-        ), patch("pncp_client.PNCP_BATCH_SIZE", 2), \
-             patch("pncp_client.PNCP_BATCH_DELAY_S", 0.5), \
+        ), patch("clients.pncp._parallel_mixin.PNCP_BATCH_SIZE", 2), \
+             patch("clients.pncp._parallel_mixin.PNCP_BATCH_DELAY_S", 0.5), \
              patch("asyncio.sleep", side_effect=mock_sleep):
 
             client = AsyncPNCPClient(max_concurrent=10)

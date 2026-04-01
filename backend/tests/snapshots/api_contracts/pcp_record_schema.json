@@ -32,7 +32,7 @@
     "codigoSituacaoEdital": "int",
     "codigoTratamentoDiferenciado": "int",
     "comprador": "NoneType",
-    "dataHoraFinalLances": "str",
+    "dataHoraFinalLances": "NoneType",
     "dataHoraFinalPropostas": "str",
     "dataHoraInicioLances": "str",
     "dataHoraInicioPropostas": "str",
@@ -78,13 +78,13 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 467803,
+    "codigoLicitacao": 469194,
     "numeroLicitacao": null,
-    "identificacao": "04",
-    "numero": "04/2026",
-    "resumo": "Contratação de empresa para o fornecimento de Material Pedagogico e de espediente para a Escola Pouso Alegre por meio da Associação de Apoio da Escola Municipal De 1ºGrau Pouso Alegre.",
-    "razaoSocial": "Associação de Apoio da Escola Municipal de 1º Grau Pouso Alegre",
-    "nomeUnidade": "Associação de Apoio da Escola Municipal de 1º Grau Pouso Alegre",
+    "identificacao": "03",
+    "numero": "03/2026",
+    "resumo": "CONTRATAÇÃO DE EMPRESA PARA AQUISIÇÃO DE COMBUSTÍVEIS, TIPO GASOLINA COMUM E/OU ADITIVADA, ETANOL, LUBRIFICANTES, FILTROS DE AR, FILTROS DE AR CONDICIONADO, FILTROS DE ÓLEO LUBRIFICANTE PARA MOTOR, FILTROS DE COMBUSTÍVEL PARA OS VEÍCULOS OFICIAIS DA...",
+    "razaoSocial": "Câmara Municipal de Boa Ventura de São Roque",
+    "nomeUnidade": "Câmara Municipal de Boa Ventura de São Roque",
     "status": {
       "codigo": 1,
       "descricao": "Recebendo Propostas"
@@ -96,32 +96,32 @@
     "tipoLicitacao": {
       "codigoModalidadeLicitacao": 0,
       "modalidadeLicitacao": "Dispensa",
-      "codigoTipoLicitacao": 10,
-      "siglaTipoLicitacao": "CD",
-      "tipoLicitacao": "Dispensa",
-      "tipoRealizacao": "Eletrônico",
+      "codigoTipoLicitacao": 34,
+      "siglaTipoLicitacao": null,
+      "tipoLicitacao": "Dispensa Presencial",
+      "tipoRealizacao": "Presencial",
       "tipoJulgamento": "Menor Preço"
     },
     "codigoSituacaoEdital": 5,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-03-31T20:01:00Z",
-    "dataHoraInicioPropostas": "2026-03-26T20:00:00Z",
-    "dataHoraFinalPropostas": "2026-03-31T20:00:00Z",
-    "dataHoraFinalLances": "2026-04-01T20:00:00Z",
-    "dataHoraPublicacao": "2026-03-26T16:23:00Z",
+    "dataHoraInicioLances": "2026-04-02T02:59:00Z",
+    "dataHoraInicioPropostas": "2026-03-31T20:00:00Z",
+    "dataHoraFinalPropostas": "2026-04-02T02:59:00Z",
+    "dataHoraFinalLances": null,
+    "dataHoraPublicacao": "2026-03-31T19:49:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 7352,
-      "nomeUnidadeCompradora": "Associação de Apoio da Escola Municipal de 1º Grau Pouso Alegre",
-      "codigoComprador": 4222,
+      "codigoUnidadeCompradora": 9634,
+      "nomeUnidadeCompradora": "Câmara Municipal de Boa Ventura de São Roque",
+      "codigoComprador": 5483,
       "nomeComprador": null,
-      "cidade": "Paraíso do Tocantins",
+      "cidade": "Boa Ventura de São Roque",
       "codigoMunicipioIbge": null,
-      "uf": "TO"
+      "uf": "PR"
     },
     "comprador": null,
-    "urlReferencia": "/to/associacao-de-apoio-da-escola-municipal-de-1o-grau-pouso-alegre-4222/de-04-2026-2026-467803",
+    "urlReferencia": "/pr/camara-municipal-de-boa-ventura-de-sao-roque-5483/dp-03-2026-2026-469194",
     "statusProcessoPublico": {
       "codigo": 1,
       "descricao": "Recebendo Propostas"
@@ -129,5 +129,5 @@
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-03-31T14:35:02.808029+00:00"
+  "captured_at": "2026-04-01T19:16:19.298770+00:00"
 }

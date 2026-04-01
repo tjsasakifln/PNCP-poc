@@ -60,11 +60,6 @@ from config.pncp import (
     PNCP_BATCH_DELAY_S,  # noqa: F401
     USE_REDIS_CIRCUIT_BREAKER,  # noqa: F401
     CB_REDIS_TTL,  # noqa: F401
-    # LicitaJá
-    LICITAJA_CIRCUIT_BREAKER_THRESHOLD,  # noqa: F401
-    LICITAJA_CIRCUIT_BREAKER_COOLDOWN,  # noqa: F401
-    LICITAJA_BULKHEAD_CONCURRENCY,  # noqa: F401
-    LICITAJA_SOURCE_TIMEOUT,  # noqa: F401
 )
 
 # features.py — feature flags, LLM, trial, viability, inspection
@@ -77,8 +72,6 @@ from config.features import (
     TERM_DENSITY_HIGH_THRESHOLD,  # noqa: F401
     TERM_DENSITY_MEDIUM_THRESHOLD,  # noqa: F401
     TERM_DENSITY_LOW_THRESHOLD,  # noqa: F401
-    FILTER_DEBUG_MODE,  # noqa: F401
-    FILTER_DEBUG_SAMPLE,  # noqa: F401
     QA_AUDIT_SAMPLE_RATE,  # noqa: F401
     ZERO_RESULTS_RELAXATION_ENABLED,  # noqa: F401
     LLM_ZERO_MATCH_ENABLED,  # noqa: F401
@@ -125,7 +118,6 @@ from config.features import (
     TERM_SEARCH_FILTER_CONTEXT,  # noqa: F401
     TERM_SEARCH_VALUE_RANGE_MIN,  # noqa: F401
     TERM_SEARCH_VALUE_RANGE_MAX,  # noqa: F401
-    LICITAJA_ENABLED,  # noqa: F401
     _feature_flag_cache,  # noqa: F401
     _FEATURE_FLAG_TTL,  # noqa: F401
     _FEATURE_FLAG_REGISTRY,  # noqa: F401

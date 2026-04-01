@@ -44,10 +44,75 @@ from clients.pncp.retry import (
     calculate_delay,
     format_date,
 )
-from clients.pncp.sync_client import PNCPClient, STATUS_PNCP_MAP
 from clients.pncp._parallel_mixin import _PNCPParallelMixin
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# PNCP Degraded Error (moved from sync_client — DEBT-v3-S3 Phase 1.2)
+# ============================================================================
+
+class PNCPDegradedError(PNCPAPIError):
+    """Raised when PNCP circuit breaker is in degraded state."""
+    pass
+
+
+# ============================================================================
+# Status Mapping for PNCP API (moved from sync_client — DEBT-v3-S3 Phase 1.2)
+# ============================================================================
+
+# Mapping from StatusLicitacao enum values to PNCP API parameter values
+# Note: Import StatusLicitacao at runtime to avoid circular imports
+STATUS_PNCP_MAP = {
+    "recebendo_proposta": "recebendo_proposta",
+    "em_julgamento": "propostas_encerradas",
+    "encerrada": "encerrada",
+    "todos": None,  # Don't send status parameter - return all
+}
+
+
+# ============================================================================
+# Normalize helper (moved from sync_client — DEBT-v3-S3 Phase 1.2)
+# ============================================================================
+
+def _normalize_item(item: Dict[str, Any], uf_hint: str | None = None) -> Dict[str, Any]:
+    """
+    Flatten nested PNCP API response into the flat format expected by
+    filter.py, excel.py and llm.py.
+
+    The PNCP API nests org/location data inside ``orgaoEntidade`` and
+    ``unidadeOrgao`` objects.  The rest of the codebase expects flat
+    top-level keys: ``uf``, ``municipio``, ``nomeOrgao``, ``codigoCompra``.
+
+    Also ensures linkSistemaOrigem is preserved for Excel hyperlinks.
+    Note: linkProcessoEletronico is always empty from PNCP API (CRIT-FLT-008).
+
+    Args:
+        item: Raw PNCP API response item.
+        uf_hint: Fallback UF code when the API returns empty ufSigla
+                 (common for federal agencies). Typically the UF that
+                 was queried.
+    """
+    unidade = item.get("unidadeOrgao") or {}
+    orgao = item.get("orgaoEntidade") or {}
+
+    uf_from_api = unidade.get("ufSigla", "")
+    # P0-FIX: Federal agencies often return empty ufSigla.
+    # Use the queried UF as fallback so the item is not rejected by the UF filter.
+    if not uf_from_api and uf_hint:
+        uf_from_api = uf_hint
+        item["_uf_from_hint"] = True
+    item["uf"] = uf_from_api
+    item["municipio"] = unidade.get("municipioNome", "")
+    item["nomeOrgao"] = orgao.get("razaoSocial", "") or unidade.get("nomeUnidade", "")
+    item["codigoCompra"] = item.get("numeroControlePNCP", "")
+
+    # Preserve link fields (already in root level from API)
+    # CRIT-FLT-008: linkSistemaOrigem is the primary link (86% populated).
+    # linkProcessoEletronico is always empty from PNCP API but kept for other sources.
+
+    return item
 
 
 class AsyncPNCPClient(_PNCPParallelMixin):
@@ -622,7 +687,7 @@ class AsyncPNCPClient(_PNCPParallelMixin):
                     item_id = item.get("numeroControlePNCP", "")
                     if item_id and item_id not in state.seen_ids:
                         state.seen_ids.add(item_id)
-                        normalized = PNCPClient._normalize_item(item, uf_hint=uf)
+                        normalized = _normalize_item(item, uf_hint=uf)
                         state.items.append(normalized)
 
                 state.pages_fetched = pagina

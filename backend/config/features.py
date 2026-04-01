@@ -33,9 +33,7 @@ TERM_DENSITY_HIGH_THRESHOLD: float = float(os.getenv("TERM_DENSITY_HIGH_THRESHOL
 TERM_DENSITY_MEDIUM_THRESHOLD: float = float(os.getenv("TERM_DENSITY_MEDIUM_THRESHOLD", "0.02"))
 TERM_DENSITY_LOW_THRESHOLD: float = float(os.getenv("TERM_DENSITY_LOW_THRESHOLD", "0.01"))
 
-# Filter Debugging & QA
-FILTER_DEBUG_MODE: bool = str_to_bool(os.getenv("FILTER_DEBUG_MODE", "false"))
-FILTER_DEBUG_SAMPLE: int = int(os.getenv("FILTER_DEBUG_SAMPLE", "0"))
+# Filter QA
 QA_AUDIT_SAMPLE_RATE: float = float(os.getenv("QA_AUDIT_SAMPLE_RATE", "0.10"))
 
 # Zero-results relaxation
@@ -55,9 +53,6 @@ PARTIAL_DATA_SSE_ENABLED: bool = str_to_bool(os.getenv("PARTIAL_DATA_SSE_ENABLED
 PENDING_REVIEW_TTL_SECONDS: int = int(os.getenv("PENDING_REVIEW_TTL_SECONDS", "86400"))
 PENDING_REVIEW_MAX_RETRIES: int = int(os.getenv("PENDING_REVIEW_MAX_RETRIES", "3"))
 PENDING_REVIEW_RETRY_DELAY: int = int(os.getenv("PENDING_REVIEW_RETRY_DELAY", "300"))
-
-# LicitaJá Source
-LICITAJA_ENABLED: bool = str_to_bool(os.getenv("LICITAJA_ENABLED", "false"))
 
 # D-01: Item Inspection (Gray Zone)
 ITEM_INSPECTION_ENABLED: bool = str_to_bool(os.getenv("ITEM_INSPECTION_ENABLED", "true"))
@@ -148,7 +143,6 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "SECTOR_RED_FLAGS_ENABLED": ("SECTOR_RED_FLAGS_ENABLED", "true"),
     "PROXIMITY_CONTEXT_ENABLED": ("PROXIMITY_CONTEXT_ENABLED", "true"),
     "ITEM_INSPECTION_ENABLED": ("ITEM_INSPECTION_ENABLED", "true"),
-    "FILTER_DEBUG_MODE": ("FILTER_DEBUG_MODE", "false"),
     # --- Term Search Quality ---
     "TERM_SEARCH_LLM_AWARE": ("TERM_SEARCH_LLM_AWARE", "false"),
     "TERM_SEARCH_SYNONYMS": ("TERM_SEARCH_SYNONYMS", "false"),
@@ -157,7 +151,6 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     # --- Data Sources ---
     "COMPRASGOV_ENABLED": ("COMPRASGOV_ENABLED", "false"),
     "PCP_V2_ENABLED": ("PCP_ENABLED", "true"),
-    "LICITAJA_ENABLED": ("LICITAJA_ENABLED", "false"),
     "DATALAKE_ENABLED": ("DATALAKE_ENABLED", "true"),
     "DATALAKE_QUERY_ENABLED": ("DATALAKE_QUERY_ENABLED", "true"),
     # --- Cache & Warming ---

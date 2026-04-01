@@ -64,33 +64,9 @@ STOPWORDS_PT: Set[str] = {
 
 
 def validate_terms(terms: list[str]) -> dict:
-    """
-    Valida termos de busca e retorna válidos/ignorados com motivos.
+    """Validate search terms. Returns {'valid': [...], 'ignored': [...], 'reasons': {...}}.
 
-    CRITICAL: Esta função garante que cada termo está OU em 'valid' OU em 'ignored',
-    NUNCA em ambos. Isso elimina o bug de mostrar termos como "usados" e "ignorados"
-    simultaneamente.
-
-    Args:
-        terms: Lista de termos digitados pelo usuário (pode ter espaços extras)
-
-    Returns:
-        {
-            'valid': [...],      # Termos que serão usados (normalizados)
-            'ignored': [...],    # Termos que não serão usados (originais)
-            'reasons': {...}     # {termo_original: motivo_da_rejeição}
-        }
-
-    Examples:
-        >>> validate_terms(['uniforme escolar', ' jaleco', '  de', 'abc'])
-        {
-            'valid': ['uniforme escolar', 'jaleco'],
-            'ignored': ['de', 'abc'],
-            'reasons': {
-                'de': 'Palavra comum não indexada (stopword)',
-                'abc': 'Termo muito curto (mínimo 4 caracteres)'
-            }
-        }
+    Each term is either in 'valid' OR 'ignored', never both.
     """
     MIN_LENGTH = 4
 
@@ -584,29 +560,7 @@ KEYWORDS_EXCLUSAO: Set[str] = {
 
 
 def normalize_text(text: str) -> str:
-    """
-    Normalize text for keyword matching.
-
-    Normalization steps:
-    - Convert to lowercase
-    - Remove accents (NFD + remove combining characters)
-    - Remove excessive punctuation
-    - Normalize whitespace
-
-    Args:
-        text: Input text to normalize
-
-    Returns:
-        Normalized text (lowercase, no accents, clean whitespace)
-
-    Examples:
-        >>> normalize_text("Jáleco Médico")
-        'jaleco medico'
-        >>> normalize_text("UNIFORME-ESCOLAR!!!")
-        'uniforme escolar'
-        >>> normalize_text("  múltiplos   espaços  ")
-        'multiplos espacos'
-    """
+    """Lowercase + strip accents + remove punctuation + normalize whitespace."""
     if not text:
         return ""
 
@@ -1042,45 +996,9 @@ def match_keywords(
     context_required: Dict[str, Set[str]] | None = None,
     compiled_patterns: Dict[str, re.Pattern] | None = None,
 ) -> Tuple[bool, List[str]]:
-    """
-    Check if procurement object description contains uniform-related keywords.
+    """Check exclusions first (fail-fast), then search for keyword matches with plural support.
 
-    Uses flexible word boundary matching to handle plural variations:
-    - "uniforme" matches "uniforme" and "uniformes" (plural -s or -es suffix)
-    - "notebook" matches "notebook" and "notebooks" (plural -s suffix)
-    - "uniforme" does NOT match "uniformemente" or "uniformização" (different words)
-
-    Algorithm:
-    1. Try exact match with word boundaries: \\b{keyword}\\b
-    2. If no match, try plural variations: \\b{keyword}s\\b or \\b{keyword}es\\b
-    3. If context_required is provided, validate that generic/ambiguous keywords
-       have at least one confirming context keyword present in the text.
-
-    Args:
-        objeto: Procurement object description (objetoCompra from PNCP API)
-        keywords: Set of keywords to search for (KEYWORDS_UNIFORMES)
-        exclusions: Optional set of exclusion keywords (KEYWORDS_EXCLUSAO)
-        context_required: Optional dict mapping generic keywords to sets of
-            context keywords.  A generic keyword only counts as a match if
-            at least one of its context keywords is also found in the text.
-
-    Returns:
-        Tuple containing:
-        - bool: True if at least one keyword matched (and no exclusions found)
-        - List[str]: List of matched keywords (original form, not normalized)
-
-    Examples:
-        >>> match_keywords("Aquisição de uniformes escolares", KEYWORDS_UNIFORMES)
-        (True, ['uniformes', 'uniforme escolar'])
-
-        >>> match_keywords("Aquisição de notebooks", {"notebook"})
-        (True, ['notebook'])
-
-        >>> match_keywords("Uniformização de procedimento", KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
-        (False, [])
-
-        >>> match_keywords("Software de gestão", KEYWORDS_UNIFORMES)
-        (False, [])
+    Returns (matched: bool, matched_keywords: List[str]).
     """
     objeto_norm = normalize_text(objeto)
 

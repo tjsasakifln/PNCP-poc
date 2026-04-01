@@ -26,40 +26,9 @@ def filter_licitacao(
     context_required: Dict[str, Set[str]] | None = None,
     filter_closed: bool = False,
 ) -> Tuple[bool, Optional[str]]:
-    """
-    Apply all filters to a single procurement bid (fail-fast sequential filtering).
+    """Apply UF + keyword + optional deadline filters to a single bid.
 
-    Filter order (fastest to slowest for optimization):
-    1. UF check (O(1) set lookup)
-    2. Keyword matching (regex - most expensive)
-    3. Status/deadline validation (datetime parsing)
-
-    Note: Value range filter was REMOVED (2026-02-05) to return all results
-    regardless of estimated value. This allows users to see all opportunities
-    without arbitrary value restrictions.
-
-    Args:
-        licitacao: PNCP procurement bid dictionary
-        ufs_selecionadas: Set of selected Brazilian state codes (e.g., {'SP', 'RJ'})
-
-    Returns:
-        Tuple containing:
-        - bool: True if bid passes all filters, False otherwise
-        - Optional[str]: Rejection reason if rejected, None if approved
-
-    Examples:
-        >>> bid = {
-        ...     "uf": "SP",
-        ...     "valorTotalEstimado": 150000.0,
-        ...     "objetoCompra": "Aquisição de uniformes escolares",
-        ...     "dataAberturaProposta": "2026-12-31T10:00:00Z"
-        ... }
-        >>> filter_licitacao(bid, {"SP"})
-        (True, None)
-
-        >>> bid_rejected = {"uf": "RJ", "valorTotalEstimado": 100000.0}
-        >>> filter_licitacao(bid_rejected, {"SP"})
-        (False, "UF 'RJ' não selecionada")
+    Returns (passed: bool, rejection_reason: str | None).
     """
     # 1. UF Filter (fastest check)
     uf = licitacao.get("uf", "")
@@ -119,45 +88,7 @@ def filter_batch(
     exclusions: Set[str] | None = None,
     context_required: Dict[str, Set[str]] | None = None,
 ) -> Tuple[List[dict], Dict[str, int]]:
-    """
-    Filter a batch of procurement bids and return statistics.
-
-    Applies filter_licitacao() to each bid and tracks rejection reasons
-    for observability and debugging.
-
-    Note: Value range filter was REMOVED (2026-02-05) to return all results
-    regardless of estimated value.
-
-    Args:
-        licitacoes: List of PNCP procurement bid dictionaries
-        ufs_selecionadas: Set of selected Brazilian state codes
-
-    Returns:
-        Tuple containing:
-        - List[dict]: Approved bids (passed all filters)
-        - Dict[str, int]: Statistics dictionary with rejection counts
-
-    Statistics Keys:
-        - total: Total number of bids processed
-        - aprovadas: Number of bids that passed all filters
-        - rejeitadas_uf: Rejected due to UF not selected
-        - rejeitadas_keyword: Rejected due to missing uniform keywords
-        - rejeitadas_prazo: Rejected due to deadline passed
-        - rejeitadas_outros: Rejected for other reasons
-
-    Examples:
-        >>> bids = [
-        ...     {"uf": "SP", "valorTotalEstimado": 100000, "objetoCompra": "Uniformes"},
-        ...     {"uf": "RJ", "valorTotalEstimado": 100000, "objetoCompra": "Uniformes"}
-        ... ]
-        >>> aprovadas, stats = filter_batch(bids, {"SP"})
-        >>> stats["total"]
-        2
-        >>> stats["aprovadas"]
-        1
-        >>> stats["rejeitadas_uf"]
-        1
-    """
+    """Filter a batch of bids and return (approved_list, stats_dict)."""
     aprovadas: List[dict] = []
     stats: Dict[str, int] = {
         "total": len(licitacoes),
@@ -195,31 +126,7 @@ def filtrar_por_orgao(
     licitacoes: List[dict],
     orgaos: List[str] | None
 ) -> List[dict]:
-    """
-    Filtra licitações por nome do órgão/entidade contratante.
-
-    Realiza busca parcial (contains) normalizada para encontrar licitações
-    de órgãos específicos. A busca é case-insensitive e ignora acentos.
-
-    Args:
-        licitacoes: Lista de licitações
-        orgaos: Lista de nomes de órgãos para filtrar (busca parcial).
-                None = todos os órgãos.
-
-    Returns:
-        Lista filtrada de licitações
-
-    Examples:
-        >>> bids = [
-        ...     {"nomeOrgao": "Prefeitura Municipal de São Paulo"},
-        ...     {"nomeOrgao": "Ministério da Saúde"},
-        ...     {"nomeOrgao": "INSS"},
-        ... ]
-        >>> filtrar_por_orgao(bids, ["Prefeitura"])
-        [{'nomeOrgao': 'Prefeitura Municipal de São Paulo'}]
-        >>> filtrar_por_orgao(bids, ["Ministerio", "INSS"])
-        [{'nomeOrgao': 'Ministério da Saúde'}, {'nomeOrgao': 'INSS'}]
-    """
+    """Filter bids by organ name (partial, normalized match). None = all."""
     if not orgaos:
         logger.debug("filtrar_por_orgao: orgaos=None, retornando todas")
         return licitacoes
@@ -259,24 +166,7 @@ def filtrar_por_municipio(
     licitacoes: List[dict],
     municipios: List[str] | None
 ) -> List[dict]:
-    """
-    Filtra licitações por código IBGE do município.
-
-    Args:
-        licitacoes: Lista de licitações
-        municipios: Lista de códigos IBGE de municípios (7 dígitos)
-
-    Returns:
-        Lista filtrada de licitações
-
-    Examples:
-        >>> bids = [
-        ...     {"codigoMunicipioIbge": "3550308", "municipio": "São Paulo"},
-        ...     {"codigoMunicipioIbge": "3304557", "municipio": "Rio de Janeiro"},
-        ... ]
-        >>> filtrar_por_municipio(bids, ["3550308"])
-        [{'codigoMunicipioIbge': '3550308', 'municipio': 'São Paulo'}]
-    """
+    """Filter bids by IBGE municipality code. None = all."""
     if not municipios:
         logger.debug("filtrar_por_municipio: municipios=None, retornando todas")
         return licitacoes

@@ -10,7 +10,7 @@ from datetime import datetime, timezone as _tz
 
 import quota
 from authorization import get_admin_ids, get_master_quota_info
-from search_cache import get_from_cache as _supabase_get_cache
+from cache.manager import get_from_cache as _supabase_get_cache
 from search_context import SearchContext
 from log_sanitizer import mask_user_id
 from fastapi import HTTPException
@@ -104,7 +104,7 @@ async def stage_validate(pipeline, ctx: SearchContext) -> None:
                 if not ctx.quota_info.allowed:
                     raise HTTPException(status_code=403, detail=ctx.quota_info.error_message)
                 # AC10: Structured log
-                from search_cache import compute_search_hash
+                from cache.enums import compute_search_hash
                 _ph = compute_search_hash(_cache_params)
                 logger.info(
                     f"Quota skipped for user {mask_user_id(ctx.user['id'])}: "
