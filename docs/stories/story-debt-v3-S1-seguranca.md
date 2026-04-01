@@ -37,30 +37,30 @@ Eliminar todas as vulnerabilidades de SECURITY DEFINER sem SET search_path e imp
 ## Acceptance Criteria
 
 ### Seguranca (3h)
-- [ ] AC1: `grep -rn "SECURITY DEFINER" supabase/migrations/ | grep -v "SET search_path"` retorna **0 linhas** apos migration aplicada
-- [ ] AC2: Funcoes afetadas: `handle_new_user`, `get_conversations_with_unread_count`, `get_analytics_summary`, `check_and_increment_quota`, `increment_quota_atomic` — todas com `SET search_path = public`
-- [ ] AC3: Teste: `SELECT proname, prosecdef FROM pg_proc WHERE prosecdef = true` lista apenas funcoes com search_path configurado
+- [x] AC1: `grep -rn "SECURITY DEFINER" supabase/migrations/ | grep -v "SET search_path"` retorna **0 linhas** apos migration aplicada
+- [x] AC2: Funcoes afetadas: `handle_new_user`, `get_conversations_with_unread_count`, `get_analytics_summary`, `check_and_increment_quota`, `increment_quota_atomic` — todas com `SET search_path = public`
+- [x] AC3: Teste: `SELECT proname, prosecdef FROM pg_proc WHERE prosecdef = true` lista apenas funcoes com search_path configurado
 
 ### Retention (8h)
-- [ ] AC4: pg_cron job para `search_state_transitions`: DELETE WHERE created_at < now() - interval '90 days' — rodando diariamente 05:00 UTC
-- [ ] AC5: pg_cron job para `classification_feedback`: DELETE WHERE created_at < now() - interval '180 days'
-- [ ] AC6: pg_cron job para `alert_runs`: DELETE WHERE created_at < now() - interval '90 days'
-- [ ] AC7: pg_cron job para `mfa_recovery_attempts`: DELETE WHERE created_at < now() - interval '30 days'
-- [ ] AC8: pg_cron job para `search_sessions`: DELETE WHERE status IN ('completed','failed','expired') AND updated_at < now() - interval '180 days'
-- [ ] AC9: `SELECT count(*) FROM cron.job WHERE command LIKE '%DELETE%'` retorna >= 5
-- [ ] AC10: pg_cron VACUUM ANALYZE para pncp_raw_bids rodando 07:30 UTC (30 min apos purge)
-- [ ] AC11: pg_cron semanal para `check_pncp_raw_bids_bloat()`
+- [x] AC4: pg_cron job para `search_state_transitions`: DELETE WHERE created_at < now() - interval '90 days' — rodando diariamente 05:00 UTC
+- [x] AC5: pg_cron job para `classification_feedback`: DELETE WHERE created_at < now() - interval '180 days'
+- [x] AC6: pg_cron job para `alert_runs`: DELETE WHERE created_at < now() - interval '90 days'
+- [x] AC7: pg_cron job para `mfa_recovery_attempts`: DELETE WHERE created_at < now() - interval '30 days'
+- [x] AC8: pg_cron job para `search_sessions`: DELETE WHERE status IN ('completed','failed','expired') AND updated_at < now() - interval '180 days'
+- [x] AC9: `SELECT count(*) FROM cron.job WHERE command LIKE '%DELETE%'` retorna >= 5
+- [x] AC10: pg_cron VACUUM ANALYZE para pncp_raw_bids rodando 07:30 UTC (30 min apos purge)
+- [x] AC11: pg_cron semanal para `check_pncp_raw_bids_bloat()`
 
 ### Indexes e Cleanup (4h)
-- [ ] AC12: `DROP INDEX IF EXISTS` para alert_preferences.user_id redundante e google_sheets_exports GIN
-- [ ] AC13: 4 triggers renomeados: `tr_*` → `trg_*` ou `trigger_*` → `trg_*` (match padrao do codebase)
-- [ ] AC14: Composite indexes criados: `search_state_transitions(search_id, to_state)`, `classification_feedback(setor_id, created_at DESC)`
+- [x] AC12: `DROP INDEX IF EXISTS` para alert_preferences.user_id redundante e google_sheets_exports GIN
+- [x] AC13: 4 triggers renomeados: `tr_*` → `trg_*` ou `trigger_*` → `trg_*` (match padrao do codebase)
+- [x] AC14: Composite indexes criados: `search_state_transitions(search_id, to_state)`, `classification_feedback(setor_id, created_at DESC)`
 
 ### Entrega
-- [ ] AC15: Migration UNICA (nao multiplas) em `supabase/migrations/`
-- [ ] AC16: Migration idempotente (IF EXISTS / IF NOT EXISTS em todas as operacoes)
-- [ ] AC17: `supabase db push` executa sem erro em staging
-- [ ] AC18: Backend tests: `python scripts/run_tests_safe.py --parallel 4` → 0 novos failures
+- [x] AC15: Migration UNICA (nao multiplas) em `supabase/migrations/`
+- [x] AC16: Migration idempotente (IF EXISTS / IF NOT EXISTS em todas as operacoes)
+- [x] AC17: `supabase db push` executa sem erro em staging
+- [x] AC18: Backend tests: `python scripts/run_tests_safe.py --parallel 4` → 0 novos failures
 
 ---
 
@@ -75,8 +75,8 @@ Eliminar todas as vulnerabilidades de SECURITY DEFINER sem SET search_path e imp
 
 ## Definition of Done
 
-- [ ] Todos os ACs passam
-- [ ] 0 funcoes SECURITY DEFINER sem SET search_path
-- [ ] 5+ pg_cron retention jobs ativos
-- [ ] Zero novos test failures
+- [x] Todos os ACs passam
+- [x] 0 funcoes SECURITY DEFINER sem SET search_path
+- [x] 5+ pg_cron retention jobs ativos
+- [x] Zero novos test failures
 - [ ] Migration aplicada em staging e validada
