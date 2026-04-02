@@ -14,7 +14,7 @@ class TestSectorConfig:
     def test_all_sectors_exist(self):
         sectors = list_sectors()
         ids = {s["id"] for s in sectors}
-        assert ids == {"vestuario", "alimentos", "informatica", "mobiliario", "papelaria", "engenharia", "software", "facilities", "saude", "vigilancia", "transporte", "manutencao_predial", "engenharia_rodoviaria", "materiais_eletricos", "materiais_hidraulicos"}
+        assert ids == {"vestuario", "alimentos", "informatica", "mobiliario", "papelaria", "engenharia", "software", "facilities", "saude", "vigilancia", "transporte_servicos", "frota_veicular", "manutencao_predial", "engenharia_rodoviaria", "materiais_eletricos", "materiais_hidraulicos"}
 
     def test_get_sector_returns_config(self):
         s = get_sector("vestuario")
@@ -33,8 +33,8 @@ class TestSectorIdsUnchanged:
     EXPECTED_IDS = {
         "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
         "engenharia", "software", "facilities", "saude", "vigilancia",
-        "transporte", "manutencao_predial", "engenharia_rodoviaria",
-        "materiais_eletricos", "materiais_hidraulicos",
+        "transporte_servicos", "frota_veicular", "manutencao_predial",
+        "engenharia_rodoviaria", "materiais_eletricos", "materiais_hidraulicos",
     }
 
     def test_sector_ids_unchanged(self):
@@ -837,25 +837,47 @@ class TestVigilanciaSector:
         assert ok is False
 
 
-class TestTransporteSector:
-    """Tests for Transporte e Veículos sector."""
+class TestTransporteServicosSector:
+    """Tests for Transporte de Pessoas e Cargas sector."""
 
     def _match(self, objeto: str):
-        s = get_sector("transporte")
+        s = get_sector("transporte_servicos")
         return match_keywords(objeto, s.keywords, s.exclusions)
 
-    # TRUE POSITIVES
     def test_matches_locacao_veiculos(self):
         ok, _ = self._match("Locação de veículos com motorista para a Secretaria de Educação")
         assert ok is True
 
-    def test_excludes_aquisicao_combustivel(self):
-        """ISSUE-064 session-033: aquisição avulsa de combustível é FP para transporte de pessoas."""
-        ok, _ = self._match("Registro de preços para aquisição de combustível (gasolina e diesel)")
+    def test_matches_transporte_escolar(self):
+        ok, _ = self._match("Contratação de serviços de transporte escolar para alunos da rede municipal")
+        assert ok is True
+
+    def test_excludes_aquisicao_veiculo(self):
+        """Compra de veículos é FP para serviços de transporte — pertence a frota_veicular."""
+        ok, _ = self._match("Aquisição de veículos tipo caminhonete para a Secretaria de Obras")
         assert ok is False
 
+    def test_excludes_veiculo_comunicacao(self):
+        ok, _ = self._match("Contratação de veículo de comunicação para publicidade institucional")
+        assert ok is False
+
+
+class TestFrotaVeicularSector:
+    """Tests for Frota e Veículos sector."""
+
+    def _match(self, objeto: str):
+        s = get_sector("frota_veicular")
+        return match_keywords(objeto, s.keywords, s.exclusions)
+
+    def test_matches_aquisicao_veiculos(self):
+        ok, _ = self._match("Aquisição de veículos tipo caminhonete para a Secretaria de Obras")
+        assert ok is True
+
+    def test_matches_ambulancia(self):
+        ok, _ = self._match("Aquisição de ambulância tipo D para o SAMU")
+        assert ok is True
+
     def test_matches_frota_com_combustivel(self):
-        """Locação de frota COM combustível é TP (combustível como insumo, não objeto)."""
         ok, _ = self._match("Contratação de locação de frota com fornecimento de combustível")
         assert ok is True
 
@@ -867,20 +889,6 @@ class TestTransporteSector:
         ok, _ = self._match("Registro de preços para aquisição de pneus para a frota de veículos")
         assert ok is True
 
-    def test_matches_transporte_escolar(self):
-        ok, _ = self._match("Contratação de serviços de transporte escolar para alunos da rede municipal")
-        assert ok is True
-
-    def test_matches_aquisicao_veiculos(self):
-        # "zero km" é excluído (session-032 fix). Usar veículo sem abreviação zero km.
-        ok, _ = self._match("Aquisição de veículos tipo caminhonete para a Secretaria de Obras")
-        assert ok is True
-
-    def test_matches_ambulancia(self):
-        ok, _ = self._match("Aquisição de ambulância tipo D para o SAMU")
-        assert ok is True
-
-    # FALSE POSITIVES (should be excluded)
     def test_excludes_veiculo_comunicacao(self):
         ok, _ = self._match("Contratação de veículo de comunicação para publicidade institucional")
         assert ok is False

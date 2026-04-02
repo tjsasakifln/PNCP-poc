@@ -246,7 +246,18 @@ SECTOR_SYNONYMS: Dict[str, Dict[str, Set[str]]] = {
         },
     },
 
-    "transporte": {
+    "transporte_servicos": {
+        "veículo": {
+            "veiculo", "veículos", "veiculos",
+            "automóvel", "automovel", "automóveis", "automoveis",
+            "viatura", "viaturas",
+        },
+        "frete": {
+            "fretes", "fretamento", "fretamentos",
+            "transporte de carga", "transporte de cargas",
+        },
+    },
+    "frota_veicular": {
         "veículo": {
             "veiculo", "veículos", "veiculos",
             "automóvel", "automovel", "automóveis", "automoveis",

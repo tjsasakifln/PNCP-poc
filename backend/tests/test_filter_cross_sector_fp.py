@@ -40,7 +40,7 @@ class TestCrossSectorFalsePositives:
         ("alimentos", "Material de escritório", "Secretaria de Alimentação"),
         ("facilities", "Uniformes para equipe", "Empresa de Limpeza Predial"),
         ("engenharia_rodoviaria", "Material de escritório", "Departamento de Estradas"),
-        ("transporte", "Material de escritório", "Secretaria de Transportes"),
+        ("transporte_servicos", "Material de escritório", "Secretaria de Transportes"),
         ("materiais_eletricos", "Material de limpeza", "Companhia de Energia"),
         ("materiais_hidraulicos", "Material de escritório", "Companhia de Saneamento"),
         ("mobiliario", "Material de limpeza", "Fábrica de Móveis"),
@@ -84,7 +84,7 @@ class TestLegitimatePassThrough:
         ("vestuario", "Aquisição de EPIs — luvas, botas e jalecos para equipe"),
         ("alimentos", "Fornecimento de merenda escolar e gêneros alimentícios"),
         ("facilities", "Serviço de limpeza e conservação predial"),
-        ("transporte", "Locação de veículos tipo van para transporte escolar"),
+        ("transporte_servicos", "Locação de veículos tipo van para transporte escolar"),
         ("mobiliario", "Aquisição de mesas e cadeiras para escritório"),
     ])
     def test_legitimate_bid_not_stripped(self, sector_id, legitimate_text):
@@ -148,7 +148,7 @@ class TestGlobalExclusionOverrides:
         assert "servico de limpeza" in overrides
 
     def test_transporte_overrides_combustivel(self):
-        overrides = GLOBAL_EXCLUSION_OVERRIDES.get("transporte", set())
+        overrides = GLOBAL_EXCLUSION_OVERRIDES.get("frota_veicular", set())
         assert "combustivel" in overrides
 
     def test_papelaria_overrides_material_escritorio(self):
@@ -156,7 +156,7 @@ class TestGlobalExclusionOverrides:
         assert "material de escritorio" in overrides
 
     def test_transporte_overrides_locacao_veiculo(self):
-        overrides = GLOBAL_EXCLUSION_OVERRIDES.get("transporte", set())
+        overrides = GLOBAL_EXCLUSION_OVERRIDES.get("transporte_servicos", set())
         assert "locacao de veiculo" in overrides or "locacao de veiculos" in overrides
 
     def test_override_removes_from_effective_set(self):

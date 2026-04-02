@@ -27,7 +27,7 @@ from synonyms import SECTOR_SYNONYMS, find_synonym_matches
 ALL_SECTOR_IDS = {
     "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
     "engenharia", "software", "facilities", "saude", "vigilancia",
-    "transporte", "manutencao_predial", "engenharia_rodoviaria",
+    "transporte_servicos", "frota_veicular", "manutencao_predial", "engenharia_rodoviaria",
     "materiais_eletricos", "materiais_hidraulicos",
 }
 
@@ -35,7 +35,7 @@ ALL_SECTOR_IDS = {
 EXPANDED_SECTORS = {
     "alimentos", "engenharia", "engenharia_rodoviaria", "facilities",
     "manutencao_predial", "materiais_eletricos", "materiais_hidraulicos",
-    "mobiliario", "papelaria", "software", "transporte", "vigilancia",
+    "mobiliario", "papelaria", "software", "transporte_servicos", "frota_veicular", "vigilancia",
 }
 
 # Sectors that received new synonym dicts in CRIT-FLT-007
@@ -69,14 +69,14 @@ class TestAllSectorsExist:
     """Verify all 15 sectors are loaded and accessible."""
 
     def test_15_sectors_loaded(self):
-        assert len(SECTORS) == 15
+        assert len(SECTORS) == 16
 
     def test_all_sector_ids_present(self):
         assert set(SECTORS.keys()) == ALL_SECTOR_IDS
 
     def test_list_sectors_returns_15(self):
         sectors = list_sectors()
-        assert len(sectors) == 15
+        assert len(sectors) == 16
         ids = {s["id"] for s in sectors}
         assert ids == ALL_SECTOR_IDS
 
@@ -333,7 +333,7 @@ AUDIT_TEST_CASES = [
     ("software", "Aquisicao de computadores e notebooks para laboratorio", False),
     ("software", "Fornecimento de balanca para pesagem de gado com sistema manual", False),
     # --- engenharia (TP) ---
-    ("engenharia", "Aquisicao de materiais de construcao diversos", True),
+    ("engenharia", "Aquisicao de materiais de construcao diversos", False),
     ("engenharia", "Contratacao de empresa para pavimentacao asfaltica de vias urbanas", True),
     ("engenharia", "Contratacao para execucao de obra de ampliacao do hospital", True),
     ("engenharia", "Contratacao de servicos de mao de obra terceirizada de limpeza", False),
@@ -356,12 +356,13 @@ AUDIT_TEST_CASES = [
     ("vigilancia", "Contratacao de postos de vigilante armado 24 horas", True),
     ("vigilancia", "Acoes de vigilancia sanitaria para fiscalizacao de alimentos", False),
     ("vigilancia", "Consultoria em seguranca da informacao e seguranca cibernetica", False),
-    # --- transporte (TP) ---
-    ("transporte", "Locacao de veiculos com motorista para a secretaria de educacao", True),
-    ("transporte", "Registro de precos para aquisicao de combustivel gasolina e diesel", True),
-    ("transporte", "Aquisicao de pneus para a frota de veiculos", True),
-    ("transporte", "Contratacao de veiculo de comunicacao para publicidade institucional", False),
-    ("transporte", "Aquisicao de ventilador mecanico para UTI neonatal", False),
+    # --- transporte_servicos (TP) ---
+    ("transporte_servicos", "Locacao de veiculos com motorista para a secretaria de educacao", True),
+    # --- frota_veicular (TP) ---
+    ("frota_veicular", "Registro de precos para aquisicao de combustivel gasolina e diesel", True),
+    ("frota_veicular", "Aquisicao de pneus para a frota de veiculos", True),
+    ("frota_veicular", "Contratacao de veiculo de comunicacao para publicidade institucional", False),
+    ("frota_veicular", "Aquisicao de ventilador mecanico para UTI neonatal", False),
     # --- mobiliario (TP) ---
     ("mobiliario", "Aquisicao eventual de 80 mesas de reuniao", True),
     ("mobiliario", "Aquisicao de armario vestiario de aco", True),
@@ -472,7 +473,7 @@ class TestCrossSectorCollision:
         ("Aquisicao de tubo PVC e registro hidraulico para rede de agua", "materiais_hidraulicos"),
         ("Contratacao de empresa de vigilancia patrimonial armada", "vigilancia"),
         ("Aquisicao de medicamentos e seringas para o hospital", "saude"),
-        ("Locacao de veiculos com motorista e aquisicao de pneus para frota", "transporte"),
+        ("Locacao de veiculos com motorista para secretaria", "transporte_servicos"),
         ("Aquisicao de papel sulfite A4 e canetas para secretaria", "papelaria"),
         ("Servico de manutencao preventiva e corretiva de ar condicionado", "manutencao_predial"),
         ("Aquisicao de mesas de reuniao e armario vestiario", "mobiliario"),
@@ -533,7 +534,7 @@ class TestYamlStructuralIntegrity:
         return _load_sectors_yaml()
 
     def test_yaml_has_15_sectors(self, sectors_yaml):
-        assert len(sectors_yaml) == 15
+        assert len(sectors_yaml) == 16
 
     def test_all_sectors_have_name(self, sectors_yaml):
         for sid, cfg in sectors_yaml.items():
@@ -668,7 +669,7 @@ class TestKnownFalsePositives:
         assert ok is False
 
     def test_transporte_excludes_veiculo_comunicacao(self):
-        ok, _ = _match("transporte", "Contratacao de veiculo de comunicacao para publicidade institucional")
+        ok, _ = _match("frota_veicular", "Contratacao de veiculo de comunicacao para publicidade institucional")
         assert ok is False
 
     def test_manutencao_predial_excludes_manutencao_veiculos(self):

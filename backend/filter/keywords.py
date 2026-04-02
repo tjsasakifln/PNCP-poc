@@ -774,7 +774,11 @@ GLOBAL_EXCLUSION_OVERRIDES: Dict[str, Set[str]] = {
         "servico de limpeza", "servicos de limpeza",
         "servico de conservacao",
     },
-    "transporte": {
+    "transporte_servicos": {
+        "locacao de veiculo", "locacao de veiculos",
+        "aluguel de veiculo", "aluguel de veiculos",
+    },
+    "frota_veicular": {
         "combustivel", "abastecimento de combustivel",
         "locacao de veiculo", "locacao de veiculos",
         "aluguel de veiculo", "aluguel de veiculos",
@@ -831,7 +835,7 @@ _INFRA_EXEMPT_SECTORS: Set[str] = {
 # CRIT-024: facilities has "material de limpeza hospitalar" (contains "hospitalar");
 # CRIT-024: transporte has "ambulância" (descriptions naturally contain "paciente", "hospitalar")
 _MEDICAL_EXEMPT_SECTORS: Set[str] = {
-    "saude", "facilities", "transporte",
+    "saude", "facilities", "transporte_servicos", "frota_veicular",
 }
 # CRIT-024: Administrative red flags overlap with software sector keywords
 # (software has "consultoria de software", "consultoria de ti", "assessoria de ti")
@@ -876,7 +880,11 @@ RED_FLAGS_PER_SECTOR: Dict[str, List[str]] = {
         "vigilancia sanitaria", "vigilancia epidemiologica",
         "vigilancia ambiental", "vigilancia em saude",
     ],
-    "transporte": [
+    "transporte_servicos": [
+        "transporte de dados", "transporte de residuos",
+        "transporte de materiais perigosos", "transporte de energia",
+    ],
+    "frota_veicular": [
         "transporte de dados", "transporte de residuos",
         "transporte de materiais perigosos", "transporte de energia",
     ],

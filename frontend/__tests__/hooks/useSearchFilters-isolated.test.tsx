@@ -398,8 +398,8 @@ describe("useSearchFilters (isolated)", () => {
   });
 
   // 15. SETORES_FALLBACK has correct count
-  test("SETORES_FALLBACK contains 15 sectors", () => {
-    expect(SETORES_FALLBACK).toHaveLength(15);
+  test("SETORES_FALLBACK contains 16 sectors", () => {
+    expect(SETORES_FALLBACK).toHaveLength(16);
     expect(SETORES_FALLBACK[0].id).toBe("vestuario");
   });
 });

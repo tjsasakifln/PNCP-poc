@@ -387,7 +387,7 @@ class TestFindTermSynonymCrossSector:
         expected_sectors = {
             "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
             "engenharia", "software", "facilities", "saude", "vigilancia",
-            "transporte", "manutencao_predial", "engenharia_rodoviaria",
+            "transporte_servicos", "frota_veicular", "manutencao_predial", "engenharia_rodoviaria",
             "materiais_eletricos", "materiais_hidraulicos",
         }
         assert expected_sectors.issubset(set(SECTOR_SYNONYMS.keys())), (

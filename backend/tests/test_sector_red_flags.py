@@ -58,7 +58,7 @@ class TestSectorRedFlagsReject:
 
     def test_transporte_reject_transporte_de_dados(self):
         obj = normalize_text("Serviço de transporte de dados via fibra óptica")
-        flagged, terms = has_sector_red_flags(obj, "transporte")
+        flagged, terms = has_sector_red_flags(obj, "frota_veicular")
         assert flagged is True
 
     def test_mobiliario_reject_cadeira_de_rodas(self):
@@ -143,7 +143,7 @@ class TestSectorRedFlagsPass:
 
     def test_transporte_pass_locacao_veiculos(self):
         obj = normalize_text("Locação de transporte e veículos para servidores")
-        flagged, terms = has_sector_red_flags(obj, "transporte")
+        flagged, terms = has_sector_red_flags(obj, "frota_veicular")
         assert flagged is False
 
     def test_mobiliario_pass_mesa_escritorio(self):
@@ -226,7 +226,7 @@ class TestSectorRedFlagsEdgeCases:
         expected = {
             "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
             "engenharia", "software", "facilities", "saude", "vigilancia",
-            "transporte", "manutencao_predial", "engenharia_rodoviaria",
+            "transporte_servicos", "frota_veicular", "manutencao_predial", "engenharia_rodoviaria",
             "materiais_eletricos", "materiais_hidraulicos",
         }
         assert set(RED_FLAGS_PER_SECTOR.keys()) == expected

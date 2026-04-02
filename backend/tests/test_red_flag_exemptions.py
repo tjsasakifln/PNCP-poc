@@ -243,7 +243,7 @@ class TestNonExemptSectors:
 
     @pytest.mark.parametrize("setor", [
         "informatica", "software", "papelaria", "mobiliario",
-        "alimentos", "facilities", "vigilancia", "transporte",
+        "alimentos", "facilities", "vigilancia", "transporte_servicos", "frota_veicular",
     ])
     def test_non_exempt_sector_catches_infra_flags(self, setor: str):
         """Non-infra-exempt sectors are checked against infrastructure red flags."""
@@ -310,8 +310,8 @@ class TestExemptionSets:
         }
 
     def test_medical_exempt_sectors(self):
-        # CRIT-024: facilities and transporte added
-        assert _MEDICAL_EXEMPT_SECTORS == {"saude", "facilities", "transporte"}
+        # CRIT-024: facilities and transporte added; session-035: split into transporte_servicos + frota_veicular
+        assert _MEDICAL_EXEMPT_SECTORS == {"saude", "facilities", "transporte_servicos", "frota_veicular"}
 
     def test_admin_exempt_sectors(self):
         # CRIT-024: software exempt from administrative red flags
@@ -416,7 +416,7 @@ class TestTransporteMedicalExemption:
             "hospitalar com leito e equipamento cirurgico"
         )
         flagged, terms = has_red_flags(
-            text, ALL_RED_FLAG_SETS, setor="transporte"
+            text, ALL_RED_FLAG_SETS, setor="frota_veicular"
         )
         medical_terms = [t for t in terms if t in RED_FLAGS_MEDICAL]
         assert len(medical_terms) == 0
@@ -424,14 +424,14 @@ class TestTransporteMedicalExemption:
     def test_transporte_still_catches_infra_flags(self):
         """Transporte is NOT exempt from infra flags."""
         flagged, terms = has_red_flags(
-            _infra_heavy_text(), ALL_RED_FLAG_SETS, setor="transporte"
+            _infra_heavy_text(), ALL_RED_FLAG_SETS, setor="frota_veicular"
         )
         assert flagged is True
 
     def test_transporte_still_catches_admin_flags(self):
         """Transporte is NOT exempt from admin flags."""
         flagged, terms = has_red_flags(
-            _admin_heavy_text(), ALL_RED_FLAG_SETS, setor="transporte"
+            _admin_heavy_text(), ALL_RED_FLAG_SETS, setor="frota_veicular"
         )
         assert flagged is True
 
@@ -454,7 +454,8 @@ class TestAllSectorsRecall:
         "facilities": "Servico de limpeza predial conservacao e manutencao de ar condicionado",
         "saude": "Aquisicao de medicamento hospitalar material cirurgico e equipamento medico",
         "vigilancia": "Servico de vigilancia patrimonial monitoramento e alarme eletronico",
-        "transporte": "Aquisicao de veiculo ambulancia e locacao de onibus para transporte",
+        "transporte_servicos": "Locacao de onibus e contratacao de servicos de transporte escolar",
+        "frota_veicular": "Aquisicao de veiculo ambulancia e combustivel para frota municipal",
         "manutencao_predial": "Servico de manutencao predial elevador e ar condicionado",
         "engenharia_rodoviaria": "Obra de pavimentacao asfaltica e drenagem rodoviaria",
         "materiais_eletricos": "Aquisicao de material eletrico lampada led e disjuntor",

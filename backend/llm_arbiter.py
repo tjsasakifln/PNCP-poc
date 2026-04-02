@@ -322,7 +322,12 @@ _SECTOR_NEGATIVE_EXAMPLES: dict[str, list[str]] = {
         "Material de escritório para Departamento de Estradas",
         "Uniformes para equipe de rodovias",
     ],
-    "transporte": [
+    "transporte_servicos": [
+        "Material de escritório para Secretaria de Transportes",
+        "Uniformes para Departamento de Trânsito",
+        "Aquisição de veículos tipo ambulância para SAMU",
+    ],
+    "frota_veicular": [
         "Material de escritório para Secretaria de Transportes",
         "Uniformes para Departamento de Trânsito",
     ],

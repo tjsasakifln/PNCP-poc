@@ -158,7 +158,7 @@ class TestAC3SetorPassedToFilter:
     async def test_setor_matches_request_setor_id(self):
         """The setor kwarg must exactly match ctx.request.setor_id for all 15 sectors."""
         for sector in ["vestuario", "alimentos", "informatica", "mobiliario", "engenharia",
-                        "software", "facilities", "saude", "vigilancia", "transporte"]:
+                        "software", "facilities", "saude", "vigilancia", "transporte_servicos"]:
             raw = _make_raw(3)
             mock_filter = MagicMock(return_value=(raw, {"aprovadas": 3, "total": 3}))
             deps = make_deps(aplicar_todos_filtros=mock_filter)

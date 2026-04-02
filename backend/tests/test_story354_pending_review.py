@@ -631,7 +631,7 @@ class TestPendingReviewEdgeCases:
             valor=250_000,
             setor_name="Transporte",
             prompt_level="zero_match",
-            setor_id="transporte",
+            setor_id="frota_veicular",
             search_id="test-354-edge-1",
         )
 

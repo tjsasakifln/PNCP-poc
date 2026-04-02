@@ -449,40 +449,76 @@ GROUND_TRUTH = {
             "Segurança cibernética para infraestrutura de TI",
         ],
     },
-    "transporte": {
+    "transporte_servicos": {
         "relevant": [
             "Locação de veículos para transporte de servidores",
-            "Aquisição de combustível diesel para abastecimento da frota de veículos",
             "Contratação de serviço de transporte escolar rural",
-            "Aquisição de ônibus para transporte público municipal",
             "Locação de vans para transporte de pacientes",
-            "Aquisição de pneus para veículos da frota municipal",
-            "Registro de preços para combustível e abastecimento de veículos",
-            "Contratação de serviço de frete e transporte de mudança",
-            "Aquisição de peças e acessórios automotivos para frota",
-            "Seguro de veículos da frota municipal para 2026",
-            "Aquisição de ambulância tipo B para SAMU municipal",
-            "Contratação de serviço de guincho e reboque para veículos",
-            "Locação de micro-ônibus para transporte de funcionários",
-            "Aquisição de lubrificantes automotivos para manutenção de veículos",
-            "Aquisição de gasolina e etanol para abastecimento de frota",
+            "Contratação de serviço de frete para entrega de mercadorias",
+            "Locação de veículos tipo passageiro para transporte de autoridades",
+            "Contratação de motorista para transporte institucional",
+            "Contratação de serviços de transporte de carga",
+            "Serviço de fretamento de veículos para equipe de campo",
+            "Locação de veículos para transporte de alunos da rede municipal",
+            "Contratação de transporte coletivo para funcionários",
+            "Serviço de translado de passageiros para eventos oficiais",
+            "Locação de automóvel para transporte de autoridades municipais",
+            "Contratação de empresa para transporte de pacientes ao hospital",
+            "Serviço de frete e transporte de mudança para secretaria",
+            "Contratação de condutor para serviço de transporte de alunos",
         ],
         "irrelevant": [
             "Secretaria de transporte para planejamento urbano",
-            "Grupo gerador a diesel para sistema de energia emergencial",
-            "Bateria de notebook para departamento de informática",
-            "Veículo de comunicação para publicidade institucional",
-            "Filtro de água para bebedouros das escolas",
-            "Filtro de linha para equipamentos de informática",
-            "Mecânica dos solos para fundação de edificação",
-            "Bateria musical para banda da escola municipal",
+            "Aquisição de combustível diesel para abastecimento da frota",
+            "Aquisição de ônibus para transporte público municipal",
+            "Aquisição de pneus para veículos da frota municipal",
+            "Aquisição de peças e acessórios automotivos para frota",
+            "Aquisição de bateria automotiva para veículos municipais",
+            "Manutenção preventiva de veículos da frota municipal",
             "Aquisição de material de limpeza para escolas",
             "Contratação de serviço de vigilância patrimonial",
             "Aquisição de mobiliário para escritório da prefeitura",
             "Construção de terminal urbano para embarque",
+            "Aquisição de uniformes para servidores da prefeitura",
+            "Contratação de carteira de habilitação para motoristas",
+            "Aquisição de medicamentos para farmácia básica",
+            "Aquisição de equipamentos de informática para secretaria",
+        ],
+    },
+    "frota_veicular": {
+        "relevant": [
+            "Aquisição de veículos tipo sedan para frota da prefeitura",
+            "Registro de preços para combustível diesel para frota municipal",
+            "Aquisição de ônibus para transporte público municipal",
+            "Manutenção preventiva e corretiva dos veículos da frota",
+            "Aquisição de pneus para veículos da frota municipal",
+            "Fornecimento de combustível e lubrificantes para frota",
+            "Aquisição de ambulância tipo D para unidade de saúde",
+            "Aquisição de motocicletas para agentes municipais",
+            "Gestão de frota e rastreamento de veículos",
+            "Serviço de manutenção automotiva para veículos da frota",
+            "Aquisição de peças e acessórios automotivos para frota",
+            "Aquisição de caminhões para coleta de resíduos sólidos",
+            "Abastecimento de combustível para frota de veículos oficiais",
+            "Aquisição de bateria automotiva para veículos municipais",
+            "Aquisição de filtros automotivos e lubrificantes para frota",
+        ],
+        "irrelevant": [
+            "Contratação de serviço de vigilância patrimonial",
+            "Aquisição de mobiliário para escritório da prefeitura",
+            "Serviço de manutenção predial preventiva e corretiva",
+            "Aquisição de medicamentos para farmácia básica",
+            "Contratação de empresa para construção civil de escola",
+            "Aquisição de sistema de gestão e tecnologia da informação",
+            "Grupo gerador a diesel para sistema de energia emergencial",
+            "Veículo de comunicação para publicidade institucional",
             "Lubrificante cirúrgico para procedimentos médicos",
             "Ventilação mecânica para UTI do hospital municipal",
+            "Bateria musical para banda da escola municipal",
+            "Filtro de água para bebedouros das escolas",
             "Aquisição de uniformes para servidores da prefeitura",
+            "Construção de terminal urbano para embarque e desembarque",
+            "Aquisição de material de limpeza para repartições públicas",
         ],
     },
     "manutencao_predial": {
@@ -1032,14 +1068,14 @@ class TestTransporte:
     def test_locacao_veiculos_approved(self):
         """AC-TRA-2: locação de veículos → APPROVED"""
         assert check_match(
-            "transporte",
+            "transporte_servicos",
             "Locação de veículos para transporte de servidores",
         )[0]
 
     def test_transporte_dados_rejected(self):
         """AC-TRA-3: transporte de dados → REJECTED"""
         matched, kws = check_match(
-            "transporte",
+            "transporte_servicos",
             "Transporte de dados via fibra óptica para data center",
         )
         assert not matched, f"transporte de dados should be rejected: {kws}"
@@ -1047,17 +1083,17 @@ class TestTransporte:
     def test_combustivel_approved(self):
         """AC-TRA-4: combustível → APPROVED"""
         assert check_match(
-            "transporte",
+            "frota_veicular",
             "Aquisição de combustível diesel para abastecimento da frota de veículos",
         )[0]
 
     def test_ambulancia_analysis(self):
-        """AC-TRA-5: ambulância → ambiguous (transporte OR saude?)"""
+        """AC-TRA-5: ambulância → ambiguous (frota_veicular OR saude?)"""
         obj = "Aquisição de ambulância tipo B para SAMU municipal"
-        matched_tra, _ = check_match("transporte", obj)
+        matched_tra, _ = check_match("frota_veicular", obj)
         matched_sau, _ = check_match("saude", obj)
-        # Ambulância should match at least transporte (it's a vehicle)
-        assert matched_tra, "ambulância should match transporte"
+        # Ambulância should match at least frota_veicular (it's a vehicle)
+        assert matched_tra, "ambulância should match frota_veicular"
 
 
 class TestManutencaoPredial:
@@ -1271,11 +1307,11 @@ class TestConsolidatedMetrics:
     """AC-FINAL-1: Consolidated table for all 15 sectors."""
 
     def test_all_sectors_covered(self):
-        """Verify all 15 sectors have ground truth data."""
+        """Verify all 16 sectors have ground truth data."""
         expected = {
             "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
             "engenharia", "software", "facilities", "saude", "vigilancia",
-            "transporte", "manutencao_predial", "engenharia_rodoviaria",
+            "transporte_servicos", "frota_veicular", "manutencao_predial", "engenharia_rodoviaria",
             "materiais_eletricos", "materiais_hidraulicos",
         }
         assert set(GROUND_TRUTH.keys()) == expected

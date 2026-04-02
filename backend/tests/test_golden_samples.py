@@ -557,7 +557,7 @@ class TestGoldenSamplesTransporte:
 
     @pytest.fixture
     def kw(self):
-        return _sector_kwargs("transporte")
+        return _sector_kwargs("frota_veicular")
 
     @pytest.mark.parametrize("description", [
         "Aquisição de veículos zero km tipo sedan para a frota da secretaria de saúde",
@@ -815,7 +815,7 @@ class TestGoldenSamplesCrossSectorEdgeCases:
         expected = {
             "vestuario", "alimentos", "informatica", "mobiliario",
             "papelaria", "engenharia", "software", "facilities",
-            "saude", "vigilancia", "transporte", "manutencao_predial",
+            "saude", "vigilancia", "transporte_servicos", "frota_veicular", "manutencao_predial",
             "engenharia_rodoviaria", "materiais_eletricos", "materiais_hidraulicos",
         }
         assert set(SECTORS.keys()) == expected

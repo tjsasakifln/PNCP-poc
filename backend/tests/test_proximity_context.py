@@ -416,7 +416,7 @@ class TestProximityContextCrossSector:
         expected_sectors = {
             "vestuario", "alimentos", "informatica", "mobiliario",
             "papelaria", "engenharia", "software", "facilities",
-            "saude", "vigilancia", "transporte", "manutencao_predial",
+            "saude", "vigilancia", "transporte_servicos", "frota_veicular", "manutencao_predial",
             "engenharia_rodoviaria", "materiais_eletricos", "materiais_hidraulicos",
         }
 

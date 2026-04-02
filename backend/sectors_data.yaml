@@ -4667,13 +4667,168 @@ sectors:
       - "alarme"
       - "cerca eletrica"
 
-  transporte:
-    name: "Transporte e Veículos"
-    description: "Aquisição/locação de veículos, combustíveis, manutenção de frota, pneus, peças automotivas, gerenciamento de frota"
-    max_contract_value: 100000000  # R$ 100M
-    viability_value_range: [50000, 5000000]  # D-04: ideal R$50k-R$5M
+  transporte_servicos:
+    name: "Transporte de Pessoas e Cargas"
+    description: "Contratação de serviços de transporte: transporte escolar, fretamento, locação de veículos, translados, transporte de pacientes e cargas"
+    max_contract_value: 50000000  # R$ 50M
+    viability_value_range: [30000, 3000000]  # R$ 30k-R$ 3M
     keywords:
-      # Vehicle acquisition
+      # Transporte de pessoas
+      - "transporte escolar"
+      - "transporte de passageiros"
+      - "transporte de alunos"
+      - "transporte de pacientes"
+      - "transporte coletivo"
+      - "transporte público"
+      # Frete / logística
+      - "transporte de carga"
+      - "fretamento"
+      - "frete"
+      - "fretes"
+      # Locação/aluguel de veículos (serviço com ou sem motorista)
+      - "locação de veículo"
+      - "locacao de veiculo"
+      - "locação de veículos"
+      - "locacao de veiculos"
+      - "aluguel de veículo"
+      - "aluguel de veiculo"
+      - "aluguel de veículos"
+      - "aluguel de veiculos"
+      - "locação de automóvel"
+      - "locacao de automovel"
+      # Serviços gerais de transporte
+      - "serviço de transporte"
+      - "servico de transporte"
+      - "serviços de transporte"
+      - "servicos de transporte"
+      - "prestação de serviços de transporte"
+      - "prestacao de servicos de transporte"
+      # Motoristas / condutores
+      - "motorista"
+      - "condutor"
+      # Rotas e translados
+      - "rota escolar"
+      - "translado"
+      - "traslado"
+    exclusions:
+      # Compra de veículos — pertence a frota_veicular
+      - "aquisição de veículo"
+      - "aquisicao de veiculo"
+      - "aquisição de veículos"
+      - "aquisicao de veiculos"
+      - "aquisição de automóvel"
+      - "aquisicao de automovel"
+      - "aquisição de caminhão"
+      - "aquisicao de caminhao"
+      - "aquisição de ônibus"
+      - "aquisicao de onibus"
+      - "aquisição de motocicleta"
+      - "aquisicao de motocicleta"
+      - "aquisição de ambulância"
+      - "aquisicao de ambulancia"
+      - "aquisição de van"
+      - "aquisicao de van"
+      # Manutenção mecânica — pertence a frota_veicular
+      - "manutenção veicular"
+      - "manutencao veicular"
+      - "funilaria"
+      - "borracharia"
+      - "lanternagem"
+      # "motorista" como função de RH (capacitação/habilitação), não serviço contratado
+      - "cnh"
+      - "carteira de habilitação"
+      - "carteira de habilitacao"
+      # Secretaria como nome de órgão (não licitação de serviço)
+      - "secretaria de transporte"
+      - "secretaria de transportes"
+      - "secretaria municipal de transporte"
+      - "secretaria de mobilidade"
+      # Caçambas / saneamento
+      - "caçambas estacionárias"
+      - "cacambas estacionarias"
+      - "limpa-fossa"
+      - "limpa fossa"
+      - "desentupidora"
+      - "desentupimento"
+    context_required_keywords:
+      frete:
+        - "transporte"
+        - "mudança"
+        - "mudanca"
+        - "carga"
+        - "entrega"
+        - "veículo"
+        - "veiculo"
+      fretes:
+        - "transporte"
+        - "mudança"
+        - "mudanca"
+        - "carga"
+        - "entrega"
+        - "veículo"
+        - "veiculo"
+      motorista:
+        - "transporte"
+        - "serviço"
+        - "servico"
+        - "locação"
+        - "locacao"
+        - "condução"
+        - "conducao"
+    co_occurrence_rules:
+      # "motorista" em contexto de RH (treinamento, habilitação) — não serviço
+      - trigger: "motorista"
+        negative_contexts:
+          - "habilitacao"
+          - "cnh"
+          - "treinamento"
+          - "curso"
+          - "capacitacao"
+        positive_signals:
+          - "servico"
+          - "transporte"
+          - "locacao"
+          - "conducao"
+      # "transporte" como nome de secretaria/órgão — não contratação de serviço
+      - trigger: "transporte"
+        negative_contexts:
+          - "secretaria de transporte"
+          - "secretaria de transportes"
+          - "secretaria municipal de transporte"
+          - "departamento de transporte"
+        positive_signals:
+          - "servico de transporte"
+          - "locacao"
+          - "fretamento"
+          - "escolar"
+          - "paciente"
+          - "passageiro"
+    domain_signals:
+      ncm_prefixes:
+        - "8703"  # Automóveis de passageiros (locação)
+        - "8702"  # Veículos para transporte coletivo (ônibus, vans)
+        - "8704"  # Veículos para transporte de mercadorias (frete)
+      unit_patterns:
+        - "viagem"
+        - "passageiro"
+        - "km"
+        - "hora"
+        - "dia"
+      size_patterns: []
+    signature_terms:
+      - "transporte escolar"
+      - "fretamento"
+      - "locacao de veiculo"
+      - "condutor"
+      - "passageiro"
+
+  frota_veicular:
+    name: "Frota e Veículos"
+    description: "Aquisição de veículos, manutenção de frota, combustíveis, pneus, peças automotivas e serviços de oficina"
+    max_contract_value: 100000000  # R$ 100M
+    viability_value_range: [50000, 5000000]  # R$ 50k-R$ 5M
+    keywords:
+      # Veículos (aquisição de ativo)
       - "veículo"
       - "veiculo"
       - "veículos"
@@ -4704,26 +4859,11 @@ sectors:
       - "utilitario"
       - "caminhonete"
       - "caminhoneta"
-      - "veículo zero km"
-      - "veiculo zero km"
-      - "veículo novo"
-      - "veiculo novo"
       - "aquisição de veículo"
       - "aquisicao de veiculo"
       - "aquisição de veículos"
       - "aquisicao de veiculos"
-      # Vehicle rental/leasing
-      - "locação de veículo"
-      - "locacao de veiculo"
-      - "locação de veículos"
-      - "locacao de veiculos"
-      - "aluguel de veículo"
-      - "aluguel de veiculo"
-      - "aluguel de veículos"
-      - "aluguel de veiculos"
-      - "locação de automóvel"
-      - "locacao de automovel"
-      # Fleet management
+      # Gestão de frota
       - "frota"
       - "frotas"
       - "gestão de frota"
@@ -4741,7 +4881,7 @@ sectors:
       - "manutencao preventiva veicular"
       - "manutenção corretiva veicular"
       - "manutencao corretiva veicular"
-      # Fuel
+      # Combustíveis
       - "combustível"
       - "combustivel"
       - "combustíveis"
@@ -4760,7 +4900,7 @@ sectors:
       - "gnv"
       - "gás natural veicular"
       - "gas natural veicular"
-      # Tires and parts
+      # Pneus e peças
       - "pneu"
       - "pneus"
       - "câmara de ar"
@@ -4787,18 +4927,7 @@ sectors:
       - "pastilha de freio"
       - "amortecedor"
       - "amortecedores"
-      # Transport services
-      - "transporte escolar"
-      - "transporte de passageiros"
-      - "transporte de carga"
-      - "transporte de pacientes"
-      - "frete"
-      - "fretes"
-      - "serviço de transporte"
-      - "servico de transporte"
-      - "serviços de transporte"
-      - "servicos de transporte"
-      # Automotive services
+      # Serviços de oficina
       - "borracharia"
       - "funilaria"
       - "funilaria e pintura"
@@ -4811,7 +4940,7 @@ sectors:
       - "autoelétrica"
       - "autoeletrica"
     exclusions:
-      # "veículo" in non-automotive context
+      # "veículo" em contexto não-automotivo
       - "veículo de comunicação"
       - "veiculo de comunicacao"
       - "veículo de informação"
@@ -4820,54 +4949,54 @@ sectors:
       - "veiculo de midia"
       - "veículo de publicidade"
       - "veiculo de publicidade"
-      # "diesel" in non-fuel context
+      # "diesel" em contexto de gerador (não combustível veicular)
       - "grupo gerador diesel"
       - "gerador a diesel"
-      # "filtro" in non-automotive context
+      # "filtro" em contexto não-automotivo
       - "filtro de água"
       - "filtro de agua"
       - "filtro de linha"
-      # "bateria" in non-automotive context
+      # "bateria" em contexto não-automotivo
       - "bateria musical"
       - "bateria de notebook"
       - "bateria de celular"
-      # "transporte" as department name
+      # "transporte" como nome de secretaria/órgão
       - "secretaria de transporte"
       - "secretaria de transportes"
       - "secretaria municipal de transporte"
       - "secretaria de mobilidade"
-      # IT/Software
+      # TI/Software
       - "software"
       - "sistema de gestão"
       - "sistema de gestao"
       - "tecnologia da informação"
       - "tecnologia da informacao"
-      # Construction
+      # Construção civil
       - "construção civil"
       - "construcao civil"
-      # Medical
+      # Médico/hospitalar (contexto não-veicular)
       - "medicamento"
       - "medicamentos"
       - "ambulância aérea"
       - "ambulancia aerea"
-      # Cleaning
+      # Limpeza (material, não serviço veicular)
       - "material de limpeza"
       - "produto de limpeza"
-      # Furniture
+      # Mobiliário
       - "mobiliário"
       - "mobiliario"
-      # "mecânica" in non-automotive context
+      # "mecânica" em contexto não-automotivo
       - "mecânica dos solos"
       - "mecanica dos solos"
       - "ventilação mecânica"
       - "ventilacao mecanica"
       - "ventilador mecânico"
       - "ventilador mecanico"
-      # "lubrificante" in non-automotive context
+      # "lubrificante" em contexto não-automotivo
       - "lubrificante cirúrgico"
       - "lubrificante cirurgico"
       - "lubrificante industrial"
-      # ISSUE-060 session-029: combustível/insumos para geradores e equipamentos fixos
+      # Combustível para geradores/equipamentos fixos (não frota)
       - "combustível para grupo gerador"
       - "combustivel para grupo gerador"
       - "combustível para gerador"
@@ -4876,102 +5005,43 @@ sectors:
       - "peças para equipamentos"
       - "manutenção de equipamentos estacionários"
       - "manutencao de equipamentos estacionarios"
-      # ISSUE-064 session-031: FPs de aquisição de veículos novos zero km (não são serviço de transporte)
-      - "veículo zero quilômetro"
-      - "veiculo zero quilometro"
-      - "zero quilômetro"
-      - "zero quilometro"
-      # Pneus/câmaras sem contexto de frota (compra de material avulso)
-      - "câmaras de ar e protetores"
-      - "camaras de ar e protetores"
-      - "pneus e câmaras de ar"
-      - "pneus e camaras de ar"
-      - "pneus e baterias"
-      # Manutenção mecânica com fornecimento de peças (oficina, não serviço de transporte)
-      - "manutenção mecânica com fornecimento de peças"
-      - "manutencao mecanica com fornecimento de pecas"
-      - "manutenção preventiva e corretiva com fornecimento de peças"
-      - "manutencao preventiva e corretiva com fornecimento de pecas"
-      # Locação de caminhão para obras (não transporte de passageiros/escolar)
-      - "caminhão traçado"
-      - "caminhao tracado"
-      - "caçamba basculante"
-      - "cacamba basculante"
-      # ISSUE-064 session-032: abreviação KM + FPs de seguros/borracharia/lavagem
-      # Abreviação "ZERO KM" — fix anterior usou "zero quilometro" mas títulos reais usam "ZERO KM"
-      - "zero km"
-      - "0 km"
-      # Seguros automotivos
+      # Locação/aluguel de veículos — pertence a transporte_servicos (serviço contratado)
+      - "locação de veículo"
+      - "locacao de veiculo"
+      - "locação de veículos"
+      - "locacao de veiculos"
+      - "aluguel de veículo"
+      - "aluguel de veiculo"
+      - "aluguel de veículos"
+      - "aluguel de veiculos"
+      - "locação de automóvel"
+      - "locacao de automovel"
+      # Lavagem de veículos (serviço estético, não gestão de frota)
+      - "lavagem de veículo"
+      - "lavagem de veiculo"
+      - "lavagem de veículos"
+      - "lavagem de veiculos"
+      # Ambulância sem condutor (equipamento, não veículo automotivo em serviço)
+      - "ambulância sem condutor"
+      - "ambulancia sem condutor"
+      # Caçambas / saneamento
+      - "caçambas estacionárias"
+      - "cacambas estacionarias"
+      - "limpa-fossa"
+      - "limpa fossa"
+      - "desentupidora"
+      - "desentupimento"
+      # Seguros automotivos (setor próprio)
       - "seguro automotivo"
       - "seguros automotivos"
       - "seguros dos veículos"
       - "seguros dos veiculos"
       - "seguro de veículos"
       - "seguro de veiculos"
-      # Recauchutagem (compra avulsa, não frota)
-      - "recauchutagem"
-      - "recauchutagem de pneus"
-      # Lavagem de veículos
-      - "lavagem de veículo"
-      - "lavagem de veiculo"
-      - "lavagem de veículos"
-      - "lavagem de veiculos"
-      # Ambulância sem condutor (locação de equipamento, não serviço de transporte)
-      - "ambulância sem condutor"
-      - "ambulancia sem condutor"
-      # Caçambas estacionárias (coleta de resíduos, não transporte)
-      - "caçambas estacionárias"
-      - "cacambas estacionarias"
-      # ISSUE-064 session-033: "0KM" sem espaço (não coberto por "0 km")
-      - "0km"
-      # ISSUE-064 session-033: combustíveis direcionados (aquisição/abastecimento como objeto principal)
-      - "aquisição de combustível"
-      - "aquisicao de combustivel"
-      - "abastecimento de combustíveis"
-      - "abastecimento de combustivel"
-      # ISSUE-064 session-033: plural de seguros (singular já existe acima)
       - "seguros de veículos"
       - "seguros de veiculos"
-      # ISSUE-064 session-033: peças/acessórios automotivos avulsos
-      - "peças e acessórios automotivos"
-      - "pecas e acessorios automotivos"
-      # ISSUE-064 session-033: saneamento com caminhão especializado
-      - "limpa-fossa"
-      - "limpa fossa"
-      - "desentupidora"
-      - "desentupimento"
-      # ISSUE-064/065 session-034: Aquisição/compra de veículos (maior bloco FPs — 55%)
-      # "aquisição de veículo" já é keyword mas exclusão tem precedência (fail-fast)
-      - "aquisição de veículo"
-      - "aquisicao de veiculo"
-      - "aquisição de veículos"
-      - "aquisicao de veiculos"
-      - "aquisição de automóvel"
-      - "aquisicao de automovel"
-      - "aquisição de automóveis"
-      - "aquisicao de automoveis"
-      - "aquisição de ambulância"
-      - "aquisicao de ambulancia"
-      - "aquisição de caminhão"
-      - "aquisicao de caminhao"
-      - "aquisição de ônibus"
-      - "aquisicao de onibus"
-      - "aquisição de motocicleta"
-      - "aquisicao de motocicleta"
-      - "aquisição de van"
-      - "aquisicao de van"
-      # ISSUE-064/065 session-034: Manutenção mecânica/veicular (FPs de oficina, não serviço de transporte)
-      # "manutenção veicular", "funilaria", "borracharia" são keywords mas exclusão tem precedência
-      - "manutenção veicular"
-      - "manutencao veicular"
-      - "funilaria"
-      - "lanternagem"
-      - "borracharia"
     context_required_keywords:
-      # CRIT-021 AC9: Transporte context gates
-      # "diesel" can appear in generator/equipment fuel context.
-      # "van" can be surname. "frete" can be abstract shipping cost.
-      # "lubrificante" can be industrial (non-vehicle). Context ensures vehicle context.
+      # "diesel" pode aparecer em contexto de gerador — exige contexto veicular
       diesel:
         - "combustível"
         - "combustivel"
@@ -4989,6 +5059,8 @@ sectors:
         - "escolar"
         - "locação"
         - "locacao"
+        - "aquisição"
+        - "aquisicao"
       vans:
         - "transporte"
         - "veículo"
@@ -4997,22 +5069,8 @@ sectors:
         - "escolar"
         - "locação"
         - "locacao"
-      frete:
-        - "transporte"
-        - "mudança"
-        - "mudanca"
-        - "carga"
-        - "entrega"
-        - "veículo"
-        - "veiculo"
-      fretes:
-        - "transporte"
-        - "mudança"
-        - "mudanca"
-        - "carga"
-        - "entrega"
-        - "veículo"
-        - "veiculo"
+        - "aquisição"
+        - "aquisicao"
       lubrificante:
         - "automotivo"
         - "veicular"
@@ -5031,9 +5089,8 @@ sectors:
         - "troca"
         - "veículo"
         - "veiculo"
-    # CRIT-FLT-007: Co-occurrence rules for transporte
     co_occurrence_rules:
-      # Rule 1: "manutenção" in non-vehicle context
+      # "manutenção" em contexto não-veicular (predial, software)
       - trigger: "manutencao"
         negative_contexts:
           - "predial"
@@ -5046,7 +5103,7 @@ sectors:
           - "frota"
           - "automotiva"
           - "motor"
-      # Rule 2: "combustível/diesel" in non-vehicle context (generators)
+      # "diesel" em contexto de gerador (não combustível veicular)
       - trigger: "diesel"
         negative_contexts:
           - "gerador"
@@ -5058,7 +5115,6 @@ sectors:
           - "veiculo"
           - "posto"
           - "frota"
-    # CRIT-FLT-007: Domain signals for transporte
     domain_signals:
       ncm_prefixes:
         - "8703"  # Automóveis de passageiros
@@ -5081,7 +5137,6 @@ sectors:
       - "automotivo"
       - "pneu"
       - "mecanica automotiva"
-      - "frete"
       - "combustivel"
       - "frota"
 

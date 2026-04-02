@@ -108,7 +108,7 @@ ATESTADOS_DISPONIVEIS: list[dict] = [
     {"id": "pgr_pcmso", "label": "PGR/PCMSO (Segurança do Trabalho)", "sectors": ["facilities", "vigilancia"]},
     {"id": "alvara_sanitario", "label": "Alvará Sanitário", "sectors": ["alimentos", "saude"]},
     {"id": "registro_anvisa", "label": "Registro ANVISA", "sectors": ["saude"]},
-    {"id": "habilitacao_antt", "label": "Habilitação ANTT", "sectors": ["transporte"]},
+    {"id": "habilitacao_antt", "label": "Habilitação ANTT", "sectors": ["transporte_servicos", "frota_veicular"]},
     {"id": "registro_cfq", "label": "Registro CRQ (Química)", "sectors": ["saude", "materiais_hidraulicos"]},
     {"id": "licenca_ambiental", "label": "Licença Ambiental", "sectors": ["engenharia", "engenharia_rodoviaria"]},
     {"id": "crt", "label": "CRT (Técnico)", "sectors": ["informatica", "software"]},
