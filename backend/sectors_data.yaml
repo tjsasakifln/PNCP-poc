@@ -4940,6 +4940,33 @@ sectors:
       - "limpa fossa"
       - "desentupidora"
       - "desentupimento"
+      # ISSUE-064/065 session-034: Aquisição/compra de veículos (maior bloco FPs — 55%)
+      # "aquisição de veículo" já é keyword mas exclusão tem precedência (fail-fast)
+      - "aquisição de veículo"
+      - "aquisicao de veiculo"
+      - "aquisição de veículos"
+      - "aquisicao de veiculos"
+      - "aquisição de automóvel"
+      - "aquisicao de automovel"
+      - "aquisição de automóveis"
+      - "aquisicao de automoveis"
+      - "aquisição de ambulância"
+      - "aquisicao de ambulancia"
+      - "aquisição de caminhão"
+      - "aquisicao de caminhao"
+      - "aquisição de ônibus"
+      - "aquisicao de onibus"
+      - "aquisição de motocicleta"
+      - "aquisicao de motocicleta"
+      - "aquisição de van"
+      - "aquisicao de van"
+      # ISSUE-064/065 session-034: Manutenção mecânica/veicular (FPs de oficina, não serviço de transporte)
+      # "manutenção veicular", "funilaria", "borracharia" são keywords mas exclusão tem precedência
+      - "manutenção veicular"
+      - "manutencao veicular"
+      - "funilaria"
+      - "lanternagem"
+      - "borracharia"
     context_required_keywords:
       # CRIT-021 AC9: Transporte context gates
       # "diesel" can appear in generator/equipment fuel context.
