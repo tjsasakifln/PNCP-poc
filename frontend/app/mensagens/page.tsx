@@ -256,22 +256,7 @@ function MensagensPageInner() {
 
   return (
     <div className="min-h-screen bg-[var(--canvas)] flex flex-col">
-      <PageHeader
-        title="Suporte"
-        extraControls={
-          mobileShowThread ? (
-            <button
-              onClick={() => setMobileShowThread(false)}
-              className="md:hidden p-1 -ml-1 text-[var(--ink-secondary)] hover:text-[var(--ink)]"
-              aria-label="Voltar"
-            >
-              <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
-            </button>
-          ) : undefined
-        }
-      />
+      <PageHeader title="Suporte" />
 
       {/* Main layout: two-panel */}
       <div className="flex-1 flex max-w-6xl mx-auto w-full">
@@ -468,6 +453,21 @@ function MensagensPageInner() {
             mobileShowThread ? "flex" : "hidden md:flex"
           }`}
         >
+          {/* ISSUE-062: Mobile back button — visible only when thread is open on mobile */}
+          {mobileShowThread && (
+            <div className="lg:hidden flex items-center gap-2 px-4 py-2 border-b border-[var(--border)] bg-[var(--surface-0)]">
+              <button
+                onClick={() => setMobileShowThread(false)}
+                className="flex items-center gap-1.5 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+                aria-label="Voltar para conversas"
+              >
+                <svg className="w-4 h-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+                Conversas
+              </button>
+            </div>
+          )}
           {!selectedConv ? (
             <div className="flex-1 flex items-center justify-center text-[var(--ink-muted)] text-sm">
               Selecione uma conversa para visualizar

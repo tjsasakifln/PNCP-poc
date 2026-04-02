@@ -3517,6 +3517,34 @@ sectors:
       - "kit produto de limpeza"
       - "fornecimento de material de limpeza"
       - "fornecimento de produto de limpeza"
+      # ISSUE-063 session-031: plurais das exclusões acima (filter.py não normaliza singular/plural em exclusões)
+      - "aquisição de materiais de limpeza"
+      - "aquisicao de materiais de limpeza"
+      - "compra de materiais de limpeza"
+      - "materiais de limpeza para estoque"
+      - "produtos de limpeza para estoque"
+      - "kit materiais de limpeza"
+      - "kit produtos de limpeza"
+      - "fornecimento de materiais de limpeza"
+      - "fornecimento de produtos de limpeza"
+      # Registro de preços (FP mais frequente na sessão 031)
+      - "registro de precos para aquisicao de material de limpeza"
+      - "registro de precos para aquisicao de materiais de limpeza"
+      - "registro de precos de materiais de limpeza"
+      - "registro de precos de produtos de limpeza"
+      - "registro de preços para aquisição de material de limpeza"
+      - "registro de preços para aquisição de materiais de limpeza"
+      - "registro de preços de materiais de limpeza"
+      - "registro de preços de produtos de limpeza"
+      # Aquisições futuras/parceladas (SRP para material)
+      - "aquisicoes parceladas de material de limpeza"
+      - "aquisicoes parceladas de materiais de limpeza"
+      - "aquisicoes futuras de material de limpeza"
+      - "aquisicoes futuras de materiais de limpeza"
+      - "aquisições parceladas de material de limpeza"
+      - "aquisições parceladas de materiais de limpeza"
+      - "aquisições futuras de material de limpeza"
+      - "aquisições futuras de materiais de limpeza"
       # ISSUE-062 session-030: fraldas, teleatendentes, saneantes hospitalares, outsourcing TI
       - "fralda"
       - "fraldas"
@@ -4825,6 +4853,27 @@ sectors:
       - "peças para equipamentos"
       - "manutenção de equipamentos estacionários"
       - "manutencao de equipamentos estacionarios"
+      # ISSUE-064 session-031: FPs de aquisição de veículos novos zero km (não são serviço de transporte)
+      - "veículo zero quilômetro"
+      - "veiculo zero quilometro"
+      - "zero quilômetro"
+      - "zero quilometro"
+      # Pneus/câmaras sem contexto de frota (compra de material avulso)
+      - "câmaras de ar e protetores"
+      - "camaras de ar e protetores"
+      - "pneus e câmaras de ar"
+      - "pneus e camaras de ar"
+      - "pneus e baterias"
+      # Manutenção mecânica com fornecimento de peças (oficina, não serviço de transporte)
+      - "manutenção mecânica com fornecimento de peças"
+      - "manutencao mecanica com fornecimento de pecas"
+      - "manutenção preventiva e corretiva com fornecimento de peças"
+      - "manutencao preventiva e corretiva com fornecimento de pecas"
+      # Locação de caminhão para obras (não transporte de passageiros/escolar)
+      - "caminhão traçado"
+      - "caminhao tracado"
+      - "caçamba basculante"
+      - "cacamba basculante"
     context_required_keywords:
       # CRIT-021 AC9: Transporte context gates
       # "diesel" can appear in generator/equipment fuel context.

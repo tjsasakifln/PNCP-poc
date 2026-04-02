@@ -136,10 +136,14 @@ export async function GET(request: NextRequest) {
     const response = await fetch(`${backendUrl}/metrics`, { headers });
 
     if (!response.ok) {
-      // ISSUE-056: distinguish config error (METRICS_TOKEN mismatch) from user auth error
+      // ISSUE-056: distinguish "token missing" from "token wrong" for easier diagnosis
       if (response.status === 401) {
+        const metricsTokenSet = !!process.env.METRICS_TOKEN;
+        const errorMsg = metricsTokenSet
+          ? "Backend metrics indisponivel: METRICS_TOKEN configurado no frontend mas rejeitado pelo backend. Verifique se o valor coincide com a variavel METRICS_TOKEN no servico backend (railway variables --service bidiq-backend)."
+          : "Backend metrics indisponivel: METRICS_TOKEN nao configurado no frontend. Configure a variavel de ambiente METRICS_TOKEN no Railway (servico frontend) com o mesmo valor do backend.";
         return NextResponse.json(
-          { error: "Backend metrics indisponivel: METRICS_TOKEN nao configurado no frontend. Configure a variavel de ambiente.", raw: null, metrics: null },
+          { error: errorMsg, raw: null, metrics: null },
           { status: 503 }
         );
       }
