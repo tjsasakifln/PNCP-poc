@@ -4386,20 +4386,13 @@ sectors:
       - "monitoramento 24 horas"
       - "monitoramento 24h"
       - "monitoramento remoto"
-      # Security equipment
-      - "colete balístico"
-      - "colete balistico"
-      - "coletes balísticos"
-      - "coletes balisticos"
-      - "colete à prova de balas"
-      - "colete a prova de balas"
-      - "arma de fogo"
-      - "munição"
-      - "municao"
+      # Operational equipment (radio/communications — used by guards, not equipment procurement)
       - "rádio comunicador"
       - "radio comunicador"
       - "rádio comunicação"
       - "radio comunicacao"
+      # NOTE: coletes balísticos, armas e munição REMOVIDOS dos keywords (sessão 036).
+      # São compras de equipamento policial, não serviços de vigilância. Movidos para exclusions.
     exclusions:
       # "vigilância" in health context
       - "vigilância sanitária"
@@ -4435,13 +4428,31 @@ sectors:
       - "alarme de incêndio"
       - "alarme de incendio"
       - "alarme hospitalar"
-      # IT/Software
+      # Equipment procurement (sessão 036: FP coletes/armas em SP+TO)
+      - "colete balístico"
+      - "colete balistico"
+      - "coletes balísticos"
+      - "coletes balisticos"
+      - "colete à prova de balas"
+      - "colete a prova de balas"
+      - "arma de fogo"
+      - "armas de fogo"
+      - "munição"
+      - "municao"
+      - "equipamento policial"
+      - "equipamentos policiais"
+      # IT/Software — including "segurança de redes" (sessão 036: FP Carapicuíba)
       - "software"
       - "sistema de gestão"
       - "sistema de gestao"
       - "tecnologia da informação"
       - "tecnologia da informacao"
       - "infraestrutura de ti"
+      - "segurança de redes"
+      - "seguranca de redes"
+      - "servidores"
+      - "firewall"
+      - "redes de computadores"
       # Construction
       - "construção civil"
       - "construcao civil"

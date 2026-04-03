@@ -258,7 +258,7 @@ export default function OnboardingPage() {
           {/* Navigation */}
           <div className="flex items-center justify-between mt-8 pt-4 border-t border-[var(--border)]">
             <div>
-              {currentStep > 0 ? (
+              {currentStep > 0 && (
                 <button
                   onClick={prevStep}
                   disabled={isAnalyzing}
@@ -266,14 +266,6 @@ export default function OnboardingPage() {
                   data-testid="btn-voltar"
                 >
                   Voltar
-                </button>
-              ) : (
-                <button
-                  onClick={handleSkip}
-                  className="min-h-[44px] px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
-                  data-testid="btn-pular"
-                >
-                  Pular por agora
                 </button>
               )}
             </div>

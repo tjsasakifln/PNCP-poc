@@ -20,7 +20,7 @@ import { SignupForm } from "./components/SignupForm";
 type PartnerInfo = { name: string; slug: string } | null;
 
 export default function SignupPage() {
-  const { signUpWithEmail, signInWithGoogle } = useAuth();
+  const { signUpWithEmail, signInWithGoogle, session: authSession, loading: authLoading } = useAuth();
   const { trackEvent } = useAnalytics();
   const router = useRouter();
 
@@ -45,6 +45,14 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // ISSUE-068: Redirect already-authenticated users (consistent with /login)
+  useEffect(() => {
+    if (!authLoading && authSession) {
+      toast.info("Você já está autenticado!", { id: "already-auth" });
+      setTimeout(() => { router.push("/buscar"); }, 1500);
+    }
+  }, [authLoading, authSession, router]);
 
   // STORY-323 AC16: Partner tracking
   const [partnerInfo, setPartnerInfo] = useState<PartnerInfo>(null);

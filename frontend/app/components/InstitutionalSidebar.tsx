@@ -186,7 +186,7 @@ export default function InstitutionalSidebar({ variant, className = "", scrollTa
   const stats = variant === 'signup'
     ? content.stats.map(s =>
         s.label === 'licitações/dia'
-          ? { ...s, value: dailyVolume || 'centenas' }
+          ? { ...s, value: dailyVolume || '100+' }
           : s
       )
     : content.stats;

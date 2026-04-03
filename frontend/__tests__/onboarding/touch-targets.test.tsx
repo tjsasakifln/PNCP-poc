@@ -116,7 +116,7 @@ describe('Onboarding Touch Targets (WCAG 2.1)', () => {
 
   it('Pular button has min-h-[44px]', () => {
     render(<OnboardingPage />);
-    const btn = screen.getByTestId('btn-pular');
+    const btn = screen.getByTestId('btn-pular-alt');
     expect(btn.className).toContain('min-h-[44px]');
   });
 

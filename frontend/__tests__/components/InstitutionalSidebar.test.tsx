@@ -20,7 +20,7 @@ jest.mock('../../hooks/usePublicMetrics', () => ({
 }));
 
 beforeEach(() => {
-  mockDailyVolumeValue = null; // null → shows "centenas" fallback
+  mockDailyVolumeValue = null; // null → shows "100+" fallback
   mockDailyVolumeLoading = false;
 });
 afterEach(() => {
@@ -103,13 +103,13 @@ describe('InstitutionalSidebar', () => {
     });
 
     it('renders signup statistics with fallback before API resolves', () => {
-      // Before the API responds, the component shows "centenas" as the fallback value
+      // Before the API responds, the component shows "100+" as the fallback value
       // for the licitações/dia stat (STORY-358 AC4)
       render(<InstitutionalSidebar variant="signup" />);
 
       expect(screen.getByText('27')).toBeInTheDocument();
       expect(screen.getByText('estados cobertos')).toBeInTheDocument();
-      expect(screen.getByText('centenas')).toBeInTheDocument();
+      expect(screen.getByText('100+')).toBeInTheDocument();
       expect(screen.getByText('licitações/dia')).toBeInTheDocument();
       expect(screen.getByText('100%')).toBeInTheDocument();
       expect(screen.getByText('fonte oficial')).toBeInTheDocument();
@@ -232,15 +232,15 @@ describe('InstitutionalSidebar', () => {
   });
 
   describe('STORY-358: Dynamic Daily Volume', () => {
-    it('shows "centenas" as fallback when API fetch fails', async () => {
-      // FE-007: hook returns null → component shows "centenas" fallback
+    it('shows "100+" as fallback when API fetch fails', async () => {
+      // FE-007: hook returns null → component shows "100+" fallback
       mockDailyVolumeValue = null;
 
       await act(async () => {
         render(<InstitutionalSidebar variant="signup" />);
       });
 
-      expect(screen.getByText('centenas')).toBeInTheDocument();
+      expect(screen.getByText('100+')).toBeInTheDocument();
       expect(screen.getByText('licitações/dia')).toBeInTheDocument();
     });
 
@@ -260,7 +260,7 @@ describe('InstitutionalSidebar', () => {
 
     it('does NOT fetch for login variant', async () => {
       // FE-007: hook is called regardless of variant but component uses displayValue for signup only.
-      // For login, stats are static — the "centenas" dynamic stat doesn't appear.
+      // For login, stats are static — the "100+" dynamic stat doesn't appear.
       await act(async () => {
         render(<InstitutionalSidebar variant="login" />);
       });
@@ -269,8 +269,8 @@ describe('InstitutionalSidebar', () => {
       expect(screen.queryByText('licitações/dia')).not.toBeInTheDocument();
     });
 
-    it('shows "centenas" fallback when API returns non-ok response', async () => {
-      // FE-007: hook returns null when API fails → "centenas" fallback
+    it('shows "100+" fallback when API returns non-ok response', async () => {
+      // FE-007: hook returns null when API fails → "100+" fallback
       mockDailyVolumeValue = null;
 
       await act(async () => {
@@ -279,7 +279,7 @@ describe('InstitutionalSidebar', () => {
 
       await waitFor(() => {
         // Non-ok response is treated as null — fallback applies
-        expect(screen.getByText('centenas')).toBeInTheDocument();
+        expect(screen.getByText('100+')).toBeInTheDocument();
       });
       expect(screen.getByText('licitações/dia')).toBeInTheDocument();
     });

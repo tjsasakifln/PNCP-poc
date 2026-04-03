@@ -187,7 +187,7 @@ describe('OnboardingPage', () => {
     it('renders skip button on step 1', () => {
       render(<OnboardingPage />);
 
-      expect(screen.getByTestId('btn-pular')).toBeInTheDocument();
+      expect(screen.getByTestId('btn-pular-alt')).toBeInTheDocument();
     });
 
     it('Continuar button is disabled when CNAE is empty', () => {
@@ -223,7 +223,7 @@ describe('OnboardingPage', () => {
     it('skip button navigates to /buscar', () => {
       render(<OnboardingPage />);
 
-      const skipBtn = screen.getByTestId('btn-pular');
+      const skipBtn = screen.getByTestId('btn-pular-alt');
       fireEvent.click(skipBtn);
 
       expect(mockPush).toHaveBeenCalledWith('/buscar');
