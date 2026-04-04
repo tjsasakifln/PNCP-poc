@@ -28,6 +28,7 @@ export interface CaseStudy {
   result: string;
   metrics: CaseMetrics;
   publishDate: string;
+  lastModified?: string;
   keywords: string[];
 }
 

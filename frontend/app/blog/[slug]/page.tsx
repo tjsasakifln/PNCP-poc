@@ -42,6 +42,7 @@ export async function generateMetadata({
       description: article.description,
       type: 'article',
       publishedTime: article.publishDate,
+      modifiedTime: article.lastModified || article.publishDate,
       section: article.category,
       tags: article.tags,
       url: canonicalUrl,

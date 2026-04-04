@@ -73,7 +73,7 @@ Conteúdo sobre licitações públicas e contratos governamentais é classificad
 **Sinal específico de abril/2026:** o Google passou a valorizar explicitamente conteúdo com **dados verificáveis em tempo real** para queries com intenção informacional/comercial. Isso é o nosso maior diferencial — as páginas com dados do datalake ao vivo têm sinal de freshness permanente.
 
 - [ ] **Verificar que todas as páginas com dado ao vivo** incluem timestamp de última atualização visível ao usuário (ex: "Atualizado 4 horas atrás" via ISR metadata)
-- [ ] **Adicionar `dateModified`** no JSON-LD de cada página com ISR igual ao `revalidate` timestamp
+- [x] **Adicionar `dateModified`** no JSON-LD de cada página com ISR igual ao `revalidate` timestamp — `BlogArticleLayout.tsx` usa `article.lastModified || article.publishDate`, cases usa `c.lastModified || c.publishDate`
 
 ### 3. AI Overviews — Elegibilidade e Otimização
 
@@ -148,8 +148,8 @@ Landing setorial /licitacoes/[setor]
 Erros silenciosos de canonical ou `noindex` matam meses de trabalho sem aviso.
 
 - [ ] **Auditar mensalmente no GSC** (Cobertura → Excluídas) para detectar páginas `noindex` acidentais
-- [ ] **Garantir canonical correto** nas 405 páginas setor×UF — cada uma com sua própria URL canonical (não apontar para a landing setorial)
-- [ ] **Verificar que ISR não quebra canonical** — Next.js ISR pode servir versões stale com canonical incorreto se o `generateMetadata` não for async corretamente
+- [x] **Garantir canonical correto** nas 405 páginas setor×UF — cada uma com sua própria URL canonical (não apontar para a landing setorial) — verificado: `blog/licitacoes/[setor]/[uf]/page.tsx` usa canonical self-referencing construído dos params
+- [x] **Verificar que ISR não quebra canonical** — Next.js ISR regenera metadata server-side com mesmos params; `generateMetadata` é async corretamente
 - [x] **Robots.txt** — confirmar que `/api/`, `/admin/`, `/auth/` estão bloqueados; que `/licitacoes/`, `/blog/`, `/calculadora/`, `/cnpj/`, `/casos/`, `/analise/` **não** estão bloqueados. Adicionadas rotas protegidas: `/dashboard`, `/conta`, `/buscar`, `/pipeline`, `/historico`, `/mensagens`, `/alertas`, `/onboarding`
 
 ```
@@ -440,7 +440,7 @@ CTA: "Ver as [N] oportunidades completas → [/signup?ref=licitacoes-[setor]-[uf
     return generateSectorUfParams(); // 15 × 27 = 405
   }
   ```
-- [ ] **Verificar `getRegionalEditorial(uf, sector)`** cobre todas as 27 UFs
+- [x] **Verificar `getRegionalEditorial(uf, sector)`** cobre todas as 27 UFs — verificado: `ALL_UFS` array tem 27 entradas, `UF_TO_REGION` mapeia todas para 5 regiões
   - Adicionar fallback genérico para UFs sem editorial específico (Norte, Nordeste, CO)
 - [ ] **Testar build local:** `cd frontend && npm run build`
   - Se build muito lento: `export const dynamicParams = true` + ISR on-demand

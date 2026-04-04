@@ -14,10 +14,12 @@ export interface BlogArticleMeta {
   category: BlogCategory;
   tags: string[];
   publishDate: string;
+  lastModified?: string;
   readingTime: string;
   wordCount: number;
   keywords: string[];
   relatedSlugs: string[];
+  sources?: string[];
 }
 
 /**
@@ -61,6 +63,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'reduzir-tempo-analisando-editais-irrelevantes',
       'escolher-editais-maior-probabilidade-vitoria',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // B2G-02
@@ -84,6 +91,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'custo-invisivel-disputar-pregoes-errados',
       'reduzir-tempo-analisando-editais-irrelevantes',
       'empresas-vencem-30-porcento-pregoes',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -109,6 +121,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'disputar-todas-licitacoes-matematica-real',
       'escolher-editais-maior-probabilidade-vitoria',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // B2G-04
@@ -132,6 +149,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'erro-operacional-perder-contratos-publicos',
       'estruturar-setor-licitacao-5-milhoes',
       'empresas-vencem-30-porcento-pregoes',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'TCU — Jurisprudência sobre habilitação em licitações',
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
     ],
   },
 
@@ -157,6 +179,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'como-aumentar-taxa-vitoria-licitacoes',
       'licitacao-volume-ou-inteligencia',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // B2G-06
@@ -180,6 +206,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'licitacao-volume-ou-inteligencia',
       'vale-a-pena-disputar-pregao',
       'custo-invisivel-disputar-pregoes-errados',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -205,6 +236,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'como-aumentar-taxa-vitoria-licitacoes',
       'empresas-vencem-30-porcento-pregoes',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // B2G-08
@@ -228,6 +264,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'erro-operacional-perder-contratos-publicos',
       'disputar-todas-licitacoes-matematica-real',
       'equipe-40-horas-mes-editais-descartados',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -253,6 +293,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'vale-a-pena-disputar-pregao',
       'disputar-todas-licitacoes-matematica-real',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // B2G-10
@@ -276,6 +321,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'disputar-todas-licitacoes-matematica-real',
       'como-aumentar-taxa-vitoria-licitacoes',
       'reduzir-tempo-analisando-editais-irrelevantes',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -301,6 +351,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'escolher-editais-maior-probabilidade-vitoria',
       'clausulas-escondidas-editais-licitacao',
     ],
+    sources: [
+      'Portal da Transparência (portaldatransparencia.gov.br)',
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // B2G-12
@@ -324,6 +379,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'como-aumentar-taxa-vitoria-licitacoes',
       'estruturar-setor-licitacao-5-milhoes',
       'licitacao-volume-ou-inteligencia',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -349,6 +408,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'como-aumentar-taxa-vitoria-licitacoes',
       'empresas-vencem-30-porcento-pregoes',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // B2G-14
@@ -372,6 +435,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'clausulas-escondidas-editais-licitacao',
       'escolher-editais-maior-probabilidade-vitoria',
       'disputar-todas-licitacoes-matematica-real',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Decreto 11.462/2023 — Sistema de Registro de Preços',
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
     ],
   },
 
@@ -397,9 +465,13 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'custo-invisivel-disputar-pregoes-errados',
       'como-aumentar-taxa-vitoria-licitacoes',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
-  // ──────────────────────────────────────────────
+  // ─��────────────────────────────────────────────
   // STORY-263: Consultorias de Licitação — 15 articles
   // ──────────────────────────────────────────────
 
@@ -425,6 +497,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'aumentar-taxa-sucesso-clientes-20-porcento',
       'como-aumentar-taxa-vitoria-licitacoes',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // CONS-02
@@ -448,6 +524,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'consultorias-modernas-inteligencia-priorizar-oportunidades',
       'triagem-editais-vantagem-estrategica-clientes',
       'diagnostico-eficiencia-licitacao-servico-premium',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -473,6 +553,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'aumentar-retencao-clientes-inteligencia-editais',
       'reduzir-ruido-aumentar-performance-pregoes',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // CONS-04
@@ -496,6 +580,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'aumentar-retencao-clientes-inteligencia-editais',
       'erro-operacional-perder-contratos-publicos',
       'escolher-editais-maior-probabilidade-vitoria',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -521,6 +610,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'aumentar-retencao-clientes-inteligencia-editais',
       'analise-edital-diferencial-competitivo-consultoria',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // CONS-06
@@ -544,6 +637,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'inteligencia-artificial-consultoria-licitacao-2026',
       'nova-geracao-ferramentas-mercado-licitacoes',
       'analise-edital-diferencial-competitivo-consultoria',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -569,6 +666,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'diagnostico-eficiencia-licitacao-servico-premium',
       'vale-a-pena-disputar-pregao',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // CONS-08
@@ -592,6 +693,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'inteligencia-artificial-consultoria-licitacao-2026',
       'consultorias-modernas-inteligencia-priorizar-oportunidades',
       'licitacao-volume-ou-inteligencia',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -617,6 +722,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'reduzir-tempo-analisando-editais-irrelevantes',
       'equipe-40-horas-mes-editais-descartados',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // CONS-10
@@ -640,6 +749,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'consultorias-modernas-inteligencia-priorizar-oportunidades',
       'nova-geracao-ferramentas-mercado-licitacoes',
       'como-aumentar-taxa-vitoria-licitacoes',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -665,6 +778,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'diagnostico-eficiencia-licitacao-servico-premium',
       'analise-edital-diferencial-competitivo-consultoria',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // CONS-12
@@ -688,6 +805,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'diagnostico-eficiencia-licitacao-servico-premium',
       'usar-dados-provar-eficiencia-licitacoes',
       'aumentar-retencao-clientes-inteligencia-editais',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -713,6 +834,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'usar-dados-provar-eficiencia-licitacoes',
       'triagem-editais-vantagem-estrategica-clientes',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // CONS-14
@@ -737,6 +862,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'usar-dados-provar-eficiencia-licitacoes',
       'como-aumentar-taxa-vitoria-licitacoes',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // CONS-15
@@ -760,6 +889,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'aumentar-retencao-clientes-inteligencia-editais',
       'usar-dados-provar-eficiencia-licitacoes',
       'aumentar-taxa-sucesso-clientes-20-porcento',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -790,6 +923,12 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'como-participar-primeira-licitacao-2026',
       'analise-viabilidade-editais-guia',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'CONFEA/CREA — Conselho Federal de Engenharia e Agronomia',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // GUIA-S2
@@ -814,6 +953,12 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'licitacoes-saude-2026',
       'inteligencia-artificial-licitacoes-como-funciona',
       'analise-viabilidade-editais-guia',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'ComprasGov — Portal de Compras do Governo Federal',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -840,6 +985,12 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'como-participar-primeira-licitacao-2026',
       'lei-14133-guia-fornecedores',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Anvisa — Agência Nacional de Vigilância Sanitária',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // GUIA-S4
@@ -865,6 +1016,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'analise-viabilidade-editais-guia',
       'lei-14133-guia-fornecedores',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // GUIA-S5
@@ -889,6 +1045,12 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'licitacoes-saude-2026',
       'como-participar-primeira-licitacao-2026',
       'pncp-guia-completo-empresas',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'FNDE — Fundo Nacional de Desenvolvimento da Educação (PNAE)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 
@@ -919,6 +1081,12 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'licitacoes-engenharia-2026',
       'licitacoes-ti-software-2026',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'ComprasGov — Portal de Compras do Governo Federal',
+      'SICAF — Sistema de Cadastramento Unificado de Fornecedores',
+    ],
   },
 
   // GUIA-T2
@@ -943,6 +1111,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'pncp-guia-completo-empresas',
       'licitacoes-engenharia-2026',
       'clausulas-escondidas-editais-licitacao',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Lei 8.666/1993 (revogada — transição)',
+      'Decreto 10.024/2019 — Pregão Eletrônico',
     ],
   },
 
@@ -969,6 +1142,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'inteligencia-artificial-licitacoes-como-funciona',
       'licitacoes-ti-software-2026',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Decreto 10.764/2021 — Regulamenta o PNCP',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // GUIA-T4
@@ -994,6 +1172,10 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'inteligencia-artificial-consultoria-licitacao-2026',
       'reduzir-tempo-analisando-editais-irrelevantes',
     ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
+    ],
   },
 
   // GUIA-T5
@@ -1018,6 +1200,11 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
       'como-participar-primeira-licitacao-2026',
       'licitacoes-engenharia-2026',
       'licitacoes-ti-software-2026',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Dados agregados da plataforma SmartLic (2025-2026)',
     ],
   },
 ];

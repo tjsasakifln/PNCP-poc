@@ -33,6 +33,7 @@ export async function generateMetadata({
       type: 'article',
       locale: 'pt_BR',
       publishedTime: c.publishDate,
+      modifiedTime: c.lastModified || c.publishDate,
       tags: c.keywords,
       images: [
         {
@@ -61,6 +62,7 @@ export default async function CaseDetailPage({
     headline: c.title,
     description: c.description,
     datePublished: c.publishDate,
+    dateModified: c.lastModified || c.publishDate,
     author: {
       '@type': 'Organization',
       name: 'SmartLic',
@@ -233,6 +235,12 @@ export default async function CaseDetailPage({
             className="text-sm text-brand-blue hover:underline"
           >
             Ver licitações de {c.sector} →
+          </Link>
+          <Link
+            href={`/blog/licitacoes/${c.sectorSlug}/${c.uf.toLowerCase()}`}
+            className="text-sm text-brand-blue hover:underline"
+          >
+            Panorama de {c.sector} em {c.uf} →
           </Link>
           <Link href="/casos" className="text-sm text-brand-blue hover:underline">
             Ver todos os casos →

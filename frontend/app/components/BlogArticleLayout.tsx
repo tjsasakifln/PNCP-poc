@@ -179,7 +179,13 @@ export default function BlogArticleLayout({
       },
     },
     datePublished: article.publishDate,
-    dateModified: article.publishDate,
+    dateModified: article.lastModified || article.publishDate,
+    ...(article.sources?.length && {
+      citation: article.sources.map((s: string) => ({
+        '@type': 'CreativeWork',
+        name: s,
+      })),
+    }),
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': canonicalUrl,
@@ -311,6 +317,17 @@ export default function BlogArticleLayout({
                   <time dateTime={article.publishDate}>
                     {formatDate(article.publishDate)}
                   </time>
+                  {article.lastModified && article.lastModified !== article.publishDate && (
+                    <>
+                      <span aria-hidden="true">&middot;</span>
+                      <span>
+                        Atualizado em{' '}
+                        <time dateTime={article.lastModified}>
+                          {formatDate(article.lastModified)}
+                        </time>
+                      </span>
+                    </>
+                  )}
                   <span aria-hidden="true">&middot;</span>
                   <span>{article.readingTime}</span>
                   <span aria-hidden="true">&middot;</span>
@@ -338,6 +355,18 @@ export default function BlogArticleLayout({
                     </Link>
                   ))}
                 </div>
+              )}
+
+              {/* Sources — SEO E-E-A-T */}
+              {article.sources && article.sources.length > 0 && (
+                <section className="mt-8 pt-6 border-t border-[var(--border)]">
+                  <h2 className="text-sm font-semibold text-ink mb-3">Fontes e Referências</h2>
+                  <ol className="list-decimal list-inside space-y-1">
+                    {article.sources.map((source, i) => (
+                      <li key={i} className="text-sm text-ink-secondary">{source}</li>
+                    ))}
+                  </ol>
+                </section>
               )}
 
               {/* Share Buttons */}
