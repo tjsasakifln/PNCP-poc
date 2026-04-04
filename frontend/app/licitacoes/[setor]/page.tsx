@@ -306,6 +306,24 @@ export default async function SectorPage({
           }}
         />
       )}
+
+      {/* SEO-PLAYBOOK P4: Dataset schema */}
+      {buildDatasetJsonLd(sector, stats) && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(buildDatasetJsonLd(sector, stats)),
+          }}
+        />
+      )}
+
+      {/* SEO-PLAYBOOK P4: HowTo schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(buildHowToJsonLd(sector)),
+        }}
+      />
     </main>
   );
 }
@@ -379,4 +397,54 @@ function buildJsonLd(
   }
 
   return jsonLd;
+}
+
+// SEO-PLAYBOOK P4: Dataset schema for AI Overviews eligibility
+function buildDatasetJsonLd(
+  sector: { name: string; slug: string },
+  stats: SectorStats | null,
+) {
+  if (!stats || stats.total_open === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: `Licitações de ${sector.name} — Dataset`,
+    description: `${stats.total_open} licitações abertas de ${sector.name} no Brasil`,
+    variableMeasured: "Total de licitações públicas abertas",
+    measurementTechnique: "Agregação via PNCP — Portal Nacional de Contratações Públicas",
+    temporalCoverage: "2024/..",
+    spatialCoverage: "BR",
+    isAccessibleForFree: true,
+    creator: {
+      "@type": "Organization",
+      name: "SmartLic",
+      url: "https://smartlic.tech",
+    },
+  };
+}
+
+// SEO-PLAYBOOK P4: HowTo schema for rich snippets
+function buildHowToJsonLd(sector: { name: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: `Como encontrar licitações de ${sector.name}`,
+    step: [
+      {
+        "@type": "HowToStep",
+        name: "Acesse o SmartLic",
+        text: "Crie sua conta em 30 segundos — sem cartão de crédito",
+      },
+      {
+        "@type": "HowToStep",
+        name: "Selecione seu setor e UF",
+        text: `Escolha ${sector.name} e as UFs de interesse para filtrar editais relevantes`,
+      },
+      {
+        "@type": "HowToStep",
+        name: "Receba score de viabilidade",
+        text: "4 fatores avaliados automaticamente por edital: modalidade, prazo, valor e geografia",
+      },
+    ],
+  };
 }

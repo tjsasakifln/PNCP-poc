@@ -1,11 +1,13 @@
 import { MetadataRoute } from 'next';
 import { getAllSlugs } from '@/lib/blog';
 import { SECTORS } from '@/lib/sectors';
+import { generateSectorParams, generateLicitacoesParams } from '@/lib/programmatic';
 
 /**
  * GTM-COPY-006 AC10: Dynamic sitemap with all public pages
  * STORY-261 AC10: Includes /blog and /blog/{slug} routes
  * STORY-324 AC12: Includes /licitacoes and /licitacoes/{setor} routes
+ * SEO-PLAYBOOK P0: Includes programmatic, licitacoes setor×UF, and panorama routes
  *
  * Next.js generates sitemap.xml automatically from this file.
  */
@@ -26,6 +28,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: new Date(),
     changeFrequency: 'daily' as const,
     priority: 0.8,
+  }));
+
+  // SEO-PLAYBOOK P0: Programmatic sector pages (/blog/programmatic/[setor])
+  const programmaticSectorRoutes: MetadataRoute.Sitemap = generateSectorParams().map(({ setor }) => ({
+    url: `${baseUrl}/blog/programmatic/${setor}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.8,
+  }));
+
+  // SEO-PLAYBOOK P0: Sector×UF pages (/blog/licitacoes/[setor]/[uf])
+  const licitacoesUfRoutes: MetadataRoute.Sitemap = generateLicitacoesParams().map(({ setor, uf }) => ({
+    url: `${baseUrl}/blog/licitacoes/${setor}/${uf}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.8,
+  }));
+
+  // SEO-PLAYBOOK P0: Panorama sector pages (/blog/panorama/[setor])
+  const panoramaSectorRoutes: MetadataRoute.Sitemap = generateSectorParams().map(({ setor }) => ({
+    url: `${baseUrl}/blog/panorama/${setor}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
   }));
 
   return [
@@ -131,5 +157,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
+    // SEO-PLAYBOOK P0: About page
+    {
+      url: `${baseUrl}/sobre`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    // SEO-PLAYBOOK P0: Programmatic sector pages
+    ...programmaticSectorRoutes,
+    // SEO-PLAYBOOK P0: Sector × UF pages (405 combinations)
+    ...licitacoesUfRoutes,
+    // SEO-PLAYBOOK P0: Panorama sector pages
+    ...panoramaSectorRoutes,
   ];
 }

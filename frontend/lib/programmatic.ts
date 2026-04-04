@@ -440,18 +440,11 @@ const PHASE1_SECTORS = ['informatica', 'saude', 'engenharia', 'facilities', 'sof
 const PHASE1_UFS = ['SP', 'RJ', 'MG', 'PR', 'RS'];
 
 /**
- * MKT-003 AC5: Generate static params for phased launch.
- * Phase 1: 5 sectors × 5 UFs = 25 pages.
+ * SEO-PLAYBOOK P1: Generate static params for full 15×27 = 405 pages.
+ * (Previously Phase 1: 5 sectors × 5 UFs = 25 pages)
  */
 export function generateLicitacoesParams(): { setor: string; uf: string }[] {
-  const params: { setor: string; uf: string }[] = [];
-  for (const sector of SECTORS) {
-    if (!PHASE1_SECTORS.includes(sector.id)) continue;
-    for (const uf of PHASE1_UFS) {
-      params.push({ setor: sector.slug, uf: uf.toLowerCase() });
-    }
-  }
-  return params;
+  return generateSectorUfParams(); // 15 × 27 = 405
 }
 
 // -----------------------------------------------------------------------

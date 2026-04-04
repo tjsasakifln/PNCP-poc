@@ -4,6 +4,16 @@ Allow: /
 Disallow: /admin
 Disallow: /auth/callback
 Disallow: /api
+Disallow: /dashboard
+Disallow: /conta
+Disallow: /buscar
+Disallow: /pipeline
+Disallow: /historico
+Disallow: /mensagens
+Disallow: /alertas
+Disallow: /onboarding
+Disallow: /recuperar-senha
+Disallow: /redefinir-senha
 
 # Host
 Host: https://smartlic.tech

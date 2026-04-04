@@ -111,7 +111,7 @@ Com 405 páginas setor×UF + 40 artigos + calculadora + CNPJ tool, o crawl budge
 | 4 | Artigos de blog | 0.7 | monthly | Conteúdo estático |
 | 5 | `/blog/panorama/[setor]` | 0.7 | weekly | Semi-estático |
 
-- [ ] **Verificar que as 405 páginas setor×UF** têm `changeFrequency: 'daily'` (dado ao vivo = Google deve recrawlear diariamente)
+- [x] **Verificar que as 405 páginas setor×UF** têm `changeFrequency: 'daily'` (dado ao vivo = Google deve recrawlear diariamente)
 - [ ] **Não indexar** `/analise/[hash]` (conteúdo gerado por usuário, não editorial) — adicionar `<meta name="robots" content="noindex">` na página de análise compartilhada
 
 ### 5. Internal Linking — Arquitetura de PageRank
@@ -150,7 +150,7 @@ Erros silenciosos de canonical ou `noindex` matam meses de trabalho sem aviso.
 - [ ] **Auditar mensalmente no GSC** (Cobertura → Excluídas) para detectar páginas `noindex` acidentais
 - [ ] **Garantir canonical correto** nas 405 páginas setor×UF — cada uma com sua própria URL canonical (não apontar para a landing setorial)
 - [ ] **Verificar que ISR não quebra canonical** — Next.js ISR pode servir versões stale com canonical incorreto se o `generateMetadata` não for async corretamente
-- [ ] **Robots.txt** — confirmar que `/api/`, `/admin/`, `/auth/` estão bloqueados; que `/licitacoes/`, `/blog/`, `/calculadora/`, `/cnpj/`, `/casos/`, `/analise/` **não** estão bloqueados
+- [x] **Robots.txt** — confirmar que `/api/`, `/admin/`, `/auth/` estão bloqueados; que `/licitacoes/`, `/blog/`, `/calculadora/`, `/cnpj/`, `/casos/`, `/analise/` **não** estão bloqueados. Adicionadas rotas protegidas: `/dashboard`, `/conta`, `/buscar`, `/pipeline`, `/historico`, `/mensagens`, `/alertas`, `/onboarding`
 
 ```
 # Verificação rápida:
@@ -350,12 +350,12 @@ FUNDO (decisão — "preciso disso agora")
 
 #### Checklist de implementação
 
-- [ ] **Abrir `frontend/app/sitemap.ts`**
-- [ ] **Importar os helpers necessários:**
+- [x] **Abrir `frontend/app/sitemap.ts`**
+- [x] **Importar os helpers necessários:**
   ```ts
   import { generateSectorParams, generateLicitacoesParams } from '@/lib/programmatic';
   ```
-- [ ] **Adicionar rotas `/blog/programmatic/[setor]`** (15 páginas, priority 0.8):
+- [x] **Adicionar rotas `/blog/programmatic/[setor]`** (15 páginas, priority 0.8):
   ```ts
   const programmaticSectorRoutes: MetadataRoute.Sitemap = generateSectorParams().map(({ setor }) => ({
     url: `${baseUrl}/blog/programmatic/${setor}`,
@@ -364,7 +364,7 @@ FUNDO (decisão — "preciso disso agora")
     priority: 0.8,
   }));
   ```
-- [ ] **Adicionar rotas `/blog/licitacoes/[setor]/[uf]`** (25 páginas fase 1, priority 0.8):
+- [x] **Adicionar rotas `/blog/licitacoes/[setor]/[uf]`** (405 páginas full 15×27, priority 0.8):
   ```ts
   const licitacoesUfRoutes: MetadataRoute.Sitemap = generateLicitacoesParams().map(({ setor, uf }) => ({
     url: `${baseUrl}/blog/licitacoes/${setor}/${uf}`,
@@ -373,7 +373,7 @@ FUNDO (decisão — "preciso disso agora")
     priority: 0.8,
   }));
   ```
-- [ ] **Adicionar rotas `/blog/panorama/[setor]`** (15 páginas, priority 0.7):
+- [x] **Adicionar rotas `/blog/panorama/[setor]`** (15 páginas, priority 0.7):
   ```ts
   const panoramaSectorRoutes: MetadataRoute.Sitemap = generateSectorParams().map(({ setor }) => ({
     url: `${baseUrl}/blog/panorama/${setor}`,
@@ -382,7 +382,7 @@ FUNDO (decisão — "preciso disso agora")
     priority: 0.7,
   }));
   ```
-- [ ] **Incluir os arrays no `return`** do sitemap:
+- [x] **Incluir os arrays no `return`** do sitemap:
   ```ts
   return [
     // ... rotas existentes ...
@@ -397,7 +397,7 @@ FUNDO (decisão — "preciso disso agora")
   - Confirmar que `/blog/panorama/saude` aparece
   - Contagem total esperada: ~85 entradas novas
 - [ ] **Submeter sitemap ao Google Search Console**
-- [ ] **Commit:** `seo: add programmatic blog routes to sitemap (+55 urls)`
+- [x] **Commit:** `seo: add programmatic blog routes to sitemap (+435 urls)`
 
 ---
 
@@ -432,9 +432,9 @@ CTA: "Ver as [N] oportunidades completas → [/signup?ref=licitacoes-[setor]-[uf
 
 #### Checklist de implementação
 
-- [ ] **Abrir `frontend/lib/programmatic.ts`**
-- [ ] **Localizar `generateLicitacoesParams()`** (linha ~446)
-- [ ] **Substituir o corpo de `generateLicitacoesParams()`:**
+- [x] **Abrir `frontend/lib/programmatic.ts`**
+- [x] **Localizar `generateLicitacoesParams()`** (linha ~446)
+- [x] **Substituir o corpo de `generateLicitacoesParams()`:**
   ```ts
   export function generateLicitacoesParams(): { setor: string; uf: string }[] {
     return generateSectorUfParams(); // 15 × 27 = 405
@@ -449,7 +449,7 @@ CTA: "Ver as [N] oportunidades completas → [/signup?ref=licitacoes-[setor]-[uf
 - [ ] **Deploy e validação:**
   - Navegar para `/blog/licitacoes/vestuario/ba` — deve carregar com dados reais
   - Verificar ISR 24h via header `x-nextjs-cache: HIT`
-- [ ] **Commit:** `seo(programmatic): expand sector×UF pages from 25 to 405 (full 15×27)`
+- [x] **Commit:** `seo(programmatic): expand sector×UF pages from 25 to 405 (full 15×27)`
 
 ---
 
@@ -645,9 +645,9 @@ Contexto: "Não ter histórico não é impedimento — é ponto de partida.
 
 #### Checklist de implementação
 
-- [ ] **Abrir `frontend/app/licitacoes/[setor]/page.tsx`**
-- [ ] **Localizar `buildJsonLd()`** (linha ~350)
-- [ ] **Adicionar `Dataset` schema:**
+- [x] **Abrir `frontend/app/licitacoes/[setor]/page.tsx`**
+- [x] **Localizar `buildJsonLd()`** (linha ~350)
+- [x] **Adicionar `Dataset` schema:**
   ```ts
   if (stats && stats.total_open > 0) {
     jsonLd["@type"] = ["WebPage", "Dataset"];
@@ -666,7 +666,7 @@ Contexto: "Não ter histórico não é impedimento — é ponto de partida.
     jsonLd["creator"] = { "@type": "Organization", "name": "SmartLic", "url": "https://smartlic.tech" };
   }
   ```
-- [ ] **Adicionar `HowTo` schema:**
+- [x] **Adicionar `HowTo` schema:**
   ```ts
   const howToSchema = {
     "@context": "https://schema.org",
@@ -681,7 +681,7 @@ Contexto: "Não ter histórico não é impedimento — é ponto de partida.
   ```
 - [ ] **Testar com Google Rich Results Test:** `https://smartlic.tech/licitacoes/engenharia`
 - [ ] **Validar 3-4 setores diferentes** (spot check)
-- [ ] **Commit:** `seo: add Dataset+HowTo schema to /licitacoes/[setor] landing pages`
+- [x] **Commit:** `seo: add Dataset+HowTo schema to /licitacoes/[setor] landing pages`
 
 ---
 
