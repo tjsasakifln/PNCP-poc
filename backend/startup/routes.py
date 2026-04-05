@@ -45,6 +45,7 @@ from routes.calculadora import router as calculadora_router
 from routes.empresa_publica import router as empresa_publica_router
 from routes.share import router as share_router
 from routes.referral import router as referral_router
+from routes.relatorio import router as relatorio_router
 
 _v1_routers = [
     admin_router, subscriptions_router, features_router, messages_router,
@@ -60,6 +61,7 @@ _v1_routers = [
     empresa_publica_router,
     share_router,
     referral_router,
+    relatorio_router,
 ]
 
 

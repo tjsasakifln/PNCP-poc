@@ -167,6 +167,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
+    // SEO-PLAYBOOK 6.3: Panorama Licitações Brasil 2026 T1 (gated digital PR asset)
+    {
+      url: `${baseUrl}/relatorio-2026-t1`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
     // SEO-PLAYBOOK P2: Calculadora B2G
     {
       url: `${baseUrl}/calculadora`,

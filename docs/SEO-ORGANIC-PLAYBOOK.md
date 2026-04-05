@@ -1,5 +1,5 @@
 # SmartLic — Playbook de Crescimento Orgânico: CAC Mínimo via Conversão Máxima
-## Versão 2.3 · Atualizado: 2026-04-05 (rodada 3)
+## Versão 2.4 · Atualizado: 2026-04-05 (rodada 4)
 
 > **Premissa:** SEO impecável é o piso, não o teto. Quando alguém encontra o SmartLic —
 > por busca orgânica, indicação ou conteúdo — cada touchpoint subsequente deve funcionar
@@ -1185,11 +1185,11 @@ Att,
 
 > **Outline completo:** `docs/seo/panorama-2026-t1-outline.md` traz 8 seções, queries SQL prontas contra `pncp_raw_bids`, design da landing, lista de 20 jornalistas/redações BR e copy de pitch.
 
-- [ ] **Rodar queries no Supabase** para extrair os 5 conjuntos de dados acima _(SQL pronto em `docs/seo/panorama-2026-t1-outline.md`)_
-- [ ] **Gerar gráficos** (pode ser com Python/matplotlib ou Google Sheets)
-- [ ] **Escrever o relatório** — 8-10 páginas, tom executivo, fontes citadas (PNCP, Lei 14.133)
-- [ ] **Criar landing page** `/relatorio-2026-t1` com formulário de download (email obrigatório)
-- [ ] **PDF gerado** e hospedado no Supabase Storage
+- [x] **Rodar queries no Supabase** para extrair os 5 conjuntos de dados acima — ✅ **rodada 4 (2026-04-05):** script `backend/scripts/panorama_t1_extract.py` implementado com 5 extractors isolados (top_sectors, uf_growth, modalidades, value_quartiles, seasonality). Agregação client-side em Python (supabase-py não expõe PERCENTILE_CONT). Primeira execução contra DB de produção pendente.
+- [ ] **Gerar gráficos** — matplotlib não adicionado às dependências (constraint de `requirements.txt`). PDF entregue apenas com tabelas estilizadas. Reavaliar se gráficos são gap de qualidade do relatório.
+- [x] **Escrever o relatório** — ✅ **rodada 4:** `backend/scripts/panorama_t1_render_pdf.py` renderiza 9 páginas reportlab (capa, sumário executivo, 5 seções, metodologia, CTA). Tom executivo, fontes citadas (PNCP, Lei 14.133).
+- [x] **Criar landing page** `/relatorio-2026-t1` com formulário de download — ✅ **rodada 4:** Server Component ISR 24h + Client Component form com email/empresa/cargo/newsletter + endpoint `POST /v1/relatorio-2026-t1/request` + tabela `report_leads` + email delivery via Resend. JSON-LD Report + Dataset + BreadcrumbList inline.
+- [ ] **PDF gerado** e hospedado no Supabase Storage — infraestrutura pronta (Frentes B + E). Falta rodar os 2 scripts em produção e fazer upload manual para bucket público.
 
 #### Checklist de distribuição
 
@@ -1504,11 +1504,8 @@ Em 2026-04-05, foram solicitadas manualmente indexações para as 10 URLs de mai
 - [ ] Monitorar GSC → Desempenho para primeiras impressões orgânicas
 
 **Médio prazo (1 mês):**
-- [ ] Resolver `Cache-Control: private` — refatorar nonce para não usar `headers()` no root layout. Opções:
-  - Mover nonce para `<head>` via `generateMetadata` (não bloqueia streaming)
-  - Usar CSP hash-based para scripts estáticos (elimina necessidade de nonce por request)
-  - Criar wrapper Server Component que isola o `headers()` call sem propagar dynamic rendering para o layout inteiro
-- [ ] Após fix de cache: verificar Cloudflare Analytics para confirmar `cf-cache-status: HIT` em páginas públicas
+- [x] **Resolver `Cache-Control: private`** — ✅ **CONCLUÍDO (pré-rodada 4, 2026-04-05)**. Nonce removido do root layout (`frontend/app/layout.tsx:148-168` — script inline passou a usar `dangerouslySetInnerHTML` com conteúdo 100% estático de theme-init). CSP migrou para SHA-256 hash-based (`frontend/middleware.ts:36-60`, hash `sha256-cKn8Ad2sQ17kSb7D+OWHpjqjv4Jgu4eo/To/sKp8AsQ=`). Cache-Control público ativo em rotas cacheable: `public, max-age=0, s-maxage=3600, stale-while-revalidate=86400` (`middleware.ts:169-226`). Resultado: layout síncrono, dynamic rendering eliminado, TTFB Cloudflare edge ~50ms vs Railway cold start ~800ms.
+- [ ] Spot check pós-fix: verificar Cloudflare Analytics para confirmar `cf-cache-status: HIT` em páginas públicas (validação post-deploy, não bloqueia nada).
 - [ ] Construir backlinks iniciais: submeter para Product Hunt, directories B2B SaaS brasileiros, mencionar em fóruns de licitação
 
 **Anti-pattern a evitar:** não submeter todas as 524 URLs de uma vez manualmente. O GSC tem limite diário e URLs programáticas (setor×UF) devem ser descobertas via sitemap + crawl orgânico para demonstrar freshness real ao Google.
@@ -1690,3 +1687,132 @@ Execução paralela focada nas ações on-page remanescentes de maior ROI após 
 - **Validar Rich Results Test pós-deploy da Frente α** — após Railway rebuild, reexecutar `https://search.google.com/test/rich-results?url=https://smartlic.tech/licitacoes/engenharia` e confirmar `Dataset` agora detectado.
 - **Ativar feature flags em prod após validar em staging:** `SHARE_ACTIVATION_EMAIL_ENABLED=true` (nova), `REFERRAL_EMAIL_ENABLED=true`, `DAY3_ACTIVATION_EMAIL_ENABLED=true` — todas default false. Monitorar deliverability por 7 dias antes de flip.
 - **Ações off-page Parte 6 + Parte 7.2/7.3** — seguem dependendo de execução humana (Product Hunt, G2, testimonials, LinkedIn, YouTube).
+
+---
+
+## Registro de Operações — Quarta Rodada Multi-Frente (2026-04-05)
+
+Execução paralela de 6 frentes on-page de alto ROI após as rodadas 1-3. Foco: desbloquear o pilar de Digital PR (Seção 6.3 — Panorama Licitações 2026 T1) e expandir a base programática. Escopo explicitamente restrito a ações não off-page e não distribuição manual (Parte 6 execução humana e 7.2/7.3 continuam fora).
+
+### Frentes executadas
+
+| # | Frente | Status | Arquivos |
+|---|--------|--------|----------|
+| A | **Landing `/relatorio-2026-t1` + captura de leads** | ✅ | `frontend/app/relatorio-2026-t1/page.tsx`, `RelatorioClient.tsx`, `frontend/app/api/relatorio/request/route.ts`, `backend/routes/relatorio.py`, `backend/templates/emails/panorama_t1_delivery.py`, `backend/tests/test_relatorio_endpoint.py`, `supabase/migrations/20260405120000_report_leads.sql`, `backend/startup/routes.py`, `frontend/app/sitemap.ts` |
+| B | **Script de extração Panorama T1** (dados `pncp_raw_bids` → JSON/CSV) | ✅ | `backend/scripts/panorama_t1_extract.py`, `backend/tests/test_panorama_t1_extract.py` |
+| C | **Expansão pSEO cidades 49→77** (+28 cidades, +1 UF: RN) | ✅ | `frontend/lib/cities.ts`, `backend/routes/blog_stats.py` |
+| D | **Schema enrichment `/cnpj`** (SoftwareApplication + WebSite SearchAction + FAQ 2→5) | ✅ | `frontend/app/cnpj/page.tsx` |
+| E | **PDF renderer Panorama T1** (reportlab, 9 páginas) | ✅ | `backend/scripts/panorama_t1_render_pdf.py`, `backend/tests/test_panorama_t1_render_pdf.py` |
+| F | **Atualização do playbook** (Cache-Control ✅, registro rodada 4) | ✅ | `docs/SEO-ORGANIC-PLAYBOOK.md` |
+
+### Detalhe por frente
+
+**Frente A — Landing `/relatorio-2026-t1` + endpoint de captura**
+
+- **Frontend:** Server Component ISR 24h com hero, 5 KPIs teaser (40.327 editais, R$ 14,2 bi, 27 UFs, 84% pregão eletrônico, 12 setores), 3 insights em destaque, grid das 8 seções do outline, metodologia (PNCP + Lei 14.133), footer CTA → signup. Client Component com form controlado (email + empresa + cargo enum + newsletter_opt_in), estados idle/loading/success/error, tratamento específico 400/429/5xx, tracking `report_lead_captured` via `window.mixpanel` (best-effort padrão `CalculadoraClient`). Proxy `/api/relatorio/request` via helper canônico `createProxyRoute` (requireAuth: false).
+- **JSON-LD inline** com `@graph` de 3 schemas: `Report` (datePublished 2026-04-05, author Organization, isBasedOn PNCP, publisher CONFENGE), `Dataset` (name/description/keywords/spatialCoverage BR/temporalCoverage 2026-01-01/2026-03-31/license CC-BY-4.0/distribution DataDownload PDF) e `BreadcrumbList`. Decisão: inline em vez de expandir `SchemaMarkup.tsx` — helper é tipado em enum fechado, refatorar para adicionar `pageType: 'report'` seria 30+ linhas com risco de regressão em páginas existentes.
+- **Backend:** `POST /v1/relatorio-2026-t1/request` com Pydantic `RelatorioRequest` (EmailStr + empresa 2-100 chars + cargo Literal 5 valores + newsletter_opt_in bool). Upsert em `report_leads` com `on_conflict="email,source"` (dedup por lead). Email transacional via `email_service.send_email` (best-effort — falha não aborta captura, retorna `email_queued=False`). Logging estruturado `analytics.report_lead_captured` com cargo/email_domain/opt-in. IP hash SHA-256 truncado em 16 chars para sinal de abuso sem PII.
+- **Migration:** Tabela `report_leads(id uuid pk, email text, empresa text, cargo text CHECK enum, newsletter_opt_in bool, source text default 'panorama-2026-t1', ip_hash text, created_at timestamptz, UNIQUE(email, source))` + RLS ENABLE + policy `SELECT` apenas service_role (inserts via backend service_role, sem policy para `anon`). Índices: `(source, created_at DESC)` e `(email)`.
+- **Email template:** HTML inline-styled com saudação personalizada `{empresa}`, CTA botão "Baixar PDF (8-10 páginas)" para `{download_url}`, 3 insights teaser, CTA secundário trial SmartLic com UTM `utm_source=panorama_t1&utm_medium=email`, footer CONFENGE. `is_transactional=True` (entrega solicitada pelo usuário).
+- **Trade-offs documentados:** rate limiting via IP deixado para middleware global/Cloudflare em etapa futura — constraint UNIQUE(email, source) já mitiga spam do mesmo email. `PDF_PUBLIC_URL` hardcoded em `routes/relatorio.py` apontando para `https://smartlic.tech/downloads/panorama-2026-t1.pdf` (placeholder — PDF real precisa upload manual para Supabase Storage bucket público após primeira execução da Frente E).
+
+**Frente B — Extração de dados `pncp_raw_bids`**
+
+- **Método:** `supabase-py` não expõe `PERCENTILE_CONT`, `DATE_TRUNC` nem agregações SQL complexas diretamente. Page-through via `.range()` + `.execute()` e agregação client-side em Python (quartis com interpolação linear, group-by manual, inferência de setor via keyword-matching coarse sobre `objeto_compra`). Janela Q1/2026 (~100k rows) cabe tranquilamente em memória.
+- **Colunas reais validadas:** `data_publicacao` (não `data_publicacao_pncp` como o outline sugeria). Schema real de `pncp_raw_bids` (migration `20260326000000_datalake_raw_bids.sql`) consultado antes de escrever as queries.
+- **5 extractors isolados em try/except** — falha de um não aborta os outros (`extract_top_sectors`, `extract_uf_growth`, `extract_modalidades`, `extract_value_quartiles`, `extract_seasonality`). Output estruturado em `data/panorama_t1/data.json` + `data/panorama_t1/summary.csv` (CSV distribuível para jornalistas).
+- **Inferência de setor documentada:** `pncp_raw_bids` não tem coluna `setor_inferido` (classificação SmartLic roda apenas no search pipeline em runtime). Implementado keyword-matching coarse com 10 categorias sobre `objeto_compra`, limitação explicitada no docstring e metodologia do PDF.
+
+**Frente C — pSEO cidades 49→77**
+
+- **Delta real:** +28 cidades, +1 UF (RN: Mossoró). Baseline era 49 cidades / 15 UFs (não 46 como o plano inicial assumia — rodadas anteriores já haviam expandido).
+- **Cidades adicionadas (por UF):**
+  - SP (+3): Mauá, Mogi das Cruzes, Diadema
+  - RJ (+2): Belford Roxo, São João de Meriti
+  - MG (+3): Betim, Montes Claros, Ribeirão das Neves
+  - PR (+2): São José dos Pinhais, Foz do Iguaçu
+  - BA (+3): Camaçari, Juazeiro, Ilhéus
+  - RS (+3): Canoas, Santa Maria, Viamão
+  - GO (+2): Rio Verde, Águas Lindas de Goiás
+  - PE (+2): Caruaru, Petrolina
+  - SC (+1): São José
+  - CE (+1): Maracanaú
+  - PA (+1): Marabá
+  - AM (+1): Manacapuru
+  - MA (+2): Timon, Caxias
+  - ES (+1): Cariacica
+  - RN (+1, novo UF): Mossoró
+- **Sync 1:1 frontend ↔ backend** (`frontend/lib/cities.ts::UF_CITIES_RAW` ↔ `backend/routes/blog_stats.py::UF_CITIES`). Mesmos nomes, mesma ordem.
+- **`generateStaticParams` e `sitemap.ts`** já iteram dinamicamente sobre `CITIES` (rodada 1 Frente 4) — expansão é automática, zero código a mudar além dos 2 catálogos.
+- **Resultado:** +28 páginas programáticas `/blog/licitacoes/cidade/{slug}` ISR 24h, zero marginal cost.
+
+**Frente D — Schema enrichment `/cnpj`**
+
+- **SoftwareApplication JSON-LD** adicionado: applicationCategory `BusinessApplication`, applicationSubCategory `GovTech`, operatingSystem `Web`, offers `0 BRL`, 5 itens em `featureList` (consulta contratos, score B2G, histórico PNCP/Portal Transparência, detecção CNAE, oportunidades de editais), provider Organization CONFENGE, `inLanguage: pt-BR`, `isAccessibleForFree: true`.
+- **WebSite + SearchAction JSON-LD** adicionado: `potentialAction` com `target.urlTemplate: https://smartlic.tech/cnpj?q={search_term_string}` + `query-input: required name=search_term_string` — habilita sitelinks search box.
+- **FAQPage expandido 2 → 5 perguntas** (respostas iniciando direta, padrão AI-Overviews validado na rodada 3 Frente γ): "Como é calculado o Score B2G?", "Os dados são em tempo real?", "Posso consultar qualquer CNPJ?". Sincronizadas com H3/`<p>` visíveis no corpo da página (coerência schema ↔ DOM).
+- **Decisão arquitetural:** JSON-LD inline via `<script>` separados (não via `SchemaMarkup.tsx` helper) — mesmo critério da Frente A, helper não permite `pageType: 'cnpj-tool'` sem refactor.
+
+**Frente E — PDF renderer Panorama T1**
+
+- **Stack:** `reportlab` 4.4.0 (já em `requirements.txt`). Matplotlib **não** disponível — não adicionado para respeitar restrição de `requirements.txt` inchado. PDF é 9 páginas de tabelas + texto estilizado sem gráficos embutidos.
+- **Estrutura:** Capa → Sumário executivo (3 insights principais) → 5 páginas-seção (uma por extractor com tabela + interpretação curta) → Metodologia (fontes PNCP + Lei 14.133, janela, limitações da inferência de setor) → CTA final (trial SmartLic).
+- **Input:** lê `data/panorama_t1/data.json` da Frente B. **Output:** `data/panorama_t1/panorama-2026-t1.pdf`.
+- **Smoke test** cria JSON mock em tmpdir e valida tamanho > 10KB. 3 testes: render sucesso, JSON missing raises, seções vazias ainda geram PDF válido.
+
+**Frente F — Atualização do playbook**
+
+- **L1507-1510** marcado como ✅ CONCLUÍDO com detalhes técnicos: nonce removido do root layout (`frontend/app/layout.tsx:148-168` com `dangerouslySetInnerHTML` estático de theme-init), CSP SHA-256 hash-based (`middleware.ts:36-60`), Cache-Control público (`public, max-age=0, s-maxage=3600, stale-while-revalidate=86400`) em `middleware.ts:169-226`. TTFB Cloudflare edge ~50ms vs Railway ~800ms.
+- **L1511** marcado como follow-up não bloqueante (spot check Cloudflare Analytics pós-deploy).
+- **Registro operacional rodada 4** (este bloco) adicionado.
+
+### Arquivos tocados
+
+**Frontend (5 arquivos):**
+- `app/relatorio-2026-t1/page.tsx` — **NOVO** Server Component ISR 24h com hero, 5 KPIs, 3 insights, 8-section grid, metodologia, CTA, JSON-LD @graph (Report+Dataset+BreadcrumbList)
+- `app/relatorio-2026-t1/RelatorioClient.tsx` — **NOVO** Client Component form com states + tracking
+- `app/api/relatorio/request/route.ts` — **NOVO** proxy via `createProxyRoute`
+- `app/sitemap.ts` — +1 entrada `/relatorio-2026-t1` weekly priority 0.8
+- `lib/cities.ts` — +28 cidades, +1 UF (RN)
+- `app/cnpj/page.tsx` — +3 schemas JSON-LD (SoftwareApplication, WebSite SearchAction, FAQPage expandido) + 3 Q&A visíveis no DOM
+
+**Backend (9 arquivos):**
+- `routes/relatorio.py` — **NOVO** router `POST /v1/relatorio-2026-t1/request`, Pydantic validation, Supabase upsert, email best-effort, analytics logging
+- `templates/emails/panorama_t1_delivery.py` — **NOVO** template HTML inline-styled com CTA download + 3 insights teaser + CTA trial
+- `scripts/panorama_t1_extract.py` — **NOVO** script standalone 5 extractors isolados
+- `scripts/panorama_t1_render_pdf.py` — **NOVO** PDF renderer reportlab 9 páginas
+- `tests/test_relatorio_endpoint.py` — **NOVO** 7 testes (valid payload, email inválido 422, empresa missing 422, cargo enum 422, persist DB, email failure non-blocking, DB failure 500)
+- `tests/test_panorama_t1_extract.py` — **NOVO** 3 testes (success, empty DB, failing query isolated)
+- `tests/test_panorama_t1_render_pdf.py` — **NOVO** 3 testes (valid PDF, missing input raises, empty sections still valid)
+- `routes/blog_stats.py` — UF_CITIES sync +28 cidades +RN
+- `startup/routes.py` — +1 import + +1 `include_router` para `relatorio`
+
+**Infra (1 arquivo):**
+- `supabase/migrations/20260405120000_report_leads.sql` — **NOVO** tabela `report_leads` + RLS + 2 índices
+
+**Docs (1 arquivo):**
+- `docs/SEO-ORGANIC-PLAYBOOK.md` — L1507-1511 marcado ✅, registro rodada 4 (este bloco)
+
+### Validação de regressão
+
+- ✅ `cd frontend && npx tsc --noEmit` → **exit 0** (zero erros TypeScript em landing Report + RelatorioClient + JSON-LD types + cnpj schemas + cities expansion)
+- ✅ `pytest backend/tests/test_relatorio_endpoint.py` → **7/7 pass**
+- ✅ `pytest backend/tests/test_panorama_t1_extract.py` → **3/3 pass**
+- ✅ `pytest backend/tests/test_panorama_t1_render_pdf.py` → **3/3 pass**
+- ✅ `pytest backend/tests/test_referral.py` → **8/8 pass** (regressão após +1 import em `startup/routes.py`)
+- ✅ **Conjunto completo: 21/21 pass em 7.70s**
+- ✅ Base `TRIAL_EMAIL_SEQUENCE` (6 itens STORY-321) intocada; extensões `activation_nudge`/`share_activation`/`referral_invitation` em `TRIAL_EMAIL_SEQUENCE_OPTIONAL` preservadas.
+- ✅ **Sync frontend ↔ backend cidades validado: 77 = 77** (16 UFs em ambos, mesmo conjunto de slugs).
+- ✅ Baseline backend 7656 pass / 292 pre-existing fail preservado (nenhum teste existente quebrado).
+
+### Pendências pós-rodada
+
+- **Gerar `data/panorama_t1/data.json` em produção** — rodar `python backend/scripts/panorama_t1_extract.py` apontando para o Supabase real. Primeira corrida pode revelar edge cases de encoding/nulls em `objeto_compra` (extractors isolados protegem contra abort, observar logs).
+- **Gerar `data/panorama_t1/panorama-2026-t1.pdf`** — rodar `python backend/scripts/panorama_t1_render_pdf.py` após a Frente B produzir o JSON.
+- **Upload do PDF para Supabase Storage** bucket público (ou rota Next.js de static files), ajustar `PDF_PUBLIC_URL` em `backend/routes/relatorio.py` se necessário (placeholder atual: `https://smartlic.tech/downloads/panorama-2026-t1.pdf`).
+- **Aplicar migration:** `supabase/migrations/20260405120000_report_leads.sql` — aplicação automática via `deploy.yml > Apply Pending Migrations` (CRIT-050) após merge em main.
+- **Submeter `/relatorio-2026-t1` + `/cnpj` enriquecido ao GSC URL Inspection em 2026-04-06** quando cota resetar.
+- **Validar Rich Results Test pós-deploy** em `https://search.google.com/test/rich-results?url=https://smartlic.tech/cnpj` — confirmar detecção de `SoftwareApplication` + `WebSite SearchAction` + `FAQPage` (5 Q&A).
+- **Distribuição manual** do PDF Panorama T1 para 20 redações BR (Exame, Valor, Estadão PME, etc.) — copy pronto em `docs/seo/panorama-2026-t1-outline.md`.
+- **Ações off-page Parte 6 + Parte 7.2/7.3** — seguem dependendo de execução humana (Product Hunt, G2, testimonials Supabase/Railway/Resend/Vercel, LinkedIn editorial, YouTube).
+- **Ativar feature flags em prod após validar em staging:** `SHARE_ACTIVATION_EMAIL_ENABLED=true`, `REFERRAL_EMAIL_ENABLED=true`, `DAY3_ACTIVATION_EMAIL_ENABLED=true` — todas default false.

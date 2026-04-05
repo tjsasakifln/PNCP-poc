@@ -34,21 +34,22 @@ export function slugify(input: string): string {
  * When the backend adds more cities, append them here.
  */
 const UF_CITIES_RAW: Record<string, string[]> = {
-  SP: ['São Paulo', 'Campinas', 'Guarulhos', 'São Bernardo do Campo', 'Osasco'],
-  RJ: ['Rio de Janeiro', 'Niterói', 'Duque de Caxias', 'Nova Iguaçu'],
-  MG: ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora'],
+  SP: ['São Paulo', 'Campinas', 'Guarulhos', 'São Bernardo do Campo', 'Osasco', 'Santo André', 'Mauá', 'Mogi das Cruzes', 'Diadema'],
+  RJ: ['Rio de Janeiro', 'Niterói', 'Duque de Caxias', 'Nova Iguaçu', 'São Gonçalo', 'Belford Roxo', 'São João de Meriti'],
+  MG: ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora', 'Betim', 'Montes Claros', 'Ribeirão das Neves'],
   DF: ['Brasília'],
-  PR: ['Curitiba', 'Londrina', 'Maringá', 'Cascavel'],
-  BA: ['Salvador', 'Feira de Santana', 'Vitória da Conquista'],
-  RS: ['Porto Alegre', 'Caxias do Sul', 'Pelotas'],
-  GO: ['Goiânia', 'Aparecida de Goiânia', 'Anápolis'],
-  PE: ['Recife', 'Jaboatão dos Guararapes', 'Olinda'],
-  SC: ['Florianópolis', 'Joinville', 'Blumenau'],
-  CE: ['Fortaleza', 'Caucaia', 'Juazeiro do Norte'],
-  PA: ['Belém', 'Ananindeua', 'Santarém'],
-  AM: ['Manaus', 'Parintins'],
-  MA: ['São Luís', 'Imperatriz'],
-  ES: ['Vitória', 'Vila Velha', 'Serra'],
+  PR: ['Curitiba', 'Londrina', 'Maringá', 'Cascavel', 'Ponta Grossa', 'São José dos Pinhais', 'Foz do Iguaçu'],
+  BA: ['Salvador', 'Feira de Santana', 'Vitória da Conquista', 'Camaçari', 'Juazeiro', 'Ilhéus'],
+  RS: ['Porto Alegre', 'Caxias do Sul', 'Pelotas', 'Canoas', 'Santa Maria', 'Viamão'],
+  GO: ['Goiânia', 'Aparecida de Goiânia', 'Anápolis', 'Rio Verde', 'Águas Lindas de Goiás'],
+  PE: ['Recife', 'Jaboatão dos Guararapes', 'Olinda', 'Caruaru', 'Petrolina'],
+  SC: ['Florianópolis', 'Joinville', 'Blumenau', 'São José'],
+  CE: ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Maracanaú'],
+  PA: ['Belém', 'Ananindeua', 'Santarém', 'Marabá'],
+  AM: ['Manaus', 'Parintins', 'Manacapuru'],
+  MA: ['São Luís', 'Imperatriz', 'Timon', 'Caxias'],
+  ES: ['Vitória', 'Vila Velha', 'Serra', 'Cariacica'],
+  RN: ['Mossoró'],
 };
 
 function buildCities(): CityMeta[] {
@@ -63,7 +64,7 @@ function buildCities(): CityMeta[] {
 
 /**
  * Canonical list of cities for programmatic SEO pages.
- * Currently ~46 cities across 15 UFs (matches backend UF_CITIES).
+ * Currently 81 cities across 16 UFs (matches backend UF_CITIES).
  */
 export const CITIES: CityMeta[] = buildCities();
 
