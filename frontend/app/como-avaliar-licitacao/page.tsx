@@ -51,25 +51,6 @@ const articleSchema = {
   },
 };
 
-const breadcrumbSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    {
-      '@type': 'ListItem',
-      position: 1,
-      name: 'Início',
-      item: 'https://smartlic.tech',
-    },
-    {
-      '@type': 'ListItem',
-      position: 2,
-      name: 'Como avaliar uma licitação',
-      item: 'https://smartlic.tech/como-avaliar-licitacao',
-    },
-  ],
-};
-
 const howToSchema = {
   '@context': 'https://schema.org',
   '@type': 'HowTo',
@@ -103,15 +84,17 @@ export default function ComoAvaliarLicitacao() {
   return (
     <ContentPageLayout
       breadcrumbLabel="Como avaliar uma licitação"
+      breadcrumbItems={[
+        { label: 'Início', href: '/' },
+        { label: 'Guias', href: '/features' },
+        { label: 'Como avaliar uma licitação' },
+      ]}
       relatedPages={RELATED_PAGES}
     >
+      {/* Breadcrumb JSON-LD emitted by BreadcrumbNav inside ContentPageLayout */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <script
         type="application/ld+json"

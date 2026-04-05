@@ -19,6 +19,7 @@ import { PlanStatusBanners } from "./components/PlanStatusBanners";
 import { PlanProCard } from "./components/PlanProCard";
 import { PlanConsultoriaCard } from "./components/PlanConsultoriaCard";
 import { PlanFAQ } from "./components/PlanFAQ";
+import { trackViewItem, trackBeginCheckout } from "../components/GoogleAnalytics";
 
 interface UserProfile {
   plan_id?: string;
@@ -137,6 +138,26 @@ export default function PlanosPage() {
     trackEventRef.current("plan_page_viewed", { source: "url" });
   }, []);
 
+  // GA4 view_item — fire once per billing period change for each plan shown.
+  useEffect(() => {
+    const pro = proPricing[billingPeriod];
+    const consult = consultoriaPricing[billingPeriod];
+    trackViewItem({
+      id: "smartlic_pro",
+      name: "SmartLic Pro",
+      price: pro.monthly,
+      billing_period: billingPeriod,
+      category: "subscription",
+    });
+    trackViewItem({
+      id: "consultoria",
+      name: "SmartLic Consultoria",
+      price: consult.monthly,
+      billing_period: billingPeriod,
+      category: "subscription",
+    });
+  }, [billingPeriod, proPricing, consultoriaPricing]);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!session?.access_token) { setUserProfile(null); setProfileLoading(false); return; }
@@ -187,6 +208,13 @@ export default function PlanosPage() {
     if (!session) { window.location.href = "/login"; return; }
     setCheckoutLoading(true);
     trackEvent("checkout_initiated", { plan_id: "smartlic_pro", billing_period: billingPeriod, source: "planos_page" });
+    trackBeginCheckout({
+      id: "smartlic_pro",
+      name: "SmartLic Pro",
+      price: proPricing[billingPeriod].total,
+      billing_period: billingPeriod,
+      category: "subscription",
+    });
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
       const res = await fetch(`${backendUrl}/v1/checkout?plan_id=smartlic_pro&billing_period=${billingPeriod}`, {
@@ -208,6 +236,13 @@ export default function PlanosPage() {
     if (!session) { window.location.href = "/login"; return; }
     setCheckoutLoading(true);
     trackEvent("checkout_initiated", { plan_id: "consultoria", billing_period: billingPeriod, source: "planos_page" });
+    trackBeginCheckout({
+      id: "consultoria",
+      name: "SmartLic Consultoria",
+      price: consultoriaPricing[billingPeriod].total,
+      billing_period: billingPeriod,
+      category: "subscription",
+    });
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
       const res = await fetch(`${backendUrl}/v1/checkout?plan_id=consultoria&billing_period=${billingPeriod}`, {

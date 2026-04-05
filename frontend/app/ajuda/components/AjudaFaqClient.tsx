@@ -3,13 +3,12 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/components/AuthProvider";
+import { FAQ_DATA as FAQ_DATA_SOURCE, type FAQItem } from "../faqData";
 
 // ---- FAQ Data ----
-
-interface FAQItem {
-  question: string;
-  answer: string;
-}
+// Question/answer content lives in ../faqData.ts so the server component
+// can import it for FAQPage JSON-LD schema emission. Icons are defined
+// here because they contain client-side JSX/SVG.
 
 interface FAQCategory {
   id: string;
@@ -18,214 +17,44 @@ interface FAQCategory {
   items: FAQItem[];
 }
 
-const FAQ_DATA: FAQCategory[] = [
-  {
-    id: "como-buscar",
-    title: "Como Buscar",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    ),
-    items: [
-      {
-        question: "Como faço uma análise por oportunidades de licitação?",
-        answer:
-          "Acesse a página de Análise, selecione os estados (UFs) de interesse e clique em \"Buscar\". O sistema consultará automaticamente as fontes oficiais de contratações públicas e retornará as oportunidades filtradas para o seu setor.",
-      },
-      {
-        question: "Posso buscar em mais de um estado ao mesmo tempo?",
-        answer:
-          "Sim. Na página de análise, você pode selecionar múltiplos estados simultaneamente. O sistema buscará oportunidades em todos os estados selecionados de forma paralela.",
-      },
-      {
-        question: "O que significam os filtros de setor?",
-        answer:
-          "Os setores representam as áreas de atuação (ex.: TI, Engenharia, Saúde). Ao selecionar um setor, o sistema aplica filtros inteligentes de palavras-chave para encontrar licitações relevantes àquela área específica.",
-      },
-      {
-        question: "Quanto tempo leva uma análise?",
-        answer:
-          "A duração varia conforme o número de estados selecionados. Normalmente, uma análise leva entre 10 segundos e 2 minutos. Você acompanha o progresso em tempo real na tela.",
-      },
-      {
-        question: "Como faço download dos resultados em Excel?",
-        answer:
-          "Após a análise ser concluída, clique no botão \"Download Excel\" que aparece junto aos resultados. O arquivo será gerado e baixado automaticamente com todas as oportunidades encontradas. Este recurso está disponível em planos pagos.",
-      },
-      {
-        question: "Como funciona a avaliação por IA?",
-        answer:
-          "Após cada análise, nosso sistema avalia automaticamente cada oportunidade usando IA, indicando adequação ao seu perfil, critérios de elegibilidade, competitividade e pontos de atenção. Você decide em segundos se vale a pena investir tempo.",
-      },
-    ],
-  },
-  {
-    id: "planos",
-    title: "Planos",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-      </svg>
-    ),
-    items: [
-      {
-        question: "Qual a diferença entre o período de avaliação e o SmartLic Pro?",
-        answer:
-          "Durante os 14 dias de avaliação gratuita, você usa o produto completo sem restrições: Excel, Pipeline, IA completa e histórico. Após o período de avaliação, assine o SmartLic Pro para continuar com acesso completo.",
-      },
-      {
-        question: "Posso testar antes de assinar?",
-        answer:
-          "Sim! Ao criar sua conta, você experimenta o produto completo por 14 dias gratuitamente, sem limites. Não é necessário informar dados de pagamento.",
-      },
-      {
-        question: "Como amplio meu acesso?",
-        answer:
-          "Acesse a página de Opções, escolha a modalidade desejada e clique em \"Continuar\". Você será redirecionado para o checkout seguro. A mudança é imediata após a confirmação do pagamento.",
-      },
-      {
-        question: "O que acontece se eu cancelar meu acesso?",
-        answer:
-          "Você mantém acesso completo até o fim do período já pago. Após essa data, o acesso ao sistema é encerrado. O período de avaliação gratuita é exclusivo para os primeiros 14 dias após o cadastro inicial e não é reativado após um cancelamento.",
-      },
-      {
-        question: "O que acontece quando minhas análises mensais acabam?",
-        answer:
-          "Quando suas análises mensais se esgotam, elas são renovadas automaticamente no próximo ciclo de faturamento.",
-      },
-    ],
-  },
-  {
-    id: "pagamentos",
-    title: "Pagamentos",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-      </svg>
-    ),
-    items: [
-      {
-        question: "Quais formas de pagamento são aceitas?",
-        answer:
-          "Aceitamos cartão de crédito (Visa, Mastercard, American Express, Elo) e Boleto Bancário, processados de forma segura pelo Stripe. O Boleto pode levar até 3 dias úteis para confirmação. PIX em breve.",
-      },
-      {
-        question: "O pagamento é seguro?",
-        answer:
-          "Sim. Todos os pagamentos são processados pelo Stripe, plataforma certificada PCI-DSS nível 1. Nós nunca armazenamos os dados do seu cartão em nossos servidores.",
-      },
-      {
-        question: "Como cancelo minha assinatura?",
-        answer:
-          "Você pode cancelar a qualquer momento acessando Minha Conta. O acesso permanece ativo até o final do período já pago. Após essa data, o acesso ao sistema é encerrado.",
-      },
-      {
-        question: "Receberei nota fiscal?",
-        answer:
-          "Sim, uma nota fiscal (invoice) é gerada automaticamente pelo Stripe a cada cobrança e enviada para o e-mail cadastrado na sua conta.",
-      },
-      {
-        question: "Existe desconto para pagamento anual?",
-        answer:
-          "Sim! O acesso anual tem economia de 25% em relação ao mensal — R$ 297/mês em vez de R$ 397/mês.",
-      },
-    ],
-  },
-  {
-    id: "fontes-dados",
-    title: "Fontes de Dados",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-      </svg>
-    ),
-    items: [
-      {
-        question: "De onde vêm os dados das licitações?",
-        answer:
-          "Todos os dados são obtidos diretamente de portais oficiais de contratações públicas do Brasil, que consolidam licitações federais, estaduais e municipais — incluindo autarquias, fundações e empresas públicas. Os dados são públicos e abertos.",
-      },
-      {
-        question: "Com que frequência os dados são atualizados?",
-        answer:
-          "Os dados são consultados em tempo real a cada análise. Quando você realiza uma análise, o sistema consulta as fontes oficiais naquele momento, garantindo que os resultados estejam sempre atualizados.",
-      },
-      {
-        question: "O SmartLic cobre todas as licitações do Brasil?",
-        answer:
-          "O SmartLic consulta todas as licitações publicadas nas fontes oficiais de contratações públicas. Órgãos municipais, estaduais e federais que publicam nos portais oficiais são cobertos. Órgãos que utilizam exclusivamente sistemas legados podem não aparecer.",
-      },
-      {
-        question: "Os valores apresentados são exatos?",
-        answer:
-          "Os valores exibidos são os valores estimados publicados pelos órgãos nas fontes oficiais. Valores finais de contratação podem diferir após o processo licitatório.",
-      },
-    ],
-  },
-  {
-    id: "confianca",
-    title: "Confiança e Credibilidade",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    ),
-    items: [
-      {
-        question: "Como o SmartLic decide quais licitações recomendar?",
-        answer:
-          "Cada licitação é avaliada com 5 critérios objetivos: compatibilidade setorial, faixa de valor, prazo de preparação, região de atuação e modalidade. O resultado é um nível de aderência (Alta, Média ou Baixa) que indica o quanto a oportunidade se encaixa no seu perfil. Não há opinião envolvida — são critérios documentados e verificáveis.",
-      },
-      {
-        question: "De onde vêm os dados das licitações?",
-        answer:
-          "Todos os dados são obtidos de portais oficiais de contratações públicas do Brasil, que cobrem licitações de todas as esferas — federal, estadual e municipal. O SmartLic consolida automaticamente múltiplas fontes oficiais para garantir cobertura nacional (27 UFs) e atualização contínua.",
-      },
-      {
-        question: "Quem está por trás do SmartLic?",
-        answer:
-          "O SmartLic é desenvolvido pela CONFENGE Avaliações e Inteligência Artificial LTDA, empresa com experiência em avaliações técnicas e inteligência artificial aplicada ao mercado B2G. Você pode saber mais na nossa página Sobre.",
-      },
-    ],
-  },
-  {
-    id: "minha-conta",
-    title: "Minha Conta",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
-    items: [
-      {
-        question: "Como altero minha senha?",
-        answer:
-          "Acesse Minha Conta e utilize o formulário \"Alterar senha\". Após a alteração, você será desconectado e precisará fazer login novamente com a nova senha.",
-      },
-      {
-        question: "Como excluo minha conta?",
-        answer:
-          "Acesse Minha Conta, na seção \"Dados e Privacidade\", clique em \"Excluir Minha Conta\". Esta ação é irreversível e apaga permanentemente todos os seus dados, incluindo histórico de análises e assinaturas.",
-      },
-      {
-        question: "Posso exportar meus dados?",
-        answer:
-          "Sim. Na página Minha Conta, seção \"Dados e Privacidade\", clique em \"Exportar Meus Dados\". Será gerado um arquivo JSON com todas as suas informações, conforme previsto pela LGPD.",
-      },
-      {
-        question: "Esqueci minha senha. Como recupero?",
-        answer:
-          "Na tela de login, clique em \"Esqueci minha senha\". Um e-mail com instruções de redefinição será enviado para o endereço cadastrado. Verifique também a pasta de spam.",
-      },
-      {
-        question: "Como entro em contato com o suporte?",
-        answer:
-          "Você pode entrar em contato através da página de Mensagens dentro da plataforma. Respondemos em até 24 horas úteis.",
-      },
-    ],
-  },
-];
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  "como-buscar": (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  ),
+  "planos": (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+  ),
+  "pagamentos": (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+    </svg>
+  ),
+  "fontes-dados": (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+    </svg>
+  ),
+  "confianca": (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  ),
+  "minha-conta": (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  ),
+};
+
+const FAQ_DATA: FAQCategory[] = FAQ_DATA_SOURCE.map((category) => ({
+  ...category,
+  icon: CATEGORY_ICONS[category.id] ?? null,
+}));
+
 
 // ---- Accordion Item Component ----
 

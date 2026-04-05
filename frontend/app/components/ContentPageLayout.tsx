@@ -1,7 +1,8 @@
 import LandingNavbar from './landing/LandingNavbar';
 import Footer from './Footer';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import BreadcrumbNav from '@/components/seo/BreadcrumbNav';
+import type { BreadcrumbItem } from '@/lib/seo';
 
 interface RelatedPage {
   href: string;
@@ -12,35 +13,33 @@ interface ContentPageLayoutProps {
   children: React.ReactNode;
   breadcrumbLabel: string;
   relatedPages: RelatedPage[];
+  /** Optional full breadcrumb trail. If provided, overrides the 2-level default. */
+  breadcrumbItems?: BreadcrumbItem[];
 }
 
 export default function ContentPageLayout({
   children,
   breadcrumbLabel,
   relatedPages,
+  breadcrumbItems,
 }: ContentPageLayoutProps) {
+  const items: BreadcrumbItem[] =
+    breadcrumbItems ?? [
+      { label: 'Início', href: '/' },
+      { label: breadcrumbLabel },
+    ];
+
   return (
     <div className="min-h-screen flex flex-col bg-canvas">
       <LandingNavbar />
 
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-          {/* Breadcrumb */}
-          <nav
-            aria-label="Breadcrumb"
-            className="mb-8 flex items-center gap-2 text-sm text-ink-secondary"
-          >
-            <Link
-              href="/"
-              className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-            >
-              Início
-            </Link>
-            <ChevronRight className="w-4 h-4" aria-hidden="true" />
-            <span className="font-medium text-ink" aria-current="page">
-              {breadcrumbLabel}
-            </span>
-          </nav>
+          <BreadcrumbNav
+            items={items}
+            className="mb-8"
+            suppressSchema={!breadcrumbItems}
+          />
 
           {/* Content Grid */}
           <div className="lg:grid lg:grid-cols-3 lg:gap-12">

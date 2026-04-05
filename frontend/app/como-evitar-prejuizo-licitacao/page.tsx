@@ -51,25 +51,6 @@ const articleSchema = {
   },
 };
 
-const breadcrumbSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    {
-      '@type': 'ListItem',
-      position: 1,
-      name: 'Início',
-      item: 'https://smartlic.tech',
-    },
-    {
-      '@type': 'ListItem',
-      position: 2,
-      name: 'Como evitar prejuízo em licitações',
-      item: 'https://smartlic.tech/como-evitar-prejuizo-licitacao',
-    },
-  ],
-};
-
 const howToSchema = {
   '@context': 'https://schema.org',
   '@type': 'HowTo',
@@ -103,16 +84,18 @@ export default function ComoEvitarPrejuizo() {
   return (
     <ContentPageLayout
       breadcrumbLabel="Como evitar prejuízo em licitações"
+      breadcrumbItems={[
+        { label: 'Início', href: '/' },
+        { label: 'Guias', href: '/features' },
+        { label: 'Como evitar prejuízo em licitações' },
+      ]}
       relatedPages={RELATED_PAGES}
     >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      {/* breadcrumbSchema now emitted by BreadcrumbNav in ContentPageLayout */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}

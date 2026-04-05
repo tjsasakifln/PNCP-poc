@@ -1,0 +1,111 @@
+name: IndexNow — notify search engines of URL updates
+
+# Fires on every push to main that touches the frontend. Extracts the list of
+# changed Next.js `page.tsx` routes, maps them to public URLs, and submits them
+# to the IndexNow API (Bing, Yandex, Seznam). Google doesn't accept IndexNow
+# but still benefits from sitemap + crawl frequency signals.
+#
+# Docs: https://www.indexnow.org/documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+permissions:
+  contents: read
+
+jobs:
+  submit-indexnow:
+    name: Submit changed URLs to IndexNow
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - name: Checkout with diff history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Extract changed frontend routes
+        id: urls
+        run: |
+          set -euo pipefail
+
+          # Collect changed files between the previous and current commit.
+          CHANGED=$(git diff --name-only HEAD~1 HEAD || true)
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          # Filter for Next.js App Router page files under frontend/app/**.
+          # Map frontend/app/foo/page.tsx -> /foo ; frontend/app/page.tsx -> /
+          URL_LIST=$(echo "$CHANGED" \
+            | grep -E '^frontend/app/.*/page\.(t|j)sx?$|^frontend/app/page\.(t|j)sx?$' || true)
+
+          if [ -z "$URL_LIST" ]; then
+            echo "No page routes changed — nothing to submit."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Build a JSON array of absolute URLs.
+          JSON_URLS=$(echo "$URL_LIST" | awk '
+            {
+              sub(/^frontend\/app/, "")
+              sub(/\/page\.(t|j)sx?$/, "")
+              # Skip dynamic segments like [slug] — IndexNow needs concrete URLs.
+              if ($0 ~ /\[.*\]/) next
+              if ($0 == "") $0 = "/"
+              printf("\"https://smartlic.tech%s\",", $0)
+            }
+          ' | sed 's/,$//')
+
+          if [ -z "$JSON_URLS" ]; then
+            echo "All changed routes are dynamic segments — skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "urls=[$JSON_URLS]" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Submitting URLs: [$JSON_URLS]"
+
+      - name: POST to IndexNow API
+        if: ${{ steps.urls.outputs.skip != 'true' }}
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+          URL_LIST_JSON: ${{ steps.urls.outputs.urls }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${INDEXNOW_KEY:-}" ]; then
+            echo "::warning::INDEXNOW_KEY secret not set — skipping submission."
+            exit 0
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "host": "smartlic.tech",
+            "key": "${INDEXNOW_KEY}",
+            "keyLocation": "https://smartlic.tech/${INDEXNOW_KEY}.txt",
+            "urlList": ${URL_LIST_JSON}
+          }
+          EOF
+          )
+
+          echo "Payload:"
+          echo "$PAYLOAD"
+
+          HTTP_CODE=$(curl -sS -o /tmp/indexnow.out -w "%{http_code}" \
+            -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d "$PAYLOAD")
+
+          echo "IndexNow responded HTTP $HTTP_CODE"
+          cat /tmp/indexnow.out || true
+
+          # 200 = accepted, 202 = accepted (async). Anything else is a failure.
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "202" ]; then
+            echo "::error::IndexNow submission failed with HTTP $HTTP_CODE"
+            exit 1
+          fi

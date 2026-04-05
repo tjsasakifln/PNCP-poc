@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Trophy, CheckCircle, Loader2, AlertCircle, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import { useAnalytics } from "../../../hooks/useAnalytics";
+import { trackPurchase } from "../../components/GoogleAnalytics";
 
 const PLAN_DETAILS: Record<string, { name: string; icon: React.ReactNode; message: string }> = {
   smartlic_pro: {
@@ -33,6 +34,13 @@ const PLAN_DETAILS: Record<string, { name: string; icon: React.ReactNode; messag
 
 const POLL_INTERVAL_MS = 5000;
 const MAX_POLL_DURATION_MS = 60000; // GTM-UX-004 AC9: 60s polling window
+
+// Fallback pricing used for GA4 `purchase` event value when the backend
+// doesn't return an explicit amount. Should be kept in sync with Stripe.
+const PLAN_FALLBACK_PRICES: Record<string, number> = {
+  smartlic_pro: 397,
+  consultoria: 997,
+};
 
 type ActivationStatus = "polling" | "active" | "timeout";
 
@@ -85,6 +93,42 @@ export default function ObrigadoContent() {
           if (data.status === "active") {
             setActivationStatus("active");
             clearInterval(interval);
+
+            // GA4 `purchase` — fire once on confirmed activation.
+            // transaction_id must be unique to avoid duplicate attribution:
+            // prefer Stripe session_id from query params, fall back to
+            // subscription id or a deterministic composite key.
+            const sessionId = searchParams.get("session_id");
+            const subId = data.subscription_id || data.id;
+            const planIdResolved = planId || "smartlic_pro";
+            const txId =
+              sessionId ||
+              subId ||
+              `${planIdResolved}-${session.user?.id || "anon"}-${startTime}`;
+            const value =
+              typeof data.amount === "number"
+                ? data.amount
+                : PLAN_FALLBACK_PRICES[planIdResolved] ?? 0;
+            try {
+              trackPurchase({
+                transaction_id: txId,
+                value,
+                currency: "BRL",
+                items: [
+                  {
+                    item_id: planIdResolved,
+                    item_name:
+                      PLAN_DETAILS[planIdResolved]?.name || "SmartLic Pro",
+                    price: value,
+                    quantity: 1,
+                    item_category: "subscription",
+                  },
+                ],
+              });
+            } catch {
+              // Analytics failure must never break the activation UX.
+            }
+
             // GTM-UX-004 AC9: Celebration toast on activation
             toast.success("Assinatura ativada com sucesso! Bem-vindo ao SmartLic Pro!", {
               duration: 6000,
@@ -98,7 +142,7 @@ export default function ObrigadoContent() {
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [session?.access_token, activationStatus]);
+  }, [session?.access_token, activationStatus, planId, searchParams, session?.user?.id]);
 
   const details = planId ? PLAN_DETAILS[planId] : null;
 

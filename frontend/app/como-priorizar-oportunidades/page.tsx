@@ -51,25 +51,6 @@ const articleSchema = {
   },
 };
 
-const breadcrumbSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    {
-      '@type': 'ListItem',
-      position: 1,
-      name: 'Início',
-      item: 'https://smartlic.tech',
-    },
-    {
-      '@type': 'ListItem',
-      position: 2,
-      name: 'Como priorizar oportunidades',
-      item: 'https://smartlic.tech/como-priorizar-oportunidades',
-    },
-  ],
-};
-
 const howToSchema = {
   '@context': 'https://schema.org',
   '@type': 'HowTo',
@@ -103,16 +84,18 @@ export default function ComoPriorizarOportunidades() {
   return (
     <ContentPageLayout
       breadcrumbLabel="Como priorizar oportunidades"
+      breadcrumbItems={[
+        { label: 'Início', href: '/' },
+        { label: 'Guias', href: '/features' },
+        { label: 'Como priorizar oportunidades' },
+      ]}
       relatedPages={RELATED_PAGES}
     >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      {/* breadcrumbSchema emitted by BreadcrumbNav in ContentPageLayout */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
