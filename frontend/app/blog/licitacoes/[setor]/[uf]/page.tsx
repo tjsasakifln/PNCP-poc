@@ -16,6 +16,8 @@ import {
   ALL_UFS,
   UF_NAMES,
 } from '@/lib/programmatic';
+import { getCitiesByUf } from '@/lib/cities';
+import { getFreshnessLabel } from '@/lib/seo';
 
 /**
  * MKT-003 AC1: Sector × UF programmatic page.
@@ -171,12 +173,20 @@ export default async function LicitacoesSectorUfPage({
                 : ''}
             </p>
 
-            {/* AC4: Badge "Dados atualizados em {data}" */}
+            {/* AC4: Badge "Dados atualizados em {data}" + granular freshness label */}
             {stats && (
-              <p className="mt-3 inline-flex items-center gap-2 text-sm text-ink-secondary bg-surface-2 px-3 py-1 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-green-500" />
-                Dados atualizados em {new Date(stats.last_updated).toLocaleDateString('pt-BR')}
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <p className="inline-flex items-center gap-2 text-sm text-ink-secondary bg-surface-2 px-3 py-1 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  Dados atualizados em {new Date(stats.last_updated).toLocaleDateString('pt-BR')}
+                </p>
+                <time
+                  dateTime={new Date(stats.last_updated).toISOString()}
+                  className="text-xs text-ink-muted"
+                >
+                  {getFreshnessLabel(stats.last_updated)}
+                </time>
+              </div>
             )}
           </div>
         </div>
@@ -340,6 +350,30 @@ export default async function LicitacoesSectorUfPage({
             currentUf={ufUpper}
             currentType="sector-uf"
           />
+
+          {/* SEO Frente 4: Cidades relevantes em {UF} */}
+          {(() => {
+            const cidadesUf = getCitiesByUf(ufUpper);
+            if (cidadesUf.length === 0) return null;
+            return (
+              <section className="mt-10">
+                <h2 className="text-xl font-semibold text-ink mb-4">
+                  Cidades relevantes em {ufName}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {cidadesUf.map((c) => (
+                    <Link
+                      key={c.slug}
+                      href={`/blog/licitacoes/cidade/${c.slug}`}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full border border-[var(--border)] text-sm text-ink-secondary hover:bg-surface-1 hover:text-ink transition-colors"
+                    >
+                      Licitações em {c.name}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
         </div>
       </main>
 

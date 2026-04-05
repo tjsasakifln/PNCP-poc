@@ -6,7 +6,15 @@
  * Each programmatic page receives 3-4 schema types automatically.
  */
 
-export type SchemaPageType = 'sector' | 'sector-uf' | 'city' | 'panorama' | 'article';
+export type SchemaPageType =
+  | 'sector'
+  | 'sector-uf'
+  | 'city'
+  | 'cidade' // SEO Frente 4: alias for pt-BR city pages (same behavior as 'city')
+  | 'panorama'
+  | 'article'
+  | 'analise'
+  | 'faq';
 
 interface FAQ {
   question: string;
@@ -41,7 +49,7 @@ export interface SchemaMarkupProps {
 }
 
 function buildArticleSchema(props: SchemaMarkupProps) {
-  return {
+  const base: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: props.title,
@@ -68,6 +76,16 @@ function buildArticleSchema(props: SchemaMarkupProps) {
       '@id': props.url,
     },
   };
+
+  // SEO-PLAYBOOK P6: analise pages get an `about` field tied to the sector
+  if (props.pageType === 'analise' && props.sectorName) {
+    base.about = {
+      '@type': 'Thing',
+      name: props.sectorName,
+    };
+  }
+
+  return base;
 }
 
 function buildFAQSchema(faqs: FAQ[]) {
@@ -167,13 +185,27 @@ function buildHowToSchema(props: SchemaMarkupProps) {
 }
 
 function buildLocalBusinessSchema(props: SchemaMarkupProps) {
-  if (props.pageType !== 'city' || !props.cidade) return null;
+  if (props.pageType !== 'city' && props.pageType !== 'cidade') return null;
+  if (!props.cidade) return null;
 
   return {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    name: `Licitações em ${props.cidade}`,
+    name: `SmartLic — Licitações em ${props.cidade}`,
     description: `Oportunidades de licitação pública em ${props.cidade}${props.uf ? `, ${props.uf}` : ''}`,
+    url: props.url,
+    areaServed: {
+      '@type': 'City',
+      name: props.cidade,
+      ...(props.uf
+        ? {
+            containedInPlace: {
+              '@type': 'AdministrativeArea',
+              name: props.uf,
+            },
+          }
+        : {}),
+    },
     address: {
       '@type': 'PostalAddress',
       addressLocality: props.cidade,
@@ -184,7 +216,12 @@ function buildLocalBusinessSchema(props: SchemaMarkupProps) {
 }
 
 function buildItemListSchema(props: SchemaMarkupProps) {
-  if (props.pageType !== 'sector-uf' && props.pageType !== 'city') return null;
+  if (
+    props.pageType !== 'sector-uf' &&
+    props.pageType !== 'city' &&
+    props.pageType !== 'cidade'
+  )
+    return null;
   if (!props.totalEditais || props.totalEditais === 0) return null;
 
   return {
@@ -211,8 +248,10 @@ function buildItemListSchema(props: SchemaMarkupProps) {
 function getSchemas(props: SchemaMarkupProps): object[] {
   const schemas: object[] = [];
 
-  // Article schema — always included
-  schemas.push(buildArticleSchema(props));
+  // Article schema — always included except for pure FAQ pages
+  if (props.pageType !== 'faq') {
+    schemas.push(buildArticleSchema(props));
+  }
 
   // Breadcrumb — always included if provided
   const breadcrumb = buildBreadcrumbSchema(props.breadcrumbs);

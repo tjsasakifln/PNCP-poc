@@ -3,6 +3,7 @@ import { getAllSlugs } from '@/lib/blog';
 import { SECTORS } from '@/lib/sectors';
 import { generateSectorParams, generateLicitacoesParams } from '@/lib/programmatic';
 import { getAllCaseSlugs } from '@/lib/cases';
+import { CITIES } from '@/lib/cities';
 
 /**
  * GTM-COPY-006 AC10: Dynamic sitemap with all public pages
@@ -52,6 +53,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${baseUrl}/blog/panorama/${setor}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
+  // SEO Frente 4: City pSEO pages (/blog/licitacoes/cidade/[cidade])
+  const cidadeRoutes: MetadataRoute.Sitemap = CITIES.map((c) => ({
+    url: `${baseUrl}/blog/licitacoes/cidade/${c.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
     priority: 0.7,
   }));
 
@@ -185,6 +194,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...licitacoesUfRoutes,
     // SEO-PLAYBOOK P0: Panorama sector pages
     ...panoramaSectorRoutes,
+    // SEO Frente 4: City pSEO pages
+    ...cidadeRoutes,
     // SEO-PLAYBOOK P7: RSS feed
     {
       url: `${baseUrl}/blog/rss.xml`,
