@@ -1,0 +1,23 @@
+{
+  "name": "SmartLic — Inteligencia em Licitacoes",
+  "short_name": "SmartLic",
+  "description": "Analise a viabilidade de licitacoes antes de investir tempo. Cruza seu perfil com cada edital e recomenda apenas o que tem chance real de retorno.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a1e3f",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

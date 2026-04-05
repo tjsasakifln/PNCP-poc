@@ -26,6 +26,18 @@ const SETORES = [
   { id: 'materiais_hidraulicos', name: 'Materiais Hidráulicos e Saneamento' },
 ];
 
+// Map calculadora sector IDs (granular) to blog sector slugs (15 canonical)
+const SETOR_TO_BLOG_SLUG: Record<string, string> = {
+  vestuario: 'vestuario', alimentos: 'alimentos', informatica: 'informatica',
+  mobiliario: 'mobiliario', papelaria: 'papelaria', engenharia: 'engenharia',
+  software_desenvolvimento: 'software', software_licencas: 'software',
+  servicos_prediais: 'facilities', produtos_limpeza: 'facilities',
+  medicamentos: 'saude', equipamentos_medicos: 'saude', insumos_hospitalares: 'saude',
+  vigilancia: 'vigilancia', transporte_servicos: 'transporte', frota_veicular: 'transporte',
+  manutencao_predial: 'manutencao-predial', engenharia_rodoviaria: 'engenharia-rodoviaria',
+  materiais_eletricos: 'materiais-eletricos', materiais_hidraulicos: 'materiais-hidraulicos',
+};
+
 const UFS = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO',
   'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
@@ -372,6 +384,14 @@ export default function CalculadoraClient() {
             >
               Recalcular com outros parâmetros
             </button>
+            {SETOR_TO_BLOG_SLUG[setor] && (
+              <Link
+                href={`/blog/licitacoes/${SETOR_TO_BLOG_SLUG[setor]}/${uf.toLowerCase()}`}
+                className="block text-sm text-blue-600 hover:underline"
+              >
+                Ver todas as licitacoes de {resultado.dados.setor_name} {prepUF(uf)} {uf} →
+              </Link>
+            )}
           </div>
         </div>
       )}

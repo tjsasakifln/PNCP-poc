@@ -123,6 +123,14 @@ export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const host = request.headers.get("host") || "";
 
+  // SEO: Strip trailing slash to prevent duplicate URLs splitting ranking signals.
+  // Exceptions: root "/" and API routes (which are handled below).
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.slice(0, -1);
+    return NextResponse.redirect(url, 301);
+  }
+
   // Allow API routes first (includes /api/health for Railway healthcheck)
   if (pathname.startsWith("/api/")) {
     return addSecurityHeaders(NextResponse.next());

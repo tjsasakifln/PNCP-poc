@@ -142,6 +142,12 @@ export default async function RootLayout({
         <StructuredData />
         {/* STORY-261 AC11: RSS feed discovery */}
         <link rel="alternate" type="application/rss+xml" title="SmartLic Blog" href="/blog/rss.xml" />
+        {/* SEO: PWA manifest (completes sw.js + offline.html signal chain) */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0a1e3f" />
+        {/* SEO: Preconnect to critical origins for faster TTFB */}
+        <link rel="preconnect" href="https://fqqyovlzdzimiwfofdjk.supabase.co" />
+        <link rel="dns-prefetch" href="https://fqqyovlzdzimiwfofdjk.supabase.co" />
         {/* DEBT-108: Theme init script uses nonce so CSP allows it without unsafe-inline */}
         <script
           nonce={nonce}

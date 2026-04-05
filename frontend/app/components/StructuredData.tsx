@@ -1,10 +1,12 @@
-import Script from 'next/script';
-
 /**
  * GTM-COPY-006 AC6: Structured Data (JSON-LD) for Google & AI Search
  *
  * Includes Organization, WebSite (with SearchAction), and SoftwareApplication schemas.
  * FAQPage schema is rendered separately in /ajuda via FaqStructuredData.
+ *
+ * Uses native <script> instead of next/script — JSON-LD is not executable JS,
+ * so async loading via next/script adds unnecessary overhead and delays
+ * structured data availability for crawlers.
  */
 export function StructuredData() {
   // Organization Schema — AC6
@@ -85,22 +87,19 @@ export function StructuredData() {
 
   return (
     <>
-      <Script
-        id="organization-schema"
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(organizationSchema),
         }}
       />
-      <Script
-        id="website-schema"
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(websiteSchema),
         }}
       />
-      <Script
-        id="software-application-schema"
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(softwareApplicationSchema),

@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { BLOG_ARTICLES } from '@/lib/blog';
 import LandingNavbar from '../components/landing/LandingNavbar';
 import Footer from '../components/Footer';
@@ -45,8 +46,34 @@ export default function BlogPage() {
           </div>
         </div>
 
+        {/* SEO: Free tools cross-links — distributes PageRank to high-conversion pages */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
+          <h2 className="text-lg font-semibold text-ink mb-4">Ferramentas Gratuitas</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            {[
+              { href: '/calculadora', title: 'Calculadora de Licitacoes', desc: 'Estime valores e prazos com dados reais do PNCP' },
+              { href: '/cnpj', title: 'Consulta CNPJ B2G', desc: 'Veja o historico de licitacoes de qualquer empresa' },
+              { href: '/glossario', title: 'Glossario de Licitacoes', desc: '50+ termos explicados de forma pratica' },
+            ].map((tool) => (
+              <Link
+                key={tool.href}
+                href={tool.href}
+                className="group p-4 rounded-lg border border-[var(--border)] hover:border-brand-blue/30 hover:bg-surface-1 transition-colors"
+              >
+                <span className="text-xs font-medium px-2 py-0.5 rounded bg-brand-blue-subtle/50 text-brand-blue">
+                  Ferramenta
+                </span>
+                <h3 className="mt-2 text-sm font-semibold text-ink group-hover:text-brand-blue transition-colors">
+                  {tool.title}
+                </h3>
+                <p className="mt-1 text-xs text-ink-secondary">{tool.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+
         {/* Article Listing */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12">
           <BlogListClient articles={BLOG_ARTICLES} />
         </div>
       </main>

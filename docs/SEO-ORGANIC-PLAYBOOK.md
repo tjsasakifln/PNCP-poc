@@ -140,7 +140,7 @@ Landing setorial /licitacoes/[setor]
 ```
 
 - [x] **Verificar que a homepage** tem links explícitos para `/calculadora` e `/cnpj` — Navbar + Footer atualizados
-- [ ] **Verificar que cada artigo de blog** tem link para `/licitacoes/[setor]` correspondente
+- [x] **Verificar que cada artigo de blog** tem link para `/licitacoes/[setor]` correspondente — `RelatedPages.tsx` expandido: todos 15 setores × 27 UFs (removida limitação hardcoded de 5×5), ferramentas (calculadora, CNPJ) adicionadas como cross-links
 - [x] **Verificar que cada landing setorial** tem links para as 5 UFs principais (`/blog/licitacoes/[setor]/sp`, `/mg`, `/rs`, `/pr`, `/sc`) — Seção adicionada com link para calculadora
 
 ### 6. Indexabilidade e Canonical
@@ -151,6 +151,11 @@ Erros silenciosos de canonical ou `noindex` matam meses de trabalho sem aviso.
 - [x] **Garantir canonical correto** nas 405 páginas setor×UF — cada uma com sua própria URL canonical (não apontar para a landing setorial) — verificado: `blog/licitacoes/[setor]/[uf]/page.tsx` usa canonical self-referencing construído dos params
 - [x] **Verificar que ISR não quebra canonical** — Next.js ISR regenera metadata server-side com mesmos params; `generateMetadata` é async corretamente
 - [x] **Robots.txt** — confirmar que `/api/`, `/admin/`, `/auth/` estão bloqueados; que `/licitacoes/`, `/blog/`, `/calculadora/`, `/cnpj/`, `/casos/`, `/analise/` **não** estão bloqueados. Adicionadas rotas protegidas: `/dashboard`, `/conta`, `/buscar`, `/pipeline`, `/historico`, `/mensagens`, `/alertas`, `/onboarding`
+
+- [x] **Trailing slash hardening** — `trailingSlash: false` em `next.config.js` + redirect 301 em `middleware.ts` para URLs com trailing slash. Previne split de ranking signals nas 405+ páginas
+- [x] **PWA manifest** — `public/manifest.json` criado (name, icons, theme_color, lang pt-BR). Completa cadeia sw.js + offline.html existente
+- [x] **Preconnect hints** — `<link rel="preconnect">` e `<link rel="dns-prefetch">` para Supabase em `layout.tsx`. Reduz TTFB nas páginas programáticas
+- [x] **JSON-LD inline rendering** — `StructuredData.tsx` trocou `<Script>` (next/script, async) por `<script>` nativo. JSON-LD não é JS executável — loading async adicionava overhead desnecessário
 
 ```
 # Verificação rápida:
@@ -894,7 +899,7 @@ Antes de escrever qualquer artigo, verifique:
 
 - [x] **RSS feed** — verificar se `/blog/rss.xml` está no sitemap
 - [x] **Canonical tags** — confirmar que todas as 40 páginas têm `alternates.canonical`
-- [x] **Internal linking audit** — BlogArticleLayout sidebar agora inclui link para `/calculadora`; cada artigo já linka para 2+ relacionados via AC13
+- [x] **Internal linking audit** — BlogArticleLayout sidebar inclui `/calculadora`; `RelatedPages.tsx` expandido para 15×27 (era 5×5 hardcoded); ferramentas (calculadora, CNPJ) adicionadas como tipo 'ferramenta'; blog listing page tem seção "Ferramentas Gratuitas" cross-linking para `/calculadora`, `/cnpj`, `/glossario`; calculadora resultados linkam para `/blog/licitacoes/[setor]/[uf]` correspondente
 - [ ] **Core Web Vitals** — LCP < 2.5s, CLS < 0.1 nas páginas programáticas (PageSpeed Insights)
 
 ---

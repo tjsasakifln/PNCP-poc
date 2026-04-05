@@ -70,7 +70,7 @@ interface RelatedPagesProps {
 interface RelatedLink {
   title: string;
   href: string;
-  type: 'editorial' | 'panorama' | 'programmatic';
+  type: 'editorial' | 'panorama' | 'programmatic' | 'ferramenta';
 }
 
 function getEditorialLinks(sectorId: string): RelatedLink[] {
@@ -98,16 +98,9 @@ function getPanoramaLink(sectorId: string, sector: SectorMeta): RelatedLink | nu
   };
 }
 
-/** Phase 1 sectors × UFs that have /blog/licitacoes/ pages */
-const LICITACOES_SECTORS = ['informatica', 'saude', 'engenharia', 'facilities', 'software'];
-const LICITACOES_UFS = ['SP', 'RJ', 'MG', 'PR', 'RS'];
-
+/** All 15 sectors × 27 UFs now have /blog/licitacoes/ pages (P1 complete) */
 function getLicitacoesHref(sectorSlug: string, uf: string): string {
-  const sectorId = sectorSlug.replace(/-/g, '_');
-  if (LICITACOES_SECTORS.includes(sectorId) && LICITACOES_UFS.includes(uf)) {
-    return `/blog/licitacoes/${sectorSlug}/${uf.toLowerCase()}`;
-  }
-  return `/blog/programmatic/${sectorSlug}/${uf.toLowerCase()}`;
+  return `/blog/licitacoes/${sectorSlug}/${uf.toLowerCase()}`;
 }
 
 function getNeighboringUfLinks(
@@ -159,6 +152,12 @@ export default function RelatedPages({
   // 4. Related sector pages
   links.push(...getRelatedSectorLinks(sectorId));
 
+  // 5. Free tools (cross-link to high-conversion pages)
+  links.push(
+    { title: 'Calculadora de Licitacoes', href: '/calculadora', type: 'ferramenta' },
+    { title: 'Consulta CNPJ B2G', href: '/cnpj', type: 'ferramenta' },
+  );
+
   // Deduplicate and limit to 7
   const seen = new Set<string>();
   const unique = links.filter((link) => {
@@ -173,6 +172,7 @@ export default function RelatedPages({
     editorial: 'Artigo',
     panorama: 'Panorama',
     programmatic: 'Dados',
+    ferramenta: 'Ferramenta',
   };
 
   return (

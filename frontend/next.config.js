@@ -4,6 +4,7 @@ const { withSentryConfig } = require("@sentry/nextjs");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  trailingSlash: false,
   output: 'standalone',
   // Fix standalone output when repo has multiple lockfiles (root + frontend)
   // Without this, Next.js infers the wrong workspace root and server.js
