@@ -197,10 +197,12 @@ curl -X POST "https://api.indexnow.org/indexnow" \
 // Dispara automaticamente via GitHub Actions post-deploy
 ```
 
-- [ ] **Gerar e publicar IndexNow key** — arquivo estático em `public/[key].txt` _(instruções em `docs/seo/indexnow-api-key.md`; pendente: gerar key e commitar arquivo)_
-- [x] **GitHub Action de indexação pós-deploy** — `.github/workflows/indexnow.yml` criada (2026-04-05): diff `HEAD~1..HEAD`, mapeia `frontend/app/**/page.tsx` → URLs, POST para `api.indexnow.org` usando secret `INDEXNOW_KEY`
-- [ ] **Configurar secret `INDEXNOW_KEY`** no GitHub (`gh secret set INDEXNOW_KEY`)
-- [ ] **Verificar resposta 200** da API IndexNow após primeiro deploy com Action ativa
+- [x] **Gerar e publicar IndexNow key** (2026-04-05) — key `e9fd5881ff34cea8b67399d910212300` gerada via `python -c "import secrets; print(secrets.token_hex(16))"`. Arquivo hospedado em `frontend/public/e9fd5881ff34cea8b67399d910212300.txt`. Validado: `curl https://smartlic.tech/e9fd5881ff34cea8b67399d910212300.txt` → HTTP 200 retornando a key.
+- [x] **GitHub Action de indexação pós-deploy** (2026-04-05) — `.github/workflows/indexnow.yml` criada: diff `HEAD~1..HEAD`, mapeia `frontend/app/**/page.tsx` → URLs, POST para `api.indexnow.org` usando secret `INDEXNOW_KEY`.
+- [x] **Configurar secret `INDEXNOW_KEY`** (2026-04-05) — `gh secret set INDEXNOW_KEY --repo tjsasakifln/PNCP-poc` aplicado; `gh secret list` confirma.
+- [x] **Verificar resposta 202** da API IndexNow (2026-04-05) — submissão live `POST api.indexnow.org/indexnow` com `keyLocation=https://smartlic.tech/e9fd5881ff34cea8b67399d910212300.txt` e 3 URLs de teste (homepage, `/indicar`, `/blog/licitacoes/cidade/sao-paulo`) → HTTP 202 Accepted. Pipeline IndexNow ativo end-to-end.
+
+> **Nota operacional (2026-04-05):** Primeiro deploy (`9f9c3289`) serviu o arquivo da key como 404 — `railway ssh` confirmou que o container não tinha o arquivo em `/app/public/` apesar de `robots.txt` estar presente. Causa: Docker layer cache da Railway não invalidou a layer `COPY` apesar do conteúdo ter mudado. Resolução: bump de `ARG CACHEBUST` em `frontend/Dockerfile` (commit `b6f6ac50`) forçou rebuild completo, resolvendo. Conforme pattern documentado em CLAUDE.md > Railway Deploy Rules.
 
 **Google Ping — notificação de sitemap atualizado:**
 
@@ -1373,7 +1375,7 @@ Quando amigo converte → quem indicou ganha 1 mês grátis
 - [x] **Webhook Stripe** para creditar mês grátis automaticamente (2026-04-05) — `customer.subscription.created` roteado para `_handle_subscription_created` → `_credit_referral_conversion`: lê `metadata.referral_code`, marca registro como `converted`, estende `trial_end` do referrer via `stripe.Subscription.modify(..., proration_behavior='none')`, dispara email. Arquivo: `backend/webhooks/handlers/subscription.py`.
 - [x] **Fluxo signup com `?ref=CODE`** (2026-04-05) — `app/signup/page.tsx` persiste código em localStorage, chama `/api/referral/redeem` após signup bem-sucedido, limpa storage. Não bloqueia signup em falha.
 - [x] **Testes backend** — `backend/tests/test_referral.py` com 8 tests (code generation, stats, redeem, auth mock via `dependency_overrides`), 100% pass.
-- [ ] **Aplicar migration** — `supabase db push` (arquivo criado, aplicação manual pendente).
+- [x] **Aplicar migration** (2026-04-05) — aplicada automaticamente pelo `deploy.yml > Apply Pending Migrations` (23s) após push do commit `68bd0a75`. Validação via `supabase db query --linked`: tabela `public.referrals` com 7 colunas, `rls_enabled=true`, 3 policies (`referrals_select_own`, `referrals_insert_own`, `referrals_service_all`), função `generate_referral_code()` retornando código `YLYJGODJ` (8 chars alfanuméricos).
 - [ ] **Verificar rastreamento** via Mixpanel: eventos `referral_shared`, `referral_signed_up`, `referral_converted`
 
 ---
@@ -1554,6 +1556,7 @@ Execução simultânea de 5 frentes atacando as ações de maior ROI ainda não 
 - 3 falhas em `test_blog_stats::TestPanoramaStats::*` e `test_openapi_schema_matches_snapshot` confirmadas como **pre-existentes** via `git stash` (reproduziram sem as mudanças). **Zero regressões introduzidas.**
 
 ### Pendências manuais
-- Aplicar migration: `supabase db push` em `20260405100000_referrals.sql`
-- Gerar `INDEXNOW_KEY` + commitar `frontend/public/<key>.txt` (instruções em `docs/seo/indexnow-api-key.md`)
-- Executar ações off-page (Frente 5) conforme playbooks prontos em `docs/seo/`
+- ~~Aplicar migration: `supabase db push` em `20260405100000_referrals.sql`~~ → **CONCLUÍDO (2026-04-05)** via `deploy.yml > Apply Pending Migrations`; tabela + RLS + função validadas.
+- ~~Gerar `INDEXNOW_KEY` + commitar `frontend/public/<key>.txt`~~ → **CONCLUÍDO (2026-04-05)**: key `e9fd5881ff34cea8b67399d910212300`, GH Secret configurado, pipeline validado end-to-end (curl HTTP 200, IndexNow submission HTTP 202).
+- Plugar email Day-7 de referral na sequência de onboarding existente (templates prontos em `backend/templates/emails/referral_{welcome,converted}.py`).
+- Executar ações off-page (Frente 5) conforme playbooks prontos em `docs/seo/` (Product Hunt, G2, testimonials, LinkedIn, relatório Panorama T1).
