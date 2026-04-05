@@ -32,6 +32,17 @@ const UFS = [
   'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
 ];
 
+// Preposição correta por UF (contração de "em" com artigo definido)
+const PREP_UF: Record<string, string> = {
+  AC: 'no', AM: 'no', AP: 'no', BA: 'na', CE: 'no', DF: 'no',
+  ES: 'no', MA: 'no', MT: 'no', MS: 'no', PA: 'no', PB: 'na',
+  PI: 'no', PR: 'no', RJ: 'no', RN: 'no', RS: 'no',
+  // Sem artigo: AL, GO, MG, PE, RO, RR, SC, SE, SP, TO → "em"
+};
+function prepUF(uf: string): string {
+  return PREP_UF[uf] ?? 'em';
+}
+
 interface DadosCalculadora {
   total_editais_mes: number;
   avg_value: number;
@@ -305,7 +316,7 @@ export default function CalculadoraClient() {
           {/* Shock card */}
           <div className="bg-gradient-to-br from-red-600 to-orange-500 rounded-2xl p-8 text-white text-center shadow-xl">
             <p className="text-lg opacity-90 mb-2">
-              Valor de licitações de {resultado.dados.setor_name} em {resultado.dados.uf} que sua equipe
+              Valor de licitações de {resultado.dados.setor_name} {prepUF(resultado.dados.uf)} {resultado.dados.uf} que sua equipe
             </p>
             <p className="text-xl font-bold opacity-90 mb-4">NÃO está analisando por mês</p>
             <p className="text-5xl sm:text-6xl font-black tracking-tight">
@@ -316,7 +327,7 @@ export default function CalculadoraClient() {
           {/* Breakdown */}
           <div className="bg-gray-50 rounded-xl p-6 space-y-3">
             <p className="text-gray-700">
-              Seu setor tem <strong>{resultado.totalEditais} editais/mês</strong> nesta UF — dados reais do PNCP
+              Seu setor tem <strong>{resultado.totalEditais} editais/mês</strong> {prepUF(resultado.dados.uf)} {resultado.dados.uf} — dados reais do PNCP
             </p>
             <p className="text-gray-700">
               Sua equipe cobre <strong>{resultado.coberturaAtual.toFixed(0)}%</strong> do total disponível
