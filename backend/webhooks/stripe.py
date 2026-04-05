@@ -43,6 +43,7 @@ from webhooks.handlers.checkout import (  # noqa: F401
     _create_partner_referral_async,
 )
 from webhooks.handlers.subscription import (  # noqa: F401
+    handle_subscription_created as _handle_subscription_created,
     handle_subscription_updated as _handle_subscription_updated,
     handle_subscription_deleted as _handle_subscription_deleted,
     _mark_partner_referral_churned,
@@ -182,6 +183,8 @@ async def stripe_webhook(request: Request):
                 await _handle_async_payment_succeeded(sb, event)
             elif event.type == "checkout.session.async_payment_failed":
                 await _handle_async_payment_failed(sb, event)
+            elif event.type == "customer.subscription.created":
+                await _handle_subscription_created(sb, event)
             elif event.type == "customer.subscription.updated":
                 await _handle_subscription_updated(sb, event)
             elif event.type == "customer.subscription.deleted":

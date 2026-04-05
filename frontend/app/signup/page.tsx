@@ -152,6 +152,51 @@ export default function SignupPage() {
     }
   };
 
+  // SEO-PLAYBOOK Frente 2: persist ?ref=CODE for referral program
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get("ref");
+    if (refCode && /^[A-Z0-9]{8}$/i.test(refCode)) {
+      safeSetItem("referral_code", refCode.toUpperCase());
+    }
+  }, []);
+
+  // SEO-PLAYBOOK Frente 2: once the user is authenticated AND a referral_code
+  // is in localStorage, call /api/referral/redeem to register the conversion.
+  // Never blocks signup flow — failures are silently logged.
+  useEffect(() => {
+    if (!authSession?.access_token || !authSession.user?.id) return;
+    const code = safeGetItem("referral_code");
+    if (!code) return;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/referral/redeem", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authSession.access_token}`,
+          },
+          body: JSON.stringify({
+            code,
+            referred_user_id: authSession.user.id,
+          }),
+        });
+        if (!res.ok) {
+          console.warn("[signup] referral redeem non-ok", res.status);
+        }
+      } catch (e) {
+        console.warn("[signup] referral redeem failed", e);
+      } finally {
+        try {
+          localStorage.removeItem("referral_code");
+        } catch {
+          /* ignore */
+        }
+      }
+    })();
+  }, [authSession]);
+
   // STORY-323 AC16: Detect ?partner=slug and persist to cookie/localStorage
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

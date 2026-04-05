@@ -81,6 +81,154 @@ async def handle_subscription_updated(sb, event: stripe.Event) -> None:
     await invalidate_user_caches(user_id, f"Subscription updated: billing_period={billing_period}")
 
 
+async def handle_subscription_created(sb, event: stripe.Event) -> None:
+    """
+    Handle customer.subscription.created event.
+
+    SEO-PLAYBOOK Referral: If `metadata.referral_code` is present, mark the
+    matching referral row as converted and credit the referrer with 30 extra
+    days of trial_end on their active subscription (Stripe handles the rest
+    of the prorata automatically on the next invoice).
+    """
+    subscription_data = event.data.object
+    metadata = subscription_data.get("metadata") or {}
+    referral_code = (metadata.get("referral_code") or "").strip().upper()
+
+    if not referral_code:
+        return
+
+    logger.info(f"Subscription created with referral_code={referral_code}")
+
+    try:
+        _credit_referral_conversion(sb, referral_code, subscription_data)
+    except Exception:
+        # Never let referral crediting break the webhook
+        logger.exception("Failed to credit referral for code %s", referral_code)
+
+
+def _credit_referral_conversion(sb, referral_code: str, subscription_data) -> None:
+    """Mark referral row converted + extend referrer's trial_end by 30 days.
+
+    Defensive: if referrer has no active Stripe subscription we still mark
+    the row as ``converted`` so the credit can be applied on their next
+    subscription (the app-level UI will show the accumulated credit).
+    """
+    # 1. Look up the referral row
+    row_result = (
+        sb.table("referrals")
+        .select("id, referrer_user_id, status, referred_user_id")
+        .eq("code", referral_code)
+        .limit(1)
+        .execute()
+    )
+    rows = getattr(row_result, "data", []) or []
+    if not rows:
+        logger.info("Referral code not found at conversion: %s", referral_code)
+        return
+
+    row = rows[0]
+    if row["status"] in ("converted", "credited"):
+        logger.info("Referral already credited: %s", referral_code)
+        return
+
+    from datetime import datetime, timezone
+
+    sb.table("referrals").update(
+        {
+            "status": "converted",
+            "converted_at": datetime.now(timezone.utc).isoformat(),
+        }
+    ).eq("id", row["id"]).execute()
+
+    referrer_user_id = row["referrer_user_id"]
+
+    # 2. Find referrer's active Stripe subscription
+    ref_sub_result = (
+        sb.table("user_subscriptions")
+        .select("stripe_subscription_id")
+        .eq("user_id", referrer_user_id)
+        .eq("is_active", True)
+        .limit(1)
+        .execute()
+    )
+    ref_sub_rows = getattr(ref_sub_result, "data", []) or []
+    if not ref_sub_rows or not ref_sub_rows[0].get("stripe_subscription_id"):
+        logger.info(
+            "Referrer %s has no active Stripe subscription — credit queued for next cycle",
+            referrer_user_id,
+        )
+        return
+
+    stripe_sub_id = ref_sub_rows[0]["stripe_subscription_id"]
+
+    # 3. Extend trial_end by 30 days on the referrer's subscription.
+    #    Stripe applies this as a free-period extension automatically.
+    try:
+        import stripe as stripe_mod
+        existing = stripe_mod.Subscription.retrieve(stripe_sub_id)
+        base = existing.get("trial_end") or existing.get("current_period_end")
+        if not base:
+            logger.warning(
+                "Cannot determine base timestamp for trial extension on %s", stripe_sub_id
+            )
+            return
+        new_trial_end = int(base) + 30 * 24 * 60 * 60
+        stripe_mod.Subscription.modify(
+            stripe_sub_id,
+            trial_end=new_trial_end,
+            proration_behavior="none",
+        )
+        logger.info(
+            "Extended trial_end by 30d on %s for referrer %s",
+            stripe_sub_id,
+            referrer_user_id,
+        )
+
+        sb.table("referrals").update({"status": "credited"}).eq("id", row["id"]).execute()
+
+        _send_referral_converted_email(sb, referrer_user_id)
+    except Exception:
+        logger.exception("Stripe trial extension failed for %s", stripe_sub_id)
+
+
+def _send_referral_converted_email(sb, referrer_user_id: str) -> None:
+    """Fire-and-forget: notify the referrer they earned 1 free month."""
+    try:
+        from email_service import send_email_async
+        from templates.emails.referral_converted import render_referral_converted_email
+
+        profile = (
+            sb.table("profiles")
+            .select("email, full_name")
+            .eq("id", referrer_user_id)
+            .single()
+            .execute()
+        )
+        if not profile.data or not profile.data.get("email"):
+            return
+
+        email = profile.data["email"]
+        name = profile.data.get("full_name") or email.split("@")[0]
+
+        credits_result = (
+            sb.table("referrals")
+            .select("id", count="exact")
+            .eq("referrer_user_id", referrer_user_id)
+            .eq("status", "credited")
+            .execute()
+        )
+        credits_total = getattr(credits_result, "count", None) or 1
+
+        send_email_async(
+            to=email,
+            subject="Parabéns! Você ganhou 1 mês grátis no SmartLic",
+            html=render_referral_converted_email(user_name=name, credits_total=credits_total),
+            tags=[{"name": "category", "value": "referral_converted"}],
+        )
+    except Exception:
+        logger.exception("Failed to send referral converted email to %s", referrer_user_id)
+
+
 async def handle_subscription_deleted(sb, event: stripe.Event) -> None:
     """
     Handle customer.subscription.deleted event.
