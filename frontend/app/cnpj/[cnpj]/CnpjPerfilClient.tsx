@@ -7,6 +7,8 @@ interface Contrato {
   valor: number | null;
   data_inicio: string | null;
   descricao: string;
+  esfera?: string | null;
+  uf?: string | null;
 }
 
 interface Empresa {
@@ -186,6 +188,7 @@ export default function CnpjPerfilClient({ perfil }: { perfil: PerfilB2G }) {
               <thead>
                 <tr className="border-b-2 border-gray-200">
                   <th className="text-left py-3 px-2 font-semibold text-gray-600">Órgão</th>
+                  <th className="text-left py-3 px-2 font-semibold text-gray-600">Esfera</th>
                   <th className="text-left py-3 px-2 font-semibold text-gray-600">Descrição</th>
                   <th className="text-right py-3 px-2 font-semibold text-gray-600">Valor</th>
                   <th className="text-right py-3 px-2 font-semibold text-gray-600">Data</th>
@@ -195,6 +198,7 @@ export default function CnpjPerfilClient({ perfil }: { perfil: PerfilB2G }) {
                 {contratos.map((c, i) => (
                   <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-2 max-w-[200px] truncate">{c.orgao}</td>
+                    <td className="py-3 px-2 whitespace-nowrap text-gray-500">{c.esfera || '—'}{c.uf ? ` (${c.uf})` : ''}</td>
                     <td className="py-3 px-2 max-w-[300px] truncate text-gray-600">{c.descricao}</td>
                     <td className="py-3 px-2 text-right whitespace-nowrap">
                       {c.valor ? formatBRL(c.valor) : '—'}

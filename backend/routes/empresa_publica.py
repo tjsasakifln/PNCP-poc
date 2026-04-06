@@ -28,6 +28,9 @@ _perfil_cache: dict[str, tuple[dict, float]] = {}
 _CNPJ_RE = re.compile(r"^\d{14}$")
 _BRASILAPI_TIMEOUT = 15
 _PT_TIMEOUT = 20
+_PNCP_TIMEOUT = 25
+_PNCP_BASE = "https://pncp.gov.br/api/consulta/v1"
+_ESFERA_LABELS = {"F": "Federal", "E": "Estadual", "M": "Municipal", "D": "Distrital"}
 
 
 # ---------------------------------------------------------------------------
@@ -39,6 +42,8 @@ class ContratoPublico(BaseModel):
     valor: Optional[float] = None
     data_inicio: Optional[str] = None
     descricao: str
+    esfera: Optional[str] = None
+    uf: Optional[str] = None
 
 
 class EmpresaInfo(BaseModel):
@@ -125,7 +130,111 @@ async def _fetch_brasilapi(cnpj: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Portal da Transparência — contracts
+# PNCP — contracts (all spheres: Federal, Estadual, Municipal, Distrital)
+# ---------------------------------------------------------------------------
+
+def _normalize_cnpj(raw: str) -> str:
+    return raw.replace(".", "").replace("/", "").replace("-", "")
+
+
+async def _fetch_contratos_pncp(cnpj: str) -> list[dict]:
+    """Fetch contracts from PNCP (all government spheres).
+
+    PNCP /contratos ignores cnpjFornecedor server-side, so we filter
+    client-side by niFornecedor. See collect-report-data.py for details.
+    """
+    now = datetime.now(timezone.utc)
+    data_fim = now.strftime("%Y%m%d")
+    data_ini = (now - timedelta(days=730)).strftime("%Y%m%d")
+
+    matched: list[dict] = []
+    max_pages = 5
+
+    try:
+        async with httpx.AsyncClient(timeout=_PNCP_TIMEOUT) as client:
+            page = 1
+            while page <= max_pages:
+                resp = await client.get(
+                    f"{_PNCP_BASE}/contratos",
+                    params={
+                        "cnpjFornecedor": cnpj,
+                        "dataInicial": data_ini,
+                        "dataFinal": data_fim,
+                        "pagina": page,
+                        "tamanhoPagina": 50,
+                    },
+                )
+                if resp.status_code != 200:
+                    logger.warning("PNCP contratos %d for %s p=%d", resp.status_code, cnpj, page)
+                    break
+
+                body = resp.json()
+                items = body.get("data", body) if isinstance(body, dict) else body
+                if not isinstance(items, list) or not items:
+                    break
+
+                total_records = body.get("totalRegistros", 0) if isinstance(body, dict) else 0
+
+                for c in items:
+                    ni = _normalize_cnpj(c.get("niFornecedor") or "")
+                    if ni and ni != cnpj:
+                        continue
+
+                    orgao = c.get("orgaoEntidade", {})
+                    unidade = c.get("unidadeOrgao", {})
+                    esfera_id = orgao.get("esferaId", "")
+
+                    valor = None
+                    for vf in ("valorGlobal", "valorInicial"):
+                        v = c.get(vf)
+                        if v is not None:
+                            try:
+                                fv = float(v)
+                                if fv > 0:
+                                    valor = fv
+                                    break
+                            except (ValueError, TypeError):
+                                pass
+
+                    data_assinatura = c.get("dataAssinatura") or ""
+                    if len(data_assinatura) > 10:
+                        data_assinatura = data_assinatura[:10]
+
+                    descricao = c.get("objetoContrato") or c.get("informacaoComplementar") or "Sem descrição"
+                    if len(descricao) > 200:
+                        descricao = descricao[:197] + "..."
+
+                    matched.append({
+                        "orgao": unidade.get("nomeUnidade", "") or orgao.get("razaoSocial", "Não informado"),
+                        "valor": valor,
+                        "data_inicio": data_assinatura,
+                        "descricao": descricao,
+                        "esfera": _ESFERA_LABELS.get(esfera_id, esfera_id),
+                        "uf": unidade.get("ufSigla", ""),
+                    })
+
+                total_pages = body.get("totalPaginas", 1) if isinstance(body, dict) else 1
+
+                # Early termination: API not filtering, too many unrelated records
+                if total_records > 5000 and not matched and page >= 3:
+                    logger.warning(
+                        "PNCP %d records but 0 matches for %s after %d pages — aborting",
+                        total_records, cnpj, page,
+                    )
+                    break
+
+                if page >= total_pages:
+                    break
+                page += 1
+
+    except Exception as e:
+        logger.warning("PNCP contratos error for %s: %s", cnpj, e)
+
+    return matched
+
+
+# ---------------------------------------------------------------------------
+# Portal da Transparência — contracts (federal only, fallback)
 # ---------------------------------------------------------------------------
 
 async def _fetch_contratos_pt(cnpj: str) -> list[dict]:
@@ -204,50 +313,65 @@ async def _build_perfil(cnpj: str) -> dict:
     setor_id = map_cnae_to_setor(cnae_str)
     setor_nome = get_setor_name(setor_id)
 
-    # 3. Contracts from Portal da Transparência
-    contratos_raw = await _fetch_contratos_pt(cnpj)
+    # 3. Contracts — PNCP primary (all spheres), PT fallback (federal only)
+    contratos_pncp = await _fetch_contratos_pncp(cnpj)
 
-    # Parse contracts — last 24 months
-    cutoff = datetime.now(timezone.utc) - timedelta(days=730)
-    contratos_parsed: list[dict] = []
+    if contratos_pncp:
+        contratos_all = contratos_pncp
+        fonte = "PNCP"
+    else:
+        # Fallback to Portal da Transparência (federal only)
+        contratos_pt_raw = await _fetch_contratos_pt(cnpj)
+        contratos_all = []
+        for c in contratos_pt_raw:
+            orgao_data = c.get("unidadeGestora", {})
+            valor = None
+            for vf in ("valorFinalCompra", "valorInicial", "valorInicialCompra"):
+                if c.get(vf):
+                    try:
+                        fv = float(c[vf])
+                        if fv > 0:
+                            valor = fv
+                            break
+                    except (ValueError, TypeError):
+                        pass
+            data_inicio = c.get("dataInicioVigencia") or c.get("dataFimCompra") or ""
+            if data_inicio and len(data_inicio) > 10:
+                data_inicio = data_inicio[:10]
+            descricao = c.get("objeto") or c.get("descricaoObjeto") or "Sem descrição"
+            if len(descricao) > 200:
+                descricao = descricao[:197] + "..."
+            contratos_all.append({
+                "orgao": orgao_data.get("nome") or orgao_data.get("nomeOrgao") or "Não informado",
+                "valor": valor,
+                "data_inicio": data_inicio,
+                "descricao": descricao,
+                "esfera": "Federal",
+                "uf": orgao_data.get("uf") or "",
+            })
+        fonte = "PT"
+
     ufs_set: set[str] = set()
     valor_total = 0.0
+    contratos_parsed: list[dict] = []
 
-    for c in contratos_raw:
-        orgao_data = c.get("unidadeGestora", {})
-        orgao_nome = orgao_data.get("nome") or orgao_data.get("nomeOrgao") or "Não informado"
-
-        valor = None
-        for vf in ("valorFinalCompra", "valorInicial", "valorInicialCompra"):
-            if c.get(vf) and float(c[vf]) > 0:
-                valor = float(c[vf])
-                break
-
-        data_inicio = c.get("dataInicioVigencia") or c.get("dataFimCompra") or ""
-        if data_inicio and len(data_inicio) > 10:
-            data_inicio = data_inicio[:10]
-
-        descricao = c.get("objeto") or c.get("descricaoObjeto") or "Sem descrição"
-        if len(descricao) > 200:
-            descricao = descricao[:197] + "..."
-
-        uf_contrato = orgao_data.get("uf") or ""
+    for c in contratos_all:
+        uf_contrato = c.get("uf") or ""
         if uf_contrato:
             ufs_set.add(uf_contrato)
-
-        if valor:
-            valor_total += valor
-
+        if c.get("valor"):
+            valor_total += c["valor"]
         contratos_parsed.append({
-            "orgao": orgao_nome,
-            "valor": valor,
-            "data_inicio": data_inicio,
-            "descricao": descricao,
+            "orgao": c["orgao"],
+            "valor": c.get("valor"),
+            "data_inicio": c.get("data_inicio"),
+            "descricao": c["descricao"],
+            "esfera": c.get("esfera"),
+            "uf": uf_contrato or None,
         })
 
-    # Limit to 10 most recent
     contratos_parsed = contratos_parsed[:10]
-    total_24m = len(contratos_raw)
+    total_24m = len(contratos_all)
 
     # 4. Score
     if total_24m >= 5:
@@ -277,5 +401,5 @@ async def _build_perfil(cnpj: str) -> dict:
         "total_contratos_24m": total_24m,
         "valor_total_24m": round(valor_total, 2),
         "ufs_atuacao": sorted(ufs_set),
-        "aviso_legal": "Dados de fontes públicas: CNPJ aberto (BrasilAPI) e Portal da Transparência do Governo Federal.",
+        "aviso_legal": "Dados de fontes públicas: CNPJ aberto (BrasilAPI) e PNCP/Portal da Transparência.",
     }

@@ -19,6 +19,8 @@ interface PerfilB2G {
     valor: number | null;
     data_inicio: string | null;
     descricao: string;
+    esfera?: string | null;
+    uf?: string | null;
   }>;
   score: string;
   setor_detectado: string;
