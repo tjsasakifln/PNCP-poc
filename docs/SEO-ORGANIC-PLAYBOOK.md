@@ -25,6 +25,7 @@
 | [5](#parte-5--anti-patterns) | Anti-patterns | O que nunca fazer |
 | [6](#parte-6--off-page-backlinks-e-autoridade-de-domínio) | Off-Page | Backlinks, digital PR, diretórios — **o que faltava** |
 | [7](#parte-7--distribuição-produto-como-canal) | Distribuição | LinkedIn, P6 viral, YouTube, referral |
+| [8](#parte-8--alternativas-on-page-para-ações-off-page) | On-Page Alt. | **Substitutos on-page para cada ação off-page — implementação prioritária** |
 
 ---
 
@@ -1455,6 +1456,211 @@ Os três ou não publica.
 - **Não confundir DA/DR alto de diretório com link de qualidade editorial.** Links de perfis (Product Hunt, G2, Capterra) têm DA alto mas são nofollow ou de baixo peso editorial. Valem pela tração inicial de autoridade e pelo tráfego qualificado direto. O objetivo de médio prazo são links editoriais (portais de notícias, blogs técnicos de licitação) — que vêm via digital PR (seção 6.3).
 
 - **Não esperar ter "conteúdo perfeito" para começar o LinkedIn.** Posts imperfeitos publicados hoje valem mais que posts perfeitos publicados em 30 dias. O algoritmo do LinkedIn favorece consistência e engajamento, não polimento.
+
+---
+
+## Parte 8 — Alternativas On-Page para Ações Off-Page
+
+> **Decisão estratégica (2026-04-06):** As ações off-page das Partes 6 e 7.2/7.3 + aceleradores A6/A7/A8
+> dependem de outreach manual, cadastro em plataformas externas, envio de emails a terceiros e
+> distribuição em redes sociais. Para o momento atual (site novo, 2/602 páginas indexadas, zero
+> backlinks, pre-revenue, time de 1 pessoa), essas ações são **indesejáveis**. Esta seção documenta
+> substitutos on-page de resultado equivalente ou superior para cada uma delas.
+>
+> **Fundamento (pesquisa de mercado 2026):** Backlinks representam ~45% dos sinais off-page (vs 80% em
+> 2012), enquanto brand mentions + entity signals = 55%. Sites com cobertura topical profunda ranqueiam
+> 3x mais rápido que sites com backlinks mas cobertura rasa. Para sites novos, topical authority +
+> internal linking + structured data + entity SEO são mais eficazes que link building nos primeiros 90 dias.
+>
+> Fontes:
+> - [SearchAtlas: Backlinks vs Brand Mentions 2026](https://searchatlas.com/blog/backlinks-to-mentions-evolution-off-page-signals-2026/)
+> - [ClickRank: Topical Authority 2026](https://www.clickrank.ai/topical-authority/)
+> - [BacklinkGen: Topical Authority Beats Backlinks](https://backlinkgen.com/blog/why-topical-authority-beats-backlinks-in-2026-the-new-seo-trust-model-explained/)
+> - [RankForte: SEO Without Link Building](https://rankforte.com/blog/seo-without-link-building/)
+> - [ClickPoint: Entity Authority 2026](https://blog.clickpointsoftware.com/from-domain-authority-to-entity-authority-2026-google-discover-update)
+
+### Mapa de Substituições
+
+| Off-Page (substituída) | On-Page (substituta) | Páginas Novas | Esforço | Impacto vs Original |
+|------------------------|---------------------|---------------|---------|---------------------|
+| **O1+O2:** Perfis (6.1) + Testimonials (6.2) | **S1:** Glossário Licitações (50-80 termos) | 50-80 | 2-3 sem | Superior |
+| **O3:** Digital PR distribuição (6.3) | **S2:** Data Hub `/dados` + Dataset Schema | 1 | 1 sem | Equivalente |
+| **O4+O7:** Fóruns (6.4) + Reddit (A6) | **S3:** Comparador + Alertas Públicos + RSS | 405+ | 2 sem | Superior |
+| **O5+O9+O10+O11:** LinkedIn (7.2, A8, §7) | **S4:** Blog Weekly Digest no domínio | 52/ano | 1d setup + semanal | Superior |
+| **O6:** YouTube Shorts (7.3) | **S5:** Demo Interativo + Video Embeds | 1-3 | 1 sem | Equivalente |
+| **O8:** HARO/Qwoted (A7) | **S6:** Estatísticas Citáveis + Embed Widget | 1 | 3-5d | Superior |
+
+**Total:** ~510-545 novas páginas · Zero dependência de terceiros · 6-8 semanas (vs 12+ de outreach contínuo)
+
+---
+
+### S1 — Glossário de Licitações Públicas (substitui O1 Perfis + O2 Testimonials)
+
+**O que:** Hub `/glossario` com 50-80 termos de licitações públicas (pregão eletrônico, inexigibilidade, SRP, ata de registro de preços, etc.), cada um com página dedicada `/glossario/[termo]`. Cada página inclui: definição, base legal (Lei 14.133), exemplo prático, dados ao vivo do datalake (quantos editais dessa modalidade abriram este mês), links internos para páginas setor×UF relevantes.
+
+**Por que equivalente/superior:**
+- 60% dos Knowledge Panels em 2026 são acionados por menções de marca + structured data, não por backlinks
+- Glossários geram **backlinks naturais** — professores, sites de licitação e concorrentes citam definições sem que ninguém peça
+- 50-80 novas páginas com internal linking bidirecional = equivalente a 7-10 backlinks DA60+ em distribuição de PageRank interno
+- Long-tail **KD < 5** para "o que é pregão eletrônico", "inexigibilidade de licitação" — ranqueiam em 2-4 semanas mesmo sem DA
+- Cada página é candidata a **AI Overviews** (formato pergunta + resposta direta + dado verificável)
+
+**Implementação:**
+- Arquivo: `frontend/app/glossario/[termo]/page.tsx` (ISR 24h)
+- Dados: `backend/sectors_data.yaml` + termos legais da Lei 14.133
+- Schema: `DefinedTerm` + `FAQPage` JSON-LD
+- Internal links: blog → glossário relevante, glossário → páginas setor×UF
+- Sitemap: 50-80 URLs, `changeFrequency: 'weekly'`
+
+**Impacto:** +50-80 páginas indexáveis, +2K-5K impressões/mês (30d), backlinks naturais 3-5/mês após 60d.
+
+**Status:** [ ] Pendente implementação
+
+---
+
+### S2 — Data Hub Público `/dados` (substitui O3 Digital PR distribuição)
+
+**O que:** Página pública `/dados` que expõe dados agregados do datalake em formato explorável: gráficos interativos por setor, UF, modalidade, tendência temporal. Sempre atualizada (ISR 6h) com dados ao vivo. Download de CSV/JSON para pesquisadores e jornalistas (email-gated para captura de leads).
+
+**Por que equivalente/superior:**
+- "Quando sua marca publica os únicos dados públicos sobre um tema, você se torna a fonte que todo artigo linka" — data journalism sem outreach
+- **Dataset Schema markup** (`schema.org/Dataset`) é priorizado pelo Google Dataset Search e AI Overviews
+- Jornalistas encontram os dados organicamente via Google — elimina pitch por email
+- O relatório Panorama já existe como PDF — esta alternativa torna os dados **live e permanentes**
+- **Google Discover** prioriza dados proprietários atualizados com `max-image-preview:large`
+
+**Implementação:**
+- Arquivo: `frontend/app/dados/page.tsx` (ISR 6h)
+- Backend: `GET /v1/dados/agregados` (dados agregados do `pncp_raw_bids`, sem PII)
+- Schema: `Dataset` + `DataCatalog` JSON-LD com `temporalCoverage`, `spatialCoverage`
+- Visualização: Recharts (já no stack)
+- Download: CSV/JSON export (email-gated)
+- Internal links: `/dados` → landing setorial, artigos → `/dados`
+
+**Impacto:** +1 página de altíssimo valor SEO, candidata a AI Overviews, Google Discover, +100-300 leads/mês via download gated.
+
+**Status:** [ ] Pendente implementação
+
+---
+
+### S3 — Comparador + Alertas Públicos + RSS (substitui O4 Fóruns + O7 Reddit)
+
+**O que:**
+1. **Comparador de Editais** (`/comparador`): ferramenta pública para comparar 2-3 editais lado a lado nos 4 fatores de viabilidade. Zero login. Resultado compartilhável via URL.
+2. **Alertas Públicos** (`/alertas-publicos/[setor]/[uf]`): página pública (sem login) com editais mais recentes por setor×UF, atualizada em tempo real. RSS feed para consumo automático por agregadores.
+
+**Por que equivalente/superior:**
+- Ferramentas gratuitas geram **menções orgânicas** em fóruns e comunidades sem postar manualmente
+- **RSS feed** permite que agregadores e sites de licitação consumam e citem a fonte automaticamente
+- URLs compartilháveis substituem seeding manual no Reddit/Facebook — usuários compartilham quando a ferramenta resolve um problema real
+- Cada ferramenta gratuita = sinais de entidade (brand mentions não-linkadas = 55% dos sinais off-page em 2026)
+- **KD < 3** para "comparar editais de licitação", "alertas de licitação [setor] [UF]"
+
+**Implementação:**
+- `/comparador`: client-side comparison via API existente
+- `/alertas-publicos/[setor]/[uf]`: SSR + ISR 1h, dados do datalake, RSS via route handler
+- Schema: `WebApplication` (comparador) + `DataFeed` (alertas)
+- 405+ páginas de alertas (15 setores × 27 UFs) + 1 comparador
+
+**Impacto:** +405 novas páginas indexáveis, RSS consumption por 5-10 sites em 30d, menções orgânicas em fóruns sem intervenção.
+
+**Status:** [ ] Pendente implementação
+
+---
+
+### S4 — Blog Weekly Digest no Domínio (substitui O5 LinkedIn + O9 LinkedIn articles + O10/O11 compartilhamentos)
+
+**O que:** Blog semanal `/blog/weekly/[yyyy-ww]` com insights que iriam para o LinkedIn, publicados no próprio domínio:
+- "Esta semana no PNCP: X editais, Y setores em alta, Z UFs com crescimento"
+- Dados exclusivos do datalake
+- Formato escaneável (tabelas, destaques, comparativos)
+
+**Por que equivalente/superior:**
+- Posts no LinkedIn **não geram equity SEO** — o conteúdo vive no domínio do LinkedIn (DR98 deles, não do SmartLic)
+- Blog semanal no domínio próprio acumula **topical authority** progressivamente
+- **Google Discover** favorece frequência editorial consistente + dados proprietários
+- 52 posts/ano = 52 URLs competindo por long-tail queries atuais ("licitações abril 2026", "pregão TI março 2026")
+- O founder pode compartilhar o link do blog no LinkedIn — tráfego flui para o domínio próprio
+
+**Implementação:**
+- Script: `backend/scripts/weekly_digest.py` (extrai stats do `pncp_raw_bids`, gera dados)
+- Arquivo: `frontend/app/blog/weekly/[slug]/page.tsx` (SSG/ISR)
+- Schema: `NewsArticle` + `Dataset` JSON-LD
+- Internal links: homepage "Trending" widget → último weekly, weekly → landing setoriais
+- Sitemap: `changeFrequency: 'weekly'`, `priority: 0.8`
+
+**Impacto:** +52 páginas/ano, Google Discover eligibility, freshness signal permanente, +5K-15K impressões/mês após 8 semanas.
+
+**Status:** [ ] Pendente implementação
+
+---
+
+### S5 — Demo Interativo + Video Embeds (substitui O6 YouTube Shorts)
+
+**O que:** Demos interativos embutidos no SmartLic ao invés de conteúdo em plataforma externa:
+1. **Demo interativo** `/demo` — simulação guiada do fluxo busca → resultado → viabilidade, sem login. Shepherd.js (já no stack).
+2. **OG Video meta tags** com preview animado (MP4) nas landing setoriais.
+3. **Video embeds** nos artigos de blog e cases hospedados no domínio (Supabase Storage), não YouTube.
+
+**Por que equivalente/superior:**
+- Vídeos no YouTube geram equity para o YouTube, não para smartlic.tech
+- Demo interativo no domínio próprio = **dwell time alto** (sinal de qualidade forte para Google), conversão direta
+- Embeds de vídeo aumentam time-on-page em 2.6x → sinal de engajamento positivo
+- `VideoObject` schema markup permite rich snippets de vídeo no Google sem canal YouTube
+
+**Implementação:**
+- `/demo`: Shepherd.js guided tour com dados mock realistas
+- OG video: `<meta property="og:video" />` com MP4 curto (15s) no Supabase Storage
+- Blog embeds: `<video>` tag com `.mp4` do Supabase Storage
+- Schema: `VideoObject` + `HowTo` JSON-LD
+
+**Impacto:** +30-50% dwell time em páginas com demo, rich snippets de vídeo no SERP, conversão direta sem intermediário.
+
+**Status:** [ ] Pendente implementação
+
+---
+
+### S6 — Estatísticas Citáveis com Embed Widget (substitui O8 HARO/Qwoted)
+
+**O que:** Página `/estatisticas` com dados mais citáveis do datalake em formato de cards embeddáveis (modelo Statista). Cada stat tem:
+- Número + contexto + fonte (PNCP) + data de atualização
+- Botão "Citar esta estatística" → snippet HTML com backlink automático
+- Botão "Copiar citação" (formato acadêmico: "SmartLic, 2026. Dados PNCP processados.")
+
+**Por que equivalente/superior:**
+- Elimina necessidade de responder queries de jornalistas — encontram os dados no Google e citam com snippet pronto
+- **Embed widget com backlink** garante que cada citação gera link de volta automaticamente
+- 60% dos Knowledge Panels em 2026 são acionados por menções de marca consistentes — cada citação é uma menção
+- Concorrentes não têm dados ao vivo do PNCP — **monopólio de fonte**
+
+**Implementação:**
+- Página: `frontend/app/estatisticas/page.tsx` (ISR 6h)
+- Endpoint: `GET /v1/stats/public` (dados agregados sem PII)
+- Embed widget: `<iframe>` ou `<blockquote>` com link canonical
+- Schema: `Dataset` + `StatisticalPopulation` JSON-LD
+
+**Impacto:** Backlinks naturais 5-10/mês após 90d (jornalistas citando), entity signals permanentes, zero outreach.
+
+**Status:** [ ] Pendente implementação
+
+---
+
+### Ordem de Execução Recomendada
+
+1. **S1 — Glossário** (maior impacto topical + KD mais baixo + backlinks naturais)
+2. **S4 — Weekly Digest** (setup rápido, acumula valor composto semanalmente)
+3. **S2 — Data Hub** (diferencial único, Google Discover eligible)
+4. **S6 — Estatísticas Citáveis** (complementa S2, gera backlinks passivos)
+5. **S3 — Comparador + Alertas** (maior volume de páginas, depende de S1/S4 para internal linking)
+6. **S5 — Demo Interativo** (conversão direta, menor prioridade SEO)
+
+### Verificação
+
+1. **Após S1:** `curl https://smartlic.tech/sitemap.xml | grep glossario` → 50+ URLs
+2. **Após S4:** GSC → Desempenho → filtrar `/blog/weekly/` → impressões crescentes
+3. **Após S2:** Google Dataset Search → "licitações Brasil 2026" → SmartLic aparece
+4. **Após S6:** Google Alerts "SmartLic" → menções em artigos sem outreach
+5. **Geral:** Ahrefs Webmaster → DR crescendo 2-3 pontos/mês via backlinks naturais
 
 ---
 
