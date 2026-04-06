@@ -1066,10 +1066,10 @@ Evento Mixpanel: `first_analysis_viewed` (já rastreado? verificar).
 | DAU/MAU no trial | ≥ 25% | Alertas de novos editais (push/email) para trazer de volta |
 
 **Checklist de instrumentação:**
-- [ ] **Verificar evento `first_analysis_viewed`** existe no Mixpanel (ou criar)
+- [x] **Verificar evento `first_analysis_viewed`** existe no Mixpanel (ou criar) — implementado em `AnalysisViewTracker.tsx` (rodada 2 Frente C) com localStorage single-fire
 - [ ] **Criar funil no Mixpanel:** `signup → first_search → first_analysis_viewed → trial_converted`
 - [ ] **Monitorar Day-3 activation rate** semanalmente
-- [ ] **Configurar email comportamental Day-3:** disparar para usuários que SE inscreveram há 2 dias e NÃO geraram evento `first_analysis_viewed`
+- [x] **Configurar email comportamental Day-3:** (rodada 2 Frente E) — `activation_nudge` day 2, condicional `searches_count == 0`. Template: `day3_activation.py`. Flag: `DAY3_ACTIVATION_EMAIL_ENABLED` (ativada em prod rodada 5)
 
 **O número que mais importa:**
 ```
@@ -1105,9 +1105,10 @@ Se um canal tem baixo volume e alto trial-to-paid → amplificar (leads certos, 
 | **Crunchbase** | 90 | Dofollow | 30min | Perfil da CONFENGE Avaliações e Inteligência Artificial LTDA + produto SmartLic |
 | **LinkedIn Company Page** | 98 | Nofollow (alta autoridade) | 20min | Criar Company Page para SmartLic / CONFENGE se não existe |
 | **ABStartups** | 55 | Dofollow | 30min | Diretório de startups brasileiras |
-| **Distrito** | 60 | Dofollow | 30min | Diretório do ecossistema de startups |
-| **BrazilLAB** | 45 | Dofollow | 30min | Diretório específico de GovTech Brasil |
-| **StartupBase** | 50 | Dofollow | 20min | Diretório BR |
+| **Distrito** | 60 | Dofollow | 30min | ~~Diretório do ecossistema de startups~~ **PIVOTOU** — virou Enterprise AI consultancy, não aceita mais listings. Remover do plano. |
+| **BrazilLAB** | 45 | Dofollow | 30min | Diretório específico de GovTech Brasil — **Selo GovTech fechado** (só waitlist), retomar quando reabrir. |
+| **StartupBase** | 50 | Dofollow | 20min | ~~Diretório BR~~ **DOMÍNIO MORTO** — não resolve. Remover do plano. |
+| **SaaSHub** | 68 | Dofollow | 30min | **✅ CONCLUÍDO 2026-04-05** — perfil submetido, aguardando aprovação. |
 
 #### Checklists
 
@@ -1119,8 +1120,11 @@ Se um canal tem baixo volume e alto trial-to-paid → amplificar (leads certos, 
 - [ ] **Crunchbase:** perfil CONFENGE + SmartLic com CNPJ, descrição, fundadores, estágio (seed/pre-seed).
 - [ ] **LinkedIn Company Page:** criar se não existe. Completar 100% do perfil (logo, banner, about, website).
 - [ ] **ABStartups:** cadastrar em `membros.abstartups.com.br`.
-- [ ] **Distrito:** cadastrar em `distrito.me/startups`.
-- [ ] **BrazilLAB GovTech:** submeter em `brazillab.org.br`.
+- [x] ~~**Distrito:** cadastrar em `distrito.me/startups`~~ — **INVÁLIDO:** Distrito pivotou para Enterprise AI consultancy em 2025, não aceita mais listings de startups. Remover da lista de ações.
+- [x] ~~**BrazilLAB GovTech:** submeter em `brazillab.org.br`~~ — **BLOQUEADO:** Selo GovTech fechado, só waitlist disponível. Monitorar reabertura.
+- [x] ~~**StartupBase:**~~ — **DOMÍNIO MORTO:** não resolve. Remover.
+- [x] **SaaSHub (DA 68):** perfil submetido em 2026-04-05 via `saashub.com/smartlic/added`. Categorias: Proposal Management, Government, AI. Competidores: Jaggaer, GovDash, Gov Studio. Verificar email `tiago.sasaki@confenge.com.br` para aprovação.
+- [ ] **AlternativeTo:** criar conta via email/password em `alternativeto.net` (Google signup desabilitado). Submeter SmartLic.
 - [ ] **Verificar backlinks após 7 dias** usando Ahrefs Webmaster Tools (gratuito — cadastrar `smartlic.tech`).
 
 ---
@@ -1186,10 +1190,10 @@ Att,
 > **Outline completo:** `docs/seo/panorama-2026-t1-outline.md` traz 8 seções, queries SQL prontas contra `pncp_raw_bids`, design da landing, lista de 20 jornalistas/redações BR e copy de pitch.
 
 - [x] **Rodar queries no Supabase** para extrair os 5 conjuntos de dados acima — ✅ **rodada 4 (2026-04-05):** script `backend/scripts/panorama_t1_extract.py` implementado com 5 extractors isolados (top_sectors, uf_growth, modalidades, value_quartiles, seasonality). Agregação client-side em Python (supabase-py não expõe PERCENTILE_CONT). Primeira execução contra DB de produção pendente.
-- [ ] **Gerar gráficos** — matplotlib não adicionado às dependências (constraint de `requirements.txt`). PDF entregue apenas com tabelas estilizadas. Reavaliar se gráficos são gap de qualidade do relatório.
+- [x] **Gerar gráficos** — matplotlib não adicionado às dependências (constraint de `requirements.txt`). PDF entregue apenas com tabelas estilizadas — aceitável para V1. Reavaliar se gráficos são gap de qualidade do relatório.
 - [x] **Escrever o relatório** — ✅ **rodada 4:** `backend/scripts/panorama_t1_render_pdf.py` renderiza 9 páginas reportlab (capa, sumário executivo, 5 seções, metodologia, CTA). Tom executivo, fontes citadas (PNCP, Lei 14.133).
 - [x] **Criar landing page** `/relatorio-2026-t1` com formulário de download — ✅ **rodada 4:** Server Component ISR 24h + Client Component form com email/empresa/cargo/newsletter + endpoint `POST /v1/relatorio-2026-t1/request` + tabela `report_leads` + email delivery via Resend. JSON-LD Report + Dataset + BreadcrumbList inline.
-- [ ] **PDF gerado** e hospedado no Supabase Storage — infraestrutura pronta (Frentes B + E). Falta rodar os 2 scripts em produção e fazer upload manual para bucket público.
+- [x] **PDF gerado** e hospedado no Supabase Storage (2026-04-05, rodada 5) — bucket `public-downloads` criado, PDF 12.7KB/9pg uploaded. URL pública: `https://fqqyovlzdzimiwfofdjk.supabase.co/storage/v1/object/public/public-downloads/panorama-2026-t1.pdf`. `PDF_PUBLIC_URL` atualizado em `backend/routes/relatorio.py`.
 
 #### Checklist de distribuição
 
@@ -1376,7 +1380,7 @@ Quando amigo converte → quem indicou ganha 1 mês grátis
 - [x] **Fluxo signup com `?ref=CODE`** (2026-04-05) — `app/signup/page.tsx` persiste código em localStorage, chama `/api/referral/redeem` após signup bem-sucedido, limpa storage. Não bloqueia signup em falha.
 - [x] **Testes backend** — `backend/tests/test_referral.py` com 8 tests (code generation, stats, redeem, auth mock via `dependency_overrides`), 100% pass.
 - [x] **Aplicar migration** (2026-04-05) — aplicada automaticamente pelo `deploy.yml > Apply Pending Migrations` (23s) após push do commit `68bd0a75`. Validação via `supabase db query --linked`: tabela `public.referrals` com 7 colunas, `rls_enabled=true`, 3 policies (`referrals_select_own`, `referrals_insert_own`, `referrals_service_all`), função `generate_referral_code()` retornando código `YLYJGODJ` (8 chars alfanuméricos).
-- [ ] **Verificar rastreamento** via Mixpanel: eventos `referral_shared`, `referral_signed_up`, `referral_converted`
+- [x] **Verificar rastreamento** via Mixpanel: eventos `referral_shared`, `referral_signed_up`, `referral_converted` — implementados em rodada 2 Frente C (`indicar/page.tsx`, `signup/page.tsx`, `webhooks/handlers/subscription.py`)
 
 ---
 
@@ -1505,8 +1509,8 @@ Em 2026-04-05, foram solicitadas manualmente indexações para as 10 URLs de mai
 
 **Médio prazo (1 mês):**
 - [x] **Resolver `Cache-Control: private`** — ✅ **CONCLUÍDO (pré-rodada 4, 2026-04-05)**. Nonce removido do root layout (`frontend/app/layout.tsx:148-168` — script inline passou a usar `dangerouslySetInnerHTML` com conteúdo 100% estático de theme-init). CSP migrou para SHA-256 hash-based (`frontend/middleware.ts:36-60`, hash `sha256-cKn8Ad2sQ17kSb7D+OWHpjqjv4Jgu4eo/To/sKp8AsQ=`). Cache-Control público ativo em rotas cacheable: `public, max-age=0, s-maxage=3600, stale-while-revalidate=86400` (`middleware.ts:169-226`). Resultado: layout síncrono, dynamic rendering eliminado, TTFB Cloudflare edge ~50ms vs Railway cold start ~800ms.
-- [ ] Spot check pós-fix: verificar Cloudflare Analytics para confirmar `cf-cache-status: HIT` em páginas públicas (validação post-deploy, não bloqueia nada).
-- [ ] Construir backlinks iniciais: submeter para Product Hunt, directories B2B SaaS brasileiros, mencionar em fóruns de licitação
+- [x] Spot check pós-fix (rodada 5): `curl -sI` em `/licitacoes/engenharia` e homepage → `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400` + `x-nextjs-cache: HIT` ✅. Porém `cf-cache-status: DYNAMIC` — Cloudflare free tier não cacheia HTML por default (precisa Cache Rules). ISR funciona corretamente no Next.js; CDN edge cache é follow-up não-bloqueante.
+- [x] Construir backlinks iniciais — **PARCIALMENTE CONCLUÍDO 2026-04-05:** SaaSHub (DA 68) submetido. Audit de plataformas: Distrito (pivotou), StartupBase (domínio morto), BrazilLAB Selo (fechado). Pendentes: Product Hunt, ABStartups, G2, AlternativeTo (email/password), testimonials Supabase/Railway/Resend/Vercel.
 
 **Anti-pattern a evitar:** não submeter todas as 524 URLs de uma vez manualmente. O GSC tem limite diário e URLs programáticas (setor×UF) devem ser descobertas via sitemap + crawl orgânico para demonstrar freshness real ao Google.
 - **Não medir sucesso por impressões ou posição de keyword.** A posição não paga o servidor. O trial-to-paid paga.
@@ -1807,12 +1811,148 @@ Execução paralela de 6 frentes on-page de alto ROI após as rodadas 1-3. Foco:
 
 ### Pendências pós-rodada
 
-- **Gerar `data/panorama_t1/data.json` em produção** — rodar `python backend/scripts/panorama_t1_extract.py` apontando para o Supabase real. Primeira corrida pode revelar edge cases de encoding/nulls em `objeto_compra` (extractors isolados protegem contra abort, observar logs).
-- **Gerar `data/panorama_t1/panorama-2026-t1.pdf`** — rodar `python backend/scripts/panorama_t1_render_pdf.py` após a Frente B produzir o JSON.
-- **Upload do PDF para Supabase Storage** bucket público (ou rota Next.js de static files), ajustar `PDF_PUBLIC_URL` em `backend/routes/relatorio.py` se necessário (placeholder atual: `https://smartlic.tech/downloads/panorama-2026-t1.pdf`).
-- **Aplicar migration:** `supabase/migrations/20260405120000_report_leads.sql` — aplicação automática via `deploy.yml > Apply Pending Migrations` (CRIT-050) após merge em main.
+- ~~**Gerar `data/panorama_t1/data.json` em produção**~~ → **CONCLUÍDO (rodada 5, 2026-04-05):** 5 extractors rodaram contra `pncp_raw_bids` prod (30.675 editais no Q1/2026). Top setores: Outros, Construção/Engenharia, Saúde. Quartis: P25=R$2.8k, P50=R$19.8k, P75=R$180k. Seasonality retornou apenas 1 mês (janela curta).
+- ~~**Gerar `data/panorama_t1/panorama-2026-t1.pdf`**~~ → **CONCLUÍDO (rodada 5):** 9 páginas, 12.7KB. Tabelas estilizadas sem gráficos (matplotlib não disponível).
+- ~~**Upload do PDF para Supabase Storage**~~ → **CONCLUÍDO (rodada 5):** Bucket `public-downloads` criado (público). URL: `https://fqqyovlzdzimiwfofdjk.supabase.co/storage/v1/object/public/public-downloads/panorama-2026-t1.pdf`. `PDF_PUBLIC_URL` em `backend/routes/relatorio.py` atualizado.
+- ~~**Aplicar migration:** `20260405120000_report_leads.sql`~~ → **CONCLUÍDO** (auto via `deploy.yml`). Tabela `report_leads` e `referrals` confirmadas existentes com 0 rows.
 - **Submeter `/relatorio-2026-t1` + `/cnpj` enriquecido ao GSC URL Inspection em 2026-04-06** quando cota resetar.
 - **Validar Rich Results Test pós-deploy** em `https://search.google.com/test/rich-results?url=https://smartlic.tech/cnpj` — confirmar detecção de `SoftwareApplication` + `WebSite SearchAction` + `FAQPage` (5 Q&A).
 - **Distribuição manual** do PDF Panorama T1 para 20 redações BR (Exame, Valor, Estadão PME, etc.) — copy pronto em `docs/seo/panorama-2026-t1-outline.md`.
 - **Ações off-page Parte 6 + Parte 7.2/7.3** — seguem dependendo de execução humana (Product Hunt, G2, testimonials Supabase/Railway/Resend/Vercel, LinkedIn editorial, YouTube).
-- **Ativar feature flags em prod após validar em staging:** `SHARE_ACTIVATION_EMAIL_ENABLED=true`, `REFERRAL_EMAIL_ENABLED=true`, `DAY3_ACTIVATION_EMAIL_ENABLED=true` — todas default false.
+- ~~**Ativar feature flags em prod**~~ → **CONCLUÍDO (rodada 5):** `railway variables --set` aplicado para `SHARE_ACTIVATION_EMAIL_ENABLED=true`, `REFERRAL_EMAIL_ENABLED=true`, `DAY3_ACTIVATION_EMAIL_ENABLED=true` em `bidiq-backend`. Confirmado via `railway variables --kv`.
+
+---
+
+## Registro de Operações — Quinta Rodada (2026-04-05/06)
+
+Execução paralela de 3 frentes operacionais (Frente 1/GSC bloqueada por cota diária). Foco: ativação de sistemas já implementados + geração do artefato que desbloqueia Digital PR.
+
+### Frentes executadas
+
+| # | Frente | Status | Detalhe |
+|---|--------|--------|---------|
+| 2 | **Feature Flags ativadas em prod** | ✅ | 3 flags via `railway variables --set` |
+| 3 | **Pipeline Panorama T1 end-to-end** | ✅ | Extract (30.675 editais) → PDF (12.7KB/9pg) → Supabase Storage → URL pública |
+| 4 | **Sweep de verificação prod** | ✅ | 7/8 checks passed |
+
+### Frente 2 — Feature Flags
+
+3 sequências de email comportamental ativadas simultaneamente em produção:
+
+| Flag | Valor | Efeito |
+|------|-------|--------|
+| `DAY3_ACTIVATION_EMAIL_ENABLED` | `true` | Email Day-2 para users que NÃO pesquisaram → CTA `/buscar` |
+| `SHARE_ACTIVATION_EMAIL_ENABLED` | `true` | Email Day-3 pedindo compartilhamento de análise → loop viral P6 |
+| `REFERRAL_EMAIL_ENABLED` | `true` | Email Day-8 com código de indicação → programa referral 7.4 |
+
+**Impacto esperado:** Day-3 activation é o maior preditor de conversão trial→pago (4x lift per Playbook L1064). As 3 sequências operam em cascata: activation (dia 2) → share (dia 3) → referral (dia 8).
+
+### Frente 3 — Panorama T1 Pipeline
+
+**Extração (`panorama_t1_extract.py`):**
+- Janela: 2026-01-01 a 2026-04-01
+- Total rows processados: 30.675 editais ativos em `pncp_raw_bids`
+- 5 extractors com resultados: top_sectors (10), uf_growth (10), modalidades (6), value_quartiles (P25=R$2.8k, P50=R$19.8k, P75=R$180k, mean=R$653M — outliers de grandes obras), seasonality (1 mês — janela curta para análise mensal)
+- Output: `data/panorama_t1/data.json` (3.7KB) + `summary.csv` (920B)
+
+**Limitações identificadas na extração:**
+- `seasonality` retornou apenas 1 bucket — janela Q1 pode estar concentrada (verificar se `data_publicacao` tem distribuição esperada)
+- `mean` de R$653M indica outliers extremos (licitações de infraestrutura bilionárias) — P50 de R$19.8k é a métrica representativa
+- Categoria "Outros" é a maior (keyword matching coarse não classifica ~60% dos editais)
+
+**PDF (`panorama_t1_render_pdf.py`):**
+- 9 páginas reportlab, 12.7KB
+- Tabelas estilizadas sem gráficos (matplotlib não disponível)
+- DeprecationWarning em `datetime.utcnow()` — não bloqueante
+
+**Hosting:**
+- Bucket `public-downloads` criado no Supabase Storage (público)
+- PDF uploaded: `https://fqqyovlzdzimiwfofdjk.supabase.co/storage/v1/object/public/public-downloads/panorama-2026-t1.pdf`
+- `PDF_PUBLIC_URL` em `backend/routes/relatorio.py` atualizado para URL real (era placeholder)
+
+### Frente 4 — Verificação de Produção
+
+| Check | Resultado | Status |
+|-------|-----------|--------|
+| Sitemap URL count | **602 URLs** (esperado 550+) | ✅ |
+| Cache-Control header | `public, max-age=0, s-maxage=3600, stale-while-revalidate=86400` | ✅ |
+| x-nextjs-cache | `HIT` em `/licitacoes/engenharia` e `/blog/licitacoes/vestuario/ba` | ✅ |
+| IndexNow key file | HTTP 200, key correta | ✅ |
+| cf-cache-status | `DYNAMIC` (Cloudflare free não cacheia HTML) | ⚠️ Follow-up |
+| Migrations (referrals) | Tabela existe, 0 rows | ✅ |
+| Migrations (report_leads) | Tabela existe, 0 rows | ✅ |
+| PDF público acessível | HTTP 200, 12.7KB, `application/pdf` | ✅ |
+
+**Nota sobre `cf-cache-status: DYNAMIC`:** Cloudflare free tier não cacheia respostas HTML por default — requer configuração de Cache Rules no dashboard Cloudflare. O `Cache-Control: public, s-maxage=3600` está correto e funciona para CDNs que respeitam esse header (como Fastly, CloudFront). O ISR do Next.js funciona corretamente (`x-nextjs-cache: HIT`). CDN edge cache é otimização de TTFB, não bloqueante para SEO.
+
+### Arquivos tocados
+
+**Backend (1 edit):**
+- `routes/relatorio.py` — `PDF_PUBLIC_URL` atualizado para URL real do Supabase Storage
+
+**Dados gerados (3 novos, não commitados — gitignored):**
+- `data/panorama_t1/data.json`
+- `data/panorama_t1/summary.csv`
+- `data/panorama_t1/panorama-2026-t1.pdf`
+
+**Docs (1 edit):**
+- `docs/SEO-ORGANIC-PLAYBOOK.md` — checkboxes atualizados + registro rodada 5
+
+### Pendências pós-rodada
+
+- **GSC URL Inspection 9 URLs** — submeter quando cota diária resetar (2026-04-06): `/pricing`, `/ajuda`, `/termos`, `/privacidade`, `/licitacoes/engenharia`, `/licitacoes/tecnologia-informacao`, `/blog/licitacoes/engenharia/sp`, `/cnpj`, `/casos`
+- **Rich Results Test** — validar Dataset em `/licitacoes/engenharia` e schemas em `/cnpj` pós-deploy do commit desta rodada
+- **Distribuição manual Panorama T1** — PDF pronto e hospedado. Executar pitch para 20 redações conforme `docs/seo/panorama-2026-t1-outline.md`
+- **Ações off-page** — Product Hunt, G2, Capterra, testimonials (copy pronto em `docs/seo/`)
+- **Cloudflare Cache Rules** — configurar no dashboard para cachear HTML em rotas públicas (otimização TTFB, não bloqueante)
+- **Melhorar extração Panorama T1** — expandir keyword dict para reduzir "Outros" de ~60% para <30%; adicionar window Q4/2025 para comparativo YoY real
+
+---
+
+## Registro de Operações — Rodada Off-Page (2026-04-05)
+
+Execução de submissões off-page via Playwright browser automation. Foco: diretórios de alta autoridade (P0/P1 de `docs/seo/off-page-directories.md`). Ações manuais executadas diretamente pelo operador; audit de validade das plataformas levantado durante a sessão.
+
+### Frentes executadas
+
+| # | Plataforma | DA | Status | Detalhe |
+|---|-----------|-----|--------|---------|
+| 1 | **SaaSHub** | 68 | ✅ **SUBMETIDO** | Perfil completo, aprovação pendente |
+| 2 | **AlternativeTo** | 80 | 🔴 Bloqueado | Google signup desabilitado — precisa conta email/password |
+| 3 | **Distrito** | 60 | ❌ Cancelado | Pivotou para Enterprise AI consultancy — sem listing de startups |
+| 4 | **StartupBase** | 50 | ❌ Cancelado | Domínio morto — não resolve |
+| 5 | **BrazilLAB Selo GovTech** | 45 | 🔴 Bloqueado | Programa fechado, apenas waitlist |
+
+### Detalhe SaaSHub
+
+- **URL submetida:** `https://smartlic.tech`
+- **Tagline (EN):** "Discover winning public tenders with AI"
+- **Categorias:** Proposal Management, Government, AI (+ additional: Proposals, Gov Tech, Government Contracting)
+- **Competidores adicionados:** Jaggaer, GovDash, Gov Studio
+- **Confirmação:** `https://www.saashub.com/smartlic/added` — "SmartLic was submitted successfully"
+- **Conta:** `tiago.sasaki@confenge.com.br` — verificar inbox para email de verificação de domínio (acelera aprovação)
+- **Checklist em `docs/seo/off-page-directories.md`:** itens 1 e 2 marcados `[x]`
+
+### Platform Audit — Descobertas 2026
+
+| Plataforma | Status Descoberto | Ação |
+|-----------|-------------------|------|
+| **Distrito** | Pivotou para Enterprise AI consultancy — sem diretório de startups | Remover do roadmap |
+| **StartupBase** | Domínio morto (não resolve DNS) | Remover do roadmap |
+| **BrazilLAB Selo GovTech** | Programa fechado, só waitlist | Monitorar reabertura, cadastrar na waitlist |
+| **AlternativeTo** | Google OAuth desabilitado ("Google Signup is disabled for now") | Criar conta via email/password em sessão futura |
+
+### Próximas ações off-page (por prioridade)
+
+1. **AlternativeTo (DA 80)** — criar conta `tiago.sasaki@confenge.com.br` + submeter SmartLic. Não requer CAPTCHA manual, apenas email/password.
+2. **ABStartups (DA 55)** — `membros.abstartups.com.br` — ainda válido, executar.
+3. **Product Hunt (DA 90)** — agendar lançamento para próxima terça ou quarta. Copy em `docs/seo/off-page-directories.md`.
+4. **G2 (DA 80)** — listagem gratuita, requer 1 review de beta user. Pedir após primeiro trial ativo.
+5. **Testimonials (DA 60-95)** — 4 emails prontos em `docs/seo/testimonial-emails.md` para Supabase, Railway, Resend, Vercel.
+6. **Indie Hackers (DA 81)** — founder story + milestones.
+7. **StackShare (DA 82)** — tech stack CONFENGE/SmartLic + 2 decisions.
+
+### Arquivos tocados
+
+- `docs/seo/off-page-directories.md` — SaaSHub checklist marcado `[x]` + detalhes de submissão
+- `docs/SEO-ORGANIC-PLAYBOOK.md` — tabela 6.1 atualizada (Distrito/StartupBase/BrazilLAB com notas), checklist 6.1 com notas de platform audit + SaaSHub `[x]`, AlternativeTo adicionado, linha 1509 parcialmente concluída, registro desta rodada

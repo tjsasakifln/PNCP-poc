@@ -127,9 +127,10 @@
 - **Screenshots:** 3
 - **Ações paralelas:** Claim profile, adicionar comparativos vs ferramentas existentes
 - **Checklist:**
-  - [ ] Submit form completo
-  - [ ] Tech stack tags (Next.js, FastAPI, Supabase)
-  - [ ] Integrations listadas
+  - [x] Submit form completo — **CONCLUÍDO 2026-04-05** via `https://www.saashub.com/smartlic/added`
+  - [x] Tech stack tags (Next.js, FastAPI, Supabase) — adicionadas durante o submit
+  - [ ] Integrations listadas — preencher após aprovação do perfil
+- **Submissão:** Tagline EN "Discover winning public tenders with AI", 3 categorias (Proposal Management, Government, AI), competidores (Jaggaer, GovDash, Gov Studio). Conta: `tiago.sasaki@confenge.com.br` — verificar email para speed up de aprovação.
 - **Justificativa P1:** Bom DA, fácil de submeter, aceita produtos brasileiros.
 
 ### 7. StackShare
