@@ -49,14 +49,8 @@ export function StructuredData() {
         url: 'https://smartlic.tech/logo.svg',
       },
     },
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: 'https://smartlic.tech/buscar?q={search_term_string}',
-      },
-      'query-input': 'required name=search_term_string',
-    },
+    // SearchAction removed: /buscar is Disallowed in robots.txt (authenticated route).
+    // Keeping it would contradict robots.txt and waste crawl budget.
   };
 
   // SoftwareApplication Schema — AC6
@@ -68,8 +62,8 @@ export function StructuredData() {
     operatingSystem: 'Web',
     offers: {
       '@type': 'AggregateOffer',
-      lowPrice: '297.00',
-      highPrice: '397.00',
+      lowPrice: '1599.00',
+      highPrice: '1999.00',
       priceCurrency: 'BRL',
       offerCount: 3,
     },

@@ -1,5 +1,5 @@
 # SmartLic — Playbook de Crescimento Orgânico: CAC Mínimo via Conversão Máxima
-## Versão 2.6 · Atualizado: 2026-04-06 (rodada 5 — on-page completo)
+## Versão 2.7 · Atualizado: 2026-04-06 (rodada 6 — desbloqueio de indexação + correções técnicas)
 
 > **Premissa:** SEO impecável é o piso, não o teto. Quando alguém encontra o SmartLic —
 > por busca orgânica, indicação ou conteúdo — cada touchpoint subsequente deve funcionar
@@ -1957,3 +1957,94 @@ Execução de submissões off-page via Playwright browser automation. Foco: dire
 
 - `docs/seo/off-page-directories.md` — SaaSHub checklist marcado `[x]` + detalhes de submissão
 - `docs/SEO-ORGANIC-PLAYBOOK.md` — tabela 6.1 atualizada (Distrito/StartupBase/BrazilLAB com notas), checklist 6.1 com notas de platform audit + SaaSHub `[x]`, AlternativeTo adicionado, linha 1509 parcialmente concluída, registro desta rodada
+
+---
+
+## Registro de Operações — Rodada 6: Desbloqueio de Indexação (2026-04-06)
+
+Auditoria SEO profunda com dados reais (WebFetch, WebSearch, Playwright no Cloudflare dashboard). Descoberta e correção do bloqueio #1 que impedia toda indexação.
+
+### Diagnóstico: Por que `site:smartlic.tech` retornava ZERO resultados
+
+| Bloqueio | Causa Raiz | Severidade |
+|----------|-----------|-----------|
+| **Cloudflare "Block AI bots"** | Configurado como "Block on all pages" — bloqueava crawlers incluindo bots que o Google usa para AI Overviews | CRÍTICO |
+| **lastmod idêntico** | `sitemap.ts` usava `new Date()` para todas as 608 URLs — Google ignora lastmod quando todos são iguais | ALTO |
+| **SearchAction contradiz robots.txt** | JSON-LD WebSite anunciava SearchAction para `/buscar` que está em `Disallow` no robots.txt | MÉDIO |
+| **Preços desatualizados no schema** | SoftwareApplication mostrava R$297-397 mas preço real é R$1,599-1,999 | BAIXO |
+| **`/login` no sitemap** | Página marcada `noindex` incluída no sitemap — desperdício de crawl budget | BAIXO |
+
+### Análise Competitiva (dados coletados via WebSearch)
+
+| Concorrente | Páginas Indexadas | Conteúdo | Structured Data |
+|-------------|------------------|----------|-----------------|
+| **Effecti** (effecti.com.br) | ~362+ | 339 blog posts, sector pages, ferramentas | Organization, WebSite, Article (Rank Math) |
+| **Alerta Licitação** | 5,000-10,000+ | Programmatic (1 page/município) | Basic Organization |
+| **LicitaIA** (licitaia.app) | ~1 | Apenas homepage | Nenhum |
+| **LiciteAI** (liciteai.com.br) | ~1 | Apenas homepage | Nenhum |
+| **ComprasBR** | ~20-50 | Blog ativo sobre licitações | Não avaliado |
+
+**Conclusão:** A janela para dominar "IA + licitações" no SEO está completamente aberta. Nenhum concorrente AI-native tem presença de SEO. Effecti lidera mas posiciona IA como feature, não core.
+
+### Benchmarks de crescimento CAC-zero (case studies reais 2025-2026)
+
+| Case | Resultado | Timeline |
+|------|-----------|----------|
+| Omniful.ai | 180 pages → 40 demos/mês, 7% conversion | 30 dias |
+| AI Image Generator (Omnius) | 15K pages → 67→2,103 signups/mês (+3,035%) | 90 dias |
+| Wise | 10K→425K pages, 60M visits/mês | 3 meses |
+| Docupilot | 500% traffic growth (1.3K→8K) | 9 meses |
+
+### Ações executadas
+
+| # | Ação | Status | Detalhe |
+|---|------|--------|---------|
+| 1 | **Cloudflare: Block AI bots → "Do not block"** | ✅ FEITO | Via Playwright no dashboard. Era "Block on all pages" → mudado para "Do not block (allow crawlers)" |
+| 2 | **Validação Googlebot** | ✅ FEITO | `curl -A "Googlebot" https://smartlic.tech/` → HTTP 200 com HTML completo (era 403) |
+| 3 | **Cloudflare: Bot Fight Mode** | ✅ Já estava OFF | Confirmado via evaluate no checkbox (checked: false) |
+| 4 | **sitemap.ts: lastmod com datas reais** | ✅ FEITO | Blog: publishDate/lastModified; estáticas: 2026-04-06; programáticas: today; legal: 2026-02-01 |
+| 5 | **sitemap.ts: remover /login** | ✅ FEITO | Era noindex + prioridade 0.4 — desperdício de crawl budget |
+| 6 | **StructuredData: remover SearchAction** | ✅ FEITO | Contradizia robots.txt Disallow /buscar |
+| 7 | **StructuredData: corrigir preços** | ✅ FEITO | R$297-397 → R$1,599-1,999 (SmartLic Pro real) |
+| 8 | **robots.txt: desbloquear Google-Extended** | ✅ FEITO | Necessário para citação em AI Overviews. Demais AI bots mantidos bloqueados |
+
+### Dados-chave da pesquisa (para referência futura)
+
+- **AI Overviews:** 83% das citações vêm de páginas FORA do top 10 orgânico — oportunidade massiva para domínio novo
+- **AI Overviews:** Páginas com FCP <0.4s recebem 6.7 citações vs 2.1 para lentas (3.2x)
+- **AI Overviews:** Queries de 8+ palavras têm 7x mais chance de trigger AIO
+- **AI Overviews:** FAQPage schema aumenta 60% a chance de ser citado
+- **IndexNow:** Google NÃO participa do protocolo (apenas Bing/Yandex/Naver). Indexação Google depende de GSC + sitemap + backlinks
+- **Topical Authority:** Google avalia se o site responde TODAS as perguntas de um tópico. Profundidade > volume
+- **Internal Linking:** 2-5 links contextuais por 1,000 palavras, páginas-chave a ≤3 cliques da homepage
+
+### Arquivos tocados
+
+**Frontend (3 edits):**
+- `app/sitemap.ts` — lastmod com datas reais por tipo de página, removido /login
+- `app/components/StructuredData.tsx` — removido SearchAction, preços corrigidos para R$1,599-1,999
+- `public/robots.txt` — desbloqueado Google-Extended para AI Overviews
+
+**Cloudflare Dashboard (1 change):**
+- Security > Settings > Block AI bots: "Block on all pages" → "Do not block (allow crawlers)"
+
+**Docs (1 edit):**
+- `docs/SEO-ORGANIC-PLAYBOOK.md` — v2.7, registro rodada 6
+
+### Projeções pós-desbloqueio
+
+| Métrica | Antes (rodada 5) | Após desbloqueio (rodada 6) | Fundamento |
+|---------|-------------------|----------------------------|-----------|
+| Páginas indexadas (7 dias) | 0 | 20-50 | Googlebot agora recebe 200; sitemap com 602 URLs submetido |
+| Páginas indexadas (30 dias) | 0 | 150-300 | Programmatic pages com ISR daily + internal linking hub-spoke |
+| Impressões/mês (30 dias) | 0 | 500-2,000 | Long-tail setor×UF queries sem competição |
+| Trials orgânicos (30 dias) | 0 | 1-3 | Primeiros clicks em queries informacionais/BOFU |
+| Trials orgânicos (90 dias) | 0 | 5-15 | Topical authority construída + AI Overviews citations |
+
+### Pendências pós-rodada
+
+- **GSC URL Inspection 20 páginas top** — submeter manualmente as páginas mais importantes para acelerar indexação
+- **Frente 4 (AI Overviews):** Atomic Answer Technique nos 51 artigos — parágrafo 40-60 palavras após cada H2
+- **Frente 5 (Topical Authority):** Artigos BOFU: "SmartLic vs Effecti", "Melhores plataformas licitação 2026", cluster "IA em Licitações" (10-15 páginas — nicho vazio)
+- **Monitorar GSC Coverage diariamente** — target: primeiras páginas indexadas em 3-7 dias
+- **Cloudflare Cache Rules** — configurar para cachear HTML em rotas públicas (TTFB optimization)
