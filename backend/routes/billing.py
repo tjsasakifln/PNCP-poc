@@ -116,9 +116,10 @@ async def create_checkout(
     is_subscription = plan_id in ("smartlic_pro", "consultoria", "consultor_agil", "maquina", "sala_guerra")
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
-    # STORY-280 AC1: Boleto enabled for subscriptions (PIX NOT supported for subscriptions)
+    # STORY-280 AC1: Boleto + PIX enabled for subscriptions
+    # Zero-churn P2 §3.2: PIX added — Brazil's #1 payment method
     session_params = {
-        "payment_method_types": ["card", "boleto"],
+        "payment_method_types": ["card", "boleto", "pix"],
         "line_items": [{"price": stripe_price_id, "quantity": 1}],
         "mode": "subscription" if is_subscription else "payment",
         "success_url": f"{frontend_url}/planos/obrigado?plan={plan_id}",

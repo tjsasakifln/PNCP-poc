@@ -301,8 +301,12 @@ class TestProcessTrialEmails:
             mock_send.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_skips_unsubscribed_users(self):
-        """AC5: Users who opted out of marketing emails are skipped."""
+    async def test_skips_unsubscribed_marketing_but_sends_conversion(self):
+        """AC5 + P2 §1.2: Users who opted out of marketing emails still receive conversion emails.
+
+        Marketing emails (welcome, engagement) are skipped, but conversion-critical
+        emails (paywall_alert, value, last_day, expired) are still sent.
+        """
         from services.trial_email_sequence import process_trial_emails
 
         mock_sb = MagicMock()
@@ -320,6 +324,56 @@ class TestProcessTrialEmails:
                     "full_name": "Unsub User",
                     "plan_type": "free_trial",
                     "marketing_emails_enabled": False,
+                }]))
+                return chain
+            return MagicMock()
+
+        mock_sb.table.side_effect = table_side_effect
+
+        with patch("config.TRIAL_EMAILS_ENABLED", True), \
+             patch("supabase_client.get_supabase", return_value=mock_sb), \
+             patch("supabase_client.sb_execute", side_effect=_sb_execute_side_effect), \
+             patch("email_service.send_email_async") as mock_send, \
+             patch("metrics.TRIAL_EMAILS_SENT"):
+
+            result = await process_trial_emails()
+
+            # Marketing emails (welcome, engagement) should be skipped
+            assert result["unsubscribed_skipped"] >= 1
+            # Conversion emails (paywall_alert, value, last_day, expired) should still be sent
+            assert mock_send.call_count >= 1
+            sent_types = [
+                call.kwargs.get("tags", call.args[-1] if len(call.args) > 3 else [])
+                for call in mock_send.call_args_list
+            ]
+            # Verify only conversion emails were sent (no welcome/engagement)
+            for call in mock_send.call_args_list:
+                tags = call.kwargs.get("tags", [])
+                email_type = next((t["value"] for t in tags if t["name"] == "type"), None)
+                assert email_type in ("paywall_alert", "value", "last_day", "expired"), \
+                    f"Marketing email '{email_type}' should not be sent to unsubscribed user"
+
+    @pytest.mark.asyncio
+    async def test_skips_fully_unsubscribed_users(self):
+        """AC5: Users who opted out of BOTH marketing and conversion emails get no emails."""
+        from services.trial_email_sequence import process_trial_emails
+
+        mock_sb = MagicMock()
+
+        def table_side_effect(name):
+            if name == "profiles":
+                chain = MagicMock()
+                chain.select.return_value = chain
+                chain.eq.return_value = chain
+                chain.gte.return_value = chain
+                chain.lt.return_value = chain
+                chain.execute = AsyncMock(return_value=MagicMock(data=[{
+                    "id": "user-unsub-uuid",
+                    "email": "unsub@example.com",
+                    "full_name": "Unsub User",
+                    "plan_type": "free_trial",
+                    "marketing_emails_enabled": False,
+                    "trial_conversion_emails_enabled": False,
                 }]))
                 return chain
             return MagicMock()

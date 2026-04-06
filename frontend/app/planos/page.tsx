@@ -61,7 +61,7 @@ const CONSULTORIA_FEATURES = [
 ];
 
 const FAQ_ITEMS = [
-  { question: "Quais formas de pagamento são aceitas?", answer: "Aceitamos cartão de crédito e Boleto Bancário. O cartão é processado instantaneamente. O boleto pode levar até 1 dia útil para confirmação após o pagamento." },
+  { question: "Quais formas de pagamento são aceitas?", answer: "Aceitamos cartão de crédito, Boleto Bancário e PIX. O cartão e o PIX são processados instantaneamente. O boleto pode levar até 1 dia útil para confirmação após o pagamento." },
   { question: "Posso cancelar a qualquer momento?", answer: "Sim. Sem contrato de fidelidade, mesmo no acesso anual. Cancele quando quiser e mantenha o acesso até o fim do período já pago." },
   { question: "Existe contrato de fidelidade?", answer: "Não. O SmartLic Pro funciona como acesso recorrente. Você escolhe o período de acesso e pode alterar ou cancelar livremente." },
   { question: "O que acontece se eu cancelar?", answer: "Você mantém acesso completo até o fim do período já pago. Após essa data, o acesso ao sistema é encerrado. O período de avaliação gratuita é exclusivo para os primeiros 14 dias após o cadastro inicial e não é reativado." },
@@ -337,6 +337,26 @@ export default function PlanosPage() {
             </div>
             <p className="mt-3 text-sm font-semibold text-[var(--brand-blue)]">Exemplo ilustrativo com base em oportunidades típicas do setor</p>
             <p className="mt-2 text-xs text-[var(--ink-muted)]" data-testid="roi-disclaimer">{ROI_DISCLAIMER}</p>
+          </div>
+        </div>
+
+        {/* Zero-churn P2 §3.2 + §9: Payment methods + security badges */}
+        <div className="mt-8 mb-8 flex flex-wrap items-center justify-center gap-6 text-sm text-[var(--ink-secondary)]">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-brand-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+            <span>Cartao, Boleto e PIX</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            <span>Dados criptografados</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            <span>LGPD compliant</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+            <span>Fontes oficiais do governo</span>
           </div>
         </div>
 

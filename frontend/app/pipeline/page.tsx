@@ -40,24 +40,31 @@ const ReadOnlyKanban = dynamic(
 );
 
 // STORY-313 AC9: Pipeline tour steps
+// Zero-churn P2 §6.2: Tour expanded with trial limit warning (step 4)
 const PIPELINE_TOUR_STEPS: TourStep[] = [
   {
     id: 'pipeline-columns',
     title: 'Kanban de oportunidades',
-    text: '<span class="tour-step-counter">Passo 1 de 3</span><p>Arraste oportunidades entre etapas para acompanhar seu progresso.</p>',
+    text: '<span class="tour-step-counter">Passo 1 de 4</span><p>Arraste oportunidades entre etapas para acompanhar seu progresso.</p>',
     attachTo: { element: '[data-tour="kanban-columns"]', on: 'top' },
   },
   {
     id: 'pipeline-card',
     title: 'Detalhes do card',
-    text: '<span class="tour-step-counter">Passo 2 de 3</span><p>Clique para ver detalhes e adicionar notas.</p>',
+    text: '<span class="tour-step-counter">Passo 2 de 4</span><p>Clique para ver detalhes e adicionar notas.</p>',
     attachTo: { element: '[data-tour="pipeline-card"]', on: 'right' },
     showOn: () => !!document.querySelector('[data-tour="pipeline-card"]'),
   },
   {
     id: 'pipeline-alerts',
     title: 'Alertas e prazos',
-    text: '<span class="tour-step-counter">Passo 3 de 3</span><p>Fique atento aos prazos — cards com borda vermelha estão próximos do encerramento.</p>',
+    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Fique atento aos prazos — cards com borda vermelha estão próximos do encerramento.</p>',
+    attachTo: { element: '[data-tour="kanban-columns"]', on: 'bottom' },
+  },
+  {
+    id: 'pipeline-trial-limit',
+    title: 'Limite do trial',
+    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Durante o trial, você pode acompanhar até 15 oportunidades. Assine o SmartLic Pro para pipeline ilimitado.</p>',
     attachTo: { element: '[data-tour="kanban-columns"]', on: 'bottom' },
   },
 ];

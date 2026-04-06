@@ -144,8 +144,8 @@ export function EnhancedLoadingProgress({
   const [currentStage, setCurrentStage] = useState(1);
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  // DEBT-v3-S2 AC9: "Stuck" state after 45s without final result
-  const STUCK_THRESHOLD_SECONDS = 45;
+  // DEBT-v3-S2 AC9: "Stuck" state — Zero-churn P2 §5.2: reduced from 45s to 15s
+  const STUCK_THRESHOLD_SECONDS = 15;
   const isStuck = elapsedTime >= STUCK_THRESHOLD_SECONDS;
 
   // UX-411: Carousel state

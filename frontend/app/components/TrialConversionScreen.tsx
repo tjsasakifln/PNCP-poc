@@ -171,10 +171,54 @@ export function TrialConversionScreen({ trialValue, onClose, loading }: TrialCon
           </div>
         ) : null}
 
-        {/* Anchor Message */}
+        {/* Zero-churn P2 §4.2: Trial vs Paid comparison table */}
+        {hasData && (
+          <div className="overflow-hidden rounded-xl border border-[var(--border)] mb-8">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-surface-1">
+                  <th className="text-left px-4 py-3 font-medium text-ink-secondary">Recurso</th>
+                  <th className="text-center px-4 py-3 font-medium text-ink-secondary">Trial (Agora)</th>
+                  <th className="text-center px-4 py-3 font-medium text-brand-navy">Pro</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                <tr>
+                  <td className="px-4 py-2.5 text-ink">Oportunidades analisadas</td>
+                  <td className="px-4 py-2.5 text-center text-ink-secondary">{trialValue!.total_opportunities}</td>
+                  <td className="px-4 py-2.5 text-center font-semibold text-brand-navy">Ilimitado</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2.5 text-ink">Pipeline</td>
+                  <td className="px-4 py-2.5 text-center text-ink-secondary">15 itens</td>
+                  <td className="px-4 py-2.5 text-center font-semibold text-brand-navy">Ilimitado</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2.5 text-ink">Alertas</td>
+                  <td className="px-4 py-2.5 text-center text-ink-muted">—</td>
+                  <td className="px-4 py-2.5 text-center font-semibold text-brand-navy">Automaticos</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2.5 text-ink">Relatorios</td>
+                  <td className="px-4 py-2.5 text-center text-ink-secondary">Resumidos</td>
+                  <td className="px-4 py-2.5 text-center font-semibold text-brand-navy">Completos + Excel</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2.5 text-ink">Historico</td>
+                  <td className="px-4 py-2.5 text-center text-ink-secondary">30 dias</td>
+                  <td className="px-4 py-2.5 text-center font-semibold text-brand-navy">Ilimitado</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Zero-churn P2 §4.2: Personalized ROI anchor message */}
         <div className="bg-gradient-to-r from-brand-navy/5 to-brand-blue/5 dark:from-brand-navy/20 dark:to-brand-blue/20 border border-brand-navy/10 dark:border-brand-blue/20 rounded-xl p-6 mb-8 text-center">
           <p className="text-lg md:text-xl font-semibold text-ink">
-            Uma única licitação ganha pode pagar o sistema por um ano inteiro.
+            {hasData && trialValue!.total_value > 0
+              ? `Você analisou ${formatCurrency(trialValue!.total_value)} em oportunidades. Uma vitória de 1% = ${formatCurrency(trialValue!.total_value * 0.01)} — ${Math.max(1, Math.round(trialValue!.total_value * 0.01 / 3564))}x o custo anual.`
+              : "Uma única licitação ganha pode pagar o sistema por um ano inteiro."}
           </p>
         </div>
 
@@ -218,8 +262,8 @@ export function TrialConversionScreen({ trialValue, onClose, loading }: TrialCon
           })}
         </div>
 
-        {/* Zero-churn P1 §9: Social proof */}
-        <div className="flex items-center justify-center gap-4 mt-4 mb-6 text-sm text-[var(--ink-secondary)]">
+        {/* Zero-churn P1 §9 + P2 §9: Social proof + satisfaction guarantee */}
+        <div className="flex flex-wrap items-center justify-center gap-4 mt-4 mb-6 text-sm text-[var(--ink-secondary)]">
           <span className="flex items-center gap-1.5">
             <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -237,6 +281,12 @@ export function TrialConversionScreen({ trialValue, onClose, loading }: TrialCon
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             Sem fidelidade
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5C18.577 6.44 19 8.027 19 9.7c0 5.009-3.667 9.132-8.44 9.878a.75.75 0 01-.12.002.75.75 0 01-.12-.002C5.667 18.832 2 14.709 2 9.7c0-1.673.423-3.26 1.166-4.701zM10 5a1 1 0 011 1v3.586l2.207 2.207a1 1 0 01-1.414 1.414l-2.5-2.5A1 1 0 019 10V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Garantia 30 dias
           </span>
         </div>
 

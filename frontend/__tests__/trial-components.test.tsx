@@ -61,13 +61,13 @@ describe('TrialConversionScreen', () => {
   it('renders with trial value data', () => {
     render(<TrialConversionScreen trialValue={mockTrialValue} onClose={jest.fn()} />);
 
-    // Check for trial value data displayed in stats cards
-    expect(screen.getByText('47')).toBeInTheDocument(); // total_opportunities
+    // Check for trial value data displayed in stats cards + comparison table
+    expect(screen.getAllByText('47').length).toBeGreaterThanOrEqual(1); // total_opportunities (may appear in stats + table)
     // STORY-264 AC9: searches_executed no longer shows /3
     expect(screen.getByText('3')).toBeInTheDocument(); // searches_executed (no "/3")
     expect(screen.queryByText('3/3')).not.toBeInTheDocument(); // Old format removed
-    // Check value is formatted as currency
-    expect(screen.getByText(/12\.450\.000/)).toBeInTheDocument(); // total_value in BRL
+    // Check value is formatted as currency (may appear in stats + ROI message)
+    expect(screen.getAllByText(/12\.450\.000/).length).toBeGreaterThanOrEqual(1); // total_value in BRL
   });
 
   it('renders alternative message when no data', () => {
@@ -124,8 +124,16 @@ describe('TrialConversionScreen', () => {
     });
   });
 
-  it('shows anchor message about single bid value', () => {
+  it('shows personalized ROI anchor message when trial has value data', () => {
     render(<TrialConversionScreen trialValue={mockTrialValue} onClose={jest.fn()} />);
+
+    // Zero-churn P2 §4.2: personalized ROI replaces generic anchor when total_value > 0
+    expect(screen.getByText(/Você analisou.*em oportunidades.*custo anual/i)).toBeInTheDocument();
+  });
+
+  it('shows generic anchor message when no value data', () => {
+    const noValueData = { ...mockTrialValue, total_value: 0 };
+    render(<TrialConversionScreen trialValue={noValueData} onClose={jest.fn()} />);
 
     expect(screen.getByText(/Uma única licitação ganha pode pagar o sistema por um ano inteiro/i)).toBeInTheDocument();
   });

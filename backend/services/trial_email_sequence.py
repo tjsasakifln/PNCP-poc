@@ -249,10 +249,10 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
 
                 # Find trial users at this milestone
                 # AC4: Only free_trial users (converted users have different plan_type)
-                # AC5: Only users with marketing_emails_enabled=true
+                # AC5: Respect unsubscribe preferences (marketing vs conversion)
                 users_result = await sb_execute(
                     sb.table("profiles")
-                    .select("id, email, full_name, plan_type, marketing_emails_enabled")
+                    .select("id, email, full_name, plan_type, marketing_emails_enabled, trial_conversion_emails_enabled")
                     .eq("plan_type", "free_trial")
                     .gte("created_at", target_start)
                     .lt("created_at", target_end)
@@ -278,10 +278,21 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                         converted_skipped += 1
                         continue
 
-                    # AC5: Skip if user has unsubscribed from marketing emails
-                    if user.get("marketing_emails_enabled") is False:
-                        unsubscribed_skipped += 1
-                        continue
+                    # AC5 + P2 §1.2: Differentiate marketing vs conversion emails
+                    # Conversion-critical emails: paywall_alert (Day 7), value (Day 10),
+                    # last_day (Day 13), expired (Day 16)
+                    is_conversion_email = email_type in ("paywall_alert", "value", "last_day", "expired")
+
+                    if is_conversion_email:
+                        # Only skip if user explicitly opted out of conversion emails
+                        if user.get("trial_conversion_emails_enabled") is False:
+                            unsubscribed_skipped += 1
+                            continue
+                    else:
+                        # Marketing/engagement emails — respect marketing preference
+                        if user.get("marketing_emails_enabled") is False:
+                            unsubscribed_skipped += 1
+                            continue
 
                     # AC6: Idempotency check — skip if already sent this email_number
                     try:

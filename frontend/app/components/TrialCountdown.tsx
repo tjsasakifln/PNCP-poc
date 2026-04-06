@@ -50,7 +50,13 @@ export function TrialCountdown({ daysRemaining, className = "" }: TrialCountdown
         ${bgColor} ${textColor} ${borderColor}
         ${className}
       `}
-      title="Ver períodos de acesso"
+      title={
+        daysRemaining > 7
+          ? `Seu trial tem acesso completo por ${daysRemaining} dias`
+          : daysRemaining >= 4
+            ? "Acesso completo. Após Day 7, alguns recursos ficam limitados."
+            : "Últimos dias de acesso completo! Assine para manter todos os recursos."
+      }
     >
       <span className={`w-1.5 h-1.5 rounded-full ${dotColor} ${daysRemaining <= 2 ? "animate-pulse" : ""}`} />
       {daysRemaining} dia{daysRemaining === 1 ? "" : "s"} de acesso completo

@@ -40,9 +40,8 @@
 - [x] **P1 | S** — ~~Segmentar emails por engagement~~ RESOLVIDO: Tier computation (high_value/active/dormant) em `_render_email()`. Subjects personalizados por tier para engagement e value emails.
   - Arquivo: `backend/services/trial_email_sequence.py`
 
-- [ ] **P2 | S** — Diferenciar emails transacionais vs marketing no unsubscribe: usuario clica unsubscribe pensando ser "marketing" e perde TODOS os emails de conversao (Day 10 value, Day 13 last day, Day 16 comeback).
-  - Arquivo: `backend/routes/trial_emails.py` linha 28
-  - Acao: Separar `marketing_emails_enabled` de `trial_conversion_emails_enabled`
+- [x] **P2 | S** — ~~Diferenciar emails transacionais vs marketing no unsubscribe~~ RESOLVIDO: Unsubscribe agora so desativa emails marketing (welcome, engagement, feature discovery). Emails criticos de conversao (paywall_alert Day 7, value Day 10, last_day Day 13, expired Day 16) continuam ativos via `trial_conversion_emails_enabled` flag separada. Migration + logica split no `trial_email_sequence.py`.
+  - Arquivo: `backend/routes/trial_emails.py`, `backend/services/trial_email_sequence.py`, `supabase/migrations/20260406000000_split_unsubscribe_flags.sql`
 
 - [ ] **P2 | M** — Implementar timezone-aware email scheduling: emails podem chegar as 3am no fuso do usuario, sendo ignorados/deletados.
   - Arquivo: `backend/cron/notifications.py`
@@ -92,13 +91,11 @@
 - [x] **P1 | M** — ~~Auto-apply cupom na URL~~ RESOLVIDO: Frontend le `?coupon=` de searchParams e passa ao checkout. Backend resolve coupon via `stripe.PromotionCode.list()` e aplica em `discounts`.
   - Arquivo: `frontend/app/planos/page.tsx`, `backend/routes/billing.py`
 
-- [ ] **P2 | S** — Exibir Boleto como opcao de pagamento na UI: backend ja configura `["card", "boleto"]` no Stripe session, mas frontend nao mostra Boleto como opcao visivel.
-  - Arquivo: `frontend/app/planos/page.tsx`, `backend/routes/billing.py` linha 54
-  - Acao: Adicionar badge "Aceitamos cartao e boleto" na pagina de planos
+- [x] **P2 | S** — ~~Exibir Boleto e PIX como opcao de pagamento na UI~~ RESOLVIDO: Badge visual "Cartao, Boleto e PIX" com icones adicionado na pagina `/planos` entre plan cards e FAQ. FAQ atualizado para mencionar PIX.
+  - Arquivo: `frontend/app/planos/page.tsx`
 
-- [ ] **P2 | S** — Adicionar PIX como metodo de pagamento: PIX e o metodo mais usado no Brasil. Stripe suporta PIX desde 2023.
-  - Arquivo: `backend/routes/billing.py`
-  - Acao: Adicionar `"pix"` ao array de payment_method_types na session Stripe
+- [x] **P2 | S** — ~~Adicionar PIX como metodo de pagamento~~ RESOLVIDO: `"pix"` adicionado ao array `payment_method_types` na session Stripe. Agora aceita `["card", "boleto", "pix"]`.
+  - Arquivo: `backend/routes/billing.py` linha 122
 
 ---
 
@@ -120,13 +117,11 @@
 - [x] **P1 | M** — ~~CTAs contextuais pos-acao~~ RESOLVIDO: `TrialUpsellCTA` ja implementado com 5 variantes (post-search, post-download, post-pipeline, dashboard, quota). Pipeline CTA trigger via `showPipelineCTA` state. Feature usage tracking adicionado.
   - Arquivo: `frontend/components/billing/TrialUpsellCTA.tsx`, `frontend/app/pipeline/page.tsx`
 
-- [ ] **P2 | M** — Comparacao "trial vs paid" na tela de conversao: TrialConversionScreen mostra stats mas nao compara "o que voce tem hoje" vs "o que voce ganha pagando".
+- [x] **P2 | M** — ~~Comparacao "trial vs paid" na tela de conversao~~ RESOLVIDO: Tabela responsiva 5 linhas (Oportunidades, Pipeline, Alertas, Relatorios, Historico) com colunas "Trial (Agora)" vs "Pro". Mostra dados reais do trial do usuario. Renderiza condicionalmente quando hasData=true.
   - Arquivo: `frontend/app/components/TrialConversionScreen.tsx`
-  - Acao: Tabela lado-a-lado: Trial (10 resultados, 5 pipeline) vs Pro (ilimitado, alertas, relatorios)
 
-- [ ] **P2 | S** — "Uma unica licitacao ganha paga o sistema por um ano" — frase generica. Substituir por calculo personalizado baseado no valor que o usuario JA analisou.
+- [x] **P2 | S** — ~~ROI personalizado na tela de conversao~~ RESOLVIDO: Calculo dinamico: "Voce analisou {total_value}. Uma vitoria de 1% = {1%} — {N}x o custo anual." Fallback para texto generico quando sem dados. Custo anual base: R$3.564 (R$297/mes).
   - Arquivo: `frontend/app/components/TrialConversionScreen.tsx`
-  - Acao: "Voce analisou R$2.4M. Uma unica vitoria de 1% = R$24.000 — 5x o custo anual."
 
 ---
 
@@ -151,9 +146,8 @@
 - [x] **P0 | M** — ~~Timeouts de busca~~ RESOLVIDO: Adicionado TTL cache in-memory (1h, max 50 entries) para datalake queries em `datalake_query.py`. Queries repetidas servidas do cache, eliminando round-trip ao DB.
   - Arquivo: `backend/datalake_query.py`
 
-- [ ] **P2 | M** — Mostrar resultados parciais antes do timeout completo: botao "Ver resultados parciais" aparece apos 45s, mas deveria aparecer apos 15s com contagem parcial.
-  - Arquivo: `frontend/app/buscar/components/EnhancedLoadingProgress.tsx`
-  - Acao: Reduzir threshold de "partial results" para 15s, mostrar contagem em tempo real
+- [x] **P2 | M** — ~~Resultados parciais mais cedo~~ RESOLVIDO: `STUCK_THRESHOLD_SECONDS` reduzido de 45 para 15. Botao "Ver resultados parciais" aparece apos 15s (antes era 45s). Contagem em tempo real ja existia via `ufTotalFound`.
+  - Arquivo: `frontend/app/buscar/components/EnhancedLoadingProgress.tsx` linha 148
 
 ---
 
@@ -179,9 +173,8 @@
   - Arquivo: `frontend/hooks/useShepherdTour.ts`
   - Acao: Adicionar tour para dashboard ("Aqui voce ve o valor acumulado") e alertas ("Configure alertas para nao perder oportunidades")
 
-- [ ] **P2 | S** — Pipeline tour nao avisa sobre limite de 5 items: usuario atinge limite sem warning previo, frustrado.
-  - Arquivo: `frontend/app/pipeline/page.tsx`
-  - Acao: No tour step do pipeline, mencionar "Durante o trial, voce pode acompanhar ate 5 oportunidades"
+- [x] **P2 | S** — ~~Pipeline tour avisa sobre limite~~ RESOLVIDO: Step 4 adicionado ao tour: "Durante o trial, voce pode acompanhar ate 15 oportunidades. Assine para pipeline ilimitado." Contadores atualizados de "de 3" para "de 4".
+  - Arquivo: `frontend/app/pipeline/page.tsx` linhas 43-75
 
 - [ ] **P3 | S** — Falta help center linkado nos pontos de friccao: empty states, paywall, pipeline limit, erros nao linkam para `/ajuda`.
   - Arquivo: Multiplos componentes
@@ -250,13 +243,11 @@
 - [x] **P1 | M** — ~~Social proof na UI do trial~~ RESOLVIDO: Badges de trust ("Dados oficiais PNCP", "Cancele quando quiser", "Sem fidelidade") adicionados em TrialConversionScreen.
   - Arquivo: `frontend/app/components/TrialConversionScreen.tsx`
 
-- [ ] **P2 | S** — Exibir badges de seguranca e compliance: signup nao mostra LGPD compliance, SSL, ou politica de dados. Empresas B2G sao sensíveis a seguranca.
+- [x] **P2 | S** — ~~Badges de seguranca e compliance~~ RESOLVIDO: Badges "Dados criptografados" + "LGPD compliant" + "Fontes oficiais do governo" adicionados em `/signup` (abaixo do box "Acesso imediato") e `/planos` (junto com badge de pagamentos). Icones SVG inline.
   - Arquivo: `frontend/app/signup/page.tsx`, `frontend/app/planos/page.tsx`
-  - Acao: Badge "Dados criptografados" + "LGPD compliant" + "Fontes oficiais do governo"
 
-- [ ] **P2 | M** — Adicionar garantia de satisfacao: nenhuma mensagem de "cancele quando quiser" ou "garantia de 30 dias" no checkout. Reduce risk perception.
+- [x] **P2 | M** — ~~Garantia de satisfacao~~ RESOLVIDO: Badge "Garantia 30 dias" com icone shield adicionado ao trust badges do TrialConversionScreen (junto com "Dados oficiais PNCP", "Cancele quando quiser", "Sem fidelidade"). Layout flex-wrap para responsividade.
   - Arquivo: `frontend/app/components/TrialConversionScreen.tsx`
-  - Acao: Badge "Sem fidelidade. Cancele quando quiser." + "Garantia de satisfacao 30 dias"
 
 ---
 
@@ -268,9 +259,8 @@
 - [x] **P1 | S** — ~~Quota progress visivel~~ RESOLVIDO: QuotaBadge agora mostra "X/1000 analises" (usado/total) em vez de apenas "X analises restantes". Tooltip com detalhes completos.
   - Arquivo: `frontend/app/components/QuotaBadge.tsx`
 
-- [ ] **P2 | S** — TrialCountdown badge nao explica fases: mostra "5 dias restantes" mas nao diz que Day 8 traz restricoes. Usuario nao entende "5 dias = acesso limitado ja ativo".
-  - Arquivo: `frontend/app/components/TrialCountdown.tsx`
-  - Acao: Tooltip no hover: "Seu trial tem acesso completo ate Day 7. Apos, alguns recursos ficam limitados."
+- [x] **P2 | S** — ~~TrialCountdown tooltip explica fases~~ RESOLVIDO: Title dinamico por faixa: >7 dias ("acesso completo por N dias"), 4-7 ("Apos Day 7, alguns recursos ficam limitados"), 1-3 ("Ultimos dias! Assine para manter todos os recursos").
+  - Arquivo: `frontend/app/components/TrialCountdown.tsx` linha 53
 
 ---
 
@@ -282,9 +272,9 @@
 |------------|-----------|-----------|------------|
 | P0 (Bloqueante) | 13 | **13 (100%)** | 27% |
 | P1 (Critico) | 22 | **22 (100%)** | 46% |
-| P2 (Importante) | 12 | 0 | 25% |
+| P2 (Importante) | 16 | **10 (63%)** | 33% |
 | P3 (Otimizacao) | 2 | 0 | 4% |
-| **TOTAL** | **49** | **35** | **100%** |
+| **TOTAL** | **53** | **45** | **100%** |
 
 ### Top 10 acoes de maior impacto na conversao
 

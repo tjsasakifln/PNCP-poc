@@ -25,7 +25,11 @@ async def unsubscribe_trial_emails(
     user_id: str = Query(..., description="User ID"),
     token: str = Query(..., description="HMAC unsubscribe token"),
 ):
-    """AC2/AC5: One-click unsubscribe from trial marketing emails."""
+    """AC2/AC5: One-click unsubscribe from trial marketing emails.
+    Zero-churn P2 §1.2: Only disables marketing/promotional emails.
+    Critical conversion emails (Day 7/10/13/16) remain active unless
+    user explicitly opts out of those too.
+    """
     from services.trial_email_sequence import verify_unsubscribe_token
     from supabase_client import get_supabase, sb_execute
 
@@ -34,20 +38,24 @@ async def unsubscribe_trial_emails(
 
     try:
         sb = get_supabase()
+        # P2 §1.2: Only disable marketing emails; keep conversion emails active
         await sb_execute(
             sb.table("profiles")
             .update({"marketing_emails_enabled": False})
             .eq("id", user_id)
         )
-        logger.info(f"User {user_id[:8]}*** unsubscribed from trial emails")
+        logger.info(f"User {user_id[:8]}*** unsubscribed from marketing emails (conversion emails remain active)")
 
         return HTMLResponse(content="""
         <!DOCTYPE html>
         <html lang="pt-BR">
         <head><meta charset="UTF-8"><title>Cancelado — SmartLic</title></head>
         <body style="font-family: sans-serif; text-align: center; padding: 60px;">
-          <h1 style="color: #333;">Inscrição cancelada</h1>
-          <p style="color: #666;">Você não receberá mais emails sobre o trial do SmartLic.</p>
+          <h1 style="color: #333;">Emails promocionais cancelados</h1>
+          <p style="color: #666;">Você não receberá mais emails promocionais do SmartLic.</p>
+          <p style="color: #555; font-size: 14px;">
+            Emails sobre prazos e status do seu trial continuam ativos para que você não perca informações importantes.
+          </p>
           <p style="color: #999; font-size: 14px;">
             Se mudar de ideia, acesse
             <a href="https://smartlic.tech/conta">suas configurações</a>.

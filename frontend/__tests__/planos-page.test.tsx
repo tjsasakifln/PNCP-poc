@@ -512,7 +512,7 @@ describe("STORY-280 AC4: FAQ includes payment methods question", () => {
     const user = userEvent.setup();
     const faqBtn = screen.getByText("Quais formas de pagamento são aceitas?");
     await user.click(faqBtn);
-    expect(screen.getByText(/cartão de crédito e Boleto Bancário/)).toBeInTheDocument();
+    expect(screen.getByText(/cartão de crédito, Boleto Bancário e PIX/)).toBeInTheDocument();
   });
 });
 

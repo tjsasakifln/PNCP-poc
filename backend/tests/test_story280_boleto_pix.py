@@ -127,8 +127,8 @@ class TestAC1BoletoCheckout:
         source = inspect.getsource(billing_module.create_checkout)
         assert '"boleto"' in source or "'boleto'" in source, \
             "checkout must include 'boleto' in payment_method_types"
-        assert '"pix"' not in source and "'pix'" not in source, \
-            "checkout must NOT include 'pix' for subscription mode"
+        assert '"pix"' in source or "'pix'" in source, \
+            "checkout must include 'pix' in payment_method_types (P2 zero-churn)"
 
     @pytest.mark.asyncio
     @patch("routes.billing.require_auth")
