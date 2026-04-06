@@ -356,7 +356,7 @@ export default function PlanosPage() {
           <div className="py-8 text-center">
             <p className="text-lg font-semibold text-[var(--ink)] mb-4">Precisa de mais informações?</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
-              <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5531992378865"}?text=${encodeURIComponent("Olá! Gostaria de saber mais sobre o SmartLic Pro.")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[var(--ink-secondary)] hover:text-[var(--brand-blue)] transition-colors" data-testid="whatsapp-link">
+              <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5548988344559"}?text=${encodeURIComponent("Olá! Gostaria de saber mais sobre o SmartLic Pro.")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[var(--ink-secondary)] hover:text-[var(--brand-blue)] transition-colors" data-testid="whatsapp-link">
                 <MessageCircle className="w-5 h-5" /><span className="font-medium">Fale conosco</span>
               </a>
               <a href="mailto:tiago.sasaki@confenge.com.br" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[var(--ink-secondary)] hover:text-[var(--brand-blue)] transition-colors" data-testid="email-link">
