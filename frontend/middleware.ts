@@ -67,23 +67,19 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     // CSP script-src strategy (validated 2026-04-06, vercel/next.js #89754):
     //
     // Next.js 16 App Router + RSC injects dynamic inline scripts per-request
-    // (self.__next_f.push([...]) RSC payload chunks, __NEXT_DATA__). These
-    // change every request → no static hash possible. Nonce approach forces
-    // headers() in layout.tsx → dynamic rendering → Next.js overrides to
+    // (self.__next_f.push([...]) RSC payload chunks). These change every request
+    // → no static hash possible. Nonce forces headers() → dynamic rendering →
     // Cache-Control:private → CDN cannot cache → worse CWV/SEO.
     //
-    // Industry consensus (confirmed open issue Feb 2026, no upstream fix):
-    // 'unsafe-inline' is unavoidable for Next.js + public CDN caching.
+    // 'strict-dynamic' NOT used: it disables 'self' and domain allowlisting for
+    // <script src> tags, blocking all /_next/static/chunks/*.js files.
+    // strict-dynamic only works when scripts are loaded BY a trusted (nonce/hash)
+    // script — not for static <script src> in HTML without a nonce.
     //
-    // Mitigation: 'strict-dynamic' alongside 'unsafe-inline'. In CSP3-capable
-    // browsers (~95% market share), 'unsafe-inline' is IGNORED when
-    // 'strict-dynamic' is present — browser enforces nonce/hash instead.
-    // Fallback for old browsers: 'unsafe-inline' applies.
-    //
-    // + static SHA-256 hash for theme-init (dangerouslySetInnerHTML in layout.tsx)
-    // This script has a nonce in CSP3 browsers (strict-dynamic path); in legacy
-    // browsers the hash allows it explicitly.
-    "script-src 'self' 'unsafe-inline' 'strict-dynamic' 'sha256-cKn8Ad2sQ17kSb7D+OWHpjqjv4Jgu4eo/To/sKp8AsQ=' https://js.stripe.com https://static.cloudflareinsights.com https://cdnjs.cloudflare.com https://cdn.sentry.io https://www.clarity.ms https://www.googletagmanager.com",
+    // Industry consensus (open issue Feb 2026, no upstream fix): 'unsafe-inline'
+    // is unavoidable for Next.js + public CDN caching. CSP still provides real
+    // protection via connect-src, object-src 'none', frame-src, default-src.
+    "script-src 'self' 'unsafe-inline' https://js.stripe.com https://static.cloudflareinsights.com https://cdnjs.cloudflare.com https://cdn.sentry.io https://www.clarity.ms https://www.googletagmanager.com",
     // DEBT-116: style-src unsafe-inline is an accepted risk.
     // Tailwind CSS and Next.js inject inline styles at runtime (className -> style).
     // Nonce-based styles would require a custom PostCSS plugin + Next.js config changes
