@@ -112,3 +112,25 @@ export function formatBRL(value: number): string {
   }
   return `R$ ${value.toFixed(0)}`;
 }
+
+// A5: Trending sectors type + fetch
+export interface TrendingSector {
+  slug: string;
+  name: string;
+  count_this_week: number;
+}
+
+export async function fetchTrendingSectors(): Promise<TrendingSector[] | null> {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) return null;
+
+  try {
+    const res = await fetch(`${backendUrl}/v1/sectors/trending`, {
+      next: { revalidate: 21600 }, // 6h ISR
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}

@@ -301,3 +301,50 @@ async def refresh_all_sector_stats() -> int:
         except Exception as e:
             logger.error("Failed to refresh sector %s: %s", sector_id, e)
     return refreshed
+
+
+# ---------------------------------------------------------------------------
+# A5: Trending sectors endpoint
+# ---------------------------------------------------------------------------
+
+class TrendingSector(BaseModel):
+    slug: str
+    name: str
+    count_this_week: int
+
+
+_trending_cache: Optional[tuple[list[dict], float]] = None
+_TRENDING_CACHE_TTL = 6 * 60 * 60  # 6h
+
+
+@router.get("/sectors/trending", response_model=list[TrendingSector])
+async def get_trending_sectors():
+    """Top 5 sectors by bid count in the last 7 days (public, no auth).
+
+    Used by homepage TrendingEditais component to inject fresh internal links.
+    """
+    global _trending_cache
+
+    # Check cache
+    if _trending_cache:
+        data, ts = _trending_cache
+        if time.time() - ts < _TRENDING_CACHE_TTL:
+            return [TrendingSector(**d) for d in data]
+
+    # Aggregate counts from cached sector stats (avoid extra PNCP calls)
+    sector_counts: list[dict] = []
+    for sector_id, sector in SECTORS.items():
+        cached = _get_cached_stats(sector_id)
+        count = cached["total_open"] if cached else 0
+        sector_counts.append({
+            "slug": sector_slug(sector_id),
+            "name": sector.name,
+            "count_this_week": count,
+        })
+
+    # Sort by count descending, take top 5
+    sector_counts.sort(key=lambda x: x["count_this_week"], reverse=True)
+    top5 = sector_counts[:5]
+
+    _trending_cache = (top5, time.time())
+    return [TrendingSector(**d) for d in top5]

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, source } = await request.json();
+    const { email, source, setor, uf } = await request.json();
 
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Email inválido' }, { status: 400 });
@@ -13,12 +13,16 @@ export async function POST(request: NextRequest) {
     const res = await fetch(`${backendUrl}/v1/lead-capture`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, source, captured_at: new Date().toISOString() }),
+      body: JSON.stringify({
+        email,
+        source,
+        setor: setor || null,
+        uf: uf || null,
+        captured_at: new Date().toISOString(),
+      }),
     });
 
     if (!res.ok) {
-      // If backend doesn't have the endpoint yet, still return success
-      // The lead capture will be implemented backend-side later
       console.warn(`Lead capture backend returned ${res.status} — storing locally only`);
     }
 

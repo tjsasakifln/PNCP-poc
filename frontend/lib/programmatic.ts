@@ -439,6 +439,48 @@ const PHASE1_SECTORS = ['informatica', 'saude', 'engenharia', 'facilities', 'sof
 /** Phase 1 UFs — 5 largest by procurement volume */
 const PHASE1_UFS = ['SP', 'RJ', 'MG', 'PR', 'RS'];
 
+// S3: Alertas Publicos types and fetch
+export interface AlertaBid {
+  titulo: string;
+  orgao: string;
+  valor: number | null;
+  uf: string;
+  municipio: string;
+  modalidade: string;
+  data_publicacao: string;
+  data_abertura: string | null;
+  link_pncp: string;
+  pncp_id: string;
+}
+
+export interface AlertasData {
+  sector_id: string;
+  sector_name: string;
+  uf: string;
+  bids: AlertaBid[];
+  total: number;
+  last_updated: string;
+}
+
+export async function fetchAlertasPublicos(
+  sectorSlug: string,
+  uf: string,
+): Promise<AlertasData | null> {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) return null;
+
+  try {
+    const sectorId = sectorSlug.replace(/-/g, '_');
+    const res = await fetch(`${backendUrl}/v1/alertas/${sectorId}/uf/${uf.toUpperCase()}`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * SEO-PLAYBOOK P1: Generate static params for full 15×27 = 405 pages.
  * (Previously Phase 1: 5 sectors × 5 UFs = 25 pages)

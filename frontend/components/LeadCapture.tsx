@@ -3,12 +3,14 @@
 import { useState } from 'react';
 
 interface LeadCaptureProps {
-  source: string;         // 'calculadora' | 'cnpj'
+  source: string;         // 'calculadora' | 'cnpj' | 'alertas'
   heading?: string;
   description?: string;
+  setor?: string;         // A2: sector context from parent
+  uf?: string;            // A2: UF context from parent
 }
 
-export function LeadCapture({ source, heading, description }: LeadCaptureProps) {
+export function LeadCapture({ source, heading, description, setor, uf }: LeadCaptureProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
@@ -21,7 +23,7 @@ export function LeadCapture({ source, heading, description }: LeadCaptureProps) 
       const res = await fetch('/api/lead-capture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, source }),
+        body: JSON.stringify({ email, source, setor, uf }),
       });
       if (res.ok) {
         setStatus('success');
@@ -46,7 +48,7 @@ export function LeadCapture({ source, heading, description }: LeadCaptureProps) 
   return (
     <div className="rounded-xl bg-surface-1 border border-border p-6 sm:p-8">
       <h3 className="text-lg font-bold text-ink mb-2">
-        {heading || 'Receba análises como esta no seu email'}
+        {heading || 'Receba alertas semanais do seu setor por email'}
       </h3>
       <p className="text-ink-secondary text-sm mb-4">
         {description || 'Dados semanais do PNCP sobre seu setor. Sem spam — cancele a qualquer momento.'}

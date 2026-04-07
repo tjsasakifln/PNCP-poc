@@ -50,6 +50,8 @@ from routes.trial_extension import router as trial_extension_router
 from routes.weekly_digest import router as weekly_digest_router
 from routes.stats_public import router as stats_public_router
 from routes.dados_publicos import router as dados_publicos_router
+from routes.alertas_publicos import router as alertas_publicos_router
+from routes.lead_capture import router as lead_capture_router
 
 _v1_routers = [
     admin_router, subscriptions_router, features_router, messages_router,
@@ -70,6 +72,8 @@ _v1_routers = [
     weekly_digest_router,
     stats_public_router,
     dados_publicos_router,
+    alertas_publicos_router,
+    lead_capture_router,
 ]
 
 

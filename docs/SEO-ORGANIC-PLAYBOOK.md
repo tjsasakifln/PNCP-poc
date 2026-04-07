@@ -1063,10 +1063,10 @@ Para o SmartLic (fase atual: pré-escala, custo de infra ~zero marginal por cana
 | # | Tática | Impacto estimado | Esforço |
 |---|--------|-----------------|---------|
 | A1 | **Expandir para setor×UF×modalidade** (405 → 2,430 páginas) | 3-4× volume de busca endereçável | 2-3 semanas |
-| A2 | **Lead magnet na calculadora/CNPJ** (email capture sem signup) | +200-500 leads/mês (5-10% capture) | 1 semana |
+| A2 | ~~**Lead magnet na calculadora/CNPJ**~~ ✅ CONCLUÍDO 2026-04-07 — Backend `POST /v1/lead-capture` + tabela `leads` + LeadCapture com setor/uf context + CNPJ perfil page | +200-500 leads/mês (5-10% capture) | 1 semana |
 | A3 | **Weekly proprietary data report** (trigger Google Discover) | 5K-20K visits por spike | 1 dia setup + semanal |
-| A4 | **CTA nas páginas /licitacoes/[setor]** (atualmente sem CTA) | +15-20% conversão nessas páginas | 1 dia |
-| A5 | **"Trending editais" na homepage** (internal link injection) | Acelera crawl de novas páginas em horas | 1 dia |
+| A4 | ~~**CTA nas páginas /licitacoes/[setor]**~~ ✅ CONCLUÍDO 2026-04-07 — 3 CTAs contextuais com `?ref=licitacoes-{setor}` + copy com contagem live + banner pós-UF grid | +15-20% conversão nessas páginas | 1 dia |
+| A5 | ~~**"Trending editais" na homepage**~~ ✅ CONCLUÍDO 2026-04-07 — `GET /v1/sectors/trending` (top 5 setores 7d, cache 6h) + TrendingEditais async com fallback estático + link para /alertas-publicos | Acelera crawl de novas páginas em horas | 1 dia |
 | A6 | **Reddit seeding** em r/brasil, r/empreendedorismo | DR95 backlinks + citação em AI answers | 90 dias buildup |
 | A7 | **Source of Sources + Qwoted** (journalist backlinks) | DR70+ editorial links | Ongoing |
 | A8 | **LinkedIn articles** com dados proprietários do datalake | DR98 indexed pages + B2B reach | Semanal |
@@ -1564,7 +1564,7 @@ Os três ou não publica.
 
 **Impacto:** +405 novas páginas indexáveis, RSS consumption por 5-10 sites em 30d, menções orgânicas em fóruns sem intervenção.
 
-**Status:** [ ] Pendente implementação
+**Status:** [x] Implementado (2026-04-07) — Backend `GET /v1/alertas/{setor_id}/uf/{uf}` (query datalake, cache 1h, 20 bids mais recentes). Frontend `app/alertas-publicos/[setor]/[uf]/page.tsx` (ISR 1h, DataFeed+BreadcrumbList JSON-LD, listagem de bids com link PNCP, CTA contextual). RSS feed `rss.xml/route.ts` por setor×UF (405 feeds). Hub index `alertas-publicos/page.tsx`. Sitemap integrado (+405 URLs). Cross-links de blog licitacoes. Backend `POST /v1/lead-capture` + tabela `leads`. Testes: 7/7 backend pass.
 
 ---
 

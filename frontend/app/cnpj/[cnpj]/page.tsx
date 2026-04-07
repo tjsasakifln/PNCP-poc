@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ContentPageLayout from '../../components/ContentPageLayout';
 import CnpjPerfilClient from './CnpjPerfilClient';
+import { LeadCapture } from '@/components/LeadCapture';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
@@ -172,6 +173,17 @@ export default async function CnpjPerfilPage({
       />
 
       <CnpjPerfilClient perfil={perfil} />
+
+      {/* A2: Contextual lead capture with detected sector + UF */}
+      <div className="mt-10">
+        <LeadCapture
+          source="cnpj-perfil"
+          setor={perfil.setor_detectado}
+          uf={perfil.empresa.uf}
+          heading="Receba alertas semanais do seu setor por email"
+          description={`Novos editais de ${perfil.setor_nome} em ${perfil.empresa.uf}, toda semana no seu email.`}
+        />
+      </div>
     </ContentPageLayout>
   );
 }

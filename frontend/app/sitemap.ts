@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getAllSlugs, getArticleBySlug } from '@/lib/blog';
 import { SECTORS } from '@/lib/sectors';
-import { generateSectorParams, generateLicitacoesParams } from '@/lib/programmatic';
+import { generateSectorParams, generateLicitacoesParams, generateSectorUfParams } from '@/lib/programmatic';
 import { getAllCaseSlugs } from '@/lib/cases';
 import { CITIES } from '@/lib/cities';
 import { GLOSSARY_TERMS } from '@/lib/glossary-terms';
@@ -96,6 +96,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: today,
     changeFrequency: 'daily' as const,
     priority: 0.7,
+  }));
+
+  // S3: Alertas Publicos pages (15 sectors × 27 UFs = 405 pages)
+  const alertasRoutes: MetadataRoute.Sitemap = generateSectorUfParams().map(({ setor, uf }) => ({
+    url: `${baseUrl}/alertas-publicos/${setor}/${uf}`,
+    lastModified: today,
+    changeFrequency: 'hourly' as const,
+    priority: 0.8,
   }));
 
   return [
@@ -295,5 +303,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.8,
     })),
+    // S3: Alertas Publicos hub
+    {
+      url: `${baseUrl}/alertas-publicos`,
+      lastModified: today,
+      changeFrequency: 'daily' as const,
+      priority: 0.9,
+    },
+    // S3: Alertas Publicos pages (405)
+    ...alertasRoutes,
   ];
 }

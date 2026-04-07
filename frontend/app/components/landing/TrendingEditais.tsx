@@ -1,21 +1,30 @@
 /**
  * TrendingEditais — SEO internal link injection from homepage to programmatic pages.
  * Pure server component. No client JS needed.
- * Goal: inject internal links to accelerate Google crawl discovery.
+ * A5: Now fetches live trending data from backend with static fallback.
  */
 import Link from 'next/link';
-import { SECTORS } from '@/lib/sectors';
+import { SECTORS, fetchTrendingSectors } from '@/lib/sectors';
 
 const TOP_UFS = ['SP', 'MG', 'RJ', 'RS', 'PR', 'BA', 'SC', 'GO', 'PE', 'CE'];
 
-// Top 8 sectors by typical public procurement volume
-const TOP_SECTORS = SECTORS.slice(0, 8);
+// Static fallback: first 8 sectors
+const FALLBACK_SECTORS = SECTORS.slice(0, 8);
 
-export function TrendingEditais() {
+export async function TrendingEditais() {
   const now = new Date();
   const month = now.toLocaleString('pt-BR', { month: 'long' });
   const year = now.getFullYear();
   const monthCapitalized = month.charAt(0).toUpperCase() + month.slice(1);
+
+  // A5: Try to fetch live trending data
+  const trending = await fetchTrendingSectors();
+  const hasLiveData = trending && trending.length > 0;
+
+  // Use live data if available, otherwise static fallback
+  const displaySectors = hasLiveData
+    ? trending.map((t) => ({ slug: t.slug, name: t.name, count: t.count_this_week }))
+    : FALLBACK_SECTORS.map((s) => ({ slug: s.slug, name: s.name, count: 0 }));
 
   return (
     <section className="py-16 bg-surface-0 border-t border-[var(--border)]">
@@ -24,12 +33,14 @@ export function TrendingEditais() {
           Licitações Abertas — {monthCapitalized} {year}
         </h2>
         <p className="text-sm text-ink-secondary mb-8">
-          Dados atualizados diariamente do Portal Nacional de Contratações Públicas (PNCP)
+          {hasLiveData
+            ? 'Setores mais ativos esta semana — dados ao vivo do PNCP'
+            : 'Dados atualizados diariamente do Portal Nacional de Contratações Públicas (PNCP)'}
         </p>
 
-        {/* Sector links */}
+        {/* Sector links with optional count badges */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">
-          {TOP_SECTORS.map((sector) => (
+          {displaySectors.map((sector) => (
             <Link
               key={sector.slug}
               href={`/licitacoes/${sector.slug}`}
@@ -38,6 +49,11 @@ export function TrendingEditais() {
               <span className="text-sm font-semibold text-ink group-hover:text-brand-blue transition-colors">
                 {sector.name}
               </span>
+              {sector.count > 0 && (
+                <span className="block text-xs text-ink-secondary mt-1">
+                  {sector.count} editais esta semana
+                </span>
+              )}
             </Link>
           ))}
         </div>
@@ -65,6 +81,9 @@ export function TrendingEditais() {
           </Link>
           <Link href="/cnpj" className="text-sm text-brand-blue hover:underline">
             Consulta CNPJ →
+          </Link>
+          <Link href="/alertas-publicos" className="text-sm text-brand-blue hover:underline">
+            Alertas Públicos →
           </Link>
           <Link href="/glossario" className="text-sm text-brand-blue hover:underline">
             Glossário →
