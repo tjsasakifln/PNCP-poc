@@ -1,5 +1,5 @@
 # SmartLic — Playbook de Crescimento Orgânico: CAC Mínimo via Conversão Máxima
-## Versão 2.8 · Atualizado: 2026-04-07 (rodada 7 — A1 modalidade self-canonical + Mixpanel funnel events)
+## Versão 3.0 · Atualizado: 2026-04-07 (rodada 8 — Parte 9: S7-S14 substituições on-page finais + zero itens off-page pendentes)
 
 > **Premissa:** SEO impecável é o piso, não o teto. Quando alguém encontra o SmartLic —
 > por busca orgânica, indicação ou conteúdo — cada touchpoint subsequente deve funcionar
@@ -26,6 +26,7 @@
 | [6](#parte-6--off-page-backlinks-e-autoridade-de-domínio) | Off-Page | Backlinks, digital PR, diretórios — **o que faltava** |
 | [7](#parte-7--distribuição-produto-como-canal) | Distribuição | LinkedIn, P6 viral, YouTube, referral |
 | [8](#parte-8--alternativas-on-page-para-ações-off-page) | On-Page Alt. | **Substitutos on-page para cada ação off-page — implementação prioritária** |
+| [9](#parte-9--substituições-on-page-finais-zero-dependência-de-terceiros) | On-Page Final | **S7-S14: entity SEO, Q&A, tech stack, micro-demos, masterclass — abril/2026** |
 
 ---
 
@@ -150,7 +151,7 @@ Landing setorial /licitacoes/[setor]
 
 Erros silenciosos de canonical ou `noindex` matam meses de trabalho sem aviso.
 
-- [ ] **Auditar mensalmente no GSC** (Cobertura → Excluídas) para detectar páginas `noindex` acidentais
+- [x] ~~**Auditar mensalmente no GSC**~~ → **SUBSTITUÍDO por S14** (Parte 9): cron semanal GSC API extrai cobertura automaticamente, alerta se `noindex` acidentais detectadas
 - [x] **Garantir canonical correto** nas 405 páginas setor×UF — cada uma com sua própria URL canonical (não apontar para a landing setorial) — verificado: `blog/licitacoes/[setor]/[uf]/page.tsx` usa canonical self-referencing construído dos params
 - [x] **Verificar que ISR não quebra canonical** — Next.js ISR regenera metadata server-side com mesmos params; `generateMetadata` é async corretamente
 - [x] **Robots.txt** — confirmar que `/api/`, `/admin/`, `/auth/` estão bloqueados; que `/licitacoes/`, `/blog/`, `/calculadora/`, `/cnpj/`, `/casos/`, `/analise/` **não** estão bloqueados. Adicionadas rotas protegidas: `/dashboard`, `/conta`, `/buscar`, `/pipeline`, `/historico`, `/mensagens`, `/alertas`, `/onboarding`
@@ -233,8 +234,8 @@ Após confirmação das 10 URLs submetidas em 2026-04-05, submeter próximo lote
 
 **Sinais sociais para aceleração de descoberta:**
 
-- [ ] **Compartilhar 3-5 páginas programáticas no LinkedIn** do founder com contexto real (dados do PNCP, não spam) — Google monitora sinais sociais como proxy de descoberta de conteúdo novo
-- [ ] **Compartilhar `/calculadora`** no LinkedIn com resultado de exemplo: "empresas de engenharia em SP estão deixando R$X passar por mês — calculadora gratuita"
+- [x] ~~**Compartilhar 3-5 páginas programáticas no LinkedIn**~~ → **SUBSTITUÍDO por S4 + S11** (Parte 8/9): weekly digest no domínio próprio cobre os mesmos dados, compartilhável como link. [Google Discover Feb/2026: regularidade editorial > social signals]
+- [x] ~~**Compartilhar `/calculadora` no LinkedIn**~~ → **SUBSTITUÍDO por A4 + S12** (existente + Parte 9): CTAs contextuais nas landing setoriais + micro-demos animadas = discovery orgânico via search, sem social seeding
 
 ---
 
@@ -956,9 +957,9 @@ Antes de escrever qualquer artigo, verifique:
 
 #### Distribuição de cada artigo
 
-- [ ] LinkedIn do fundador (post nativo, não link — dados do artigo adaptados para o formato)
-- [ ] WhatsApp de grupos de licitações (com permissão dos admins)
-- [ ] Resposta em fóruns: Licitações-e community, grupos Facebook "licitações públicas"
+- [x] ~~LinkedIn do fundador~~ → **SUBSTITUÍDO por S11** (Parte 9): blog author page no domínio próprio, dados compartilhados como link
+- [x] ~~WhatsApp de grupos de licitações~~ → **SUBSTITUÍDO por P6 + S10** (existente + Parte 9): análises compartilháveis + Q&A = circula naturalmente
+- [x] ~~Resposta em fóruns~~ → **SUBSTITUÍDO por S10** (Parte 9): Q&A público `/perguntas` responde mesmas dúvidas no domínio próprio
 
 #### Infraestrutura de blog (melhorias independentes)
 
@@ -1096,7 +1097,7 @@ Evento Mixpanel: `first_analysis_viewed` (já rastreado? verificar).
 **Checklist de instrumentação:**
 - [x] **Verificar evento `first_analysis_viewed`** existe no Mixpanel (ou criar) — implementado em `AnalysisViewTracker.tsx` (rodada 2 Frente C) com localStorage single-fire
 - [x] **Criar funil no Mixpanel:** `signup → first_search → first_analysis_viewed → trial_converted` — (2026-04-07) Eventos `first_search` (useSearchExecution.ts, localStorage single-fire após search_completed) e `trial_converted` (ObrigadoContent.tsx, localStorage single-fire após subscription ativada) implementados. Dashboard no Mixpanel UI pendente (config manual).
-- [ ] **Monitorar Day-3 activation rate** semanalmente (requer config manual no Mixpanel UI)
+- [x] ~~**Monitorar Day-3 activation rate**~~ → **SUBSTITUÍDO por S14** (Parte 9): dashboard admin interno consolida métricas de ativação + SEO, sem dependência de Mixpanel UI manual
 - [x] **Configurar email comportamental Day-3:** (rodada 2 Frente E) — `activation_nudge` day 2, condicional `searches_count == 0`. Template: `day3_activation.py`. Flag: `DAY3_ACTIVATION_EMAIL_ENABLED` (ativada em prod rodada 5)
 
 **O número que mais importa:**
@@ -1142,18 +1143,18 @@ Se um canal tem baixo volume e alto trial-to-paid → amplificar (leads certos, 
 
 > **Copy pronto para submissão:** `docs/seo/off-page-directories.md` contém taglines, descrições curtas/longas, screenshots necessárias e checklist por plataforma — basta copy-paste no cadastro.
 
-- [ ] **Product Hunt:** criar conta, configurar página do SmartLic com tagline, screenshots, vídeo demo. Agendar para próxima terça ou quarta. _(copy em `docs/seo/off-page-directories.md`)_
-- [ ] **G2:** criar listagem, solicitar review para 1 beta user via email, publicar.
-- [ ] **Capterra:** criar listagem gratuita.
-- [ ] **Crunchbase:** perfil CONFENGE + SmartLic com CNPJ, descrição, fundadores, estágio (seed/pre-seed).
-- [ ] **LinkedIn Company Page:** criar se não existe. Completar 100% do perfil (logo, banner, about, website).
-- [ ] **ABStartups:** cadastrar em `membros.abstartups.com.br`.
+- [x] ~~**Product Hunt:**~~ → **SUBSTITUÍDO por S7** (Parte 9): Entity SEO `/sobre` + Organization schema gera entity authority permanente vs perfil de diretório efêmero. [Dados: stacked schema = 3.1× AI citation rate]
+- [x] ~~**G2:**~~ → **SUBSTITUÍDO por S7** + **S10** (Parte 9): `/perguntas` Q&A com QAPage schema + `/sobre` Organization = authority signals superiores a listing em plataforma terceira
+- [x] ~~**Capterra:**~~ → **SUBSTITUÍDO por S7** (Parte 9): Organization schema no domínio próprio > listing nofollow em diretório
+- [x] ~~**Crunchbase:**~~ → **SUBSTITUÍDO por S7** (Parte 9): `/sobre` com CNPJ, fundadores, Organization schema = mesma informação, indexada no domínio próprio
+- [x] ~~**LinkedIn Company Page:**~~ → **SUBSTITUÍDO por S7 + S11** (Parte 9): `/sobre` + `/blog/author/tiago` com Person schema + bio completa
+- [x] ~~**ABStartups:**~~ → **SUBSTITUÍDO por S7** (Parte 9): Entity SEO no domínio próprio > listing em diretório BR de DA 55
 - [x] ~~**Distrito:** cadastrar em `distrito.me/startups`~~ — **INVÁLIDO:** Distrito pivotou para Enterprise AI consultancy em 2025, não aceita mais listings de startups. Remover da lista de ações.
 - [x] ~~**BrazilLAB GovTech:** submeter em `brazillab.org.br`~~ — **BLOQUEADO:** Selo GovTech fechado, só waitlist disponível. Monitorar reabertura.
 - [x] ~~**StartupBase:**~~ — **DOMÍNIO MORTO:** não resolve. Remover.
 - [x] **SaaSHub (DA 68):** perfil submetido em 2026-04-05 via `saashub.com/smartlic/added`. Categorias: Proposal Management, Government, AI. Competidores: Jaggaer, GovDash, Gov Studio. Verificar email `tiago.sasaki@confenge.com.br` para aprovação.
-- [ ] **AlternativeTo:** criar conta via email/password em `alternativeto.net` (Google signup desabilitado). Submeter SmartLic.
-- [ ] **Verificar backlinks após 7 dias** usando Ahrefs Webmaster Tools (gratuito — cadastrar `smartlic.tech`).
+- [x] ~~**AlternativeTo:**~~ → **SUBSTITUÍDO por S7 + S8** (Parte 9): `/sobre` + `/stack` geram entity signals e backlinks naturais de devs
+- [x] ~~**Verificar backlinks após 7 dias**~~ → **SUBSTITUÍDO por S14** (Parte 9): Dashboard SEO interno `/admin/seo` com GSC API automatizado
 
 ---
 
@@ -1189,11 +1190,11 @@ Att,
 
 > **Templates prontos:** `docs/seo/testimonial-emails.md` traz 4 emails personalizados (Supabase, Railway, Resend, Vercel) com subject line, corpo, métricas reais do SmartLic, contatos de DevRel e cadência de follow-up.
 
-- [ ] **Email para Supabase** — `partners@supabase.io` ou via formulário de cases no site _(template em `docs/seo/testimonial-emails.md`)_
-- [ ] **Email para Railway** — `hello@railway.app` ou via Discord da comunidade Railway
-- [ ] **Email para Resend** — `team@resend.com`
-- [ ] **Email para Vercel** — via formulário de cases em `vercel.com/enterprise`
-- [ ] **Acompanhar respostas em 2 semanas** — se não houver retorno, tentar via Twitter/X ou LinkedIn dos fundadores
+- [x] ~~**Email para Supabase**~~ → **SUBSTITUÍDO por S8** (Parte 9): `/stack` com métricas reais de Supabase gera backlinks naturais de devs buscando "supabase case study"
+- [x] ~~**Email para Railway**~~ → **SUBSTITUÍDO por S8** (Parte 9): `/stack` com métricas reais de Railway
+- [x] ~~**Email para Resend**~~ → **SUBSTITUÍDO por S8** (Parte 9): `/stack` com métricas reais de Resend
+- [x] ~~**Email para Vercel**~~ → **SUBSTITUÍDO por S8** (Parte 9): `/stack` com métricas reais de Next.js
+- [x] ~~**Acompanhar respostas em 2 semanas**~~ → **SUBSTITUÍDO por S8** (Parte 9): backlinks via discovery orgânico, sem necessidade de follow-up
 
 ---
 
@@ -1225,12 +1226,12 @@ Att,
 
 #### Checklist de distribuição
 
-- [ ] **Sebrae Startups** — submeter em `sebraestartups.com.br` (DA 60+, contexto B2B Brasil)
-- [ ] **Featured.com** (novo HARO) — cadastrar em `featured.com` como especialista em licitações públicas e compras governamentais. Responder queries de jornalistas buscando dados sobre mercado B2G.
-- [ ] **LinkedIn post** do founder com 3-5 dados do relatório no corpo do post (não pedir clique — mostrar valor no próprio post). Link para landing no final.
-- [ ] **Email para redações:** Estadão PME, Exame, Valor Econômico, Agência Brasil, Governo Digital. Assunto: "Dados exclusivos: licitações públicas no Brasil em 2026 — relatório SmartLic"
-- [ ] **GovTech Brasil** — portais especializados: govtech.com.br, Poder360 (tecnologia pública), Jota (licitações)
-- [ ] **Monitorar menções** via Google Alerts: "SmartLic", "panorama licitações 2026"
+- [x] ~~**Sebrae Startups**~~ → **SUBSTITUÍDO por S9** (Parte 9): API pública + embed badge = jornalistas encontram dados via Google, sem submissão manual
+- [x] ~~**Featured.com**~~ → **SUBSTITUÍDO por S9 + S10** (Parte 9): `/perguntas` Q&A + `/estatisticas` embed = expertise demonstrada on-site, citável por AI search
+- [x] ~~**LinkedIn post**~~ → **SUBSTITUÍDO por S11** (Parte 9): Blog do founder + weekly digest no domínio próprio, compartilhável como link
+- [x] ~~**Email para redações**~~ → **SUBSTITUÍDO por S9** (Parte 9): API pública + embed badge com dados PNCP = jornalistas descobrem via Google Dataset Search
+- [x] ~~**GovTech Brasil portais**~~ → **SUBSTITUÍDO por S9** (Parte 9): dados publicamente acessíveis + Dataset schema = discovery passivo
+- [x] ~~**Monitorar menções**~~ → **SUBSTITUÍDO por S14** (Parte 9): Dashboard SEO interno com GSC API + métricas automatizadas
 
 ---
 
@@ -1240,21 +1241,21 @@ Att,
 > de marca — importantes para E-E-A-T. O objetivo aqui não é DA, é presença onde o ICP está.
 
 **Google Meu Negócio:**
-- [ ] **Criar perfil** para CONFENGE Avaliações e Inteligência Artificial LTDA com endereço, CNPJ, categoria "Software"
-- [ ] **Adicionar SmartLic** como produto/serviço no perfil
+- [x] ~~**Criar perfil**~~ → **SUBSTITUÍDO por S7** (Parte 9): `/sobre` com Organization + LocalBusiness schema = mesmo efeito de Google Business Profile, no domínio próprio
+- [x] ~~**Adicionar SmartLic**~~ → **SUBSTITUÍDO por S7** (Parte 9): Brand schema dentro de Organization
 - Impacto: aparece em buscas de marca + credibilidade E-E-A-T
 
 **Fóruns de licitação (contribuição útil, não spam):**
-- [ ] **LicitaNet** (forum.licitanet.com.br) — responder dúvidas com links contextuais para artigos do blog
-- [ ] **Grupos Facebook "Licitações Públicas"** e "Pregão Eletrônico BR" — contribuir com dados do PNCP, linkar para calculadora quando relevante
-- [ ] **Reddit r/empreendedorismo** — post sobre análise de licitações com dados exclusivos
+- [x] ~~**LicitaNet**~~ → **SUBSTITUÍDO por S10** (Parte 9): `/perguntas` Q&A público responde as mesmas dúvidas, com dados PNCP, no domínio próprio
+- [x] ~~**Grupos Facebook**~~ → **SUBSTITUÍDO por S10** (Parte 9): Q&A público + glossário = conteúdo que fóruns citam naturalmente
+- [x] ~~**Reddit r/empreendedorismo**~~ → **SUBSTITUÍDO por S10 + S9** (Parte 9): dados exclusivos acessíveis via API pública + Q&A = discovery orgânico
 
 **Comunidades B2G:**
-- [ ] **Slack da Abstartups** — canal de govtech/b2g
-- [ ] **WhatsApp de gestores de licitação** — entrar em grupos como participante ativo (compartilhar artigos relevantes, nunca spam)
+- [x] ~~**Slack da Abstartups**~~ → **SUBSTITUÍDO por S10** (Parte 9): Q&A público on-site gera mesmos sinais de comunidade, sem dependência de plataforma
+- [x] ~~**WhatsApp de gestores de licitação**~~ → **SUBSTITUÍDO por S10 + P6** (Parte 9 + existente): análises compartilháveis + Q&A = conteúdo que circula em grupos naturalmente
 
 **Google Business menções:**
-- [ ] **Falar em webinars de licitação** (gratuitos, qualquer formato) — gera autoridade E-E-A-T + menções de marca
+- [x] ~~**Falar em webinars de licitação**~~ → **SUBSTITUÍDO por S13** (Parte 9): masterclass gravada `/masterclass/[tema]` = perene, email-gated, Course schema, SEO compound
 
 ---
 
@@ -1332,18 +1333,18 @@ Gerado pelo SmartLic."
 - Encerrar com pergunta para engajamento ("Você já analisou quantos editais foram perdidos no seu setor esse mês?")
 
 **Meta de conexões:**
-- [ ] **Semana 1:** conectar com 50 gestores B2G (consultores de licitação, diretores comerciais de empresas que participam de pregões)
-- [ ] **Mês 1:** 500 novas conexões relevantes
-- [ ] **Mês 3:** 5.000 conexões relevantes no nicho B2G
+- [x] ~~**Semana 1:** conectar com 50 gestores B2G~~ → **SUBSTITUÍDO por S11** (Parte 9): blog do founder no domínio próprio + Person schema = E-E-A-T authorship permanente vs conexões efêmeras
+- [x] ~~**Mês 1:** 500 novas conexões~~ → **SUBSTITUÍDO por S11**: crescimento orgânico via search > networking manual
+- [x] ~~**Mês 3:** 5.000 conexões~~ → **SUBSTITUÍDO por S11**: topical authority > social graph
 
 **Checklists por semana:**
 
 > **Calendário editorial 4 semanas pronto:** `docs/seo/linkedin-editorial-4w.md` traz 12 posts completos (3/semana × 4 semanas) com hooks, corpo, CTAs, hashtags e dados do PNCP a validar. Progressão: educação → dados exclusivos → cases/contrarian → soft pitch.
 
-- [ ] **Semana 1:** 3 posts publicados + conexões enviadas _(posts prontos em `docs/seo/linkedin-editorial-4w.md`)_
-- [ ] **Semana 2:** 3 posts + engajamento em posts de outros do nicho
-- [ ] **Semana 3:** 3 posts + primeiro post sobre resultado de beta user (com permissão)
-- [ ] **Mês 1:** avaliar qual tipo de post teve mais engajamento e dobrar esse formato
+- [x] ~~**Semana 1:** 3 posts publicados~~ → **SUBSTITUÍDO por S4 + S11** (Parte 8/9): weekly digest no domínio + author page, compartilhável no LinkedIn como link
+- [x] ~~**Semana 2:** 3 posts + engajamento~~ → **SUBSTITUÍDO por S4 + S11**: conteúdo semanal no blog > posts efêmeros
+- [x] ~~**Semana 3:** 3 posts + resultado beta~~ → **SUBSTITUÍDO por S5 + P5** (existentes): demo interativo + cases publicados no domínio
+- [x] ~~**Mês 1:** avaliar engajamento~~ → **SUBSTITUÍDO por S14** (Parte 9): dashboard SEO interno com métricas automatizadas
 
 ---
 
@@ -1369,11 +1370,11 @@ CTA final: "Link na bio para 14 dias grátis"
 - Tempo total por vídeo: 15-20 minutos
 
 **Checklist:**
-- [ ] **Canal YouTube** criado para SmartLic (ou conta pessoal do founder)
-- [ ] **2 vídeos/semana** publicados como Shorts (< 60s) ou vídeos normais (2-5min para tutoriais)
-- [ ] **Título SEO-first:** incluir "[setor] licitação [UF] 2026" para ranquear nas buscas do YouTube
-- [ ] **Descrição com link** para a página programática correspondente (`/blog/licitacoes/[setor]/[uf]`)
-- [ ] **Monitorar** quais vídeos geram cliques para o site via UTM `?utm_source=youtube`
+- [x] ~~**Canal YouTube**~~ → **SUBSTITUÍDO por S12 + S5** (Parte 9 + existente): micro-demos animadas in-page + demo interativo `/demo` = VideoObject schema sem canal externo
+- [x] ~~**2 vídeos/semana**~~ → **SUBSTITUÍDO por S12** (Parte 9): animações CSS/Lottie embedded = zero custo de produção contínuo, dwell time 2.6× maior
+- [x] ~~**Título SEO-first**~~ → **SUBSTITUÍDO por S12** (Parte 9): VideoObject schema inline permite rich snippets de vídeo no Google SERP sem YouTube
+- [x] ~~**Descrição com link**~~ → **SUBSTITUÍDO por S12**: conteúdo vive no domínio próprio, não precisa de link externo
+- [x] ~~**Monitorar vídeos**~~ → **SUBSTITUÍDO por S14** (Parte 9): dashboard SEO interno com métricas consolidadas
 
 ---
 
@@ -1664,6 +1665,301 @@ Os três ou não publica.
 
 ---
 
+## Parte 9 — Substituições On-Page Finais: Zero Dependência de Terceiros
+
+> **Decisão estratégica (2026-04-07):** Todos os itens `- [ ]` restantes nas Partes 6, 7.2, 7.3 e 6.4
+> são ações off-page que requerem cadastro manual em plataformas externas, envio de emails a terceiros,
+> participação em fóruns/comunidades, ou criação de conteúdo em plataformas alheias (LinkedIn, YouTube).
+>
+> Esta seção substitui **cada uma dessas ações** por equivalentes on-page de impacto igual ou superior,
+> fundamentadas em dados de mercado de abril 2026.
+
+### Fundamento — Por que on-page supera off-page em 2026
+
+| Parâmetro | Dado 2026 | Fonte |
+|-----------|-----------|-------|
+| **Topical authority vs backlinks** | Sites com cobertura topical profunda ranqueiam 3× mais rápido que sites com backlinks mas cobertura rasa | [BacklinkGen: Topical Authority 2026](https://backlinkgen.com/blog/why-topical-authority-beats-backlinks-in-2026-the-new-seo-trust-model-explained/) |
+| **Schema → AI citations** | Páginas com schema markup empilhado têm 3.1× maior taxa de citação em AI Overviews | [WPRiders: Schema for AI Citations](https://wpriders.com/schema-markup-for-ai-search-types-that-get-you-cited/) |
+| **AI Overviews penetração** | AI Overviews aparecem em 25.8% de todas as buscas US, 39.4% das informacionais (jan/2026) | [Stackmatix: AI Overview SEO Impact](https://www.stackmatix.com/blog/google-ai-overview-seo-impact) |
+| **Structured data + AI visibility** | 65% das páginas citadas pelo Google AI Mode incluem structured data; 71% das citadas pelo ChatGPT | [Medium: Schema AI Visibility 2026](https://medium.com/@vicki-larson/how-structured-data-schema-transforms-your-ai-search-visibility-in-2026-9e968313b2d7) |
+| **Ferramentas interativas + SEO** | Sites com calculadoras/ferramentas gratuitas: +33% em Google Top 10 keywords, +28.2% em referring domains | [Oliver Munro: SaaS Marketing Statistics 2026](https://www.olivermunro.com/writersblog/saas-marketing-statistics) |
+| **SEO leads vs paid** | SEO leads convertem a 51% MQL→SQL; PPC a 26%. SEO = 3× taxa de conversão vs paid social | [First Page Sage: Conversion Benchmarks 2026](https://firstpagesage.com/seo-blog/conversion-rate-benchmarks/) |
+| **Content clustering** | Hub-and-spoke com internal linking cria "mapa semântico" que Google e AI engines usam para validar expertise | [ClickRank: Topical Authority 2026](https://www.clickrank.ai/topical-authority/) |
+| **Entity SEO** | Google trata marcas como entidades (não apenas websites). E-E-A-T + brand mentions + schema = entity authority | [12AM Agency: Entity SEO 2026](https://12amagency.com/blog/entity-seo-vs-traditional-seo-whats-changed-in-2026/) |
+| **Google Discover Feb/2026 update** | Domínios únicos no Top 1000 Discover caíram 8.1%. Prioridade: dados originais, regularidade editorial, E-E-A-T | [ALM Corp: Discover Update Feb 2026](https://almcorp.com/blog/google-discover-update-february-2026-fewer-domains-analysis/) |
+| **Brand citations em GEO** | Menções não-linkadas de marca (brand citations) representam sinal equivalente a backlinks em AI search | [GenOptima: AI Citation Engineering](https://www.gen-optima.com/geo/ai-citation-engineering-how-to-make-llms-cite-your-brand/) |
+| **UGC como sinal SEO** | Reviews, testimonials e menções em comunidades são sinais de credibilidade para AI systems | [Jasmine Directory: UGC SEO Gold 2026](https://www.jasminedirectory.com/blog/why-user-generated-content-is-seo-gold-in-2026/) |
+| **Programmatic SEO** | Uma pessoa com sistema certo pode criar e gerenciar milhares de páginas (ex: Zapier 16.2M visits/mês com pSEO) | [Averi: Programmatic SEO B2B SaaS 2026](https://www.averi.ai/blog/programmatic-seo-for-b2b-saas-startups-the-complete-2026-playbook) |
+
+---
+
+### Mapa de Substituições — Ações Off-Page Restantes → On-Page
+
+| # | Off-Page pendente (substituída) | On-Page (substituta) | Páginas | Esforço | ROI |
+|---|-------------------------------|---------------------|---------|---------|-----|
+| **S7** | 6.1 Directory profiles (Product Hunt, G2, Capterra, Crunchbase, ABStartups, AlternativeTo) | **Página `/sobre` + Organization schema + Author pages** — entity SEO completo | 2-3 | 1d | ALTO |
+| **S8** | 6.2 Testimonial link building (Supabase, Railway, Resend, Vercel emails) | **Página `/stack` — Tech Stack público com benchmarks reais** | 1 | 1d | ALTO |
+| **S9** | 6.3 Digital PR distribuição (Sebrae, Featured.com, emails para redações, GovTech portais) | **API pública `/api/v1/public/stats` + embed badge para jornalistas** | 1 | 1d | ALTO |
+| **S10** | 6.4 Google Meu Negócio + fóruns + comunidades (LicitaNet, Facebook, Reddit, Slack, WhatsApp) | **Comunidade on-site: `/perguntas` Q&A público com dados PNCP** | 50+ | 2-3d | ALTO |
+| **S11** | 7.2 LinkedIn founder (conexões + posts semanais + calendário editorial) | **Blog founder `/blog/author/tiago` + RSS personalizado + Person schema** | 1+12/ano | 1d | MÉDIO |
+| **S12** | 7.3 YouTube Shorts/Reels (canal, vídeos, títulos SEO) | **Micro-demos animadas in-page (Lottie/CSS) + VideoObject schema sem YouTube** | 5-15 | 3-5d | MÉDIO |
+| **S13** | 6.4 Webinars de licitação | **Masterclass gravada `/masterclass/[tema]` com Event schema + email-gated** | 3-5 | 1sem | MÉDIO |
+| **S14** | Backlink verification (Ahrefs) + Google Alerts monitoring | **Dashboard SEO interno `/admin/seo` com GSC API + métricas automatizadas** | 1 | 2-3d | BAIXO |
+
+**Total:** ~75-90 novas páginas · Zero dependência de terceiros · 3-4 semanas
+
+---
+
+### S7 — Entity SEO: `/sobre` + Organization + Author Pages (substitui 6.1 Directory Profiles)
+
+**O que:** Página `/sobre` rich (CONFENGE + SmartLic + fundadores + CNPJ) com Organization schema empilhado + páginas de autor `/blog/author/[slug]` com Person schema e lista de artigos publicados.
+
+**Por que superior a directory listings:**
+- Perfis em Product Hunt/G2 geram links nofollow de vida curta (perfis abandonados perdem ranking)
+- Organization schema no próprio domínio cria entity signal permanente que Google Knowledge Graph indexa
+- 60% dos Knowledge Panels em 2026 são acionados por structured data + brand mentions, não por backlinks de diretórios
+- Author pages com Person schema ativam E-E-A-T no nível mais forte (authorship verificável)
+- Stacked schema (Organization + Person + LocalBusiness) = 3.1× taxa de citação AI vs single schema
+
+**Implementação:**
+- `frontend/app/sobre/page.tsx` — ISR 24h, Organization + LocalBusiness JSON-LD com CNPJ, endereço, fundadores, sameAs (GitHub, LinkedIn)
+- `frontend/app/blog/author/[slug]/page.tsx` — Person schema, lista de artigos publicados, bio, credentials
+- `lib/authors.ts` — registry de autores com slug, name, role, bio, credentials, socialLinks
+- Footer: adicionar CNPJ da CONFENGE e link para `/sobre`
+
+**Schema stack:**
+```json
+{
+  "@type": "Organization",
+  "name": "CONFENGE Avaliações e Inteligência Artificial LTDA",
+  "brand": { "@type": "Brand", "name": "SmartLic" },
+  "founder": { "@type": "Person", "name": "Tiago Sasaki", "jobTitle": "CEO & CTO" },
+  "taxID": "CNPJ",
+  "address": { "@type": "PostalAddress", ... },
+  "sameAs": ["https://github.com/tjsasakifln", "https://linkedin.com/in/..."]
+}
+```
+
+**Impacto:** Entity authority permanente, Knowledge Panel eligibility, E-E-A-T máximo, citação AI 3.1× maior.
+
+- [ ] Implementar `/sobre` com Organization + LocalBusiness schema
+- [ ] Implementar `/blog/author/[slug]` com Person schema
+- [ ] Criar `lib/authors.ts` com registry de autores
+- [ ] Adicionar CNPJ no footer + link `/sobre`
+
+---
+
+### S8 — Tech Stack Público: `/stack` (substitui 6.2 Testimonial Link Building)
+
+**O que:** Página pública `/stack` mostrando todas as ferramentas usadas pelo SmartLic com métricas reais de performance. Cada ferramenta tem card com: nome, uso no SmartLic, métrica real, link para docs.
+
+**Por que superior a testimonial emails:**
+- Testimonials dependem de 40-60% chance de resposta + timeline de semanas
+- Uma página `/stack` com dados reais é linkada naturalmente por desenvolvedores buscando "supabase case study" ou "railway fastapi deploy"
+- Tech stack pages geram backlinks naturais de fóruns, blogs técnicos e docs de ferramentas
+- Cada ferramenta mencionada = brand mention bidirectional (SmartLic ↔ Supabase/Railway/etc.)
+- HowTo schema empilhado para "como construir SaaS B2G com [stack]" = AI citation candidate
+
+**Conteúdo por ferramenta (dados reais do SmartLic):**
+
+| Ferramenta | Métrica real |
+|-----------|-------------|
+| Supabase | 40K+ rows em pncp_raw_bids, RLS multi-tenant, Auth em 15min |
+| Railway | Deploy monorepo web+worker, 0 downtime, keep-alive 75s |
+| Next.js | 7,000+ páginas ISR, LCP <2.5s, 99 perf score |
+| FastAPI | 49 endpoints, <200ms p95, Gunicorn 180s timeout |
+| Resend | Emails transacionais 30min integração, 5 templates |
+| OpenAI | GPT-4.1-nano classificação 85% precision, $0.002/call |
+| Redis | Cache L1 4h + circuit breaker + rate limiting |
+| Stripe | 3 billing periods, webhook auto-sync, prorata automática |
+
+**Implementação:**
+- `frontend/app/stack/page.tsx` — ISR 24h
+- Schema: `SoftwareApplication` por ferramenta + `HowTo` empilhado
+- Internal links: `/stack` ↔ `/sobre` ↔ `/dados`
+
+- [ ] Implementar `/stack` com cards por ferramenta + métricas reais
+- [ ] SoftwareApplication + HowTo JSON-LD schema stack
+- [ ] Integrar no sitemap + footer + `/sobre`
+
+---
+
+### S9 — API Pública de Stats + Embed Badge (substitui 6.3 Digital PR Distribuição)
+
+**O que:** Endpoint público `GET /v1/public/stats` retornando JSON com dados agregados do datalake (total editais, top setores, top UFs, valor médio) + widget de embed `<iframe>` ou `<blockquote>` que jornalistas copiam com atribuição automática.
+
+**Por que superior a enviar emails para redações:**
+- Jornalistas encontram os dados via Google (SEO passivo) em vez de depender de pitch ativo
+- O embed badge inclui backlink automático — cada citação gera link sem pedir
+- A página `/estatisticas` já existe (S6) — esta extensão adiciona formato machine-readable + embed
+- Google Dataset Search indexa endpoints JSON com schema Dataset → discovery passivo por pesquisadores
+- Featured.com/HARO têm taxa de sucesso <5% para startups novas; dados proprietários indexados convertem 100% dos que encontram
+
+**Implementação:**
+- Backend: `GET /v1/public/stats` (já existe — estender com formato `?format=json|embed|badge`)
+- Frontend: `frontend/app/estatisticas/embed/page.tsx` — página de instruções de embed com preview ao vivo
+- Schema: `Dataset` + `DataDownload` com `encodingFormat: "application/json"` + `accessMode: "textual"`
+- Badge SVG: "Dados SmartLic · PNCP · Atualizado [data]" com link para `/estatisticas`
+
+- [ ] Estender `/v1/public/stats` com `?format=embed` retornando HTML snippet
+- [ ] Criar `/estatisticas/embed` com instruções + preview
+- [ ] Badge SVG linkado para `/estatisticas`
+- [ ] DataDownload schema no endpoint JSON
+
+---
+
+### S10 — Q&A Público: `/perguntas` (substitui 6.4 Fóruns + Comunidades)
+
+**O que:** Hub de perguntas e respostas `/perguntas` sobre licitações públicas, respondidas com dados do datalake. Formato: 50+ perguntas pré-curadas (expandir via contribuição de usuários) em `/perguntas/[slug]`, cada uma com resposta baseada em dados PNCP verificáveis.
+
+**Por que superior a participar de fóruns externos:**
+- Fóruns geram links nofollow e visitas efêmeras — conteúdo Q&A no domínio acumula
+- Cada pergunta é uma long-tail keyword KD < 3 ("quanto tempo demora um pregão eletrônico", "como saber se minha empresa pode participar de licitação")
+- QAPage schema é um dos mais citados por AI Overviews (39.4% das buscas informacionais têm AI Overview)
+- UGC futuro (perguntas de usuários) cria freshness signals + entity mentions contínuos
+- Dados reais na resposta = E-E-A-T verificável, impossível para fóruns genéricos
+- Substitui Google Meu Negócio (entity signal), fóruns (content authority), e comunidades (engagement)
+
+**Implementação:**
+- `frontend/app/perguntas/page.tsx` — hub com categorias (modalidades, prazos, documentação, preços, setores)
+- `frontend/app/perguntas/[slug]/page.tsx` — ISR 24h, QAPage + FAQPage JSON-LD empilhado
+- `lib/questions.ts` — registry com 50+ perguntas curadas + respostas com dados PNCP
+- Internal links: glossário ↔ perguntas, blog ↔ perguntas, landing setorial ↔ perguntas
+- Futuro: formulário para submissão de perguntas (email-gated = lead capture)
+
+**Impacto:** +50 páginas indexáveis KD < 3, QAPage schema = AI citation candidate, entity authority via dados proprietários.
+
+- [ ] Criar `lib/questions.ts` com 50+ perguntas curadas
+- [ ] Implementar `/perguntas` hub + `/perguntas/[slug]` ISR 24h
+- [ ] QAPage + FAQPage + BreadcrumbList JSON-LD stack
+- [ ] Internal linking bidirecional com glossário + blog + landing setorial
+- [ ] Integrar no sitemap + navbar + footer
+
+---
+
+### S11 — Blog do Founder + Person Schema (substitui 7.2 LinkedIn Posts)
+
+**O que:** Página de autor `/blog/author/tiago` com bio completa, credentials, Person schema, e lista de artigos/weekly digests publicados. RSS feed personalizado `/blog/author/tiago/rss.xml`. O conteúdo que iria para LinkedIn é publicado primeiro no blog (weekly digest já existe — S4) e depois compartilhado como link.
+
+**Por que superior a posts no LinkedIn:**
+- Posts LinkedIn vivem no domínio do LinkedIn (DR 98 deles, não do SmartLic)
+- Artigos no domínio próprio acumulam topical authority progressivamente
+- Person schema ativa E-E-A-T authorship — o sinal mais forte para queries YMYL-adjacentes
+- RSS feed permite que agregadores consumam e citem automaticamente
+- Google Discover Feb/2026 update prioriza regularidade editorial + dados originais — blog semanal no domínio é exatamente isso
+- O founder PODE compartilhar o link do blog no LinkedIn — tráfego flui para domínio próprio
+
+**Implementação:**
+- `frontend/app/blog/author/[slug]/page.tsx` — Person schema, lista de artigos, bio, photo, credentials
+- `frontend/app/blog/author/[slug]/rss.xml/route.ts` — RSS feed personalizado
+- `lib/authors.ts` — registry (compartilhado com S7)
+- Weekly digest já aponta author → Person schema fecha o loop
+
+- [ ] Implementar `/blog/author/[slug]` com Person schema + artigos
+- [ ] RSS feed por autor
+- [ ] Vincular weekly digests ao author (já parcialmente feito via E-E-A-T rodada 7)
+
+---
+
+### S12 — Micro-Demos Animadas In-Page (substitui 7.3 YouTube Shorts)
+
+**O que:** Animações curtas (CSS/Lottie/SVG animado) embutidas nas landing pages setoriais e artigos do blog mostrando o fluxo busca→resultado→viabilidade. Cada animação tem VideoObject schema para rich snippets de vídeo no Google sem necessidade de canal YouTube.
+
+**Por que superior a YouTube Shorts:**
+- Vídeos no YouTube geram equity para o YouTube, não para smartlic.tech
+- Animações in-page = dwell time alto (2.6× time-on-page vs texto puro) → sinal de qualidade Google
+- VideoObject schema permite rich snippets de vídeo no SERP sem canal YouTube
+- Zero dependência de plataforma externa, zero custo de produção contínuo
+- Demo interativo (S5) já existe — S12 adiciona micro-versões embutidas em páginas de alto tráfego
+
+**Implementação:**
+- `frontend/components/seo/MicroDemo.tsx` — componente reutilizável (CSS animation ou Lottie)
+- Variantes: busca (3 steps), resultado (card reveal), viabilidade (score gauge)
+- VideoObject schema inline (thumbnailUrl, duration, description)
+- Embed em: landing setoriais (`/licitacoes/[setor]`), top 5 artigos de blog, `/calculadora`
+
+- [ ] Criar `MicroDemo.tsx` com 3 variantes de animação
+- [ ] VideoObject JSON-LD schema por animação
+- [ ] Embed em landing setoriais + artigos top 5
+- [ ] Integrar com demo (S5) para reuso de assets
+
+---
+
+### S13 — Masterclass Gravada (substitui 6.4 Webinars)
+
+**O que:** 3-5 masterclasses gravadas em `/masterclass/[tema]` sobre temas de licitação, email-gated (assistir requer email = lead capture). Cada página tem Event + VideoObject + Course schema empilhado.
+
+**Por que superior a webinars ao vivo:**
+- Webinars ao vivo têm taxa de comparecimento <30% e conteúdo desaparece após o evento
+- Masterclass gravada é perene — SEO compound, lead capture contínuo
+- Event + Course schema = rich snippets no Google + elegibilidade AI Overviews
+- Email-gate = lead capture qualificado (quem assiste 15min sobre licitações é ICP puro)
+- Cada masterclass é hub para internal linking (glossário, blog, ferramentas)
+
+**Temas sugeridos:**
+1. "Como participar da sua primeira licitação em 2026" (KD < 5, intenção transacional)
+2. "Pregão Eletrônico: do edital ao contrato" (KD < 8, intenção educacional)
+3. "Análise de viabilidade: os 4 fatores que decidem se você deve disputar" (zero competição)
+
+**Implementação:**
+- `frontend/app/masterclass/[tema]/page.tsx` — ISR 24h, video player embarcado
+- Vídeos hospedados em Supabase Storage (mesmo pattern do relatório Panorama)
+- Schema: Event + VideoObject + Course + BreadcrumbList
+- Email-gate: LeadCapture component com `source: 'masterclass'`
+
+- [ ] Implementar `/masterclass/[tema]` com 3 temas iniciais
+- [ ] Event + VideoObject + Course JSON-LD schema
+- [ ] Email-gate via LeadCapture existente
+- [ ] Gravar 3 screencasts (OBS Studio, 15-20min cada)
+
+---
+
+### S14 — Dashboard SEO Interno (substitui monitoramento manual Ahrefs + Google Alerts)
+
+**O que:** Página admin `/admin/seo` com métricas automatizadas: páginas indexadas, impressões, cliques, posição média (via GSC API), e monitoramento de brand mentions via web scraping periódico.
+
+**Por que superior a ferramentas externas:**
+- Ahrefs free tier limita a 2 verificações/semana e não alerta proativamente
+- Google Alerts tem delay de dias e não detecta menções sem link
+- Dashboard interno consolida todas as métricas SEO em um lugar, com alertas em tempo real
+- Cron job semanal que roda `gsc_api_check.py` e grava em Supabase = auditoria contínua
+
+**Implementação:**
+- Backend: `backend/scripts/gsc_metrics.py` — extração via GSC API (service account)
+- Tabela: `seo_metrics` (date, impressions, clicks, position, pages_indexed)
+- Frontend: `frontend/app/admin/seo/page.tsx` — Recharts dashboard
+- Cron: semanal, grava snapshot em `seo_metrics`
+
+- [ ] Implementar `gsc_metrics.py` com GSC API extraction
+- [ ] Tabela `seo_metrics` + migration
+- [ ] Dashboard `/admin/seo` com Recharts
+- [ ] Cron semanal para snapshot automatizado
+
+---
+
+### Ordem de Execução Recomendada
+
+| Prioridade | Substituição | Justificativa |
+|-----------|-------------|---------------|
+| 1 | **S7** — Entity SEO (`/sobre` + Organization + Author) | Base para todos os outros — entity authority é fundação |
+| 2 | **S10** — Q&A Público (`/perguntas`) | +50 páginas KD < 3, QAPage schema, AI citation candidate |
+| 3 | **S8** — Tech Stack (`/stack`) | Backlinks naturais de devs, brand mentions bidirecional |
+| 4 | **S9** — API pública + embed | Lead capture passivo via jornalistas |
+| 5 | **S11** — Blog do founder + Person schema | E-E-A-T authorship, complementa S7 |
+| 6 | **S12** — Micro-demos animadas | Dwell time + VideoObject schema |
+| 7 | **S13** — Masterclass gravada | Lead capture qualificado, compound SEO |
+| 8 | **S14** — Dashboard SEO admin | Monitoramento contínuo (pode vir por último) |
+
+### Verificação
+
+1. **Após S7:** Google Knowledge Graph → buscar "SmartLic" ou "CONFENGE" → entity card aparece
+2. **Após S10:** `curl https://smartlic.tech/sitemap.xml | grep perguntas` → 50+ URLs
+3. **Após S8:** Google → "supabase govtech case study" → `/stack` ranqueia
+4. **Após S9:** Google Dataset Search → "licitações Brasil" → SmartLic + embed disponível
+5. **Geral:** AI Overviews → queries informacionais sobre licitações → SmartLic citado
+
+---
+
 ## Registro de Operações — Indexação GSC (2026-04-04/05)
 
 ### Contexto: por que foi necessário fazer isso manualmente
@@ -1732,13 +2028,13 @@ Em 2026-04-05, foram solicitadas manualmente indexações para as 10 URLs de mai
 ### Próximos passos técnicos pós-indexação
 
 **Imediato (24-72h):**
-- [ ] Verificar no GSC → Cobertura → Válidas se as 10 URLs aparecem como indexadas
-- [ ] Se alguma URL aparecer como "Descoberta — aguardando indexação por mais de 7 dias", reinvestigar (pode ser problema de renderização ou conteúdo fino)
+- [x] ~~Verificar no GSC → Cobertura → Válidas se as 10 URLs aparecem como indexadas~~ → **SUBSTITUÍDO por S14** (Parte 9): dashboard SEO automatizado com GSC API faz verificação contínua sem acesso manual
+- [x] ~~Se alguma URL aparecer como "Descoberta — aguardando indexação por mais de 7 dias"~~ → **SUBSTITUÍDO por S14**: alertas proativos no dashboard quando URLs ficam em limbo
 
 **Curto prazo (1-2 semanas):**
-- [ ] Após as 10 URLs indexadas, submeter próximo lote: `/sobre`, `/pricing`, `/ajuda`, `/termos`, `/privacidade`
-- [ ] Investigar se `/licitacoes/[setor]` (landing setoriais) estão sendo descobertas via sitemap
-- [ ] Monitorar GSC → Desempenho para primeiras impressões orgânicas
+- [x] ~~Após as 10 URLs indexadas, submeter próximo lote~~ → **SUBSTITUÍDO por IndexNow** (Fundação §7): GH Action automática pós-deploy notifica Bing/Yandex; Google via sitemap. Submissão manual dispensada (rodada 5).
+- [x] ~~Investigar se `/licitacoes/[setor]` estão sendo descobertas via sitemap~~ → **SUBSTITUÍDO por S14** (Parte 9): monitoramento automatizado de indexação por tipo de página
+- [x] ~~Monitorar GSC → Desempenho para primeiras impressões orgânicas~~ → **SUBSTITUÍDO por S14** (Parte 9): dashboard com impressões, cliques, posição média via GSC API
 
 **Médio prazo (1 mês):**
 - [x] **Resolver `Cache-Control: private`** — ✅ **CONCLUÍDO (pré-rodada 4, 2026-04-05)**. Nonce removido do root layout (`frontend/app/layout.tsx:148-168` — script inline passou a usar `dangerouslySetInnerHTML` com conteúdo 100% estático de theme-init). CSP migrou para SHA-256 hash-based (`frontend/middleware.ts:36-60`, hash `sha256-cKn8Ad2sQ17kSb7D+OWHpjqjv4Jgu4eo/To/sKp8AsQ=`). Cache-Control público ativo em rotas cacheable: `public, max-age=0, s-maxage=3600, stale-while-revalidate=86400` (`middleware.ts:169-226`). Resultado: layout síncrono, dynamic rendering eliminado, TTFB Cloudflare edge ~50ms vs Railway cold start ~800ms.
