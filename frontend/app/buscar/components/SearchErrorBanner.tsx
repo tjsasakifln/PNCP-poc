@@ -7,6 +7,7 @@
  * Provides contextual action buttons: "Tentar novamente" and "Reduzir escopo".
  */
 
+import Link from "next/link";
 import type { HumanizedError } from "../../../lib/error-messages";
 
 interface SearchErrorBannerProps {
@@ -119,6 +120,11 @@ export function SearchErrorBanner({
                 Cancelar
               </button>
             )}
+          </div>
+          <div className="mt-3">
+            <Link href="/ajuda#como-buscar" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+              Precisa de ajuda?
+            </Link>
           </div>
         </div>
       </div>

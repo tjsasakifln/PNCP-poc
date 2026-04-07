@@ -127,6 +127,11 @@ export function TrialPaywall({ additionalCount, context = "search" }: TrialPaywa
             </button>
           )}
         </div>
+        <div className="mt-3 text-center">
+          <Link href="/ajuda#planos" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+            Precisa de ajuda?
+          </Link>
+        </div>
       </div>
     </div>
   );

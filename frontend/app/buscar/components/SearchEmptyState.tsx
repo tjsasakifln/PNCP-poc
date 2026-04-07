@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { FilterStats } from "../../types";
 
 interface SearchEmptyStateProps {
@@ -153,6 +154,12 @@ export function SearchEmptyState({
           Pesquisa realizada em {stateCount} estado{stateCount > 1 ? "s" : ""} usando 5 modalidades de contratação
         </p>
       )}
+
+      <div className="mb-4 text-center">
+        <Link href="/ajuda#como-buscar" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+          Precisa de ajuda?
+        </Link>
+      </div>
 
       {/* Action Button */}
       <button

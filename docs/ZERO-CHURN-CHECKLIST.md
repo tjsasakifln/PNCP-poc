@@ -173,9 +173,8 @@
 - [x] **P2 | S** — ~~Pipeline tour avisa sobre limite~~ RESOLVIDO: Step 4 adicionado ao tour: "Durante o trial, voce pode acompanhar ate 15 oportunidades. Assine para pipeline ilimitado." Contadores atualizados de "de 3" para "de 4".
   - Arquivo: `frontend/app/pipeline/page.tsx` linhas 43-75
 
-- [ ] **P3 | S** — Falta help center linkado nos pontos de friccao: empty states, paywall, pipeline limit, erros nao linkam para `/ajuda`.
-  - Arquivo: Multiplos componentes
-  - Acao: Adicionar "Precisa de ajuda?" com link para FAQ relevante em cada ponto de friccao
+- [x] **P3 | S** — ~~Falta help center linkado nos pontos de friccao~~ RESOLVIDO: "Precisa de ajuda?" com deep-links contextuais adicionado em 10 componentes: SearchEmptyState, OnboardingEmptyState, SearchErrorBanner, ErrorDetail (`/ajuda`), TrialPaywall, Pipeline limit banner+modal (`/ajuda#planos`), DashboardFullPageError (`/ajuda`), DashboardEmptyState, AlertsEmptyState (`/ajuda#como-buscar`).
+  - Arquivo: 8 arquivos frontend (buscar/components, billing, pipeline, dashboard, alertas)
 
 ---
 
@@ -200,9 +199,8 @@
 - [x] **P2 | M** — ~~Dashboard admin de trial conversion~~ RESOLVIDO: 2 novos endpoints admin: `GET /admin/trial-metrics` (active trials, conversion rate 30d, risk distribution, email funnel) e `GET /admin/at-risk-trials` (lista paginada com risk badges). Frontend: `AdminTrialMetrics` widget com KPI cards, PieChart risk distribution (Recharts), BarChart email funnel, e tabela de usuarios at-risk.
   - Arquivo: `backend/admin.py`, `backend/services/trial_risk.py`, `frontend/app/admin/components/AdminTrialMetrics.tsx`, `frontend/app/admin/page.tsx`
 
-- [ ] **P3 | M** — A/B testing capability: nao ha como testar variantes de messaging, pricing display, ou CTA copy. Sem variant parameter nos analytics events.
-  - Arquivo: Frontend + backend analytics
-  - Acao: Adicionar `variant` property em events de conversao, implementar feature flag por usuario
+- [x] **P3 | M** — ~~A/B testing capability~~ RESOLVIDO: Servico `ab_testing.py` com assignment deterministico (hash MD5 user_id+experiment). `track_funnel_event()` estendido com `variant` param + `experiment_variants` dict. Endpoint `GET /feature-flags/experiments` retorna variantes do usuario. Frontend: `useExperiments()` hook (SWR), proxy `/api/experiments`, tracking enriquecido em TrialConversionScreen, TrialExpiringBanner, TrialUpsellCTA. Config: `AB_EXPERIMENTS_ENABLED` + `AB_ACTIVE_EXPERIMENTS` (JSON env var).
+  - Arquivo: `backend/services/ab_testing.py` (NOVO), `backend/analytics_events.py`, `backend/config/features.py`, `backend/routes/feature_flags.py`, `frontend/hooks/useExperiments.ts` (NOVO), `frontend/app/api/experiments/route.ts` (NOVO), 3 componentes frontend
 
 ---
 
@@ -267,8 +265,8 @@
 | P0 (Bloqueante) | 13 | **13 (100%)** | 27% |
 | P1 (Critico) | 22 | **22 (100%)** | 46% |
 | P2 (Importante) | 16 | **16 (100%)** | 33% |
-| P3 (Otimizacao) | 2 | 0 | 4% |
-| **TOTAL** | **53** | **51 (96%)** | **100%** |
+| P3 (Otimizacao) | 2 | **2 (100%)** | 4% |
+| **TOTAL** | **53** | **53 (100%)** | **100%** |
 
 ### Top 10 acoes de maior impacto na conversao
 

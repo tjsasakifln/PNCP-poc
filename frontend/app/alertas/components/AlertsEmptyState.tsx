@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "../../../components/ui/button";
 
 export function AlertsEmptyState({ onCreate }: { onCreate: () => void }) {
@@ -38,6 +39,11 @@ export function AlertsEmptyState({ onCreate }: { onCreate: () => void }) {
           </li>
         ))}
       </ol>
+      <div className="mt-3 mb-4 text-center">
+        <Link href="/ajuda#como-buscar" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+          Precisa de ajuda?
+        </Link>
+      </div>
       <Button
         onClick={onCreate}
         variant="primary"

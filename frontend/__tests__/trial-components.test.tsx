@@ -22,6 +22,15 @@ jest.mock('../hooks/useAnalytics', () => ({
   useAnalytics: () => ({ trackEvent: mockTrackEvent }),
 }));
 
+jest.mock('../hooks/useExperiments', () => ({
+  useExperiments: () => ({
+    experiments: {},
+    getVariant: () => null,
+    getExperimentProperties: () => ({}),
+    isLoaded: true,
+  }),
+}));
+
 jest.mock('../app/components/AuthProvider', () => ({
   useAuth: () => ({ session: { access_token: 'test-token' }, loading: false }),
 }));

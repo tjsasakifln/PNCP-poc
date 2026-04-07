@@ -145,6 +145,10 @@ ATESTADOS_DISPONIVEIS: list[dict] = [
     {"id": "crt", "label": "CRT (Técnico)", "sectors": ["informatica", "software_desenvolvimento", "software_licencas"]},
 ]
 
+# A/B Testing
+AB_EXPERIMENTS_ENABLED: bool = str_to_bool(os.getenv("AB_EXPERIMENTS_ENABLED", "false"))
+AB_ACTIVE_EXPERIMENTS: str = os.getenv("AB_ACTIVE_EXPERIMENTS", "{}")
+
 # STORY-267: Term Search Quality Parity
 TERM_SEARCH_LLM_AWARE: bool = str_to_bool(os.getenv("TERM_SEARCH_LLM_AWARE", "false"))
 TERM_SEARCH_SYNONYMS: bool = str_to_bool(os.getenv("TERM_SEARCH_SYNONYMS", "false"))
@@ -203,6 +207,8 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     # --- Trial & Billing ---
     "TRIAL_EMAILS_ENABLED": ("TRIAL_EMAILS_ENABLED", "true"),
     "TRIAL_PAYWALL_ENABLED": ("TRIAL_PAYWALL_ENABLED", "true"),
+    # --- A/B Testing ---
+    "ab_experiments_enabled": ("AB_EXPERIMENTS_ENABLED", "false"),
     # --- Feature Gates (unreleased features) ---
     "ORGANIZATIONS_ENABLED": ("ORGANIZATIONS_ENABLED", "false"),
     "MESSAGES_ENABLED": ("MESSAGES_ENABLED", "true"),

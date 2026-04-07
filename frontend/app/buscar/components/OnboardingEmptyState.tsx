@@ -47,6 +47,11 @@ export function OnboardingEmptyState({ onAdjustFilters }: OnboardingEmptyStatePr
           <li>Estender o período para 15 ou 30 dias</li>
         </ul>
       </div>
+      <div className="mt-3 mb-4 text-center">
+        <Link href="/ajuda#como-buscar" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+          Precisa de ajuda?
+        </Link>
+      </div>
       <button
         onClick={onAdjustFilters}
         className="px-4 py-2 rounded-lg bg-[var(--brand-blue)] text-white text-sm font-medium hover:bg-[var(--brand-blue-hover)] transition-colors"

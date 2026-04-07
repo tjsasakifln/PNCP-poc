@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import FocusTrap from "focus-trap-react";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useExperiments } from "../../hooks/useExperiments";
 import { useAuth } from "../components/AuthProvider";
 import { usePlans } from "../../hooks/usePlans";
 import { GlassCard } from "./ui/GlassCard";
@@ -35,6 +36,7 @@ const BILLING_PRICES: Record<BillingPeriod, { monthly: number; label: string; su
 export function TrialConversionScreen({ trialValue, onClose, loading }: TrialConversionScreenProps) {
   const router = useRouter();
   const { trackEvent } = useAnalytics();
+  const { getExperimentProperties } = useExperiments();
   const { session } = useAuth();
   const { plans } = usePlans();
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
@@ -57,12 +59,13 @@ export function TrialConversionScreen({ trialValue, onClose, loading }: TrialCon
     trackEvent("trial_conversion_screen_viewed", {
       total_opportunities: trialValue?.total_opportunities ?? 0,
       total_value: trialValue?.total_value ?? 0,
+      ...getExperimentProperties(),
     });
   }, []);
 
   // P0 zero-churn: Direct checkout — skip /planos redirect (1-click conversion)
   const handleSelectPlan = async (period: BillingPeriod) => {
-    trackEvent("trial_conversion_cta_clicked", { billing_period: period });
+    trackEvent("trial_conversion_cta_clicked", { billing_period: period, ...getExperimentProperties() });
 
     if (!session?.access_token) {
       router.push(`/planos?billing=${period}`);
@@ -92,7 +95,7 @@ export function TrialConversionScreen({ trialValue, onClose, loading }: TrialCon
   };
 
   const handleClose = () => {
-    trackEvent("trial_conversion_dismissed");
+    trackEvent("trial_conversion_dismissed", getExperimentProperties());
     router.push(`/planos?billing=${billingPeriod}`);
   };
 

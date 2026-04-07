@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useExperiments } from "../../hooks/useExperiments";
 import { safeSetItem, safeGetItem } from "../../lib/storage";
 
 // ---------------------------------------------------------------------------
@@ -173,6 +174,7 @@ export function TrialUpsellCTA({
   subscriptionStatus,
 }: TrialUpsellCTAProps) {
   const { trackEvent } = useAnalytics();
+  const { getExperimentProperties } = useExperiments();
   // Refs for unstable values accessed in effects (trackEvent is not memoized,
   // contextData is a prop object — refs avoid spurious re-fires).
   const trackEventRef = useRef(trackEvent);
@@ -217,14 +219,14 @@ export function TrialUpsellCTA({
   const handleDismiss = useCallback(() => {
     setDismissed(variant);
     setVisible(false);
-    trackEvent("trial_upsell_dismissed", { variant });
+    trackEvent("trial_upsell_dismissed", { variant, ...getExperimentProperties() });
     reportCTAEvent("dismissed", variant);
-  }, [variant, trackEvent]);
+  }, [variant, trackEvent, getExperimentProperties]);
 
   const handleClick = useCallback(() => {
-    trackEvent("trial_upsell_clicked", { variant, ...contextData });
+    trackEvent("trial_upsell_clicked", { variant, ...contextData, ...getExperimentProperties() });
     reportCTAEvent("clicked", variant);
-  }, [variant, contextData, trackEvent]);
+  }, [variant, contextData, trackEvent, getExperimentProperties]);
 
   if (!visible) return null;
 

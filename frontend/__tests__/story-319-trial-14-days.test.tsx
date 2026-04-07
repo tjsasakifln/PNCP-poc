@@ -25,6 +25,16 @@ jest.mock("../hooks/useAnalytics", () => ({
   }),
 }));
 
+// Mock useExperiments
+jest.mock("../hooks/useExperiments", () => ({
+  useExperiments: () => ({
+    experiments: {},
+    getVariant: () => null,
+    getExperimentProperties: () => ({}),
+    isLoaded: true,
+  }),
+}));
+
 // Mock next/link
 jest.mock("next/link", () => {
   return function MockLink({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) {

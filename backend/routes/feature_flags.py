@@ -503,6 +503,15 @@ async def reload_flags_endpoint(
 public_router = APIRouter(prefix="/feature-flags", tags=["feature-flags"])
 
 
+@public_router.get("/experiments")
+async def get_experiments(user: dict = Depends(require_auth)):
+    """Return active experiment variants for the authenticated user."""
+    from services.ab_testing import get_user_experiments
+    user_id = user.get("id", "")
+    variants = get_user_experiments(user_id)
+    return {"experiments": variants}
+
+
 @public_router.get("", response_model=PublicFeatureFlagListResponse)
 async def list_public_feature_flags(
     _user: dict = Depends(require_auth),

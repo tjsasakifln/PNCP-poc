@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useExperiments } from "../../hooks/useExperiments";
 
 interface TrialExpiringBannerProps {
   daysRemaining: number;
@@ -16,6 +17,7 @@ interface TrialExpiringBannerProps {
 export function TrialExpiringBanner({ daysRemaining, onConvert }: TrialExpiringBannerProps) {
   const [dismissed, setDismissed] = useState(false);
   const { trackEvent } = useAnalytics();
+  const { getExperimentProperties } = useExperiments();
 
   // STORY-319 AC8: Show from day 8 (6 days remaining) of 14-day trial
   if (dismissed || daysRemaining > 6) return null;
@@ -30,11 +32,11 @@ export function TrialExpiringBanner({ daysRemaining, onConvert }: TrialExpiringB
 
   const handleDismiss = () => {
     setDismissed(true);
-    trackEvent("trial_expiring_banner_dismissed", { days_remaining: daysRemaining });
+    trackEvent("trial_expiring_banner_dismissed", { days_remaining: daysRemaining, ...getExperimentProperties() });
   };
 
   const handleCTA = () => {
-    trackEvent("trial_expiring_banner_cta_clicked", { days_remaining: daysRemaining });
+    trackEvent("trial_expiring_banner_cta_clicked", { days_remaining: daysRemaining, ...getExperimentProperties() });
     if (onConvert) {
       onConvert();
     }

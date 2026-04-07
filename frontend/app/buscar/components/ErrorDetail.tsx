@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { SearchError } from "../hooks/useSearch";
 import { toast } from "sonner";
 
@@ -139,6 +140,11 @@ export function ErrorDetail({ error, searchId, errorMessage, timestamp }: ErrorD
               </>
             )}
           </button>
+          <div className="mt-3 text-center">
+            <Link href="/ajuda" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+              Precisa de ajuda?
+            </Link>
+          </div>
         </div>
       )}
     </div>

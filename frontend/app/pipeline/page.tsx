@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { Button } from "../../components/ui/button";
 import { usePipeline } from "../../hooks/usePipeline";
 import { usePlan } from "../../hooks/usePlan";
@@ -217,9 +218,14 @@ export default function PipelinePage() {
             <span className="text-sm text-blue-800 dark:text-blue-200">
               Limite de {PIPELINE_LIMIT} itens no modo preview. Assine para pipeline ilimitado.
             </span>
-            <a href="/planos" className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap ml-3">
-              Ver planos
-            </a>
+            <div className="flex items-center gap-3 whitespace-nowrap ml-3">
+              <a href="/planos" className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                Ver planos
+              </a>
+              <Link href="/ajuda#planos" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                Precisa de ajuda?
+              </Link>
+            </div>
           </div>
         )}
 
@@ -378,6 +384,11 @@ export default function PipelinePage() {
               >
                 Fechar
               </Button>
+            </div>
+            <div className="mt-3 text-center">
+              <Link href="/ajuda#planos" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                Precisa de ajuda?
+              </Link>
             </div>
           </div>
         </div>

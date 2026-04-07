@@ -37,6 +37,11 @@ export function DashboardFullPageError({ onRetry }: { onRetry: () => void }) {
         >
           Tentar novamente
         </button>
+        <div className="mt-3 text-center">
+          <Link href="/ajuda" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+            Precisa de ajuda?
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -148,6 +153,11 @@ export function DashboardEmptyState() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
         </svg>
       </Link>
+      <div className="mt-3 text-center">
+        <Link href="/ajuda#como-buscar" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+          Precisa de ajuda?
+        </Link>
+      </div>
     </div>
   );
 }

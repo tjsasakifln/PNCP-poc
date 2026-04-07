@@ -60,7 +60,12 @@ def track_event(event_name: str, properties: dict[str, Any] | None = None) -> No
         pass  # Fire-and-forget — never fail
 
 
-def track_funnel_event(event_name: str, user_id: str, properties: dict[str, Any] | None = None) -> None:
+def track_funnel_event(
+    event_name: str,
+    user_id: str,
+    properties: dict[str, Any] | None = None,
+    variant: str | None = None,
+) -> None:
     """Track a conversion funnel event with user cohort enrichment. Fire-and-forget."""
     try:
         props = dict(properties) if properties else {}
@@ -85,6 +90,17 @@ def track_funnel_event(event_name: str, user_id: str, properties: dict[str, Any]
                 props["engagement_tier"] = "active"
             else:
                 props["engagement_tier"] = "dormant"
+        except Exception:
+            pass  # Enrichment is best-effort
+
+        # Enrich with A/B experiment variants
+        try:
+            if variant is not None:
+                props["ab_variant"] = variant
+            from services.ab_testing import get_user_experiments
+            experiment_variants = get_user_experiments(user_id)
+            if experiment_variants:
+                props["experiment_variants"] = experiment_variants
         except Exception:
             pass  # Enrichment is best-effort
 
