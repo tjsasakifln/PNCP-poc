@@ -1064,7 +1064,7 @@ Para o SmartLic (fase atual: pré-escala, custo de infra ~zero marginal por cana
 |---|--------|-----------------|---------|
 | A1 | **Expandir para setor×UF×modalidade** (405 → 2,430 páginas) | 3-4× volume de busca endereçável | 2-3 semanas |
 | A2 | ~~**Lead magnet na calculadora/CNPJ**~~ ✅ CONCLUÍDO 2026-04-07 — Backend `POST /v1/lead-capture` + tabela `leads` + LeadCapture com setor/uf context + CNPJ perfil page | +200-500 leads/mês (5-10% capture) | 1 semana |
-| A3 | **Weekly proprietary data report** (trigger Google Discover) | 5K-20K visits por spike | 1 dia setup + semanal |
+| A3 | ~~**Weekly proprietary data report**~~ ✅ CONCLUÍDO 2026-04-07 — Weekly digest otimizado para Discover: Person author (E-E-A-T), speakable schema, isAccessibleForFree, OG image dinâmica `/api/og?type=weekly`, byline visível | 5K-20K visits por spike | 1 dia setup + semanal |
 | A4 | ~~**CTA nas páginas /licitacoes/[setor]**~~ ✅ CONCLUÍDO 2026-04-07 — 3 CTAs contextuais com `?ref=licitacoes-{setor}` + copy com contagem live + banner pós-UF grid | +15-20% conversão nessas páginas | 1 dia |
 | A5 | ~~**"Trending editais" na homepage**~~ ✅ CONCLUÍDO 2026-04-07 — `GET /v1/sectors/trending` (top 5 setores 7d, cache 6h) + TrendingEditais async com fallback estático + link para /alertas-publicos | Acelera crawl de novas páginas em horas | 1 dia |
 | A6 | **Reddit seeding** em r/brasil, r/empreendedorismo | DR95 backlinks + citação em AI answers | 90 dias buildup |
@@ -1564,7 +1564,7 @@ Os três ou não publica.
 
 **Impacto:** +405 novas páginas indexáveis, RSS consumption por 5-10 sites em 30d, menções orgânicas em fóruns sem intervenção.
 
-**Status:** [x] Implementado (2026-04-07) — Backend `GET /v1/alertas/{setor_id}/uf/{uf}` (query datalake, cache 1h, 20 bids mais recentes). Frontend `app/alertas-publicos/[setor]/[uf]/page.tsx` (ISR 1h, DataFeed+BreadcrumbList JSON-LD, listagem de bids com link PNCP, CTA contextual). RSS feed `rss.xml/route.ts` por setor×UF (405 feeds). Hub index `alertas-publicos/page.tsx`. Sitemap integrado (+405 URLs). Cross-links de blog licitacoes. Backend `POST /v1/lead-capture` + tabela `leads`. Testes: 7/7 backend pass.
+**Status:** [x] Implementado (2026-04-07) — Backend `GET /v1/alertas/{setor_id}/uf/{uf}` (query datalake, cache 1h, 20 bids mais recentes). Frontend `app/alertas-publicos/[setor]/[uf]/page.tsx` (ISR 1h, DataFeed+BreadcrumbList JSON-LD, listagem de bids com link PNCP, CTA contextual). RSS feed `rss.xml/route.ts` por setor×UF (405 feeds). Hub index `alertas-publicos/page.tsx`. Sitemap integrado (+405 URLs). Cross-links de blog licitacoes. Backend `POST /v1/lead-capture` + tabela `leads`. Testes: 7/7 backend pass. **Comparador** adicionado em rodada 7 (2026-04-07): Backend `GET /v1/comparador/buscar?q=&uf=` (text search datalake, top 10, cache 1h) + `GET /v1/comparador/bids?ids=` (lookup por pncp_id, max 5, cache 1h). Frontend `app/comparador/page.tsx` (ISR 24h, WebApplication+BreadcrumbList JSON-LD) + `ComparadorClient.tsx` (busca, seleção até 3 bids, grid comparativo lado a lado, URL compartilhável `?ids=`). Proxies `/api/comparador/buscar` + `/api/comparador/bids`. CTA → `/signup?ref=comparador`. Sitemap e footer integrados. Testes: 16/16 backend pass.
 
 ---
 
@@ -1616,7 +1616,7 @@ Os três ou não publica.
 
 **Impacto:** +30-50% dwell time em páginas com demo, rich snippets de vídeo no SERP, conversão direta sem intermediário.
 
-**Status:** [ ] Pendente implementação
+**Status:** [x] Implementado (2026-04-07) — `app/demo/page.tsx` (ISR 24h, HowTo+WebApplication+BreadcrumbList JSON-LD), `DemoClient.tsx` (Shepherd.js tour 4 passos: setor→busca→resultados→análise, mock data Engenharia/SP 6 bids, state machine com auto-transition), `mock-data.ts`. CTA → `/signup?ref=demo`. Sitemap e footer integrados.
 
 ---
 
@@ -2285,3 +2285,51 @@ Auditoria SEO profunda com dados reais (WebFetch, WebSearch, Playwright no Cloud
 - **Frente 5 (Topical Authority):** Artigos BOFU: "SmartLic vs Effecti", "Melhores plataformas licitação 2026", cluster "IA em Licitações" (10-15 páginas — nicho vazio)
 - **Monitorar GSC Coverage diariamente** — target: primeiras páginas indexadas em 3-7 dias
 - **Cloudflare Cache Rules** — configurar para cachear HTML em rotas públicas (TTFB optimization)
+
+---
+
+## Registro de Operações — Sétima Rodada Multi-Frente (2026-04-07)
+
+Execução paralela de 3 frentes implementando os itens pendentes de maior ROI do playbook. Foco: ferramentas de conversão (S5 Demo, S3 Comparador) e otimização Google Discover (A3).
+
+### Frentes executadas
+
+| # | Frente | Status | Arquivos criados | Arquivos modificados |
+|---|--------|--------|-----------------|---------------------|
+| 1 | **S5 — Demo Interativo `/demo`** | ✅ | `app/demo/page.tsx`, `DemoClient.tsx`, `mock-data.ts` | `sitemap.ts`, `Footer.tsx` |
+| 2 | **S3 — Comparador de Editais `/comparador`** | ✅ | `routes/comparador.py`, `tests/test_comparador.py`, `app/comparador/page.tsx`, `ComparadorClient.tsx`, `api/comparador/buscar/route.ts`, `api/comparador/bids/route.ts` | `startup/routes.py`, `sitemap.ts`, `Footer.tsx` |
+| 3 | **A3 — Google Discover optimization** | ✅ | — | `blog/weekly/[slug]/page.tsx`, `api/og/route.tsx` |
+
+### Detalhe por frente
+
+**Frente 1 — S5 Demo Interativo**
+- Shepherd.js guided tour com 4 passos (setor → busca → resultados → análise viabilidade)
+- Mock data: 6 licitações realistas de Engenharia/SP com scores de viabilidade pré-calculados
+- State machine: `selecting` → `searching` (2s animação) → `results` → `detail`
+- Tour sempre mostra (sem localStorage persistence — diferente do onboarding)
+- JSON-LD: HowTo (4 steps) + WebApplication + BreadcrumbList
+- CTA: "Fazer uma busca real → /signup?ref=demo"
+
+**Frente 2 — S3 Comparador de Editais**
+- Backend: 2 endpoints públicos sem auth em `routes/comparador.py`:
+  - `GET /v1/comparador/buscar?q=&uf=` — text search no datalake, top 10, cache 1h
+  - `GET /v1/comparador/bids?ids=` — lookup por pncp_id, max 5, cache 1h
+- Frontend: busca → seleção até 3 bids → grid comparativo lado a lado (título, órgão, valor, modalidade, prazo, UF)
+- URL compartilhável: `/comparador?ids=id1,id2,id3`
+- JSON-LD: WebApplication + BreadcrumbList
+- CTA: "Analisar mais editais com score de viabilidade → /signup?ref=comparador"
+- 16/16 testes backend passando
+
+**Frente 3 — A3 Google Discover**
+- JSON-LD: author mudou de Organization → Person (Tiago Sasaki, CEO) — sinal E-E-A-T
+- Adicionado: `isAccessibleForFree: true`, `speakable` (SpeakableSpecification targeting h1 + .weekly-summary)
+- OG image dinâmica: `/api/og?type=weekly&week=X&year=Y&bids=N&sector=TopSector`
+- Byline visível: "Por Tiago Sasaki · Equipe SmartLic"
+- Classe `weekly-summary` no bloco de métricas-chave
+
+### Validação de regressão
+
+- ✅ `cd frontend && npx tsc --noEmit` → **exit 0**
+- ✅ `pytest tests/test_comparador.py` → **16/16 pass**
+- ✅ `pytest tests/test_alertas_publicos.py tests/test_calculadora.py tests/test_referral.py tests/test_stripe_webhook.py tests/test_blog_stats.py` → **94/94 pass, 2 pre-existing fails** (TestPanoramaStats — documentadas desde rodada 1)
+- ✅ Zero regressões introduzidas

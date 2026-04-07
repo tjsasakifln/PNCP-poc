@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
     return renderAnaliseOG(searchParams);
   }
 
+  // A3: Weekly digest OG image for Google Discover
+  if (type === "weekly") {
+    return renderWeeklyOG(searchParams);
+  }
+
   // Default OG image
   return renderDefaultOG();
 }
@@ -147,6 +152,89 @@ function renderAnaliseOG(searchParams: URLSearchParams) {
         {/* URL */}
         <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.4)", marginTop: "24px" }}>
           smartlic.tech
+        </p>
+      </div>
+    ),
+    { width: 1200, height: 630 }
+  );
+}
+
+function renderWeeklyOG(searchParams: URLSearchParams) {
+  const week = searchParams.get("week") || "?";
+  const year = searchParams.get("year") || "2026";
+  const bids = searchParams.get("bids") || "0";
+  const sector = searchParams.get("sector") || "";
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "1200",
+          height: "630",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #0A1E3F 0%, #0D2B5E 50%, #116DFF 100%)",
+          fontFamily: "sans-serif",
+          padding: "48px",
+        }}
+      >
+        {/* SmartLic branding */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+          <span style={{ fontSize: "32px", fontWeight: 700, color: "#FFFFFF", letterSpacing: "-1px" }}>
+            SmartLic
+          </span>
+          <span style={{ fontSize: "14px", color: "#8BA3C7" }}>Digest Semanal</span>
+        </div>
+
+        {/* Week badge */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            backgroundColor: "rgba(17,109,255,0.3)",
+            padding: "8px 20px",
+            borderRadius: "20px",
+            marginBottom: "32px",
+          }}
+        >
+          <span style={{ fontSize: "18px", color: "#8BB8FF", fontWeight: 600 }}>
+            Semana {week} / {year}
+          </span>
+        </div>
+
+        {/* Main stat */}
+        <p style={{ fontSize: "72px", fontWeight: 800, color: "#FFFFFF", margin: "0 0 8px 0" }}>
+          {parseInt(bids).toLocaleString('pt-BR')}
+        </p>
+        <p style={{ fontSize: "24px", color: "#C8D4E8", margin: "0 0 32px 0" }}>
+          editais publicados no PNCP
+        </p>
+
+        {/* Top sector */}
+        {sector && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "12px 24px",
+              backgroundColor: "rgba(255,255,255,0.08)",
+              borderRadius: "12px",
+            }}
+          >
+            <span style={{ fontSize: "16px", color: "#8BA3C7" }}>Setor em destaque:</span>
+            <span style={{ fontSize: "18px", color: "#FFFFFF", fontWeight: 600 }}>
+              {sector.length > 35 ? sector.slice(0, 32) + "…" : sector}
+            </span>
+          </div>
+        )}
+
+        {/* URL */}
+        <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.4)", marginTop: "32px" }}>
+          smartlic.tech/blog/weekly
         </p>
       </div>
     ),

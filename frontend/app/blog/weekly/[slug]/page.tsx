@@ -95,6 +95,7 @@ export async function generateMetadata({
   return {
     title: `${data.title} | SmartLic`,
     description,
+    authors: [{ name: 'Tiago Sasaki' }],
     alternates: { canonical: buildCanonical(`/blog/weekly/${slug}`) },
     openGraph: {
       title: data.title,
@@ -103,6 +104,12 @@ export async function generateMetadata({
       url: buildCanonical(`/blog/weekly/${slug}`),
       locale: 'pt_BR',
       publishedTime: data.period_start,
+      images: [{
+        url: `${SITE_URL}/api/og?type=weekly&week=${data.week}&year=${data.year}&bids=${data.total_bids}&sector=${encodeURIComponent(data.top_sector)}`,
+        width: 1200,
+        height: 630,
+        alt: data.title,
+      }],
     },
   };
 }
@@ -159,8 +166,15 @@ function buildJsonLd(data: WeeklyData, slug: string) {
           url: SITE_URL,
         },
         author: {
-          '@type': 'Organization',
-          name: 'SmartLic Intelligence',
+          '@type': 'Person',
+          name: 'Tiago Sasaki',
+          jobTitle: 'CEO',
+          url: `${SITE_URL}/sobre`,
+        },
+        isAccessibleForFree: true,
+        speakable: {
+          '@type': 'SpeakableSpecification',
+          cssSelector: ['h1', '.weekly-summary'],
         },
       },
       {
@@ -252,12 +266,15 @@ export default async function WeeklyDigestPage({
                   timeZone: 'America/Sao_Paulo',
                 })}
               </p>
+              <p className="text-sm text-ink-secondary mt-1">
+                Por <span className="font-medium text-ink">Tiago Sasaki</span> · Equipe SmartLic
+              </p>
             </div>
           </div>
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
             {/* Key metrics */}
-            <section>
+            <section className="weekly-summary">
               <h2 className="text-lg font-semibold text-ink mb-4">Resumo da Semana</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-surface-1 border border-[var(--border)] rounded-xl p-5">

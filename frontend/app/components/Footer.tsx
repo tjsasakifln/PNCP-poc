@@ -66,6 +66,12 @@ export default function Footer() {
               <li>
                 <FooterLink href="/casos">Casos de sucesso</FooterLink>
               </li>
+              <li>
+                <FooterLink href="/comparador">Comparador de Editais</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/demo">Demo Interativo</FooterLink>
+              </li>
             </ul>
           </div>
 

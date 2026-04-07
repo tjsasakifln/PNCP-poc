@@ -312,5 +312,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // S3: Alertas Publicos pages (405)
     ...alertasRoutes,
+    // S5: Demo Interativo
+    {
+      url: `${baseUrl}/demo`,
+      lastModified: STATIC_LAST_EDIT,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    // S3: Comparador de Editais
+    {
+      url: `${baseUrl}/comparador`,
+      lastModified: STATIC_LAST_EDIT,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
   ];
 }
