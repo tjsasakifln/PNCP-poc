@@ -78,9 +78,10 @@ async function fetchWeeklyData(slug: string): Promise<WeeklyData | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const data = await fetchWeeklyData(params.slug);
+  const { slug } = await params;
+  const data = await fetchWeeklyData(slug);
 
   if (!data) {
     return {
@@ -94,12 +95,12 @@ export async function generateMetadata({
   return {
     title: `${data.title} | SmartLic`,
     description,
-    alternates: { canonical: buildCanonical(`/blog/weekly/${params.slug}`) },
+    alternates: { canonical: buildCanonical(`/blog/weekly/${slug}`) },
     openGraph: {
       title: data.title,
       description,
       type: 'article',
-      url: buildCanonical(`/blog/weekly/${params.slug}`),
+      url: buildCanonical(`/blog/weekly/${slug}`),
       locale: 'pt_BR',
       publishedTime: data.period_start,
     },
@@ -195,16 +196,17 @@ function buildJsonLd(data: WeeklyData, slug: string) {
 export default async function WeeklyDigestPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const data = await fetchWeeklyData(params.slug);
+  const { slug } = await params;
+  const data = await fetchWeeklyData(slug);
 
   if (!data) {
     notFound();
   }
 
-  const canonicalUrl = buildCanonical(`/blog/weekly/${params.slug}`);
-  const jsonLd = buildJsonLd(data, params.slug);
+  const canonicalUrl = buildCanonical(`/blog/weekly/${slug}`);
+  const jsonLd = buildJsonLd(data, slug);
 
   return (
     <>
