@@ -27,13 +27,49 @@ import { getFreshnessLabel } from '@/lib/seo';
  * ISR 24h. Phase 1: 5 sectors × 5 UFs = 25 pages.
  */
 
-const MODALIDADE_MAP: Record<number, { name: string; slug: string }> = {
-  4: { name: 'Concorrência Eletrônica', slug: 'concorrencia-eletronica' },
-  5: { name: 'Concorrência Presencial', slug: 'concorrencia-presencial' },
-  6: { name: 'Pregão Eletrônico', slug: 'pregao-eletronico' },
-  7: { name: 'Pregão Presencial', slug: 'pregao-presencial' },
-  8: { name: 'Dispensa de Licitação', slug: 'dispensa' },
-  12: { name: 'Credenciamento', slug: 'credenciamento' },
+const MODALIDADE_MAP: Record<number, { name: string; slug: string; description: string; legalBasis: string; typicalProcess: string }> = {
+  4: {
+    name: 'Concorrência Eletrônica',
+    slug: 'concorrencia-eletronica',
+    description: 'Modalidade para contratações de maior valor, conduzida integralmente em ambiente digital. Permite ampla participação de fornecedores com critérios objetivos de julgamento.',
+    legalBasis: 'Art. 6º, XXXVIII e Arts. 33-39 da Lei 14.133/2021',
+    typicalProcess: 'Publicação do edital → Fase de propostas (mín. 35 dias úteis) → Julgamento → Habilitação → Adjudicação → Homologação',
+  },
+  5: {
+    name: 'Concorrência Presencial',
+    slug: 'concorrencia-presencial',
+    description: 'Modalidade para contratações de maior valor realizada em sessão presencial. Utilizada quando a natureza do objeto requer avaliação in loco ou demonstração física.',
+    legalBasis: 'Art. 6º, XXXVIII e Arts. 33-39 da Lei 14.133/2021',
+    typicalProcess: 'Publicação do edital → Entrega de envelopes → Abertura de propostas → Habilitação → Adjudicação → Homologação',
+  },
+  6: {
+    name: 'Pregão Eletrônico',
+    slug: 'pregao-eletronico',
+    description: 'Modalidade mais utilizada em licitações públicas brasileiras. Destinada à aquisição de bens e serviços comuns, conduzida integralmente em plataforma digital com fase de lances.',
+    legalBasis: 'Art. 6º, XLI e Arts. 28-32 da Lei 14.133/2021; Decreto 10.024/2019',
+    typicalProcess: 'Publicação do edital → Fase de propostas (mín. 8 dias úteis) → Fase de lances → Negociação → Habilitação → Adjudicação',
+  },
+  7: {
+    name: 'Pregão Presencial',
+    slug: 'pregao-presencial',
+    description: 'Modalidade para bens e serviços comuns realizada em sessão presencial com lances verbais. Cada vez menos utilizada após obrigatoriedade do formato eletrônico.',
+    legalBasis: 'Art. 6º, XLI da Lei 14.133/2021 (uso restrito)',
+    typicalProcess: 'Publicação do edital → Credenciamento → Classificação inicial → Lances verbais → Negociação → Habilitação',
+  },
+  8: {
+    name: 'Dispensa de Licitação',
+    slug: 'dispensa',
+    description: 'Contratação direta sem competição entre fornecedores, permitida em casos específicos previstos em lei, como valores abaixo do limite ou situações emergenciais.',
+    legalBasis: 'Arts. 74-75 da Lei 14.133/2021',
+    typicalProcess: 'Justificativa da contratação → Pesquisa de preços → Parecer jurídico → Autorização → Empenho → Contrato',
+  },
+  12: {
+    name: 'Credenciamento',
+    slug: 'credenciamento',
+    description: 'Processo pelo qual a Administração convoca interessados para prestar serviços ou fornecer bens, credenciando todos que atendam às condições exigidas.',
+    legalBasis: 'Art. 79 da Lei 14.133/2021',
+    typicalProcess: 'Chamamento público → Inscrição → Análise documental → Credenciamento → Convocação por rodízio ou demanda',
+  },
 };
 
 export const revalidate = 86400; // 24h ISR
@@ -85,8 +121,10 @@ export async function generateMetadata({
   const stats = await fetchSectorUfBlogStats(setor, ufUpper);
   const total = stats?.total_editais ?? 0;
   const ufName = UF_NAMES[ufUpper] || ufUpper;
-  // Canonical always points to the base page (without modalidade param) to avoid duplicate content
-  const canonicalUrl = `https://smartlic.tech/blog/licitacoes/${setor}/${uf}`;
+  // Self-canonical when valid modalidade param → allows Google to index modalidade variants separately (A1)
+  const canonicalUrl = modalidadeInfo
+    ? `https://smartlic.tech/blog/licitacoes/${setor}/${uf}?modalidade=${modalidadeCode}`
+    : `https://smartlic.tech/blog/licitacoes/${setor}/${uf}`;
   const modalidadeSuffix = modalidadeInfo ? ` — ${modalidadeInfo.name}` : '';
 
   return {
@@ -127,6 +165,21 @@ export default async function LicitacoesSectorUfPage({
   const ufName = UF_NAMES[ufUpper] || ufUpper;
   const monthYear = getMonthYear();
   const faqs = generateLicitacoesFAQs(sector.name, ufName, stats?.total_editais, stats?.avg_value);
+  const modalidadeFaqs = modalidadeInfo ? [
+    {
+      question: `Como funciona o ${modalidadeInfo.name} para ${sector.name} em ${ufName}?`,
+      answer: `${modalidadeInfo.typicalProcess}. Para o setor de ${sector.name} em ${ufName}, o SmartLic monitora automaticamente todos os editais publicados nesta modalidade.`,
+    },
+    {
+      question: `Quantos editais de ${modalidadeInfo.name} de ${sector.name} abrem por mês em ${ufName}?`,
+      answer: `Nos últimos 10 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados em ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período.`,
+    },
+    {
+      question: `Qual a base legal do ${modalidadeInfo.name}?`,
+      answer: `O ${modalidadeInfo.name} é regulamentado por ${modalidadeInfo.legalBasis}. ${modalidadeInfo.description}`,
+    },
+  ] : [];
+  const allFaqs = [...modalidadeFaqs, ...faqs];
   const editorial = getRegionalEditorial(sector.name, ufUpper, ufName);
   const slug = `licitacoes/${setor}/${uf}`;
   const url = `https://smartlic.tech/blog/${slug}`;
@@ -149,14 +202,14 @@ export default async function LicitacoesSectorUfPage({
 
       <SchemaMarkup
         pageType="sector-uf"
-        title={`Licitações de ${sector.name} em ${ufName} — ${monthYear}`}
+        title={`Licitações de ${sector.name} em ${ufName}${modalidadeInfo ? ` — ${modalidadeInfo.name}` : ''} — ${monthYear}`}
         description={`${stats?.total_editais ?? 0} licitações de ${sector.name} em ${ufName}`}
         url={url}
         sectorName={sector.name}
         uf={ufUpper}
         totalEditais={stats?.total_editais}
         breadcrumbs={breadcrumbs}
-        faqs={faqs}
+        faqs={allFaqs}
         dataPoints={[
           { name: 'Total de Editais', value: stats?.total_editais ?? 0 },
           { name: 'Valor Mínimo', value: stats?.value_range_min ?? 0 },
@@ -339,6 +392,39 @@ export default async function LicitacoesSectorUfPage({
             </div>
           )}
 
+          {/* A1: Modalidade-specific FAQ for unique content */}
+          {modalidadeInfo && (
+            <section className="mb-10">
+              <h2 className="text-xl font-semibold text-ink mb-4">
+                Perguntas sobre {modalidadeInfo.name}
+              </h2>
+              <div className="space-y-4">
+                {[
+                  {
+                    q: `Como funciona o ${modalidadeInfo.name} para ${sector.name} em ${ufName}?`,
+                    a: `${modalidadeInfo.typicalProcess}. Para o setor de ${sector.name} em ${ufName}, o SmartLic monitora automaticamente todos os editais publicados nesta modalidade no PNCP, PCP e ComprasGov.`,
+                  },
+                  {
+                    q: `Quantos editais de ${modalidadeInfo.name} de ${sector.name} abrem por mês em ${ufName}?`,
+                    a: `Nos últimos 10 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados em ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período — consulte os dados ao vivo acima para o número atualizado.`,
+                  },
+                  {
+                    q: `Qual a base legal do ${modalidadeInfo.name}?`,
+                    a: `O ${modalidadeInfo.name} é regulamentado por ${modalidadeInfo.legalBasis}. ${modalidadeInfo.description}`,
+                  },
+                ].map((faq, i) => (
+                  <details key={`mod-faq-${i}`} className="group border border-[var(--border)] rounded-lg">
+                    <summary className="flex items-center justify-between p-4 cursor-pointer font-medium text-ink hover:bg-surface-1 rounded-lg transition-colors">
+                      {faq.q}
+                      <span className="text-ink-secondary group-open:rotate-180 transition-transform">&#x25BE;</span>
+                    </summary>
+                    <p className="px-4 pb-4 text-ink-secondary leading-relaxed">{faq.a}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* AC2: FAQ section */}
           <section className="mb-10">
             <h2 className="text-xl font-semibold text-ink mb-4">
@@ -363,6 +449,41 @@ export default async function LicitacoesSectorUfPage({
               ))}
             </div>
           </section>
+
+          {/* A1: Modalidade-specific educational content for unique indexable content */}
+          {modalidadeInfo && (
+            <section className="mb-10">
+              <h2 className="text-xl font-semibold text-ink mb-4">
+                {modalidadeInfo.name} para {sector.name} em {ufName}
+              </h2>
+              <div className="prose prose-slate max-w-none text-ink-secondary leading-relaxed space-y-4">
+                <p>{modalidadeInfo.description}</p>
+                <div className="not-prose p-4 rounded-lg bg-surface-1 border border-[var(--border)]">
+                  <p className="text-sm font-medium text-ink mb-2">Base Legal</p>
+                  <p className="text-sm text-ink-secondary">{modalidadeInfo.legalBasis}</p>
+                </div>
+                <div className="not-prose p-4 rounded-lg bg-surface-1 border border-[var(--border)]">
+                  <p className="text-sm font-medium text-ink mb-2">Processo Típico</p>
+                  <p className="text-sm text-ink-secondary">{modalidadeInfo.typicalProcess}</p>
+                </div>
+                {(() => {
+                  const modStats = stats?.top_modalidades?.find(
+                    (m) => m.name.toLowerCase().includes(modalidadeInfo.slug.split('-')[0])
+                  );
+                  const modPct = modStats && totalModCount > 0
+                    ? Math.round((modStats.count / totalModCount) * 100)
+                    : null;
+                  return modPct !== null ? (
+                    <p>
+                      No setor de {sector.name} em {ufName}, a modalidade {modalidadeInfo.name} representa{' '}
+                      <strong>{modPct}%</strong> dos editais publicados nos últimos 10 dias
+                      {modStats ? ` (${modStats.count} de ${totalModCount} editais)` : ''}.
+                    </p>
+                  ) : null;
+                })()}
+              </div>
+            </section>
+          )}
 
           {/* AC4: Final CTA with button */}
           <BlogCTA

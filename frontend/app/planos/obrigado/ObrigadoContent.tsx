@@ -101,6 +101,20 @@ export default function ObrigadoContent() {
             const sessionId = searchParams.get("session_id");
             const subId = data.subscription_id || data.id;
             const planIdResolved = planId || "smartlic_pro";
+
+            // SEO-PLAYBOOK: trial_converted funnel event (single-fire)
+            if (typeof window !== 'undefined' && !localStorage.getItem('sl_trial_converted_tracked')) {
+              try {
+                trackEventRef.current('trial_converted', {
+                  plan: planIdResolved,
+                  billing_period: searchParams.get('billing_period') || 'monthly',
+                  source: 'planos',
+                });
+                localStorage.setItem('sl_trial_converted_tracked', '1');
+              } catch {
+                // Analytics failure must never break the activation UX.
+              }
+            }
             const txId =
               sessionId ||
               subId ||

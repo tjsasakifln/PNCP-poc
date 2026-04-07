@@ -1,5 +1,5 @@
 # SmartLic — Playbook de Crescimento Orgânico: CAC Mínimo via Conversão Máxima
-## Versão 2.7 · Atualizado: 2026-04-06 (rodada 6 — desbloqueio de indexação + correções técnicas)
+## Versão 2.8 · Atualizado: 2026-04-07 (rodada 7 — A1 modalidade self-canonical + Mixpanel funnel events)
 
 > **Premissa:** SEO impecável é o piso, não o teto. Quando alguém encontra o SmartLic —
 > por busca orgânica, indicação ou conteúdo — cada touchpoint subsequente deve funcionar
@@ -1062,7 +1062,7 @@ Para o SmartLic (fase atual: pré-escala, custo de infra ~zero marginal por cana
 
 | # | Tática | Impacto estimado | Esforço |
 |---|--------|-----------------|---------|
-| A1 | **Expandir para setor×UF×modalidade** (405 → 2,430 páginas) | 3-4× volume de busca endereçável | 2-3 semanas |
+| A1 | ~~**Expandir para setor×UF×modalidade**~~ ✅ CONCLUÍDO 2026-04-07 — Self-canonical por modalidade (1,620 URLs indexáveis separadamente), MODALIDADE_MAP expandido com description/legalBasis/typicalProcess, 3 FAQs por modalidade no JSON-LD, seção educacional com stats filtrados | 3-4× volume de busca endereçável | 2-3 semanas |
 | A2 | ~~**Lead magnet na calculadora/CNPJ**~~ ✅ CONCLUÍDO 2026-04-07 — Backend `POST /v1/lead-capture` + tabela `leads` + LeadCapture com setor/uf context + CNPJ perfil page | +200-500 leads/mês (5-10% capture) | 1 semana |
 | A3 | ~~**Weekly proprietary data report**~~ ✅ CONCLUÍDO 2026-04-07 — Weekly digest otimizado para Discover: Person author (E-E-A-T), speakable schema, isAccessibleForFree, OG image dinâmica `/api/og?type=weekly`, byline visível | 5K-20K visits por spike | 1 dia setup + semanal |
 | A4 | ~~**CTA nas páginas /licitacoes/[setor]**~~ ✅ CONCLUÍDO 2026-04-07 — 3 CTAs contextuais com `?ref=licitacoes-{setor}` + copy com contagem live + banner pós-UF grid | +15-20% conversão nessas páginas | 1 dia |
@@ -1095,8 +1095,8 @@ Evento Mixpanel: `first_analysis_viewed` (já rastreado? verificar).
 
 **Checklist de instrumentação:**
 - [x] **Verificar evento `first_analysis_viewed`** existe no Mixpanel (ou criar) — implementado em `AnalysisViewTracker.tsx` (rodada 2 Frente C) com localStorage single-fire
-- [ ] **Criar funil no Mixpanel:** `signup → first_search → first_analysis_viewed → trial_converted`
-- [ ] **Monitorar Day-3 activation rate** semanalmente
+- [x] **Criar funil no Mixpanel:** `signup → first_search → first_analysis_viewed → trial_converted` — (2026-04-07) Eventos `first_search` (useSearchExecution.ts, localStorage single-fire após search_completed) e `trial_converted` (ObrigadoContent.tsx, localStorage single-fire após subscription ativada) implementados. Dashboard no Mixpanel UI pendente (config manual).
+- [ ] **Monitorar Day-3 activation rate** semanalmente (requer config manual no Mixpanel UI)
 - [x] **Configurar email comportamental Day-3:** (rodada 2 Frente E) — `activation_nudge` day 2, condicional `searches_count == 0`. Template: `day3_activation.py`. Flag: `DAY3_ACTIVATION_EMAIL_ENABLED` (ativada em prod rodada 5)
 
 **O número que mais importa:**

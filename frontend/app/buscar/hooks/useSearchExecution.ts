@@ -625,6 +625,17 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
         cached: data.cached || false,
       });
 
+      // SEO-PLAYBOOK: first_search funnel event (single-fire)
+      if (typeof window !== 'undefined' && !localStorage.getItem('sl_first_search_tracked')) {
+        trackEvent('first_search', {
+          setor_id: filters.searchMode === 'setor' ? filters.setorId : null,
+          ufs: Array.from(filters.ufsSelecionadas),
+          results_count: data.total_filtrado || 0,
+          search_mode: filters.searchMode,
+        });
+        localStorage.setItem('sl_first_search_tracked', '1');
+      }
+
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         // CRIT-070 AC4: Log for traceability
