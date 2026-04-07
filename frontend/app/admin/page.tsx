@@ -10,6 +10,7 @@ import { AdminUptimeWidget } from "./components/AdminUptimeWidget";
 import { AdminSourceHealth } from "./components/AdminSourceHealth";
 import { AdminReconciliation } from "./components/AdminReconciliation";
 import { AdminSupportSLA } from "./components/AdminSupportSLA";
+import { AdminTrialMetrics } from "./components/AdminTrialMetrics";
 import { AdminUserTable } from "./components/AdminUserTable";
 import { AdminCreateUser } from "./components/AdminCreateUser";
 
@@ -78,6 +79,13 @@ export default function AdminPage() {
   const { data: slaData, isLoading: slaLoading, mutate: mutateSla } = useAdminSWR<SlaResponse>(isAdmin ? "/api/admin/support-sla" : null);
 
   const { data: reconData, isLoading: reconLoading, mutate: mutateRecon } = useAdminSWR<ReconResponse>(isAdmin ? "/api/admin/reconciliation/history?limit=5" : null);
+
+  const { data: trialMetrics, isLoading: metricsLoading } = useAdminSWR<any>(
+    isAdmin ? "/api/admin/trial-metrics" : null
+  );
+  const { data: atRiskData } = useAdminSWR<any>(
+    isAdmin ? "/api/admin/at-risk-trials?limit=10" : null
+  );
 
   const users = usersData?.users ?? [];
   const total = usersData?.total ?? 0;
@@ -193,6 +201,12 @@ export default function AdminPage() {
           slaData={slaData ?? null}
           slaLoading={slaLoading}
           onRefresh={() => mutateSla()}
+        />
+
+        <AdminTrialMetrics
+          metrics={trialMetrics ?? null}
+          atRiskUsers={atRiskData?.users ?? []}
+          loading={metricsLoading}
         />
 
         {showCreate && (

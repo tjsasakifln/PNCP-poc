@@ -263,8 +263,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchAdminStatus]);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Zero-Churn P2 §1.2: Keep timezone current on every login (handles existing users)
+    if (data?.user) {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz) {
+        supabase.from("profiles").update({ timezone: tz }).eq("id", data.user.id).then(() => {
+          // Fire-and-forget — timezone update is best-effort
+        }).catch(() => {});
+      }
+    }
   }, []);
 
   const signUpWithEmail = useCallback(async (
@@ -286,6 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           sector: sector,
           phone_whatsapp: phoneWhatsApp,
           whatsapp_consent: whatsappConsent,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
       },
     });

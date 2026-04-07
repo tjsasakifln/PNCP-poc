@@ -90,6 +90,17 @@ SHARE_ACTIVATION_EMAIL_ENABLED: bool = str_to_bool(os.getenv("SHARE_ACTIVATION_E
 # 3 new emails on days 2, 5, 8 highlighting specific features.
 FEATURE_DISCOVERY_EMAILS_ENABLED: bool = str_to_bool(os.getenv("FEATURE_DISCOVERY_EMAILS_ENABLED", "true"))
 
+# Zero-Churn P2 §2.2: Grace period data retention
+DATA_RETENTION_DAYS: int = int(os.getenv("DATA_RETENTION_DAYS", "30"))
+GRACE_DOWNLOAD_ENABLED: bool = str_to_bool(os.getenv("GRACE_DOWNLOAD_ENABLED", "true"))
+
+# Zero-Churn P2 §8.2: Trial Extension as retention mechanism
+TRIAL_EXTENSION_ENABLED: bool = str_to_bool(os.getenv("TRIAL_EXTENSION_ENABLED", "true"))
+TRIAL_EXTENSION_MAX_DAYS: int = int(os.getenv("TRIAL_EXTENSION_MAX_DAYS", "7"))
+TRIAL_EXTENSION_PROFILE_DAYS: int = 3
+TRIAL_EXTENSION_FEEDBACK_DAYS: int = 2
+TRIAL_EXTENSION_REFERRAL_DAYS: int = 7
+
 # DEBT-325: USD to BRL exchange rate for LLM cost estimation
 USD_TO_BRL_RATE: float = float(os.getenv("USD_TO_BRL_RATE", "5.0"))
 

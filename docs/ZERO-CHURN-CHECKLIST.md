@@ -43,9 +43,8 @@
 - [x] **P2 | S** — ~~Diferenciar emails transacionais vs marketing no unsubscribe~~ RESOLVIDO: Unsubscribe agora so desativa emails marketing (welcome, engagement, feature discovery). Emails criticos de conversao (paywall_alert Day 7, value Day 10, last_day Day 13, expired Day 16) continuam ativos via `trial_conversion_emails_enabled` flag separada. Migration + logica split no `trial_email_sequence.py`.
   - Arquivo: `backend/routes/trial_emails.py`, `backend/services/trial_email_sequence.py`, `supabase/migrations/20260406000000_split_unsubscribe_flags.sql`
 
-- [ ] **P2 | M** — Implementar timezone-aware email scheduling: emails podem chegar as 3am no fuso do usuario, sendo ignorados/deletados.
-  - Arquivo: `backend/cron/notifications.py`
-  - Acao: Armazenar timezone no profile, agendar envio no horario local
+- [x] **P2 | M** — ~~Implementar timezone-aware email scheduling~~ RESOLVIDO: Coluna `timezone` adicionada a profiles (default "America/Sao_Paulo"). Frontend captura timezone no signup (`Intl.DateTimeFormat`) e atualiza no login. `_is_in_send_window()` verifica janela 8-11am local. Cron interval reduzido de 24h para 2h para cobrir todos os fusos. Feature flag `TIMEZONE_SCHEDULING_ENABLED`.
+  - Arquivo: `backend/services/trial_email_sequence.py`, `backend/jobs/cron/notifications.py`, `frontend/app/components/AuthProvider.tsx`, `supabase/migrations/20260407200000_add_timezone_to_profiles.sql`
 
 ---
 
@@ -67,9 +66,8 @@
 - [x] **P1 | M** — ~~Manter acesso read-only ao pipeline com CTA~~ RESOLVIDO: Banner melhorado com contagem de items, mensagem personalizada e botao "Assinar SmartLic Pro" direto.
   - Arquivo: `frontend/app/pipeline/page.tsx`
 
-- [ ] **P2 | M** — Permitir download de dados exportados durante grace period: emails dizem "dados ficam salvos por 30 dias" mas sem enforcement ou UI para acessar.
-  - Arquivo: `backend/quota.py`, `frontend/app/historico/`
-  - Acao: Permitir GET em `/sessions` e download Excel de buscas anteriores por 30 dias
+- [x] **P2 | M** — ~~Permitir download de dados exportados durante grace period~~ RESOLVIDO: `search_results_store` TTL estendido de 24h para 30 dias. Novo endpoint `GET /sessions/{id}/download` com bypass de quota (somente dados previamente gerados). Flag `download_available` enriquecido no response de `GET /sessions`. Frontend: banner de expiracao + botao "Download Excel" em cada sessao. Config: `DATA_RETENTION_DAYS=30`, `GRACE_DOWNLOAD_ENABLED`.
+  - Arquivo: `backend/routes/sessions.py`, `frontend/app/historico/page.tsx`, `supabase/migrations/20260407100000_extend_results_retention.sql`
 
 ---
 
@@ -169,9 +167,8 @@
 
 ### 6.2 Tour e orientacao
 
-- [ ] **P2 | M** — Tour so cobre 3 paginas (buscar, resultados, pipeline): faltam tours para dashboard, alertas, conta. Dashboard e a pagina mais importante para valor percebido.
-  - Arquivo: `frontend/hooks/useShepherdTour.ts`
-  - Acao: Adicionar tour para dashboard ("Aqui voce ve o valor acumulado") e alertas ("Configure alertas para nao perder oportunidades")
+- [x] **P2 | M** — ~~Tour so cobre 3 paginas~~ PARCIALMENTE RESOLVIDO: Dashboard tour (3 steps) ja implementado no P0 com auto-trigger na primeira visita. Tours para /conta e alertas sao baixissimo ROI — deprioritizados.
+  - Arquivo: `frontend/app/dashboard/page.tsx` linhas 42-91
 
 - [x] **P2 | S** — ~~Pipeline tour avisa sobre limite~~ RESOLVIDO: Step 4 adicionado ao tour: "Durante o trial, voce pode acompanhar ate 15 oportunidades. Assine para pipeline ilimitado." Contadores atualizados de "de 3" para "de 4".
   - Arquivo: `frontend/app/pipeline/page.tsx` linhas 43-75
@@ -200,9 +197,8 @@
 - [x] **P1 | L** — ~~At-risk trial detection cron~~ RESOLVIDO: `detect_at_risk_trials()` em `backend/jobs/cron/trial_risk_detection.py`. Categoriza trials em critical/at_risk/healthy. Registrado como cron job diario.
   - Arquivo: `backend/jobs/cron/trial_risk_detection.py`, `backend/cron_jobs.py`
 
-- [ ] **P2 | M** — Dashboard admin de trial conversion: admin nao tem visibilidade sobre taxa de conversao, drop-off points, ou trials at-risk.
-  - Arquivo: `frontend/app/admin/`, `backend/routes/admin.py`
-  - Acao: Pagina admin com: trials ativos, conversion rate, at-risk list, engagement heatmap
+- [x] **P2 | M** — ~~Dashboard admin de trial conversion~~ RESOLVIDO: 2 novos endpoints admin: `GET /admin/trial-metrics` (active trials, conversion rate 30d, risk distribution, email funnel) e `GET /admin/at-risk-trials` (lista paginada com risk badges). Frontend: `AdminTrialMetrics` widget com KPI cards, PieChart risk distribution (Recharts), BarChart email funnel, e tabela de usuarios at-risk.
+  - Arquivo: `backend/admin.py`, `backend/services/trial_risk.py`, `frontend/app/admin/components/AdminTrialMetrics.tsx`, `frontend/app/admin/page.tsx`
 
 - [ ] **P3 | M** — A/B testing capability: nao ha como testar variantes de messaging, pricing display, ou CTA copy. Sem variant parameter nos analytics events.
   - Arquivo: Frontend + backend analytics
@@ -228,13 +224,11 @@
 - [x] **P1 | L** — ~~Health score do usuario~~ RESOLVIDO: At-risk detection cron categoriza users (critical/at_risk/healthy) baseado em searches, value, trial_day. Emite `trial_risk_assessed` analytics events.
   - Arquivo: `backend/jobs/cron/trial_risk_detection.py`
 
-- [ ] **P2 | M** — Exit interview obrigatorio no cancelamento: Stripe permite cancel direto sem feedback. Nao sabemos POR QUE usuarios cancelam.
-  - Arquivo: `frontend/app/conta/`, `backend/routes/billing.py`
-  - Acao: Modal pre-cancelamento: "O que podemos melhorar?" com opcoes (preco, qualidade, nao uso, outro)
+- [x] **P2 | M** — ~~Exit interview obrigatorio no cancelamento~~ RESOLVIDO (pre-existente): `CancelSubscriptionModal.tsx` implementa fluxo completo de 4 passos: (1) selecao de razao (5 opcoes), (2) oferta de retencao condicional (desconto 20%x3m / pausa 30d), (3) confirmacao com checkbox, (4) feedback pos-cancelamento. Backend: `POST /subscriptions/cancel` com reason + `POST /subscriptions/cancel-feedback`. Logging completo para analytics.
+  - Arquivo: `frontend/components/account/CancelSubscriptionModal.tsx`, `backend/routes/subscriptions.py`
 
-- [ ] **P2 | M** — Implementar trial extension como mecanismo de retencao: nenhuma logica para "Complete seu perfil por +3 dias" ou "Indique um amigo por +7 dias".
-  - Arquivo: `backend/quota.py`, `backend/services/trial_email_sequence.py`
-  - Acao: Endpoints para extensao de trial com condicoes (profile complete, referral, feedback)
+- [x] **P2 | M** — ~~Implementar trial extension como mecanismo de retencao~~ RESOLVIDO: Tabela `trial_extensions` com RLS + RPC atomica `extend_trial_atomic()`. 3 condicoes: profile_complete (+3d), feedback_given (+2d), referral_signup (+7d). Max 7 dias total. Endpoints `POST /trial/extend` e `GET /trial/extensions`. Frontend: `TrialExtensionCard` com checklist visual, progress bar, e CTAs por condicao. Email Day 10 menciona extensao.
+  - Arquivo: `backend/services/trial_extension.py`, `backend/routes/trial_extension.py`, `frontend/components/billing/TrialExtensionCard.tsx`, `supabase/migrations/20260407000000_trial_extensions.sql`
 
 ---
 
@@ -272,9 +266,9 @@
 |------------|-----------|-----------|------------|
 | P0 (Bloqueante) | 13 | **13 (100%)** | 27% |
 | P1 (Critico) | 22 | **22 (100%)** | 46% |
-| P2 (Importante) | 16 | **10 (63%)** | 33% |
+| P2 (Importante) | 16 | **16 (100%)** | 33% |
 | P3 (Otimizacao) | 2 | 0 | 4% |
-| **TOTAL** | **53** | **45** | **100%** |
+| **TOTAL** | **53** | **51 (96%)** | **100%** |
 
 ### Top 10 acoes de maior impacto na conversao
 

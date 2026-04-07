@@ -17,11 +17,31 @@ import hmac
 import hashlib
 import os
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
 # HMAC secret for unsubscribe tokens (reuses WEBHOOK_SECRET or falls back)
 _UNSUBSCRIBE_SECRET = os.getenv("WEBHOOK_SECRET", os.getenv("SECRET_KEY", "smartlic-trial-unsub"))
+
+
+TIMEZONE_SCHEDULING_ENABLED = os.getenv("TIMEZONE_SCHEDULING_ENABLED", "true").lower() == "true"
+
+
+def _is_in_send_window(user_tz_str: str, window_start: int = 8, window_end: int = 11) -> bool:
+    """Check if current UTC time falls within send window in user's local timezone.
+
+    Default window: 8am-11am local time (covers morning business hours).
+    Disabled when TIMEZONE_SCHEDULING_ENABLED=false (e.g., in tests).
+    """
+    if not TIMEZONE_SCHEDULING_ENABLED:
+        return True
+    try:
+        user_tz = ZoneInfo(user_tz_str or "America/Sao_Paulo")
+    except (KeyError, ValueError):
+        user_tz = ZoneInfo("America/Sao_Paulo")
+    now_local = datetime.now(timezone.utc).astimezone(user_tz)
+    return window_start <= now_local.hour < window_end
 
 # ============================================================================
 # AC1: Email sequence definition — 6 emails over 14-day trial
@@ -252,7 +272,7 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                 # AC5: Respect unsubscribe preferences (marketing vs conversion)
                 users_result = await sb_execute(
                     sb.table("profiles")
-                    .select("id, email, full_name, plan_type, marketing_emails_enabled, trial_conversion_emails_enabled")
+                    .select("id, email, full_name, plan_type, marketing_emails_enabled, trial_conversion_emails_enabled, timezone")
                     .eq("plan_type", "free_trial")
                     .gte("created_at", target_start)
                     .lt("created_at", target_end)
@@ -270,6 +290,14 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                     user_name = user.get("full_name") or (email_addr.split("@")[0] if email_addr else "Usuario")
 
                     if not email_addr:
+                        continue
+
+                    # Zero-Churn P2 §1.2: Only send during user's local business hours (8-11am)
+                    # The loop runs every 2h so all timezones are covered within the day
+                    user_tz = user.get("timezone") or "America/Sao_Paulo"
+                    if not _is_in_send_window(user_tz):
+                        # Will be picked up in next cron run (every 2h)
+                        skipped += 1
                         continue
 
                     # AC4: Skip if user has converted (double-check plan_type)

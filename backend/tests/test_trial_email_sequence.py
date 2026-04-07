@@ -656,7 +656,7 @@ class TestCronJobIntegration:
 
     def test_trial_sequence_constants_exist(self):
         from cron_jobs import TRIAL_SEQUENCE_INTERVAL_SECONDS, TRIAL_SEQUENCE_BATCH_SIZE
-        assert TRIAL_SEQUENCE_INTERVAL_SECONDS == 86400
+        assert TRIAL_SEQUENCE_INTERVAL_SECONDS == 7200  # 2h for timezone coverage
         assert TRIAL_SEQUENCE_BATCH_SIZE == 50
 
     @pytest.mark.asyncio

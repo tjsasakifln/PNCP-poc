@@ -10,10 +10,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useSessions } from "../../hooks/useSessions";
+import { usePlan } from "../../hooks/usePlan";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { formatCurrencyBR } from "../../lib/format-currency";
 import { APP_NAME } from "../../lib/config";
 import { PageErrorBoundary } from "../../components/PageErrorBoundary";
+import { toast } from "sonner";
 
 // UX-354 -> UX-356: Shared sector slug -> display name mapping
 import { getSectorDisplayName } from "../../lib/constants/sector-names";
@@ -48,6 +50,8 @@ interface SearchSession {
   pipeline_stage: string | null;
   started_at: string;
   response_state: string | null;
+  // Zero-Churn P2 §2.2: Backend-computed flag for grace period downloads
+  download_available?: boolean;
 }
 
 // CRIT-002 AC20: Status badge configuration
@@ -153,9 +157,27 @@ export default function HistoricoPage() {
   const { session, loading: authLoading } = useAuth();
   const router = useRouter();
   const { trackEvent } = useAnalytics();
+  const { planInfo } = usePlan();
   const [page, setPage] = useState(0);
   // UX-433: Filter to hide failures — default to showing only completed
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'failed'>('completed');
+
+  // Zero-Churn P2 §2.2: Determine if user's plan/trial has expired
+  const isExpired = useMemo(() => {
+    if (!planInfo) return false;
+    const { subscription_status, trial_expires_at, plan_id } = planInfo;
+    // Active paid subscription — not expired
+    if (subscription_status === "active" || subscription_status === "trialing") return false;
+    // Free trial — check expiry
+    if (plan_id === "free_trial" && trial_expires_at) {
+      return new Date(trial_expires_at) < new Date();
+    }
+    // Cancelled / past_due / unpaid without active sub
+    if (subscription_status && ["canceled", "past_due", "unpaid", "incomplete_expired"].includes(subscription_status)) {
+      return true;
+    }
+    return false;
+  }, [planInfo]);
 
   // ISSUE-040: Reset page to 0 when filter changes to ensure consistent counts
   const handleStatusFilterChange = useCallback((newFilter: 'all' | 'completed' | 'failed') => {
@@ -215,6 +237,33 @@ export default function HistoricoPage() {
     router.push(`/buscar?${params.toString()}`);
   }, [router, trackEvent]);
 
+  // Zero-Churn P2 §2.2: Grace period Excel download
+  const handleDownload = useCallback(async (searchId: string) => {
+    try {
+      const res = await fetch(`/api/sessions/${searchId}/download`, {
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        toast.error(err?.detail || "Erro ao baixar arquivo");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `smartlic-${searchId.slice(0, 8)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Erro ao baixar arquivo");
+    }
+  }, [session]);
+
   // GTM-POLISH-001 AC1-AC3: Unified auth loading
   if (authLoading) {
     return <AuthLoadingScreen />;
@@ -263,6 +312,28 @@ export default function HistoricoPage() {
         }
       />
       <div className="max-w-4xl mx-auto py-8 px-4">
+        {/* Zero-Churn P2 §2.2: Expired plan banner — download still available for 30 days */}
+        {isExpired && (
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  Seu plano expirou
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  Seus dados ficam disponiveis para download por 30 dias. Assine para continuar analisando.
+                </p>
+                <a href="/planos" className="inline-block mt-2 text-xs bg-amber-600 text-white px-4 py-1.5 rounded hover:bg-amber-700 transition-colors">
+                  Assinar SmartLic Pro
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         <p className="text-[var(--ink-secondary)] mb-2">
           {`${total} ${total !== 1 ? 'análises' : 'análise'} ${statusFilter === 'completed' ? (total !== 1 ? 'concluídas' : 'concluída') : statusFilter === 'failed' ? 'com falha' : (total !== 1 ? 'realizadas' : 'realizada')}`}
         </p>
@@ -432,6 +503,21 @@ export default function HistoricoPage() {
                           Repetir análise
                         </button>
                       ) : null}
+                      {/* Zero-Churn P2 §2.2: Grace period download button */}
+                      {s.download_available && (
+                        <button
+                          onClick={() => handleDownload(s.id)}
+                          data-testid="download-excel-button"
+                          className="mt-2 text-xs text-[var(--brand-blue)] hover:text-[var(--brand-navy)]
+                                     flex items-center gap-1 transition-colors"
+                          title="Baixar resultados em Excel"
+                        >
+                          <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download Excel
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

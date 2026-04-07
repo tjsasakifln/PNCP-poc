@@ -370,6 +370,18 @@ def render_trial_value_email(user_name: str, stats: dict, unsubscribe_url: str =
       Não perca esse progresso. Com o SmartLic Pro, você mantém acesso a tudo:
       análises ilimitadas, IA de classificação, pipeline e relatórios Excel.
     </p>
+    <tr><td style="padding: 20px 30px;">
+      <p style="font-size: 15px; color: #1a1a2e; margin: 0 0 12px;">
+        <strong>Sabia que voce pode ganhar ate 7 dias extras?</strong>
+      </p>
+      <p style="font-size: 14px; color: #4a4a6a; margin: 0 0 16px;">
+        Complete seu perfil (+3 dias), de feedback sobre uma busca (+2 dias)
+        ou convide um colega (+7 dias).
+      </p>
+      <a href="{FRONTEND_URL}/dashboard" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">
+        Ver minhas opcoes
+      </a>
+    </td></tr>
     <p style="text-align: center; margin: 24px 0 16px;">
       <a href="{FRONTEND_URL}/planos" class="btn"
          style="display: inline-block; padding: 14px 32px; background-color: {SMARTLIC_GREEN}; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">

@@ -3,11 +3,14 @@
 Extracted from main.py as part of STORY-202 monolith decomposition.
 """
 
+import io
 import logging
 
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from auth import require_auth
 from database import get_db
 from schemas import SessionsListResponse
@@ -52,13 +55,109 @@ async def get_sessions(
             .range(offset, offset + limit - 1)
         )
 
+        # Zero-Churn P2 §2.2: Enrich each session with download_available flag
+        from config.features import DATA_RETENTION_DAYS
+        sessions = result.data or []
+        now = datetime.now(timezone.utc)
+        for s in sessions:
+            created = s.get("created_at", "")
+            is_completed = s.get("status") in ("completed", None) or (s.get("total_filtered") or 0) > 0
+            within_retention = False
+            if created:
+                try:
+                    created_dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                    within_retention = now < created_dt + timedelta(days=DATA_RETENTION_DAYS)
+                except (ValueError, TypeError):
+                    pass
+            s["download_available"] = is_completed and within_retention
+
         return {
-            "sessions": result.data,
+            "sessions": sessions,
             "total": result.count or 0,
             "limit": limit,
             "offset": offset,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching sessions for user {user['id']}: {e}")
-        from fastapi import HTTPException
         raise HTTPException(status_code=503, detail="Histórico temporariamente indisponível")
+
+
+@router.get("/sessions/{search_id}/download")
+async def download_session_excel(
+    search_id: str,
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """Download Excel for a previously completed search session.
+
+    Zero-Churn P2 §2.2: Allows downloads within DATA_RETENTION_DAYS even
+    after trial/subscription expires. Bypasses quota checks — only previously
+    generated data can be downloaded.
+    """
+    from config.features import DATA_RETENTION_DAYS, GRACE_DOWNLOAD_ENABLED
+    from excel import create_excel
+
+    if not GRACE_DOWNLOAD_ENABLED:
+        raise HTTPException(status_code=403, detail="Downloads durante grace period desabilitados")
+
+    # Verify ownership
+    session_result = await sb_execute(
+        db.table("search_sessions")
+        .select("id, user_id, created_at, status, search_params")
+        .eq("id", search_id)
+        .eq("user_id", user["id"])
+        .single()
+    )
+    if not session_result.data:
+        raise HTTPException(status_code=404, detail="Sessao nao encontrada")
+
+    session = session_result.data
+
+    # Check retention window
+    created_at = session.get("created_at", "")
+    if created_at:
+        try:
+            created_dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            retention_deadline = created_dt + timedelta(days=DATA_RETENTION_DAYS)
+            if datetime.now(timezone.utc) > retention_deadline:
+                raise HTTPException(status_code=410, detail="Dados expirados apos periodo de retencao")
+        except HTTPException:
+            raise
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Could not parse created_at for session {search_id}: {e}")
+
+    # Load results from search_results_store
+    results_result = await sb_execute(
+        db.table("search_results_store")
+        .select("results")
+        .eq("search_id", search_id)
+        .single()
+    )
+    if not results_result.data or not results_result.data.get("results"):
+        raise HTTPException(status_code=410, detail="Resultados nao disponiveis — dados expirados")
+
+    results = results_result.data["results"]
+    if not isinstance(results, list):
+        results = []
+
+    # Extract search params for Excel
+    params = session.get("search_params") or {}
+    sector_name = params.get("setor", "")
+    ufs = params.get("ufs", [])
+    if not isinstance(ufs, list):
+        ufs = []
+
+    logger.info(
+        f"Grace period download: user={user['id']} search_id={search_id} "
+        f"results={len(results)} sector={sector_name}"
+    )
+
+    excel_buf = create_excel(results)
+    filename = f"smartlic-{search_id[:8]}.xlsx"
+    return StreamingResponse(
+        io.BytesIO(excel_buf.getvalue()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -427,7 +427,9 @@ describe('Auth methods', () => {
     expect(mockSignUp).toHaveBeenCalledWith({
       email: 'new@example.com',
       password: 'password123',
-      options: { data: { full_name: 'John Doe' } },
+      options: {
+        data: expect.objectContaining({ full_name: 'John Doe' }),
+      },
     });
   });
 

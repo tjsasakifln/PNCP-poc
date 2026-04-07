@@ -11,6 +11,7 @@ import { PageHeader } from "../../components/PageHeader";
 import { AuthLoadingScreen } from "../../components/AuthLoadingScreen";
 import { TrialUpsellCTA } from "../../components/billing/TrialUpsellCTA";
 import { TrialValueTracker } from "../../components/billing/TrialValueTracker";
+import { TrialExtensionCard } from "../../components/billing/TrialExtensionCard";
 import { usePlan } from "../../hooks/usePlan";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { formatCurrencyBR } from "../../lib/format-currency";
@@ -278,6 +279,9 @@ export default function DashboardPage() {
         <div className="mb-6">
           <TrialValueTracker />
         </div>
+
+        {/* Zero-Churn P2 §8.2: Trial extension actions checklist */}
+        <TrialExtensionCard />
 
         {summary && (
           <p className="text-sm text-[var(--ink-muted)] mb-6">

@@ -72,14 +72,13 @@ async def detect_at_risk_trials() -> dict:
                 searches = stats_dict.get("searches_count", 0)
                 value = stats_dict.get("total_value_estimated", 0.0)
 
-                if searches == 0:
-                    category = "critical"
+                from services.trial_risk import categorize_trial_risk
+                category = categorize_trial_risk(searches, value, trial_day)
+                if category == "critical":
                     critical += 1
-                elif searches <= 3 and value < 100_000 and trial_day >= 5:
-                    category = "at_risk"
+                elif category == "at_risk":
                     at_risk += 1
                 else:
-                    category = "healthy"
                     healthy += 1
 
                 track_event("trial_risk_assessed", {

@@ -7,7 +7,7 @@ from jobs.cron.canary import _is_cb_or_connection_error
 
 logger = logging.getLogger(__name__)
 
-TRIAL_SEQUENCE_INTERVAL_SECONDS = 24 * 60 * 60
+TRIAL_SEQUENCE_INTERVAL_SECONDS = 2 * 60 * 60  # Every 2h to cover all timezones
 TRIAL_SEQUENCE_BATCH_SIZE = 50
 ALERTS_LOCK_KEY = "smartlic:alerts:lock"
 ALERTS_LOCK_TTL = 30 * 60
@@ -108,7 +108,7 @@ async def _alerts_loop() -> None:
 
 
 async def _trial_sequence_loop() -> None:
-    await asyncio.sleep(_next_utc_hour(11))  # 08:00 BRT = 11:00 UTC
+    await asyncio.sleep(60)  # Small initial delay for startup
     while True:
         try:
             from services.trial_email_sequence import process_trial_emails

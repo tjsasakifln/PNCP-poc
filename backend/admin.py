@@ -931,6 +931,181 @@ async def get_support_sla(
         raise HTTPException(status_code=500, detail="Erro ao calcular metricas de SLA")
 
 
+# ============================================================================
+# Zero-Churn P2 §7.2: Trial Conversion Dashboard Endpoints
+# ============================================================================
+
+
+@router.get("/trial-metrics")
+async def get_trial_metrics(
+    admin: dict = Depends(require_admin),
+):
+    """Trial conversion metrics dashboard.
+
+    Returns active trial count, 30-day conversion rate, risk distribution,
+    and email funnel stats from trial_email_log.
+    """
+    from datetime import datetime, timezone, timedelta
+    from collections import defaultdict
+    from supabase_client import get_supabase
+    from services.trial_risk import categorize_trial_risk
+
+    sb = get_supabase()
+    now = datetime.now(timezone.utc)
+    thirty_days_ago = now - timedelta(days=30)
+
+    # Active trials
+    active_result = (
+        sb.table("profiles")
+        .select("id", count="exact")
+        .eq("plan_type", "free_trial")
+        .execute()
+    )
+    active_trials = active_result.count or 0
+
+    # Conversion rate (last 30 days): users created in window who now have paid plan
+    window_start = now - timedelta(days=44)  # 14d trial + 30d window
+    converted_result = (
+        sb.table("profiles")
+        .select("id", count="exact")
+        .neq("plan_type", "free_trial")
+        .gte("created_at", window_start.isoformat())
+        .execute()
+    )
+    total_started_result = (
+        sb.table("profiles")
+        .select("id", count="exact")
+        .gte("created_at", window_start.isoformat())
+        .execute()
+    )
+
+    converted_count = converted_result.count or 0
+    total_count = total_started_result.count or 0
+    conversion_rate = round((converted_count / total_count * 100) if total_count > 0 else 0, 1)
+
+    # Risk distribution: categorize active trial users
+    risk_dist: dict[str, int] = {"critical": 0, "at_risk": 0, "healthy": 0}
+    if active_trials > 0:
+        trial_users_result = (
+            sb.table("profiles")
+            .select("id, created_at")
+            .eq("plan_type", "free_trial")
+            .limit(200)
+            .execute()
+        )
+        for tu in (trial_users_result.data or []):
+            try:
+                created = datetime.fromisoformat(tu["created_at"].replace("Z", "+00:00"))
+                trial_day = (now - created).days
+                searches_r = (
+                    sb.table("search_sessions")
+                    .select("id", count="exact")
+                    .eq("user_id", tu["id"])
+                    .execute()
+                )
+                searches = searches_r.count or 0
+                risk = categorize_trial_risk(searches, 0, trial_day)
+                risk_dist[risk] = risk_dist.get(risk, 0) + 1
+            except Exception:
+                continue
+
+    # Email funnel from trial_email_log (last 30 days)
+    email_funnel = []
+    try:
+        email_stats = (
+            sb.table("trial_email_log")
+            .select("email_type, id, opened_at, clicked_at")
+            .gte("sent_at", thirty_days_ago.isoformat())
+            .execute()
+        )
+        funnel: dict[str, dict[str, int]] = defaultdict(lambda: {"sent": 0, "opened": 0, "clicked": 0})
+        for row in (email_stats.data or []):
+            et = row.get("email_type", "unknown")
+            funnel[et]["sent"] += 1
+            if row.get("opened_at"):
+                funnel[et]["opened"] += 1
+            if row.get("clicked_at"):
+                funnel[et]["clicked"] += 1
+        email_funnel = [
+            {"email_type": k, **v}
+            for k, v in sorted(funnel.items())
+        ]
+    except Exception:
+        pass
+
+    return {
+        "active_trials": active_trials,
+        "conversion_rate_30d": conversion_rate,
+        "converted_count": converted_count,
+        "total_started": total_count,
+        "risk_distribution": risk_dist,
+        "email_funnel": email_funnel,
+    }
+
+
+@router.get("/at-risk-trials")
+async def get_at_risk_trials(
+    admin: dict = Depends(require_admin),
+    page: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    risk_category: Optional[str] = Query(default=None),
+):
+    """Paginated list of trial users with risk categorization."""
+    from datetime import datetime, timezone
+    from supabase_client import get_supabase
+    from services.trial_risk import categorize_trial_risk
+
+    sb = get_supabase()
+    now = datetime.now(timezone.utc)
+
+    trial_users_result = (
+        sb.table("profiles")
+        .select("id, email, full_name, company, created_at", count="exact")
+        .eq("plan_type", "free_trial")
+        .order("created_at", desc=True)
+        .range(page * limit, page * limit + limit - 1)
+        .execute()
+    )
+
+    users = []
+    for tu in (trial_users_result.data or []):
+        try:
+            created = datetime.fromisoformat(tu["created_at"].replace("Z", "+00:00"))
+            trial_day = (now - created).days
+
+            searches_r = (
+                sb.table("search_sessions")
+                .select("id", count="exact")
+                .eq("user_id", tu["id"])
+                .execute()
+            )
+            searches = searches_r.count or 0
+
+            risk = categorize_trial_risk(searches, 0, trial_day)
+
+            if risk_category and risk != risk_category:
+                continue
+
+            users.append({
+                "user_id": tu["id"],
+                "email": tu.get("email", ""),
+                "full_name": tu.get("full_name", ""),
+                "company": tu.get("company", ""),
+                "trial_day": trial_day,
+                "searches_count": searches,
+                "risk_category": risk,
+            })
+        except Exception:
+            continue
+
+    return {
+        "users": users,
+        "total": trial_users_result.count or 0,
+        "page": page,
+        "limit": limit,
+    }
+
+
 def _assign_plan(sb, user_id: str, plan_id: str):
     """Internal: assign plan creating subscription record."""
     from datetime import datetime, timezone, timedelta
