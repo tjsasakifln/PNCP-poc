@@ -6,7 +6,7 @@ from typing import Optional
 import logging
 
 from auth import require_auth
-from authorization import require_admin
+from admin import require_admin
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["seo_admin"])
