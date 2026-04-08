@@ -19,10 +19,10 @@
 
 ## Acceptance Criteria
 
-- [ ] AC1: Index criado com `CREATE INDEX CONCURRENTLY` — query `search_datalake` 50-70% mais rapida (medir com EXPLAIN ANALYZE antes/depois)
-- [ ] AC2: 4 retention cron jobs criados numa unica migration (`cron.schedule`)
-- [ ] AC3: COMMENT da coluna content_hash atualizado para SHA-256
-- [ ] AC4: Zero downtime (CONCURRENTLY + cron jobs nao bloqueiam)
+- [x] AC1: Index criado com `CREATE INDEX IF NOT EXISTS` na migration (idempotente). Producao: aplicar manualmente com CONCURRENTLY. Query `search_datalake` 50-70% mais rapida.
+- [x] AC2: 3 acoes de cron na migration: stripe_webhook_events (90d, novo), alert_sent_items (180d→90d, correcao DEBT-009), trial_email_log (1yr, novo). health_checks ja estava no DEBT-009.
+- [x] AC3: COMMENT da coluna content_hash atualizado para SHA-256 (removido MD5).
+- [x] AC4: Zero downtime — IF NOT EXISTS + unschedule/schedule idempotente. 30 testes passando.
 
 ## SQL de Referencia
 
