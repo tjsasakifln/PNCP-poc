@@ -69,11 +69,11 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         passou por três ciclos distintos de evolução em duas décadas. Do
         monitoramento manual de diários oficiais ao processamento por
         inteligência artificial, cada geração resolveu um problema e criou o
-        próximo. Em 2026, estamos no ponto de inflexão da terceira geração --
+        próximo. Em 2026, estamos no ponto de inflexão da terceira geração —
         ferramentas que não apenas encontram editais, mas classificam,
         pontuam e priorizam oportunidades com base em dados objetivos. Para
         consultorias e empresas que operam no mercado B2G, entender essa
-        evolução não é exercício acadêmico -- é requisito para escolher a
+        evolução não é exercício acadêmico — é requisito para escolher a
         ferramenta certa e capturar vantagem competitiva num mercado que
         movimenta mais de R$ 200 bilhões anuais em compras públicas
         federais.
@@ -84,7 +84,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
 
       <p>
         Até meados dos anos 2000, a única forma de identificar oportunidades
-        de licitação era monitorar diários oficiais -- publicações impressas
+        de licitação era monitorar diários oficiais — publicações impressas
         ou em PDF, sem mecanismo de busca, sem padronização de dados e sem
         integração entre esferas de governo. Um analista que monitorava
         licitações federais, estaduais e municipais precisava consultar
@@ -97,7 +97,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         primeiro marco de digitalização, centralizando as compras federais em
         um portal eletrônico. Porém, as compras estaduais e municipais
         permaneceram fragmentadas por quase duas décadas. A Lei 14.133/2021
-        -- a Nova Lei de Licitações -- mudou esse cenário ao estabelecer o
+        — a Nova Lei de Licitações — mudou esse cenário ao estabelecer o
         PNCP como portal centralizado e obrigatório. Pela primeira vez, existe
         uma fonte nacional com ambição de consolidar todas as contratações
         públicas do país.
@@ -105,7 +105,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Evolução das compras públicas digitais no
+          Dados de referência — Evolução das compras públicas digitais no
           Brasil
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
@@ -151,7 +151,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
 
       <p>
         As limitações da Geração 1, no entanto, eram significativas. A busca
-        dependia exclusivamente de correspondência textual -- se o edital
+        dependia exclusivamente de correspondência textual — se o edital
         usava uma terminologia diferente da palavra-chave cadastrada, ele
         simplesmente não aparecia. Não havia classificação setorial, não
         havia avaliação de viabilidade e não havia priorização. O usuário
@@ -175,7 +175,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
 
       <p>
         Plataformas de Geração 2 também introduziram filtros mais
-        sofisticados -- por UF, por faixa de valor, por modalidade, por
+        sofisticados — por UF, por faixa de valor, por modalidade, por
         órgão. A experiência de uso melhorou consideravelmente. Porém, o
         problema fundamental persistiu: a qualificação dos editais
         continuava sendo manual. O analista recebia alertas de editais que
@@ -183,7 +183,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         viabilidade e prioridade permanecia inteiramente humana. O volume de
         alertas em operações multi-setor e multi-UF frequentemente
         ultrapassava a capacidade de análise, gerando fadiga de notificação
-        -- o analista recebia tantos alertas que deixava de abrir muitos
+        — o analista recebia tantos alertas que deixava de abrir muitos
         deles.
       </p>
 
@@ -193,7 +193,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
       <p>
         A terceira geração representa uma mudança qualitativa, não apenas
         incremental. Ferramentas de Geração 3 não se limitam a encontrar
-        editais e alertar -- elas classificam, pontuam e priorizam. A
+        editais e alertar — elas classificam, pontuam e priorizam. A
         diferença é estrutural: a ferramenta assume parte da carga cognitiva
         que antes cabia exclusivamente ao analista.
       </p>
@@ -208,7 +208,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         &ldquo;informática&rdquo; ou &ldquo;computador&rdquo;. Segundo,
         análise de viabilidade multi-fator que pondera modalidade, prazo,
         valor e geografia para gerar um score objetivo de cada edital.
-        Terceiro, consolidação multi-fonte com deduplicação automática --
+        Terceiro, consolidação multi-fonte com deduplicação automática —
         o mesmo edital publicado no PNCP, ComprasGov e Portal de Compras
         Públicas aparece uma única vez, com a informação mais completa.
       </p>
@@ -235,21 +235,21 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         </p>
         <ul className="space-y-3 text-sm text-ink-secondary">
           <li>
-            <strong>Geração 1 -- Busca e listagem:</strong> O usuário
+            <strong>Geração 1 — Busca e listagem:</strong> O usuário
             procura editais. Valor: consolidação de fontes. Limitação: sem
             classificação, sem priorização, dependência total de
             palavras-chave exatas. O analista gasta 80% do tempo descartando
             resultados irrelevantes.
           </li>
           <li>
-            <strong>Geração 2 -- Alertas e monitoramento:</strong> O sistema
+            <strong>Geração 2 — Alertas e monitoramento:</strong> O sistema
             avisa o usuário sobre novos editais. Valor: eliminação da busca
             manual. Limitação: alertas baseados em palavras-chave geram alto
             volume de notificações com baixa taxa de relevância (20-40% dos
             alertas são efetivamente relevantes).
           </li>
           <li>
-            <strong>Geração 3 -- Inteligência e classificação:</strong> O
+            <strong>Geração 3 — Inteligência e classificação:</strong> O
             sistema classifica, pontua e prioriza. Valor: redução de 70-85%
             no volume de editais que exigem análise humana. Diferencial:
             capacidade de avaliar relevância semântica (IA) e viabilidade
@@ -275,7 +275,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         do objeto não contém as palavras-chave óbvias do setor. Isso exige
         modelos de linguagem capazes de interpretar contexto semântico, não
         apenas correspondência textual. Teste com editais que você sabe
-        serem relevantes mas que usam terminologia incomum -- se a
+        serem relevantes mas que usam terminologia incomum — se a
         ferramenta não os classifica corretamente, ela opera na Geração 2
         com rótulo de Geração 3.
       </p>
@@ -287,7 +287,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         prazo insuficiente, valor fora da faixa ou localização
         incompatível. Ferramentas de Geração 3 avaliam viabilidade em
         múltiplos fatores e geram um score que permite ordenar editais por
-        probabilidade de retorno -- não apenas por data de publicação.
+        probabilidade de retorno — não apenas por data de publicação.
       </p>
 
       <h3>Consolidação multi-fonte com deduplicação</h3>
@@ -305,7 +305,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
       <p>
         A ferramenta deve explicar por que classificou um edital como
         relevante ou irrelevante. Classificações &ldquo;caixa-preta&rdquo;
-        -- onde o sistema diz &ldquo;relevante&rdquo; sem justificativa --
+        — onde o sistema diz &ldquo;relevante&rdquo; sem justificativa —
         não permitem que o usuário calibre suas expectativas nem identifique
         falsos negativos. O ideal é que cada classificação venha
         acompanhada da fonte (palavras-chave, classificação por IA,
@@ -344,7 +344,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         diferentes de concorrência), adequação de prazo (tempo suficiente
         para preparar proposta competitiva), faixa de valor (dentro da
         capacidade da empresa) e custo geográfico (viabilidade logística de
-        execução). O score resultante não é uma opinião -- é uma composição
+        execução). O score resultante não é uma opinião — é uma composição
         ponderada de dados verificáveis.
       </p>
 
@@ -363,13 +363,13 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
 
       <p>
         O retorno sobre investimento de uma ferramenta de licitação não se
-        mede apenas pela economia de tempo -- embora essa seja a métrica
+        mede apenas pela economia de tempo — embora essa seja a métrica
         mais visível. O cálculo completo de ROI considera três componentes:
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Framework de cálculo de ROI -- Ferramenta de licitação
+          Framework de cálculo de ROI — Ferramenta de licitação
         </p>
         <ul className="space-y-3 text-sm text-ink-secondary">
           <li>
@@ -408,7 +408,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         Geração 3, com classificação semântica por IA, capturam editais que
         escapariam a buscas baseadas em palavras-chave. Para consultorias,
         essa capacidade se traduz diretamente em mais valor entregue aos
-        clientes -- como detalhado em{' '}
+        clientes — como detalhado em{' '}
         <Link href="/blog/consultorias-modernas-inteligencia-priorizar-oportunidades" className="text-brand-navy dark:text-brand-blue hover:underline">
           como consultorias modernas usam inteligência para priorizar
           oportunidades
@@ -419,7 +419,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
 
       <p>
         A adoção de uma ferramenta de Geração 3 não é apenas uma decisão de
-        tecnologia -- é uma decisão de posicionamento. Consultorias que
+        tecnologia — é uma decisão de posicionamento. Consultorias que
         operam com ferramentas de Geração 1 ou 2 competem pelo esforço
         manual de seus analistas. Consultorias que adotam ferramentas de
         Geração 3 competem pela qualidade da inteligência que entregam.
@@ -433,16 +433,16 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         por palavra-chave tem um teto operacional definido pelo número de
         analistas. Uma equipe que usa classificação por IA e viabilidade
         multi-fator tem um teto definido pela capacidade de elaborar
-        propostas -- que é, em última análise, a atividade que gera
+        propostas — que é, em última análise, a atividade que gera
         receita.
       </p>
 
       <p>
         A questão não é mais se a transição para ferramentas de Geração 3
         é necessária, mas quando e com qual ferramenta. Os critérios
-        apresentados neste artigo -- classificação semântica, viabilidade
+        apresentados neste artigo — classificação semântica, viabilidade
         multi-fator, consolidação multi-fonte e transparência de
-        classificação -- servem como checklist objetivo para essa decisão.
+        classificação — servem como checklist objetivo para essa decisão.
       </p>
 
       {/* CTA Section — BEFORE FAQ */}
@@ -483,7 +483,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
         A Geração 1 (2005-2015) são portais de busca e listagem que agregam
         publicações de diários oficiais e portais governamentais em um único
         local com busca por palavra-chave. A Geração 2 (2015-2023) adiciona
-        alertas e monitoramento -- o sistema notifica o usuário quando editais
+        alertas e monitoramento — o sistema notifica o usuário quando editais
         compatíveis são publicados. A Geração 3 (2023 em diante) incorpora
         inteligência artificial para classificação setorial, análise de
         viabilidade multi-fator e priorização automatizada de oportunidades.
@@ -491,7 +491,7 @@ export default function NovaGeracaoFerramentasMercadoLicitacoes() {
 
       <h3>O que diferencia uma ferramenta de Geração 3 das anteriores?</h3>
       <p>
-        Ferramentas de Geração 3 não apenas encontram editais -- classificam
+        Ferramentas de Geração 3 não apenas encontram editais — classificam
         e priorizam. As diferenças principais são: classificação setorial por
         IA que vai além de palavras-chave exatas, análise de viabilidade em
         múltiplos fatores (modalidade, prazo, valor, geografia), consolidação

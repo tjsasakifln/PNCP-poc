@@ -70,7 +70,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         ferramentas de busca estão cada vez mais acessíveis, e qualquer
         profissional com acesso ao PNCP consegue localizar licitações em
         minutos. O diferencial está no que a consultoria faz entre a busca
-        e a recomendação -- e é justamente esse espaço que a maioria das
+        e a recomendação — e é justamente esse espaço que a maioria das
         consultorias deixa vazio.
       </p>
 
@@ -131,7 +131,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
 
       <p>
         O dado sobre disposição de pagamento é revelador. Existe demanda
-        latente por um serviço mais sofisticado -- os clientes querem mais
+        latente por um serviço mais sofisticado — os clientes querem mais
         do que estão recebendo. A oportunidade para consultorias que
         conseguem entregar análise, e não apenas busca, é concreta e
         quantificável.
@@ -153,7 +153,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         replicabilidade: qualquer concorrente com acesso aos mesmos portais
         pode entregar a mesma lista. O segundo é a transferência de
         trabalho: a lista de editais, por si só, não reduz o trabalho do
-        cliente -- apenas muda o local de busca. Em vez de buscar no portal,
+        cliente — apenas muda o local de busca. Em vez de buscar no portal,
         o cliente busca na lista da consultoria. A triagem, a análise de
         viabilidade e a decisão de participar continuam sendo
         responsabilidade do cliente.
@@ -212,20 +212,20 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         <p className="text-sm font-semibold text-ink mb-3">Os 3 níveis de maturidade da consultoria de licitação</p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
-            <strong>Nível 1 -- Operacional (busca e repasse):</strong> Entregáveis: lista de editais
+            <strong>Nível 1 — Operacional (busca e repasse):</strong> Entregáveis: lista de editais
             filtrada por palavras-chave e UF. Frequência: diária ou semanal. Competência: conhecimento
             de portais públicos. Ticket médio: R$ 800 a R$ 2.000/mês. Churn típico: 35% a 45% ao ano.
             Diferenciação: baixa (serviço facilmente replicável).
           </li>
           <li>
-            <strong>Nível 2 -- Analítico (triagem + viabilidade):</strong> Entregáveis: oportunidades
+            <strong>Nível 2 — Analítico (triagem + viabilidade):</strong> Entregáveis: oportunidades
             triadas com score de viabilidade, relatório mensal de aderência e métricas de resultado.
             Frequência: semanal com alertas diários para alta viabilidade. Competência: critérios de
             viabilidade + ferramentas de classificação. Ticket médio: R$ 2.500 a R$ 5.000/mês. Churn
             típico: 18% a 25% ao ano. Diferenciação: média (exige metodologia e ferramentas).
           </li>
           <li>
-            <strong>Nível 3 -- Estratégico (curadoria + recomendação + acompanhamento):</strong>
+            <strong>Nível 3 — Estratégico (curadoria + recomendação + acompanhamento):</strong>
             Entregáveis: curadoria de oportunidades com recomendação de priorização, análise de
             concorrência, contexto do órgão, acompanhamento de propostas e dashboard de resultado.
             Frequência: contínua com reuniões quinzenais de alinhamento. Competência: inteligência
@@ -239,7 +239,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
       <p>
         A maioria das consultorias opera no Nível 1. As que se destacam
         operam no Nível 2 ou 3. A transição entre níveis não exige uma
-        reformulação completa da operação -- exige a adição de camadas
+        reformulação completa da operação — exige a adição de camadas
         de valor sobre a base existente.
       </p>
 
@@ -326,7 +326,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         Essa fase exige investimento em inteligência setorial: construir e
         manter bases de dados sobre preços históricos, concorrentes
         frequentes e padrões dos órgãos contratantes nos setores dos
-        clientes. O esforço é cumulativo -- cada licitação analisada
+        clientes. O esforço é cumulativo — cada licitação analisada
         alimenta a base de conhecimento para as próximas.
       </p>
 
@@ -370,7 +370,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         O ponto mais relevante desses dados é a receita por consultor. Um
         consultor de Nível 3 pode gerar até 2,5 vezes mais receita do que
         um de Nível 1, atendendo menos clientes com maior margem. Isso
-        significa que a migração de nível não apenas melhora a retenção --
+        significa que a migração de nível não apenas melhora a retenção —
         melhora a economia da operação como um todo.
       </p>
 
@@ -381,20 +381,20 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         retorno para o cliente, não em termos de custo para a consultoria.
         Um cliente que paga R$ 5.000/mês por uma consultoria de Nível 2 e
         adjudica R$ 200.000 em contratos por trimestre a partir das
-        recomendações tem um custo de aquisição de contrato de 7,5% -- muito
+        recomendações tem um custo de aquisição de contrato de 7,5% — muito
         inferior ao custo de manter uma equipe interna de licitação.
       </p>
 
       <p>
         Essa lógica de precificação exige que a consultoria meça e comunique
         resultados. O relatório mensal de valor não é um diferencial
-        cosmético -- é o instrumento que sustenta a precificação premium.
+        cosmético — é o instrumento que sustenta a precificação premium.
       </p>
 
       <h2>Posicionamento de marca: linguagem e entregáveis</h2>
 
       <p>
-        A transição de nível não é apenas operacional -- é também de
+        A transição de nível não é apenas operacional — é também de
         posicionamento. A forma como a consultoria se apresenta,
         os termos que usa e os entregáveis que destaca determinam a
         percepção do mercado sobre seu serviço.
@@ -406,7 +406,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         Uma consultoria de Nível 1 tipicamente se posiciona com termos como
         &ldquo;monitoramento de editais&rdquo;, &ldquo;busca de
         licitações&rdquo; e &ldquo;alerta de oportunidades&rdquo;. Esses
-        termos descrevem uma atividade operacional -- e o cliente interpreta
+        termos descrevem uma atividade operacional — e o cliente interpreta
         como tal.
       </p>
 
@@ -414,7 +414,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         Uma consultoria de Nível 3 se posiciona com termos como
         &ldquo;inteligência de oportunidades&rdquo;, &ldquo;curadoria
         estratégica&rdquo; e &ldquo;gestão de pipeline de licitações&rdquo;.
-        Esses termos descrevem um serviço consultivo -- e o cliente
+        Esses termos descrevem um serviço consultivo — e o cliente
         interpreta como investimento, não custo. O artigo sobre{' '}
         <Link href="/blog/diagnóstico-eficiência-licitação-serviço-premium" className="text-brand-navy dark:text-brand-blue hover:underline">
           diagnóstico de eficiência como serviço premium
@@ -436,7 +436,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         A forma do entregável importa quase tanto quanto o conteúdo. Um
         relatório bem formatado com métricas claras comunica profissionalismo
         e rigor metodológico. Uma lista em texto corrido no corpo do e-mail
-        comunica improviso. O investimento em apresentação não é vaidade --
+        comunica improviso. O investimento em apresentação não é vaidade —
         é estratégia de retenção.
       </p>
 
@@ -468,7 +468,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         de Compras Públicas, ComprasGov), classificação por IA em 15 setores
         e análise de viabilidade em 4 fatores. A consultoria usa a plataforma
         como motor de triagem e dedica o tempo da equipe à análise e
-        recomendação -- as camadas que justificam o preço premium.
+        recomendação — as camadas que justificam o preço premium.
       </p>
 
       {/* CTA Section — BEFORE FAQ */}
@@ -478,7 +478,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           Classifique oportunidades por setor e viabilidade em minutos. Sua
-          equipe foca na recomendação estratégica -- o diferencial que o
+          equipe foca na recomendação estratégica — o diferencial que o
           cliente não encontra em nenhum outro lugar.
         </p>
         <Link

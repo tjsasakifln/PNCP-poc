@@ -164,7 +164,7 @@ export default function SicafComoCadastrarManterAtivo2026() {
       </div>
 
       <p>
-        A certidão do FGTS é a que mais surpreende empresas iniciantes: vence em apenas 30 dias e precisar renovar frequentemente. Já a certidão da Receita Federal (que inclui PGFN) pode ser obtida instantaneamente pelo portal da Receita quando a empresa está regular, o que facilita a renovação.
+        A certidão do FGTS é a que mais surpreende empresas iniciantes: vence em apenas 30 dias e precisa ser renovada com frequência. Já a certidão da Receita Federal (que inclui PGFN) pode ser obtida instantaneamente pelo portal da Receita quando a empresa está regular, o que facilita a renovação.
       </p>
       <p>
         Uma dica prática: programe lembretes no seu calendário com 15 dias de antecedência para cada certidão. Se a sua empresa pretende participar ativamente de licitações — o que recomendamos — use ferramentas como o{' '}

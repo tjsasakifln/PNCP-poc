@@ -68,9 +68,9 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
         O maior inimigo da performance em pregões não é a concorrência
         acirrada, o preço agressivo dos competidores ou a complexidade
         técnica dos editais. É o ruído. <strong>Reduzir ruído em
-        editais</strong> -- a massa de publicações irrelevantes que consome
+        editais</strong> — a massa de publicações irrelevantes que consome
         a capacidade analítica da equipe antes de chegar às oportunidades
-        reais -- é a alavanca operacional de maior impacto para consultorias
+        reais — é a alavanca operacional de maior impacto para consultorias
         e empresas que atuam no mercado B2G. O PNCP publica em média 3.200
         processos por dia útil. Para uma empresa que atua em dois setores e
         monitora oito UFs, a esmagadora maioria dessas publicações é ruído
@@ -84,7 +84,7 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
 
       <p>
         O problema de ruído em licitações é contraintuitivo. A escassez de
-        informação -- não saber onde estão os editais -- deixou de ser o
+        informação — não saber onde estão os editais — deixou de ser o
         gargalo operacional. Com o PNCP, o ComprasGov e o Portal de Compras
         Públicas, a informação é abundante e acessível. O novo gargalo é o
         excesso: há editais demais para analisar, e a maioria deles é
@@ -104,13 +104,13 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
         mesma descrita em{' '}
         <Link href="/blog/reduzir-tempo-analisando-editais-irrelevantes" className="text-brand-navy dark:text-brand-blue hover:underline">
           como reduzir em 50% o tempo gasto analisando editais irrelevantes
-        </Link> -- mas aqui vamos além do diagnóstico de tempo e entramos na
+        </Link> — mas aqui vamos além do diagnóstico de tempo e entramos na
         tipologia do ruído e nas estratégias específicas de filtragem.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Volume e relevância no mercado de licitações
+          Dados de referência — Volume e relevância no mercado de licitações
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -214,7 +214,7 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
         atestados, garantias e capacidade operacional incompatíveis. Editais
         com valor muito abaixo do limiar de viabilidade geram ruído porque o
         custo de elaboração da proposta consome parcela desproporcional da
-        margem potencial. Cada empresa -- e cada cliente de consultoria -- tem
+        margem potencial. Cada empresa — e cada cliente de consultoria — tem
         uma faixa de valor ideal onde a relação custo de proposta versus
         margem do contrato é otimizada. Editais fora dessa faixa são ruído,
         independentemente de serem do setor e da região corretos. Conforme
@@ -231,7 +231,7 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
       <p>
         O primeiro filtro ataca o ruído de maior volume. A classificação
         setorial inteligente opera em duas camadas. A primeira camada é a
-        correspondência por palavras-chave setoriais -- termos específicos
+        correspondência por palavras-chave setoriais — termos específicos
         do segmento que identificam editais com alta probabilidade de
         relevância. A segunda camada é a classificação por IA para objetos
         que não contêm as palavras-chave óbvias, mas que a análise semântica
@@ -249,28 +249,28 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Framework de filtragem progressiva -- Do volume bruto à lista curada
+          Framework de filtragem progressiva — Do volume bruto à lista curada
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Etapa 1 -- Classificação setorial (elimina 70-85% do
+            <strong>Etapa 1 — Classificação setorial (elimina 70-85% do
             ruído):</strong> Palavras-chave setoriais + classificação por IA
             para zero-match. Resultado: de 1.000 editais/semana para
             150-300 do setor correto.
           </li>
           <li>
-            <strong>Etapa 2 -- Filtro geográfico (elimina 30-50% do
+            <strong>Etapa 2 — Filtro geográfico (elimina 30-50% do
             restante):</strong> Seleção de UFs de atuação + análise de
             viabilidade logística. Resultado: de 150-300 para 75-150 editais
             na região de interesse.
           </li>
           <li>
-            <strong>Etapa 3 -- Filtro de valor e modalidade (elimina 40-60%
+            <strong>Etapa 3 — Filtro de valor e modalidade (elimina 40-60%
             do restante):</strong> Faixa de valor viável + compatibilidade de
             modalidade. Resultado: de 75-150 para 30-60 editais viáveis.
           </li>
           <li>
-            <strong>Etapa 4 -- Score de viabilidade multi-fator (priorização
+            <strong>Etapa 4 — Score de viabilidade multi-fator (priorização
             final):</strong> Pontuação de 0-100 considerando modalidade (30%),
             timeline (25%), valor (25%) e geografia (20%). Resultado: 30-60
             editais ordenados por score, com os 10-15 de maior potencial
@@ -310,7 +310,7 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
       </p>
 
       <p>
-        O score resultante -- de 0 a 100 -- permite decisão rápida: editais
+        O score resultante — de 0 a 100 — permite decisão rápida: editais
         acima de 70 merecem análise detalhada; entre 50 e 70 merecem
         avaliação condicional; abaixo de 50 devem ser descartados salvo
         exceção estratégica documentada.
@@ -325,7 +325,7 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
         e de viabilidade podem ainda ser inadequados por razões estratégicas:
         o cliente está saindo de determinado tipo de contrato, prioriza
         acumular atestados em área específica, ou tem restrição interna para
-        determinados órgãos. Esse filtro não é automatizável -- é a camada
+        determinados órgãos. Esse filtro não é automatizável — é a camada
         onde a expertise consultiva agrega valor insubstituível.
       </p>
 
@@ -352,13 +352,13 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
         semana. Sem filtragem estruturada, essa massa de publicações
         sobrecarrega qualquer equipe de análise. Com os três filtros
         aplicados, o volume que chega à análise humana é de 30 a 60 editais
-        por semana -- uma redução de 95%.
+        por semana — uma redução de 95%.
       </p>
 
       <p>
         Mas a redução de volume é apenas metade do benefício. A outra metade
         é a qualidade do que sobrevive. Os 50 editais que passam pelos
-        filtros não são aleatórios -- são editais que atendem a critérios
+        filtros não são aleatórios — são editais que atendem a critérios
         objetivos de setor, geografia, valor, modalidade e viabilidade. A
         taxa de propostas enviadas sobre editais analisados sobe de 15-20%
         (análise sem filtro) para 60-80% (análise pós-filtro). E a taxa de
@@ -369,7 +369,7 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Impacto mensurável da redução de ruído -- Cenário de consultoria
+          Impacto mensurável da redução de ruído — Cenário de consultoria
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -397,13 +397,13 @@ export default function ReduzirRuidoAumentarPerformancePregoes() {
         A lição é clara: performance em pregões não se constrói analisando
         mais editais. Constrói-se analisando melhor os editais certos. A
         redução de ruído é o pré-requisito para que a expertise da equipe
-        -- ou da consultoria -- se manifeste onde ela gera resultado.
+        — ou da consultoria — se manifeste onde ela gera resultado.
       </p>
 
       {/* CTA Section — BEFORE FAQ */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Reduza ruído automaticamente -- o SmartLic filtra por setor e viabilidade
+          Reduza ruído automaticamente — o SmartLic filtra por setor e viabilidade
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           Classificação setorial por IA em 15 setores, filtro de viabilidade em

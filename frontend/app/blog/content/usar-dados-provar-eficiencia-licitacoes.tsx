@@ -55,7 +55,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
                 name: 'O que é taxa de descarte em licitações e por que é um KPI positivo?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Taxa de descarte é o percentual de editais identificados que foram deliberadamente não-disputados após análise de viabilidade. Ao contrário do que parece, uma taxa de descarte alta (60% a 80%) é um indicador positivo -- significa que a consultoria está evitando que o cliente desperdice recursos em oportunidades de baixa probabilidade. Cada edital descartado com justificativa economiza entre R$ 800 e R$ 2.500 em custos de proposta. Uma consultoria que descarta 70% dos editais triados e recomenda apenas os 30% mais viáveis está gerando valor pela curadoria, não pelo volume.',
+                  text: 'Taxa de descarte é o percentual de editais identificados que foram deliberadamente não-disputados após análise de viabilidade. Ao contrário do que parece, uma taxa de descarte alta (60% a 80%) é um indicador positivo — significa que a consultoria está evitando que o cliente desperdice recursos em oportunidades de baixa probabilidade. Cada edital descartado com justificativa economiza entre R$ 800 e R$ 2.500 em custos de proposta. Uma consultoria que descarta 70% dos editais triados e recomenda apenas os 30% mais viáveis está gerando valor pela curadoria, não pelo volume.',
                 },
               },
             ],
@@ -67,11 +67,11 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
       <p className="text-base sm:text-xl leading-relaxed text-ink">
         A maioria das consultorias de licitação vende experiência. Anos de mercado, conhecimento
         dos portais, familiaridade com a legislação, relacionamento com órgãos. São diferenciais
-        reais -- mas intangíveis. Quando o cliente questiona se o serviço está gerando retorno,
+        reais — mas intangíveis. Quando o cliente questiona se o serviço está gerando retorno,
         a resposta costuma ser qualitativa: &ldquo;estamos trabalhando bem&rdquo;, &ldquo;o mercado
         está competitivo&rdquo;, &ldquo;vamos ajustar a estratégia&rdquo;. Consultorias que dominam
         os <strong>KPIs de consultoria de licitação</strong> e os apresentam de forma estruturada
-        não precisam justificar -- demonstram. E consultorias que demonstram retorno retêm
+        não precisam justificar — demonstram. E consultorias que demonstram retorno retêm
         clientes por anos, não por meses.
       </p>
 
@@ -80,7 +80,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
       <p>
         O mercado de consultoria em licitações opera, em grande parte, na base da confiança
         pessoal. O consultor conhece o setor, entende os editais, sabe montar proposta.
-        O cliente confia nessa competência e paga mensalmente -- até que os resultados não
+        O cliente confia nessa competência e paga mensalmente — até que os resultados não
         aparecem. Sem métricas objetivas, a avaliação de performance fica subjetiva: o
         cliente &ldquo;sente&rdquo; que não está funcionando, e o consultor não tem dados para
         contestar ou confirmar essa percepção.
@@ -90,7 +90,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
         Segundo pesquisa da Fundação Getúlio Vargas sobre maturidade de gestão em
         prestadores de serviços B2B (FGV, 2023), apenas 22% das consultorias de pequeno
         e médio porte no Brasil utilizam dashboards ou relatórios periódicos com KPIs
-        para seus clientes. No segmento de licitações, esse percentual é ainda menor --
+        para seus clientes. No segmento de licitações, esse percentual é ainda menor —
         estimado em 12% a 15%, dado que a maioria das consultorias opera com equipes
         de 1 a 5 pessoas e prioriza a execução operacional sobre a gestão de performance.
       </p>
@@ -118,7 +118,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
       <p>
         Empresas que participam de licitações são, por natureza, orientadas a processo.
         Elas operam com documentação formal, prazos rígidos e requisitos objetivos. O
-        cliente B2G entende linguagem de dados -- ele vive isso diariamente na relação
+        cliente B2G entende linguagem de dados — ele vive isso diariamente na relação
         com órgãos públicos. Quando a consultoria apresenta resultados em formato
         estruturado, com números comparáveis e tendências claras, ela fala a linguagem
         do cliente.
@@ -129,7 +129,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
         diretorias que cobram retorno sobre investimentos em serviços terceirizados. O
         gestor do setor de licitações precisa justificar internamente o gasto com a
         consultoria. Se ele não recebe dados, precisa fabricar argumentos qualitativos
-        -- e isso fragiliza tanto a posição dele quanto a da consultoria. Fornecer
+        — e isso fragiliza tanto a posição dele quanto a da consultoria. Fornecer
         dados é proteger o seu próprio contrato.
       </p>
 
@@ -140,7 +140,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
       <p>
         Os KPIs a seguir foram organizados em ordem de importância para a demonstração
         de valor ao cliente. Cada um pode ser extraído de dados operacionais que a
-        consultoria já possui (ou deveria possuir) -- registros de participações,
+        consultoria já possui (ou deveria possuir) — registros de participações,
         resultados, e histórico de editais analisados.
       </p>
 
@@ -151,7 +151,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
         dividido pelo número de licitações disputadas, expressa em percentual. A média do
         mercado B2G fica entre 8% e 12% (fonte: Painel de Compras do Governo Federal, dados
         2023-2024). Uma consultoria competente deve posicionar seus clientes acima desse
-        patamar -- taxas entre 18% e 30% indicam seleção estratégica eficaz.
+        patamar — taxas entre 18% e 30% indicam seleção estratégica eficaz.
       </p>
 
       <p>
@@ -189,7 +189,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
 
       <p>
         O percentual de editais identificados que foram deliberadamente não-disputados após
-        análise de viabilidade. Contraintuitivamente, uma taxa de descarte alta é positiva --
+        análise de viabilidade. Contraintuitivamente, uma taxa de descarte alta é positiva —
         significa que a consultoria está evitando desperdício. Taxas entre 60% e 80% são
         típicas de consultorias com triagem estruturada.
       </p>
@@ -204,7 +204,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
 
       <p>
         A soma dos valores dos contratos vencidos no período. É o KPI mais tangível para o
-        cliente -- o número que aparece no fluxo de caixa. Apresente em acumulado trimestral
+        cliente — o número que aparece no fluxo de caixa. Apresente em acumulado trimestral
         e com tendência: &ldquo;Valor adjudicado neste trimestre: R$ 847.000 (+32% vs.
         trimestre anterior).&rdquo;
       </p>
@@ -225,7 +225,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
-        <p className="text-sm font-semibold text-ink mb-3">Modelo de cálculo de ROI -- exemplo prático</p>
+        <p className="text-sm font-semibold text-ink mb-3">Modelo de cálculo de ROI — exemplo prático</p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li><strong>Honorário trimestral da consultoria:</strong> R$ 15.000 (R$ 5.000/mês)</li>
           <li><strong>Custos de proposta (12 participações x R$ 1.200):</strong> R$ 14.400</li>
@@ -237,7 +237,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
       </div>
 
       <p>
-        Apresente o ROI com a ressalva de que o valor adjudicado é receita bruta -- a margem
+        Apresente o ROI com a ressalva de que o valor adjudicado é receita bruta — a margem
         líquida do contrato depende da execução. Ainda assim, o ROI sobre receita gerada é
         uma métrica poderosa de justificativa.
       </p>
@@ -266,7 +266,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
       <p>
         O percentual de contratos adjudicados com órgãos que já contrataram o cliente
         anteriormente. Uma taxa de reincidência de 30% a 50% indica boa reputação junto
-        aos órgãos contratantes -- o cliente está sendo reconhecido pela qualidade da
+        aos órgãos contratantes — o cliente está sendo reconhecido pela qualidade da
         execução. Acima de 70% pode indicar excesso de dependência; abaixo de 15% sugere
         que a execução dos contratos anteriores pode não estar gerando renovação.
       </p>
@@ -279,7 +279,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
         com escopos distintos.
       </p>
 
-      <h3>Relatório semanal -- operacional</h3>
+      <h3>Relatório semanal — operacional</h3>
 
       <p>
         Uma página, preferencialmente por email. Conteúdo: editais triados na semana,
@@ -288,7 +288,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
         reunião.
       </p>
 
-      <h3>Relatório mensal -- tático</h3>
+      <h3>Relatório mensal — tático</h3>
 
       <p>
         Duas a três páginas com gráficos. Conteúdo: todos os 8 KPIs com evolução mensal,
@@ -301,7 +301,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
         </Link>.
       </p>
 
-      <h3>Relatório trimestral -- estratégico</h3>
+      <h3>Relatório trimestral — estratégico</h3>
 
       <p>
         Cinco a oito páginas, idealmente apresentado em reunião. Conteúdo: ROI acumulado,
@@ -317,7 +317,7 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
           <li><strong>Consultoria individual (1-2 pessoas):</strong> Taxa de adjudicação 12-18%, 15-25 editais triados/semana, ROI semestral 400-800% (fonte: estimativa setorial, associações de consultores)</li>
           <li><strong>Consultoria de médio porte (3-8 pessoas):</strong> Taxa de adjudicação 18-28%, 40-80 editais triados/semana, ROI semestral 800-1.500%</li>
           <li><strong>Consultoria com ferramentas de automação:</strong> Taxa de adjudicação 22-32%, 100-200 editais triados/semana, ROI semestral 1.000-2.500%</li>
-          <li><strong>Valor médio adjudicado por pregão (2024):</strong> R$ 185.000 (materiais) e R$ 340.000 (serviços continuados) -- fonte: PNCP, dados consolidados 2024</li>
+          <li><strong>Valor médio adjudicado por pregão (2024):</strong> R$ 185.000 (materiais) e R$ 340.000 (serviços continuados) — fonte: PNCP, dados consolidados 2024</li>
         </ul>
       </div>
 
@@ -382,9 +382,9 @@ export default function UsarDadosProvarEficienciaLicitacoes() {
 
       <h3>Com que frequência devo apresentar relatórios ao cliente?</h3>
       <p>
-        Três cadências: semanal (operacional -- editais triados e status de processos),
-        mensal (tático -- KPIs com evolução e análise de vitórias/derrotas) e trimestral
-        (estratégico -- ROI acumulado, benchmarks e recomendações). O relatório trimestral
+        Três cadências: semanal (operacional — editais triados e status de processos),
+        mensal (tático — KPIs com evolução e análise de vitórias/derrotas) e trimestral
+        (estratégico — ROI acumulado, benchmarks e recomendações). O relatório trimestral
         é o mais crítico para retenção, pois é usado pelo cliente para justificar o
         investimento internamente.
       </p>

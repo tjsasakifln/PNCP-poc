@@ -39,7 +39,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
                 name: 'Quanto tempo uma consultoria economiza ao adotar IA na triagem de editais?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Uma consultoria que atende 10 clientes em setores distintos gasta, em média, 3 a 5 horas diárias na triagem manual de editais nos portais PNCP, ComprasGov e Portal de Compras Públicas. Com triagem automatizada por IA, esse tempo cai para 30 a 60 minutos -- uma redução de 70% a 85%. Em termos anuais, isso representa entre 600 e 1.000 horas-analista liberadas para atividades de maior valor agregado.',
+                  text: 'Uma consultoria que atende 10 clientes em setores distintos gasta, em média, 3 a 5 horas diárias na triagem manual de editais nos portais PNCP, ComprasGov e Portal de Compras Públicas. Com triagem automatizada por IA, esse tempo cai para 30 a 60 minutos — uma redução de 70% a 85%. Em termos anuais, isso representa entre 600 e 1.000 horas-analista liberadas para atividades de maior valor agregado.',
                 },
               },
               {
@@ -55,7 +55,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
                 name: 'A IA em licitações funciona para todos os setores ou apenas para alguns?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'A classificação por IA funciona para todos os setores, mas com níveis de precisão diferentes. Setores com vocabulário técnico padronizado -- como tecnologia da informação, saúde, engenharia e materiais elétricos -- apresentam taxas de acerto superiores a 90%. Setores com descrições mais genéricas, como facilities e manutenção predial, exigem camadas adicionais de classificação (análise semântica além de palavras-chave) para atingir a mesma precisão.',
+                  text: 'A classificação por IA funciona para todos os setores, mas com níveis de precisão diferentes. Setores com vocabulário técnico padronizado — como tecnologia da informação, saúde, engenharia e materiais elétricos — apresentam taxas de acerto superiores a 90%. Setores com descrições mais genéricas, como facilities e manutenção predial, exigem camadas adicionais de classificação (análise semântica além de palavras-chave) para atingir a mesma precisão.',
                 },
               },
             ],
@@ -99,7 +99,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Adoção de IA em GovTech e compras públicas
+          Dados de referência — Adoção de IA em GovTech e compras públicas
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -147,7 +147,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
       <p>
         A classificação setorial é a aplicação de IA com maior retorno imediato
         para consultorias de licitação. O problema é conhecido: cada cliente da
-        consultoria atua em um setor específico -- vestuário, engenharia, saúde,
+        consultoria atua em um setor específico — vestuário, engenharia, saúde,
         TI, alimentos. A consultoria precisa monitorar portais diariamente e
         identificar quais editais são relevantes para cada cliente. Manualmente,
         isso exige leitura do objeto de cada publicação, interpretação do escopo,
@@ -160,7 +160,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
       </p>
 
       <p>
-        <strong>Camada 1 -- Palavras-chave:</strong> O modelo verifica a presença
+        <strong>Camada 1 — Palavras-chave:</strong> O modelo verifica a presença
         de termos específicos do setor no título e na descrição do objeto. Um
         edital que menciona &ldquo;aquisição de uniformes profissionais para
         servidores&rdquo; é classificado como setor de vestuário com alta
@@ -169,16 +169,16 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
       </p>
 
       <p>
-        <strong>Camada 2 -- Análise semântica:</strong> Para editais com
+        <strong>Camada 2 — Análise semântica:</strong> Para editais com
         descrições ambíguas ou genéricas, o LLM analisa o contexto semântico
         completo. Um edital que menciona &ldquo;contratação de serviços
         especializados para manutenção de sistemas informatizados&rdquo; pode ser
-        software ou TI -- a análise semântica diferencia com base em termos
+        software ou TI — a análise semântica diferencia com base em termos
         complementares, valores estimados e padrões do órgão contratante.
       </p>
 
       <p>
-        <strong>Camada 3 -- Classificação zero-match:</strong> Quando nenhuma
+        <strong>Camada 3 — Classificação zero-match:</strong> Quando nenhuma
         palavra-chave do setor aparece na descrição, mas o contexto sugere
         relevância, o modelo faz uma classificação binária (relevante ou não)
         baseada em compreensão semântica profunda. Essa camada captura entre 8% e
@@ -198,7 +198,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
 
       <p>
         Classificar o setor é necessário, mas insuficiente. Um edital pode ser do
-        setor correto e ainda assim ser inviável para o cliente -- por valor,
+        setor correto e ainda assim ser inviável para o cliente — por valor,
         prazo, modalidade ou localização. A análise de viabilidade automatizada
         aplica um modelo de scoring com fatores ponderados que simula o julgamento
         de um analista experiente.
@@ -206,7 +206,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Framework -- Modelo de viabilidade em 4 fatores
+          Framework — Modelo de viabilidade em 4 fatores
         </p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
@@ -223,7 +223,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
           </li>
           <li>
             <strong>Valor estimado (25%):</strong> Compara o valor estimado com a
-            faixa operacional do cliente. Cada setor tem faixas ideais -- uma
+            faixa operacional do cliente. Cada setor tem faixas ideais — uma
             empresa de engenharia que opera entre R$ 500 mil e R$ 5 milhões não
             deveria receber editais de R$ 30 mil.
           </li>
@@ -268,7 +268,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
       <p>
         Quando a consultoria monitora 8 a 15 clientes simultaneamente, a lista
         diária de editais viáveis pode conter 20 a 50 oportunidades. Sem
-        priorização, o analista atende na ordem em que os editais aparecem -- o
+        priorização, o analista atende na ordem em que os editais aparecem — o
         que frequentemente significa que oportunidades de alto valor com prazo
         curto são analisadas depois de editais de baixo valor com prazo longo.
       </p>
@@ -293,8 +293,8 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
 
       <p>
         A quarta aplicação madura de IA é a geração automatizada de resumos
-        executivos. Editais de licitação são documentos extensos -- frequentemente
-        entre 30 e 120 páginas -- com informações dispersas em seções técnicas,
+        executivos. Editais de licitação são documentos extensos — frequentemente
+        entre 30 e 120 páginas — com informações dispersas em seções técnicas,
         jurídicas e administrativas. O analista de uma consultoria precisa extrair,
         de cada edital, as informações essenciais: objeto resumido, valor estimado,
         prazo, requisitos de habilitação, critério de julgamento e condições
@@ -313,8 +313,8 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
       <p>
         A qualidade do resumo depende diretamente da qualidade do prompt e do
         contexto fornecido ao modelo. Resumos genéricos têm pouco valor. Resumos
-        que incorporam o perfil do cliente -- setor, faixa de valor, região de
-        atuação -- e que destacam alertas específicos (exigência de visita
+        que incorporam o perfil do cliente — setor, faixa de valor, região de
+        atuação — e que destacam alertas específicos (exigência de visita
         técnica, necessidade de atestado incomum, cláusula de garantia atípica)
         são o diferencial que justifica o serviço consultivo.
       </p>
@@ -334,7 +334,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
         <strong>Padrões de sazonalidade:</strong> Quais órgãos publicam mais
         licitações no primeiro trimestre? Quais setores têm pico de demanda no
         segundo semestre? A resposta a essas perguntas permite que a consultoria
-        antecipe a preparação documental dos clientes -- atualizando certidões,
+        antecipe a preparação documental dos clientes — atualizando certidões,
         renovando atestados e preparando planilhas de custos antes da publicação
         do edital.
       </p>
@@ -356,13 +356,13 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Impacto da IA na operação de consultorias
+          Dados de referência — Impacto da IA na operação de consultorias
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
             <strong>Redução de tempo de triagem:</strong> Consultorias que
             adotaram triagem automatizada por IA reportam redução de 70% a 85% no
-            tempo diário de busca e classificação de editais -- de 3-5 horas para
+            tempo diário de busca e classificação de editais — de 3-5 horas para
             30-60 minutos (Fonte: pesquisa setorial ABES, benchmarks de
             produtividade em empresas de serviços B2B, 2024).
           </li>
@@ -370,7 +370,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
             <strong>Custo operacional por classificação:</strong> O custo de
             classificar um edital usando LLM (GPT-4.1-nano) é inferior a
             R$ 0,02 por edital. Para 1.000 editais por dia, o custo mensal de
-            processamento fica abaixo de R$ 400 -- equivalente a menos de 3% do
+            processamento fica abaixo de R$ 400 — equivalente a menos de 3% do
             custo de um analista júnior (Fonte: tabela de preços OpenAI API,
             fevereiro 2026).
           </li>
@@ -429,8 +429,8 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
 
       <p>
         A mensagem para o profissional de consultoria é clara: a IA libera seu
-        tempo das tarefas de busca, triagem e classificação -- que consomem 50%
-        a 70% da jornada -- para que você dedique mais horas às atividades que
+        tempo das tarefas de busca, triagem e classificação — que consomem 50%
+        a 70% da jornada — para que você dedique mais horas às atividades que
         efetivamente geram valor e diferenciam sua consultoria. Sobre como as
         ferramentas de nova geração se posicionam nesse contexto, veja{' '}
         <Link href="/blog/nova-geracao-ferramentas-mercado-licitacoes" className="text-brand-navy dark:text-brand-blue hover:underline">
@@ -497,7 +497,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Framework -- Cálculo de ROI da automação por IA na consultoria
+          Framework — Cálculo de ROI da automação por IA na consultoria
         </p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
@@ -520,9 +520,9 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
           <li className="pt-2">
             <strong>Exemplo numérico:</strong> Consultoria com 2 analistas, custo-hora
             de R$ 85,00, 4 horas/dia de triagem cada. Custo mensal de triagem:
-            R$ 14.960. Com IA, triagem cai para 1 hora/dia cada -- custo residual
+            R$ 14.960. Com IA, triagem cai para 1 hora/dia cada — custo residual
             de R$ 3.740 + ferramenta R$ 397 = R$ 4.137. Economia direta:
-            R$ 10.823/mês. Horas liberadas: 132h/mês -- se convertidas em serviço
+            R$ 10.823/mês. Horas liberadas: 132h/mês — se convertidas em serviço
             consultivo a R$ 150/hora, receita potencial adicional de R$ 19.800/mês.
           </li>
         </ul>
@@ -530,21 +530,21 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
 
       <p>
         O ROI não se limita à economia em horas de triagem. A melhoria na
-        qualidade da seleção de editais -- menos propostas em editais inviáveis,
-        mais propostas em editais de alta viabilidade -- eleva a{' '}
+        qualidade da seleção de editais — menos propostas em editais inviáveis,
+        mais propostas em editais de alta viabilidade — eleva a{' '}
         <Link href="/blog/como-aumentar-taxa-vitoria-licitacoes" className="text-brand-navy dark:text-brand-blue hover:underline">
           taxa de vitória em licitações
         </Link>{' '}
         dos clientes, o que por sua vez aumenta a retenção e o valor percebido
         do serviço consultivo. A consultoria que entrega mais adjudicações por mês
-        justifica um ticket mais alto -- e a IA é o motor silencioso por trás
+        justifica um ticket mais alto — e a IA é o motor silencioso por trás
         dessa entrega.
       </p>
 
       <p>
         A decisão de adoção, portanto, não é tecnológica. É uma decisão de
         modelo de negócio: a consultoria que não automatiza a triagem está
-        usando seu recurso mais caro -- o tempo de analistas qualificados -- na
+        usando seu recurso mais caro — o tempo de analistas qualificados — na
         tarefa de menor valor agregado da cadeia. A IA inverte essa equação,
         direcionando o tempo humano para onde ele gera mais resultado: análise
         estratégica, elaboração de propostas e relacionamento com o cliente.
@@ -553,7 +553,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
       {/* CTA Section — BEFORE FAQ */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Experimente IA aplicada a licitações -- triagem inteligente no SmartLic
+          Experimente IA aplicada a licitações — triagem inteligente no SmartLic
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           Classificação setorial por IA, análise de viabilidade em 4 fatores e
@@ -617,7 +617,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
         Uma consultoria que atende 10 clientes em setores distintos gasta, em
         média, 3 a 5 horas diárias na triagem manual de editais nos portais PNCP,
         ComprasGov e Portal de Compras Públicas. Com triagem automatizada por IA,
-        esse tempo cai para 30 a 60 minutos -- uma redução de 70% a 85%. Em
+        esse tempo cai para 30 a 60 minutos — uma redução de 70% a 85%. Em
         termos anuais, isso representa entre 600 e 1.000 horas-analista liberadas
         para atividades de maior valor agregado.
       </p>
@@ -636,7 +636,7 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
       <h3>A IA em licitações funciona para todos os setores ou apenas para alguns?</h3>
       <p>
         A classificação por IA funciona para todos os setores, mas com níveis de
-        precisão diferentes. Setores com vocabulário técnico padronizado -- como
+        precisão diferentes. Setores com vocabulário técnico padronizado — como
         tecnologia da informação, saúde, engenharia e materiais elétricos --
         apresentam taxas de acerto superiores a 90%. Setores com descrições mais
         genéricas, como facilities e manutenção predial, exigem camadas adicionais

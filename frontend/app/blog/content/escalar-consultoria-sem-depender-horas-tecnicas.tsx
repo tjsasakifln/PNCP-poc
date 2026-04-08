@@ -61,7 +61,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
         horas técnicas: o cliente contrata um pacote mensal de horas, e a
         consultoria aloca analistas para monitoramento, triagem e análise de
         editais. Esse modelo funciona até o ponto em que a consultoria bate no
-        teto -- e toda consultoria bate. A equação é simples:{' '}
+        teto — e toda consultoria bate. A equação é simples:{' '}
         <strong>escalar consultoria de licitação</strong> por horas técnicas
         exige contratar mais analistas na mesma proporção em que se captam
         novos clientes. Custos fixos sobem linearmente. Margem permanece
@@ -77,7 +77,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
         O modelo de horas técnicas tem uma limitação estrutural que se torna
         visível quando a consultoria tenta crescer além de 8 a 12 clientes
         ativos. Cada analista dedicado a operações de licitação consegue
-        gerenciar, com qualidade, de 4 a 6 clientes simultaneamente --
+        gerenciar, com qualidade, de 4 a 6 clientes simultaneamente —
         dependendo da complexidade setorial e do volume de editais de cada
         cliente. Acima desse limite, a qualidade da triagem cai, prazos são
         perdidos, e a consultoria começa a operar em modo reativo.
@@ -85,7 +85,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Limites do modelo de horas técnicas
+          Dados de referência — Limites do modelo de horas técnicas
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -107,7 +107,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
             <strong>Teto de receita:</strong> Uma consultoria com 3 analistas
             (média de R$ 130/hora) e taxa de utilização de 70% fatura, no
             máximo, R$ 48.048/mês (3 x 176h x 0,70 x R$ 130). Para atingir
-            R$ 100.000/mês, precisa de 6 a 7 analistas -- dobrando custos
+            R$ 100.000/mês, precisa de 6 a 7 analistas — dobrando custos
             fixos com folha, encargos e infraestrutura.
           </li>
         </ul>
@@ -118,12 +118,12 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
         adicional de receita exige alocação proporcional de custo. A margem é
         fixa, o crescimento é linear, e qualquer perda de cliente impacta
         imediatamente o resultado. Para a consultoria que deseja sair desse
-        ciclo, existem quatro modelos alternativos -- e nenhum exige abandonar
+        ciclo, existem quatro modelos alternativos — e nenhum exige abandonar
         completamente o modelo atual de uma vez.
       </p>
 
       {/* Section 2 */}
-      <h2>Modelo 1: Produtização -- pacotes pré-definidos de serviço</h2>
+      <h2>Modelo 1: Produtização — pacotes pré-definidos de serviço</h2>
 
       <p>
         A produtização consiste em transformar o serviço consultivo em pacotes
@@ -185,7 +185,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       <h2>Modelo 2: Tecnologia como multiplicador de capacidade</h2>
 
       <p>
-        O segundo modelo não substitui o serviço -- amplifica a capacidade da
+        O segundo modelo não substitui o serviço — amplifica a capacidade da
         equipe existente. A lógica é direta: se um analista gasta 3 horas por
         dia em triagem manual e uma ferramenta de IA reduz esse tempo para 40
         minutos, o mesmo analista pode atender o dobro de clientes com a mesma
@@ -197,14 +197,14 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       </p>
 
       <p>
-        <strong>Estágio 1 -- Automação de busca:</strong> Em vez de acessar PNCP,
+        <strong>Estágio 1 — Automação de busca:</strong> Em vez de acessar PNCP,
         ComprasGov e Portal de Compras Públicas manualmente, a consultoria usa
         uma ferramenta que consolida as três fontes e aplica filtros de setor,
         UF e período automaticamente. Economia: 60% a 70% do tempo de busca.
       </p>
 
       <p>
-        <strong>Estágio 2 -- Classificação por IA:</strong> A ferramenta
+        <strong>Estágio 2 — Classificação por IA:</strong> A ferramenta
         classifica cada edital por relevância setorial e calcula um score de
         viabilidade. O analista recebe editais já ranqueados, eliminando o
         trabalho de ler publicações irrelevantes. Economia adicional: 40% a 50%
@@ -212,7 +212,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       </p>
 
       <p>
-        <strong>Estágio 3 -- Relatórios automatizados:</strong> Resumos
+        <strong>Estágio 3 — Relatórios automatizados:</strong> Resumos
         executivos, relatórios semanais e dashboards de pipeline são gerados
         automaticamente, reduzindo o tempo de comunicação com o cliente.
         Economia adicional: 30% a 40% do tempo de reporting.
@@ -220,7 +220,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Impacto da tecnologia na capacidade operacional
+          Dados de referência — Impacto da tecnologia na capacidade operacional
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -250,7 +250,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       <p>
         O terceiro modelo combina receita recorrente previsível com projetos de
         maior valor. A consultoria oferece um plano de assinatura mensal que
-        cobre monitoramento, triagem e análise de viabilidade -- a camada
+        cobre monitoramento, triagem e análise de viabilidade — a camada
         operacional que pode ser largamente automatizada. Sobre essa base, vende
         serviços consultivos avulsos: análise detalhada de edital específico,
         elaboração de proposta técnica, recurso administrativo, impugnação.
@@ -259,14 +259,14 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       <p>
         A vantagem é dupla. Primeiro, a assinatura gera receita previsível e
         recorrente que cobre os custos fixos da operação. Segundo, os serviços
-        avulsos geram margem elevada porque são demandados pontualmente -- o
+        avulsos geram margem elevada porque são demandados pontualmente — o
         cliente paga pelo valor da entrega, não pelo tempo consumido.
       </p>
 
       <h3>Estrutura de assinatura recomendada</h3>
 
       <p>
-        <strong>Base (assinatura):</strong> R$ 2.000 a R$ 4.000/mês --
+        <strong>Base (assinatura):</strong> R$ 2.000 a R$ 4.000/mês —
         monitoramento contínuo, lista de oportunidades qualificadas, score de
         viabilidade, acesso a dashboard de pipeline. Custo de entrega: baixo
         (80% automatizado).
@@ -292,9 +292,9 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
 
       <p>
         O quarto modelo é o mais agressivo em termos de escala: a consultoria
-        licencia sua metodologia, processos e ferramentas para parceiros --
+        licencia sua metodologia, processos e ferramentas para parceiros —
         escritórios de contabilidade, assessorias empresariais, advogados
-        especializados -- que atendem seus próprios clientes usando a estrutura
+        especializados — que atendem seus próprios clientes usando a estrutura
         da consultoria como motor operacional.
       </p>
 
@@ -319,7 +319,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Framework -- Projeção de receita e margem por modelo
+          Framework — Projeção de receita e margem por modelo
         </p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li className="font-semibold">Com 5 clientes:</li>
@@ -338,7 +338,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
           </li>
           <li>
             <strong>White-label:</strong> Não viável com apenas 5 clientes
-            diretos -- requer base mínima de parceiros.
+            diretos — requer base mínima de parceiros.
           </li>
           <li className="pt-3 font-semibold">Com 20 clientes:</li>
           <li>
@@ -366,7 +366,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
         quadruplicar a base de clientes (de 5 para 20) não quadruplica o custo.
         A margem salta de 51% para 64% (produtizado) e de 54% para 67% (híbrido).
         No modelo de horas, a margem permanece fixa em 36% independentemente do
-        volume -- porque cada novo cliente exige alocação proporcional de
+        volume — porque cada novo cliente exige alocação proporcional de
         analista.
       </p>
 
@@ -380,7 +380,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       </p>
 
       <p>
-        <strong>Meses 1-2 -- Fundação:</strong> Definir os pacotes de serviço
+        <strong>Meses 1-2 — Fundação:</strong> Definir os pacotes de serviço
         (produtizados ou híbridos). Adotar uma ferramenta de inteligência em
         licitações para automatizar a triagem. Calcular o custo de entrega de
         cada pacote. Documentar processos para que possam ser replicados. Para
@@ -392,7 +392,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       </p>
 
       <p>
-        <strong>Meses 3-4 -- Piloto:</strong> Migrar 3 a 5 clientes existentes
+        <strong>Meses 3-4 — Piloto:</strong> Migrar 3 a 5 clientes existentes
         para o novo modelo, preferencialmente clientes com perfil de
         monitoramento (que consomem mais horas de triagem). Manter os demais
         clientes no modelo de horas. Comparar margem e satisfação entre os dois
@@ -400,7 +400,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       </p>
 
       <p>
-        <strong>Meses 5-6 -- Expansão:</strong> Com base nos resultados do piloto,
+        <strong>Meses 5-6 — Expansão:</strong> Com base nos resultados do piloto,
         expandir o modelo produtizado para a base completa. Iniciar prospecção de
         novos clientes já com a proposta de valor escalável. Avaliar viabilidade
         de parcerias white-label com escritórios complementares.
@@ -408,7 +408,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
 
       <p>
         O risco de não migrar é ficar preso em um modelo onde o crescimento
-        depende exclusivamente de contratar mais analistas -- um recurso escasso,
+        depende exclusivamente de contratar mais analistas — um recurso escasso,
         caro e com curva de aprendizado longa. A tecnologia já existe para
         quebrar essa dependência. O que falta, na maioria das consultorias, é
         a decisão estratégica de mudar. Para quem quer entender a estrutura
@@ -421,7 +421,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
       {/* CTA Section — BEFORE FAQ */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Use o SmartLic como motor da sua operação escalável -- plano para consultorias
+          Use o SmartLic como motor da sua operação escalável — plano para consultorias
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           Triagem automatizada por IA, análise de viabilidade em 4 fatores e
@@ -453,7 +453,7 @@ export default function EscalarConsultoriaSemDependerHorasTecnicas() {
         o que eleva custos fixos proporcionalmente à receita. Uma consultoria com
         3 analistas que cobram R$ 150/hora tem receita máxima teórica de
         R$ 79.200/mês, mas na prática fatura 50% a 65% disso devido a horas não
-        faturáveis -- resultando em um teto de R$ 40.000 a R$ 51.000/mês.
+        faturáveis — resultando em um teto de R$ 40.000 a R$ 51.000/mês.
       </p>
 
       <h3>Quais são os modelos de escala alternativos para consultorias de licitação?</h3>

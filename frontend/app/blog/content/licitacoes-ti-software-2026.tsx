@@ -23,7 +23,7 @@ export default function LicitacoesTISoftware2026() {
                 name: 'Qual a modalidade mais usada para licitações de TI?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'O pregao eletrônico é a modalidade dominante, utilizada em mais de 80% dos editais de TI publicados no PNCP. A Lei 14.133/2021 classifica a maioria dos serviços de TI como "serviços comuns" (art. 6o, XIII), o que torna o pregao obrigatório. Exceções incluem: desenvolvimento de software sob medida de alta complexidade (que pode usar concorrência por técnica e preço) e aquisição de licenças de software proprietário sem concorrente (que pode ser contratada por inexigibilidade, art. 74, I).',
+                  text: 'O pregão eletrônico é a modalidade dominante, utilizada em mais de 80% dos editais de TI publicados no PNCP. A Lei 14.133/2021 classifica a maioria dos serviços de TI como "serviços comuns" (art. 6o, XIII), o que torna o pregão obrigatório. Exceções incluem: desenvolvimento de software sob medida de alta complexidade (que pode usar concorrência por técnica e preço) e aquisição de licenças de software proprietário sem concorrente (que pode ser contratada por inexigibilidade, art. 74, I).',
                 },
               },
               {
@@ -31,7 +31,7 @@ export default function LicitacoesTISoftware2026() {
                 name: 'Posso participar de licitação de software sendo startup ou MEI?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim. A Lei Complementar 123/2006 garante tratamento diferenciado para ME e EPP em licitações: empate ficto (até 5% acima do menor preço em pregao), prazo adicional para regularização fiscal (5 dias úteis), e licitações exclusivas para valores até R$ 80.000. Para startups constituidas como ME/EPP, esses benefícios se aplicam integralmente. A principal barreira não é jurídica, mas documental: editais de TI frequentemente exigem atestados de capacidade técnica com quantitativos mínimos, o que pode ser desafiador para empresas novas.',
+                  text: 'Sim. A Lei Complementar 123/2006 garante tratamento diferenciado para ME e EPP em licitações: empate ficto (até 5% acima do menor preço em pregão), prazo adicional para regularização fiscal (5 dias úteis), e licitações exclusivas para valores até R$ 80.000. Para startups constituídas como ME/EPP, esses benefícios se aplicam integralmente. A principal barreira não é jurídica, mas documental: editais de TI frequentemente exigem atestados de capacidade técnica com quantitativos mínimos, o que pode ser desafiador para empresas novas.',
                 },
               },
               {
@@ -47,15 +47,15 @@ export default function LicitacoesTISoftware2026() {
                 name: 'O que é prova de conceito (POC) em licitações de software?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'A prova de conceito (POC) é um procedimento previsto na Lei 14.133 (art. 17, §3o) que permite ao órgão contratante verificar se a solução ofertada atende aos requisitos técnicos do edital antes da adjudicação. Em editais de TI, a POC normalmente envolve: demonstração funcional do software em ambiente controlado, validação de requisitos técnicos específicos (integração, performance, segurança), e execução de casos de teste predefinidos. O prazo típico é de 5 a 15 dias úteis. A POC e eliminatoria — se a solução não for aprovada, a empresa e desclassificada é o próximo colocado e convocado.',
+                  text: 'A prova de conceito (POC) é um procedimento previsto na Lei 14.133 (art. 17, §3o) que permite ao órgão contratante verificar se a solução ofertada atende aos requisitos técnicos do edital antes da adjudicação. Em editais de TI, a POC normalmente envolve: demonstração funcional do software em ambiente controlado, validação de requisitos técnicos específicos (integração, performance, segurança), e execução de casos de teste predefinidos. O prazo típico é de 5 a 15 dias úteis. A POC é eliminatória — se a solução não for aprovada, a empresa é desclassificada e o próximo colocado é convocado.',
                 },
               },
               {
                 '@type': 'Question',
-                name: 'Como funciona o modelo de fabrica de software em licitações?',
+                name: 'Como funciona o modelo de fábrica de software em licitações?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'O modelo de fabrica de software é a forma predominante de contratação de desenvolvimento no governo. O órgão contrata um volume de Pontos de Função (PF) ou UST (Unidades de Servico Tecnico) por período, e demanda entregas conforme necessidade. Valores típicos: R$ 400 a R$ 900 por Ponto de Função, dependendo da complexidade é da região. Contratos variam de 5.000 PF/ano (órgãos menores) a 100.000+ PF/ano (grandes ministerios). A métrica de PF segue a metodologia IFPUG/NESMA, é a contagem e frequentemente fonte de disputas contratuais.',
+                  text: 'O modelo de fábrica de software é a forma predominante de contratação de desenvolvimento no governo. O órgão contrata um volume de Pontos de Função (PF) ou UST (Unidades de Serviço Técnico) por período, e demanda entregas conforme necessidade. Valores típicos: R$ 400 a R$ 900 por Ponto de Função, dependendo da complexidade e da região. Contratos variam de 5.000 PF/ano (órgãos menores) a 100.000+ PF/ano (grandes ministérios). A métrica de PF segue a metodologia IFPUG/NESMA, e a contagem é frequentemente fonte de disputas contratuais.',
                 },
               },
               {
@@ -63,7 +63,7 @@ export default function LicitacoesTISoftware2026() {
                 name: 'Quais UFs publicam mais editais de TI?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'O Distrito Federal (DF) lidera com folga, concentrando aproximadamente 25% do valor total de editais de TI, devido a concentração de órgãos federais em Brasilia. Em seguida: São Paulo (SP) com ~18% (governo estadual + prefeituras de grande porte), Rio de Janeiro (RJ) com ~12%, e Minas Gerais (MG) com ~8%. Para o governo federal especificamente, praticamente todos os grandes contratos de TI tem execução em Brasilia, mesmo quando o órgão tem presenca nacional.',
+                  text: 'O Distrito Federal (DF) lidera com folga, concentrando aproximadamente 25% do valor total de editais de TI, devido à concentração de órgãos federais em Brasília. Em seguida: São Paulo (SP) com ~18% (governo estadual + prefeituras de grande porte), Rio de Janeiro (RJ) com ~12%, e Minas Gerais (MG) com ~8%. Para o governo federal especificamente, praticamente todos os grandes contratos de TI têm execução em Brasília, mesmo quando o órgão tem presença nacional.',
                 },
               },
             ],
@@ -80,7 +80,7 @@ export default function LicitacoesTISoftware2026() {
             '@type': 'HowTo',
             name: 'Como participar de licitações de TI e software',
             description:
-              'Passo a passo para empresas de tecnologia participarem de licitações públicas no Brasil, do cadastro a adjudicação.',
+              'Passo a passo para empresas de tecnologia participarem de licitações públicas no Brasil, do cadastro à adjudicação.',
             step: [
               {
                 '@type': 'HowToStep',
@@ -95,7 +95,7 @@ export default function LicitacoesTISoftware2026() {
               {
                 '@type': 'HowToStep',
                 name: 'Monitorar editais no PNCP e portais estaduais',
-                text: 'Acompanhe diariamente o PNCP, ComprasGov e portais estaduais de licitação. Filtre por palavras-chave do setor: desenvolvimento de software, outsourcing de TI, cloud, ciberseguranca.',
+                text: 'Acompanhe diariamente o PNCP, ComprasGov e portais estaduais de licitação. Filtre por palavras-chave do setor: desenvolvimento de software, outsourcing de TI, cloud, cibersegurança.',
               },
               {
                 '@type': 'HowToStep',
@@ -104,13 +104,13 @@ export default function LicitacoesTISoftware2026() {
               },
               {
                 '@type': 'HowToStep',
-                name: 'Elaborar proposta técnica é de preços',
-                text: 'Monte a proposta técnica (metodologia, equipe, cronograma, ferramentas) é a planilha de preços (por PF, UST ou hora técnica). Atenda a todos os requisitos do termo de referência.',
+                name: 'Elaborar proposta técnica e de preços',
+                text: 'Monte a proposta técnica (metodologia, equipe, cronograma, ferramentas) e a planilha de preços (por PF, UST ou hora técnica). Atenda a todos os requisitos do termo de referência.',
               },
               {
                 '@type': 'HowToStep',
-                name: 'Participar do pregao e fase de lances',
-                text: 'No dia do pregao eletrônico, participe da fase de lances com limite de preço previamente calculado. Após encerramento, esteja preparado para enviar documentação de habilitação no prazo (geralmente 2-4 horas).',
+                name: 'Participar do pregão e fase de lances',
+                text: 'No dia do pregão eletrônico, participe da fase de lances com limite de preço previamente calculado. Após encerramento, esteja preparado para enviar documentação de habilitação no prazo (geralmente 2-4 horas).',
               },
               {
                 '@type': 'HowToStep',
@@ -128,13 +128,13 @@ export default function LicitacoesTISoftware2026() {
         2025, o PNCP registrou mais de 62.000 publicações relacionadas a{' '}
         <strong>tecnologia da informação, software e serviços digitais</strong>,
         com valor estimado agregado superior a R$ 45 bilhões. A transformação
-        digital do setor público -- impulsionada pela Estrategia Nacional de
-        Governo Digital, pela LGPD e pela obrigatoriedade do PNCP -- gerou um
+        digital do setor público — impulsionada pela Estratégia Nacional de
+        Governo Digital, pela LGPD e pela obrigatoriedade do PNCP — gerou um
         crescimento de 22% no volume de editais de TI entre 2023 e 2025. Para
         empresas de tecnologia, o mercado B2G representa uma oportunidade
-        concreta e recorrente, mas exige compreensao das regras específicas de{' '}
+        concreta e recorrente, mas exige compreensão das regras específicas de{' '}
         <strong>licitações de tecnologia</strong>. Este guia cobre modalidades,
-        tipos de objeto, faixas de valor, requisitos e estrategias para o
+        tipos de objeto, faixas de valor, requisitos e estratégias para o
         setor.
       </p>
 
@@ -142,8 +142,8 @@ export default function LicitacoesTISoftware2026() {
       <h2>Panorama do setor de TI em licitações 2026</h2>
 
       <p>
-        Tres forças estruturais estao expandindo o mercado de TI governamental
-        em 2026. A primeira é a continuidade da Estrategia Nacional de Governo
+        Três forças estruturais estão expandindo o mercado de TI governamental
+        em 2026. A primeira é a continuidade da Estratégia Nacional de Governo
         Digital (Decreto 10.332/2020, atualizado em 2024), que determina a
         digitalização de 100% dos serviços públicos federais até 2026 e
         impulsiona contratações de plataformas digitais, cloud e integração
@@ -152,7 +152,7 @@ export default function LicitacoesTISoftware2026() {
 
       <p>
         A segunda é a LGPD (Lei 13.709/2018), cuja fiscalização intensificada
-        pela ANPD a partir de 2024 forcou órgãos públicos a contratar serviços
+        pela ANPD a partir de 2024 forçou órgãos públicos a contratar serviços
         de adequação, auditoria de dados, implementação de controles de acesso
         e nomeação de encarregados (DPOs). Editais com componente LGPD
         cresceram 45% entre 2024 e 2025.
@@ -162,7 +162,7 @@ export default function LicitacoesTISoftware2026() {
         A terceira é a migração para cloud. O governo federal publicou a
         Portaria SGD/ME 778/2019 (atualizada em 2023), que estabelece a
         contratação de serviços de computação em nuvem como modelo preferencial.
-        Grandes órgãos como Serpro, Dataprev e ministerios estao migrando
+        Grandes órgãos como Serpro, Dataprev e ministérios estão migrando
         datacenters on-premises para AWS GovCloud, Azure Government e nuvem
         privada, gerando demanda por serviços de migração, arquitetura cloud
         e operação (CloudOps/DevOps).
@@ -170,7 +170,7 @@ export default function LicitacoesTISoftware2026() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Numeros do setor -- TI e Software em licitações (2025)
+          Números do setor — TI e Software em licitações (2025)
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -186,7 +186,7 @@ export default function LicitacoesTISoftware2026() {
             +35% em valor agregado
           </li>
           <li>
-            <strong>Modalidade predominante:</strong> pregao eletrônico (80%+
+            <strong>Modalidade predominante:</strong> pregão eletrônico (80%+
             dos processos)
           </li>
           <li>
@@ -194,7 +194,7 @@ export default function LicitacoesTISoftware2026() {
             seguido de SP, RJ e MG
           </li>
           <li>
-            <strong>Segmentos em alta:</strong> cloud migration, ciberseguranca,
+            <strong>Segmentos em alta:</strong> cloud migration, cibersegurança,
             adequação LGPD, IA/ML, RPA (automação de processos)
           </li>
         </ul>
@@ -205,7 +205,7 @@ export default function LicitacoesTISoftware2026() {
         <Link href="/blog/pncp-guia-completo-empresas" className="text-brand-navy dark:text-brand-blue hover:underline">
           PNCP
         </Link>{' '}
-        é no ComprasGov é essencial. A classificação setorial por{' '}
+        e no ComprasGov é essencial. A classificação setorial por{' '}
         <Link href="/blog/inteligência-artificial-licitações-como-funciona" className="text-brand-navy dark:text-brand-blue hover:underline">
           inteligência artificial
         </Link>{' '}
@@ -218,13 +218,13 @@ export default function LicitacoesTISoftware2026() {
 
       <h3>
         <Link href="/glossario#pregao-eletrônico" className="text-brand-navy dark:text-brand-blue hover:underline">
-          Pregao eletrônico
+          Pregão eletrônico
         </Link>{' '}
-        -- o padrão do setor
+        — o padrão do setor
       </h3>
 
       <p>
-        O pregao eletrônico e utilizado em mais de 80% dos editais de TI. A
+        O pregão eletrônico é utilizado em mais de 80% dos editais de TI. A
         Lei 14.133 classifica serviços de TI como &ldquo;serviços comuns&rdquo;
         quando os padrões de desempenho e qualidade podem ser objetivamente
         definidos no edital. Na prática, isso abrange: outsourcing de TI,
@@ -234,11 +234,11 @@ export default function LicitacoesTISoftware2026() {
       </p>
 
       <p>
-        O critério de julgamento e predominantemente menor preço por item ou
-        por lote. A fase de lances e competitiva e exige que a empresa tenha
-        calculado previamente o preço mínimo sustentável -- preço abaixo do
-        custo operacional leva a contratos deficitarios que comprometem a
-        qualidade da entrega é a reputação da empresa.
+        O critério de julgamento é predominantemente menor preço por item ou
+        por lote. A fase de lances é competitiva e exige que a empresa tenha
+        calculado previamente o preço mínimo sustentável — preço abaixo do
+        custo operacional leva a contratos deficitários que comprometem a
+        qualidade da entrega e a reputação da empresa.
       </p>
 
       <h3>
@@ -249,18 +249,18 @@ export default function LicitacoesTISoftware2026() {
 
       <p>
         A ARP é uma ferramenta estratégica no setor de TI. O órgão gerenciador
-        realiza o pregao, registra preços unitarios (por hora técnica, por
+        realiza o pregão, registra preços unitários (por hora técnica, por
         ponto de função, por licença), e demanda conforme necessidade ao longo
-        de 12 meses (prorrogável por mais 12). Outros órgãos podem aderir a
+        de 12 meses (prorrogável por mais 12). Outros órgãos podem aderir à
         ata mediante autorização.
       </p>
 
       <p>
         Para empresas de TI, a ARP tem vantagens concretas: volume garantido
         (o órgão se compromete com quantidade mínima), previsibilidade de
-        receita, e possibilidade de atender multiplos órgãos com uma única
+        receita, e possibilidade de atender múltiplos órgãos com uma única
         licitação vencida. Em contrapartida, o preço registrado deve ser
-        competitivo o suficiente para vencer o pregao, mas com margem
+        competitivo o suficiente para vencer o pregão, mas com margem
         suficiente para sustentar a operação por 12 a 24 meses sem reajuste.
       </p>
 
@@ -271,7 +271,7 @@ export default function LicitacoesTISoftware2026() {
       </h3>
 
       <p>
-        A inexigibilidade (art. 74, I, Lei 14.133) e aplicável quando a
+        A inexigibilidade (art. 74, I, Lei 14.133) é aplicável quando a
         contratação envolve software proprietário com fornecedor exclusivo.
         Se a empresa desenvolve um produto próprio que não tem concorrente
         direto para atender a necessidade do órgão, a contratação pode ser
@@ -286,7 +286,7 @@ export default function LicitacoesTISoftware2026() {
       <h2>Tipos de objeto em licitações de TI</h2>
 
       <p>
-        O universo de editais de TI e diverso. Compreender os tipos de objeto
+        O universo de editais de TI é diverso. Compreender os tipos de objeto
         ajuda a identificar os nichos onde a empresa tem maior competitividade.
       </p>
 
@@ -296,7 +296,7 @@ export default function LicitacoesTISoftware2026() {
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Fabrica de software (desenvolvimento):</strong> contratação
+            <strong>Fábrica de software (desenvolvimento):</strong> contratação
             por Pontos de Função (PF) ou UST. Inclui análise, codificação,
             testes e implantação. Contratos típicos: 12-60 meses, R$ 500K a
             R$ 50M+.
@@ -318,7 +318,7 @@ export default function LicitacoesTISoftware2026() {
             Segmento em crescimento acelerado desde 2023.
           </li>
           <li>
-            <strong>Ciberseguranca:</strong> SOC (Security Operations Center),
+            <strong>Cibersegurança:</strong> SOC (Security Operations Center),
             pentest, análise de vulnerabilidades, gestão de identidades (IAM),
             DLP. Demanda impulsionada por LGPD e ataques a órgãos públicos.
           </li>
@@ -342,18 +342,18 @@ export default function LicitacoesTISoftware2026() {
       <p>
         O setor de TI tem amplitude de valor que vai de contratos de
         R$ 20.000 (dispensa para microsserviços) a contratos de centenas de
-        milhões (outsourcing de grandes ministerios). A segmentação por faixa
+        milhões (outsourcing de grandes ministérios). A segmentação por faixa
         permite foco estratégico.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Segmentação por faixa de valor -- TI e Software
+          Segmentação por faixa de valor — TI e Software
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Microsservicos e dispensas (R$ 20K - R$ 200K):</strong>{' '}
-            Desenvolvimento de modulos, integração de APIs, consultoria pontual.
+            <strong>Microsserviços e dispensas (R$ 20K - R$ 200K):</strong>{' '}
+            Desenvolvimento de módulos, integração de APIs, consultoria pontual.
             Baixa barreira de entrada. Ideal para startups e ME/EPP. Volume
             alto, mas valor individual baixo.
           </li>
@@ -365,7 +365,7 @@ export default function LicitacoesTISoftware2026() {
           </li>
           <li>
             <strong>Grandes contratos (R$ 2M - R$ 20M):</strong>{' '}
-            Fabrica de software, outsourcing completo, infraestrutura cloud
+            Fábrica de software, outsourcing completo, infraestrutura cloud
             de grande porte. Exigem certificações (ISO, CMMI), equipe técnica
             robusta e capacidade financeira comprovada. Concorrência: 3 a 8
             empresas.
@@ -374,7 +374,7 @@ export default function LicitacoesTISoftware2026() {
             <strong>Megacontratos (acima de R$ 20M):</strong>{' '}
             Outsourcing ministerial, datacenter completo, plataformas
             nacionais. Dominados por grandes integradoras. Frequentemente
-            exigem consorcio.
+            exigem consórcio.
           </li>
         </ul>
       </div>
@@ -383,7 +383,7 @@ export default function LicitacoesTISoftware2026() {
       <h2>UFs com maior volume de editais de TI</h2>
 
       <p>
-        A geografia dos editais de TI e fortemente concentrada no Distrito
+        A geografia dos editais de TI é fortemente concentrada no Distrito
         Federal, reflexo da centralização administrativa do governo federal.
       </p>
 
@@ -394,14 +394,14 @@ export default function LicitacoesTISoftware2026() {
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
             <strong>1. Distrito Federal (DF):</strong> ~25% do valor total.
-            Ministerios, autarquias, tribunais. Maiores contratos do país
+            Ministérios, autarquias, tribunais. Maiores contratos do país
             (Serpro, Dataprev, STF, TSE). Execução presencial frequentemente
-            exigida em Brasilia.
+            exigida em Brasília.
           </li>
           <li>
             <strong>2. São Paulo (SP):</strong> ~18% do valor. Governo
             estadual (Prodesp), prefeitura da capital, municípios de grande
-            porte (Campinas, Santos, Guarulhos). Forte demanda por ciberseguranca
+            porte (Campinas, Santos, Guarulhos). Forte demanda por cibersegurança
             e cloud.
           </li>
           <li>
@@ -416,15 +416,15 @@ export default function LicitacoesTISoftware2026() {
           </li>
           <li>
             <strong>5. Rio Grande do Sul (RS):</strong> ~5% do valor. Banrisul,
-            PROCERGS, universidades. Historico de investimento em TI acima
+            PROCERGS, universidades. Histórico de investimento em TI acima
             da média regional.
           </li>
         </ul>
       </div>
 
       <p>
-        Para empresas fora do DF, uma estrategia válida e comecar por editais
-        estaduais e municipais da própria região, onde a presenca local e
+        Para empresas fora do DF, uma estratégia válida é começar por editais
+        estaduais e municipais da própria região, onde a presença local é
         vantagem competitiva, e expandir para o governo federal conforme o
         portfólio de atestados cresce.
       </p>
@@ -443,7 +443,7 @@ export default function LicitacoesTISoftware2026() {
       <p>
         Atestados são o principal documento de habilitação. Devem comprovar
         experiência em serviços compatíveis em natureza e quantidade. Para
-        fabrica de software, o edital pode exigir atestado de execução de,
+        fábrica de software, o edital pode exigir atestado de execução de,
         por exemplo, 5.000 Pontos de Função em 12 meses. Para outsourcing,
         atestado de alocação de 20+ profissionais de TI simultaneamente.
         O limite legal é de 50% do quantitativo licitado (art. 67, §1o,
@@ -458,7 +458,7 @@ export default function LicitacoesTISoftware2026() {
         (gestão da qualidade, ~12%), CMMI nível 2 ou 3 (maturidade de
         processos, ~8%), e MPS.BR (modelo brasileiro, aceito como alternativa
         ao CMMI). A obtenção de ISO 27001 leva tipicamente de 6 a 12 meses
-        e custa entre R$ 30.000 e R$ 80.000 -- é um investimento que amplia
+        e custa entre R$ 30.000 e R$ 80.000 — é um investimento que amplia
         significativamente o universo de editais disputáveis.
       </p>
 
@@ -479,8 +479,8 @@ export default function LicitacoesTISoftware2026() {
         slug="licitações-ti-software-2026"
         campaign="guias"
         ctaHref="/explorar"
-        ctaText="Explorar licitações gratis"
-        ctaMessage="Descubra editais abertos no seu setor -- busca gratuita"
+        ctaText="Explorar licitações grátis"
+        ctaMessage="Descubra editais abertos no seu setor — busca gratuita"
       />
 
       {/* Section 7 */}
@@ -506,7 +506,7 @@ export default function LicitacoesTISoftware2026() {
         e níveis de serviço mensuráveis (SLA).
       </p>
 
-      <h3>Metricas de SLA irreais</h3>
+      <h3>Métricas de SLA irreais</h3>
 
       <p>
         Editais que exigem disponibilidade de 99,99% (4,38 minutos de
@@ -515,20 +515,20 @@ export default function LicitacoesTISoftware2026() {
         SLAs de tempo de resposta de 30 minutos para suporte 24x7 em
         municípios remotos geram custo operacional desproporcional. A
         recomendação e calcular o custo real de atender cada SLA exigido
-        antes de formular o preço -- SLAs agressivos frequentemente são a
-        fonte de prejuizo em contratos de TI.
+        antes de formular o preço — SLAs agressivos frequentemente são a
+        fonte de prejuízo em contratos de TI.
       </p>
 
       <h3>Exigência de certificações como barreira</h3>
 
       <p>
         Editais que exigem certificações de nicho altamente específicas (por
-        exemplo, certificação de um único fornecedor para um modulo
-        específico) como critério eliminatorio de habilitação podem estar
+        exemplo, certificação de um único fornecedor para um módulo
+        específico) como critério eliminatório de habilitação podem estar
         direcionados para um concorrente específico. A Lei 14.133 permite
         impugnação quando as exigências de habilitação restringem
         indevidamente a competitividade (art. 164). Se a empresa identifica
-        que uma exigência de certificação e desproporcional ao objeto,
+        que uma exigência de certificação é desproporcional ao objeto,
         pode apresentar impugnação fundamentada até 3 dias úteis antes da
         abertura.
       </p>
@@ -536,9 +536,9 @@ export default function LicitacoesTISoftware2026() {
       <h3>Lock-in tecnológico não declarado</h3>
 
       <p>
-        Sistemas legados do órgão em tecnologias proprietarias (Oracle Forms,
+        Sistemas legados do órgão em tecnologias proprietárias (Oracle Forms,
         SAP ABAP, plataformas low-code específicas) podem exigir
-        conhecimento altamente especializado que não esta explicito no edital.
+        conhecimento altamente especializado que não está explícito no edital.
         Antes de participar, pesquise o histórico de contratações do órgão
         no PNCP para identificar quais tecnologias estão em uso e se a
         sua equipe tem capacidade de absorver a curva de aprendizado.
@@ -548,7 +548,7 @@ export default function LicitacoesTISoftware2026() {
       <h2>Atas de registro de preço como porta de entrada</h2>
 
       <p>
-        Para empresas que estao iniciando no mercado B2G de TI, as atas de
+        Para empresas que estão iniciando no mercado B2G de TI, as atas de
         registro de preço (ARP) oferecem uma rota de entrada com risco
         controlado.
       </p>
@@ -560,14 +560,14 @@ export default function LicitacoesTISoftware2026() {
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
             <strong>Volume sem compromisso imediato:</strong> a ARP registra
-            preços, mas a demanda e gradual. A empresa não precisa mobilizar
-            toda a equipe no dia seguinte ao registro -- o órgão faz ordens
+            preços, mas a demanda é gradual. A empresa não precisa mobilizar
+            toda a equipe no dia seguinte ao registro — o órgão faz ordens
             de serviço conforme necessidade.
           </li>
           <li>
-            <strong>Multiplos órgãos com uma licitação:</strong> outros órgãos
-            podem aderir a ata (carona), multiplicando o potencial de receita
-            sem novo processo licitatorio.
+            <strong>Múltiplos órgãos com uma licitação:</strong> outros órgãos
+            podem aderir à ata (carona), multiplicando o potencial de receita
+            sem novo processo licitatório.
           </li>
           <li>
             <strong>Construção de portfólio:</strong> cada ordem de serviço
@@ -581,13 +581,13 @@ export default function LicitacoesTISoftware2026() {
           <li>
             <strong>Fato gerador sob demanda:</strong> a empresa só aloca
             recursos quando há ordem de serviço efetiva. Diferente de
-            contratos de outsourcing onde a equipe e fixa.
+            contratos de outsourcing onde a equipe é fixa.
           </li>
         </ul>
       </div>
 
       <p>
-        A estrategia recomendada para empresas em crescimento e: comecar por
+        A estratégia recomendada para empresas em crescimento é: começar por
         ARPs de menor valor em órgãos municipais ou estaduais, construir
         atestados técnicos, e progressivamente disputar contratos de maior
         porte. Um ciclo típico de 18 a 24 meses leva uma empresa de micro
@@ -611,12 +611,12 @@ export default function LicitacoesTISoftware2026() {
       <h3>Fator 1: Modalidade (peso 30%)</h3>
 
       <p>
-        Em TI, o pregao eletrônico e dominante e favorece empresas ágeis em
+        Em TI, o pregão eletrônico é dominante e favorece empresas ágeis em
         lances e documentação. Concorrências por técnica e preço aparecem em
         projetos complexos e favorecem empresas com certificações e acervo
         diferenciado. Inexigibilidade beneficia exclusivamente fabricantes de
         software proprietário. A empresa deve identificar em qual modalidade
-        sua taxa de adjudicação histórica e maior.
+        sua taxa de adjudicação histórica é maior.
       </p>
 
       <h3>Fator 2: Timeline (peso 25%)</h3>
@@ -627,7 +627,7 @@ export default function LicitacoesTISoftware2026() {
         em TI é a disponibilidade de equipe: se o edital exige alocação de
         profissionais específicos, a empresa precisa confirmar disponibilidade
         antes de participar. Prometer profissionais alocados em outro contrato
-        e fonte comum de inadimplência.
+        é fonte comum de inadimplência.
       </p>
 
       <h3>Fator 3: Valor estimado (peso 25%)</h3>
@@ -635,9 +635,9 @@ export default function LicitacoesTISoftware2026() {
       <p>
         Valores de referência em editais de TI frequentemente são baseados em
         pesquisas de mercado ou em contratos anteriores. Quando o valor de
-        referência esta defasado (preço por PF de 3 anos atras sem reajuste),
+        referência está defasado (preço por PF de 3 anos atrás sem reajuste),
         a margem pode ser insuficiente. Verifique se o preço unitário de
-        referência e compatível com o custo operacional da sua empresa
+        referência é compatível com o custo operacional da sua empresa
         (incluindo encargos, impostos, overhead e margem mínima).
       </p>
 
@@ -645,8 +645,8 @@ export default function LicitacoesTISoftware2026() {
 
       <p>
         Em TI, a geografia tem peso menor que em engenharia, pois muitos
-        serviços podem ser executados remotamente. Porem, editais que exigem
-        presenca física da equipe em Brasilia (governo federal) ou no município
+        serviços podem ser executados remotamente. Porém, editais que exigem
+        presença física da equipe em Brasília (governo federal) ou no município
         contratante geram custo de deslocamento e alojamento que deve ser
         computado. A pandemia acelerou a aceitação de trabalho remoto no
         governo, mas muitos editais ainda exigem presencialidade parcial
@@ -655,16 +655,16 @@ export default function LicitacoesTISoftware2026() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Exemplo prático -- Viabilidade de edital de TI
+          Exemplo prático — Viabilidade de edital de TI
         </p>
         <p className="text-sm text-ink-secondary mb-3">
-          Empresa de software em SP avalia um pregao eletrônico para fabrica
-          de software de um tribunal em Brasilia, 8.000 PF em 24 meses,
-          valor estimado R$ 5,6M, execução hibrida (60% remoto):
+          Empresa de software em SP avalia um pregão eletrônico para fábrica
+          de software de um tribunal em Brasília, 8.000 PF em 24 meses,
+          valor estimado R$ 5,6M, execução híbrida (60% remoto):
         </p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
-            <strong>Modalidade (30%):</strong> Pregao eletrônico, empresa
+            <strong>Modalidade (30%):</strong> Pregão eletrônico, empresa
             tem experiência e agilidade nesta modalidade = 8/10 x 0,30 = 2,40
           </li>
           <li>
@@ -676,12 +676,12 @@ export default function LicitacoesTISoftware2026() {
             custo operacional da empresa = 8/10 x 0,25 = 2,00
           </li>
           <li>
-            <strong>Geografia (20%):</strong> Execução hibrida, 40%
-            presencial em Brasilia, empresa tem profissionais no DF =
+            <strong>Geografia (20%):</strong> Execução híbrida, 40%
+            presencial em Brasília, empresa tem profissionais no DF =
             7/10 x 0,20 = 1,40
           </li>
           <li className="pt-2 font-semibold">
-            Pontuação total: 7,55/10 -- Viabilidade alta. Recomendado
+            Pontuação total: 7,55/10 — Viabilidade alta. Recomendado
             prosseguir com análise detalhada do termo de referência.
           </li>
         </ul>
@@ -703,7 +703,7 @@ export default function LicitacoesTISoftware2026() {
       {/* CTA Section */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Monitore editais de TI com inteligência -- 14 dias gratis
+          Monitore editais de TI com inteligência — 14 dias grátis
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           O SmartLic filtra editais de tecnologia por relevância e analisa
@@ -714,12 +714,12 @@ export default function LicitacoesTISoftware2026() {
           href="/signup?source=blog&article=licitações-ti-software-2026&utm_source=blog&utm_medium=cta&utm_content=licitações-ti-software-2026&utm_campaign=guias"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          Teste Gratis por 14 Dias
+          Teste Grátis por 14 Dias
         </Link>
         <p className="text-xs text-ink-secondary mt-3">
-          Sem cartao de crédito. Veja todas as funcionalidades na{' '}
+          Sem cartão de crédito. Veja todas as funcionalidades na{' '}
           <Link href="/features" className="underline hover:text-ink">
-            pagina de recursos
+            página de recursos
           </Link>.
         </p>
       </div>
@@ -731,27 +731,27 @@ export default function LicitacoesTISoftware2026() {
       <p>
         O{' '}
         <Link href="/glossario#pregao-eletrônico" className="text-brand-navy dark:text-brand-blue hover:underline">
-          pregao eletrônico
+          pregão eletrônico
         </Link>{' '}
         é a modalidade dominante, utilizado em mais de 80% dos editais de TI
         publicados no PNCP. A Lei 14.133/2021 classifica a maioria dos
         serviços de TI como &ldquo;serviços comuns&rdquo; (art. 6o, XIII),
-        tornando o pregao obrigatório. Exceções incluem: desenvolvimento de
+        tornando o pregão obrigatório. Exceções incluem: desenvolvimento de
         software de alta complexidade (concorrência por técnica e preço) e
         software proprietário sem concorrente (inexigibilidade, art. 74, I).
-        Para a maioria das empresas de TI, dominar o processo de pregao
-        eletrônico e pre-requisito para atuar no mercado B2G.
+        Para a maioria das empresas de TI, dominar o processo de pregão
+        eletrônico é pré-requisito para atuar no mercado B2G.
       </p>
 
       <h3>Posso participar de licitação de software sendo startup ou MEI?</h3>
       <p>
         Sim. A Lei Complementar 123/2006 garante tratamento diferenciado para
-        ME e EPP: empate ficto (até 5% acima do menor preço em pregao), prazo
+        ME e EPP: empate ficto (até 5% acima do menor preço em pregão), prazo
         adicional para regularização fiscal (5 dias úteis), e licitações
-        exclusivas para valores até R$ 80.000. A principal barreira e
+        exclusivas para valores até R$ 80.000. A principal barreira é
         documental: editais de TI frequentemente exigem atestados com
-        quantitativos mínimos. A estrategia recomendada para startups e
-        comecar por dispensas de licitação (até R$ 50.000 para serviços) e
+        quantitativos mínimos. A estratégia recomendada para startups é
+        começar por dispensas de licitação (até R$ 50.000 para serviços) e
         ARPs de menor porte para construir portfólio de atestados.
       </p>
 
@@ -762,46 +762,46 @@ export default function LicitacoesTISoftware2026() {
         (alternativa brasileira ao CMMI). Para profissionais da equipe: PMP
         (gestão de projetos), ITIL (gestão de serviços), certificações cloud
         (AWS, Azure, GCP), e LGPD/DPO. Nem todos os editais exigem todas as
-        certificações -- a frequência varia por tipo de objeto e órgão
+        certificações — a frequência varia por tipo de objeto e órgão
         contratante. ISO 27001 é o investimento com maior retorno, pois
-        abre portas para editais de ciberseguranca e dados sensíveis.
+        abre portas para editais de cibersegurança e dados sensíveis.
       </p>
 
       <h3>O que é prova de conceito (POC) em licitações de software?</h3>
       <p>
         A POC é um procedimento previsto na Lei 14.133 (art. 17, §3o) que
         permite ao órgão verificar se a solução ofertada atende aos requisitos
-        técnicos antes da adjudicação. O licitante melhor classificado e
+        técnicos antes da adjudicação. O licitante melhor classificado é
         convocado a demonstrar a solução em ambiente controlado, executando
         casos de teste predefinidos no edital. O prazo típico é de 5 a 15
-        dias úteis. A POC e eliminatoria: se não aprovada, a empresa e
-        desclassificada é o próximo colocado e convocado. Para se preparar,
+        dias úteis. A POC é eliminatória: se não aprovada, a empresa é
+        desclassificada e o próximo colocado é convocado. Para se preparar,
         mantenha um ambiente de demonstração atualizado e equipe técnica
         disponível para configuração rápida.
       </p>
 
-      <h3>Como funciona o modelo de fabrica de software em licitações?</h3>
+      <h3>Como funciona o modelo de fábrica de software em licitações?</h3>
       <p>
-        O modelo de fabrica de software é a forma predominante de contratação
+        O modelo de fábrica de software é a forma predominante de contratação
         de desenvolvimento no governo. O órgão contrata um volume de Pontos
-        de Função (PF) ou Unidades de Servico Tecnico (UST) por período e
+        de Função (PF) ou Unidades de Serviço Técnico (UST) por período e
         demanda entregas conforme necessidade. Valores típicos: R$ 400 a
         R$ 900 por Ponto de Função, dependendo da complexidade e região.
         A métrica segue a metodologia IFPUG/NESMA. Os contratos variam de
         5.000 PF/ano (órgãos menores) a 100.000+ PF/ano (grandes
-        ministerios). É fundamental que a empresa domine a contagem de PF,
-        pois discrepâncias entre a contagem do órgão é a do contratado são
+        ministérios). É fundamental que a empresa domine a contagem de PF,
+        pois discrepâncias entre a contagem do órgão e a do contratado são
         a principal fonte de conflitos contratuais.
       </p>
 
       <h3>Quais UFs publicam mais editais de TI?</h3>
       <p>
         O Distrito Federal (DF) lidera com aproximadamente 25% do valor total
-        de editais de TI, devido a concentração de órgãos federais. Em
+        de editais de TI, devido à concentração de órgãos federais. Em
         seguida: São Paulo (SP) com ~18%, Rio de Janeiro (RJ) com ~12%, e
         Minas Gerais (MG) com ~8%. Para empresas que buscam volume sem se
-        deslocar para Brasilia, os governos estaduais de SP e RJ oferecem
-        oportunidades significativas com execução local. Municipios de grande
+        deslocar para Brasília, os governos estaduais de SP e RJ oferecem
+        oportunidades significativas com execução local. Municípios de grande
         porte (acima de 500 mil habitantes) também publicam editais de TI com
         frequência crescente, especialmente para cidades inteligentes e
         digitalização de serviços públicos.

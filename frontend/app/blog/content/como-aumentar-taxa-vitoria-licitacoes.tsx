@@ -71,7 +71,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
         duas resultam em contrato efetivo. O custo acumulado dessa ineficiência
         ao longo de um ano frequentemente supera o valor de um contrato inteiro.
         Este artigo apresenta um modelo estruturado para aumentar a taxa de
-        vitória em licitações sem expandir a equipe -- concentrando o esforço
+        vitória em licitações sem expandir a equipe — concentrando o esforço
         nas oportunidades certas, em vez de distribuí-lo em todas as
         disponíveis.
       </p>
@@ -82,7 +82,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
       <p>
         Existe uma premissa intuitiva, mas incorreta, que orienta a estratégia
         de muitas empresas B2G: quanto mais licitações disputar, maior o
-        faturamento com o governo. A lógica parece simples -- mais tentativas,
+        faturamento com o governo. A lógica parece simples — mais tentativas,
         mais chances. Na prática, os dados mostram o oposto.
       </p>
 
@@ -97,7 +97,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
 
       <p>
         Disputar todas seria inviável operacionalmente. Mas o problema real não
-        é a quantidade -- é a <strong>falta de critério na seleção</strong>. Quando
+        é a quantidade — é a <strong>falta de critério na seleção</strong>. Quando
         a triagem é baseada apenas em leitura superficial do objeto e do valor,
         a empresa acaba investindo tempo em editais onde não tem vantagem
         competitiva, onde o prazo é insuficiente para mobilização, ou onde a
@@ -115,14 +115,14 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
 
       <p>
         Antes de buscar melhoria, é necessário estabelecer uma referência.
-        A taxa de adjudicação -- percentual de licitações disputadas que
-        resultam em contrato -- varia significativamente por modalidade e
+        A taxa de adjudicação — percentual de licitações disputadas que
+        resultam em contrato — varia significativamente por modalidade e
         setor.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Taxa de adjudicação por modalidade
+          Dados de referência — Taxa de adjudicação por modalidade
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -152,7 +152,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
 
       <p>
         Se sua empresa opera com taxa abaixo de 15% em pregão eletrônico,
-        o problema provavelmente não está na qualidade das propostas -- está
+        o problema provavelmente não está na qualidade das propostas — está
         na seleção dos editais que decide disputar. Empresas com taxas acima de
         25% não são necessariamente melhores em precificação; elas são melhores
         em <strong>decidir quais licitações não disputar</strong>.
@@ -272,7 +272,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Exemplo prático -- Cálculo de viabilidade
+          Exemplo prático — Cálculo de viabilidade
         </p>
         <p className="text-sm text-ink-secondary mb-3">
           Empresa de TI em Curitiba avalia um pregão eletrônico para
@@ -297,7 +297,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
             logística viável = 7/10 x 0,20 = 1,40
           </li>
           <li className="pt-2 font-semibold">
-            Pontuação total: 7,80/10 -- Viabilidade alta, recomendado prosseguir
+            Pontuação total: 7,80/10 — Viabilidade alta, recomendado prosseguir
             com análise completa.
           </li>
         </ul>
@@ -312,8 +312,8 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
         analistas dedicados a licitações, volume de 25 a 30 propostas
         elaboradas por mês, e taxa de adjudicação de 12%. O faturamento com
         contratos públicos era de aproximadamente R$ 3,2 milhões anuais, mas o
-        custo operacional do setor de licitações -- salários, certidões, viagens
-        para vistoria -- consumia R$ 680.000 por ano.
+        custo operacional do setor de licitações — salários, certidões, viagens
+        para vistoria — consumia R$ 680.000 por ano.
       </p>
 
       <p>
@@ -386,7 +386,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
         propostas. A equipe não cresceu; a inteligência na seleção é que
         aumentou. O tempo liberado pela eliminação de editais de baixa
         viabilidade foi redistribuído para a qualidade das propostas nos editais
-        viáveis -- o que por sua vez alimentou a melhoria da taxa.
+        viáveis — o que por sua vez alimentou a melhoria da taxa.
       </p>
 
       {/* Section 6 */}
@@ -498,7 +498,7 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
       {/* CTA Section — STORY-262 AC18/AC19 — BEFORE FAQ */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Experimente a triagem inteligente do SmartLic -- 14 dias grátis
+          Experimente a triagem inteligente do SmartLic — 14 dias grátis
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           O SmartLic analisa cada edital com base em 4 fatores de viabilidade e
@@ -554,8 +554,8 @@ export default function ComoAumentarTaxaVitoriaLicitacoes() {
       <h3>O que é triagem por viabilidade em licitações?</h3>
       <p>
         Triagem por viabilidade é um processo de avaliação prévia de editais
-        com base em critérios objetivos -- modalidade, prazo, valor estimado e
-        localização geográfica -- que permite identificar, antes de investir
+        com base em critérios objetivos — modalidade, prazo, valor estimado e
+        localização geográfica — que permite identificar, antes de investir
         tempo na análise completa, quais oportunidades têm maior probabilidade
         de retorno para o perfil da empresa. Diferente de uma filtragem
         simples por setor, a triagem por viabilidade pondera múltiplos fatores

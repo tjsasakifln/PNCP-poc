@@ -39,7 +39,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
                 name: 'Como a triagem rigorosa aumenta a taxa de adjudicação?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'A triagem rigorosa aumenta a taxa de adjudicação por um mecanismo simples: ao eliminar editais de baixa viabilidade antes da elaboração da proposta, a empresa concentra recursos nos editais onde tem maior probabilidade de vencer. O efeito é matemático -- se uma empresa envia 20 propostas por mês e vence 3 (taxa de 15%), ao filtrar as 8 piores oportunidades e concentrar esforço nas 12 melhores, pode vencer 3 ou 4 com propostas de maior qualidade (taxa de 25% a 33%). A triagem não aumenta o número absoluto de vitórias imediatamente, mas aumenta a taxa de conversão e reduz o custo por contrato conquistado.',
+                  text: 'A triagem rigorosa aumenta a taxa de adjudicação por um mecanismo simples: ao eliminar editais de baixa viabilidade antes da elaboração da proposta, a empresa concentra recursos nos editais onde tem maior probabilidade de vencer. O efeito é matemático — se uma empresa envia 20 propostas por mês e vence 3 (taxa de 15%), ao filtrar as 8 piores oportunidades e concentrar esforço nas 12 melhores, pode vencer 3 ou 4 com propostas de maior qualidade (taxa de 25% a 33%). A triagem não aumenta o número absoluto de vitórias imediatamente, mas aumenta a taxa de conversão e reduz o custo por contrato conquistado.',
                 },
               },
               {
@@ -98,7 +98,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
         A fundamentação para esse incremento vem de três fontes. Primeiro,
         benchmarks de eficiência em compras públicas compilados pelo TCU e
         pelo IPEA indicam que a qualidade da seleção de editais é o fator
-        com maior influência sobre a taxa de adjudicação -- acima da
+        com maior influência sobre a taxa de adjudicação — acima da
         precificação e da qualidade da proposta técnica. Segundo, estudos
         de operações B2B mostram que a implementação de critérios
         estruturados de qualificação de oportunidades (pipeline
@@ -136,7 +136,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
         </ul>
       </div>
 
-      <h2>Etapa 1: triagem rigorosa -- filtrar para conquistar</h2>
+      <h2>Etapa 1: triagem rigorosa — filtrar para conquistar</h2>
 
       <p>
         A primeira etapa é, paradoxalmente, a mais contraintuitiva:
@@ -150,13 +150,13 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
 
       <p>
         A triagem rigorosa aplica 4 filtros de viabilidade antes de
-        recomendar a participação: modalidade (peso 30% -- pregão
+        recomendar a participação: modalidade (peso 30% — pregão
         eletrônico favorece empresas de menor porte; concorrência
-        favorece experiência técnica), timeline (25% -- prazo entre
+        favorece experiência técnica), timeline (25% — prazo entre
         publicação e sessão deve ser compatível com a capacidade de
-        elaboração do cliente), valor estimado (25% -- faixa de valor
+        elaboração do cliente), valor estimado (25% — faixa de valor
         deve estar dentro da capacidade de entrega e margem mínima do
-        cliente) e geografia (20% -- capacidade logística de atender o
+        cliente) e geografia (20% — capacidade logística de atender o
         órgão contratante).
       </p>
 
@@ -192,7 +192,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
       <p>
         O impacto estimado da análise de viabilidade na taxa de
         adjudicação é de +3% a +5% adicional. Combinada com a triagem
-        da Etapa 1, o impacto acumulado é de +8% a +13% -- já próximo da
+        da Etapa 1, o impacto acumulado é de +8% a +13% — já próximo da
         meta de 20%.
       </p>
 
@@ -203,8 +203,8 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
       <p>
         A terceira etapa foca na qualidade da proposta em si. Com menos
         propostas para elaborar (resultado das Etapas 1 e 2), a equipe
-        do cliente -- ou a própria consultoria, se o escopo incluir
-        elaboração -- dispõe de mais tempo e atenção para cada proposta
+        do cliente — ou a própria consultoria, se o escopo incluir
+        elaboração — dispõe de mais tempo e atenção para cada proposta
         individual.
       </p>
 
@@ -215,7 +215,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
         preço praticado pelo mercado), revisão de requisitos de
         habilitação (garantir que toda a documentação está em
         conformidade, eliminando desclassificações por falha formal) e
-        adequação da proposta técnica (quando aplicável -- em
+        adequação da proposta técnica (quando aplicável — em
         concorrências e tomadas de preço, a proposta técnica pode ser
         decisiva).
       </p>
@@ -223,7 +223,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
       <p>
         O impacto estimado da otimização de proposta é de +3% a +5% na
         taxa de adjudicação. A principal fonte desse ganho é a redução de
-        desclassificações por falha formal ou preço inexequível -- erros
+        desclassificações por falha formal ou preço inexequível — erros
         que são evitáveis com revisão estruturada e que, segundo dados do
         PNCP, respondem por 15% a 20% das eliminações em pregões
         eletrônicos.
@@ -235,7 +235,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
         A quarta etapa cobre um ponto cego de muitas operações B2G: o
         que acontece entre o envio da proposta e o resultado do certame.
         Empresas que enviam a proposta e simplesmente esperam o resultado
-        perdem oportunidades de intervenção -- impugnações, pedidos de
+        perdem oportunidades de intervenção — impugnações, pedidos de
         esclarecimento, fases de lance e recursos.
       </p>
 
@@ -252,16 +252,16 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
       <p>
         O impacto estimado do monitoramento pós-envio é de +2% a +4%.
         Embora menor que as etapas anteriores, esse incremento vem de
-        oportunidades que seriam perdidas por omissão -- propostas
+        oportunidades que seriam perdidas por omissão — propostas
         desclassificadas por não atender a esclarecimento, ou lances
         não otimizados por falta de acompanhamento.
       </p>
 
-      <h2>Etapa 5: feedback loop -- análise pós-pregão</h2>
+      <h2>Etapa 5: feedback loop — análise pós-pregão</h2>
 
       <p>
         A quinta etapa é a que garante a melhoria contínua do framework.
-        Após cada resultado de licitação -- vitória ou derrota -- a
+        Após cada resultado de licitação — vitória ou derrota — a
         consultoria realiza uma análise estruturada que alimenta as
         etapas anteriores com dados reais.
       </p>
@@ -293,25 +293,25 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
         <p className="text-sm font-semibold text-ink mb-3">Framework: impacto estimado de cada etapa na taxa de adjudicação</p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
-            <strong>Etapa 1 -- Triagem rigorosa:</strong> +5% a +8% sobre a base. Principal
+            <strong>Etapa 1 — Triagem rigorosa:</strong> +5% a +8% sobre a base. Principal
             alavanca: concentração de esforço em editais de alta viabilidade. Implementação:
             semanas 1-4.
           </li>
           <li>
-            <strong>Etapa 2 -- Análise de viabilidade:</strong> +3% a +5% adicional. Principal
+            <strong>Etapa 2 — Análise de viabilidade:</strong> +3% a +5% adicional. Principal
             alavanca: eliminação de participações com riscos ocultos. Implementação: semanas 2-6.
           </li>
           <li>
-            <strong>Etapa 3 -- Otimização de proposta:</strong> +3% a +5% adicional. Principal
+            <strong>Etapa 3 — Otimização de proposta:</strong> +3% a +5% adicional. Principal
             alavanca: redução de desclassificações e precificação competitiva. Implementação:
             semanas 4-8.
           </li>
           <li>
-            <strong>Etapa 4 -- Monitoramento pós-envio:</strong> +2% a +4% adicional. Principal
+            <strong>Etapa 4 — Monitoramento pós-envio:</strong> +2% a +4% adicional. Principal
             alavanca: captura de oportunidades perdidas por omissão. Implementação: semanas 6-10.
           </li>
           <li>
-            <strong>Etapa 5 -- Feedback loop:</strong> Melhoria contínua das etapas 1-4. Principal
+            <strong>Etapa 5 — Feedback loop:</strong> Melhoria contínua das etapas 1-4. Principal
             alavanca: calibração progressiva dos critérios com dados reais. Implementação:
             semanas 8-12 (ciclo contínuo).
           </li>
@@ -337,7 +337,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
         No cenário atual, esse cliente adjudica 2,25 contratos por mês
         (15 x 15%), gerando R$ 450.000 em receita mensal de contratos
         públicos. Com o aumento de 20% na taxa (de 15% para 18%), o
-        cliente passa a adjudicar 2,7 contratos por mês -- 0,45 contratos
+        cliente passa a adjudicar 2,7 contratos por mês — 0,45 contratos
         adicionais, equivalentes a R$ 90.000 em receita mensal adicional.
         Em um ano, são R$ 1.080.000 em contratos que o cliente não teria
         conquistado sem a melhoria.
@@ -358,17 +358,17 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
         <p className="text-sm font-semibold text-ink mb-3">Simulação de impacto financeiro por perfil de cliente</p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            &bull; <strong>Perfil A -- PME (10 propostas/mês, ticket R$ 80 mil, taxa 12%):</strong> Receita
+            &bull; <strong>Perfil A — PME (10 propostas/mês, ticket R$ 80 mil, taxa 12%):</strong> Receita
             atual: R$ 96.000/mês. Com +20% na taxa (de 12% para 14,4%): R$ 115.200/mês.
             Ganho: R$ 19.200/mês ou R$ 230.400/ano.
           </li>
           <li>
-            &bull; <strong>Perfil B -- Média empresa (15 propostas/mês, ticket R$ 200 mil, taxa 16%):</strong> Receita
+            &bull; <strong>Perfil B — Média empresa (15 propostas/mês, ticket R$ 200 mil, taxa 16%):</strong> Receita
             atual: R$ 480.000/mês. Com +20% na taxa (de 16% para 19,2%): R$ 576.000/mês.
             Ganho: R$ 96.000/mês ou R$ 1.152.000/ano.
           </li>
           <li>
-            &bull; <strong>Perfil C -- Grande empresa (25 propostas/mês, ticket R$ 500 mil, taxa 18%):</strong> Receita
+            &bull; <strong>Perfil C — Grande empresa (25 propostas/mês, ticket R$ 500 mil, taxa 18%):</strong> Receita
             atual: R$ 2.250.000/mês. Com +20% na taxa (de 18% para 21,6%): R$ 2.700.000/mês.
             Ganho: R$ 450.000/mês ou R$ 5.400.000/ano.
           </li>
@@ -407,7 +407,7 @@ export default function AumentarTaxaSucessoClientes20Porcento() {
         <strong>Mês 3 (dias 61-90):</strong> Ativação da Etapa 5
         (feedback loop) e primeira coleta de dados comparativos. Ao final
         do terceiro mês, a consultoria já tem dados suficientes para
-        comparar a taxa de adjudicação do período com a baseline -- e
+        comparar a taxa de adjudicação do período com a baseline — e
         apresentar ao cliente a evolução documentada.
       </p>
 

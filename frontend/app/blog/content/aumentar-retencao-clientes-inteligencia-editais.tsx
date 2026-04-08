@@ -23,7 +23,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
                 name: 'Qual a taxa média de churn em consultorias de licitação no Brasil?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Consultorias de licitação no Brasil enfrentam taxas de churn anuais entre 30% e 45%, segundo benchmarks de serviços B2B recorrentes. Os principais motivos de cancelamento são percepção de baixo valor agregado (o cliente acredita que pode fazer internamente), ausência de métricas claras de resultado e falta de diferenciação frente a concorrentes. Consultorias que entregam inteligência estruturada -- não apenas busca de editais -- reportam taxas de churn entre 10% e 18%.',
+                  text: 'Consultorias de licitação no Brasil enfrentam taxas de churn anuais entre 30% e 45%, segundo benchmarks de serviços B2B recorrentes. Os principais motivos de cancelamento são percepção de baixo valor agregado (o cliente acredita que pode fazer internamente), ausência de métricas claras de resultado e falta de diferenciação frente a concorrentes. Consultorias que entregam inteligência estruturada — não apenas busca de editais — reportam taxas de churn entre 10% e 18%.',
                 },
               },
               {
@@ -39,7 +39,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
                 name: 'Qual o custo de adquirir um novo cliente versus reter um existente em consultoria B2B?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Estudos de mercado B2B indicam que o custo de aquisição de um novo cliente é de 5 a 7 vezes superior ao custo de retenção de um cliente existente. Em consultorias de licitação, onde o ciclo de venda costuma durar de 30 a 90 dias e envolve demonstrações, diagnósticos gratuitos e propostas customizadas, o CAC típico varia entre R$ 2.000 e R$ 8.000. Investir em retenção -- entregando mais valor ao cliente atual -- gera retorno significativamente maior do que investir exclusivamente em aquisição.',
+                  text: 'Estudos de mercado B2B indicam que o custo de aquisição de um novo cliente é de 5 a 7 vezes superior ao custo de retenção de um cliente existente. Em consultorias de licitação, onde o ciclo de venda costuma durar de 30 a 90 dias e envolve demonstrações, diagnósticos gratuitos e propostas customizadas, o CAC típico varia entre R$ 2.000 e R$ 8.000. Investir em retenção — entregando mais valor ao cliente atual — gera retorno significativamente maior do que investir exclusivamente em aquisição.',
                 },
               },
               {
@@ -68,7 +68,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         A <strong>retenção de clientes em consultoria de licitação</strong> é o
         indicador que separa operações sustentáveis de operações que vivem em
         ciclo permanente de aquisição. Consultorias que perdem 35% a 40% da
-        carteira por ano não têm um problema de vendas -- têm um problema de
+        carteira por ano não têm um problema de vendas — têm um problema de
         valor percebido. E a raiz desse problema, na maioria dos casos, está
         na natureza do serviço entregue: buscar editais e listar oportunidades
         é uma atividade que o cliente, mais cedo ou mais tarde, acredita que
@@ -80,7 +80,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         desejam transformar a entrega de inteligência sobre editais em
         diferencial de retenção. Não se trata de fazer mais do mesmo com mais
         velocidade, mas de reposicionar o serviço em um patamar onde o cliente
-        percebe dependência estratégica -- não apenas operacional.
+        percebe dependência estratégica — não apenas operacional.
       </p>
 
       <h2>O problema de retenção em consultorias de licitação</h2>
@@ -117,7 +117,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
             &bull; <strong>Custo de aquisição versus retenção:</strong> Estudos consolidados de
             mercado B2B (Bain &amp; Company, Harvard Business Review) indicam que adquirir um novo
             cliente custa de 5 a 7 vezes mais do que reter um existente. Em consultorias de licitação,
-            o CAC típico inclui prospecção, diagnóstico gratuito e período de demonstração -- estimado
+            o CAC típico inclui prospecção, diagnóstico gratuito e período de demonstração — estimado
             entre R$ 2.000 e R$ 8.000 por cliente adquirido.
           </li>
           <li>
@@ -144,7 +144,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
       <p>
         O motivo mais citado em pesquisas de cancelamento é a percepção de que
         o serviço não justifica o preço. Isso não significa necessariamente que
-        a consultoria faz pouco -- significa que o cliente não consegue ver o
+        a consultoria faz pouco — significa que o cliente não consegue ver o
         que ela faz. Uma consultoria que envia 50 editais por semana sem
         contexto de viabilidade ou priorização está, na prática, terceirizando
         a triagem para o próprio cliente. O cliente olha aquela lista, gasta
@@ -158,9 +158,9 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         Se a consultoria não mede e não comunica resultados, o cliente avalia
         o serviço por percepção subjetiva. E a percepção subjetiva é
         vulnerável a vieses: o cliente lembra dos editais irrelevantes que
-        recebeu, não dos 5 bons que geraram proposta. Sem métricas -- quantas
+        recebeu, não dos 5 bons que geraram proposta. Sem métricas — quantas
         oportunidades qualificadas, qual a taxa de aderência, quanto tempo
-        foi economizado -- o valor entregue se torna invisível.
+        foi economizado — o valor entregue se torna invisível.
       </p>
 
       <h3>Motivo 3: falta de diferenciação</h3>
@@ -170,7 +170,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         filtrada pelas mesmas palavras-chave, o cliente escolhe pelo preço.
         A comoditização do serviço de busca de editais transforma a consultoria
         em commodity, e commodity se troca por preço inferior. A única saída
-        é entregar algo que a concorrência não entrega -- e esse algo é
+        é entregar algo que a concorrência não entrega — e esse algo é
         inteligência.
       </p>
 
@@ -180,7 +180,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
 
       <p>
         A transição que as consultorias de alta retenção fizeram não foi
-        tecnológica -- foi conceitual. Elas deixaram de se posicionar como
+        tecnológica — foi conceitual. Elas deixaram de se posicionar como
         &ldquo;serviço de busca&rdquo; e passaram a se posicionar como
         &ldquo;inteligência de oportunidades&rdquo;. A diferença está no que
         é entregue ao cliente.
@@ -189,13 +189,13 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
       <p>
         No modelo tradicional, a consultoria entrega uma lista de editais
         filtrados. O cliente recebe, analisa e decide. A consultoria é um
-        filtro -- e filtros são substituíveis.
+        filtro — e filtros são substituíveis.
       </p>
 
       <p>
         No modelo de inteligência, a consultoria entrega oportunidades
         qualificadas com contexto de viabilidade, recomendação de priorização
-        e métricas de acompanhamento. O cliente recebe uma análise -- não uma
+        e métricas de acompanhamento. O cliente recebe uma análise — não uma
         lista. A consultoria é uma fonte de inteligência estratégica, e fontes
         de inteligência são difíceis de substituir.
       </p>
@@ -225,19 +225,19 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         <p className="text-sm font-semibold text-ink mb-3">Framework de entrega de valor em 3 camadas</p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
-            <strong>Camada 1 -- Triagem qualificada:</strong> Filtrar editais por setor, região,
+            <strong>Camada 1 — Triagem qualificada:</strong> Filtrar editais por setor, região,
             modalidade e faixa de valor. Entregar apenas oportunidades aderentes ao perfil do cliente,
             com taxa de aderência superior a 70%. Ferramenta: busca multi-fonte com classificação
             setorial automatizada.
           </li>
           <li>
-            <strong>Camada 2 -- Análise de viabilidade:</strong> Para cada oportunidade, avaliar
+            <strong>Camada 2 — Análise de viabilidade:</strong> Para cada oportunidade, avaliar
             viabilidade em 4 fatores: modalidade (peso 30%), timeline/prazo (25%), valor estimado
             (25%) e geografia (20%). Classificar como alta, média ou baixa viabilidade. Entregar
             apenas alta e média ao cliente. Ferramenta: modelo de scoring automatizado.
           </li>
           <li>
-            <strong>Camada 3 -- Recomendação estratégica:</strong> Para oportunidades de alta
+            <strong>Camada 3 — Recomendação estratégica:</strong> Para oportunidades de alta
             viabilidade, elaborar recomendação com: resumo do objeto, pontos de atenção do edital,
             estimativa de concorrência, e sugestão de priorização (disputar agora, monitorar, ou
             declinar). Ferramenta: análise qualitativa + dados históricos.
@@ -257,8 +257,8 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
       <p>
         A diferença prática é significativa. Uma busca por &ldquo;equipamentos
         de informática&rdquo; em 5 estados retorna centenas de editais por
-        semana. Depois da triagem qualificada -- que cruza setor, faixa de
-        valor, modalidade e capacidade do cliente -- restam tipicamente 15 a 30
+        semana. Depois da triagem qualificada — que cruza setor, faixa de
+        valor, modalidade e capacidade do cliente — restam tipicamente 15 a 30
         oportunidades relevantes. O cliente recebe 15 oportunidades boas em vez
         de 200 editais para garimpar.
       </p>
@@ -273,7 +273,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
       </p>
 
       <p>
-        Os fatores -- modalidade, timeline, valor e geografia -- capturam as
+        Os fatores — modalidade, timeline, valor e geografia — capturam as
         dimensões que mais influenciam o resultado. Um pregão eletrônico de
         R$ 200 mil para fornecimento de mobiliário em um estado onde o cliente
         tem logística eficiente e histórico de fornecimento é uma oportunidade
@@ -295,7 +295,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
       </p>
 
       <p>
-        Essa camada exige conhecimento setorial e experiência -- exatamente
+        Essa camada exige conhecimento setorial e experiência — exatamente
         o tipo de competência que justifica o honorário da consultoria e que
         o cliente não consegue replicar internamente.
       </p>
@@ -312,11 +312,11 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
       <p>
         O relatório mensal de valor deve conter, no mínimo, cinco indicadores.
         Primeiro, o número de oportunidades qualificadas apresentadas no
-        período -- não o número total de editais encontrados, mas o número
+        período — não o número total de editais encontrados, mas o número
         que passou pelo filtro de triagem e viabilidade. Segundo, a taxa de
         aderência, que mede o percentual de oportunidades que o cliente
         considerou relevantes (meta: acima de 70%). Terceiro, a economia de
-        tempo estimada -- quantas horas o cliente teria gasto fazendo a
+        tempo estimada — quantas horas o cliente teria gasto fazendo a
         triagem manualmente. Quarto, o número de propostas geradas a partir
         das recomendações da consultoria. Quinto, o valor total dos contratos
         adjudicados a partir dessas recomendações.
@@ -328,7 +328,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         um custo mensal e passa a ser um investimento com retorno mensurável.
         Um cliente que paga R$ 3.000/mês e adjudica R$ 150.000 em contratos
         por trimestre a partir das recomendações da consultoria tem um ROI
-        evidente -- e não cancela.
+        evidente — e não cancela.
       </p>
 
       <h2>Métricas de retenção: NPS, LTV e churn rate</h2>
@@ -369,7 +369,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         O NPS, em particular, funciona como indicador antecedente: uma queda
         no NPS de um cliente específico sinaliza risco de churn 60 a 90 dias
         antes do cancelamento efetivo. Isso dá tempo para a consultoria
-        intervir -- ajustar a entrega, agendar uma reunião de alinhamento,
+        intervir — ajustar a entrega, agendar uma reunião de alinhamento,
         ou revisar o escopo do serviço.
       </p>
 
@@ -384,7 +384,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         Uma consultoria com 45 clientes ativos operava no modelo tradicional:
         buscava editais em portais públicos, filtrava por palavras-chave e
         enviava listas semanais para cada cliente. O ticket médio era de
-        R$ 2.800/mês e o churn anual era de 40% -- ou seja, a consultoria
+        R$ 2.800/mês e o churn anual era de 40% — ou seja, a consultoria
         perdia 18 clientes por ano e precisava repor continuamente para
         manter a base.
       </p>
@@ -438,7 +438,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         aprofunda as métricas de acompanhamento que sustentam essa transição.
       </p>
 
-      <h2>A automação como acelerador -- não substituto</h2>
+      <h2>A automação como acelerador — não substituto</h2>
 
       <p>
         É importante enfatizar que a automação atua como acelerador do
@@ -465,7 +465,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         </Link>{' '}
         sabem que a qualidade da triagem inicial determina o resultado final.
         Quando a triagem é feita com critérios objetivos de viabilidade, a
-        taxa de vitória do cliente melhora -- e o cliente atribui essa
+        taxa de vitória do cliente melhora — e o cliente atribui essa
         melhoria à consultoria.
       </p>
 
@@ -506,7 +506,7 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           O SmartLic classifica oportunidades por setor e avalia viabilidade em
-          4 critérios objetivos. Sua consultoria entrega inteligência -- não
+          4 critérios objetivos. Sua consultoria entrega inteligência — não
           apenas listas de editais.
         </p>
         <Link
@@ -532,8 +532,8 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         principais motivos de cancelamento são percepção de baixo valor
         agregado (o cliente acredita que pode fazer internamente), ausência
         de métricas claras de resultado e falta de diferenciação frente a
-        concorrentes. Consultorias que entregam inteligência estruturada --
-        não apenas busca de editais -- reportam taxas de churn entre 10%
+        concorrentes. Consultorias que entregam inteligência estruturada —
+        não apenas busca de editais — reportam taxas de churn entre 10%
         e 18%.
       </p>
 
@@ -556,8 +556,8 @@ export default function AumentarRetencaoClientesInteligenciaEditais() {
         cliente existente. Em consultorias de licitação, onde o ciclo de
         venda costuma durar de 30 a 90 dias e envolve demonstrações,
         diagnósticos gratuitos e propostas customizadas, o CAC típico
-        varia entre R$ 2.000 e R$ 8.000. Investir em retenção --
-        entregando mais valor ao cliente atual -- gera retorno
+        varia entre R$ 2.000 e R$ 8.000. Investir em retenção —
+        entregando mais valor ao cliente atual — gera retorno
         significativamente maior do que investir exclusivamente em
         aquisição.
       </p>

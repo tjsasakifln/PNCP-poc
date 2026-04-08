@@ -31,7 +31,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
                 name: 'Quais são as dimensões de um diagnóstico de eficiência em licitação?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Um diagnóstico completo avalia 5 dimensões: (1) Volume e relevância -- quantos editais o cliente monitora versus quantos são realmente relevantes para o seu perfil; (2) Eficiência de triagem -- quanto tempo é gasto na análise e qual a taxa de descarte; (3) Taxa de participação e adjudicação -- proporção entre editais identificados, propostas enviadas e contratos conquistados; (4) Diversificação -- concentração ou dispersão por setores, estados e órgãos contratantes; (5) Custo operacional por licitação -- investimento total dividido pelo número de participações efetivas.',
+                  text: 'Um diagnóstico completo avalia 5 dimensões: (1) Volume e relevância — quantos editais o cliente monitora versus quantos são realmente relevantes para o seu perfil; (2) Eficiência de triagem — quanto tempo é gasto na análise e qual a taxa de descarte; (3) Taxa de participação e adjudicação — proporção entre editais identificados, propostas enviadas e contratos conquistados; (4) Diversificação — concentração ou dispersão por setores, estados e órgãos contratantes; (5) Custo operacional por licitação — investimento total dividido pelo número de participações efetivas.',
                 },
               },
               {
@@ -47,7 +47,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
                 name: 'Qual o ROI típico de um diagnóstico de eficiência em licitação para o cliente?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'O ROI típico de um diagnóstico de eficiência em licitação varia entre 8x e 15x o valor investido, medido em um horizonte de 6 a 12 meses. Esse retorno vem de três fontes: redução do custo operacional por licitação (economia de horas na triagem), aumento da taxa de adjudicação (foco em editais de maior viabilidade) e eliminação de participações em licitações de baixo retorno (redução de custos com propostas que não convertem). Para uma empresa que gasta R$ 15.000 por mês em operações de licitação e investe R$ 5.000 no diagnóstico, uma melhoria de 20% na eficiência gera economia de R$ 3.000 mensais -- payback em menos de 2 meses.',
+                  text: 'O ROI típico de um diagnóstico de eficiência em licitação varia entre 8x e 15x o valor investido, medido em um horizonte de 6 a 12 meses. Esse retorno vem de três fontes: redução do custo operacional por licitação (economia de horas na triagem), aumento da taxa de adjudicação (foco em editais de maior viabilidade) e eliminação de participações em licitações de baixo retorno (redução de custos com propostas que não convertem). Para uma empresa que gasta R$ 15.000 por mês em operações de licitação e investe R$ 5.000 no diagnóstico, uma melhoria de 20% na eficiência gera economia de R$ 3.000 mensais — payback em menos de 2 meses.',
                 },
               },
               {
@@ -70,7 +70,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         B2G. Enquanto a maioria das consultorias inicia o relacionamento com
         o cliente oferecendo busca de editais ou assessoria de propostas, o
         diagnóstico estruturado funciona como produto de entrada de alto valor
-        percebido -- um assessment que mapeia a operação de licitações do
+        percebido — um assessment que mapeia a operação de licitações do
         cliente, identifica gargalos e quantifica o custo da ineficiência.
         É, ao mesmo tempo, uma ferramenta de venda e um diferencial
         competitivo.
@@ -83,7 +83,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         no mercado e, principalmente, como transformar o diagnóstico em porta
         de entrada para contratos recorrentes de maior valor. Para
         consultorias que já trabalham com inteligência de editais, o
-        diagnóstico é a extensão natural do serviço -- e a ponte para um
+        diagnóstico é a extensão natural do serviço — e a ponte para um
         posicionamento premium.
       </p>
 
@@ -95,7 +95,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         fechamento. O problema é que o contrato mensal exige do cliente uma
         decisão de comprometimento antes que ele tenha evidência tangível do
         valor que a consultoria pode entregar. A taxa de conversão de
-        propostas nesse modelo varia entre 15% e 25% -- três quartos dos
+        propostas nesse modelo varia entre 15% e 25% — três quartos dos
         leads se perdem no funil.
       </p>
 
@@ -103,7 +103,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         O diagnóstico resolve esse problema criando um degrau intermediário.
         Em vez de pedir ao cliente que assine um contrato de R$ 3.000/mês
         por 12 meses, a consultoria oferece um diagnóstico pontual por
-        R$ 2.500 a R$ 8.000 -- um investimento significativamente menor,
+        R$ 2.500 a R$ 8.000 — um investimento significativamente menor,
         com entregável definido e prazo curto (tipicamente 10 a 15 dias
         úteis). O cliente compra visibilidade sobre a sua própria operação,
         e a consultoria ganha a oportunidade de demonstrar competência
@@ -116,7 +116,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
           clientes com gargalos operacionais em licitações
         </Link>{' '}
         sabem que esses gargalos raramente são percebidos de forma completa
-        pelo próprio cliente. O diagnóstico torna o invisível tangível -- e
+        pelo próprio cliente. O diagnóstico torna o invisível tangível — e
         o tangível justifica o investimento em solução.
       </p>
 
@@ -154,7 +154,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         do cliente em 5 dimensões complementares. Cada dimensão captura um
         aspecto diferente da eficiência e, juntas, compõem um retrato
         completo da maturidade operacional do cliente no mercado B2G. A
-        metodologia é replicável -- pode ser aplicada a qualquer empresa
+        metodologia é replicável — pode ser aplicada a qualquer empresa
         que participe de licitações, independentemente do setor ou porte.
       </p>
 
@@ -162,28 +162,28 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         <p className="text-sm font-semibold text-ink mb-3">Framework: as 5 dimensões do diagnóstico de eficiência</p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
-            <strong>Dimensão 1 -- Volume e relevância:</strong> Quantos editais o cliente monitora
+            <strong>Dimensão 1 — Volume e relevância:</strong> Quantos editais o cliente monitora
             por mês versus quantos são efetivamente relevantes para o seu perfil. Benchmark: taxa
             de relevância acima de 30% indica monitoramento bem direcionado; abaixo de 15% indica
             desperdício de recursos na triagem.
           </li>
           <li>
-            <strong>Dimensão 2 -- Eficiência de triagem:</strong> Quanto tempo (em horas/semana) é
+            <strong>Dimensão 2 — Eficiência de triagem:</strong> Quanto tempo (em horas/semana) é
             dedicado à análise de editais e qual a taxa de descarte. Benchmark: operações eficientes
             descartam menos de 60% dos editais monitorados; acima de 80% indica filtros inadequados.
           </li>
           <li>
-            <strong>Dimensão 3 -- Taxa de participação e adjudicação:</strong> Proporção entre editais
+            <strong>Dimensão 3 — Taxa de participação e adjudicação:</strong> Proporção entre editais
             identificados, propostas enviadas e contratos adjudicados. Benchmark: taxa de adjudicação
             acima de 25% sobre propostas enviadas é considerada saudável no mercado B2G.
           </li>
           <li>
-            <strong>Dimensão 4 -- Diversificação:</strong> Concentração por setores, estados (UFs) e
+            <strong>Dimensão 4 — Diversificação:</strong> Concentração por setores, estados (UFs) e
             órgãos contratantes. Benchmark: dependência acima de 40% de um único órgão ou estado
             representa risco operacional significativo.
           </li>
           <li>
-            <strong>Dimensão 5 -- Custo operacional por licitação:</strong> Investimento total
+            <strong>Dimensão 5 — Custo operacional por licitação:</strong> Investimento total
             (equipe + ferramentas + deslocamento + documentação) dividido pelo número de
             participações efetivas. Benchmark: custo por participação entre R$ 800 e R$ 2.500 é
             considerado eficiente para pregões eletrônicos de médio porte.
@@ -263,7 +263,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
       <p>
         A terceira dimensão é a mais diretamente vinculada a resultado
         financeiro. Ela mede a &ldquo;taxa de conversão do funil de
-        licitações&rdquo; -- de todos os editais identificados como
+        licitações&rdquo; — de todos os editais identificados como
         relevantes, quantos geraram proposta e quantos resultaram em
         contrato adjudicado.
       </p>
@@ -295,7 +295,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         A quarta dimensão avalia o grau de concentração ou diversificação
         da atuação do cliente em três eixos: setores, estados (UFs) e
         órgãos contratantes. A diversificação é um indicador de
-        resiliência operacional -- empresas excessivamente concentradas em
+        resiliência operacional — empresas excessivamente concentradas em
         um único órgão, setor ou região são vulneráveis a mudanças de
         política de compras, contingenciamento orçamentário ou alternância
         de gestão.
@@ -315,7 +315,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         Essa dimensão é particularmente valiosa para o cliente porque
         revela um risco que raramente é monitorado. Muitas empresas B2G
         crescem atendendo a 2 ou 3 órgãos conhecidos e só percebem a
-        concentração quando perdem o principal cliente -- sem ter
+        concentração quando perdem o principal cliente — sem ter
         alternativas maduras para compensar a receita.
       </p>
 
@@ -325,7 +325,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         A quinta dimensão fecha o diagnóstico com a métrica financeira mais
         objetiva: quanto custa, de fato, participar de cada licitação. O
         custo operacional por licitação inclui todos os recursos
-        consumidos -- horas de equipe (triagem, análise, elaboração de
+        consumidos — horas de equipe (triagem, análise, elaboração de
         proposta, documentação), ferramentas de monitoramento, custos de
         deslocamento (para pregões presenciais ou entregas), taxas de
         participação e custos de garantia.
@@ -347,7 +347,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         15% das propostas, o custo efetivo por contrato conquistado é de
         R$ 18.666. Se a consultoria demonstra que pode reduzir o custo
         por participação para R$ 1.500 e aumentar a taxa de adjudicação
-        para 25%, o custo por contrato cai para R$ 6.000 -- uma economia
+        para 25%, o custo por contrato cai para R$ 6.000 — uma economia
         de 68%. Esse tipo de evidência é o que converte diagnóstico em
         contrato recorrente.
       </p>
@@ -361,7 +361,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         do serviço. Um diagnóstico de R$ 5.000 entregue em um PDF de
         3 páginas com gráficos genéricos não justifica o investimento. Um
         relatório de 15 a 25 páginas com dados específicos do cliente,
-        benchmarks setoriais e plano de ação detalhado justifica -- e
+        benchmarks setoriais e plano de ação detalhado justifica — e
         vende o próximo passo.
       </p>
 
@@ -371,12 +371,12 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
           <li>
             <strong>1. Sumário executivo (1-2 páginas):</strong> Principais achados, score geral
             de eficiência (0-100), comparação com benchmark setorial e recomendações prioritárias.
-            O sumário deve ser autocontido -- se o decisor ler apenas essa seção, deve compreender
+            O sumário deve ser autocontido — se o decisor ler apenas essa seção, deve compreender
             o diagnóstico.
           </li>
           <li>
             <strong>2. Perfil operacional (2-3 páginas):</strong> Descrição da operação atual do
-            cliente -- setores de atuação, estados cobertos, volume mensal de participações, equipe
+            cliente — setores de atuação, estados cobertos, volume mensal de participações, equipe
             dedicada, ferramentas utilizadas. Baseado em dados fornecidos pelo cliente e validados
             pela consultoria.
           </li>
@@ -397,7 +397,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
           </li>
           <li>
             <strong>6. Estimativa de impacto financeiro (1-2 páginas):</strong> Projeção do
-            retorno esperado com a implementação das recomendações -- economia de custos,
+            retorno esperado com a implementação das recomendações — economia de custos,
             aumento de adjudicações, redução de custo por contrato.
           </li>
         </ul>
@@ -418,7 +418,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         A precificação do diagnóstico deve refletir o valor entregue, não
         o custo de produção. O custo de produção (horas de consultor +
         ferramentas + relatório) tipicamente representa 30% a 40% do preço
-        cobrado -- a margem restante é justificada pelo conhecimento
+        cobrado — a margem restante é justificada pelo conhecimento
         setorial, pela metodologia proprietária e pelo valor da informação
         para o cliente.
       </p>
@@ -427,18 +427,18 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         <p className="text-sm font-semibold text-ink mb-3">Faixas de precificação por porte do cliente</p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            &bull; <strong>Faixa 1 -- MPEs (até R$ 2 milhões em contratos B2G/ano):</strong> Diagnóstico
+            &bull; <strong>Faixa 1 — MPEs (até R$ 2 milhões em contratos B2G/ano):</strong> Diagnóstico
             simplificado (3 dimensões: volume, triagem, adjudicação). Entregável de 8-12 páginas.
             Prazo: 7-10 dias úteis. Preço: R$ 2.500 a R$ 3.500. Esforço estimado: 12-16 horas
             de consultor.
           </li>
           <li>
-            &bull; <strong>Faixa 2 -- Médias empresas (R$ 2-20 milhões em contratos B2G/ano):</strong> Diagnóstico
+            &bull; <strong>Faixa 2 — Médias empresas (R$ 2-20 milhões em contratos B2G/ano):</strong> Diagnóstico
             completo (5 dimensões). Entregável de 15-20 páginas. Prazo: 10-15 dias úteis.
             Preço: R$ 4.000 a R$ 6.000. Esforço estimado: 20-30 horas de consultor.
           </li>
           <li>
-            &bull; <strong>Faixa 3 -- Grandes empresas (acima de R$ 20 milhões em contratos B2G/ano):</strong> Diagnóstico
+            &bull; <strong>Faixa 3 — Grandes empresas (acima de R$ 20 milhões em contratos B2G/ano):</strong> Diagnóstico
             completo com análise por unidade de negócio e benchmarking setorial. Entregável de
             20-30 páginas. Prazo: 15-20 dias úteis. Preço: R$ 6.000 a R$ 8.000. Esforço estimado:
             30-45 horas de consultor.
@@ -453,7 +453,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         superficial. Além disso, um preço baixo atrai clientes com baixa
         disposição de investimento, que dificilmente converterão em
         contrato recorrente. O diagnóstico deve ser acessível, mas não
-        barato -- a faixa de R$ 3.000 a R$ 5.000 atinge o equilíbrio
+        barato — a faixa de R$ 3.000 a R$ 5.000 atinge o equilíbrio
         entre acessibilidade e percepção de valor para a maioria dos
         clientes.
       </p>
@@ -461,7 +461,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
       <p>
         A margem líquida do diagnóstico, considerando o custo de produção,
         varia entre 55% e 70%. Mas o valor real do diagnóstico não está
-        na margem do projeto pontual -- está na conversão para contrato
+        na margem do projeto pontual — está na conversão para contrato
         recorrente. Um diagnóstico de R$ 5.000 que converte em um contrato
         de R$ 3.500/mês por 12 meses gera R$ 42.000 em receita recorrente.
         O diagnóstico é o investimento de R$ 5.000 que abre uma receita
@@ -482,7 +482,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
       <p>
         O diagnóstico é entregue em reunião presencial ou videoconferência
         de 60 a 90 minutos. A apresentação é tão importante quanto o
-        documento -- o consultor percorre os achados, responde a perguntas
+        documento — o consultor percorre os achados, responde a perguntas
         e contextualiza os dados para a realidade específica do cliente. A
         reunião de entrega deve terminar com uma pergunta: &ldquo;com base
         nesse diagnóstico, quais são as 3 ações prioritárias que vocês
@@ -497,7 +497,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         ação recomendado no diagnóstico. A proposta deve ser específica:
         quais ações serão implementadas, em que prazo, com que indicadores
         de sucesso e por qual investimento mensal. A especificidade é
-        crucial -- propostas genéricas (&ldquo;acompanhamento de
+        crucial — propostas genéricas (&ldquo;acompanhamento de
         licitações&rdquo;) têm taxa de conversão muito inferior a
         propostas que referenciam os gaps identificados no diagnóstico.
       </p>
@@ -557,7 +557,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
           <li>
             &bull; <strong>Conversão acumulada (diagnóstico → recorrente):</strong> 20% a 40%.
             Para cada 10 diagnósticos vendidos, a consultoria pode esperar de 2 a 4 contratos
-            recorrentes -- com ticket médio superior ao que conseguiria vendendo diretamente.
+            recorrentes — com ticket médio superior ao que conseguiria vendendo diretamente.
           </li>
         </ul>
       </div>
@@ -576,7 +576,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         A coleta manual consome de 40% a 60% do esforço total do
         diagnóstico. Uma consultoria que dedica 25 horas a um diagnóstico
         de Faixa 2 gasta, tipicamente, 10 a 15 horas apenas levantando
-        dados -- tempo que não gera insight, apenas alimenta a análise.
+        dados — tempo que não gera insight, apenas alimenta a análise.
         Ferramentas que automatizam a busca multi-fonte e a classificação
         setorial podem reduzir esse esforço de coleta em 60% a 70%,
         permitindo que o consultor dedique mais tempo à análise e à
@@ -589,7 +589,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         15 horas (com automação da coleta), a margem líquida sobe de 60%
         para 75% em um diagnóstico de R$ 5.000. Ou, alternativamente, a
         consultoria pode oferecer o diagnóstico por R$ 3.500 mantendo a
-        mesma margem absoluta -- tornando o produto de entrada mais
+        mesma margem absoluta — tornando o produto de entrada mais
         acessível e ampliando o topo do funil. Para entender como as
         empresas B2G que utilizam triagem estruturada se saem melhor no
         mercado, leia sobre{' '}
@@ -640,14 +640,14 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
       <h3>Quais são as dimensões de um diagnóstico de eficiência em licitação?</h3>
       <p>
         Um diagnóstico completo avalia 5 dimensões: (1) Volume e
-        relevância -- quantos editais o cliente monitora versus quantos
+        relevância — quantos editais o cliente monitora versus quantos
         são realmente relevantes para o seu perfil; (2) Eficiência de
-        triagem -- quanto tempo é gasto na análise e qual a taxa de
-        descarte; (3) Taxa de participação e adjudicação -- proporção
+        triagem — quanto tempo é gasto na análise e qual a taxa de
+        descarte; (3) Taxa de participação e adjudicação — proporção
         entre editais identificados, propostas enviadas e contratos
-        conquistados; (4) Diversificação -- concentração ou dispersão por
+        conquistados; (4) Diversificação — concentração ou dispersão por
         setores, estados e órgãos contratantes; (5) Custo operacional por
-        licitação -- investimento total dividido pelo número de
+        licitação — investimento total dividido pelo número de
         participações efetivas.
       </p>
 
@@ -674,7 +674,7 @@ export default function DiagnosticoEficienciaLicitacaoServicoPremium() {
         baixo retorno. Para uma empresa que gasta R$ 15.000 por mês em
         operações de licitação e investe R$ 5.000 no diagnóstico, uma
         melhoria de 20% na eficiência gera economia de R$ 3.000 mensais
-        -- payback em menos de 2 meses.
+        — payback em menos de 2 meses.
       </p>
 
       <h3>O diagnóstico serve para empresas de qualquer porte?</h3>

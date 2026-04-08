@@ -58,7 +58,7 @@ export default function ErroOperacionalPerderContratosPublicos() {
       {/* Opening paragraph — primary keyword: erro operacional perder contratos publicos */}
       <p className="text-base sm:text-xl leading-relaxed text-ink">
         Existe um <strong>erro operacional</strong> que custa contratos públicos
-        de seis dígitos a empresas tecnicamente qualificadas -- e não tem
+        de seis dígitos a empresas tecnicamente qualificadas — e não tem
         relação com a qualidade da proposta, com o preço oferecido ou com a
         documentação de habilitação. O erro acontece antes de tudo isso: na
         decisão de quais editais disputar. Empresas B2G que investem recursos
@@ -75,7 +75,7 @@ export default function ErroOperacionalPerderContratosPublicos() {
         mercado B2G. Equipe de dois a quatro analistas de licitação. Certidões
         em dia. Atestados de capacidade técnica compatíveis com o segmento.
         Precificação competitiva. Apesar disso, a taxa de adjudicação fica
-        entre 8% e 14% -- ou seja, para cada sete a doze propostas elaboradas,
+        entre 8% e 14% — ou seja, para cada sete a doze propostas elaboradas,
         apenas uma resulta em contrato.
       </p>
 
@@ -101,7 +101,7 @@ export default function ErroOperacionalPerderContratosPublicos() {
       <h2>O erro: investir tempo em editais de baixa viabilidade</h2>
 
       <p>
-        O erro operacional não é participar de licitações -- é participar sem
+        O erro operacional não é participar de licitações — é participar sem
         critério. A dinâmica típica funciona assim: o analista acessa o PNCP ou
         outros portais diariamente, identifica editais pelo objeto e pelo
         valor, e encaminha os que parecem relevantes para análise. A decisão de
@@ -148,7 +148,7 @@ export default function ErroOperacionalPerderContratosPublicos() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Exemplo prático -- Custo anual do erro de triagem
+          Exemplo prático — Custo anual do erro de triagem
         </p>
         <p className="text-sm text-ink-secondary mb-4">
           Empresa de facilities com 3 analistas, 20 propostas/mês, taxa de
@@ -176,14 +176,14 @@ export default function ErroOperacionalPerderContratosPublicos() {
           </li>
           <li>Propostas anuais: 144 | Sem adjudicação: 108 | Custo desperdiçado: R$ 453.600</li>
           <li className="font-semibold pt-1">
-            Economia anual: R$ 453.600 -- com mais contratos obtidos (36 vs 24)
+            Economia anual: R$ 453.600 — com mais contratos obtidos (36 vs 24)
           </li>
         </ul>
       </div>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Custos e desclassificação
+          Dados de referência — Custos e desclassificação
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -233,7 +233,7 @@ export default function ErroOperacionalPerderContratosPublicos() {
       <h3>Sinal 1: Taxa de adjudicação abaixo de 12%</h3>
       <p>
         Se menos de uma em cada oito propostas resulta em contrato, o
-        problema provavelmente não é competitividade de preço -- é seleção de
+        problema provavelmente não é competitividade de preço — é seleção de
         editais. Empresas com triagem estruturada operam entre 20% e 35%.
       </p>
 
@@ -344,7 +344,7 @@ export default function ErroOperacionalPerderContratosPublicos() {
       <h3>Qual o erro operacional mais comum em empresas que perdem licitações?</h3>
       <p>
         O erro mais comum é investir tempo e recursos na elaboração de
-        propostas para editais de baixa viabilidade -- licitações onde a
+        propostas para editais de baixa viabilidade — licitações onde a
         empresa não tem vantagem competitiva real, seja por valor fora da faixa
         ideal, prazo insuficiente, modalidade desfavorável ou localização
         geográfica inviável. Esse erro consome entre 60% e 70% do orçamento

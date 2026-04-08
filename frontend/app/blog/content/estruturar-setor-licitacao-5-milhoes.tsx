@@ -21,7 +21,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
                 name: 'Quantas pessoas precisa ter um setor de licitação para faturar R$ 5 milhões por ano?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Um setor de licitação enxuto e bem estruturado pode faturar R$ 5 milhões anuais com 2 a 3 profissionais dedicados: um analista de editais (triagem e compliance), um especialista em propostas (precificação e documentação) e, opcionalmente, um gestor de contratos. A chave está na automação da triagem é na especialização de cada papel, não no volume de pessoas.',
+                  text: 'Um setor de licitação enxuto e bem estruturado pode faturar R$ 5 milhões anuais com 2 a 3 profissionais dedicados: um analista de editais (triagem e compliance), um especialista em propostas (precificação e documentação) e, opcionalmente, um gestor de contratos. A chave está na automação da triagem e na especialização de cada papel, não no volume de pessoas.',
                 },
               },
               {
@@ -29,7 +29,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
                 name: 'Qual o salário médio de um analista de licitações no Brasil?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Segundo dados consolidados de plataformas de emprego como Glassdoor e Catho (2025), o salário médio de um analista de licitações no Brasil varia entre R$ 3.200 e R$ 5.800 por mês, dependendo da região é do porte da empresa. Em capitais como São Paulo e Brasília, profissionais seniores podem alcançar R$ 7.000 a R$ 9.000 mensais.',
+                  text: 'Segundo dados consolidados de plataformas de emprego como Glassdoor e Catho (2025), o salário médio de um analista de licitações no Brasil varia entre R$ 3.200 e R$ 5.800 por mês, dependendo da região e do porte da empresa. Em capitais como São Paulo e Brasília, profissionais sêniores podem alcançar R$ 7.000 a R$ 9.000 mensais.',
                 },
               },
               {
@@ -45,7 +45,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
                 name: 'É possível terceirizar parte do setor de licitação?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim. A triagem de editais é a organização documental são as atividades mais terceirizáveis, podendo ser delegadas a consultorias especializadas ou ferramentas de automação. A precificação é a elaboração da proposta técnica, por envolverem conhecimento específico do negócio, devem permanecer internas. A gestão de contratos também pode ser parcialmente terceirizada, especialmente em empresas com volume alto de contratos simultâneos.',
+                  text: 'Sim. A triagem de editais e a organização documental são as atividades mais terceirizáveis, podendo ser delegadas a consultorias especializadas ou ferramentas de automação. A precificação e a elaboração da proposta técnica, por envolverem conhecimento específico do negócio, devem permanecer internas. A gestão de contratos também pode ser parcialmente terceirizada, especialmente em empresas com volume alto de contratos simultâneos.',
                 },
               },
               {
@@ -63,10 +63,10 @@ export default function EstruturarSetorLicitacao5Milhões() {
 
       <p className="text-base sm:text-xl leading-relaxed text-ink">
         Faturar R$ 5 milhões por ano com licitações públicas não exige uma equipe de 10 pessoas,
-        um departamento inteiro ou anos de experiência previa no mercado B2G. Exige, sim, uma
-        estrutura enxuta, processos bem definidos é a capacidade de filtrar oportunidades com
+        um departamento inteiro ou anos de experiência prévia no mercado B2G. Exige, sim, uma
+        estrutura enxuta, processos bem definidos e a capacidade de filtrar oportunidades com
         critério. Neste artigo, apresentamos o modelo operacional que empresas de médio porte
-        utilizam para alcancar esse patamar com apenas 2 a 3 profissionais dedicados — e como
+        utilizam para alcançar esse patamar com apenas 2 a 3 profissionais dedicados — e como
         a tecnologia elimina os gargalos que, historicamente, exigiam mais pessoas.
       </p>
 
@@ -74,7 +74,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
         O mercado de compras públicas no Brasil movimentou R$ 1,4 trilhão entre 2023 e 2024,
         segundo dados do Painel de Compras do Governo Federal. Desse montante, mais de 60% foi
         operado por meio de pregões eletrônicos, acessíveis a empresas de qualquer porte. O
-        volume de oportunidades e abundante — o que falta na maioria das empresas não é mercado,
+        volume de oportunidades é abundante — o que falta na maioria das empresas não é mercado,
         mas capacidade operacional para capturar essas oportunidades de forma sistemática.
       </p>
 
@@ -89,17 +89,17 @@ export default function EstruturarSetorLicitacao5Milhões() {
 
       <p>
         O modelo enxuto inverte essa lógica. Em vez de contratar mais pessoas para processar
-        mais editais, ele combina especialização de papeis com automação de tarefas repetitivas.
-        A estrutura se resume a tres funções complementares, das quais a terceira e opcional
+        mais editais, ele combina especialização de papéis com automação de tarefas repetitivas.
+        A estrutura se resume a três funções complementares, das quais a terceira é opcional
         nos primeiros anos de operação.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">Dados de referência: custos do modelo enxuto vs. tradicional</p>
         <ul className="space-y-2 text-sm text-ink-secondary">
-          <li>• Modelo tradicional (5 pessoas): R$ 35.000 a R$ 55.000/mes em salários e encargos (fonte: Glassdoor Brasil, mediana salarial 2025 para analistas de licitação)</li>
-          <li>• Modelo enxuto (2-3 pessoas + ferramentas): R$ 12.000 a R$ 22.000/mes incluindo software de monitoramento</li>
-          <li>• Ticket médio de contratos públicos por pregao eletrônico: R$ 180.000 a R$ 450.000, variando por setor (fonte: Painel de Compras Governamentais, 2024)</li>
+          <li>• Modelo tradicional (5 pessoas): R$ 35.000 a R$ 55.000/mês em salários e encargos (fonte: Glassdoor Brasil, mediana salarial 2025 para analistas de licitação)</li>
+          <li>• Modelo enxuto (2-3 pessoas + ferramentas): R$ 12.000 a R$ 22.000/mês incluindo software de monitoramento</li>
+          <li>• Ticket médio de contratos públicos por pregão eletrônico: R$ 180.000 a R$ 450.000, variando por setor (fonte: Painel de Compras Governamentais, 2024)</li>
           <li>• Taxa de adjudicação média do mercado: 8% a 12% (fonte: pesquisa Bidding Analytics, 2024)</li>
         </ul>
       </div>
@@ -108,7 +108,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
 
       <p>
         O analista de editais é a primeira linha de defesa contra desperdício de recursos. Sua
-        função central e separar oportunidades viáveis de editais que não merecem investimento
+        função central é separar oportunidades viáveis de editais que não merecem investimento
         de tempo. Essa triagem precisa ser rápida, sistemática e baseada em critérios objetivos
         — não em intuição.
       </p>
@@ -116,11 +116,11 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <h3>Responsabilidades principais</h3>
 
       <p>
-        O analista de editais e responsável pelo monitoramento diário de publicações nos portais
+        O analista de editais é responsável pelo monitoramento diário de publicações nos portais
         PNCP, ComprasGov e Portal de Compras Públicas; pela triagem inicial com base em
         alinhamento setorial, faixa de valor e região geográfica; pela verificação de requisitos
         de habilitação (atestados técnicos, certidões, qualificação econômica); e pela
-        alimentação do pipeline de oportunidades com editais pre-qualificados. Para entender
+        alimentação do pipeline de oportunidades com editais pré-qualificados. Para entender
         como organizar esse pipeline de forma eficiente,{' '}
         <Link href="/blog/pipeline-licitações-funil-comercial">
           veja nosso guia sobre funil comercial em licitações
@@ -132,21 +132,21 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <p>
         O perfil ideal combina formação em Administração, Direito ou áreas correlatas com
         experiência prática em leitura de editais. Segundo dados da Catho e Glassdoor
-        atualizados em 2025, a faixa salarial para analistas de licitação no Brasil e:
+        atualizados em 2025, a faixa salarial para analistas de licitação no Brasil é:
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">Faixas salariais — Analista de Licitações (2025)</p>
         <ul className="space-y-2 text-sm text-ink-secondary">
-          <li>• Junior (0-2 anos): R$ 2.800 a R$ 4.200/mes (fonte: Catho, mediana nacional 2025)</li>
-          <li>• Pleno (2-5 anos): R$ 4.500 a R$ 6.500/mes (fonte: Glassdoor, mediana nacional 2025)</li>
-          <li>• Senior (5+ anos): R$ 6.500 a R$ 9.000/mes, podendo chegar a R$ 11.000 em Brasilia e São Paulo</li>
+          <li>• Júnior (0-2 anos): R$ 2.800 a R$ 4.200/mês (fonte: Catho, mediana nacional 2025)</li>
+          <li>• Pleno (2-5 anos): R$ 4.500 a R$ 6.500/mês (fonte: Glassdoor, mediana nacional 2025)</li>
+          <li>• Sênior (5+ anos): R$ 6.500 a R$ 9.000/mês, podendo chegar a R$ 11.000 em Brasília e São Paulo</li>
         </ul>
       </div>
 
       <p>
-        No modelo enxuto, um analista pleno e suficiente. A automação da triagem inicial
-        permite que essa pessoa dedique tempo a análise qualitativa dos editais pre-filtrados,
+        No modelo enxuto, um analista pleno é suficiente. A automação da triagem inicial
+        permite que essa pessoa dedique tempo à análise qualitativa dos editais pré-filtrados,
         em vez de gastar horas lendo publicações irrelevantes.
       </p>
 
@@ -162,11 +162,11 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <h3>Responsabilidades principais</h3>
 
       <p>
-        O especialista em propostas e responsável pela composição de preços com margem de
+        O especialista em propostas é responsável pela composição de preços com margem de
         segurança e competitividade; pela elaboração da proposta técnica, quando exigida; pela
-        montagem e conferência do envelope de habilitação; pelo acompanhamento da sessao
-        pública (pregao eletrônico) e interposição de recursos quando pertinente; e pela
-        análise pos-resultado para retroalimentar os critérios de triagem.
+        montagem e conferência do envelope de habilitação; pelo acompanhamento da sessão
+        pública (pregão eletrônico) e interposição de recursos quando pertinente; e pela
+        análise pós-resultado para retroalimentar os critérios de triagem.
       </p>
 
       <h3>Perfil e faixa salarial</h3>
@@ -174,9 +174,9 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <p>
         O especialista em propostas geralmente tem formação na área técnica do setor da empresa
         (engenharia para obras, TI para software, nutrição para alimentação) combinada com
-        experiência em licitações. A faixa salarial e ligeiramente superior a do analista,
+        experiência em licitações. A faixa salarial é ligeiramente superior à do analista,
         refletindo a especialização técnica: R$ 5.500 a R$ 8.500 para perfil pleno, podendo
-        ultrapassar R$ 10.000 para seniors em setores de alta complexidade como engenharia e
+        ultrapassar R$ 10.000 para sêniores em setores de alta complexidade como engenharia e
         saúde (fonte: Glassdoor Brasil, 2025).
       </p>
 
@@ -200,8 +200,8 @@ export default function EstruturarSetorLicitacao5Milhões() {
       </p>
 
       <p>
-        O gestor de contratos acompanha prazos de entrega, processos de medição, emissao de
-        notas fiscais, e antecipa renovações ou aditivos. A faixa salarial e similar a do
+        O gestor de contratos acompanha prazos de entrega, processos de medição, emissão de
+        notas fiscais, e antecipa renovações ou aditivos. A faixa salarial é similar à do
         analista pleno: R$ 4.500 a R$ 7.500 mensais.
       </p>
 
@@ -217,7 +217,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
 
       <p>
         A prospecção consiste no monitoramento diário de novas publicações nos portais de
-        compras públicas. Em um modelo manual, essa etapa consome entre 1 e 3 horas diarias.
+        compras públicas. Em um modelo manual, essa etapa consome entre 1 e 3 horas diárias.
         Com ferramentas automatizadas de monitoramento, o tempo cai para 15 a 30 minutos
         de revisão de alertas já filtrados por setor e região.
       </p>
@@ -227,7 +227,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <p>
         Dos editais identificados na prospecção, a triagem seleciona aqueles que atendem aos
         critérios mínimos da empresa: alinhamento setorial, faixa de valor compatível,
-        região geográfica viável, e ausência de requisitos de habilitação inalcancáveis.
+        região geográfica viável, e ausência de requisitos de habilitação inalcançáveis.
         A taxa de aprovação típica nessa etapa é de 15% a 25% — ou seja, a cada 100 editais
         monitorados, entre 15 e 25 passam para análise detalhada.
       </p>
@@ -237,7 +237,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <p>
         Os editais aprovados na triagem passam por análise completa: leitura integral do
         edital e anexos, verificação de requisitos de habilitação, levantamento de histórico
-        do órgão contratante e avaliação de competitividade. Essa etapa e conduzida pelo
+        do órgão contratante e avaliação de competitividade. Essa etapa é conduzida pelo
         analista de editais com apoio do especialista em propostas.
       </p>
 
@@ -255,42 +255,42 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <h3>Etapa 5: Acompanhamento</h3>
 
       <p>
-        Após o envio da proposta, o acompanhamento inclui participação na sessao pública,
-        resposta a diligências, interposição ou contrarrazao de recursos, e assinatura do
+        Após o envio da proposta, o acompanhamento inclui participação na sessão pública,
+        resposta a diligências, interposição ou contrarrazão de recursos, e assinatura do
         contrato em caso de adjudicação.
       </p>
 
       <h2>Ferramentas essenciais: da planilha ao sistema</h2>
 
       <p>
-        O estagio de maturidade das ferramentas utilizadas pelo setor de licitação tem
+        O estágio de maturidade das ferramentas utilizadas pelo setor de licitação tem
         impacto direto na produtividade. A maioria das empresas inicia com planilhas e
         migra para sistemas especializados conforme o volume de operação justifica o
         investimento.
       </p>
 
-      <h3>Estagio 1: Planilha e busca manual</h3>
+      <h3>Estágio 1: Planilha e busca manual</h3>
 
       <p>
-        No estagio inicial, a equipe busca editais diretamente nos portais (PNCP, ComprasNet,
+        No estágio inicial, a equipe busca editais diretamente nos portais (PNCP, ComprasNet,
         portais estaduais) e registra oportunidades em planilhas. Esse modelo funciona para
         até 10 a 15 editais acompanhados simultaneamente, mas colapsa rapidamente com o
         aumento de volume.
       </p>
 
-      <h3>Estagio 2: Alertas e monitoramento automatizado</h3>
+      <h3>Estágio 2: Alertas e monitoramento automatizado</h3>
 
       <p>
-        Ferramentas de monitoramento que agregam publicações de multiplos portais e enviam
+        Ferramentas de monitoramento que agregam publicações de múltiplos portais e enviam
         alertas filtrados por setor eliminam a etapa de busca manual. O ganho típico é de
         60% a 70% do tempo de prospecção.
       </p>
 
-      <h3>Estagio 3: Inteligência e classificação por IA</h3>
+      <h3>Estágio 3: Inteligência e classificação por IA</h3>
 
       <p>
-        No estagio mais avancado, ferramentas como o{' '}
-        <Link href="/features">SmartLic</Link> vao além do monitoramento: classificam
+        No estágio mais avançado, ferramentas como o{' '}
+        <Link href="/features">SmartLic</Link> vão além do monitoramento: classificam
         editais por relevância setorial usando inteligência artificial, avaliam viabilidade
         com base em quatro critérios objetivos (modalidade, prazo, valor e geografia) e
         organizam o pipeline de oportunidades em formato visual. Isso permite que a equipe
@@ -302,7 +302,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
 
       <p>
         Um setor de licitação sem métricas opera no escuro. Os indicadores a seguir permitem
-        que a gestão identifique gargalos, ajuste a estrategia e projete resultados com
+        que a gestão identifique gargalos, ajuste a estratégia e projete resultados com
         maior previsibilidade. O acompanhamento deve ser mensal, com revisão trimestral
         de metas.
       </p>
@@ -320,11 +320,11 @@ export default function EstruturarSetorLicitacao5Milhões() {
       </div>
 
       <p>
-        O acompanhamento desses indicadores permite identificar rapidamente se o setor esta
+        O acompanhamento desses indicadores permite identificar rapidamente se o setor está
         investindo tempo nos editais certos. Uma taxa de adjudicação abaixo de 15%
         consistentemente indica problemas na triagem ou na precificação.{' '}
         <Link href="/blog/como-aumentar-taxa-vitória-licitações">
-          Veja estrategias específicas para aumentar a taxa de vitória
+          Veja estratégias específicas para aumentar a taxa de vitória
         </Link>.
       </p>
 
@@ -332,8 +332,8 @@ export default function EstruturarSetorLicitacao5Milhões() {
 
       <p>
         Para atingir R$ 5 milhões em contratos públicos por ano, é preciso construir o
-        raciocínio de tras para frente — o funil reverso. Esse exercício revela quantos
-        editais o setor precisa monitorar, triar, analisar e licitar para alcancar a meta.
+        raciocínio de trás para frente — o funil reverso. Esse exercício revela quantos
+        editais o setor precisa monitorar, triar, analisar e licitar para alcançar a meta.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
@@ -346,21 +346,21 @@ export default function EstruturarSetorLicitacao5Milhões() {
             <li>• Taxa de aprovação na triagem: 20%</li>
             <li>• Taxa de conversão análise detalhada para proposta: 60%</li>
           </ul>
-          <p><strong>Calculo reverso:</strong></p>
+          <p><strong>Cálculo reverso:</strong></p>
           <ul className="space-y-1 ml-4">
             <li>• Meta anual: R$ 5.000.000</li>
             <li>• Contratos necessários: R$ 5.000.000 / R$ 250.000 = <strong>20 contratos</strong></li>
-            <li>• Propostas necessárias: 20 / 0,22 = <strong>91 propostas/ano</strong> (aproximadamente 8 por mes)</li>
+            <li>• Propostas necessárias: 20 / 0,22 = <strong>91 propostas/ano</strong> (aproximadamente 8 por mês)</li>
             <li>• Editais em análise detalhada: 91 / 0,60 = <strong>152 editais analisados/ano</strong></li>
-            <li>• Editais triados: 152 / 0,20 = <strong>760 editais triados/ano</strong> (63 por mes)</li>
+            <li>• Editais triados: 152 / 0,20 = <strong>760 editais triados/ano</strong> (63 por mês)</li>
           </ul>
-          <p><strong>Resultado:</strong> o setor precisa monitorar e triar aproximadamente 63 editais por mes para sustentar um pipeline que gere 20 contratos de R$ 250 mil ao longo do ano. Com triagem automatizada, esse volume e perfeitamente gerenciável por 2 pessoas.</p>
+          <p><strong>Resultado:</strong> o setor precisa monitorar e triar aproximadamente 63 editais por mês para sustentar um pipeline que gere 20 contratos de R$ 250 mil ao longo do ano. Com triagem automatizada, esse volume é perfeitamente gerenciável por 2 pessoas.</p>
         </div>
       </div>
 
       <p>
-        Esse cálculo evidência por que a triagem automatizada é tão crítica. Triar 63 editais
-        por mes manualmente — lendo cada um para verificar alinhamento setorial, requisitos
+        Esse cálculo evidencia por que a triagem automatizada é tão crítica. Triar 63 editais
+        por mês manualmente — lendo cada um para verificar alinhamento setorial, requisitos
         de habilitação e viabilidade — consome dezenas de horas. Com classificação automatizada,
         o analista recebe apenas os 12 a 15 editais que já passaram pelo filtro de relevância
         e viabilidade, concentrando o esforço humano na análise que realmente importa.
@@ -386,7 +386,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <h3>Semana 1 a 2: Definição de escopo e contratação</h3>
 
       <p>
-        Definir os setores e regiões de atuação prioritarios, os critérios mínimos de triagem
+        Definir os setores e regiões de atuação prioritários, os critérios mínimos de triagem
         (faixa de valor, modalidades, requisitos de habilitação) e iniciar o processo de
         seleção do analista de editais. Paralelamente, configurar as ferramentas de
         monitoramento.
@@ -395,7 +395,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <h3>Semana 3 a 4: Operação assistida</h3>
 
       <p>
-        O analista inicia a operação com supervisao próxima. Os primeiros editais triados
+        O analista inicia a operação com supervisão próxima. Os primeiros editais triados
         servem como calibragem dos critérios. É comum que as primeiras semanas revelem
         ajustes necessários nos filtros — setores muito amplos, faixas de valor inadequadas,
         ou regiões com poucos editais relevantes.
@@ -406,7 +406,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
       <p>
         O envio da primeira proposta é o marco real de início de operação. A partir desse
         ponto, o ciclo de feedback entre triagem, análise e resultado começa a gerar dados
-        para refinamento continuo dos critérios.
+        para refinamento contínuo dos critérios.
       </p>
 
       <h2>Erros mais comuns na estruturação</h2>
@@ -417,16 +417,16 @@ export default function EstruturarSetorLicitacao5Milhões() {
       </p>
 
       <p>
-        O primeiro erro e tentar cobrir muitos setores simultaneamente. Empresas que atuam
-        em tres ou quatro setores devem priorizar um ou dois no início e expandir conforme
-        o setor ganha maturidade operacional. O segundo erro e não definir critérios de
-        triagem antes de comecar — o que resulta em analisar editais que nunca deveriam
-        ter chegado a mesa do analista. O terceiro erro e negligenciar a retroalimentação:
+        O primeiro erro é tentar cobrir muitos setores simultaneamente. Empresas que atuam
+        em três ou quatro setores devem priorizar um ou dois no início e expandir conforme
+        o setor ganha maturidade operacional. O segundo erro é não definir critérios de
+        triagem antes de começar — o que resulta em analisar editais que nunca deveriam
+        ter chegado à mesa do analista. O terceiro erro é negligenciar a retroalimentação:
         sem analisar por que perdeu ou ganhou cada licitação, o setor não evolui.
       </p>
 
       <p>
-        Empresas que mantém uma disciplina de análise pos-resultado — registrando o motivo
+        Empresas que mantêm uma disciplina de análise pós-resultado — registrando o motivo
         de cada vitória e derrota — apresentam evolução consistente na taxa de adjudicação
         ao longo de 6 a 12 meses. Para entender quais fatores diferenciam empresas com
         alta taxa de vitória,{' '}
@@ -450,18 +450,18 @@ export default function EstruturarSetorLicitacao5Milhões() {
       </p>
 
       <p>
-        As tres áreas de maior impacto da automação no setor de licitação são: a prospecção
-        (monitoramento automatizado de multiplos portais), a triagem (classificação por
-        relevância e viabilidade) é o controle de pipeline (visão consolidada de todas as
+        As três áreas de maior impacto da automação no setor de licitação são: a prospecção
+        (monitoramento automatizado de múltiplos portais), a triagem (classificação por
+        relevância e viabilidade) e o controle de pipeline (visão consolidada de todas as
         oportunidades em andamento com prazos e status). O{' '}
-        <Link href="/planos">SmartLic</Link> cobre essas tres áreas em uma única plataforma,
+        <Link href="/planos">SmartLic</Link> cobre essas três áreas em uma única plataforma,
         permitindo que a equipe enxuta opere com a mesma eficiência de departamentos maiores.
       </p>
 
       {/* CTA — BEFORE FAQ */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Automatize a triagem é libere sua equipe para o que importa
+          Automatize a triagem e libere sua equipe para o que importa
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           O SmartLic monitora PNCP, ComprasGov e Portal de Compras Públicas, classifica editais por
@@ -489,15 +489,15 @@ export default function EstruturarSetorLicitacao5Milhões() {
         Um setor de licitação enxuto e bem estruturado pode faturar R$ 5 milhões anuais com 2 a 3
         profissionais dedicados: um analista de editais (triagem e compliance), um especialista em
         propostas (precificação e documentação) e, opcionalmente, um gestor de contratos. A chave
-        está na automação da triagem é na especialização de cada papel, não no volume de pessoas.
+        está na automação da triagem e na especialização de cada papel, não no volume de pessoas.
       </p>
 
       <h3>Qual o salário médio de um analista de licitações no Brasil?</h3>
       <p>
         Segundo dados consolidados de plataformas de emprego como Glassdoor e Catho (2025), o
         salário médio de um analista de licitações no Brasil varia entre R$ 3.200 e R$ 5.800 por
-        mes, dependendo da região é do porte da empresa. Em capitais como São Paulo e Brasilia,
-        profissionais seniores podem alcancar R$ 7.000 a R$ 9.000 mensais.
+        mês, dependendo da região e do porte da empresa. Em capitais como São Paulo e Brasília,
+        profissionais sêniores podem alcançar R$ 7.000 a R$ 9.000 mensais.
       </p>
 
       <h3>Quais KPIs devo acompanhar no setor de licitação?</h3>
@@ -505,15 +505,15 @@ export default function EstruturarSetorLicitacao5Milhões() {
         Os KPIs essenciais são: taxa de adjudicação (meta acima de 20%), valor médio dos contratos
         ganhos, custo por proposta elaborada, tempo médio entre publicação e envio da proposta,
         volume de editais triados versus propostas enviadas, e valor total do pipeline ativo. O
-        acompanhamento mensal desses indicadores permite ajustes rápidos na estrategia.
+        acompanhamento mensal desses indicadores permite ajustes rápidos na estratégia.
       </p>
 
-      <h3>E possível terceirizar parte do setor de licitação?</h3>
+      <h3>É possível terceirizar parte do setor de licitação?</h3>
       <p>
-        Sim. A triagem de editais é a organização documental são as atividades mais terceirizáveis,
+        Sim. A triagem de editais e a organização documental são as atividades mais terceirizáveis,
         podendo ser delegadas a consultorias especializadas ou ferramentas de automação. A
-        precificação é a elaboração da proposta técnica, por envolverem conhecimento específico do
-        negocio, devem permanecer internas.
+        precificação e a elaboração da proposta técnica, por envolverem conhecimento específico do
+        negócio, devem permanecer internas.
       </p>
 
       <h3>Qual o investimento inicial para montar um setor de licitação?</h3>

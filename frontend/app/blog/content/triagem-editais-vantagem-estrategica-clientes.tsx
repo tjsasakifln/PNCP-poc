@@ -66,14 +66,14 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
       {/* Opening paragraph — primary keyword: triagem de editais como serviço */}
       <p className="text-base sm:text-xl leading-relaxed text-ink">
         A maioria das consultorias de licitação trata a <strong>triagem de
-        editais como serviço</strong> implícito -- algo que acontece nos
+        editais como serviço</strong> implícito — algo que acontece nos
         bastidores, sem visibilidade para o cliente e sem remuneração direta.
         O analista acessa os portais, filtra publicações, descarta as
         irrelevantes e encaminha as restantes. Essa atividade consome entre 20
         e 40 horas mensais por cliente atendido, mas raramente aparece como
         item de entrega no contrato. O resultado é previsível: a consultoria
         absorve um custo operacional significativo sem capturar valor
-        proporcional. Este artigo propõe uma inversão de perspectiva --
+        proporcional. Este artigo propõe uma inversão de perspectiva —
         transformar a triagem em curadoria, reposicionando-a como o serviço de
         maior valor percebido da consultoria.
       </p>
@@ -88,7 +88,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
         cliente uma lista de &ldquo;oportunidades identificadas&rdquo; sem
         detalhar o processo de filtragem, os critérios aplicados ou a razão
         pela qual determinados editais foram incluídos e outros excluídos. O
-        cliente recebe uma lista -- não um serviço.
+        cliente recebe uma lista — não um serviço.
       </p>
 
       <p>
@@ -99,13 +99,13 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
         risco e recomendação explícita. A diferença entre &ldquo;encontramos 12
         editais para você esta semana&rdquo; e &ldquo;dos 340 editais
         publicados no seu setor, identificamos 12 com viabilidade acima de 70%
-        -- aqui está a análise de cada um&rdquo; é a diferença entre
+        — aqui está a análise de cada um&rdquo; é a diferença entre
         commodity e serviço premium.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Valor percebido em serviços de consultoria B2B
+          Dados de referência — Valor percebido em serviços de consultoria B2B
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -120,7 +120,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
             Serviços de inteligência de mercado com entregáveis estruturados
             são precificados entre R$ 3.000 e R$ 15.000/mês, enquanto
             serviços de monitoramento sem análise ficam na faixa de R$ 500 a
-            R$ 2.000/mês -- uma diferença de 3x a 7x.
+            R$ 2.000/mês — uma diferença de 3x a 7x.
           </li>
           <li>
             <strong>Retenção de clientes (Bain &amp; Company, 2023):</strong>{' '}
@@ -136,7 +136,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
 
       <p>
         O cliente da consultoria de licitação não precisa de mais editais. Ele
-        precisa de menos -- mas melhores. O problema de informação em
+        precisa de menos — mas melhores. O problema de informação em
         licitações públicas não é escassez; é excesso. O PNCP publica em
         média 3.200 processos por dia útil. Para uma empresa que atua em dois
         ou três setores e monitora meia dúzia de UFs, o volume semanal de
@@ -163,11 +163,11 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
 
       <p>
         A curadoria profissional de editais se estrutura em três camadas
-        complementares. A primeira camada é a triagem mecânica -- filtragem
+        complementares. A primeira camada é a triagem mecânica — filtragem
         por setor, UF, valor e modalidade que elimina editais estruturalmente
-        incompatíveis. A segunda camada é a pontuação de viabilidade -- um
+        incompatíveis. A segunda camada é a pontuação de viabilidade — um
         score numérico que avalia cada edital sobrevivente em fatores
-        objetivos. A terceira camada é a justificativa consultiva -- a análise
+        objetivos. A terceira camada é a justificativa consultiva — a análise
         qualitativa que contextualiza o score para o perfil específico do
         cliente.
       </p>
@@ -180,7 +180,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
         estimado está dentro da faixa de atuação? A modalidade é adequada ao
         perfil competitivo? Editais que falham em qualquer desses critérios
         são descartados sem análise adicional. Esta é a camada que mais se
-        beneficia de automação -- ferramentas com classificação setorial por
+        beneficia de automação — ferramentas com classificação setorial por
         IA executam essa filtragem em segundos, liberando o consultor para as
         camadas de maior valor agregado.
       </p>
@@ -201,9 +201,9 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
         É nesta camada que a consultoria agrega valor insubstituível. O score
         numérico é contextualizado para o perfil do cliente: &ldquo;Este
         pregão tem score 78, mas o órgão tem histórico de atrasos de
-        pagamento -- recomendamos participar com margem de segurança
+        pagamento — recomendamos participar com margem de segurança
         adicional&rdquo; ou &ldquo;Score 65, porém o objeto é estratégico para
-        o portfólio de atestados do cliente -- recomendamos disputar como
+        o portfólio de atestados do cliente — recomendamos disputar como
         investimento de qualificação&rdquo;. A justificativa transforma dados
         em conselho.
       </p>
@@ -216,7 +216,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
       <p>
         A apresentação é tão importante quanto o conteúdo. Um relatório de
         curadoria mal formatado em planilha Excel transmite a mesma mensagem
-        que uma lista genérica -- independentemente da qualidade da análise
+        que uma lista genérica — independentemente da qualidade da análise
         por trás dele. A embalagem do entregável precisa comunicar
         profissionalismo e rigor analítico.
       </p>
@@ -255,11 +255,11 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Framework de precificação -- Curadoria de editais como serviço
+          Framework de precificação — Curadoria de editais como serviço
         </p>
         <ul className="space-y-3 text-sm text-ink-secondary">
           <li>
-            <strong>Modelo 1 -- Fee mensal fixo:</strong> R$ 2.000 a
+            <strong>Modelo 1 — Fee mensal fixo:</strong> R$ 2.000 a
             R$ 8.000/mês por cliente, dependendo do número de setores
             monitorados (1 a 3) e UFs cobertas (3 a 10). Inclui relatório
             semanal de curadoria com score e justificativa. Vantagem:
@@ -267,14 +267,14 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
             resultado.
           </li>
           <li>
-            <strong>Modelo 2 -- Fee por edital qualificado:</strong> R$ 150
+            <strong>Modelo 2 — Fee por edital qualificado:</strong> R$ 150
             a R$ 400 por oportunidade entregue com relatório completo de
             viabilidade. O cliente paga apenas por editais que atendem ao
             critério mínimo de score. Vantagem: alinhamento entre valor
             entregue e valor cobrado. Risco: receita variável mês a mês.
           </li>
           <li>
-            <strong>Modelo 3 -- Híbrido com success fee:</strong> Fee mensal
+            <strong>Modelo 3 — Híbrido com success fee:</strong> Fee mensal
             base (R$ 1.500 a R$ 3.000) mais bônus de 1% a 3% sobre o valor
             de contratos adjudicados a partir de editais recomendados pela
             curadoria. Vantagem: incentiva qualidade da recomendação e
@@ -329,7 +329,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
           </li>
           <li>
             <strong>3. Justificativa consultiva:</strong> Contextualização do
-            score para o perfil do cliente -- experiência prévia com o órgão,
+            score para o perfil do cliente — experiência prévia com o órgão,
             compatibilidade de atestados, análise de concorrência estimada,
             observações sobre cláusulas relevantes.
           </li>
@@ -410,7 +410,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
 
       <h3>Qual a diferença entre triagem operacional e curadoria de editais como serviço?</h3>
       <p>
-        A triagem operacional é uma atividade interna de filtragem -- a
+        A triagem operacional é uma atividade interna de filtragem — a
         consultoria descarta editais irrelevantes antes de repassar os
         restantes ao cliente. A curadoria como serviço transforma essa
         filtragem em um entregável estruturado: cada edital recomendado vem
@@ -436,7 +436,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
         de funil (editais monitorados versus recomendados), ficha individual
         por edital com objeto, valor, modalidade, prazo e órgão, score de
         viabilidade com detalhamento dos quatro fatores, justificativa de
-        aderência setorial e recomendação clara -- disputar, monitorar ou
+        aderência setorial e recomendação clara — disputar, monitorar ou
         descartar. Consultorias que adicionam análise de concorrência
         estimada e histórico do órgão elevam significativamente o valor
         percebido.
@@ -444,7 +444,7 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
 
       <h3>A triagem automatizada por IA substitui o trabalho da consultoria?</h3>
       <p>
-        Não substitui -- potencializa. A automação executa a camada de
+        Não substitui — potencializa. A automação executa a camada de
         filtragem mecânica (classificação setorial, filtro geográfico,
         verificação de faixa de valor) em segundos. A consultoria agrega valor
         na camada estratégica: interpretação do contexto do cliente, análise
@@ -460,8 +460,8 @@ export default function TriagemEditaisVantagemEstrategicaClientes() {
         um analista de R$ 10.000/mês, a triagem interna custava cerca de
         R$ 1.700/mês. Ao receber uma curadoria que elimina essa atividade e
         melhora a taxa de vitória, o ROI é demonstrável. Consultorias que
-        rastreiam a taxa de conversão dos editais recomendados -- propostas
-        enviadas que resultam em contrato -- constroem evidência quantitativa
+        rastreiam a taxa de conversão dos editais recomendados — propostas
+        enviadas que resultam em contrato — constroem evidência quantitativa
         irrefutável de valor.
       </p>
 

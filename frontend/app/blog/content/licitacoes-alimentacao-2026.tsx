@@ -47,7 +47,7 @@ export default function LicitacoesAlimentacao2026() {
                 name: 'Como funciona a chamada pública de alimentação escolar?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'A chamada pública é o instrumento de compra da agricultura familiar para o PNAE, regulamentada pela Resolução FNDE 6/2020. Diferente da licitação, na chamada pública os preços são pesquisados previamente pela entidade executora (prefeitura/secretaria) é os fornecedores se habilitam apresentando projeto de venda com os itens que podem fornecer. A prioridade de seleção segue a ordem: local (município), territorial (região), estadual e nacional. Não há disputa de preço — o preço é definido previamente com base em pesquisa de mercado local.',
+                  text: 'A chamada pública é o instrumento de compra da agricultura familiar para o PNAE, regulamentada pela Resolução FNDE 6/2020. Diferente da licitação, na chamada pública os preços são pesquisados previamente pela entidade executora (prefeitura/secretaria) e os fornecedores se habilitam apresentando projeto de venda com os itens que podem fornecer. A prioridade de seleção segue a ordem: local (município), territorial (região), estadual e nacional. Não há disputa de preço — o preço é definido previamente com base em pesquisa de mercado local.',
                 },
               },
               {
@@ -124,8 +124,8 @@ export default function LicitacoesAlimentacao2026() {
         cooperativas e agricultores familiares, esse mercado oferece demanda
         constante, contratos recorrentes e pagamento garantido por repasse
         federal. Mas participar com competitividade exige conhecer as regras
-        específicas do setor -- da chamada pública ao pregao eletrônico, das
-        exigências sanitarias a logística de distribuição. Este guia cobre tudo
+        específicas do setor — da chamada pública ao pregão eletrônico, das
+        exigências sanitárias à logística de distribuição. Este guia cobre tudo
         o que você precisa saber sobre licitações de alimentação em 2026.
       </p>
 
@@ -133,12 +133,12 @@ export default function LicitacoesAlimentacao2026() {
       <h2>Panorama: o governo como maior comprador de alimentos</h2>
 
       <p>
-        A aquisição pública de alimentos no Brasil ocorre em tres grandes frentes:
+        A aquisição pública de alimentos no Brasil ocorre em três grandes frentes:
         alimentação escolar (PNAE), alimentação hospitalar e institucional
-        (hospitais, quarteis, presiidos, universidades) e programas de segurança
-        alimentar (cestas básicas, PAA -- Programa de Aquisição de Alimentos).
+        (hospitais, quartéis, presídios, universidades) e programas de segurança
+        alimentar (cestas básicas, PAA — Programa de Aquisição de Alimentos).
         Cada frente tem regulamentação, modalidades e públicos-alvo distintos, mas
-        todas compartilham uma característica: demanda recorrente é previsível.
+        todas compartilham uma característica: demanda recorrente e previsível.
       </p>
 
       <p>
@@ -146,8 +146,8 @@ export default function LicitacoesAlimentacao2026() {
         regulamentado pela Lei 11.947/2009 e pela Resolução CD/FNDE 6/2020, o
         programa garante alimentação a todos os alunos matriculados na educação
         básica pública. Os recursos são repassados pelo FNDE diretamente aos
-        estados, municípios e ao Distrito Federal, que executam as compras --
-        predominantemente via chamada pública (para agricultura familiar) e pregao
+        estados, municípios e ao Distrito Federal, que executam as compras —
+        predominantemente via chamada pública (para agricultura familiar) e pregão
         eletrônico (para demais fornecedores).
       </p>
 
@@ -156,17 +156,17 @@ export default function LicitacoesAlimentacao2026() {
         alimentares em volume significativo. Um hospital de médio porte (300 leitos)
         serve entre 900 e 1.200 refeições por dia, incluindo pacientes, acompanhantes
         e funcionários. Essa demanda gera contratos de serviço de alimentação (empresa
-        fornece refeição pronta) ou de fornecimento de generos alimenticios (hospital
+        fornece refeição pronta) ou de fornecimento de gêneros alimentícios (hospital
         produz internamente).
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Compras públicas de alimentação em números
+          Dados de referência — Compras públicas de alimentação em números
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Orcamento PNAE 2025:</strong> R$ 5,5 bilhões (FNDE), atendendo
+            <strong>Orçamento PNAE 2025:</strong> R$ 5,5 bilhões (FNDE), atendendo
             40,1 milhões de estudantes em 150 mil escolas públicas.
           </li>
           <li>
@@ -196,18 +196,18 @@ export default function LicitacoesAlimentacao2026() {
 
       <p>
         A merenda escolar é o objeto mais volumoso em licitações de alimentação.
-        Inclui generos alimenticios in natura (frutas, verduras, legumes, ovos,
-        leite), produtos industrializados (arroz, feijao, macarrao, oleo, acucar)
+        Inclui gêneros alimentícios in natura (frutas, verduras, legumes, ovos,
+        leite), produtos industrializados (arroz, feijão, macarrão, óleo, açúcar)
         e, em alguns municípios, refeições prontas preparadas por empresas
-        terceirizadas. O cardapio e elaborado por nutricionista habilitado e deve
-        atender as diretrizes do FNDE (no mínimo 20% das necessidades nutricionais
-        diarias do aluno).
+        terceirizadas. O cardápio é elaborado por nutricionista habilitado e deve
+        atender às diretrizes do FNDE (no mínimo 20% das necessidades nutricionais
+        diárias do aluno).
       </p>
 
       <p>
         As compras de merenda escolar são realizadas pelas Entidades Executoras
-        (EEx) -- prefeituras, secretarias estaduais de educação e escolas federais.
-        Cada EEx tem autonomia para definir o cardapio, os quantitativos é o
+        (EEx) — prefeituras, secretarias estaduais de educação e escolas federais.
+        Cada EEx tem autonomia para definir o cardápio, os quantitativos e o
         instrumento de compra, desde que respeite as diretrizes nacionais.
       </p>
 
@@ -215,8 +215,8 @@ export default function LicitacoesAlimentacao2026() {
 
       <p>
         Contratos de fornecimento de refeições prontas são comuns em hospitais,
-        universidades, quarteis, presidios e órgãos com restaurantes internos.
-        O objeto tipicamente e: &ldquo;contratação de empresa especializada na
+        universidades, quartéis, presídios e órgãos com restaurantes internos.
+        O objeto tipicamente é: &ldquo;contratação de empresa especializada na
         prestação de serviços de alimentação e nutrição, incluindo preparo,
         distribuição e higienização&rdquo;. O fornecedor assume toda a operação
         da cozinha, incluindo mão de obra (cozinheiros, nutricionistas,
@@ -230,24 +230,24 @@ export default function LicitacoesAlimentacao2026() {
         qualificada e logística de distribuição interna.
       </p>
 
-      <h3>Generos alimenticios (fornecimento de insumos)</h3>
+      <h3>Gêneros alimentícios (fornecimento de insumos)</h3>
 
       <p>
         Diferente das refeições prontas, aqui o fornecedor entrega os alimentos
-        é o órgão prepara internamente. Inclui hortifruti, carnes, laticinios,
-        graos, enlatados, congelados e produtos de padaria. As licitações
-        tipicamente utilizam pregao eletrônico com critério de menor preço por
-        item ou por lote, é o fornecimento e parcelado ao longo de meses.
+        e o órgão prepara internamente. Inclui hortifruti, carnes, laticínios,
+        grãos, enlatados, congelados e produtos de padaria. As licitações
+        tipicamente utilizam pregão eletrônico com critério de menor preço por
+        item ou por lote, e o fornecimento é parcelado ao longo de meses.
       </p>
 
       <h3>Cestas básicas e kits alimentação</h3>
 
       <p>
         Cestas básicas são adquiridas por órgãos de assistência social (CRAS,
-        Defesa Civil) para distribuição a familias em situação de vulnerabilidade.
+        Defesa Civil) para distribuição a famílias em situação de vulnerabilidade.
         Os kits alimentação ganharam protagonismo durante a pandemia de COVID-19,
-        quando substituiram a merenda escolar para alunos em ensino remoto. Embora
-        o volume tenha reduzido após o retorno as aulas presenciais, dispensas e
+        quando substituíram a merenda escolar para alunos em ensino remoto. Embora
+        o volume tenha reduzido após o retorno às aulas presenciais, dispensas e
         pregões para cestas básicas continuam frequentes em programas assistenciais.
       </p>
 
@@ -255,17 +255,17 @@ export default function LicitacoesAlimentacao2026() {
       <h2>PNAE: como funciona e como participar</h2>
 
       <p>
-        O PNAE merece uma seção dedicada por ser o programa de maior escala é o
+        O PNAE merece uma seção dedicada por ser o programa de maior escala e o
         que possui regras mais específicas para fornecedores.
       </p>
 
       <p>
-        <strong>Financiamento:</strong> O FNDE repassa recursos diretamente as
+        <strong>Financiamento:</strong> O FNDE repassa recursos diretamente às
         Entidades Executoras em 10 parcelas anuais (fevereiro a novembro). O
-        valor e calculado com base no censo escolar do ano anterior, multiplicado
+        valor é calculado com base no censo escolar do ano anterior, multiplicado
         pelo per capita de cada etapa de ensino: R$ 0,36 (ensino fundamental e
-        médio), R$ 0,53 (pre-escola), R$ 1,07 (creche), R$ 0,64 (EJA), R$ 2,00
-        (ensino integral). Municipios e estados devem complementar os recursos
+        médio), R$ 0,53 (pré-escola), R$ 1,07 (creche), R$ 0,64 (EJA), R$ 2,00
+        (ensino integral). Municípios e estados devem complementar os recursos
         com contrapartida própria.
       </p>
 
@@ -280,19 +280,19 @@ export default function LicitacoesAlimentacao2026() {
       <p>
         <strong>Chamada pública:</strong> A modalidade de compra da agricultura
         familiar não é licitação convencional. A chamada pública (Resolução FNDE
-        6/2020, art. 24) funciona assim: o município pública um edital com os
-        itens necessários é os preços pesquisados (baseados em CEASA, supermercados
+        6/2020, art. 24) funciona assim: o município publica um edital com os
+        itens necessários e os preços pesquisados (baseados em CEASA, supermercados
         locais e atas vigentes). Agricultores familiares, cooperativas e associações
-        se habilitam apresentando projeto de venda. A priorização e: fornecedores
+        se habilitam apresentando projeto de venda. A priorização é: fornecedores
         locais (município) primeiro, depois territoriais, estaduais e nacionais.
-        Não há disputa de preço -- o preço e definido previamente.
+        Não há disputa de preço — o preço é definido previamente.
       </p>
 
       <p>
-        <strong>Pregao para grandes fornecedores:</strong> Os 70% restantes dos
-        recursos podem ser adquiridos via pregao eletrônico convencional, aberto
-        a qualquer empresa. Esses pregões tipicamente cobrem arroz, feijao, oleo,
-        carnes congeladas, laticinios industrializados e outros produtos que a
+        <strong>Pregão para grandes fornecedores:</strong> Os 70% restantes dos
+        recursos podem ser adquiridos via pregão eletrônico convencional, aberto
+        a qualquer empresa. Esses pregões tipicamente cobrem arroz, feijão, óleo,
+        carnes congeladas, laticínios industrializados e outros produtos que a
         agricultura familiar local não consegue suprir em escala.
       </p>
 
@@ -308,22 +308,22 @@ export default function LicitacoesAlimentacao2026() {
       <h2>Modalidades de compra em alimentação</h2>
 
       <p>
-        As licitações de alimentação utilizam predominantemente tres instrumentos:
+        As licitações de alimentação utilizam predominantemente três instrumentos:
       </p>
 
       <p>
         <strong>Chamada pública</strong> (exclusiva para agricultura familiar no
         PNAE): processo simplificado, sem disputa de preço. Os preços são definidos
         previamente pela Entidade Executora com base em pesquisa de mercado. A
-        priorização e geográfica: local, territorial, estadual, nacional. A
-        documentação exigida e simplificada (DAP/CAF, documentos pessoais, projeto
+        priorização é geográfica: local, territorial, estadual, nacional. A
+        documentação exigida é simplificada (DAP/CAF, documentos pessoais, projeto
         de venda).
       </p>
 
       <p>
-        <strong>Pregao eletrônico:</strong> modalidade principal para grandes
-        fornecedores. Utilizado para compra de generos alimenticios industrializados,
-        carnes, laticinios e para contratação de serviços de alimentação (refeições
+        <strong>Pregão eletrônico:</strong> modalidade principal para grandes
+        fornecedores. Utilizado para compra de gêneros alimentícios industrializados,
+        carnes, laticínios e para contratação de serviços de alimentação (refeições
         prontas). Critério de menor preço. Editais publicados no{' '}
         <Link href="/glossario#pregao-eletrônico" className="text-brand-navy dark:text-brand-blue hover:underline">
           PNCP e nos portais de compras estaduais
@@ -334,18 +334,18 @@ export default function LicitacoesAlimentacao2026() {
         <strong>Dispensa de licitação:</strong> para compras de até R$ 59.906,02
         (art. 75, II da Lei 14.133/2021). Comum em municípios pequenos que precisam
         complementar itens de merenda de forma urgente ou em quantidades reduzidas.
-        Tambem utilizada em situações de emergência alimentar. Dispensas representam
+        Também utilizada em situações de emergência alimentar. Dispensas representam
         cerca de 20% das compras de alimentação no PNCP.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Faixas de valor típicas -- Licitações de alimentação
+          Faixas de valor típicas — Licitações de alimentação
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
             <strong>Merenda escolar (município pequeno):</strong> R$ 20.000 a
-            R$ 200.000 por chamada pública ou pregao. Municipios com menos de
+            R$ 200.000 por chamada pública ou pregão. Municípios com menos de
             20 mil habitantes.
           </li>
           <li>
@@ -376,8 +376,8 @@ export default function LicitacoesAlimentacao2026() {
       <h2>UFs com maior volume de licitações de alimentação</h2>
 
       <p>
-        O volume de compras de alimentação esta correlacionado com o número de
-        alunos matriculados (PNAE), o tamanho da rede hospitalar é a população
+        O volume de compras de alimentação está correlacionado com o número de
+        alunos matriculados (PNAE), o tamanho da rede hospitalar e a população
         em situação de vulnerabilidade (programas assistenciais).
       </p>
 
@@ -390,48 +390,48 @@ export default function LicitacoesAlimentacao2026() {
 
       <p>
         <strong>Minas Gerais</strong>, com 853 municípios, gera o maior número
-        de chamadas públicas individuais -- cada município realiza suas próprias
-        compras de merenda. <strong>Bahia</strong> e <strong>Maranhao</strong>
+        de chamadas públicas individuais — cada município realiza suas próprias
+        compras de merenda. <strong>Bahia</strong> e <strong>Maranhão</strong>
         concentram volumes expressivos de compras do PNAE e programas assistenciais,
         impulsionados pela alta demanda de segurança alimentar. <strong>Rio Grande
-        do Sul</strong> e <strong>Parana</strong> se destacam pela forte participação
-        da agricultura familiar, com cooperativas organizadas é alto percentual de
+        do Sul</strong> e <strong>Paraná</strong> se destacam pela forte participação
+        da agricultura familiar, com cooperativas organizadas e alto percentual de
         compras via chamada pública.
       </p>
 
       <p>
-        Fornecedores de generos alimenticios industrializados encontram as maiores
+        Fornecedores de gêneros alimentícios industrializados encontram as maiores
         oportunidades em capitais e regiões metropolitanas. Já cooperativas de
-        agricultura familiar tem vantagem em municípios menores, onde a logística
-        local é o conhecimento do mercado regional são diferenciais decisivos.
+        agricultura familiar têm vantagem em municípios menores, onde a logística
+        local e o conhecimento do mercado regional são diferenciais decisivos.
       </p>
 
       {/* Section 6: Requisitos */}
-      <h2>Requisitos: alvara sanitário, registro no MAPA e boas práticas</h2>
+      <h2>Requisitos: alvará sanitário, registro no MAPA e boas práticas</h2>
 
       <p>
-        O setor de alimentação e fortemente regulado por normas sanitarias.
-        Os requisitos variam conforme o tipo de produto é o canal de venda.
+        O setor de alimentação é fortemente regulado por normas sanitárias.
+        Os requisitos variam conforme o tipo de produto e o canal de venda.
       </p>
 
-      <h3>Para generos alimenticios industrializados</h3>
+      <h3>Para gêneros alimentícios industrializados</h3>
 
       <p>
-        Registro do produto no MAPA (Ministerio da Agricultura, Pecuaria e
-        Abastecimento) para produtos de origem animal (carnes, laticinios, ovos
+        Registro do produto no MAPA (Ministério da Agricultura, Pecuária e
+        Abastecimento) para produtos de origem animal (carnes, laticínios, ovos
         industrializados) ou na Anvisa para demais alimentos industrializados.
-        Alvara sanitário da vigilância sanitária municipal ou estadual. SIF
-        (Servico de Inspeção Federal) ou SIE/SIM (Inspeção Estadual/Municipal)
-        para produtos de origem animal. CNPJ com CNAE compatível (4639-7/01 --
-        comércio atacadista de produtos alimenticios em geral, ou CNAEs
+        Alvará sanitário da vigilância sanitária municipal ou estadual. SIF
+        (Serviço de Inspeção Federal) ou SIE/SIM (Inspeção Estadual/Municipal)
+        para produtos de origem animal. CNPJ com CNAE compatível (4639-7/01 —
+        comércio atacadista de produtos alimentícios em geral, ou CNAEs
         específicos conforme o tipo de alimento).
       </p>
 
       <h3>Para refeições prontas (serviços de alimentação)</h3>
 
       <p>
-        Alvara sanitário da cozinha industrial. Responsável técnico nutricionista
-        com CRN ativo. Manual de Boas Praticas de Fabricação (MBP) e Procedimentos
+        Alvará sanitário da cozinha industrial. Responsável técnico nutricionista
+        com CRN ativo. Manual de Boas Práticas de Fabricação (MBP) e Procedimentos
         Operacionais Padronizados (POPs) conforme RDC 216/2004 da Anvisa. Atestados
         de capacidade técnica comprovando fornecimento anterior de refeições em
         escala compatível. Registro no CNPJ com CNAE 5620-1/01 (fornecimento de
@@ -442,7 +442,7 @@ export default function LicitacoesAlimentacao2026() {
       <h3>Para agricultura familiar (PNAE)</h3>
 
       <p>
-        DAP (Declaração de Aptidao ao Pronaf) ou CAF (Cadastro Nacional da
+        DAP (Declaração de Aptidão ao Pronaf) ou CAF (Cadastro Nacional da
         Agricultura Familiar) ativo. Vinculação a cooperativa ou associação
         (para vendas acima do limite individual de R$ 40.000 por DAP/ano).
         Alvara sanitário municipal para produtos beneficiados (geleias, queijos
@@ -456,17 +456,17 @@ export default function LicitacoesAlimentacao2026() {
         slug="licitações-alimentação-2026"
         campaign="guias"
         ctaHref="/explorar"
-        ctaText="Explorar licitações gratis"
+        ctaText="Explorar licitações grátis"
         ctaMessage="Descubra editais abertos no seu setor — busca gratuita"
       />
 
       {/* Section 7: Logistica */}
-      <h2>Logistica: o desafio da distribuição para multiplos pontos</h2>
+      <h2>Logística: o desafio da distribuição para múltiplos pontos</h2>
 
       <p>
-        A logística é o fator que mais diferência fornecedores de alimentação
+        A logística é o fator que mais diferencia fornecedores de alimentação
         bem-sucedidos dos que acumulam sanções contratuais. Diferente de outros
-        setores onde a entrega e centralizada (almoxarifado único), compras de
+        setores onde a entrega é centralizada (almoxarifado único), compras de
         alimentação frequentemente exigem entrega em dezenas ou centenas de pontos
         distintos.
       </p>
@@ -474,17 +474,17 @@ export default function LicitacoesAlimentacao2026() {
       <p>
         No PNAE, a entrega tipicamente ocorre diretamente nas escolas. Um município
         de 100 mil habitantes pode ter 40 a 80 escolas, cada uma com cronograma e
-        cardapio próprios. O fornecedor precisa de frota (própria ou terceirizada),
+        cardápio próprios. O fornecedor precisa de frota (própria ou terceirizada),
         roteirização eficiente e capacidade de adaptar entregas semanais conforme
-        o cardapio. Em regiões rurais, escolas podem estar a dezenas de quilometros
+        o cardápio. Em regiões rurais, escolas podem estar a dezenas de quilômetros
         da sede do município, em estradas não pavimentadas.
       </p>
 
       <p>
-        Para refeições hospitalares, a logística e interna (a empresa opera a
+        Para refeições hospitalares, a logística é interna (a empresa opera a
         cozinha do hospital), mas a complexidade está na escala: 1.000+ refeições
         por dia com exigências nutricionais específicas para cada paciente (dieta
-        normal, hipossódica, pastosa, liquida, enteral). A operação funciona 365
+        normal, hipossódica, pastosa, líquida, enteral). A operação funciona 365
         dias por ano, incluindo feriados, com margem zero para interrupção.
       </p>
 
@@ -496,7 +496,7 @@ export default function LicitacoesAlimentacao2026() {
           <li>
             <strong>Merenda escolar:</strong> 40 a 200 pontos de entrega por município,
             frequência semanal ou quinzenal, produtos perecíveis exigem cadeia fria
-            parcial (hortifruti, carnes, laticinios).
+            parcial (hortifruti, carnes, laticínios).
           </li>
           <li>
             <strong>Refeições hospitalares:</strong> operação 24/7, dietas especiais,
@@ -504,26 +504,26 @@ export default function LicitacoesAlimentacao2026() {
             por paciente.
           </li>
           <li>
-            <strong>Cestas básicas:</strong> entrega pontual em CRAS, centros comunitarios
-            ou diretamente a familias. Volume concentrado em períodos específicos
+            <strong>Cestas básicas:</strong> entrega pontual em CRAS, centros comunitários
+            ou diretamente às famílias. Volume concentrado em períodos específicos
             (enchentes, secas, calamidades).
           </li>
           <li>
-            <strong>Alimentação militar:</strong> pontos de entrega em quarteis e bases,
+            <strong>Alimentação militar:</strong> pontos de entrega em quartéis e bases,
             frequentemente em áreas de difícil acesso. Requisitos de segurança para
-            acesso as instalações.
+            acesso às instalações.
           </li>
         </ul>
       </div>
 
       <p>
-        Empresas que mapeiam a logística antes de participar da licitação tem
+        Empresas que mapeiam a logística antes de participar da licitação têm
         vantagem competitiva significativa. Isso inclui: levantar o número
         e localização dos pontos de entrega (disponível no edital), calcular o
         custo de frete por rota, verificar a disponibilidade de veículos
         refrigerados (quando necessário) e negociar com transportadoras locais
-        antes de formular o preço. Um estudo logístico previo de 4 a 8 horas pode
-        evitar prejuizos de dezenas de milhares de reais ao longo do contrato.
+        antes de formular o preço. Um estudo logístico prévio de 4 a 8 horas pode
+        evitar prejuízos de dezenas de milhares de reais ao longo do contrato.
       </p>
 
       {/* Section 8: Erros comuns */}
@@ -538,20 +538,20 @@ export default function LicitacoesAlimentacao2026() {
         8 meses de validade restante. Fornecedores que mantém estoque antigo ou
         compram lotes próximos do vencimento para obter preços menores são
         surpreendidos na hora da entrega, quando o fiscal rejeita o produto.
-        A consequência e substituição as custas do fornecedor, multa contratual
+        A consequência é substituição às custas do fornecedor, multa contratual
         e registro negativo no SICAF.
       </p>
 
       <h3>Erro 2: Falha na cadeia fria</h3>
 
       <p>
-        Carnes, laticinios, hortifruti e refeições prontas exigem controle de
+        Carnes, laticínios, hortifruti e refeições prontas exigem controle de
         temperatura durante todo o transporte. Editais especificam faixas de
         temperatura (carne congelada: -18 graus Celsius; resfriados: 0 a 5 graus;
         hortifruti: 8 a 12 graus). A entrega em veículo sem refrigeração ou com
         refrigeração insuficiente resulta em rejeição imediata. Investir em
-        veículos refrigerados ou em parceria com transportadora especializada e
-        prerequisito para atuar nesse segmento.
+        veículos refrigerados ou em parceria com transportadora especializada é
+        pré-requisito para atuar nesse segmento.
       </p>
 
       <h3>Erro 3: Transporte inadequado</h3>
@@ -560,7 +560,7 @@ export default function LicitacoesAlimentacao2026() {
         Além da temperatura, a legislação sanitária (RDC 216/2004) exige que o
         transporte de alimentos seja feito em veículos limpos, exclusivos para
         alimentos (não compartilhados com produtos químicos ou outros materiais),
-        com bau fechado e em boas condições de higiene. Fiscais sanitarios podem
+        com baú fechado e em boas condições de higiene. Fiscais sanitários podem
         vistoriar o veículo no momento da entrega e rejeitar o carregamento se
         as condições não forem adequadas.
       </p>
@@ -568,15 +568,15 @@ export default function LicitacoesAlimentacao2026() {
       <h3>Erro 4: Não acompanhar a sazonalidade de preços</h3>
 
       <p>
-        Precos de hortifruti e proteinas animais variam significativamente ao
-        longo do ano. Um pregao vencido em janeiro com preço de tomate a R$ 3/kg
+        Preços de hortifruti e proteínas animais variam significativamente ao
+        longo do ano. Um pregão vencido em janeiro com preço de tomate a R$ 3/kg
         pode se tornar inviável em julho quando o preço sobe para R$ 8/kg. Editais
         com{' '}
         <Link href="/glossario#ata-de-registro-de-preços" className="text-brand-navy dark:text-brand-blue hover:underline">
           ata de registro de preços
         </Link>{' '}
         de 12 meses são especialmente arriscados para itens com alta volatilidade.
-        A recomendação e incluir margem de segurança na proposta para absorver
+        A recomendação é incluir margem de segurança na proposta para absorver
         variação sazonal ou negociar cláusula de reequilíbrio econômico-financeiro
         no contrato.
       </p>
@@ -584,11 +584,11 @@ export default function LicitacoesAlimentacao2026() {
       <h3>Erro 5: Subestimar os requisitos nutricionais</h3>
 
       <p>
-        Editais de merenda escolar exigem que os alimentos atendam a parametros
-        nutricionais específicos (calorias, macronutrientes, sodio, acucar).
+        Editais de merenda escolar exigem que os alimentos atendam a parâmetros
+        nutricionais específicos (calorias, macronutrientes, sódio, açúcar).
         Fornecedores que oferecem produtos fora das especificações nutricionais
         (por exemplo, suco com teor de fruta abaixo do mínimo exigido, ou biscoito
-        com excesso de sodio) tem a entrega rejeitada. Verifique as fichas
+        com excesso de sódio) têm a entrega rejeitada. Verifique as fichas
         técnicas dos seus produtos antes de participar. Para entender como
         outros setores lidam com especificações técnicas, veja{' '}
         <Link href="/blog/licitações-saúde-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
@@ -604,38 +604,38 @@ export default function LicitacoesAlimentacao2026() {
       </p>
 
       <p>
-        <strong>Para generos alimenticios:</strong> O preço unitário (por kg,
-        litro ou unidade) e comparado com a pesquisa de preços do órgão, que
-        tipicamente utiliza tres fontes: CEASA regional, supermercados locais
+        <strong>Para gêneros alimentícios:</strong> O preço unitário (por kg,
+        litro ou unidade) é comparado com a pesquisa de preços do órgão, que
+        tipicamente utiliza três fontes: CEASA regional, supermercados locais
         e atas de registro de preço vigentes. O fornecedor precisa operar com
         margem entre 8% e 18% sobre o custo de aquisição, dependendo do volume
-        é da logística.
+        e da logística.
       </p>
 
       <p>
         <strong>Para refeições prontas:</strong> O custo por refeição é a métrica
         central. Inclui insumos alimentares (40% a 55% do custo), mão de obra
-        (30% a 40%), equipamentos e utensilios (5% a 8%), energia e gas (3% a 5%),
+        (30% a 40%), equipamentos e utensílios (5% a 8%), energia e gás (3% a 5%),
         e BDI (15% a 22%). O preço médio de uma refeição pronta em licitações
-        públicas varia entre R$ 12 e R$ 35, dependendo da composição do cardapio,
-        da região é do volume diário.
+        públicas varia entre R$ 12 e R$ 35, dependendo da composição do cardápio,
+        da região e do volume diário.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Exemplo -- Composição de custo por refeição hospitalar
+          Exemplo — Composição de custo por refeição hospitalar
         </p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
-            <strong>Insumos alimentares:</strong> R$ 9,50 (proteina + guarnição
+            <strong>Insumos alimentares:</strong> R$ 9,50 (proteína + guarnição
             + acompanhamento + salada + sobremesa + suco)
           </li>
           <li>
-            <strong>Mao de obra (proporcional):</strong> R$ 6,80 (cozinheiro,
+            <strong>Mão de obra (proporcional):</strong> R$ 6,80 (cozinheiro,
             auxiliares, nutricionista, copeiras)
           </li>
           <li>
-            <strong>Energia, gas, agua:</strong> R$ 1,20
+            <strong>Energia, gás, água:</strong> R$ 1,20
           </li>
           <li>
             <strong>Equipamentos (depreciação):</strong> R$ 0,80
@@ -656,11 +656,11 @@ export default function LicitacoesAlimentacao2026() {
       </div>
 
       <p>
-        Para chamadas públicas do PNAE, o preço não é disputado -- ele e definido
+        Para chamadas públicas do PNAE, o preço não é disputado — ele é definido
         pela Entidade Executora com base em pesquisa de mercado. O fornecedor
         aceita ou não o preço oferecido. Por isso, a competitividade na chamada
         pública não está no preço, mas na capacidade de entrega (pontualidade,
-        qualidade, variedade) é na priorização geográfica (local primeiro).
+        qualidade, variedade) e na priorização geográfica (local primeiro).
         Entender como a licitação funciona como{' '}
         <Link href="/blog/como-participar-primeira-licitação-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           processo completo para iniciantes
@@ -674,24 +674,24 @@ export default function LicitacoesAlimentacao2026() {
       <p>
         <strong>Preferência por orgânicos e agroecológicos:</strong> A Resolução
         FNDE 6/2020 prioriza alimentos orgânicos e agroecológicos nas compras do
-        PNAE, permitindo acrescimo de até 30% no preço em relação ao convencional.
+        PNAE, permitindo acréscimo de até 30% no preço em relação ao convencional.
         Cooperativas com certificação orgânica estão em posição vantajosa.
       </p>
 
       <p>
-        <strong>Rastreabilidade exigida:</strong> Editais de grande porte estao
+        <strong>Rastreabilidade exigida:</strong> Editais de grande porte estão
         incorporando exigências de rastreabilidade da cadeia produtiva, incluindo
         origem dos ingredientes, condições de transporte e certificações de
         sustentabilidade. A tecnologia blockchain para rastreabilidade alimentar
-        começa a aparecer em editais de dialogos competitivos.
+        começa a aparecer em editais de diálogos competitivos.
       </p>
 
       <p>
         <strong>Redução de ultraprocessados:</strong> O Guia Alimentar para a
-        População Brasileira (Ministerio da Saude) orienta a redução de alimentos
-        ultraprocessados na alimentação escolar. Editais estao gradualmente
+        População Brasileira (Ministério da Saúde) orienta a redução de alimentos
+        ultraprocessados na alimentação escolar. Editais estão gradualmente
         eliminando itens como biscoitos recheados, salgadinhos e bebidas
-        acucaradas, privilegiando alimentos in natura e minimamente processados.
+        açucaradas, privilegiando alimentos in natura e minimamente processados.
         Isso beneficia fornecedores de hortifruti e agricultura familiar.
       </p>
 
@@ -706,23 +706,23 @@ export default function LicitacoesAlimentacao2026() {
       {/* CTA Section */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Monitore editais de alimentação com o SmartLic -- 14 dias gratis
+          Monitore editais de alimentação com o SmartLic — 14 dias grátis
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           O SmartLic agrega editais do PNCP e classifica por setor usando IA.
           Encontre pregões de merenda escolar, refeições hospitalares e
-          fornecimento de generos alimenticios compatíveis com seu perfil.
+          fornecimento de gêneros alimentícios compatíveis com seu perfil.
         </p>
         <Link
           href="/signup?source=blog&article=licitações-alimentação-2026&utm_source=blog&utm_medium=cta&utm_content=licitações-alimentação-2026&utm_campaign=guias"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          Teste Gratis por 14 Dias
+          Teste Grátis por 14 Dias
         </Link>
         <p className="text-xs text-ink-secondary mt-3">
-          Sem cartao de crédito. Veja todas as funcionalidades na{' '}
+          Sem cartão de crédito. Veja todas as funcionalidades na{' '}
           <Link href="/features" className="underline hover:text-ink">
-            pagina de recursos
+            página de recursos
           </Link>.
         </p>
       </div>
@@ -734,9 +734,9 @@ export default function LicitacoesAlimentacao2026() {
       <p>
         O Programa Nacional de Alimentação Escolar (PNAE) é o maior programa de
         alimentação escolar do mundo, atendendo mais de 40 milhões de estudantes.
-        E gerido pelo FNDE e executado por estados e municípios. Para participar
-        como fornecedor, cadastre-se junto a prefeitura ou secretaria de educação,
-        atenda as exigências sanitarias e participe de chamadas públicas (se
+        É gerido pelo FNDE e executado por estados e municípios. Para participar
+        como fornecedor, cadastre-se junto à prefeitura ou secretaria de educação,
+        atenda às exigências sanitárias e participe de chamadas públicas (se
         agricultura familiar) ou pregões eletrônicos (demais fornecedores). No
         mínimo 30% das compras devem vir da agricultura familiar, conforme a
         Lei 11.947/2009.
@@ -748,28 +748,28 @@ export default function LicitacoesAlimentacao2026() {
         recursos do PNAE para a agricultura familiar. A modalidade é a chamada
         pública (processo simplificado, sem disputa de preço). O agricultor precisa
         possuir DAP ou CAF e estar vinculado a cooperativa ou associação para vendas
-        acima de R$ 40.000 por DAP/ano. A priorização e geográfica: fornecedores
-        locais (mesmo município) tem preferência sobre fornecedores de outras regiões.
+        acima de R$ 40.000 por DAP/ano. A priorização é geográfica: fornecedores
+        locais (mesmo município) têm preferência sobre fornecedores de outras regiões.
         Além do PNAE, o PAA também compra da agricultura familiar para programas
         assistenciais.
       </p>
 
-      <h3>Quais certificações sanitarias são obrigatórias?</h3>
+      <h3>Quais certificações sanitárias são obrigatórias?</h3>
       <p>
-        Para alimentos industrializados: registro no MAPA ou Anvisa, alvara sanitário
-        e Certificado de Boas Praticas. Para refeições prontas: alvara sanitário,
-        nutricionista com CRN ativo, Manual de Boas Praticas (MBP) e POPs conforme
-        RDC 216/2004. Para agricultura familiar: DAP/CAF, alvara sanitário municipal
+        Para alimentos industrializados: registro no MAPA ou Anvisa, alvará sanitário
+        e Certificado de Boas Práticas. Para refeições prontas: alvará sanitário,
+        nutricionista com CRN ativo, Manual de Boas Práticas (MBP) e POPs conforme
+        RDC 216/2004. Para agricultura familiar: DAP/CAF, alvará sanitário municipal
         para produtos beneficiados, e certificação orgânica se aplicável. Produtos
-        de origem animal exigem SIF, SIE ou SIM conforme o ambito de comercialização.
+        de origem animal exigem SIF, SIE ou SIM conforme o âmbito de comercialização.
       </p>
 
       <h3>Como funciona a chamada pública de alimentação escolar?</h3>
       <p>
         A chamada pública (Resolução FNDE 6/2020) é o instrumento de compra da
-        agricultura familiar para o PNAE. O município pública edital com itens e
+        agricultura familiar para o PNAE. O município publica edital com itens e
         preços pesquisados previamente. Fornecedores se habilitam com projeto de
-        venda. Não há disputa de preço -- o preço e definido pela pesquisa de
+        venda. Não há disputa de preço — o preço é definido pela pesquisa de
         mercado (CEASA, supermercados, atas). A seleção prioriza: local (município),
         territorial, estadual, nacional. O processo é mais simples que uma licitação
         convencional, com{' '}
@@ -786,18 +786,18 @@ export default function LicitacoesAlimentacao2026() {
         semestre. O FNDE repassa recursos do PNAE em 10 parcelas anuais (fevereiro
         a novembro), o que pode gerar sazonalidade. Contratos hospitalares federais
         são mais pontuais (25 a 35 dias). Verificar o histórico de pagamento no
-        Portal da Transparência antes de participar e prática recomendada.
+        Portal da Transparência antes de participar é prática recomendada.
       </p>
 
       <h3>Como calcular preço competitivo para licitação de alimentação?</h3>
       <p>
-        Para generos alimenticios, o preço unitário deve ser competitivo em relação
-        a pesquisa do órgão (CEASA, supermercados, atas vigentes), com margem de
+        Para gêneros alimentícios, o preço unitário deve ser competitivo em relação
+        à pesquisa do órgão (CEASA, supermercados, atas vigentes), com margem de
         8% a 18% sobre o custo de aquisição. Para refeições prontas, componha o
         custo por refeição: insumos (40-55%), mão de obra (30-40%), energia e
         equipamentos (8-13%) e BDI (15-22%). Considere a sazonalidade de preços
-        de hortifruti e proteinas, e inclua margem de segurança para itens
-        volateis. Compare seu preço final com atas vigentes no PNCP para validar
+        de hortifruti e proteínas, e inclua margem de segurança para itens
+        voláteis. Compare seu preço final com atas vigentes no PNCP para validar
         competitividade antes de apresentar a proposta.
       </p>
     </>

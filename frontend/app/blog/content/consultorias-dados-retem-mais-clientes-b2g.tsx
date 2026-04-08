@@ -39,7 +39,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
                 name: 'Quais relatórios uma consultoria de licitação data-driven deve entregar ao cliente?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Os 5 relatórios essenciais são: (1) Pipeline de oportunidades -- visão consolidada de todos os editais identificados, filtrados e recomendados, com status de cada um; (2) Taxa de vitória mensal -- evolução da taxa de adjudicação com comparativo mês a mês; (3) Economia de tempo -- horas poupadas pelo cliente na triagem de editais; (4) ROI do serviço -- relação entre o valor pago à consultoria e o valor dos contratos adjudicados; (5) Tendências de mercado -- análise de volume de licitações por setor, estado e modalidade, identificando oportunidades emergentes.',
+                  text: 'Os 5 relatórios essenciais são: (1) Pipeline de oportunidades — visão consolidada de todos os editais identificados, filtrados e recomendados, com status de cada um; (2) Taxa de vitória mensal — evolução da taxa de adjudicação com comparativo mês a mês; (3) Economia de tempo — horas poupadas pelo cliente na triagem de editais; (4) ROI do serviço — relação entre o valor pago à consultoria e o valor dos contratos adjudicados; (5) Tendências de mercado — análise de volume de licitações por setor, estado e modalidade, identificando oportunidades emergentes.',
                 },
               },
               {
@@ -47,7 +47,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
                 name: 'Quanto tempo leva para implementar uma cultura de dados na consultoria?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'A implementação de uma cultura de dados em consultoria de licitação pode ser feita em 60 a 90 dias. No primeiro mês, a consultoria define os indicadores-chave e configura a coleta de dados. No segundo mês, envia o primeiro relatório completo aos clientes. A partir do terceiro mês, o ciclo de coleta, análise e comunicação já está operacional. A ferramenta utilizada para busca e classificação de editais determina o nível de automação possível -- ferramentas com classificação setorial e análise de viabilidade integradas reduzem o esforço de coleta em 60% a 70%.',
+                  text: 'A implementação de uma cultura de dados em consultoria de licitação pode ser feita em 60 a 90 dias. No primeiro mês, a consultoria define os indicadores-chave e configura a coleta de dados. No segundo mês, envia o primeiro relatório completo aos clientes. A partir do terceiro mês, o ciclo de coleta, análise e comunicação já está operacional. A ferramenta utilizada para busca e classificação de editais determina o nível de automação possível — ferramentas com classificação setorial e análise de viabilidade integradas reduzem o esforço de coleta em 60% a 70%.',
                 },
               },
               {
@@ -72,7 +72,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
         consultorias que documentam, medem e comunicam resultados com
         indicadores tangíveis retêm de 2 a 3 vezes mais clientes do que
         consultorias que entregam serviço sem métricas de
-        acompanhamento. A razão não é sofisticação tecnológica -- é
+        acompanhamento. A razão não é sofisticação tecnológica — é
         psicologia: visibilidade gera confiança, confiança gera
         renovação.
       </p>
@@ -107,9 +107,9 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
         pode estar fazendo um trabalho excelente de triagem e
         recomendação, mas se o cliente não vê os dados que comprovam
         esse trabalho, a percepção de valor se deteriora. O dado é o
-        veículo da percepção -- e a percepção é o que determina a
+        veículo da percepção — e a percepção é o que determina a
         renovação. Consultorias que dominam essa equação trabalham com
-        as empresas B2G que mais crescem no setor -- saiba o que{' '}
+        as empresas B2G que mais crescem no setor — saiba o que{' '}
         <Link href="/blog/empresas-vencem-30-porcento-pregoes" className="text-brand-navy dark:text-brand-blue hover:underline">
           empresas que vencem 30% dos pregões fazem isso diferente
         </Link>.
@@ -122,7 +122,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
             &bull; <strong>Impacto do reporting na retenção:</strong> Empresas de serviço B2B que
             implementam relatórios mensais estruturados retêm 2 a 3 vezes mais clientes do que
             empresas sem reporting. A correlação é mais forte em serviços onde o resultado não é
-            imediatamente visível -- como consultoria de licitação (Fonte: McKinsey &amp; Company,
+            imediatamente visível — como consultoria de licitação (Fonte: McKinsey &amp; Company,
             &ldquo;The Power of Visibility in B2B Services&rdquo;, 2022).
           </li>
           <li>
@@ -147,24 +147,24 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
       <p>
         O ciclo de retenção em consultorias B2B segue um padrão
         psicológico previsível, composto por três estágios. No primeiro
-        estágio -- visibilidade -- o cliente precisa ver o que a
+        estágio — visibilidade — o cliente precisa ver o que a
         consultoria faz. Sem relatórios ou dados, o trabalho da
         consultoria é invisível; o cliente percebe o serviço como uma
         caixa-preta que consome orçamento sem evidência de retorno.
       </p>
 
       <p>
-        No segundo estágio -- confiança -- a visibilidade repetida gera
+        No segundo estágio — confiança — a visibilidade repetida gera
         confiança acumulada. Quando o cliente recebe, mês após mês,
         um relatório mostrando quantas oportunidades foram identificadas,
         quantas foram recomendadas, qual foi a taxa de aderência e quanto
         tempo foi economizado, a soma dessas evidências constrói uma
         narrativa de competência. A confiança não se constrói em um
-        momento -- se constrói na repetição consistente.
+        momento — se constrói na repetição consistente.
       </p>
 
       <p>
-        No terceiro estágio -- renovação -- a confiança acumulada
+        No terceiro estágio — renovação — a confiança acumulada
         transforma a decisão de renovação em ato automático. O cliente
         não precisa ser convencido a renovar; ele renova porque os dados
         mostram que o serviço funciona. A renovação deixa de ser uma
@@ -223,7 +223,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
         objeto resumido, valor estimado, UF, modalidade, status na
         pipeline, viabilidade (alta/média/baixa) e próxima ação. O
         pipeline deve ser atualizado semanalmente e enviado ao cliente
-        com comentários contextuais -- não apenas a tabela, mas uma
+        com comentários contextuais — não apenas a tabela, mas uma
         análise de 3 a 5 linhas destacando as oportunidades mais
         relevantes do período.
       </p>
@@ -244,7 +244,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
         variação significativa (positiva ou negativa). Abaixo do
         gráfico, uma tabela com: propostas enviadas no mês, propostas
         adjudicadas, taxa de adjudicação e valor total adjudicado.
-        A tendência é mais importante que o valor pontual -- uma taxa
+        A tendência é mais importante que o valor pontual — uma taxa
         de 14% que vem subindo de 10% é mais promissora que uma taxa
         de 18% que vem caindo de 25%.
       </p>
@@ -302,7 +302,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
 
       <p>
         O relatório de tendências é o que posiciona a consultoria como
-        fonte de inteligência estratégica -- não apenas operacional. Ele
+        fonte de inteligência estratégica — não apenas operacional. Ele
         analisa o volume e a composição das licitações publicadas nos
         setores do cliente, identificando tendências de crescimento ou
         retração, novos órgãos contratantes, mudanças de modalidade e
@@ -318,7 +318,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
         oportunidades identificadas, recomendações de posicionamento).
         Esse relatório exige acesso a dados consolidados de múltiplas
         fontes (PNCP, PCP, ComprasGov) e capacidade de análise setorial
-        -- competências que justificam o valor do serviço e que o
+        — competências que justificam o valor do serviço e que o
         cliente dificilmente possui internamente.
       </p>
 
@@ -330,7 +330,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
             toda segunda-feira. Formato: tabela com status + comentário executivo de 3-5 linhas.
           </li>
           <li>
-            <strong>Taxa de vitória mensal:</strong> Mensal (até o 5.o dia útil). Formato: gráfico
+            <strong>Taxa de vitória mensal:</strong> Mensal (até o 5.º dia útil). Formato: gráfico
             de tendência + tabela comparativa + comentário sobre variações significativas.
           </li>
           <li>
@@ -360,18 +360,18 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
       </p>
 
       <p>
-        A primeira fonte -- dados operacionais -- deve ser coletada
+        A primeira fonte — dados operacionais — deve ser coletada
         automaticamente pela ferramenta de busca e triagem utilizada
         pela consultoria. Se a consultoria usa uma ferramenta que
         classifica editais por setor e avalia viabilidade, os dados das
         dimensões 1 (pipeline), 3 (economia de tempo) e 5 (tendências)
         já estão disponíveis. Se a triagem é manual, a consultoria
-        precisa manter um registro estruturado -- uma planilha, no
-        mínimo -- com cada edital processado e seu status.
+        precisa manter um registro estruturado — uma planilha, no
+        mínimo — com cada edital processado e seu status.
       </p>
 
       <p>
-        A segunda fonte -- dados do cliente -- exige colaboração. A
+        A segunda fonte — dados do cliente — exige colaboração. A
         consultoria precisa que o cliente reporte o resultado das
         propostas enviadas (adjudicação ou não, valor final, motivo de
         não-adjudicação). Essa coleta pode ser simplificada com um
@@ -382,7 +382,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
       </p>
 
       <p>
-        A terceira fonte -- dados públicos -- é a mais fácil de
+        A terceira fonte — dados públicos — é a mais fácil de
         automatizar. As bases do PNCP, Portal de Compras Públicas e
         ComprasGov contêm os dados de volume, valor e distribuição de
         licitações necessários para o relatório de tendências. Ferramentas
@@ -440,7 +440,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
           <li>
             &bull; <strong>Ticket médio mensal:</strong> Antes: estagnado ou sob pressão de
             desconto. Depois: aumento de 25% a 40% em 12 meses, sustentado pela demonstração
-            de ROI. Clientes que veem retorno de 10x+ não negociam desconto -- negociam escopo
+            de ROI. Clientes que veem retorno de 10x+ não negociam desconto — negociam escopo
             adicional (Fonte: pesquisa SaaS B2B sobre willingness-to-pay correlacionada com
             percepção de valor).
           </li>
@@ -453,7 +453,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
         modelo de crescimento da consultoria. Quando a retenção sobe de
         60% para 85%, a consultoria deixa de precisar adquirir 15-20
         clientes por ano apenas para repor os que saíram. Esse esforço
-        comercial é redirecionado para crescimento real -- novos clientes
+        comercial é redirecionado para crescimento real — novos clientes
         que se somam a uma base estável. O artigo sobre{' '}
         <Link href="/blog/aumentar-taxa-sucesso-clientes-20-porcento" className="text-brand-navy dark:text-brand-blue hover:underline">
           como aumentar a taxa de sucesso dos clientes em 20%
@@ -485,9 +485,9 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
       <p>
         Na terceira fase (dias 61-90), o ciclo se estabiliza: o pipeline
         é atualizado semanalmente, os relatórios mensais são enviados até
-        o 5.o dia útil e o relatório trimestral de ROI é preparado. A
+        o 5.º dia útil e o relatório trimestral de ROI é preparado. A
         partir desse ponto, a consultoria já tem dados de 2 a 3 meses
-        para mostrar tendências -- e os clientes já começam a perceber a
+        para mostrar tendências — e os clientes já começam a perceber a
         diferença na qualidade da comunicação.
       </p>
 
@@ -545,11 +545,11 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
       <p>
         Os 5 relatórios essenciais são: (1) Pipeline de oportunidades --
         visão consolidada de todos os editais com status de cada um;
-        (2) Taxa de vitória mensal -- evolução da taxa de adjudicação com
-        comparativo mês a mês; (3) Economia de tempo -- horas poupadas
-        na triagem de editais; (4) ROI do serviço -- relação entre valor
+        (2) Taxa de vitória mensal — evolução da taxa de adjudicação com
+        comparativo mês a mês; (3) Economia de tempo — horas poupadas
+        na triagem de editais; (4) ROI do serviço — relação entre valor
         pago e valor dos contratos adjudicados; (5) Tendências de
-        mercado -- análise de volume de licitações por setor, estado e
+        mercado — análise de volume de licitações por setor, estado e
         modalidade, identificando oportunidades emergentes.
       </p>
 
@@ -561,7 +561,7 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
         A partir do terceiro mês, o ciclo de coleta, análise e
         comunicação já está operacional. A ferramenta utilizada para
         busca e classificação de editais determina o nível de automação
-        possível -- ferramentas com classificação setorial e análise de
+        possível — ferramentas com classificação setorial e análise de
         viabilidade integradas reduzem o esforço de coleta em 60% a 70%.
       </p>
 

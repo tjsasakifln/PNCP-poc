@@ -205,7 +205,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
         </Link>.
       </p>
 
-      {/* Section 3 -- Fator 1 */}
+      {/* Section 3 — Fator 1 */}
       <h2>Fator 1: Modalidade — como cada modalidade afeta a viabilidade</h2>
 
       <p>
@@ -265,7 +265,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
         </Link>.
       </p>
 
-      {/* Section 4 -- Fator 2 */}
+      {/* Section 4 — Fator 2 */}
       <h2>Fator 2: Prazo (timeline) — o tempo é eliminatório</h2>
 
       <p>
@@ -328,7 +328,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
         arts. 155 a 163).
       </p>
 
-      {/* Section 5 -- Fator 3 */}
+      {/* Section 5 — Fator 3 */}
       <h2>Fator 3: Valor estimado — a faixa que faz sentido para a empresa</h2>
 
       <p>
@@ -391,11 +391,11 @@ export default function AnaliseViabilidadeEditaisGuia() {
         ctaMessage="Descubra editais abertos no seu setor — busca gratuita"
       />
 
-      {/* Section 7 -- Fator 4 */}
+      {/* Section 7 — Fator 4 */}
       <h2>Fator 4: Geografia — custos logísticos e presença regional</h2>
 
       <p>
-        A geografia é o quarto fator (peso 20%) e frequentemente subestimada por
+        A geografia é o quarto fator (peso 20%) e frequentemente subestimado por
         empresas que buscam editais em todo o território nacional sem considerar
         o impacto logístico na margem do contrato.
       </p>
@@ -452,7 +452,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
         o valor do contrato justifique a expansão geográfica.
       </p>
 
-      {/* Section 8 -- Framework go/no-go */}
+      {/* Section 8 — Framework go/no-go */}
       <h2>O framework go/no-go: combinando os 4 fatores em uma decisão</h2>
 
       <p>
@@ -515,7 +515,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
         </Link>.
       </p>
 
-      {/* Section 9 -- Exemplo prático */}
+      {/* Section 9 — Exemplo prático */}
       <h2>Exemplo prático: analisando 3 editais com o framework</h2>
 
       <p>
@@ -557,7 +557,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
       <h3>Edital C — Pregão para manutenção de infraestrutura de TI (SP)</h3>
 
       <p>
-        Modalidade: pregão eletrônico (nota 9). Timeline: 6 dias úteis (nota 4 --
+        Modalidade: pregão eletrônico (nota 9). Timeline: 6 dias úteis (nota 4 —
         prazo apertado mas viável se documentação estiver pronta). Valor: R$ 95
         mil (nota 7 — dentro da faixa, mas na borda inferior). Geografia: São
         Paulo capital (nota 7 — acessível, equipe remota viável para TI).{' '}
@@ -574,7 +574,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
         ruins) são decididos automaticamente pelo scoring.
       </p>
 
-      {/* Section 10 -- Automatização */}
+      {/* Section 10 — Automatização */}
       <h2>Automatizando a análise de viabilidade com IA</h2>
 
       <p>
@@ -630,7 +630,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
         </ul>
       </div>
 
-      {/* Section 11 -- Por setor */}
+      {/* Section 11 — Por setor */}
       <h2>Viabilidade por setor: particularidades que mudam a ponderação</h2>
 
       <p>

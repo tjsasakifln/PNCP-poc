@@ -112,7 +112,7 @@ export default function InteligenciaArtificialLicitacoesComoFunciona() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Volume de publicações em portais de compras públicas
+          Dados de referência — Volume de publicações em portais de compras públicas
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -333,7 +333,7 @@ export default function InteligenciaArtificialLicitacoesComoFunciona() {
         score composto que indica a probabilidade de sucesso da participação.
       </p>
 
-      <h3>Fator 1 -- Modalidade (peso 30%)</h3>
+      <h3>Fator 1 — Modalidade (peso 30%)</h3>
 
       <p>
         A modalidade da licitação determina o nível de investimento necessário para
@@ -350,7 +350,7 @@ export default function InteligenciaArtificialLicitacoesComoFunciona() {
         concorrência no scoring.
       </p>
 
-      <h3>Fator 2 -- Timeline (peso 25%)</h3>
+      <h3>Fator 2 — Timeline (peso 25%)</h3>
 
       <p>
         O prazo entre a publicação do edital e a data de abertura é um indicador
@@ -363,7 +363,7 @@ export default function InteligenciaArtificialLicitacoesComoFunciona() {
         marcado como &ldquo;prazo crítico&rdquo;.
       </p>
 
-      <h3>Fator 3 -- Valor estimado (peso 25%)</h3>
+      <h3>Fator 3 — Valor estimado (peso 25%)</h3>
 
       <p>
         Cada empresa tem uma faixa de valor onde é mais competitiva. Disputar
@@ -378,7 +378,7 @@ export default function InteligenciaArtificialLicitacoesComoFunciona() {
         no glossário.
       </p>
 
-      <h3>Fator 4 -- Geografia (peso 20%)</h3>
+      <h3>Fator 4 — Geografia (peso 20%)</h3>
 
       <p>
         A localização do órgão licitante e do local de execução afeta custos

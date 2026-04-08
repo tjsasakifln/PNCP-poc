@@ -31,7 +31,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
                 name: 'Quanto tempo um consultor de licitação gasta com triagem manual de editais?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Pesquisas operacionais em consultorias de licitação indicam que a triagem manual -- busca em portais, leitura de objetos, filtragem por relevância e compilação de resultados -- consome entre 2 e 4 horas por dia por consultor. Para consultorias que atendem clientes em múltiplos setores e estados, esse tempo pode chegar a 5 horas diárias. Isso representa 40% a 60% do tempo produtivo do consultor gasto em uma atividade operacional que não agrega valor direto ao cliente.',
+                  text: 'Pesquisas operacionais em consultorias de licitação indicam que a triagem manual — busca em portais, leitura de objetos, filtragem por relevância e compilação de resultados — consome entre 2 e 4 horas por dia por consultor. Para consultorias que atendem clientes em múltiplos setores e estados, esse tempo pode chegar a 5 horas diárias. Isso representa 40% a 60% do tempo produtivo do consultor gasto em uma atividade operacional que não agrega valor direto ao cliente.',
                 },
               },
               {
@@ -63,7 +63,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
         verdadeira quando todo o trabalho é manual. Quando a consultoria
         separa as atividades operacionais (busca e triagem de editais) das
         atividades de valor (análise e recomendação), a primeira pode ser
-        automatizada -- e a segunda pode ser multiplicada.
+        automatizada — e a segunda pode ser multiplicada.
       </p>
 
       <p>
@@ -83,7 +83,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
       </p>
 
       <p>
-        O problema não é a quantidade de trabalho -- é a qualidade da
+        O problema não é a quantidade de trabalho — é a qualidade da
         alocação. A maior parte do tempo vai para atividades que não
         exigem julgamento humano: buscar editais em portais, ler objetos
         de licitação, filtrar por relevância básica e compilar listas.
@@ -141,7 +141,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
 
       <p>
         Na prática, a maioria das consultorias descobre que 70% a 85% dos
-        editais triados manualmente são descartados por irrelevância --
+        editais triados manualmente são descartados por irrelevância —
         não pertencem ao setor do cliente, estão fora da faixa de valor
         ou são de modalidades inadequadas. O consultor gastou tempo lendo
         e avaliando editais que nunca deveriam ter chegado à sua mesa.
@@ -176,7 +176,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
         (PNCP, Portal de Compras Públicas, ComprasGov), classificação
         setorial por palavras-chave e IA, filtragem por UF, faixa de
         valor e modalidade, e scoring de viabilidade baseado em critérios
-        objetivos. Essa camada não exige julgamento humano -- exige
+        objetivos. Essa camada não exige julgamento humano — exige
         critérios bem definidos e uma ferramenta capaz de aplicá-los
         em escala.
       </p>
@@ -186,7 +186,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
         editais de alta viabilidade, recomendação estratégica para o
         cliente, contextualização com histórico do órgão e concorrência,
         e acompanhamento de resultado. Essa camada exige experiência
-        setorial, julgamento e conhecimento do perfil do cliente --
+        setorial, julgamento e conhecimento do perfil do cliente —
         exatamente o que justifica o honorário da consultoria.
       </p>
 
@@ -225,7 +225,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
 
       <p>
         Multiplicado por 10 clientes, são 2,5 a 4,5 horas por dia
-        economizadas -- exatamente o tempo de triagem manual que identificamos
+        economizadas — exatamente o tempo de triagem manual que identificamos
         no diagnóstico. Para 15 clientes, a economia chega a 3,7 a 6,7
         horas por dia, o que é praticamente impossível de absorver
         manualmente sem sobrecarregar o consultor ou comprometer a
@@ -246,7 +246,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
             análise mais profunda.
           </li>
           <li>
-            &bull; <strong>20 clientes:</strong> Economia de 5 a 9 horas/dia -- ou seja,
+            &bull; <strong>20 clientes:</strong> Economia de 5 a 9 horas/dia — ou seja,
             a triagem manual de 20 clientes é literalmente impossível para um consultor
             sozinho em uma jornada de 8 horas. Com automação, torna-se viável com margem
             para qualidade (Fonte: cálculos baseados em benchmarks de tempo por triagem
@@ -270,7 +270,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
         No modelo com triagem automatizada, o mesmo consultor consegue
         atender entre 18 e 25 clientes, porque o tempo de triagem (que
         consumia 35% a 50% da jornada) foi reduzido drasticamente. A
-        qualidade não cai -- pelo contrário, tende a subir, porque o
+        qualidade não cai — pelo contrário, tende a subir, porque o
         consultor dedica mais tempo à análise e menos à busca.
       </p>
 
@@ -280,7 +280,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
         clientes, modelo manual) pode passar a atender 60 a 75 clientes
         com a mesma equipe. Se o ticket médio é R$ 2.500/mês, a receita
         potencial salta de R$ 75.000/mês para R$ 150.000 a R$ 187.500/mês
-        -- um aumento de 100% a 150% sem custos adicionais de folha.
+        — um aumento de 100% a 150% sem custos adicionais de folha.
       </p>
 
       <p>
@@ -334,7 +334,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
         Nesta fase, a consultoria também implementa o relatório mensal de
         valor para os clientes, incluindo métricas de oportunidades
         apresentadas, taxa de aderência e economia de tempo. Esse relatório
-        é importante porque muda a percepção do cliente sobre o serviço --
+        é importante porque muda a percepção do cliente sobre o serviço —
         o que sustenta a retenção durante a transição. Como abordado no
         artigo sobre{' '}
         <Link href="/blog/aumentar-retencao-clientes-inteligencia-editais" className="text-brand-navy dark:text-brand-blue hover:underline">
@@ -384,7 +384,7 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
       </p>
 
       <p>
-        A automação da triagem não substitui o consultor -- libera-o para
+        A automação da triagem não substitui o consultor — libera-o para
         fazer o que só um consultor pode fazer: analisar, recomendar e
         acompanhar resultados. Esse é o modelo que permite crescer sem
         que cada novo cliente exija uma nova contratação.
@@ -431,8 +431,8 @@ export default function EntregarMaisResultadoClientesSemAumentarEquipe() {
       <h3>Quanto tempo um consultor de licitação gasta com triagem manual de editais?</h3>
       <p>
         Pesquisas operacionais em consultorias de licitação indicam que a
-        triagem manual -- busca em portais, leitura de objetos, filtragem
-        por relevância e compilação de resultados -- consome entre 2 e 4
+        triagem manual — busca em portais, leitura de objetos, filtragem
+        por relevância e compilação de resultados — consome entre 2 e 4
         horas por dia por consultor. Para consultorias que atendem clientes
         em múltiplos setores e estados, esse tempo pode chegar a 5 horas
         diárias. Isso representa 40% a 60% do tempo produtivo do consultor

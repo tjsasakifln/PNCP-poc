@@ -69,7 +69,7 @@ export default function ValeAPenaDisputarPregao() {
         é consumida na análise de editais que serão descartados. Estimativas
         setoriais indicam que <strong>entre 60% e 70% dos editais
         identificados como potencialmente relevantes</strong> são abandonados
-        após análise parcial -- seja por incompatibilidade de prazo, valor fora
+        após análise parcial — seja por incompatibilidade de prazo, valor fora
         da faixa viável, ou requisitos técnicos que a empresa não atende. A
         pergunta que precede qualquer investimento de tempo deveria ser
         objetiva: vale a pena disputar este pregão? Este artigo apresenta um
@@ -86,7 +86,7 @@ export default function ValeAPenaDisputarPregao() {
         de Compras Públicas, identifica editais pelo objeto, faz uma leitura
         inicial do edital completo, e então decide se a empresa deve ou não
         participar. Essa decisão frequentemente ocorre depois de investir
-        entre 30 minutos e 2 horas por edital -- tempo que não é recuperado
+        entre 30 minutos e 2 horas por edital — tempo que não é recuperado
         quando o edital é descartado.
       </p>
 
@@ -99,7 +99,7 @@ export default function ValeAPenaDisputarPregao() {
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Distribuição de modalidades e prazos
+          Dados de referência — Distribuição de modalidades e prazos
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -140,13 +140,13 @@ export default function ValeAPenaDisputarPregao() {
         O modelo de avaliação de viabilidade pondera quatro fatores, cada um
         com peso proporcional à sua influência estatística nos resultados de
         adjudicação. O objetivo não é substituir a análise completa do edital,
-        mas filtrar antes dela -- eliminando editais que, por razões
+        mas filtrar antes dela — eliminando editais que, por razões
         estruturais, têm baixa probabilidade de resultar em contrato para a
         empresa.
       </p>
 
       {/* Factor 1 */}
-      <h2>Fator 1: Modalidade -- peso 30%</h2>
+      <h2>Fator 1: Modalidade — peso 30%</h2>
 
       <p>
         A modalidade de licitação é o fator com maior peso porque determina a
@@ -189,7 +189,7 @@ export default function ValeAPenaDisputarPregao() {
       </p>
 
       {/* Factor 2 */}
-      <h2>Fator 2: Timeline -- peso 25%</h2>
+      <h2>Fator 2: Timeline — peso 25%</h2>
 
       <p>
         O fator temporal considera dois prazos distintos: o prazo de
@@ -201,14 +201,14 @@ export default function ValeAPenaDisputarPregao() {
       <p>
         A Lei 14.133/2021 estabelece prazos mínimos por modalidade, mas muitos
         órgãos publicam editais próximos ao limite legal. O prazo real
-        disponível -- descontando feriados, tempo de análise do edital e
-        elaboração da proposta -- é frequentemente insuficiente para propostas
+        disponível — descontando feriados, tempo de análise do edital e
+        elaboração da proposta — é frequentemente insuficiente para propostas
         de qualidade.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Exemplo prático -- Avaliação de prazo
+          Exemplo prático — Avaliação de prazo
         </p>
         <p className="text-sm text-ink-secondary mb-3">
           Pregão eletrônico publicado em 10/03 (segunda-feira) com abertura em
@@ -251,7 +251,7 @@ export default function ValeAPenaDisputarPregao() {
       <BlogInlineCTA slug="vale-a-pena-disputar-pregao" campaign="b2g" />
 
       {/* Factor 3 */}
-      <h2>Fator 3: Valor estimado -- peso 25%</h2>
+      <h2>Fator 3: Valor estimado — peso 25%</h2>
 
       <p>
         O valor estimado da contratação é um indicador direto de viabilidade
@@ -289,7 +289,7 @@ export default function ValeAPenaDisputarPregao() {
       </p>
 
       {/* Factor 4 */}
-      <h2>Fator 4: Geografia -- peso 20%</h2>
+      <h2>Fator 4: Geografia — peso 20%</h2>
 
       <p>
         A localização do órgão contratante e do local de execução do contrato
@@ -314,7 +314,7 @@ export default function ValeAPenaDisputarPregao() {
       <p>
         A variável crítica é o custo de frete. Para bens de alto valor
         agregado e baixo volume (equipamentos de TI, por exemplo), o frete
-        representa parcela pequena do custo total -- permitindo atuação
+        representa parcela pequena do custo total — permitindo atuação
         nacional. Para bens volumosos de baixo valor unitário (materiais de
         escritório, uniformes em grande quantidade), o frete pode representar
         5% a 15% do valor, limitando a competitividade a raios regionais.
@@ -322,7 +322,7 @@ export default function ValeAPenaDisputarPregao() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Exemplo prático -- Impacto da geografia na margem
+          Exemplo prático — Impacto da geografia na margem
         </p>
         <p className="text-sm text-ink-secondary mb-3">
           Empresa de uniformes sediada em Goiânia avaliando dois pregões
@@ -330,12 +330,12 @@ export default function ValeAPenaDisputarPregao() {
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Pregão A -- Goiânia/GO:</strong> valor R$ 180.000 |
+            <strong>Pregão A — Goiânia/GO:</strong> valor R$ 180.000 |
             frete estimado: R$ 2.800 (1,6%) | margem líquida projetada: 14% |
             pontuação geografia: 9/10
           </li>
           <li>
-            <strong>Pregão B -- Belém/PA:</strong> valor R$ 200.000 |
+            <strong>Pregão B — Belém/PA:</strong> valor R$ 200.000 |
             frete estimado: R$ 18.500 (9,3%) | margem líquida projetada: 5% |
             pontuação geografia: 4/10
           </li>
@@ -353,7 +353,7 @@ export default function ValeAPenaDisputarPregao() {
       <p>
         Os quatro fatores acima podem ser sintetizados em um checklist
         operacional que qualquer analista pode aplicar em até cinco minutos,
-        usando apenas as informações disponíveis no resumo do edital -- sem
+        usando apenas as informações disponíveis no resumo do edital — sem
         necessidade de leitura completa.
       </p>
 
@@ -426,7 +426,7 @@ export default function ValeAPenaDisputarPregao() {
       <h2>Automatizando a avaliação de viabilidade</h2>
 
       <p>
-        O checklist manual funciona bem para volumes moderados -- até 15 a 20
+        O checklist manual funciona bem para volumes moderados — até 15 a 20
         editais por semana. Acima disso, o próprio processo de triagem começa
         a consumir tempo significativo. Para empresas que monitoram múltiplos
         estados ou setores, a triagem manual de centenas de editais semanais

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import BlogInlineCTA from '../components/BlogInlineCTA';
 
 /**
- * STORY-262 B2G-14: Ata de Registro de Precos — Como Escolher
+ * STORY-262 B2G-14: Ata de Registro de Preços — Como Escolher
  * Target: 2,500-3,000 words | Category: Empresas B2G
  */
 export default function AtaRegistroPrecoComoEscolher() {
@@ -18,18 +18,18 @@ export default function AtaRegistroPrecoComoEscolher() {
             mainEntity: [
               {
                 '@type': 'Question',
-                name: 'O fornecedor e obrigado a fornecer toda a quantidade registrada na ARP?',
+                name: 'O fornecedor é obrigado a fornecer toda a quantidade registrada na ARP?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim. Conforme o art. 83 da Lei 14.133/2021, o fornecedor registrado e obrigado a fornecer até o quantitativo máximo registrado, nas condições estabelecidas na ata. A recusa injustificada pode resultar em sanções previstas nos arts. 155 a 163 da mesma lei, incluindo impedimento de licitar.',
+                  text: 'Sim. Conforme o art. 83 da Lei 14.133/2021, o fornecedor registrado é obrigado a fornecer até o quantitativo máximo registrado, nas condições estabelecidas na ata. A recusa injustificada pode resultar em sanções previstas nos arts. 155 a 163 da mesma lei, incluindo impedimento de licitar.',
                 },
               },
               {
                 '@type': 'Question',
-                name: 'E possível pedir reequilíbrio econômico-financeiro durante a vigência da ARP?',
+                name: 'É possível pedir reequilíbrio econômico-financeiro durante a vigência da ARP?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim. O art. 82, inciso VI, da Lei 14.133/2021 preve a revisão dos preços registrados quando houver alteração de fato que eleve o custo do bem ou serviço. O fornecedor deve comprovar documentalmente o aumento dos custos, apresentando planilha detalhada e índices de referência. O órgão gerenciador tem discricionariedade para aceitar ou negar o pedido.',
+                  text: 'Sim. O art. 82, inciso VI, da Lei 14.133/2021 prevê a revisão dos preços registrados quando houver alteração de fato que eleve o custo do bem ou serviço. O fornecedor deve comprovar documentalmente o aumento dos custos, apresentando planilha detalhada e índices de referência. O órgão gerenciador tem discricionariedade para aceitar ou negar o pedido.',
                 },
               },
               {
@@ -37,7 +37,7 @@ export default function AtaRegistroPrecoComoEscolher() {
                 name: 'Qual a diferença entre ARP e contrato direto por licitação convencional?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Na licitação convencional, o contrato e firmado com quantidade e prazo definidos. Na ARP, o órgão registra preços e quantitativos estimados, mas não há obrigação de aquisição mínima por parte da Administração. O fornecedor, por outro lado, e obrigado a fornecer quando demandado. Isso cria uma assimetria de risco que precisa ser avaliada.',
+                  text: 'Na licitação convencional, o contrato é firmado com quantidade e prazo definidos. Na ARP, o órgão registra preços e quantitativos estimados, mas não há obrigação de aquisição mínima por parte da Administração. O fornecedor, por outro lado, é obrigado a fornecer quando demandado. Isso cria uma assimetria de risco que precisa ser avaliada.',
                 },
               },
               {
@@ -45,7 +45,7 @@ export default function AtaRegistroPrecoComoEscolher() {
                 name: 'Órgãos não participantes podem aderir a ARP?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim, conforme o art. 86 da Lei 14.133/2021, órgãos não participantes podem aderir a ARP mediante autorização do órgão gerenciador, desde que não ultrapasse os limites legais. As adesões são limitadas a 50% do quantitativo registrado para órgãos federais, é a legislação estadual e municipal pode estabelecer regras próprias.',
+                  text: 'Sim, conforme o art. 86 da Lei 14.133/2021, órgãos não participantes podem aderir a ARP mediante autorização do órgão gerenciador, desde que não ultrapasse os limites legais. As adesões são limitadas a 50% do quantitativo registrado para órgãos federais, e a legislação estadual e municipal pode estabelecer regras próprias.',
                 },
               },
               {
@@ -62,7 +62,7 @@ export default function AtaRegistroPrecoComoEscolher() {
       />
 
       <p className="text-base sm:text-xl leading-relaxed text-ink">
-        A Ata de Registro de Precos é um dos instrumentos mais utilizados nas
+        A Ata de Registro de Preços é um dos instrumentos mais utilizados nas
         compras públicas brasileiras, e também um dos menos compreendidos por
         fornecedores. Muitas empresas tratam toda ARP como uma oportunidade
         automática de receita, sem avaliar os riscos específicos desse modelo
@@ -70,14 +70,14 @@ export default function AtaRegistroPrecoComoEscolher() {
         comprometem com preços que não sustentam, volumes que não conseguem
         atender e obrigações que desconheciam ao registrar a proposta. Este
         artigo apresenta os 6 critérios objetivos para avaliar se uma ARP
-        realmente vale sua participação, fundamentados na Lei 14.133/2021 é na
+        realmente vale sua participação, fundamentados na Lei 14.133/2021 e na
         prática do mercado B2G.
       </p>
 
       <h2>O que é uma ARP e por que é diferente de licitação convencional</h2>
 
       <p>
-        O Sistema de Registro de Precos (SRP) está disciplinado nos artigos
+        O Sistema de Registro de Preços (SRP) está disciplinado nos artigos
         82 a 86 da Lei 14.133/2021 (Nova Lei de Licitações). Diferentemente
         da licitação convencional, onde a Administração contrata uma quantidade
         definida com prazo certo, o SRP registra preços e condições para
@@ -87,18 +87,18 @@ export default function AtaRegistroPrecoComoEscolher() {
 
       <p>
         Na prática, isso significa que o fornecedor registrado se obriga a
-        manter o preço é a disponibilidade durante toda a vigência da ata (até
+        manter o preço e a disponibilidade durante toda a vigência da ata (até
         12 meses, conforme o art. 84 da Lei 14.133/2021), enquanto a
         Administração pode comprar tudo, parte ou nada do que foi registrado.
-        Essa assimetria é o ponto central que diferência a ARP de um contrato
+        Essa assimetria é o ponto central que diferencia a ARP de um contrato
         convencional e que exige avaliação cuidadosa antes da participação.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
-        <p className="text-sm font-semibold text-ink mb-3">Dados de referência: Registro de Precos no Brasil</p>
+        <p className="text-sm font-semibold text-ink mb-3">Dados de referência: Registro de Preços no Brasil</p>
         <ul className="space-y-2 text-sm text-ink-secondary">
-          <li>• Em 2025, aproximadamente 42% das contratações publicadas no PNCP utilizaram o Sistema de Registro de Precos, totalizando mais de 500 mil processos (Fonte: Painel de Compras do Governo Federal, consolidado dez/2025).</li>
-          <li>• A vigência média das ARPs registradas em 2025 foi de 10,3 meses, com 68% das atas tendo vigência de 12 meses (Fonte: Painel PNCP, Estatisticas de Compras, 2025).</li>
+          <li>• Em 2025, aproximadamente 42% das contratações publicadas no PNCP utilizaram o Sistema de Registro de Preços, totalizando mais de 500 mil processos (Fonte: Painel de Compras do Governo Federal, consolidado dez/2025).</li>
+          <li>• A vigência média das ARPs registradas em 2025 foi de 10,3 meses, com 68% das atas tendo vigência de 12 meses (Fonte: Painel PNCP, Estatísticas de Compras, 2025).</li>
           <li>• O Tribunal de Contas da União registrou aumento de 27% nos pedidos de reequilíbrio econômico-financeiro em ARPs entre 2023 e 2025, refletindo a volatilidade de custos no período (Fonte: TCU, Relatório de Auditoria em Compras Públicas, 2025).</li>
         </ul>
       </div>
@@ -107,7 +107,7 @@ export default function AtaRegistroPrecoComoEscolher() {
 
       <p>
         Antes de analisar os riscos, é importante reconhecer as vantagens
-        genuinas que a ARP oferece ao fornecedor bem posicionado.
+        genuínas que a ARP oferece ao fornecedor bem posicionado.
       </p>
 
       <p>
@@ -120,7 +120,7 @@ export default function AtaRegistroPrecoComoEscolher() {
 
       <p>
         <strong>Relacionamento institucional.</strong> Estar registrado em uma
-        ARP cria um vinculo formal com o órgão comprador. Quando a demanda
+        ARP cria um vínculo formal com o órgão comprador. Quando a demanda
         surge, o fornecedor registrado é o primeiro a ser acionado. Isso
         elimina a necessidade de competir novamente por cada pedido individual
         durante a vigência da ata.
@@ -138,13 +138,13 @@ export default function AtaRegistroPrecoComoEscolher() {
 
       <p>
         Os riscos da ARP são sistematicamente subestimados por fornecedores,
-        especialmente aqueles com pouca experiência no modelo. Os tres riscos
+        especialmente aqueles com pouca experiência no modelo. Os três riscos
         principais são:
       </p>
 
       <p>
         <strong>Obrigação de fornecimento unilateral.</strong> O art. 83 da Lei
-        14.133/2021 estabelece que o fornecedor registrado e obrigado a fornecer
+        14.133/2021 estabelece que o fornecedor registrado é obrigado a fornecer
         até o quantitativo máximo registrado. A recusa injustificada sujeita a
         empresa as sanções dos arts. 155 a 163, incluindo multa, impedimento de
         licitar e até declaração de inidoneidade. Não existe a opção de
@@ -163,7 +163,7 @@ export default function AtaRegistroPrecoComoEscolher() {
         <strong>Defasagem de preços.</strong> Em atas com vigência de 12 meses,
         a variação de custos de insumos pode corroer a margem do fornecedor.
         O pedido de reequilíbrio é um direito, mas sua concessão depende de
-        comprovação documental rigorosa é da discricionariedade do órgão. Não
+        comprovação documental rigorosa e da discricionariedade do órgão. Não
         há garantia de aprovação, nem de celeridade no processo.
       </p>
 
@@ -176,7 +176,7 @@ export default function AtaRegistroPrecoComoEscolher() {
         objetivos, não em otimismo. Os seis critérios a seguir formam um
         framework de avaliação que pode ser aplicado a qualquer ARP, independente
         do setor ou do porte da empresa. Esse tipo de análise estruturada é o
-        que diferência empresas que participam de{' '}
+        que diferencia empresas que participam de{' '}
         <Link href="/blog/escolher-editais-maior-probabilidade-vitória">
           editais com maior probabilidade de vitória
         </Link>.
@@ -188,7 +188,7 @@ export default function AtaRegistroPrecoComoEscolher() {
         O primeiro critério é o mais fundamental: a empresa tem capacidade
         operacional para atender o volume máximo registrado? Não o volume
         médio, não o volume esperado, mas o volume máximo. Porque a
-        Administração pode exigir tudo de uma vez, é a recusa injustificada
+        Administração pode exigir tudo de uma vez, e a recusa injustificada
         gera sanção.
       </p>
 
@@ -200,17 +200,17 @@ export default function AtaRegistroPrecoComoEscolher() {
         outros contratos ativos), o risco é elevado.
       </p>
 
-      <h3>Critério 2: Preco registrado vs. custo atualizado</h3>
+      <h3>Critério 2: Preço registrado vs. custo atualizado</h3>
 
       <p>
         O preço proposto no momento da licitação era competitivo e rentável.
-        Mas entre a proposta é o primeiro pedido podem se passar semanas ou
+        Mas entre a proposta e o primeiro pedido podem se passar semanas ou
         meses. A pergunta correta não é &ldquo;o preço esta bom hoje?&rdquo;
         mas &ldquo;o preço estara viável daqui a 6 meses?&rdquo;.
       </p>
 
       <p>
-        A recomendação e calcular a margem liquida considerando o cenário de
+        A recomendação é calcular a margem líquida considerando o cenário de
         custos projetado para o período da ata. Se a margem projetada for
         inferior a 8% no pior cenário, a ARP representa risco financeiro
         relevante. Em setores com alta volatilidade de insumos (alimentos,
@@ -219,10 +219,10 @@ export default function AtaRegistroPrecoComoEscolher() {
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
-        <p className="text-sm font-semibold text-ink mb-3">Exemplo prático: cálculo de margem em ARP de materiais de escritorio</p>
+        <p className="text-sm font-semibold text-ink mb-3">Exemplo prático: cálculo de margem em ARP de materiais de escritório</p>
         <p className="text-sm text-ink-secondary mb-3">
           Uma empresa avalia uma ARP para fornecimento de materiais de
-          escritorio a órgãos federais. O preço registrado para o kit básico
+          escritório a órgãos federais. O preço registrado para o kit básico
           é de R$ 85,00 por unidade. O volume máximo registrado é de 12.000
           unidades em 12 meses.
         </p>
@@ -231,24 +231,24 @@ export default function AtaRegistroPrecoComoEscolher() {
           <li>• <strong>Projeção de custo em 6 meses:</strong> R$ 74,00 (inflação de insumos + frete, estimativa conservadora baseada em IPCA acumulado de 5,2% e reajuste de frete rodoviário)</li>
           <li>• <strong>Projeção de custo em 12 meses:</strong> R$ 79,00</li>
           <li>• <strong>Margem no pior cenário (12 meses):</strong> (85 - 79) / 85 = 7,1%</li>
-          <li>• <strong>Decisão:</strong> Margem abaixo de 8% no cenário projetado. Participar somente se a ARP contiver cláusula de reequilíbrio clara é o órgão tiver histórico de aceitar pedidos de revisão.</li>
+          <li>• <strong>Decisão:</strong> Margem abaixo de 8% no cenário projetado. Participar somente se a ARP contiver cláusula de reequilíbrio clara e o órgão tiver histórico de aceitar pedidos de revisão.</li>
         </ul>
       </div>
 
       <h3>Critério 3: Quantidade de participantes (diluição)</h3>
 
       <p>
-        Em ARPs com multiplos fornecedores registrados, o volume total e
+        Em ARPs com múltiplos fornecedores registrados, o volume total é
         distribuído entre os participantes. Quanto mais fornecedores, menor
         o volume garantido para cada um. A avaliação deve considerar quantos
-        fornecedores o edital preve registrar e qual a regra de distribuição
+        fornecedores o edital prevê registrar e qual a regra de distribuição
         (rodizio, preferência por ordem de classificação, ou demanda livre).
       </p>
 
       <p>
         ARPs que registram mais de 5 fornecedores para o mesmo item diluem
-        significativamente o volume individual. Se o edital não específica
-        critério de distribuição, o risco de volume baixo e real, é o
+        significativamente o volume individual. Se o edital não especifica
+        critério de distribuição, o risco de volume baixo é real, e o
         fornecedor pode manter obrigação contratual para um volume que nunca
         se materializa.
       </p>
@@ -285,8 +285,8 @@ export default function AtaRegistroPrecoComoEscolher() {
       <p>
         Em setores como alimentos e combustíveis, onde os preços podem variar
         20% ou mais em 12 meses, a vigência longa é um fator de risco crítico.
-        Em setores como papelaria e mobiliário, onde a variação de custos e
-        mais moderada, o risco da vigência longa e menor. As{' '}
+        Em setores como papelaria e mobiliário, onde a variação de custos é
+        mais moderada, o risco da vigência longa é menor. As{' '}
         <Link href="/blog/cláusulas-escondidas-editais-licitação">
           cláusulas do edital que impactam essa avaliação
         </Link>{' '}
@@ -301,17 +301,17 @@ export default function AtaRegistroPrecoComoEscolher() {
       <h3>Critério 6: Cláusula de reequilíbrio</h3>
 
       <p>
-        O sexto critério e frequentemente o mais negligenciado: como o edital
+        O sexto critério é frequentemente o mais negligenciado: como o edital
         trata o reequilíbrio econômico-financeiro? A Lei 14.133/2021, no art.
-        82, inciso VI, preve a possibilidade de revisão de preços, mas a
+        82, inciso VI, prevê a possibilidade de revisão de preços, mas a
         implementação prática varia significativamente entre órgãos.
       </p>
 
       <p>
-        Verifique se o edital específica: (a) qual índice de referência sera
+        Verifique se o edital especifica: (a) qual índice de referência será
         utilizado para avaliar pedidos de reequilíbrio, (b) qual o prazo máximo
         para resposta ao pedido, (c) se há previsão de reequilíbrio automático
-        por índice ou apenas por solicitação fundamentada, e (d) se ha
+        por índice ou apenas por solicitação fundamentada, e (d) se há
         precedentes de reequilíbrio concedido pelo mesmo órgão em atas
         anteriores.
       </p>
@@ -333,14 +333,14 @@ export default function AtaRegistroPrecoComoEscolher() {
       <p>
         <strong>O volume máximo excede sua capacidade.</strong> Se você não
         consegue atender 100% do quantitativo registrado considerando seus
-        outros contratos ativos, o risco de inadimplência e real. E a
-        consequência e sanção administrativa.
+        outros contratos ativos, o risco de inadimplência é real. E a
+        consequência é sanção administrativa.
       </p>
 
       <p>
-        <strong>A margem projetada e insuficiente.</strong> Se o cálculo de
+        <strong>A margem projetada é insuficiente.</strong> Se o cálculo de
         margem no cenário pessimista (custo máximo projetado vs. preço
-        registrado) indica margem liquida inferior a 8%, a ARP pode se
+        registrado) indica margem líquida inferior a 8%, a ARP pode se
         transformar em contrato deficitário.
       </p>
 
@@ -352,7 +352,7 @@ export default function AtaRegistroPrecoComoEscolher() {
       </p>
 
       <p>
-        <strong>A volatilidade do setor e incompatível com o prazo.</strong>{' '}
+        <strong>A volatilidade do setor é incompatível com o prazo.</strong>{' '}
         Ata de 12 meses para itens cujos insumos variam mais de 15% ao ano,
         sem cláusula de reequilíbrio robusta, é uma aposta contra o fornecedor.
       </p>
@@ -362,17 +362,17 @@ export default function AtaRegistroPrecoComoEscolher() {
         <Link href="/blog/disputar-todas-licitações-matemática-real">
           a matemática real de disputar todas as licitações
         </Link>{' '}
-        aprofunda o raciocínio quantitativo por tras dessa seletividade.
+        aprofunda o raciocínio quantitativo por trás dessa seletividade.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">Checklist rápido: avaliação de ARP em 10 minutos</p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>• Volume máximo registrado cabe na sua capacidade operacional? (Sim/Não)</li>
-          <li>• Margem liquida projetada no pior cenário de custos e superior a 8%? (Sim/Não)</li>
-          <li>• Ha menos de 5 fornecedores registrados para o mesmo item? (Sim/Não)</li>
+          <li>• Margem líquida projetada no pior cenário de custos é superior a 8%? (Sim/Não)</li>
+          <li>• Há menos de 5 fornecedores registrados para o mesmo item? (Sim/Não)</li>
           <li>• O órgão gerenciador tem histórico de demanda consistente? (Sim/Não)</li>
-          <li>• A vigência da ata e compatível com a volatilidade dos seus custos? (Sim/Não)</li>
+          <li>• A vigência da ata é compatível com a volatilidade dos seus custos? (Sim/Não)</li>
           <li>• O edital tem cláusula de reequilíbrio detalhada com índice de referência? (Sim/Não)</li>
           <li>• <strong>Resultado:</strong> 5 ou 6 respostas &ldquo;Sim&rdquo; = ARP viável. 3 ou 4 = Requer análise aprofundada. Menos de 3 = Recusar.</li>
         </ul>
@@ -381,9 +381,9 @@ export default function AtaRegistroPrecoComoEscolher() {
       <h2>Considerações sobre a Lei 14.133/2021</h2>
 
       <p>
-        A Nova Lei de Licitações trouxe mudancas relevantes para o SRP que
+        A Nova Lei de Licitações trouxe mudanças relevantes para o SRP que
         impactam diretamente a avaliação do fornecedor. O art. 82 estabelece
-        que o SRP sera adotado preferencialmente quando a Administração não
+        que o SRP será adotado preferencialmente quando a Administração não
         puder definir previamente o quantitativo a ser demandado, quando for
         conveniente a aquisição parcelada, ou quando atender a mais de um
         órgão.
@@ -393,12 +393,12 @@ export default function AtaRegistroPrecoComoEscolher() {
         O art. 84 limita a vigência da ARP a 12 meses, prorrogável por igual
         período (totalizando 24 meses). O art. 86 disciplina as adesões por
         órgãos não participantes, limitando-as a 50% do quantitativo
-        registrado no ambito federal. Essas regras devem ser consideradas no
+        registrado no âmbito federal. Essas regras devem ser consideradas no
         cálculo de volume potencial total.
       </p>
 
       <p>
-        Um ponto frequentemente ignorado e que a Lei 14.133/2021 exige que o
+        Um ponto frequentemente ignorado é que a Lei 14.133/2021 exige que o
         edital contenha o quantitativo máximo de cada item, vedada a
         indicação de quantitativo mínimo (art. 82, par. 5). Isso reforça a
         assimetria do modelo: o fornecedor se compromete com o máximo, a
@@ -431,33 +431,33 @@ export default function AtaRegistroPrecoComoEscolher() {
 
       <h2>Perguntas Frequentes</h2>
 
-      <h3>O fornecedor e obrigado a fornecer toda a quantidade registrada na ARP?</h3>
+      <h3>O fornecedor é obrigado a fornecer toda a quantidade registrada na ARP?</h3>
       <p>
-        Sim. Conforme o art. 83 da Lei 14.133/2021, o fornecedor registrado e
+        Sim. Conforme o art. 83 da Lei 14.133/2021, o fornecedor registrado é
         obrigado a fornecer até o quantitativo máximo registrado, nas condições
         estabelecidas na ata. A recusa injustificada pode resultar em sanções
         previstas nos arts. 155 a 163 da mesma lei, incluindo multa,
         impedimento de licitar e declaração de inidoneidade. Por isso, a
-        avaliação de capacidade operacional antes da participação e
+        avaliação de capacidade operacional antes da participação é
         indispensável.
       </p>
 
-      <h3>E possível pedir reequilíbrio econômico-financeiro durante a vigência da ARP?</h3>
+      <h3>É possível pedir reequilíbrio econômico-financeiro durante a vigência da ARP?</h3>
       <p>
-        Sim. O art. 82, inciso VI, da Lei 14.133/2021 preve a revisão dos
+        Sim. O art. 82, inciso VI, da Lei 14.133/2021 prevê a revisão dos
         preços registrados quando houver alteração de fato que eleve o custo
         do bem ou serviço. O fornecedor deve comprovar documentalmente o
         aumento dos custos, apresentando planilha detalhada e índices de
         referência aceitos pelo órgão. É importante notar que o órgão
         gerenciador tem discricionariedade para aceitar ou negar o pedido,
-        é o processo pode levar semanas ou meses.
+        e o processo pode levar semanas ou meses.
       </p>
 
       <h3>Qual a diferença entre ARP e contrato direto por licitação convencional?</h3>
       <p>
-        Na licitação convencional, o contrato e firmado com quantidade definida,
+        Na licitação convencional, o contrato é firmado com quantidade definida,
         prazo de execução e valor total estabelecido. O órgão se compromete a
-        adquirir é o fornecedor se compromete a entregar. Na ARP, há uma
+        adquirir e o fornecedor se compromete a entregar. Na ARP, há uma
         assimetria fundamental: o órgão registra quantidades estimadas sem
         obrigação de compra mínima, enquanto o fornecedor se obriga a fornecer
         até o quantitativo máximo quando demandado. Essa assimetria transfere
@@ -469,7 +469,7 @@ export default function AtaRegistroPrecoComoEscolher() {
         Sim, conforme o art. 86 da Lei 14.133/2021. Órgãos não participantes
         podem aderir a ARP mediante autorização do órgão gerenciador e
         aceitação do fornecedor, desde que respeitados os limites legais. No
-        ambito federal, as adesões são limitadas a 50% do quantitativo
+        âmbito federal, as adesões são limitadas a 50% do quantitativo
         registrado. Para o fornecedor, as adesões podem representar
         oportunidade de receita adicional, mas também ampliam o volume total
         de obrigação, o que deve ser considerado no dimensionamento de
@@ -479,7 +479,7 @@ export default function AtaRegistroPrecoComoEscolher() {
       <h3>Quando devo recusar participar de uma ARP?</h3>
       <p>
         Recuse quando o volume máximo estimado exceder sua capacidade de
-        entrega considerando outros contratos ativos, quando a margem liquida
+        entrega considerando outros contratos ativos, quando a margem líquida
         projetada para o pior cenário de custos for inferior a 8-10%, quando
         houver alta volatilidade de custos no seu setor sem cláusula de
         reequilíbrio adequada no edital, ou quando o órgão gerenciador tiver

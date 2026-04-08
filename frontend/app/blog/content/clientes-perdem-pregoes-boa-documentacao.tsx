@@ -23,7 +23,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
                 name: 'Por que uma empresa perde pregão mesmo com documentação correta?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Documentação correta é condição necessária, mas não suficiente para vencer um pregão. As causas mais frequentes de não-adjudicação são preço acima do estimado (responsável por 38% a 45% das desclassificações segundo dados do TCU), excesso de concorrentes na mesma faixa de valor, e baixa aderência técnica ao objeto do edital. A documentação garante habilitação, mas a vitória depende de fatores estratégicos anteriores -- como a escolha do edital certo para disputar.',
+                  text: 'Documentação correta é condição necessária, mas não suficiente para vencer um pregão. As causas mais frequentes de não-adjudicação são preço acima do estimado (responsável por 38% a 45% das desclassificações segundo dados do TCU), excesso de concorrentes na mesma faixa de valor, e baixa aderência técnica ao objeto do edital. A documentação garante habilitação, mas a vitória depende de fatores estratégicos anteriores — como a escolha do edital certo para disputar.',
                 },
               },
               {
@@ -31,7 +31,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
                 name: 'Qual a diferença entre ser habilitado e ser adjudicado em uma licitação?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Habilitação é a etapa em que a comissão verifica se o licitante atende aos requisitos documentais e jurídicos do edital. Adjudicação é a etapa em que o vencedor é declarado, com base no critério de julgamento (menor preço, técnica e preço, etc.). Uma empresa pode ser habilitada -- com toda a documentação em ordem -- e ainda assim não ser adjudicada porque seu preço ficou acima do lance vencedor, porque não atendeu a um critério técnico específico do objeto, ou porque desistiu do certame após a fase de lances.',
+                  text: 'Habilitação é a etapa em que a comissão verifica se o licitante atende aos requisitos documentais e jurídicos do edital. Adjudicação é a etapa em que o vencedor é declarado, com base no critério de julgamento (menor preço, técnica e preço, etc.). Uma empresa pode ser habilitada — com toda a documentação em ordem — e ainda assim não ser adjudicada porque seu preço ficou acima do lance vencedor, porque não atendeu a um critério técnico específico do objeto, ou porque desistiu do certame após a fase de lances.',
                 },
               },
               {
@@ -39,7 +39,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
                 name: 'Como uma consultoria pode reduzir a taxa de derrota dos clientes?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'A principal alavanca não está na documentação, mas na seleção dos editais. Consultorias que implementam análise de viabilidade antes da decisão de participar -- avaliando modalidade, prazo, valor estimado e competição histórica -- conseguem aumentar a taxa de adjudicação dos clientes em 15% a 25%. O princípio é simples: disputar menos editais, porém com maior probabilidade de vitória.',
+                  text: 'A principal alavanca não está na documentação, mas na seleção dos editais. Consultorias que implementam análise de viabilidade antes da decisão de participar — avaliando modalidade, prazo, valor estimado e competição histórica — conseguem aumentar a taxa de adjudicação dos clientes em 15% a 25%. O princípio é simples: disputar menos editais, porém com maior probabilidade de vitória.',
                 },
               },
               {
@@ -59,10 +59,10 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
       <p className="text-base sm:text-xl leading-relaxed text-ink">
         Todo consultor de licitação já viveu essa situação: o cliente monta uma proposta
         impecável, com certidões em dia, atestados válidos, planilhas revisadas, envelope
-        lacrado no prazo -- e mesmo assim perde o pregão. A documentação estava certa. O
+        lacrado no prazo — e mesmo assim perde o pregão. A documentação estava certa. O
         processo foi seguido. E o resultado, mais uma vez, foi a derrota. Quando um cliente
         começa a <strong>perder pregão com documentação certa</strong> de forma recorrente,
-        o problema não está no que foi entregue -- está no que foi decidido antes: a escolha
+        o problema não está no que foi entregue — está no que foi decidido antes: a escolha
         de disputar aquele edital específico.
       </p>
 
@@ -70,7 +70,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
 
       <p>
         Existe uma crença arraigada no mercado de licitações de que a qualidade da
-        documentação é o principal determinante de vitória. Essa crença é compreensível --
+        documentação é o principal determinante de vitória. Essa crença é compreensível —
         afinal, a inabilitação documental é uma das formas mais visíveis e frustrantes de
         perder um certame. No entanto, os dados contam uma história diferente.
       </p>
@@ -98,7 +98,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
       <p>
         O dado é contundente: <strong>83% das derrotas em pregões não têm relação com
         documentação</strong>. A maioria dos clientes que perdem licitações perde por
-        razões estratégicas -- preço, aderência técnica, ou até desistência voluntária
+        razões estratégicas — preço, aderência técnica, ou até desistência voluntária
         quando percebem, já dentro do processo, que não deveriam estar ali.
       </p>
 
@@ -109,7 +109,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
         elaboração da proposta: a decisão de participar. Quando uma consultoria seleciona
         editais para seus clientes com base apenas em palavras-chave e região geográfica,
         sem uma análise estruturada de viabilidade, o resultado previsível é uma taxa de
-        adjudicação entre 5% e 10% -- a média do mercado segundo dados do Painel de
+        adjudicação entre 5% e 10% — a média do mercado segundo dados do Painel de
         Compras do Governo Federal.
       </p>
 
@@ -117,7 +117,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
         Esse número significa que, para cada 20 propostas elaboradas, o cliente vence 1 ou
         2. Se o custo médio de elaboração de uma proposta está entre R$ 800 e R$ 2.500
         (considerando horas de equipe, certidões, garantias e custos administrativos),
-        o custo acumulado das derrotas pode ultrapassar R$ 40.000 por mês -- sem contar
+        o custo acumulado das derrotas pode ultrapassar R$ 40.000 por mês — sem contar
         o custo de oportunidade.
       </p>
 
@@ -154,8 +154,8 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
       <h3>Cenário 2: Alta concorrência em objeto comoditizado</h3>
 
       <p>
-        Em pregões eletrônicos de menor preço para objetos padronizados -- material de
-        escritório, equipamentos de informática de prateleira, uniformes básicos -- o
+        Em pregões eletrônicos de menor preço para objetos padronizados — material de
+        escritório, equipamentos de informática de prateleira, uniformes básicos — o
         número de concorrentes pode facilmente ultrapassar 15 a 20 proponentes. A
         probabilidade estatística base cai para menos de 7%, e a disputa se resolve em
         centavos. A excelência documental não gera diferencial quando o critério é
@@ -180,7 +180,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
         estipulado, resultando em penalidades ou rescisão. Isso acontece quando a
         análise pré-participação não considerou a capacidade operacional real versus
         os prazos de entrega do edital. Tecnicamente, a documentação permitiu a
-        vitória -- mas a vitória gerou prejuízo.
+        vitória — mas a vitória gerou prejuízo.
       </p>
 
       <BlogInlineCTA slug="clientes-perdem-pregoes-boa-documentacao" campaign="consultorias" />
@@ -199,12 +199,12 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
         <Link href="/blog/escolher-editais-maior-probabilidade-vitoria" className="text-brand-navy dark:text-brand-blue hover:underline">
           seleção de editais com maior probabilidade de vitória
         </Link>{' '}
-        não é intuição -- é processo. Um framework de viabilidade minimamente robusto
+        não é intuição — é processo. Um framework de viabilidade minimamente robusto
         avalia quatro dimensões antes de recomendar a participação.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
-        <p className="text-sm font-semibold text-ink mb-3">Framework de viabilidade pré-participação -- 4 fatores</p>
+        <p className="text-sm font-semibold text-ink mb-3">Framework de viabilidade pré-participação — 4 fatores</p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li><strong>1. Modalidade e julgamento (peso 30%):</strong> Pregão eletrônico de menor preço favorece empresas com custo baixo. Técnica e preço favorece diferenciais qualitativos. A modalidade determina onde está a vantagem competitiva do cliente.</li>
           <li><strong>2. Timeline e prazos (peso 25%):</strong> Prazo entre publicação e abertura das propostas versus tempo necessário para elaboração. Prazo de execução versus capacidade operacional real do cliente.</li>
@@ -214,7 +214,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
       </div>
 
       <p>
-        Esse framework não é teoria -- é exatamente o modelo utilizado em análises de
+        Esse framework não é teoria — é exatamente o modelo utilizado em análises de
         viabilidade automatizadas. A atribuição de pesos permite gerar um score numérico
         que classifica cada edital como alta, média ou baixa viabilidade. Editais com
         score abaixo de 50 (em uma escala de 0 a 100) são recomendados para descarte,
@@ -255,7 +255,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
       <p>
         O relatório ao cliente não é mais &ldquo;encontramos 47 editais nesta semana&rdquo;.
         É &ldquo;identificamos 47 editais no seu setor, dos quais 8 apresentam viabilidade
-        alta e 12 viabilidade média -- recomendamos investir em 8 propostas&rdquo;. Essa
+        alta e 12 viabilidade média — recomendamos investir em 8 propostas&rdquo;. Essa
         comunicação demonstra curadoria, não apenas volume. Para mais sobre como
         estruturar essa relação com base em dados, veja o artigo sobre{' '}
         <Link href="/blog/aumentar-retencao-clientes-inteligencia-editais" className="text-brand-navy dark:text-brand-blue hover:underline">
@@ -270,7 +270,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
         em licitações (2023), empresas que adotam algum critério estruturado de seleção
         de editais apresentam taxas de adjudicação entre 18% e 28%, contra 5% a 10%
         de empresas que participam indiscriminadamente. A diferença não está na
-        documentação -- ambas as populações têm acesso aos mesmos recursos documentais.
+        documentação — ambas as populações têm acesso aos mesmos recursos documentais.
         A diferença está na qualidade da decisão.
       </p>
 
@@ -287,7 +287,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
       <p>
         Para a consultoria, o impacto é direto: clientes que vencem mais renovam o
         contrato. Clientes que perdem consistentemente, independentemente da qualidade
-        do serviço documental, migram para outro prestador -- ou desistem do mercado
+        do serviço documental, migram para outro prestador — ou desistem do mercado
         de licitações. A retenção de clientes está diretamente correlacionada à taxa
         de adjudicação, não à taxa de habilitação.
       </p>
@@ -297,7 +297,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
         de &ldquo;montamos propostas&rdquo; para &ldquo;selecionamos as melhores oportunidades
         e montamos propostas com alta probabilidade de vitória&rdquo;. Esse reposicionamento
         justifica honorários maiores, reduz o volume operacional e aumenta a satisfação
-        do cliente -- um ciclo virtuoso que começa na triagem, não na documentação.
+        do cliente — um ciclo virtuoso que começa na triagem, não na documentação.
       </p>
 
       {/* CTA Section */}
@@ -328,7 +328,7 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
         mostram que 83% das não-adjudicações têm causas não-documentais: preço acima do
         estimado (42%), desclassificação técnica (23%) e desistência após lances (18%).
         A documentação garante habilitação, mas a vitória depende de fatores estratégicos
-        avaliados antes da decisão de participar -- como aderência ao objeto, faixa de
+        avaliados antes da decisão de participar — como aderência ao objeto, faixa de
         preço competitiva e nível de concorrência.
       </p>
 
@@ -344,8 +344,8 @@ export default function ClientesPerdemPregoesBoadocumentacao() {
       <h3>Como uma consultoria pode reduzir a taxa de derrota dos clientes?</h3>
       <p>
         A principal alavanca está na seleção dos editais, não na documentação. Consultorias
-        que implementam análise de viabilidade antes da decisão de participar -- avaliando
-        modalidade, prazo, valor estimado e competição histórica -- conseguem elevar a
+        que implementam análise de viabilidade antes da decisão de participar — avaliando
+        modalidade, prazo, valor estimado e competição histórica — conseguem elevar a
         taxa de adjudicação dos clientes em 15% a 25% em relação à média do mercado.
       </p>
 

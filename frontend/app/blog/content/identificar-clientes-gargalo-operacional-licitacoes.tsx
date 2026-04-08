@@ -69,7 +69,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
         <strong>prospectar clientes para consultoria de licitação</strong> segue
         um roteiro genérico: listar empresas que participam de licitações,
         enviar apresentações institucionais, esperar retorno. A taxa de conversão
-        é baixa porque a abordagem ignora o timing -- nem toda empresa que
+        é baixa porque a abordagem ignora o timing — nem toda empresa que
         participa de licitações precisa de consultoria agora. O prospect ideal
         é aquele que já tem uma dor operacional identificável, que consome
         recursos e limita resultados. Este artigo mapeia sete sinais concretos
@@ -83,7 +83,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
 
       <p>
         Em vendas B2B de serviços consultivos, a variável que mais impacta a taxa
-        de conversão não é a qualidade do pitch nem o preço -- é a presença de uma
+        de conversão não é a qualidade do pitch nem o preço — é a presença de uma
         dor ativa no prospect. Uma empresa que está satisfeita com seus resultados
         em licitações, mesmo que esses resultados sejam objetivamente medianos, é
         um prospect de baixa conversão. Uma empresa que perdeu três prazos no
@@ -94,14 +94,14 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
       <p>
         A questão prática para a consultoria é: como identificar essas empresas
         sem acesso aos dados internos delas? A resposta está nos sinais públicos
-        e semi-públicos de ineficiência operacional em licitações -- indicadores
+        e semi-públicos de ineficiência operacional em licitações — indicadores
         que podem ser observados a partir de dados disponíveis nos portais de
         compras públicas e no comportamento de participação das empresas.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referência -- Perfil de empresas com gargalo operacional em licitações
+          Dados de referência — Perfil de empresas com gargalo operacional em licitações
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
@@ -142,7 +142,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
         O primeiro e mais confiável indicador de gargalo operacional é a
         desproporção entre volume de participação e resultados. Uma empresa que
         disputa 20 a 30 licitações por mês e adjudica 1 a 2 não tem um problema
-        de competitividade -- tem um problema de seleção. Está investindo recursos
+        de competitividade — tem um problema de seleção. Está investindo recursos
         em editais onde não tem vantagem competitiva.
       </p>
 
@@ -150,7 +150,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
         Esse sinal pode ser parcialmente identificado a partir de dados públicos:
         nos portais de compras, é possível verificar a frequência de participação
         de uma empresa e cruzar com o número de adjudicações no mesmo período. A
-        desproporção indica que a empresa precisa de triagem mais rigorosa -- e
+        desproporção indica que a empresa precisa de triagem mais rigorosa — e
         triagem é exatamente o serviço que a consultoria pode oferecer.
       </p>
 
@@ -232,14 +232,14 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
       <p>
         Diferente da perda de prazo, a desistência deliberada ocorre quando a
         equipe começa a analisar um edital e descobre, após investir 4 a 8 horas,
-        que a oportunidade não é viável -- exigência de atestado incompatível,
+        que a oportunidade não é viável — exigência de atestado incompatível,
         valor abaixo do mínimo operacional, cláusula restritiva identificada
         tardiamente.
       </p>
 
       <p>
         Esse padrão indica ausência de triagem estruturada. A empresa não filtra
-        antes de analisar -- investe tempo e depois descarta. Estima-se que
+        antes de analisar — investe tempo e depois descarta. Estima-se que
         consultorias que implementam triagem por viabilidade reduzem em 60% a
         75% os editais que chegam à fase de análise detalhada, eliminando a
         maioria das desistências tardias.
@@ -262,7 +262,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
         Uma empresa que participa de licitações de apenas 2 a 3 órgãos
         contratantes em um universo de dezenas ou centenas de órgãos relevantes
         para seu setor está operando com uma fração do mercado disponível. A
-        concentração geralmente não é estratégica -- é consequência de
+        concentração geralmente não é estratégica — é consequência de
         limitação operacional: a equipe só consegue monitorar os portais que
         já conhece.
       </p>
@@ -271,7 +271,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
         Os dados públicos permitem verificar essa concentração: no PNCP, é
         possível consultar o histórico de participação de um CNPJ e identificar
         a distribuição por órgão contratante. Uma concentração superior a 70%
-        em 3 ou menos órgãos sinaliza oportunidade para diversificação -- que é
+        em 3 ou menos órgãos sinaliza oportunidade para diversificação — que é
         exatamente o que a consultoria pode facilitar.
       </p>
 
@@ -290,7 +290,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
         O resultado é inconsistência: a mesma empresa disputa editais de R$ 10.000
         e de R$ 2 milhões, em modalidades que vão de pregão eletrônico a
         concorrência, em UFs onde tem presença e em UFs onde nunca operou. Sem
-        critérios, a seleção é aleatória -- e os resultados refletem essa
+        critérios, a seleção é aleatória — e os resultados refletem essa
         aleatoriedade.
       </p>
 
@@ -306,7 +306,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
       </p>
 
       {/* Section 8 */}
-      <h2>Sinal 7: Desconhecimento de fontes -- uso de apenas 1 portal</h2>
+      <h2>Sinal 7: Desconhecimento de fontes — uso de apenas 1 portal</h2>
 
       <p>
         A pesquisa do SEBRAE (2023) indica que 68% das empresas B2G consultam
@@ -340,7 +340,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Framework -- Estrutura do diagnóstico gratuito para prospecção
+          Framework — Estrutura do diagnóstico gratuito para prospecção
         </p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
@@ -410,7 +410,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
         <strong>Para o Sinal 5 (concentração em poucos órgãos):</strong>{' '}
         &ldquo;Identifiquei que a [empresa] fornece predominantemente para [órgão
         A] e [órgão B]. Nos últimos 30 dias, foram publicados [X] editais
-        relevantes para o setor de [setor] em [UFs de interesse] -- a maioria em
+        relevantes para o setor de [setor] em [UFs de interesse] — a maioria em
         órgãos que vocês provavelmente ainda não monitoram. Posso compartilhar
         essa análise?&rdquo;
       </p>
@@ -421,7 +421,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
         dias, [X] licitações relevantes para o setor de [setor] foram publicadas
         exclusivamente em outras fontes (PNCP, ComprasGov, Portal de Compras
         Públicas). O valor total estimado dessas oportunidades é de R$ [valor].
-        Preparei um levantamento -- posso enviar?&rdquo;
+        Preparei um levantamento — posso enviar?&rdquo;
       </p>
 
       <p>
@@ -442,7 +442,7 @@ export default function IdentificarClientesGargaloOperacionalLicitacoes() {
       {/* CTA Section — BEFORE FAQ */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Ofereça diagnóstico com dados reais -- use o SmartLic na demonstração
+          Ofereça diagnóstico com dados reais — use o SmartLic na demonstração
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           Busque licitações por setor e UF, veja o volume de oportunidades com
