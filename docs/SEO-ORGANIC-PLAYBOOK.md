@@ -2075,11 +2075,11 @@ Cada alavanca abaixo endereça um ponto específico do modelo. Estão priorizada
 
 **Implementação:** `backend/services/trial_email_sequence.py` + 3 novos templates em `backend/templates/emails/`.
 
-#### Alavanca 3: CNPJ Pages no Sitemap (expansão programática)
+#### Alavanca 3: CNPJ Pages no Sitemap (expansão programática) ✅ IMPLEMENTADO (2026-04-08)
 
 **Impacto:** +5.000-10.000 páginas indexáveis → +20-40% tráfego long-tail orgânico
 
-**Racional:** `/cnpj/[cnpj]` já existe como SSR dinâmico (qualquer CNPJ funciona), mas `generateStaticParams()` retorna `[]` e as páginas individuais NÃO estão no sitemap. O Google não descobre essas URLs.
+**Status:** Implementado. Backend `GET /v1/sitemap/cnpjs` + Frontend `sitemap.ts` com URLs `/cnpj/{cnpj}`. Ver Parte 11.1 para detalhes.
 
 O datalake `pncp_raw_bids` contém dezenas de milhares de CNPJs distintos de órgãos compradores. Cada página CNPJ tem conteúdo genuinamente único: perfil B2G da empresa, histórico de participação, score, setores de atuação. Buscas tipo "[nome empresa] licitações" e "[CNPJ] editais" têm volume real e zero competição.
 
@@ -2211,15 +2211,13 @@ Paid não é falha da estratégia SEO — é bridge financing enquanto o compoun
 
 ### 11.1 — CNPJ Pages no Sitemap (Onda 1: +5.000-10.000 URLs)
 
-**Status atual:** `/cnpj/[cnpj]` existe como SSR dinâmico (aceita qualquer CNPJ, ISR 24h). Hub `/cnpj` está no sitemap. Páginas individuais NÃO estão.
+**Status:** ✅ IMPLEMENTADO (2026-04-08)
 
-**Problema:** `generateStaticParams()` retorna `[]`. Google não descobre essas URLs sem sitemap entry ou internal link.
-
-**Solução:**
-1. Backend: `GET /v1/sitemap/cnpjs` → query `pncp_raw_bids` para top CNPJs por volume de participação
-2. Frontend: `sitemap.ts` → nova seção com URLs `/cnpj/{cnpj}`, priority 0.5, changefreq weekly
-3. Threshold: incluir apenas CNPJs com ≥3 contratos (evita thin content)
-4. Escalonamento: 5.000 no M1, expandir para 10.000 conforme GSC confirme indexação saudável
+- [x] Backend: `GET /v1/sitemap/cnpjs` → query `pncp_raw_bids` para top CNPJs por volume (≥3 bids), cache 24h, max 5.000
+- [x] Frontend: `sitemap.ts` → nova seção com URLs `/cnpj/{cnpj}`, priority 0.5, changefreq weekly
+- [x] Threshold: incluir apenas CNPJs com ≥3 licitações (evita thin content)
+- [x] Testes: 7 testes (filtro ≥3, cache 24h, graceful failure, schema, max 5000)
+- Escalonamento: 5.000 no M1, expandir para 10.000 conforme GSC confirme indexação saudável
 
 **Buscas capturadas:** "[empresa] licitações", "[CNPJ] editais", "[razão social] compras públicas"
 

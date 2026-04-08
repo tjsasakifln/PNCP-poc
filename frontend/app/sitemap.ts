@@ -14,13 +14,36 @@ import { getAllMasterclassTemas } from '@/lib/masterclasses';
  * STORY-261 AC10: Includes /blog and /blog/{slug} routes
  * STORY-324 AC12: Includes /licitacoes and /licitacoes/{setor} routes
  * SEO-PLAYBOOK P0: Includes programmatic, licitacoes setor×UF, and panorama routes
+ * SEO-PLAYBOOK Onda 1: Includes /cnpj/{cnpj} pages from datalake (≥3 bids)
  *
  * Next.js generates sitemap.xml automatically from this file.
  *
  * SEO-CAC-ZERO: lastmod uses actual content dates instead of build time.
  * Google ignores lastmod when all URLs share the same timestamp.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
+
+// Cache for CNPJ list fetched from backend (build-time)
+let _cnpjCache: string[] = [];
+let _cnpjFetched = false;
+
+async function fetchSitemapCnpjs(): Promise<string[]> {
+  if (_cnpjFetched) return _cnpjCache;
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const resp = await fetch(`${backendUrl}/v1/sitemap/cnpjs`, {
+      next: { revalidate: 86400 }, // 24h ISR
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    _cnpjCache = data.cnpjs || [];
+    _cnpjFetched = true;
+    return _cnpjCache;
+  } catch {
+    return [];
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_CANONICAL_URL || 'https://smartlic.tech';
 
   // Stable dates for static pages (use actual last-edit date, not build time)
@@ -99,6 +122,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: today,
     changeFrequency: 'daily' as const,
     priority: 0.7,
+  }));
+
+  // SEO-PLAYBOOK Onda 1: CNPJ pages from datalake
+  const cnpjList = await fetchSitemapCnpjs();
+  const cnpjRoutes: MetadataRoute.Sitemap = cnpjList.map((cnpj) => ({
+    url: `${baseUrl}/cnpj/${cnpj}`,
+    lastModified: today,
+    changeFrequency: 'weekly' as const,
+    priority: 0.5,
   }));
 
   // S3: Alertas Publicos pages (15 sectors × 27 UFs = 405 pages)
@@ -378,5 +410,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     })),
+    // SEO-PLAYBOOK Onda 1: CNPJ pages from datalake (≥3 bids)
+    ...cnpjRoutes,
   ];
 }
