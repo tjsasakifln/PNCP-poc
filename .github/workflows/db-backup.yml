@@ -1,0 +1,182 @@
+name: "Database Backup (pg_dump → S3)"
+# DEBT-05 AC1 — TD-034: Backup semanal independente do Supabase Cloud
+#
+# Por que fazer backup independente se o Supabase Cloud já faz backups diários?
+#   1. Supabase Pro backups ficam retidos por 7 dias apenas (PITR 3 dias)
+#   2. Backup independente no S3 garante retenção customizável (padrão: 90 dias)
+#   3. Proteção contra falha no lado do Supabase (outage, conta comprometida)
+#   4. pg_dump gera arquivo portável — pode restaurar em qualquer PostgreSQL
+#   5. Conformidade: auditores exigem backup independente do provedor
+#
+# Secrets necessários (configurar em GitHub → Settings → Secrets → Actions):
+#   SUPABASE_DB_URL          — postgresql://... (já usado no deploy.yml)
+#   AWS_BACKUP_ACCESS_KEY_ID — IAM key com permissão s3:PutObject no bucket
+#   AWS_BACKUP_SECRET_KEY    — IAM secret correspondente
+#
+# Variables necessárias (GitHub → Settings → Variables → Actions):
+#   BACKUP_S3_BUCKET    — nome do bucket S3 (ex: smartlic-db-backups)
+#   AWS_BACKUP_REGION   — região do bucket (default: us-east-1)
+#
+# Permissões IAM mínimas para o usuário de backup:
+#   s3:PutObject   on arn:aws:s3:::${BACKUP_S3_BUCKET}/db-backups/*
+#   s3:GetObject   on arn:aws:s3:::${BACKUP_S3_BUCKET}/db-backups/*  (para verificação)
+#   s3:ListBucket  on arn:aws:s3:::${BACKUP_S3_BUCKET}               (para ls)
+
+on:
+  schedule:
+    # Domingo 02:00 UTC — off-peak, após o purge das 4 BRT (= 7 UTC sex)
+    # e antes do incremental ingestion das 8 BRT (= 11 UTC dom)
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      retention_note:
+        description: 'Nota para identificar backup manual (ex: pre-migration, pre-release)'
+        required: false
+        default: 'manual'
+
+env:
+  PG_CLIENT_VERSION: "16"   # compatível com Supabase PostgreSQL 17 (backward compat OK)
+  BACKUP_FORMAT: "custom"   # pg_dump -Fc — comprimido, restaurável com pg_restore
+  BACKUP_COMPRESS: "9"      # compressão máxima (gzip level 9)
+
+jobs:
+  backup:
+    name: pg_dump → S3
+    runs-on: ubuntu-latest
+    timeout-minutes: 30     # failsafe: dump de tabela grande não deve passar de 20min
+
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+          pg_dump --version
+
+      - name: Gerar nome do arquivo de backup
+        id: filename
+        run: |
+          TIMESTAMP=$(date -u +%Y%m%d_%H%M%S)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.retention_note }}"
+          else
+            TAG="scheduled"
+          fi
+          FILENAME="smartlic_${TAG}_${TIMESTAMP}.dump"
+          echo "filename=${FILENAME}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "Arquivo de backup: ${FILENAME}"
+
+      - name: pg_dump — exportar banco completo
+        id: dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          FILENAME="${{ steps.filename.outputs.filename }}"
+
+          echo "=== Iniciando pg_dump ==="
+          echo "Arquivo: ${FILENAME}"
+          echo "Formato: custom (restaurável via pg_restore)"
+          echo "Compressão: level ${{ env.BACKUP_COMPRESS }}"
+
+          pg_dump \
+            --format="${{ env.BACKUP_FORMAT }}" \
+            --compress="${{ env.BACKUP_COMPRESS }}" \
+            --no-acl \
+            --no-owner \
+            --verbose \
+            --file="${FILENAME}" \
+            "${SUPABASE_DB_URL}"
+
+          FILE_SIZE=$(du -sh "${FILENAME}" | cut -f1)
+          echo "=== pg_dump concluído ==="
+          echo "Tamanho: ${FILE_SIZE}"
+          echo "file_size=${FILE_SIZE}" >> $GITHUB_OUTPUT
+
+      - name: Upload para S3
+        id: upload
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_BACKUP_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_BACKUP_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_BACKUP_REGION || 'us-east-1' }}
+        run: |
+          FILENAME="${{ steps.filename.outputs.filename }}"
+          BUCKET="${{ vars.BACKUP_S3_BUCKET }}"
+          S3_KEY="db-backups/${FILENAME}"
+          S3_URI="s3://${BUCKET}/${S3_KEY}"
+
+          echo "=== Upload para S3 ==="
+          echo "Destino: ${S3_URI}"
+
+          aws s3 cp \
+            "${FILENAME}" \
+            "${S3_URI}" \
+            --storage-class STANDARD_IA \
+            --metadata "source=github-actions,workflow=db-backup,timestamp=${{ steps.filename.outputs.timestamp }},git-sha=${{ github.sha }}"
+
+          echo "s3_uri=${S3_URI}" >> $GITHUB_OUTPUT
+          echo "s3_key=${S3_KEY}" >> $GITHUB_OUTPUT
+          echo "Upload concluído: ${S3_URI}"
+
+      - name: Verificar backup no S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_BACKUP_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_BACKUP_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_BACKUP_REGION || 'us-east-1' }}
+        run: |
+          BUCKET="${{ vars.BACKUP_S3_BUCKET }}"
+          S3_KEY="${{ steps.upload.outputs.s3_key }}"
+
+          echo "=== Verificando arquivo no S3 ==="
+          S3_SIZE=$(aws s3 ls "s3://${BUCKET}/${S3_KEY}" | awk '{print $3}')
+          echo "Tamanho no S3: ${S3_SIZE} bytes"
+
+          if [ -z "${S3_SIZE}" ] || [ "${S3_SIZE}" -eq "0" ]; then
+            echo "ERRO: Arquivo não encontrado ou tamanho zero no S3"
+            exit 1
+          fi
+
+          echo "Backup verificado com sucesso: ${S3_SIZE} bytes ✓"
+
+      - name: Listar backups recentes (últimos 10)
+        if: success()
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_BACKUP_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_BACKUP_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_BACKUP_REGION || 'us-east-1' }}
+        run: |
+          BUCKET="${{ vars.BACKUP_S3_BUCKET }}"
+          echo "=== Backups recentes em s3://${BUCKET}/db-backups/ ==="
+          aws s3 ls "s3://${BUCKET}/db-backups/" \
+            --human-readable \
+            | sort -r \
+            | head -10
+
+      - name: Limpar arquivo local
+        if: always()
+        run: |
+          FILENAME="${{ steps.filename.outputs.filename }}"
+          rm -f "${FILENAME}"
+          echo "Arquivo local removido ✓"
+
+      - name: Sumário do backup
+        if: success()
+        run: |
+          echo "## Backup Concluído" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Arquivo | \`${{ steps.filename.outputs.filename }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Destino | \`${{ steps.upload.outputs.s3_uri }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tamanho local | ${{ steps.dump.outputs.file_size }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | ${{ steps.filename.outputs.timestamp }} UTC |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Git SHA | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Restauração" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Download do S3" >> $GITHUB_STEP_SUMMARY
+          echo "aws s3 cp ${{ steps.upload.outputs.s3_uri }} ./restore.dump" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Restaurar em banco PostgreSQL" >> $GITHUB_STEP_SUMMARY
+          echo "pg_restore --clean --no-acl --no-owner -d \$TARGET_DB_URL ./restore.dump" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

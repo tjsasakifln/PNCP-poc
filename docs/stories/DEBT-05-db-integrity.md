@@ -16,11 +16,11 @@
 
 ## Acceptance Criteria
 
-- [ ] AC1: GitHub Actions workflow para pg_dump semanal para S3 bucket
-- [ ] AC2: FK migration em 3 steps: DROP CHECK, ADD FK NOT VALID, VALIDATE
-- [ ] AC3: Verificar zero orphan plan_types antes da FK migration
-- [ ] AC4: Documentar decisao sobre is_active: manter ou remover coluna
-- [ ] AC5: Execucao off-peak para FK validation (lock breve)
+- [x] AC1: GitHub Actions workflow para pg_dump semanal para S3 bucket
+- [x] AC2: FK migration em 3 steps: DROP CHECK, ADD FK NOT VALID, VALIDATE
+- [x] AC3: Verificar zero orphan plan_types antes da FK migration
+- [x] AC4: Documentar decisao sobre is_active: manter ou remover coluna
+- [x] AC5: Execucao off-peak para FK validation (lock breve)
 
 ## Notas
 
