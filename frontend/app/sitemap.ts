@@ -146,6 +146,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // Onda 3: City × Sector pSEO pages (81 cities × 15 sectors = 1,215 URLs)
+  const cidadeSectorRoutes: MetadataRoute.Sitemap = CITIES.flatMap((c) =>
+    SECTORS.map((s) => ({
+      url: `${baseUrl}/blog/licitacoes/cidade/${c.slug}/${s.slug}`,
+      lastModified: today,
+      changeFrequency: 'daily' as const,
+      priority: 0.6,
+    })),
+  );
+
   // SEO-PLAYBOOK Onda 1: CNPJ pages from datalake
   const cnpjList = await fetchSitemapCnpjs();
   const cnpjRoutes: MetadataRoute.Sitemap = cnpjList.map((cnpj) => ({
@@ -315,6 +325,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...panoramaSectorRoutes,
     // SEO Frente 4: City pSEO pages
     ...cidadeRoutes,
+    // Onda 3: City × Sector pSEO pages
+    ...cidadeSectorRoutes,
     // SEO-PLAYBOOK S1: Individual glossary term pages
     ...GLOSSARY_TERMS.map((t) => ({
       url: `${baseUrl}/glossario/${t.slug}`,

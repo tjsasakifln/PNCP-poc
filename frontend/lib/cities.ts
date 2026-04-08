@@ -116,3 +116,52 @@ export async function fetchCidadeStats(citySlug: string): Promise<CidadeStats | 
     return null;
   }
 }
+
+/**
+ * Onda 3: City × Sector cross-reference stats from backend
+ * (GET /v1/blog/stats/cidade/{cidade}/setor/{sectorId}).
+ */
+export interface CidadeSectorStats {
+  cidade: string;
+  uf: string;
+  sector_id: string;
+  sector_name: string;
+  total_editais: number;
+  avg_value: number;
+  value_range_min: number;
+  value_range_max: number;
+  top_modalidades: { name: string; count: number }[];
+  orgaos_frequentes: { name: string; count: number }[];
+  top_oportunidades: {
+    titulo: string;
+    orgao: string;
+    valor: number | null;
+    uf: string;
+    data: string;
+  }[];
+  has_sufficient_data: boolean;
+  last_updated: string;
+}
+
+/**
+ * Fetch city × sector stats from backend (server-side, ISR-friendly).
+ * Returns null on any failure so pages can render gracefully.
+ */
+export async function fetchCidadeSectorStats(
+  citySlug: string,
+  sectorId: string,
+): Promise<CidadeSectorStats | null> {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) return null;
+
+  try {
+    const res = await fetch(
+      `${backendUrl}/v1/blog/stats/cidade/${encodeURIComponent(citySlug)}/setor/${encodeURIComponent(sectorId)}`,
+      { next: { revalidate: 86400 } },
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as CidadeSectorStats;
+  } catch {
+    return null;
+  }
+}

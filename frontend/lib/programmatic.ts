@@ -560,6 +560,91 @@ export function getRegionalEditorial(
   return paragraphs[region];
 }
 
+// -----------------------------------------------------------------------
+// Onda 3: City × Sector editorial content
+// -----------------------------------------------------------------------
+
+/**
+ * Onda 3: Editorial content block for city × sector pages (~200 words).
+ * Varies by region using the existing UF_REGION map.
+ * All text in proper Portuguese with correct accentuation.
+ */
+export function getCidadeSectorEditorial(
+  cityName: string,
+  uf: string,
+  ufName: string,
+  sectorName: string,
+): string[] {
+  const region = UF_REGION[uf] || 'sudeste';
+  const regionName = REGION_NAMES[region];
+  const sectorLower = sectorName.toLowerCase();
+
+  const paragraphs: Record<Region, string[]> = {
+    sudeste: [
+      `${cityName} é um dos principais polos de compras públicas de ${sectorLower} em ${ufName}. Com uma rede densa de prefeituras, autarquias e secretarias, o município publica editais de forma regular ao longo do ano. A concentração econômica do ${regionName} garante que as oportunidades de ${sectorLower} em ${cityName} tenham valores expressivos e frequência consistente, tornando o monitoramento sistemático particularmente vantajoso para fornecedores do setor.`,
+      `A Lei 14.133/2021 (Nova Lei de Licitações) e a LC 123/2006 estabelecem preferência para micro e pequenas empresas locais em contratações de até R$ 80 mil, o que beneficia fornecedores de ${sectorLower} sediados em ${cityName} ou região metropolitana. Além disso, o pregão eletrônico — modalidade predominante para ${sectorLower} — permite participação remota, ampliando o mercado para empresas de outros estados que atendam às exigências técnicas e documentais.`,
+      `O SmartLic monitora automaticamente todas as publicações do PNCP, Portal de Compras Públicas e ComprasGov relacionadas a ${sectorLower} em ${cityName}/${uf}. A inteligência artificial classifica cada edital por relevância setorial e calcula um score de viabilidade baseado em quatro fatores: modalidade de contratação (30%), prazo de execução (25%), valor estimado (25%) e proximidade geográfica (20%). Isso permite que sua equipe comercial foque apenas nas oportunidades com maior probabilidade de adjudicação.`,
+    ],
+    sul: [
+      `${cityName} destaca-se pela eficiência administrativa de seus órgãos públicos, refletida em editais bem estruturados e processos transparentes para ${sectorLower}. Na região ${regionName}, a qualidade da proposta técnica frequentemente supera o fator preço na decisão de adjudicação, o que valoriza fornecedores de ${sectorLower} com experiência comprovada e capacidade técnica diferenciada.`,
+      `A legislação vigente — Lei 14.133/2021 e LC 123/2006 — favorece micro e pequenas empresas locais em contratações de até R$ 80 mil, um diferencial importante para fornecedores de ${sectorLower} estabelecidos em ${cityName}. Cooperativas e associações empresariais da região ${regionName} também têm tradição de participação conjunta em licitações de maior porte, ampliando o acesso a contratos que individualmente seriam inacessíveis.`,
+      `O SmartLic automatiza a descoberta e análise de editais de ${sectorLower} em ${cityName}/${uf}, consolidando dados de três fontes oficiais (PNCP, PCP e ComprasGov). O score de viabilidade de quatro fatores — modalidade (30%), prazo (25%), valor (25%) e geografia (20%) — elimina a análise manual e permite decisões rápidas de participação em cada oportunidade.`,
+    ],
+    nordeste: [
+      `O mercado de licitações de ${sectorLower} em ${cityName} está em crescimento acelerado, impulsionado por investimentos federais e estaduais em ${ufName}. A região ${regionName} vive uma transformação nas compras públicas, com crescente adoção de pregão eletrônico e maior transparência nos processos licitatórios, o que amplia as oportunidades para fornecedores qualificados de ${sectorLower}.`,
+      `A LC 123/2006 confere preferência a empresas locais em contratações de até R$ 80 mil, beneficiando diretamente fornecedores de ${sectorLower} em ${cityName}. A Lei 14.133/2021 também exige que órgãos públicos priorizem a participação de micro e pequenas empresas em todas as modalidades. Para empresas de fora da região, estabelecer parcerias com distribuidores locais pode ser a estratégia mais eficaz para competir neste mercado.`,
+      `O SmartLic consolida automaticamente editais de ${sectorLower} publicados em ${cityName}/${uf} nas três fontes oficiais (PNCP, PCP e ComprasGov), aplicando inteligência artificial para classificar relevância setorial e calcular viabilidade com base em quatro fatores: modalidade (30%), prazo (25%), valor (25%) e geografia (20%). Essa triagem automatizada economiza horas de análise manual e garante que nenhuma oportunidade passe despercebida.`,
+    ],
+    norte: [
+      `${cityName} apresenta um mercado de licitações de ${sectorLower} em expansão, beneficiado por investimentos federais em infraestrutura e serviços na região ${regionName}. As distâncias geográficas e as particularidades logísticas de ${ufName} reduzem a concorrência efetiva, favorecendo empresas com presença local ou capacidade logística diferenciada para fornecimento de ${sectorLower}.`,
+      `A Lei 14.133/2021 e a LC 123/2006 garantem preferência a micro e pequenas empresas locais em contratações de até R$ 80 mil. Em ${cityName}, muitos órgãos públicos aceitam prazos de entrega estendidos considerando as particularidades logísticas da região ${regionName}, o que pode ser um diferencial competitivo para fornecedores de ${sectorLower} com planejamento logístico robusto.`,
+      `O SmartLic monitora editais de ${sectorLower} em ${cityName}/${uf} em tempo real, consolidando publicações do PNCP, Portal de Compras Públicas e ComprasGov. O score de viabilidade — modalidade (30%), prazo (25%), valor (25%) e geografia (20%) — ajuda a identificar quais editais justificam o investimento logístico, otimizando a decisão de participação para cada oportunidade.`,
+    ],
+    centro_oeste: [
+      `${cityName} é um polo estratégico para licitações de ${sectorLower} em ${ufName}, beneficiado pela concentração de órgãos federais e pela pujança econômica da região ${regionName}. A infraestrutura rodoviária interligando as capitais do Centro-Oeste confere vantagens logísticas a fornecedores de ${sectorLower} que atendem contratos com entrega em múltiplos pontos.`,
+      `A legislação de licitações — Lei 14.133/2021 e LC 123/2006 — reserva preferência para micro e pequenas empresas em contratações de até R$ 80 mil. Em ${cityName}, a coexistência de grandes contratos federais e demandas municipais pulverizadas permite que fornecedores de ${sectorLower} componham um portfólio equilibrado entre contratos de alto valor e fornecimentos recorrentes de menor porte.`,
+      `O SmartLic automatiza a descoberta de editais de ${sectorLower} em ${cityName}/${uf}, consolidando três fontes oficiais e aplicando classificação por IA. O score de viabilidade de quatro fatores — modalidade (30%), prazo (25%), valor (25%) e geografia (20%) — permite que equipes comerciais identifiquem rapidamente as oportunidades mais alinhadas ao perfil da empresa.`,
+    ],
+  };
+
+  return paragraphs[region];
+}
+
+/**
+ * Onda 3: FAQs for city × sector pages (4 questions).
+ * Combines city + sector context with real data when available.
+ * All text in proper Portuguese with correct accentuation.
+ */
+export function generateCidadeSectorFAQs(
+  cityName: string,
+  uf: string,
+  sectorName: string,
+  totalEditais?: number,
+  avgValue?: number,
+): { question: string; answer: string }[] {
+  const count = totalEditais ?? 0;
+  const sectorLower = sectorName.toLowerCase();
+
+  return [
+    {
+      question: `Quantas licitações de ${sectorName} estão abertas em ${cityName}?`,
+      answer: `Nos últimos 10 dias, foram identificadas ${count > 0 ? count : 'diversas'} licitações de ${sectorLower} em ${cityName}/${uf}, consolidando dados do PNCP, Portal de Compras Públicas e ComprasGov. O SmartLic atualiza esses números automaticamente a cada 24 horas.`,
+    },
+    {
+      question: `Qual o valor médio dos editais de ${sectorName} em ${cityName}?`,
+      answer: `${avgValue && avgValue > 0 ? `O valor médio estimado é de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(avgValue)}.` : 'O valor varia conforme a modalidade e o escopo do edital.'} As licitações de ${sectorLower} em ${cityName} vão desde compras de pequeno porte até contratos expressivos. No SmartLic você filtra por faixa de valor.`,
+    },
+    {
+      question: `Quais órgãos mais compram ${sectorName} em ${cityName}?`,
+      answer: `Os principais compradores de ${sectorLower} em ${cityName} incluem prefeituras, secretarias estaduais e órgãos federais com representação local. O SmartLic identifica automaticamente os órgãos com maior volume de publicações, ajudando a priorizar relacionamento comercial com compradores recorrentes.`,
+    },
+    {
+      question: `Como participar de licitações de ${sectorName} em ${cityName}/${uf}?`,
+      answer: `O primeiro passo é monitorar as publicações nos portais oficiais (PNCP, PCP e ComprasGov). Depois, analise a viabilidade de cada edital verificando modalidade, prazo, valor e exigências técnicas. O SmartLic automatiza essa triagem usando inteligência artificial, economizando horas de análise manual e identificando as oportunidades com maior chance de adjudicação.`,
+    },
+  ];
+}
+
 /**
  * MKT-003 AC2: Generate FAQs specific to sector × UF.
  * 5 questions, 40-60 words each answer.

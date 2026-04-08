@@ -15,6 +15,7 @@ Safety: No internal IDs or direct links (same as sectors_public.py).
 
 import logging
 import time
+import unicodedata
 from collections import Counter
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -76,11 +77,20 @@ UF_CITIES: dict[str, list[str]] = {
     "RN": ["Mossoró"],
 }
 
-# Reverse mapping: city → UF
+def _strip_accents(text: str) -> str:
+    """Return ASCII-folded lowercase version of text (removes diacritics)."""
+    return "".join(
+        c for c in unicodedata.normalize("NFD", text)
+        if unicodedata.category(c) != "Mn"
+    ).lower()
+
+
+# Reverse mapping: city → UF (keyed by both accented and ASCII-stripped lowercase)
 _CITY_TO_UF: dict[str, str] = {}
 for _uf, _cities in UF_CITIES.items():
     for _city in _cities:
         _CITY_TO_UF[_city.lower()] = _uf
+        _CITY_TO_UF[_strip_accents(_city)] = _uf
 
 
 # ---------------------------------------------------------------------------
@@ -139,6 +149,22 @@ class CidadeStats(BaseModel):
     total_editais: int
     orgaos_frequentes: list[TopEntry]
     avg_value: float
+    last_updated: str
+
+
+class CidadeSectorStats(BaseModel):
+    cidade: str
+    uf: str
+    sector_id: str
+    sector_name: str
+    total_editais: int
+    avg_value: float
+    value_range_min: float = 0.0
+    value_range_max: float = 0.0
+    top_modalidades: list[TopEntry] = []
+    orgaos_frequentes: list[TopEntry] = []
+    top_oportunidades: list[SampleItem] = []
+    has_sufficient_data: bool = False
     last_updated: str
 
 
@@ -509,6 +535,80 @@ async def get_cidade_stats(cidade: str):
     }
     _cache_set(cache_key, data)
     return CidadeStats(**data)
+
+
+# ---------------------------------------------------------------------------
+# Endpoint 3b: City × Sector stats
+# ---------------------------------------------------------------------------
+
+@router.get("/cidade/{cidade}/setor/{setor_id}", response_model=CidadeSectorStats)
+async def get_cidade_sector_stats(cidade: str, setor_id: str):
+    """City × Sector stats: cross-reference city with sector keywords.
+
+    Public (no auth). Cached 6h.
+    """
+    cidade_normalized = cidade.lower().replace("-", " ").strip()
+    cidade_ascii = _strip_accents(cidade.replace("-", " ").strip())
+    cache_key = f"cidade_setor:{cidade_ascii}:{setor_id}"
+
+    cached = _cache_get(cache_key)
+    if cached:
+        return CidadeSectorStats(**cached)
+
+    # Validate city (try accented lookup first, then ASCII-stripped)
+    uf = _CITY_TO_UF.get(cidade_normalized) or _CITY_TO_UF.get(cidade_ascii)
+    if not uf:
+        raise HTTPException(status_code=404, detail=f"Cidade '{cidade}' não encontrada")
+
+    # Validate sector
+    sector = _validate_sector(setor_id)
+
+    # Query PNCP with sector keyword filter for this UF
+    results = await _query_pncp_for_sector(sector, [uf])
+
+    # Filter by city name in municipioNome (use ASCII-stripped comparison to handle accents)
+    city_results = []
+    for item in results:
+        item_city = _strip_accents(_extract_city(item))
+        if cidade_ascii in item_city or item_city in cidade_ascii:
+            city_results.append(item)
+
+    # Aggregations
+    values = [v for item in city_results if (v := _extract_value(item)) is not None]
+    avg_val = sum(values) / len(values) if values else 0.0
+    min_val = min(values) if values else 0.0
+    max_val = max(values) if values else 0.0
+
+    org_counter: Counter = Counter()
+    mod_counter: Counter = Counter()
+    for item in city_results:
+        org_counter[_extract_orgao(item)] += 1
+        mod_counter[_extract_modality(item)] += 1
+
+    top_orgaos = [{"name": o, "count": c} for o, c in org_counter.most_common(5)]
+    top_mods = [{"name": m, "count": c} for m, c in mod_counter.most_common(5)]
+    top_items = [_make_sample_item(item) for item in city_results[:5]]
+
+    display_name = cidade.replace("-", " ").title()
+    now = datetime.now(timezone.utc)
+
+    data = {
+        "cidade": display_name,
+        "uf": uf,
+        "sector_id": sector.id,
+        "sector_name": sector.name,
+        "total_editais": len(city_results),
+        "avg_value": round(avg_val, 2),
+        "value_range_min": round(min_val, 2),
+        "value_range_max": round(max_val, 2),
+        "top_modalidades": top_mods,
+        "orgaos_frequentes": top_orgaos,
+        "top_oportunidades": top_items,
+        "has_sufficient_data": len(city_results) >= 5,
+        "last_updated": now.isoformat(),
+    }
+    _cache_set(cache_key, data)
+    return CidadeSectorStats(**data)
 
 
 # ---------------------------------------------------------------------------

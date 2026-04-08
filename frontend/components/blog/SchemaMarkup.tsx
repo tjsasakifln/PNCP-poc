@@ -11,6 +11,7 @@ export type SchemaPageType =
   | 'sector-uf'
   | 'city'
   | 'cidade' // SEO Frente 4: alias for pt-BR city pages (same behavior as 'city')
+  | 'cidade-setor' // Onda 3: city × sector cross-reference pages
   | 'panorama'
   | 'article'
   | 'analise'
@@ -185,7 +186,7 @@ function buildHowToSchema(props: SchemaMarkupProps) {
 }
 
 function buildLocalBusinessSchema(props: SchemaMarkupProps) {
-  if (props.pageType !== 'city' && props.pageType !== 'cidade') return null;
+  if (props.pageType !== 'city' && props.pageType !== 'cidade' && props.pageType !== 'cidade-setor') return null;
   if (!props.cidade) return null;
 
   return {
@@ -219,7 +220,8 @@ function buildItemListSchema(props: SchemaMarkupProps) {
   if (
     props.pageType !== 'sector-uf' &&
     props.pageType !== 'city' &&
-    props.pageType !== 'cidade'
+    props.pageType !== 'cidade' &&
+    props.pageType !== 'cidade-setor'
   )
     return null;
   if (!props.totalEditais || props.totalEditais === 0) return null;

@@ -514,10 +514,10 @@ export default async function LicitacoesSectorUfPage({
                   {cidadesUf.map((c) => (
                     <Link
                       key={c.slug}
-                      href={`/blog/licitacoes/cidade/${c.slug}`}
+                      href={`/blog/licitacoes/cidade/${c.slug}/${setor}`}
                       className="inline-flex items-center px-3 py-1.5 rounded-full border border-[var(--border)] text-sm text-ink-secondary hover:bg-surface-1 hover:text-ink transition-colors"
                     >
-                      Licitações em {c.name}
+                      {sector.name} em {c.name}
                     </Link>
                   ))}
                 </div>

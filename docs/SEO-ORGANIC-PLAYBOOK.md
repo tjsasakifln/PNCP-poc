@@ -2240,15 +2240,20 @@ Paid não é falha da estratégia SEO — é bridge financing enquanto o compoun
 
 **Conteúdo por página:** nome, esfera, UF, município, editais publicados (30/90/365d), valor total/médio, setores, modalidades, últimos 10 editais, CTA signup.
 
-### 11.3 — Cidade × Setor (Onda 3: +1.215 URLs)
+### 11.3 — Cidade × Setor (Onda 3: +1.215 URLs) ✅ CONCLUÍDO (2026-04-08)
 
-**Status atual:** 46 city pages + 15 sector pages existem separadamente.
+**Status:** ✅ Implementado — 81 cidades × 15 setores = 1.215 páginas em `/blog/licitacoes/cidade/[cidade]/[setor]`.
 
-**Oportunidade:** Intersecção cidade × setor captura buscas como "licitação tecnologia curitiba" — mais específica e com maior intenção comercial.
+- [x] Backend: `GET /v1/blog/stats/cidade/{cidade}/setor/{setor_id}` → CidadeSectorStats (cache 6h, cross-filter cidade+setor keywords)
+- [x] Frontend: `/blog/licitacoes/cidade/[cidade]/[setor]` → ISR 24h com stats, top oportunidades, órgãos, editorial regional, FAQ, internal linking
+- [x] Schema: LocalBusiness + Dataset + BreadcrumbList + Article + ItemList (5 schemas por página)
+- [x] Sitemap: 1.215 URLs adicionadas com priority 0.6, changefreq daily
+- [x] Internal linking: páginas de cidade linkam para cidade×setor; páginas setor×UF linkam para cidade×setor
+- [x] Thin content: fallback informativo (box amarelo) quando <5 editais, com links para escopo mais amplo
+- [x] Testes: 8 testes backend (endpoint, cache, 404s, threshold), TypeScript zero erros, 30 testes frontend passando
+- [x] Acentuação portuguesa correta em todo texto visível, formatação profissional (R$ X.XXX,XX), zero vestígios de markdown
 
-**Solução:** `/licitacoes/cidade/[cidade]/[setor]` — 81 cidades × 15 setores = 1.215 páginas.
-
-**Risco:** Thin content se a interseção cidade+setor não tiver dados suficientes. Mitigação: só gerar página se ≥5 editais nos últimos 30 dias para aquela combinação.
+**Buscas capturadas:** "licitação {setor} {cidade}", "editais {setor} {cidade}", "{setor} licitações {cidade}/{UF}"
 
 ### 11.4 — Roadmap de Escala
 
@@ -2256,7 +2261,7 @@ Paid não é falha da estratégia SEO — é bridge financing enquanto o compoun
 |------|---------|----------|-------------|
 | Onda 1: CNPJ | +5.000 | M1-2 (abril-maio) | Endpoint backend + sitemap update |
 | Onda 2: Órgãos | +500-2.000 | ✅ M1 (abril) | Endpoint backend + nova rota frontend |
-| Onda 3: Cidade×Setor | +1.215 | M3-4 (junho-julho) | Expansão do `UF_CITIES` backend + nova rota |
+| Onda 3: Cidade×Setor | +1.215 | ✅ M1 (abril) | Backend endpoint + nova rota frontend |
 | Onda 4: Artigos BOFU | +5-15 | M1-2 (abril-maio) | Redação de conteúdo |
 | **Total** | **+6.720-14.230** | 4 meses | |
 

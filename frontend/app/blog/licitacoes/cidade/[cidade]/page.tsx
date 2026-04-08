@@ -295,13 +295,13 @@ export default async function LicitacoesCidadePage({
               Explore por setor em {city.name}
             </h2>
             <div className="flex flex-wrap gap-2">
-              {SECTORS.slice(0, 10).map((sector) => (
+              {SECTORS.map((sector) => (
                 <Link
                   key={sector.slug}
-                  href={`/blog/licitacoes/${sector.slug}/${city.uf.toLowerCase()}`}
+                  href={`/blog/licitacoes/cidade/${city.slug}/${sector.slug}`}
                   className="inline-flex items-center px-3 py-1.5 rounded-full border border-[var(--border)] text-sm text-ink-secondary hover:bg-surface-1 hover:text-ink transition-colors"
                 >
-                  {sector.name} em {city.uf}
+                  {sector.name} em {city.name}
                 </Link>
               ))}
             </div>
