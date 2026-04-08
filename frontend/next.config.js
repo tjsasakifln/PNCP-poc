@@ -29,6 +29,22 @@ const nextConfig = {
   // Middleware covers all non-static routes. Static assets (_next/static, images)
   // don't need CSP/X-Frame-Options. HSTS is enforced at Railway edge proxy level.
 
+  // SEO: Redirect acentuado → slug canônico (ISSUE-SEO-004)
+  async redirects() {
+    return [
+      {
+        source: '/gloss%C3%A1rio',
+        destination: '/glossario',
+        permanent: true,
+      },
+      {
+        source: '/gloss%C3%A1rio/:path*',
+        destination: '/glossario/:path*',
+        permanent: true,
+      },
+    ];
+  },
+
   // SYS-019: Cache headers for static assets (CDN-ready)
   async headers() {
     return [
