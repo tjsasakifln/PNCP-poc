@@ -13,11 +13,16 @@ Usage (from ARQ worker or cron endpoint):
     results = await run_all_alerts()
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from supabase_client import get_supabase, sb_execute
+
+# DEBT-04 AC3: Semaphore concurrency for parallel alert processing.
+# 10 concurrent coroutines → ~10x speedup over sequential for 1000 alerts.
+_ALERTS_CONCURRENCY = 10
 
 logger = logging.getLogger(__name__)
 
@@ -584,31 +589,42 @@ async def run_all_alerts(db=None) -> dict:
         logger.info("No active alerts to process")
         return summary
 
-    for alert in alerts:
-        try:
-            payload = await process_single_alert(alert, db)
+    # DEBT-04 AC3: Process alerts in parallel using asyncio.gather + Semaphore(10).
+    # For 1000 alerts: reduces from ~60-100s (sequential) to ~10s (parallel).
+    semaphore = asyncio.Semaphore(_ALERTS_CONCURRENCY)
 
-            if payload.get("skipped"):
-                summary["skipped"] += 1
-                logger.debug(
-                    "Alert %s skipped: %s",
-                    alert["id"][:8],
-                    payload.get("skip_reason"),
+    async def _process_with_semaphore(alert: dict) -> dict | None:
+        async with semaphore:
+            try:
+                return await process_single_alert(alert, db)
+            except Exception as e:
+                logger.error(
+                    "Failed to process alert %s: %s", alert["id"][:8], e
                 )
-            else:
-                summary["sent"] += 1
-                summary["payloads"].append(payload)
-                logger.info(
-                    "Alert %s ready: %d new items for %s",
-                    alert["id"][:8],
-                    payload["total_count"],
-                    alert["email"],
-                )
+                return None
 
-        except Exception as e:
+    results = await asyncio.gather(
+        *[_process_with_semaphore(alert) for alert in alerts]
+    )
+
+    for alert, payload in zip(alerts, results):
+        if payload is None:
             summary["errors"] += 1
-            logger.error(
-                "Failed to process alert %s: %s", alert["id"][:8], e
+        elif payload.get("skipped"):
+            summary["skipped"] += 1
+            logger.debug(
+                "Alert %s skipped: %s",
+                alert["id"][:8],
+                payload.get("skip_reason"),
+            )
+        else:
+            summary["sent"] += 1
+            summary["payloads"].append(payload)
+            logger.info(
+                "Alert %s ready: %d new items for %s",
+                alert["id"][:8],
+                payload["total_count"],
+                alert["email"],
             )
 
     logger.info(

@@ -22,6 +22,32 @@ from ingestion.config import DATALAKE_ENABLED
 logger = logging.getLogger(__name__)
 
 
+async def _notify_failure(
+    job_name: str, error: str, duration_s: float, extra: dict | None = None
+) -> None:
+    """DEBT-04 AC4: Send Slack + Sentry notifications for ingestion job failure."""
+    # Sentry capture
+    try:
+        import sentry_sdk
+        with sentry_sdk.push_scope() as scope:
+            scope.set_tag("ingestion.job", job_name)
+            scope.set_extra("duration_s", duration_s)
+            scope.set_extra("error", error)
+            sentry_sdk.capture_message(
+                f"[Ingestion:{job_name}] Job failed after {duration_s:.1f}s: {error}",
+                level="error",
+            )
+    except Exception:
+        pass
+
+    # Slack notification (no-op if webhook not configured)
+    try:
+        from services.slack_notifier import notify_ingestion_failure
+        await notify_ingestion_failure(job_name, error, duration_s, extra)
+    except Exception as exc:
+        logger.warning("[Ingestion:%s] Could not send Slack alert: %s", job_name, exc)
+
+
 async def ingestion_full_crawl_job(ctx: dict) -> dict:
     """ARQ job: Full PNCP crawl. Daily at 2am BRT (5am UTC).
 
@@ -47,6 +73,8 @@ async def ingestion_full_crawl_job(ctx: dict) -> dict:
             f"[Ingestion:FullCrawl] Failed after {duration_s}s: {type(e).__name__}: {e}",
             exc_info=True,
         )
+        # DEBT-04 AC4: Notify Slack + Sentry on ingestion failure
+        await _notify_failure("FullCrawl", f"{type(e).__name__}: {e}", duration_s)
         return {
             "status": "failed",
             "error": str(e),
@@ -86,6 +114,8 @@ async def ingestion_incremental_job(ctx: dict) -> dict:
             f"[Ingestion:Incremental] Failed after {duration_s}s: {type(e).__name__}: {e}",
             exc_info=True,
         )
+        # DEBT-04 AC4: Notify Slack + Sentry on ingestion failure
+        await _notify_failure("Incremental", f"{type(e).__name__}: {e}", duration_s)
         return {
             "status": "failed",
             "error": str(e),
@@ -129,6 +159,13 @@ async def ingestion_purge_job(ctx: dict) -> dict:
         logger.error(
             f"[Ingestion:Purge] Failed after {duration_s}s: {type(e).__name__}: {e}",
             exc_info=True,
+        )
+        # DEBT-04 AC4: Notify Slack + Sentry on ingestion failure
+        await _notify_failure(
+            "Purge",
+            f"{type(e).__name__}: {e}",
+            duration_s,
+            {"retention_days": INGESTION_RETENTION_DAYS},
         )
         return {
             "status": "failed",

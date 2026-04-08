@@ -6,12 +6,14 @@ and the conditional Prometheus /metrics mount.
 
 import logging
 import os
+import time
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import get_cors_origins, METRICS_TOKEN
+from config.pipeline import REQUEST_SLOW_THRESHOLD_S
 from middleware import CorrelationIDMiddleware, SecurityHeadersMiddleware, DeprecationMiddleware, RateLimitMiddleware
 
 logger = logging.getLogger(__name__)
@@ -124,6 +126,43 @@ def setup_middleware(app: FastAPI) -> None:
     @app.middleware("http")
     async def _track_legacy_routes_mw(request: Request, call_next):
         return await track_legacy_routes(request, call_next)
+
+    # DEBT-04 AC2: Slow request detection — log + Sentry when request exceeds threshold.
+    # Must be outermost (added last) to cover total request time including all middleware.
+    if REQUEST_SLOW_THRESHOLD_S > 0:
+        @app.middleware("http")
+        async def slow_request_detector(request: Request, call_next):
+            """DEBT-04 AC2: Detect and log requests exceeding REQUEST_SLOW_THRESHOLD_S."""
+            start = time.monotonic()
+            response = await call_next(request)
+            elapsed = time.monotonic() - start
+            if elapsed >= REQUEST_SLOW_THRESHOLD_S:
+                path = request.url.path
+                method = request.method
+                logger.warning(
+                    "DEBT-04 slow_request detected: %s %s took %.1fs (threshold=%.0fs) — "
+                    "request will be killed by Railway at 120s",
+                    method,
+                    path,
+                    elapsed,
+                    REQUEST_SLOW_THRESHOLD_S,
+                    extra={"slow_request_elapsed_s": elapsed, "path": path, "method": method},
+                )
+                try:
+                    import sentry_sdk
+                    with sentry_sdk.push_scope() as scope:
+                        scope.set_tag("slow_request", True)
+                        scope.set_extra("elapsed_s", elapsed)
+                        scope.set_extra("threshold_s", REQUEST_SLOW_THRESHOLD_S)
+                        scope.set_extra("path", path)
+                        scope.set_extra("method", method)
+                        sentry_sdk.capture_message(
+                            f"slow_request: {method} {path} ({elapsed:.1f}s)",
+                            level="warning",
+                        )
+                except Exception:
+                    pass
+            return response
 
 
 def setup_metrics_endpoint(app: FastAPI) -> None:

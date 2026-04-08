@@ -133,3 +133,10 @@ SUPPORT_SLA_ALERT_THRESHOLD_HOURS: int = 20
 # DEBT-124: Graceful Shutdown
 # ============================================
 GRACEFUL_SHUTDOWN_TIMEOUT: int = int(os.getenv("GRACEFUL_SHUTDOWN_TIMEOUT", "30"))
+
+# ============================================
+# DEBT-04 AC2: Slow request detection
+# Log + Sentry capture for requests exceeding this threshold (default 100s).
+# Set to 0 to disable detection.
+# ============================================
+REQUEST_SLOW_THRESHOLD_S: float = float(os.getenv("REQUEST_SLOW_THRESHOLD_S", "100"))
