@@ -175,7 +175,7 @@ export default function FeedbackButtons({
       <button
         onClick={handleThumbsUp}
         disabled={hasSubmitted || sending}
-        className={`p-1.5 rounded-md transition-colors ${
+        className={`flex items-center justify-center min-w-[44px] min-h-[44px] p-1.5 rounded-md transition-colors ${
           isCorrect
             ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30"
             : hasSubmitted
@@ -197,7 +197,7 @@ export default function FeedbackButtons({
       <button
         onClick={handleThumbsDown}
         disabled={hasSubmitted || sending}
-        className={`p-1.5 rounded-md transition-colors ${
+        className={`flex items-center justify-center min-w-[44px] min-h-[44px] p-1.5 rounded-md transition-colors ${
           isFP
             ? "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30"
             : hasSubmitted
