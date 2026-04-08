@@ -1,10 +1,12 @@
 "use client";
 
+import { useCallback } from "react";
 import { UF_NAMES } from "../../../lib/constants/uf-names";
 import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
 import SearchFormHeader from "./SearchFormHeader";
 import SearchFormActions from "./SearchFormActions";
 import SearchCustomizePanel from "./SearchCustomizePanel";
+import SavedPresets from "./SavedPresets";
 
 export type { SearchFormProps } from "./SearchForm.types";
 import type { SearchFormProps } from "./SearchForm.types";
@@ -13,6 +15,17 @@ export default function SearchForm(props: SearchFormProps) {
   const {
     ufsSelecionadas, status, modalidades, modoBusca, dataInicial, dataFinal,
   } = props;
+
+  const getCurrentFilters = useCallback((): Record<string, unknown> => ({
+    ufs: Array.from(props.ufsSelecionadas),
+    searchMode: props.searchMode,
+    setorId: props.setorId,
+    termosArray: props.termosArray,
+    status: props.status,
+    modalidades: props.modalidades,
+    valorMin: props.valorMin,
+    valorMax: props.valorMax,
+  }), [props.ufsSelecionadas, props.searchMode, props.setorId, props.termosArray, props.status, props.modalidades, props.valorMin, props.valorMax]);
 
   const compactSummary = (() => {
     const parts: string[] = [];
@@ -45,6 +58,14 @@ export default function SearchForm(props: SearchFormProps) {
 
   return (
     <div role="search" aria-label="Buscar licitações">
+      {props.onApplyPresetFilters && (
+        <div className="flex justify-end mb-2">
+          <SavedPresets
+            getCurrentFilters={getCurrentFilters}
+            applyFilters={props.onApplyPresetFilters}
+          />
+        </div>
+      )}
       <SearchFormHeader
         setores={props.setores}
         setoresLoading={props.setoresLoading}

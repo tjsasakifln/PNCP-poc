@@ -69,4 +69,14 @@ export interface SearchFormProps {
   isGracePeriod?: boolean;
   showFirstUseTip?: boolean;
   onDismissFirstUseTip?: () => void;
+  onApplyPresetFilters?: {
+    setUfsSelecionadas?: (ufs: Set<string>) => void;
+    setSearchMode?: (mode: "setor" | "termos") => void;
+    setSetorId?: (id: string) => void;
+    setTermosArray?: (terms: string[]) => void;
+    setStatus?: (status: string) => void;
+    setModalidades?: (m: number[]) => void;
+    setValorMin?: (v: number | null) => void;
+    setValorMax?: (v: number | null) => void;
+  };
 }

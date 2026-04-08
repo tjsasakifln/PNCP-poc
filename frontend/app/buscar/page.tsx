@@ -177,6 +177,16 @@ function HomePageContent() {
               onDismissFirstUseTip={orch.dismissFirstUseTip}
               isTrialExpired={orch.isTrialExpired || orch.search.quotaError === "trial_expired"}
               isGracePeriod={orch.isGracePeriod}
+              onApplyPresetFilters={{
+                setUfsSelecionadas: orch.filters.setUfsSelecionadas,
+                setSearchMode: orch.filters.setSearchMode,
+                setSetorId: orch.filters.setSetorId,
+                setTermosArray: orch.filters.setTermosArray,
+                setStatus: (s: string) => orch.filters.setStatus(s as Parameters<typeof orch.filters.setStatus>[0]),
+                setModalidades: orch.filters.setModalidades,
+                setValorMin: orch.filters.setValorMin,
+                setValorMax: orch.filters.setValorMax,
+              }}
             />
 
             {/* GTM-004: Auto-search banners */}
