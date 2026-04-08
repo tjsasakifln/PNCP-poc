@@ -4,8 +4,9 @@ Returns top CNPJs (orgao_cnpj) from pncp_raw_bids with ≥1 bid,
 enabling the frontend sitemap to generate /cnpj/{cnpj} URLs for
 Google discovery. Public (no auth). Cache: InMemory 24h TTL.
 
-Implementation: uses get_sitemap_cnpjs RPC (SQL GROUP BY, bypasses
-PostgREST 1k-row limit). Fallback: paginated table query.
+Implementation layers:
+1. get_sitemap_cnpjs_json RPC (RETURNS json scalar — bypasses PostgREST max-rows=1000)
+2. Fallback: paginated table query (loop 1k/page until exhausted)
 """
 
 import logging
@@ -63,25 +64,27 @@ async def sitemap_cnpjs():
 async def _fetch_top_cnpjs() -> dict:
     """Query pncp_raw_bids for distinct orgao_cnpj with ≥1 active bid.
 
-    Uses get_sitemap_cnpjs RPC (SQL-level aggregation) to bypass
-    PostgREST's 1k-row default limit. Falls back to paginated query.
+    Uses get_sitemap_cnpjs_json RPC (RETURNS json scalar) which bypasses
+    PostgREST max-rows=1000. Falls back to paginated table query if RPC
+    doesn't exist yet (e.g., migration not yet applied).
     """
     try:
         from supabase_client import get_supabase
 
         sb = get_supabase()
 
-        # Primary: use RPC for SQL-level GROUP BY (no row limit issues)
+        # Primary: JSON scalar RPC — not subject to max-rows limit
         try:
-            resp = sb.rpc("get_sitemap_cnpjs", {"max_results": _MAX_CNPJS}).execute()
-            if resp.data:
+            resp = sb.rpc("get_sitemap_cnpjs_json", {"max_results": _MAX_CNPJS}).execute()
+            if resp.data is not None:
+                # resp.data is a JSON array of CNPJ strings
+                raw = resp.data if isinstance(resp.data, list) else []
                 cnpj_list = [
-                    row["orgao_cnpj"]
-                    for row in resp.data
-                    if row.get("orgao_cnpj") and len(row["orgao_cnpj"]) >= 11
-                ]
+                    c for c in raw
+                    if c and isinstance(c, str) and len(c) >= 11
+                ][:_MAX_CNPJS]
                 logger.info(
-                    "sitemap_cnpjs (RPC): %d CNPJs returned", len(cnpj_list)
+                    "sitemap_cnpjs (JSON RPC): %d CNPJs returned", len(cnpj_list)
                 )
                 return {
                     "cnpjs": cnpj_list,
@@ -90,11 +93,11 @@ async def _fetch_top_cnpjs() -> dict:
                 }
         except Exception as rpc_err:
             logger.warning(
-                "sitemap_cnpjs RPC failed (%s), falling back to paginated query",
+                "sitemap_cnpjs JSON RPC failed (%s), falling back to paginated query",
                 rpc_err,
             )
 
-        # Fallback: paginated table query (handles large tables)
+        # Fallback: paginated table query (1k rows/page, full scan)
         counts: dict[str, int] = {}
         page_size = 1000
         offset = 0
@@ -118,17 +121,16 @@ async def _fetch_top_cnpjs() -> dict:
                 break
             offset += page_size
 
-        # Sort by count desc, cap at _MAX_CNPJS
         cnpj_list = [
             cnpj
             for cnpj, _ in sorted(counts.items(), key=lambda x: x[1], reverse=True)
         ][:_MAX_CNPJS]
 
         logger.info(
-            "sitemap_cnpjs (paginated): %d CNPJs (from %d total distinct, %d pages)",
+            "sitemap_cnpjs (paginated): %d CNPJs from %d distinct, %d pages",
             len(cnpj_list),
             len(counts),
-            offset // page_size + 1,
+            (offset // page_size) + 1,
         )
 
         return {
