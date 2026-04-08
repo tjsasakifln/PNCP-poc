@@ -2225,17 +2225,20 @@ Paid não é falha da estratégia SEO — é bridge financing enquanto o compoun
 
 ### 11.2 — Órgãos Compradores (Onda 2: +500-2.000 URLs)
 
-**Status atual:** Nenhuma página de órgão comprador existe.
+**Status:** ✅ IMPLEMENTADO (2026-04-08)
 
-**Oportunidade:** "licitações prefeitura de curitiba", "editais secretaria de saúde SP" são buscas de alta intenção sem resposta dedicada em nenhum concorrente.
+- [x] Backend: `GET /v1/sitemap/orgaos` → top órgãos por volume (≥5 licitações), cache 24h, max 2.000
+- [x] Backend: `GET /v1/orgao/{cnpj}/stats` → perfil completo com contagens 30/90/365d, valor médio/total, modalidades, setores, últimas 10 licitações
+- [x] Frontend: `/orgaos` → landing page com busca por CNPJ, FAQ, schemas JSON-LD
+- [x] Frontend: `/orgaos/[slug]` → ISR 24h com dados do datalake
+- [x] Schema: GovernmentOrganization + Dataset + BreadcrumbList
+- [x] Sitemap: rotas `/orgaos/{cnpj}` adicionadas com priority 0.5, changefreq weekly
+- [x] Testes: 14 testes backend (7 sitemap + 7 stats), todos passando
+- Escalonamento: 500-2.000 conforme volume do datalake
 
-**Solução:**
-1. Backend: `GET /v1/orgaos` → top órgãos por volume de editais no datalake
-2. Backend: `GET /v1/orgaos/{slug}/stats` → perfil completo
-3. Frontend: `/orgaos/[slug]` → ISR 24h com dados do datalake
-4. Schema: GovernmentOrganization + Dataset
+**Buscas capturadas:** "licitações prefeitura de [cidade]", "editais [órgão]", "[CNPJ órgão] compras públicas"
 
-**Conteúdo por página:** nome, esfera, UF, editais publicados (30/90/365d), valor total/médio, setores, modalidades, últimos 10 editais, CTA signup.
+**Conteúdo por página:** nome, esfera, UF, município, editais publicados (30/90/365d), valor total/médio, setores, modalidades, últimos 10 editais, CTA signup.
 
 ### 11.3 — Cidade × Setor (Onda 3: +1.215 URLs)
 
@@ -2252,7 +2255,7 @@ Paid não é falha da estratégia SEO — é bridge financing enquanto o compoun
 | Onda | Páginas | Timeline | Dependência |
 |------|---------|----------|-------------|
 | Onda 1: CNPJ | +5.000 | M1-2 (abril-maio) | Endpoint backend + sitemap update |
-| Onda 2: Órgãos | +500-2.000 | M2-3 (maio-junho) | Endpoint backend + nova rota frontend |
+| Onda 2: Órgãos | +500-2.000 | ✅ M1 (abril) | Endpoint backend + nova rota frontend |
 | Onda 3: Cidade×Setor | +1.215 | M3-4 (junho-julho) | Expansão do `UF_CITIES` backend + nova rota |
 | Onda 4: Artigos BOFU | +5-15 | M1-2 (abril-maio) | Redação de conteúdo |
 | **Total** | **+6.720-14.230** | 4 meses | |

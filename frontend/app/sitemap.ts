@@ -15,6 +15,7 @@ import { getAllMasterclassTemas } from '@/lib/masterclasses';
  * STORY-324 AC12: Includes /licitacoes and /licitacoes/{setor} routes
  * SEO-PLAYBOOK P0: Includes programmatic, licitacoes setor×UF, and panorama routes
  * SEO-PLAYBOOK Onda 1: Includes /cnpj/{cnpj} pages from datalake (≥3 bids)
+ * SEO-PLAYBOOK Onda 2: Includes /orgaos/{cnpj} pages from datalake (≥5 bids)
  *
  * Next.js generates sitemap.xml automatically from this file.
  *
@@ -38,6 +39,27 @@ async function fetchSitemapCnpjs(): Promise<string[]> {
     _cnpjCache = data.cnpjs || [];
     _cnpjFetched = true;
     return _cnpjCache;
+  } catch {
+    return [];
+  }
+}
+
+// SEO-PLAYBOOK Onda 2: Cache for órgãos compradores list
+let _orgaoCache: string[] = [];
+let _orgaoFetched = false;
+
+async function fetchSitemapOrgaos(): Promise<string[]> {
+  if (_orgaoFetched) return _orgaoCache;
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const resp = await fetch(`${backendUrl}/v1/sitemap/orgaos`, {
+      next: { revalidate: 86400 }, // 24h ISR
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    _orgaoCache = data.orgaos || [];
+    _orgaoFetched = true;
+    return _orgaoCache;
   } catch {
     return [];
   }
@@ -128,6 +150,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const cnpjList = await fetchSitemapCnpjs();
   const cnpjRoutes: MetadataRoute.Sitemap = cnpjList.map((cnpj) => ({
     url: `${baseUrl}/cnpj/${cnpj}`,
+    lastModified: today,
+    changeFrequency: 'weekly' as const,
+    priority: 0.5,
+  }));
+
+  // SEO-PLAYBOOK Onda 2: Órgãos compradores pages from datalake
+  const orgaoList = await fetchSitemapOrgaos();
+  const orgaoRoutes: MetadataRoute.Sitemap = orgaoList.map((cnpj) => ({
+    url: `${baseUrl}/orgaos/${cnpj}`,
     lastModified: today,
     changeFrequency: 'weekly' as const,
     priority: 0.5,
@@ -256,6 +287,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // SEO-PLAYBOOK P3: CNPJ B2G lookup
     {
       url: `${baseUrl}/cnpj`,
+      lastModified: STATIC_LAST_EDIT,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    // SEO-PLAYBOOK Onda 2: Órgãos Compradores landing
+    {
+      url: `${baseUrl}/orgaos`,
       lastModified: STATIC_LAST_EDIT,
       changeFrequency: 'weekly',
       priority: 0.8,
@@ -412,5 +450,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     // SEO-PLAYBOOK Onda 1: CNPJ pages from datalake (≥3 bids)
     ...cnpjRoutes,
+    // SEO-PLAYBOOK Onda 2: Órgãos compradores pages from datalake (≥5 bids)
+    ...orgaoRoutes,
   ];
 }
