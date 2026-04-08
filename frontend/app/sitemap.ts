@@ -7,6 +7,7 @@ import { CITIES } from '@/lib/cities';
 import { GLOSSARY_TERMS } from '@/lib/glossary-terms';
 import { getAllAuthorSlugs } from '@/lib/authors';
 import { getAllQuestionSlugs } from '@/lib/questions';
+import { getAllMasterclassTemas } from '@/lib/masterclasses';
 
 /**
  * GTM-COPY-006 AC10: Dynamic sitemap with all public pages
@@ -355,6 +356,27 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STATIC_LAST_EDIT,
       changeFrequency: 'weekly' as const,
       priority: 0.7,
+    })),
+    // S9: Estatísticas embed page
+    {
+      url: `${baseUrl}/estatisticas/embed`,
+      lastModified: STATIC_LAST_EDIT,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    },
+    // S13: Masterclass listing
+    {
+      url: `${baseUrl}/masterclass`,
+      lastModified: STATIC_LAST_EDIT,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    // S13: Individual masterclass pages
+    ...getAllMasterclassTemas().map((tema) => ({
+      url: `${baseUrl}/masterclass/${tema}`,
+      lastModified: STATIC_LAST_EDIT,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
     })),
   ];
 }

@@ -1803,10 +1803,10 @@ Os três ou não publica.
 - Schema: `Dataset` + `DataDownload` com `encodingFormat: "application/json"` + `accessMode: "textual"`
 - Badge SVG: "Dados SmartLic · PNCP · Atualizado [data]" com link para `/estatisticas`
 
-- [ ] Estender `/v1/public/stats` com `?format=embed` retornando HTML snippet
-- [ ] Criar `/estatisticas/embed` com instruções + preview
-- [ ] Badge SVG linkado para `/estatisticas`
-- [ ] DataDownload schema no endpoint JSON
+- [x] Estender `/v1/public/stats` com `?format=embed` retornando HTML snippet (2026-04-07, rodada 11)
+- [x] Criar `/estatisticas/embed` com instruções + preview (2026-04-07, rodada 11)
+- [x] Badge SVG linkado para `/estatisticas` (2026-04-07, rodada 11)
+- [x] DataDownload schema no endpoint JSON (2026-04-07, rodada 11)
 
 ---
 
@@ -1859,7 +1859,7 @@ Os três ou não publica.
 
 - [x] Implementar `/blog/author/[slug]` com Person schema + artigos (2026-04-07, rodada 10)
 - [x] RSS feed por autor `/blog/author/[slug]/rss.xml` (2026-04-07, rodada 10)
-- [ ] Vincular weekly digests ao author (já parcialmente feito via E-E-A-T rodada 7)
+- [x] Vincular weekly digests ao author (2026-04-07, rodada 11 — imports lib/authors.ts, Person schema com sameAs, byline com link)
 
 ---
 
@@ -1880,10 +1880,10 @@ Os três ou não publica.
 - VideoObject schema inline (thumbnailUrl, duration, description)
 - Embed em: landing setoriais (`/licitacoes/[setor]`), top 5 artigos de blog, `/calculadora`
 
-- [ ] Criar `MicroDemo.tsx` com 3 variantes de animação
-- [ ] VideoObject JSON-LD schema por animação
-- [ ] Embed em landing setoriais + artigos top 5
-- [ ] Integrar com demo (S5) para reuso de assets
+- [x] Criar `MicroDemo.tsx` com 3 variantes de animação (2026-04-07, rodada 11 — Framer Motion, busca/resultado/viabilidade)
+- [x] VideoObject JSON-LD schema por animação (2026-04-07, rodada 11 — MicroDemoSchema.tsx)
+- [x] Embed em landing setoriais + artigos top 5 (2026-04-07, rodada 11 — /licitacoes/[setor] integrado)
+- [x] Integrar com demo (S5) para reuso de assets (2026-04-07, rodada 11 — mesmos dados mock, mesma estrutura visual)
 
 ---
 
@@ -1909,9 +1909,9 @@ Os três ou não publica.
 - Schema: Event + VideoObject + Course + BreadcrumbList
 - Email-gate: LeadCapture component com `source: 'masterclass'`
 
-- [ ] Implementar `/masterclass/[tema]` com 3 temas iniciais
-- [ ] Event + VideoObject + Course JSON-LD schema
-- [ ] Email-gate via LeadCapture existente
+- [x] Implementar `/masterclass/[tema]` com 3 temas iniciais (2026-04-07, rodada 11 — primeiro-edital, analise-viabilidade, inteligencia-setorial)
+- [x] Event + VideoObject + Course JSON-LD schema (2026-04-07, rodada 11 — @graph com 4 schemas)
+- [x] Email-gate via LeadCapture existente (2026-04-07, rodada 11 — MasterclassClient.tsx)
 - [ ] Gravar 3 screencasts (OBS Studio, 15-20min cada)
 
 ---
@@ -1933,7 +1933,7 @@ Os três ou não publica.
 - Cron: semanal, grava snapshot em `seo_metrics`
 
 - [x] Implementar `gsc_metrics.py` com GSC API extraction — graceful skip sem credentials (2026-04-07, rodada 10)
-- [ ] Tabela `seo_metrics` + migration (pendente: aplicar migration no Supabase)
+- [x] Tabela `seo_metrics` + migration (2026-04-07, rodada 11 — `20260407400000_seo_metrics.sql` com RLS)
 - [x] Dashboard `/admin/seo` com Recharts (2026-04-07, rodada 10)
 - [x] Cron semanal para snapshot automatizado via `jobs/cron/seo_snapshot.py` (2026-04-07, rodada 10)
 

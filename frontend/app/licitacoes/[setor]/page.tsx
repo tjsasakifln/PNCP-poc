@@ -13,6 +13,8 @@ import {
 import { UF_NAMES } from "@/lib/programmatic";
 import { getSectorFaqs } from "@/data/sector-faqs";
 import { getFreshnessLabel } from "@/lib/seo";
+import { MicroDemo } from "@/components/seo/MicroDemo";
+import { MicroDemoSchema } from "@/components/seo/MicroDemoSchema";
 
 /**
  * STORY-324 AC5: SSG with ISR 6h for sector landing pages.
@@ -213,6 +215,12 @@ export default async function SectorPage({
             title="Analise"
             description="Score de viabilidade considera modalidade, prazo, valor e região para priorizar as melhores oportunidades."
           />
+        </div>
+
+        {/* S12: Micro-demo animation — shows the search flow visually */}
+        <div className="mt-12 max-w-2xl mx-auto">
+          <MicroDemo variant="busca" />
+          <MicroDemoSchema variant="busca" />
         </div>
       </section>
 

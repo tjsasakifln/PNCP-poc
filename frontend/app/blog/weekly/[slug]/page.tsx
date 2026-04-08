@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { buildCanonical, SITE_URL } from '@/lib/seo';
+import { getAuthorBySlug, DEFAULT_AUTHOR_SLUG } from '@/lib/authors';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
 
@@ -95,7 +96,7 @@ export async function generateMetadata({
   return {
     title: `${data.title} | SmartLic`,
     description,
-    authors: [{ name: 'Tiago Sasaki' }],
+    authors: [{ name: getAuthorBySlug(DEFAULT_AUTHOR_SLUG)!.name }],
     alternates: { canonical: buildCanonical(`/blog/weekly/${slug}`) },
     openGraph: {
       title: data.title,
@@ -167,9 +168,10 @@ function buildJsonLd(data: WeeklyData, slug: string) {
         },
         author: {
           '@type': 'Person',
-          name: 'Tiago Sasaki',
-          jobTitle: 'CEO',
-          url: `${SITE_URL}/sobre`,
+          name: getAuthorBySlug(DEFAULT_AUTHOR_SLUG)!.name,
+          jobTitle: getAuthorBySlug(DEFAULT_AUTHOR_SLUG)!.role,
+          url: buildCanonical(`/blog/author/${DEFAULT_AUTHOR_SLUG}`),
+          sameAs: getAuthorBySlug(DEFAULT_AUTHOR_SLUG)!.sameAs,
         },
         isAccessibleForFree: true,
         speakable: {
@@ -267,7 +269,11 @@ export default async function WeeklyDigestPage({
                 })}
               </p>
               <p className="text-sm text-ink-secondary mt-1">
-                Por <span className="font-medium text-ink">Tiago Sasaki</span> · Equipe SmartLic
+                Por{' '}
+                <Link href={`/blog/author/${DEFAULT_AUTHOR_SLUG}`} className="font-medium text-ink hover:text-brand-blue transition-colors">
+                  {getAuthorBySlug(DEFAULT_AUTHOR_SLUG)!.name}
+                </Link>{' '}
+                · Equipe SmartLic
               </p>
             </div>
           </div>

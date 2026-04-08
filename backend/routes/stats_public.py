@@ -9,7 +9,8 @@ import time
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query, Response
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -46,10 +47,17 @@ class PublicStat(BaseModel):
     uf: Optional[str] = None
 
 
+class DataDownloadSchema(BaseModel):
+    type: str = "DataDownload"
+    encoding_format: str = "application/json"
+    content_url: str = "https://smartlic.tech/v1/stats/public"
+
+
 class PublicStatsResponse(BaseModel):
     updated_at: str
     total_stats: int
     stats: list[PublicStat]
+    data_download: dict | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -59,17 +67,28 @@ class PublicStatsResponse(BaseModel):
 
 @router.get(
     "/stats/public",
-    response_model=PublicStatsResponse,
     summary="Estatísticas públicas agregadas do PNCP (sem auth)",
 )
-async def stats_public():
+async def stats_public(
+    format: str = Query(default="json", description="json | embed | badge"),
+):
     cached = _get_cached("global")
-    if cached:
-        return PublicStatsResponse(**cached)
+    if not cached:
+        cached = await _generate_stats()
+        _set_cached("global", cached)
 
-    data = await _generate_stats()
-    _set_cached("global", data)
-    return PublicStatsResponse(**data)
+    if format == "embed":
+        return _build_embed_html(cached)
+    if format == "badge":
+        return _build_badge_svg(cached)
+
+    # JSON (default) — include DataDownload schema
+    cached["data_download"] = {
+        "@type": "DataDownload",
+        "encodingFormat": "application/json",
+        "contentUrl": "https://smartlic.tech/v1/stats/public",
+    }
+    return PublicStatsResponse(**cached)
 
 
 # ---------------------------------------------------------------------------
@@ -333,3 +352,83 @@ async def _generate_stats() -> dict:
         "total_stats": len(stats),
         "stats": stats,
     }
+
+
+# ---------------------------------------------------------------------------
+# Embed / Badge renderers (S9)
+# ---------------------------------------------------------------------------
+
+
+def _build_embed_html(data: dict) -> HTMLResponse:
+    """Return a self-contained HTML snippet for embedding."""
+    stats_list = data.get("stats", [])
+
+    total = next((s for s in stats_list if s["id"] == "total_bids_month"), None)
+    total_val = next((s for s in stats_list if s["id"] == "total_value_month"), None)
+    avg_val = next((s for s in stats_list if s["id"] == "avg_value_month"), None)
+    top_uf = next((s for s in stats_list if s["id"] == "top_uf_count"), None)
+
+    total_txt = total["formatted_value"] if total else "—"
+    value_txt = total_val["formatted_value"] if total_val else "—"
+    avg_txt = avg_val["formatted_value"] if avg_val else "—"
+    uf_txt = top_uf["formatted_value"] if top_uf else "—"
+    updated = data.get("updated_at", "")[:10]
+
+    html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+.sl-embed{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:480px;border:1px solid #e5e7eb;border-radius:12px;padding:20px;background:#fafafa}}
+.sl-embed h3{{margin:0 0 12px;font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}}
+.sl-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+.sl-stat{{padding:12px;background:#fff;border-radius:8px;border:1px solid #f3f4f6}}
+.sl-stat .val{{font-size:20px;font-weight:700;color:#1e3a5f}}
+.sl-stat .lbl{{font-size:12px;color:#6b7280;margin-top:2px}}
+.sl-foot{{margin-top:12px;font-size:11px;color:#9ca3af;text-align:center}}
+.sl-foot a{{color:#3b82f6;text-decoration:none}}
+</style></head><body>
+<div class="sl-embed">
+<h3>Licitações Públicas — Brasil</h3>
+<div class="sl-grid">
+<div class="sl-stat"><div class="val">{total_txt}</div><div class="lbl">Editais (30 dias)</div></div>
+<div class="sl-stat"><div class="val">{value_txt}</div><div class="lbl">Valor Total</div></div>
+<div class="sl-stat"><div class="val">{avg_txt}</div><div class="lbl">Valor Médio</div></div>
+<div class="sl-stat"><div class="val">{uf_txt}</div><div class="lbl">UF Líder</div></div>
+</div>
+<div class="sl-foot">Dados: <a href="https://smartlic.tech/estatisticas" target="_blank" rel="noopener">SmartLic</a> · PNCP · Atualizado {updated}</div>
+</div></body></html>"""
+
+    return HTMLResponse(content=html, headers={"Cache-Control": "public, max-age=3600"})
+
+
+def _build_badge_svg(data: dict) -> Response:
+    """Return an SVG badge with total bids count."""
+    stats_list = data.get("stats", [])
+    total = next((s for s in stats_list if s["id"] == "total_bids_month"), None)
+    count_txt = total["formatted_value"] if total else "—"
+    updated = data.get("updated_at", "")[:10]
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="280" height="28" role="img"
+  aria-label="SmartLic: {count_txt} editais">
+  <title>SmartLic: {count_txt} editais</title>
+  <linearGradient id="s" x2="0" y2="100%">
+    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <clipPath id="r"><rect width="280" height="28" rx="5" fill="#fff"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="100" height="28" fill="#1e3a5f"/>
+    <rect x="100" width="180" height="28" fill="#3b82f6"/>
+    <rect width="280" height="28" fill="url(#s)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,sans-serif" font-size="11">
+    <text x="50" y="19" fill="#fff">SmartLic</text>
+    <text x="190" y="19" fill="#fff">{count_txt} editais · PNCP · {updated}</text>
+  </g>
+</svg>"""
+
+    return Response(
+        content=svg,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
