@@ -324,7 +324,7 @@ export default function ReduzirTempoAnalisandoEditaisIrrelevantes() {
         </p>
         <p className="text-sm text-ink-secondary mb-3">
           <strong>Empresa de papelaria e material de escritório, 2
-          analistas, atuação em SP, MG e PR:</strong>
+          analistas, atuação em SP, MG e no PR:</strong>
         </p>
         <ul className="space-y-1 text-sm text-ink-secondary mb-3">
           <li>• Volume semanal monitorado: ~120 publicações do setor</li>

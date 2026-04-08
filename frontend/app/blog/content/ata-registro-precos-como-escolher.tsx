@@ -21,31 +21,31 @@ export default function AtaRegistroPrecoComoEscolher() {
                 name: 'O fornecedor e obrigado a fornecer toda a quantidade registrada na ARP?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim. Conforme o art. 83 da Lei 14.133/2021, o fornecedor registrado e obrigado a fornecer ate o quantitativo maximo registrado, nas condicoes estabelecidas na ata. A recusa injustificada pode resultar em sancoes previstas nos arts. 155 a 163 da mesma lei, incluindo impedimento de licitar.',
+                  text: 'Sim. Conforme o art. 83 da Lei 14.133/2021, o fornecedor registrado e obrigado a fornecer até o quantitativo máximo registrado, nas condições estabelecidas na ata. A recusa injustificada pode resultar em sanções previstas nos arts. 155 a 163 da mesma lei, incluindo impedimento de licitar.',
                 },
               },
               {
                 '@type': 'Question',
-                name: 'E possivel pedir reequilibrio economico-financeiro durante a vigencia da ARP?',
+                name: 'E possível pedir reequilíbrio econômico-financeiro durante a vigência da ARP?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim. O art. 82, inciso VI, da Lei 14.133/2021 preve a revisao dos precos registrados quando houver alteracao de fato que eleve o custo do bem ou servico. O fornecedor deve comprovar documentalmente o aumento dos custos, apresentando planilha detalhada e indices de referencia. O orgao gerenciador tem discricionariedade para aceitar ou negar o pedido.',
+                  text: 'Sim. O art. 82, inciso VI, da Lei 14.133/2021 preve a revisão dos preços registrados quando houver alteração de fato que eleve o custo do bem ou serviço. O fornecedor deve comprovar documentalmente o aumento dos custos, apresentando planilha detalhada e índices de referência. O órgão gerenciador tem discricionariedade para aceitar ou negar o pedido.',
                 },
               },
               {
                 '@type': 'Question',
-                name: 'Qual a diferenca entre ARP e contrato direto por licitacao convencional?',
+                name: 'Qual a diferença entre ARP e contrato direto por licitação convencional?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Na licitacao convencional, o contrato e firmado com quantidade e prazo definidos. Na ARP, o orgao registra precos e quantitativos estimados, mas nao ha obrigacao de aquisicao minima por parte da Administracao. O fornecedor, por outro lado, e obrigado a fornecer quando demandado. Isso cria uma assimetria de risco que precisa ser avaliada.',
+                  text: 'Na licitação convencional, o contrato e firmado com quantidade e prazo definidos. Na ARP, o órgão registra preços e quantitativos estimados, mas não há obrigação de aquisição mínima por parte da Administração. O fornecedor, por outro lado, e obrigado a fornecer quando demandado. Isso cria uma assimetria de risco que precisa ser avaliada.',
                 },
               },
               {
                 '@type': 'Question',
-                name: 'Orgaos nao participantes podem aderir a ARP?',
+                name: 'Órgãos não participantes podem aderir a ARP?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim, conforme o art. 86 da Lei 14.133/2021, orgaos nao participantes podem aderir a ARP mediante autorizacao do orgao gerenciador, desde que nao ultrapasse os limites legais. As adesoes sao limitadas a 50% do quantitativo registrado para orgaos federais, e a legislacao estadual e municipal pode estabelecer regras proprias.',
+                  text: 'Sim, conforme o art. 86 da Lei 14.133/2021, órgãos não participantes podem aderir a ARP mediante autorização do órgão gerenciador, desde que não ultrapasse os limites legais. As adesões são limitadas a 50% do quantitativo registrado para órgãos federais, é a legislação estadual e municipal pode estabelecer regras próprias.',
                 },
               },
               {
@@ -53,7 +53,7 @@ export default function AtaRegistroPrecoComoEscolher() {
                 name: 'Quando devo recusar participar de uma ARP?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Recuse quando o volume estimado exceder sua capacidade de entrega, quando a margem entre o preco registrado e seu custo atualizado for inferior a 8-10%, quando houver alta volatilidade de custos sem clausula de reequilibrio adequada, ou quando o orgao gerenciador tiver historico de demandas irregulares e atrasos no pagamento.',
+                  text: 'Recuse quando o volume estimado exceder sua capacidade de entrega, quando a margem entre o preço registrado e seu custo atualizado for inferior a 8-10%, quando houver alta volatilidade de custos sem cláusula de reequilíbrio adequada, ou quando o órgão gerenciador tiver histórico de demandas irregulares e atrasos no pagamento.',
                 },
               },
             ],
@@ -62,347 +62,347 @@ export default function AtaRegistroPrecoComoEscolher() {
       />
 
       <p className="text-base sm:text-xl leading-relaxed text-ink">
-        A Ata de Registro de Precos e um dos instrumentos mais utilizados nas
-        compras publicas brasileiras, e tambem um dos menos compreendidos por
+        A Ata de Registro de Precos é um dos instrumentos mais utilizados nas
+        compras públicas brasileiras, e também um dos menos compreendidos por
         fornecedores. Muitas empresas tratam toda ARP como uma oportunidade
-        automatica de receita, sem avaliar os riscos especificos desse modelo
-        de contratacao. O resultado e previsivel: fornecedores que se
-        comprometem com precos que nao sustentam, volumes que nao conseguem
-        atender e obrigacoes que desconheciam ao registrar a proposta. Este
-        artigo apresenta os 6 criterios objetivos para avaliar se uma ARP
-        realmente vale sua participacao, fundamentados na Lei 14.133/2021 e na
-        pratica do mercado B2G.
+        automática de receita, sem avaliar os riscos específicos desse modelo
+        de contratação. O resultado é previsível: fornecedores que se
+        comprometem com preços que não sustentam, volumes que não conseguem
+        atender e obrigações que desconheciam ao registrar a proposta. Este
+        artigo apresenta os 6 critérios objetivos para avaliar se uma ARP
+        realmente vale sua participação, fundamentados na Lei 14.133/2021 é na
+        prática do mercado B2G.
       </p>
 
-      <h2>O que e uma ARP e por que e diferente de licitacao convencional</h2>
+      <h2>O que é uma ARP e por que é diferente de licitação convencional</h2>
 
       <p>
-        O Sistema de Registro de Precos (SRP) esta disciplinado nos artigos
-        82 a 86 da Lei 14.133/2021 (Nova Lei de Licitacoes). Diferentemente
-        da licitacao convencional, onde a Administracao contrata uma quantidade
-        definida com prazo certo, o SRP registra precos e condições para
-        aquisicoes futuras, sem compromisso de quantidade minima por parte do
-        orgao comprador.
+        O Sistema de Registro de Precos (SRP) está disciplinado nos artigos
+        82 a 86 da Lei 14.133/2021 (Nova Lei de Licitações). Diferentemente
+        da licitação convencional, onde a Administração contrata uma quantidade
+        definida com prazo certo, o SRP registra preços e condições para
+        aquisições futuras, sem compromisso de quantidade mínima por parte do
+        órgão comprador.
       </p>
 
       <p>
-        Na pratica, isso significa que o fornecedor registrado se obriga a
-        manter o preco e a disponibilidade durante toda a vigencia da ata (ate
+        Na prática, isso significa que o fornecedor registrado se obriga a
+        manter o preço é a disponibilidade durante toda a vigência da ata (até
         12 meses, conforme o art. 84 da Lei 14.133/2021), enquanto a
-        Administracao pode comprar tudo, parte ou nada do que foi registrado.
-        Essa assimetria e o ponto central que diferencia a ARP de um contrato
-        convencional e que exige avaliacao cuidadosa antes da participacao.
+        Administração pode comprar tudo, parte ou nada do que foi registrado.
+        Essa assimetria é o ponto central que diferência a ARP de um contrato
+        convencional e que exige avaliação cuidadosa antes da participação.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
-        <p className="text-sm font-semibold text-ink mb-3">Dados de referencia: Registro de Precos no Brasil</p>
+        <p className="text-sm font-semibold text-ink mb-3">Dados de referência: Registro de Precos no Brasil</p>
         <ul className="space-y-2 text-sm text-ink-secondary">
-          <li>• Em 2025, aproximadamente 42% das contratacoes publicadas no PNCP utilizaram o Sistema de Registro de Precos, totalizando mais de 500 mil processos (Fonte: Painel de Compras do Governo Federal, consolidado dez/2025).</li>
-          <li>• A vigencia media das ARPs registradas em 2025 foi de 10,3 meses, com 68% das atas tendo vigencia de 12 meses (Fonte: Painel PNCP, Estatisticas de Compras, 2025).</li>
-          <li>• O Tribunal de Contas da Uniao registrou aumento de 27% nos pedidos de reequilibrio economico-financeiro em ARPs entre 2023 e 2025, refletindo a volatilidade de custos no periodo (Fonte: TCU, Relatorio de Auditoria em Compras Publicas, 2025).</li>
+          <li>• Em 2025, aproximadamente 42% das contratações publicadas no PNCP utilizaram o Sistema de Registro de Precos, totalizando mais de 500 mil processos (Fonte: Painel de Compras do Governo Federal, consolidado dez/2025).</li>
+          <li>• A vigência média das ARPs registradas em 2025 foi de 10,3 meses, com 68% das atas tendo vigência de 12 meses (Fonte: Painel PNCP, Estatisticas de Compras, 2025).</li>
+          <li>• O Tribunal de Contas da União registrou aumento de 27% nos pedidos de reequilíbrio econômico-financeiro em ARPs entre 2023 e 2025, refletindo a volatilidade de custos no período (Fonte: TCU, Relatório de Auditoria em Compras Públicas, 2025).</li>
         </ul>
       </div>
 
       <h2>Vantagens reais da ARP para o fornecedor</h2>
 
       <p>
-        Antes de analisar os riscos, e importante reconhecer as vantagens
+        Antes de analisar os riscos, é importante reconhecer as vantagens
         genuinas que a ARP oferece ao fornecedor bem posicionado.
       </p>
 
       <p>
-        <strong>Previsibilidade de demanda estimada.</strong> Embora nao haja
+        <strong>Previsibilidade de demanda estimada.</strong> Embora não haja
         garantia de compra, a ARP fornece uma estimativa de demanda que permite
-        planejamento de producao, estoque e logistica. Fornecedores que
-        compreendem o padrao de consumo do orgao gerenciador podem antecipar
-        pedidos e otimizar sua operacao.
+        planejamento de produção, estoque e logística. Fornecedores que
+        compreendem o padrão de consumo do órgão gerenciador podem antecipar
+        pedidos e otimizar sua operação.
       </p>
 
       <p>
         <strong>Relacionamento institucional.</strong> Estar registrado em uma
-        ARP cria um vinculo formal com o orgao comprador. Quando a demanda
-        surge, o fornecedor registrado e o primeiro a ser acionado. Isso
+        ARP cria um vinculo formal com o órgão comprador. Quando a demanda
+        surge, o fornecedor registrado é o primeiro a ser acionado. Isso
         elimina a necessidade de competir novamente por cada pedido individual
-        durante a vigencia da ata.
+        durante a vigência da ata.
       </p>
 
       <p>
-        <strong>Possibilidade de adesoes.</strong> Conforme o art. 86 da Lei
-        14.133/2021, orgaos nao participantes da licitacao original podem aderir
-        a ARP, ampliando o volume potencial de vendas sem nova competicao. Para
-        o fornecedor, cada adesao representa receita adicional com custo
+        <strong>Possibilidade de adesões.</strong> Conforme o art. 86 da Lei
+        14.133/2021, órgãos não participantes da licitação original podem aderir
+        a ARP, ampliando o volume potencial de vendas sem nova competição. Para
+        o fornecedor, cada adesão representa receita adicional com custo
         comercial zero.
       </p>
 
       <h2>Riscos subestimados da ARP</h2>
 
       <p>
-        Os riscos da ARP sao sistematicamente subestimados por fornecedores,
-        especialmente aqueles com pouca experiencia no modelo. Os tres riscos
-        principais sao:
+        Os riscos da ARP são sistematicamente subestimados por fornecedores,
+        especialmente aqueles com pouca experiência no modelo. Os tres riscos
+        principais são:
       </p>
 
       <p>
-        <strong>Obrigacao de fornecimento unilateral.</strong> O art. 83 da Lei
+        <strong>Obrigação de fornecimento unilateral.</strong> O art. 83 da Lei
         14.133/2021 estabelece que o fornecedor registrado e obrigado a fornecer
-        ate o quantitativo maximo registrado. A recusa injustificada sujeita a
-        empresa as sancoes dos arts. 155 a 163, incluindo multa, impedimento de
-        licitar e ate declaracao de inidoneidade. Nao existe a opcao de
-        &ldquo;desistir&rdquo; de uma ARP vigente sem consequencias.
+        até o quantitativo máximo registrado. A recusa injustificada sujeita a
+        empresa as sanções dos arts. 155 a 163, incluindo multa, impedimento de
+        licitar e até declaração de inidoneidade. Não existe a opção de
+        &ldquo;desistir&rdquo; de uma ARP vigente sem consequências.
       </p>
 
       <p>
-        <strong>Volume incerto.</strong> A Administracao pode demandar 100% do
-        quantitativo registrado ou 0%. O fornecedor que dimensionou sua operacao
+        <strong>Volume incerto.</strong> A Administração pode demandar 100% do
+        quantitativo registrado ou 0%. O fornecedor que dimensionou sua operação
         para atender o volume total pode ficar com estoque parado. O que
-        dimensionou para atender o minimo pode nao ter capacidade quando a
+        dimensionou para atender o mínimo pode não ter capacidade quando a
         demanda cheia se materializar.
       </p>
 
       <p>
-        <strong>Defasagem de precos.</strong> Em atas com vigencia de 12 meses,
-        a variacao de custos de insumos pode corroer a margem do fornecedor.
-        O pedido de reequilibrio e um direito, mas sua concessao depende de
-        comprovacao documental rigorosa e da discricionariedade do orgao. Nao
-        ha garantia de aprovacao, nem de celeridade no processo.
+        <strong>Defasagem de preços.</strong> Em atas com vigência de 12 meses,
+        a variação de custos de insumos pode corroer a margem do fornecedor.
+        O pedido de reequilíbrio é um direito, mas sua concessão depende de
+        comprovação documental rigorosa é da discricionariedade do órgão. Não
+        há garantia de aprovação, nem de celeridade no processo.
       </p>
 
-      <BlogInlineCTA slug="ata-registro-precos-como-escolher" campaign="b2g" />
+      <BlogInlineCTA slug="ata-registro-preços-como-escolher" campaign="b2g" />
 
-      <h2>Os 6 criterios para avaliar uma ARP</h2>
+      <h2>Os 6 critérios para avaliar uma ARP</h2>
 
       <p>
-        A decisao de participar de uma ARP deve ser baseada em criterios
-        objetivos, nao em otimismo. Os seis criterios a seguir formam um
-        framework de avaliacao que pode ser aplicado a qualquer ARP, independente
-        do setor ou do porte da empresa. Esse tipo de analise estruturada e o
-        que diferencia empresas que participam de{' '}
-        <Link href="/blog/escolher-editais-maior-probabilidade-vitoria">
-          editais com maior probabilidade de vitoria
+        A decisão de participar de uma ARP deve ser baseada em critérios
+        objetivos, não em otimismo. Os seis critérios a seguir formam um
+        framework de avaliação que pode ser aplicado a qualquer ARP, independente
+        do setor ou do porte da empresa. Esse tipo de análise estruturada é o
+        que diferência empresas que participam de{' '}
+        <Link href="/blog/escolher-editais-maior-probabilidade-vitória">
+          editais com maior probabilidade de vitória
         </Link>.
       </p>
 
-      <h3>Criterio 1: Volume estimado vs. capacidade de entrega</h3>
+      <h3>Critério 1: Volume estimado vs. capacidade de entrega</h3>
 
       <p>
-        O primeiro criterio e o mais fundamental: a empresa tem capacidade
-        operacional para atender o volume maximo registrado? Nao o volume
-        medio, nao o volume esperado, mas o volume maximo. Porque a
-        Administracao pode exigir tudo de uma vez, e a recusa injustificada
-        gera sancao.
+        O primeiro critério é o mais fundamental: a empresa tem capacidade
+        operacional para atender o volume máximo registrado? Não o volume
+        médio, não o volume esperado, mas o volume máximo. Porque a
+        Administração pode exigir tudo de uma vez, é a recusa injustificada
+        gera sanção.
       </p>
 
       <p>
-        A avaliacao deve considerar nao apenas a capacidade de producao, mas
-        tambem logistica de entrega, capacidade de armazenamento, e fluxo de
-        caixa para antecipar custos antes do pagamento. Se o volume maximo
+        A avaliação deve considerar não apenas a capacidade de produção, mas
+        também logística de entrega, capacidade de armazenamento, e fluxo de
+        caixa para antecipar custos antes do pagamento. Se o volume máximo
         da ARP excede 70% da capacidade operacional da empresa (considerando
-        outros contratos ativos), o risco e elevado.
+        outros contratos ativos), o risco é elevado.
       </p>
 
-      <h3>Criterio 2: Preco registrado vs. custo atualizado</h3>
+      <h3>Critério 2: Preco registrado vs. custo atualizado</h3>
 
       <p>
-        O preco proposto no momento da licitacao era competitivo e rentavel.
-        Mas entre a proposta e o primeiro pedido podem se passar semanas ou
-        meses. A pergunta correta nao e &ldquo;o preco esta bom hoje?&rdquo;
-        mas &ldquo;o preco estara viavel daqui a 6 meses?&rdquo;.
+        O preço proposto no momento da licitação era competitivo e rentável.
+        Mas entre a proposta é o primeiro pedido podem se passar semanas ou
+        meses. A pergunta correta não é &ldquo;o preço esta bom hoje?&rdquo;
+        mas &ldquo;o preço estara viável daqui a 6 meses?&rdquo;.
       </p>
 
       <p>
-        A recomendacao e calcular a margem liquida considerando o cenario de
-        custos projetado para o periodo da ata. Se a margem projetada for
-        inferior a 8% no pior cenario, a ARP representa risco financeiro
+        A recomendação e calcular a margem liquida considerando o cenário de
+        custos projetado para o período da ata. Se a margem projetada for
+        inferior a 8% no pior cenário, a ARP representa risco financeiro
         relevante. Em setores com alta volatilidade de insumos (alimentos,
-        materiais eletricos, combustiveis), a margem de seguranca deve ser
+        materiais elétricos, combustíveis), a margem de segurança deve ser
         ainda maior.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
-        <p className="text-sm font-semibold text-ink mb-3">Exemplo pratico: calculo de margem em ARP de materiais de escritorio</p>
+        <p className="text-sm font-semibold text-ink mb-3">Exemplo prático: cálculo de margem em ARP de materiais de escritorio</p>
         <p className="text-sm text-ink-secondary mb-3">
           Uma empresa avalia uma ARP para fornecimento de materiais de
-          escritorio a orgaos federais. O preco registrado para o kit basico
-          e de R$ 85,00 por unidade. O volume maximo registrado e de 12.000
+          escritorio a órgãos federais. O preço registrado para o kit básico
+          é de R$ 85,00 por unidade. O volume máximo registrado é de 12.000
           unidades em 12 meses.
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>• <strong>Custo atual do kit:</strong> R$ 68,00 (margem atual: 20%)</li>
-          <li>• <strong>Projecao de custo em 6 meses:</strong> R$ 74,00 (inflacao de insumos + frete, estimativa conservadora baseada em IPCA acumulado de 5,2% e reajuste de frete rodoviario)</li>
-          <li>• <strong>Projecao de custo em 12 meses:</strong> R$ 79,00</li>
-          <li>• <strong>Margem no pior cenario (12 meses):</strong> (85 - 79) / 85 = 7,1%</li>
-          <li>• <strong>Decisao:</strong> Margem abaixo de 8% no cenario projetado. Participar somente se a ARP contiver clausula de reequilibrio clara e o orgao tiver historico de aceitar pedidos de revisao.</li>
+          <li>• <strong>Projeção de custo em 6 meses:</strong> R$ 74,00 (inflação de insumos + frete, estimativa conservadora baseada em IPCA acumulado de 5,2% e reajuste de frete rodoviário)</li>
+          <li>• <strong>Projeção de custo em 12 meses:</strong> R$ 79,00</li>
+          <li>• <strong>Margem no pior cenário (12 meses):</strong> (85 - 79) / 85 = 7,1%</li>
+          <li>• <strong>Decisão:</strong> Margem abaixo de 8% no cenário projetado. Participar somente se a ARP contiver cláusula de reequilíbrio clara é o órgão tiver histórico de aceitar pedidos de revisão.</li>
         </ul>
       </div>
 
-      <h3>Criterio 3: Quantidade de participantes (diluicao)</h3>
+      <h3>Critério 3: Quantidade de participantes (diluição)</h3>
 
       <p>
         Em ARPs com multiplos fornecedores registrados, o volume total e
-        distribuido entre os participantes. Quanto mais fornecedores, menor
-        o volume garantido para cada um. A avaliacao deve considerar quantos
-        fornecedores o edital preve registrar e qual a regra de distribuicao
-        (rodizio, preferencia por ordem de classificacao, ou demanda livre).
+        distribuído entre os participantes. Quanto mais fornecedores, menor
+        o volume garantido para cada um. A avaliação deve considerar quantos
+        fornecedores o edital preve registrar e qual a regra de distribuição
+        (rodizio, preferência por ordem de classificação, ou demanda livre).
       </p>
 
       <p>
         ARPs que registram mais de 5 fornecedores para o mesmo item diluem
-        significativamente o volume individual. Se o edital nao especifica
-        criterio de distribuicao, o risco de volume baixo e real, e o
-        fornecedor pode manter obrigacao contratual para um volume que nunca
+        significativamente o volume individual. Se o edital não específica
+        critério de distribuição, o risco de volume baixo e real, é o
+        fornecedor pode manter obrigação contratual para um volume que nunca
         se materializa.
       </p>
 
-      <h3>Criterio 4: Orgao gerenciador e historico de demanda</h3>
+      <h3>Critério 4: Órgão gerenciador e histórico de demanda</h3>
 
       <p>
-        O comportamento do orgao gerenciador e um indicador preditivo
-        importante. Orgaos com historico consistente de consumo tendem a
-        demandar volumes proximos ao estimado. Orgaos com historico de atas
+        O comportamento do órgão gerenciador é um indicador preditivo
+        importante. Órgãos com histórico consistente de consumo tendem a
+        demandar volumes próximos ao estimado. Órgãos com histórico de atas
         subutilizadas representam risco de volume ocioso.
       </p>
 
       <p>
-        A verificacao pode ser feita consultando contratacoes anteriores do
-        mesmo orgao no PNCP, verificando se houve atas para o mesmo objeto
+        A verificação pode ser feita consultando contratações anteriores do
+        mesmo órgão no PNCP, verificando se houve atas para o mesmo objeto
         nos anos anteriores e qual foi o percentual efetivamente demandado.
-        Essa analise de historico e um dos fatores que o{' '}
+        Essa análise de histórico é um dos fatores que o{' '}
         <Link href="/features">
-          SmartLic incorpora na avaliacao de viabilidade
+          SmartLic incorpora na avaliação de viabilidade
         </Link>{' '}
         de cada oportunidade.
       </p>
 
-      <h3>Criterio 5: Prazo de vigencia vs. volatilidade de custos</h3>
+      <h3>Critério 5: Prazo de vigência vs. volatilidade de custos</h3>
 
       <p>
-        Atas com vigencia de 12 meses em setores com alta volatilidade de
-        custos sao inerentemente mais arriscadas do que atas de 6 meses em
-        setores estaveis. A avaliacao deve cruzar o prazo da ata com a
+        Atas com vigência de 12 meses em setores com alta volatilidade de
+        custos são inerentemente mais arriscadas do que atas de 6 meses em
+        setores estáveis. A avaliação deve cruzar o prazo da ata com a
         previsibilidade dos custos dos insumos principais.
       </p>
 
       <p>
-        Em setores como alimentos e combustiveis, onde os precos podem variar
-        20% ou mais em 12 meses, a vigencia longa e um fator de risco critico.
-        Em setores como papelaria e mobiliario, onde a variacao de custos e
-        mais moderada, o risco da vigencia longa e menor. As{' '}
-        <Link href="/blog/clausulas-escondidas-editais-licitacao">
-          clausulas do edital que impactam essa avaliacao
+        Em setores como alimentos e combustíveis, onde os preços podem variar
+        20% ou mais em 12 meses, a vigência longa é um fator de risco crítico.
+        Em setores como papelaria e mobiliário, onde a variação de custos e
+        mais moderada, o risco da vigência longa e menor. As{' '}
+        <Link href="/blog/cláusulas-escondidas-editais-licitação">
+          cláusulas do edital que impactam essa avaliação
         </Link>{' '}
-        precisam ser analisadas com atencao. Quem acompanha o mercado sabe
+        precisam ser analisadas com atenção. Quem acompanha o mercado sabe
         que{' '}
-        <Link href="/blog/nova-geracao-ferramentas-mercado-licitacoes">
+        <Link href="/blog/nova-geração-ferramentas-mercado-licitações">
           novas ferramentas que estão mudando o mercado de licitações
         </Link>{' '}
-        ja automatizam parte dessa analise de clausulas e vigencia.
+        já automatizam parte dessa análise de cláusulas e vigência.
       </p>
 
-      <h3>Criterio 6: Clausula de reequilibrio</h3>
+      <h3>Critério 6: Cláusula de reequilíbrio</h3>
 
       <p>
-        O sexto criterio e frequentemente o mais negligenciado: como o edital
-        trata o reequilibrio economico-financeiro? A Lei 14.133/2021, no art.
-        82, inciso VI, preve a possibilidade de revisao de precos, mas a
-        implementacao pratica varia significativamente entre orgaos.
+        O sexto critério e frequentemente o mais negligenciado: como o edital
+        trata o reequilíbrio econômico-financeiro? A Lei 14.133/2021, no art.
+        82, inciso VI, preve a possibilidade de revisão de preços, mas a
+        implementação prática varia significativamente entre órgãos.
       </p>
 
       <p>
-        Verifique se o edital especifica: (a) qual indice de referencia sera
-        utilizado para avaliar pedidos de reequilibrio, (b) qual o prazo maximo
-        para resposta ao pedido, (c) se ha previsao de reequilibrio automatico
-        por indice ou apenas por solicitacao fundamentada, e (d) se ha
-        precedentes de reequilibrio concedido pelo mesmo orgao em atas
+        Verifique se o edital específica: (a) qual índice de referência sera
+        utilizado para avaliar pedidos de reequilíbrio, (b) qual o prazo máximo
+        para resposta ao pedido, (c) se há previsão de reequilíbrio automático
+        por índice ou apenas por solicitação fundamentada, e (d) se ha
+        precedentes de reequilíbrio concedido pelo mesmo órgão em atas
         anteriores.
       </p>
 
       <p>
-        Um edital que menciona reequilibrio apenas de forma generica, sem
-        definir indice, prazo ou procedimento, oferece baixa seguranca ao
-        fornecedor. Em contrapartida, editais com clausula detalhada de
-        reequilibrio reduzem significativamente o risco de defasagem.
+        Um edital que menciona reequilíbrio apenas de forma genérica, sem
+        definir índice, prazo ou procedimento, oferece baixa segurança ao
+        fornecedor. Em contrapartida, editais com cláusula detalhada de
+        reequilíbrio reduzem significativamente o risco de defasagem.
       </p>
 
       <h2>Quando recusar uma ARP</h2>
 
       <p>
-        A decisao de nao participar de uma ARP e tao importante quanto a
-        decisao de participar. Recuse quando:
+        A decisão de não participar de uma ARP é tão importante quanto a
+        decisão de participar. Recuse quando:
       </p>
 
       <p>
-        <strong>O volume maximo excede sua capacidade.</strong> Se voce nao
+        <strong>O volume máximo excede sua capacidade.</strong> Se você não
         consegue atender 100% do quantitativo registrado considerando seus
-        outros contratos ativos, o risco de inadimplencia e real. E a
-        consequencia e sancao administrativa.
+        outros contratos ativos, o risco de inadimplência e real. E a
+        consequência e sanção administrativa.
       </p>
 
       <p>
-        <strong>A margem projetada e insuficiente.</strong> Se o calculo de
-        margem no cenario pessimista (custo maximo projetado vs. preco
+        <strong>A margem projetada e insuficiente.</strong> Se o cálculo de
+        margem no cenário pessimista (custo máximo projetado vs. preço
         registrado) indica margem liquida inferior a 8%, a ARP pode se
-        transformar em contrato deficitario.
+        transformar em contrato deficitário.
       </p>
 
       <p>
-        <strong>O orgao tem historico problematico.</strong> Orgaos com
-        historico de atrasos no pagamento superiores a 60 dias, ou com
-        historico de negar sistematicamente pedidos de reequilibrio, representam
+        <strong>O órgão tem histórico problemático.</strong> Órgãos com
+        histórico de atrasos no pagamento superiores a 60 dias, ou com
+        histórico de negar sistematicamente pedidos de reequilíbrio, representam
         risco financeiro desproporcional.
       </p>
 
       <p>
-        <strong>A volatilidade do setor e incompativel com o prazo.</strong>{' '}
+        <strong>A volatilidade do setor e incompatível com o prazo.</strong>{' '}
         Ata de 12 meses para itens cujos insumos variam mais de 15% ao ano,
-        sem clausula de reequilibrio robusta, e uma aposta contra o fornecedor.
+        sem cláusula de reequilíbrio robusta, é uma aposta contra o fornecedor.
       </p>
 
       <p>
         O artigo sobre{' '}
-        <Link href="/blog/disputar-todas-licitacoes-matematica-real">
-          a matematica real de disputar todas as licitacoes
+        <Link href="/blog/disputar-todas-licitações-matemática-real">
+          a matemática real de disputar todas as licitações
         </Link>{' '}
-        aprofunda o raciocinio quantitativo por tras dessa seletividade.
+        aprofunda o raciocínio quantitativo por tras dessa seletividade.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
-        <p className="text-sm font-semibold text-ink mb-3">Checklist rapido: avaliacao de ARP em 10 minutos</p>
+        <p className="text-sm font-semibold text-ink mb-3">Checklist rápido: avaliação de ARP em 10 minutos</p>
         <ul className="space-y-2 text-sm text-ink-secondary">
-          <li>• Volume maximo registrado cabe na sua capacidade operacional? (Sim/Nao)</li>
-          <li>• Margem liquida projetada no pior cenario de custos e superior a 8%? (Sim/Nao)</li>
-          <li>• Ha menos de 5 fornecedores registrados para o mesmo item? (Sim/Nao)</li>
-          <li>• O orgao gerenciador tem historico de demanda consistente? (Sim/Nao)</li>
-          <li>• A vigencia da ata e compativel com a volatilidade dos seus custos? (Sim/Nao)</li>
-          <li>• O edital tem clausula de reequilibrio detalhada com indice de referencia? (Sim/Nao)</li>
-          <li>• <strong>Resultado:</strong> 5 ou 6 respostas &ldquo;Sim&rdquo; = ARP viavel. 3 ou 4 = Requer analise aprofundada. Menos de 3 = Recusar.</li>
+          <li>• Volume máximo registrado cabe na sua capacidade operacional? (Sim/Não)</li>
+          <li>• Margem liquida projetada no pior cenário de custos e superior a 8%? (Sim/Não)</li>
+          <li>• Ha menos de 5 fornecedores registrados para o mesmo item? (Sim/Não)</li>
+          <li>• O órgão gerenciador tem histórico de demanda consistente? (Sim/Não)</li>
+          <li>• A vigência da ata e compatível com a volatilidade dos seus custos? (Sim/Não)</li>
+          <li>• O edital tem cláusula de reequilíbrio detalhada com índice de referência? (Sim/Não)</li>
+          <li>• <strong>Resultado:</strong> 5 ou 6 respostas &ldquo;Sim&rdquo; = ARP viável. 3 ou 4 = Requer análise aprofundada. Menos de 3 = Recusar.</li>
         </ul>
       </div>
 
-      <h2>Consideracoes sobre a Lei 14.133/2021</h2>
+      <h2>Considerações sobre a Lei 14.133/2021</h2>
 
       <p>
-        A Nova Lei de Licitacoes trouxe mudancas relevantes para o SRP que
-        impactam diretamente a avaliacao do fornecedor. O art. 82 estabelece
-        que o SRP sera adotado preferencialmente quando a Administracao nao
+        A Nova Lei de Licitações trouxe mudancas relevantes para o SRP que
+        impactam diretamente a avaliação do fornecedor. O art. 82 estabelece
+        que o SRP sera adotado preferencialmente quando a Administração não
         puder definir previamente o quantitativo a ser demandado, quando for
-        conveniente a aquisicao parcelada, ou quando atender a mais de um
-        orgao.
+        conveniente a aquisição parcelada, ou quando atender a mais de um
+        órgão.
       </p>
 
       <p>
-        O art. 84 limita a vigencia da ARP a 12 meses, prorrogavel por igual
-        periodo (totalizando 24 meses). O art. 86 disciplina as adesoes por
-        orgaos nao participantes, limitando-as a 50% do quantitativo
+        O art. 84 limita a vigência da ARP a 12 meses, prorrogável por igual
+        período (totalizando 24 meses). O art. 86 disciplina as adesões por
+        órgãos não participantes, limitando-as a 50% do quantitativo
         registrado no ambito federal. Essas regras devem ser consideradas no
-        calculo de volume potencial total.
+        cálculo de volume potencial total.
       </p>
 
       <p>
         Um ponto frequentemente ignorado e que a Lei 14.133/2021 exige que o
-        edital contenha o quantitativo maximo de cada item, vedada a
-        indicacao de quantitativo minimo (art. 82, par. 5). Isso reforça a
-        assimetria do modelo: o fornecedor se compromete com o maximo, a
-        Administracao nao se compromete com nenhum minimo.
+        edital contenha o quantitativo máximo de cada item, vedada a
+        indicação de quantitativo mínimo (art. 82, par. 5). Isso reforça a
+        assimetria do modelo: o fornecedor se compromete com o máximo, a
+        Administração não se compromete com nenhum mínimo.
       </p>
 
       {/* CTA — BEFORE FAQ */}
@@ -411,12 +411,12 @@ export default function AtaRegistroPrecoComoEscolher() {
           Filtre ARPs por viabilidade real
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
-          O SmartLic analisa modalidade, valor, prazo e regiao de cada
+          O SmartLic analisa modalidade, valor, prazo e região de cada
           oportunidade. Identifique rapidamente quais ARPs valem sua
-          participacao e quais devem ser descartadas.
+          participação e quais devem ser descartadas.
         </p>
         <Link
-          href="/signup?source=blog&article=ata-registro-precos-como-escolher&utm_source=blog&utm_medium=cta&utm_content=ata-registro-precos-como-escolher&utm_campaign=b2g"
+          href="/signup?source=blog&article=ata-registro-preços-como-escolher&utm_source=blog&utm_medium=cta&utm_content=ata-registro-preços-como-escolher&utm_campaign=b2g"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
           Teste Grátis por 14 Dias
@@ -434,57 +434,57 @@ export default function AtaRegistroPrecoComoEscolher() {
       <h3>O fornecedor e obrigado a fornecer toda a quantidade registrada na ARP?</h3>
       <p>
         Sim. Conforme o art. 83 da Lei 14.133/2021, o fornecedor registrado e
-        obrigado a fornecer ate o quantitativo maximo registrado, nas condicoes
-        estabelecidas na ata. A recusa injustificada pode resultar em sancoes
+        obrigado a fornecer até o quantitativo máximo registrado, nas condições
+        estabelecidas na ata. A recusa injustificada pode resultar em sanções
         previstas nos arts. 155 a 163 da mesma lei, incluindo multa,
-        impedimento de licitar e declaracao de inidoneidade. Por isso, a
-        avaliacao de capacidade operacional antes da participacao e
-        indispensavel.
+        impedimento de licitar e declaração de inidoneidade. Por isso, a
+        avaliação de capacidade operacional antes da participação e
+        indispensável.
       </p>
 
-      <h3>E possivel pedir reequilibrio economico-financeiro durante a vigencia da ARP?</h3>
+      <h3>E possível pedir reequilíbrio econômico-financeiro durante a vigência da ARP?</h3>
       <p>
-        Sim. O art. 82, inciso VI, da Lei 14.133/2021 preve a revisao dos
-        precos registrados quando houver alteracao de fato que eleve o custo
-        do bem ou servico. O fornecedor deve comprovar documentalmente o
-        aumento dos custos, apresentando planilha detalhada e indices de
-        referencia aceitos pelo orgao. E importante notar que o orgao
+        Sim. O art. 82, inciso VI, da Lei 14.133/2021 preve a revisão dos
+        preços registrados quando houver alteração de fato que eleve o custo
+        do bem ou serviço. O fornecedor deve comprovar documentalmente o
+        aumento dos custos, apresentando planilha detalhada e índices de
+        referência aceitos pelo órgão. É importante notar que o órgão
         gerenciador tem discricionariedade para aceitar ou negar o pedido,
-        e o processo pode levar semanas ou meses.
+        é o processo pode levar semanas ou meses.
       </p>
 
-      <h3>Qual a diferenca entre ARP e contrato direto por licitacao convencional?</h3>
+      <h3>Qual a diferença entre ARP e contrato direto por licitação convencional?</h3>
       <p>
-        Na licitacao convencional, o contrato e firmado com quantidade definida,
-        prazo de execucao e valor total estabelecido. O orgao se compromete a
-        adquirir e o fornecedor se compromete a entregar. Na ARP, ha uma
-        assimetria fundamental: o orgao registra quantidades estimadas sem
-        obrigacao de compra minima, enquanto o fornecedor se obriga a fornecer
-        ate o quantitativo maximo quando demandado. Essa assimetria transfere
+        Na licitação convencional, o contrato e firmado com quantidade definida,
+        prazo de execução e valor total estabelecido. O órgão se compromete a
+        adquirir é o fornecedor se compromete a entregar. Na ARP, há uma
+        assimetria fundamental: o órgão registra quantidades estimadas sem
+        obrigação de compra mínima, enquanto o fornecedor se obriga a fornecer
+        até o quantitativo máximo quando demandado. Essa assimetria transfere
         o risco de demanda para o fornecedor.
       </p>
 
-      <h3>Orgaos nao participantes podem aderir a ARP?</h3>
+      <h3>Órgãos não participantes podem aderir a ARP?</h3>
       <p>
-        Sim, conforme o art. 86 da Lei 14.133/2021. Orgaos nao participantes
-        podem aderir a ARP mediante autorizacao do orgao gerenciador e
-        aceitacao do fornecedor, desde que respeitados os limites legais. No
-        ambito federal, as adesoes sao limitadas a 50% do quantitativo
-        registrado. Para o fornecedor, as adesoes podem representar
-        oportunidade de receita adicional, mas tambem ampliam o volume total
-        de obrigacao, o que deve ser considerado no dimensionamento de
+        Sim, conforme o art. 86 da Lei 14.133/2021. Órgãos não participantes
+        podem aderir a ARP mediante autorização do órgão gerenciador e
+        aceitação do fornecedor, desde que respeitados os limites legais. No
+        ambito federal, as adesões são limitadas a 50% do quantitativo
+        registrado. Para o fornecedor, as adesões podem representar
+        oportunidade de receita adicional, mas também ampliam o volume total
+        de obrigação, o que deve ser considerado no dimensionamento de
         capacidade.
       </p>
 
       <h3>Quando devo recusar participar de uma ARP?</h3>
       <p>
-        Recuse quando o volume maximo estimado exceder sua capacidade de
+        Recuse quando o volume máximo estimado exceder sua capacidade de
         entrega considerando outros contratos ativos, quando a margem liquida
-        projetada para o pior cenario de custos for inferior a 8-10%, quando
-        houver alta volatilidade de custos no seu setor sem clausula de
-        reequilibrio adequada no edital, ou quando o orgao gerenciador tiver
-        historico de demandas irregulares e atrasos significativos no
-        pagamento. A seletividade na participacao e um indicador de maturidade
+        projetada para o pior cenário de custos for inferior a 8-10%, quando
+        houver alta volatilidade de custos no seu setor sem cláusula de
+        reequilíbrio adequada no edital, ou quando o órgão gerenciador tiver
+        histórico de demandas irregulares e atrasos significativos no
+        pagamento. A seletividade na participação é um indicador de maturidade
         operacional.
       </p>
       {/* TODO: Link para página programática de setor — MKT-003 */}

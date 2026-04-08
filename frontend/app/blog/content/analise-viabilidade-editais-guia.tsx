@@ -160,13 +160,13 @@ export default function AnaliseViabilidadeEditaisGuia() {
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Pregão eletrônico -- bens padronizados:</strong> R$ 1.500 a
+            <strong>Pregão eletrônico — bens padronizados:</strong> R$ 1.500 a
             R$ 3.000. Inclui: 4 a 8 horas de análise do edital, 4 a 8 horas de
             elaboração de proposta, atualização de certidões (se necessário),
             participação na sessão de lances (2 a 4 horas).
           </li>
           <li>
-            <strong>Pregão eletrônico -- serviços contínuos:</strong> R$ 3.000 a
+            <strong>Pregão eletrônico — serviços contínuos:</strong> R$ 3.000 a
             R$ 8.000. Inclui: 8 a 16 horas de análise (edital + termo de
             referência), elaboração de planilha de custos com BDI, composição de
             equipe mínima, cálculo de encargos trabalhistas, participação na
@@ -206,7 +206,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
       </p>
 
       {/* Section 3 -- Fator 1 */}
-      <h2>Fator 1: Modalidade -- como cada modalidade afeta a viabilidade</h2>
+      <h2>Fator 1: Modalidade — como cada modalidade afeta a viabilidade</h2>
 
       <p>
         A modalidade da licitação é o fator com maior peso na análise de viabilidade
@@ -266,7 +266,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
       </p>
 
       {/* Section 4 -- Fator 2 */}
-      <h2>Fator 2: Prazo (timeline) -- o tempo é eliminatório</h2>
+      <h2>Fator 2: Prazo (timeline) — o tempo é eliminatório</h2>
 
       <p>
         O prazo entre a data de publicação (ou a data em que a empresa identifica o
@@ -329,7 +329,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
       </p>
 
       {/* Section 5 -- Fator 3 */}
-      <h2>Fator 3: Valor estimado -- a faixa que faz sentido para a empresa</h2>
+      <h2>Fator 3: Valor estimado — a faixa que faz sentido para a empresa</h2>
 
       <p>
         O{' '}
@@ -392,7 +392,7 @@ export default function AnaliseViabilidadeEditaisGuia() {
       />
 
       {/* Section 7 -- Fator 4 */}
-      <h2>Fator 4: Geografia -- custos logísticos e presença regional</h2>
+      <h2>Fator 4: Geografia — custos logísticos e presença regional</h2>
 
       <p>
         A geografia é o quarto fator (peso 20%) e frequentemente subestimada por
@@ -525,42 +525,42 @@ export default function AnaliseViabilidadeEditaisGuia() {
         serviços de TI na região Sudeste.
       </p>
 
-      <h3>Edital A -- Pregão eletrônico para licenças de software (MG)</h3>
+      <h3>Edital A — Pregão eletrônico para licenças de software (MG)</h3>
 
       <p>
-        Modalidade: pregão eletrônico (nota 9 -- modalidade principal da empresa).
-        Timeline: 12 dias úteis até abertura (nota 8 -- prazo confortável).
-        Valor: R$ 180 mil (nota 9 -- centro da faixa ideal). Geografia: Belo
-        Horizonte (nota 10 -- sede da empresa).{' '}
+        Modalidade: pregão eletrônico (nota 9 — modalidade principal da empresa).
+        Timeline: 12 dias úteis até abertura (nota 8 — prazo confortável).
+        Valor: R$ 180 mil (nota 9 — centro da faixa ideal). Geografia: Belo
+        Horizonte (nota 10 — sede da empresa).{' '}
         <strong>Score: 9,0 x 0,30 + 8,0 x 0,25 + 9,0 x 0,25 + 10,0 x 0,20 =
         8,95.</strong> Decisão: GO. O edital é altamente compatível com o perfil
         da empresa em todos os fatores.
       </p>
 
-      <h3>Edital B -- {' '}
+      <h3>Edital B — {' '}
         <Link href="/glossario#concorrencia" className="text-brand-navy dark:text-brand-blue hover:underline">
           Concorrência
         </Link>{' '}
         para sistema integrado de gestão (AM)</h3>
 
       <p>
-        Modalidade: concorrência (nota 4 -- empresa tem taxa de 8% nessa
-        modalidade). Timeline: 25 dias úteis (nota 7 -- viável mas exige
-        dedicação). Valor: R$ 1,2 milhão (nota 5 -- acima da faixa usual, mas
-        há atestados parciais). Geografia: Manaus (nota 2 -- fora da região de
+        Modalidade: concorrência (nota 4 — empresa tem taxa de 8% nessa
+        modalidade). Timeline: 25 dias úteis (nota 7 — viável mas exige
+        dedicação). Valor: R$ 1,2 milhão (nota 5 — acima da faixa usual, mas
+        há atestados parciais). Geografia: Manaus (nota 2 — fora da região de
         atuação, custo de deslocamento alto).{' '}
         <strong>Score: 4,0 x 0,30 + 7,0 x 0,25 + 5,0 x 0,25 + 2,0 x 0,20 =
         4,60.</strong> Decisão: NO-GO. O custo de participação em concorrência
         fora da região não justifica a probabilidade de adjudicação.
       </p>
 
-      <h3>Edital C -- Pregão para manutenção de infraestrutura de TI (SP)</h3>
+      <h3>Edital C — Pregão para manutenção de infraestrutura de TI (SP)</h3>
 
       <p>
         Modalidade: pregão eletrônico (nota 9). Timeline: 6 dias úteis (nota 4 --
         prazo apertado mas viável se documentação estiver pronta). Valor: R$ 95
-        mil (nota 7 -- dentro da faixa, mas na borda inferior). Geografia: São
-        Paulo capital (nota 7 -- acessível, equipe remota viável para TI).{' '}
+        mil (nota 7 — dentro da faixa, mas na borda inferior). Geografia: São
+        Paulo capital (nota 7 — acessível, equipe remota viável para TI).{' '}
         <strong>Score: 9,0 x 0,30 + 4,0 x 0,25 + 7,0 x 0,25 + 7,0 x 0,20 =
         6,85.</strong> Decisão: análise aprofundada. O score está na faixa
         intermediária — vale ler o edital completo antes de decidir. O prazo

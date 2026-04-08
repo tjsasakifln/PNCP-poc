@@ -2,10 +2,10 @@ import Link from 'next/link';
 import BlogInlineCTA from '../components/BlogInlineCTA';
 
 /**
- * SEO GUIA-S3: Licitacoes de Saude 2026 — Guia Completo
+ * SEO GUIA-S3: Licitações de Saude 2026 — Guia Completo
  *
  * Content cluster: guias setoriais
- * Target: 3,000+ words | Primary KW: licitacoes saude
+ * Target: 3,000+ words | Primary KW: licitações saúde
  */
 export default function LicitacoesSaude2026() {
   return (
@@ -39,7 +39,7 @@ export default function LicitacoesSaude2026() {
                 name: 'Empresas pequenas podem participar de licitações de saúde?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Sim. A Lei Complementar 123/2006 e a Lei 14.133/2021 preveem tratamento diferenciado para ME e EPP, incluindo prioridade em itens de até R$ 80.000 e cota reservada de até 25% em licitações de bens divisíveis. Além disso, muitos editais de saúde são divididos em lotes menores, permitindo que empresas de menor porte participem de itens compatíveis com sua capacidade de fornecimento.',
+                  text: 'Sim. A Lei Complementar 123/2006 é a Lei 14.133/2021 preveem tratamento diferenciado para ME e EPP, incluindo prioridade em itens de até R$ 80.000 e cota reservada de até 25% em licitações de bens divisíveis. Além disso, muitos editais de saúde são divididos em lotes menores, permitindo que empresas de menor porte participem de itens compatíveis com sua capacidade de fornecimento.',
                 },
               },
               {
@@ -63,7 +63,7 @@ export default function LicitacoesSaude2026() {
                 name: 'Quais UFs publicam mais editais de saúde?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'São Paulo lidera com o maior volume de publicações de editais de saúde no PNCP, seguido por Rio de Janeiro, Minas Gerais, Bahia e Rio Grande do Sul. Esses cinco estados concentram aproximadamente 55% das publicações federais, estaduais e municipais do setor. O volume está diretamente relacionado ao tamanho da rede pública de saúde e ao orçamento do Fundo Estadual e dos Fundos Municipais de Saúde.',
+                  text: 'São Paulo lidera com o maior volume de publicações de editais de saúde no PNCP, seguido por Rio de Janeiro, Minas Gerais, Bahia e Rio Grande do Sul. Esses cinco estados concentram aproximadamente 55% das publicações federais, estaduais e municipais do setor. O volume está diretamente relacionado ao tamanho da rede pública de saúde e ao orçamento do Fundo Estadual é dos Fundos Municipais de Saúde.',
                 },
               },
             ],
@@ -99,7 +99,7 @@ export default function LicitacoesSaude2026() {
               },
               {
                 '@type': 'HowToStep',
-                name: 'Analise a viabilidade antes de participar',
+                name: 'Análise a viabilidade antes de participar',
                 text: 'Avalie cada edital considerando modalidade, prazo de entrega, valor estimado, localização geográfica e histórico de pagamento do órgão.',
               },
               {
@@ -114,83 +114,83 @@ export default function LicitacoesSaude2026() {
 
       {/* Opening paragraph */}
       <p className="text-base sm:text-xl leading-relaxed text-ink">
-        O setor de saude e um dos maiores demandantes de compras publicas no Brasil.
-        Somente em 2024, os gastos federais, estaduais e municipais com aquisicao de
-        medicamentos, equipamentos medicos e insumos hospitalares ultrapassaram{' '}
-        <strong>R$ 90 bilhoes</strong>, segundo dados do Ministerio da Saude e do
+        O setor de saúde é um dos maiores demandantes de compras públicas no Brasil.
+        Somente em 2024, os gastos federais, estaduais e municipais com aquisição de
+        medicamentos, equipamentos médicos e insumos hospitalares ultrapassaram{' '}
+        <strong>R$ 90 bilhões</strong>, segundo dados do Ministerio da Saude é do
         Painel de Compras do Governo Federal. Para empresas que atuam nesse segmento,
-        entender como funcionam as licitacoes de saude -- das modalidades mais comuns
-        aos requisitos regulatorios -- e a diferenca entre participar com consistencia
-        e desperdicar recursos em editais incompativeis. Este guia apresenta o panorama
-        completo das licitacoes de saude em 2026, com dados praticos sobre subsetores,
-        faixas de valor, estados com maior volume e os erros que mais eliminam
+        entender como funcionam as licitações de saúde -- das modalidades mais comuns
+        aos requisitos regulatorios -- é a diferença entre participar com consistência
+        e desperdicar recursos em editais incompatíveis. Este guia apresenta o panorama
+        completo das licitações de saúde em 2026, com dados práticos sobre subsetores,
+        faixas de valor, estados com maior volume é os erros que mais eliminam
         fornecedores.
       </p>
 
       {/* Section 1: Panorama */}
-      <h2>Panorama das licitacoes de saude no Brasil</h2>
+      <h2>Panorama das licitações de saúde no Brasil</h2>
 
       <p>
-        O Sistema Unico de Saude (SUS) atende mais de 190 milhoes de brasileiros e
-        depende integralmente de compras publicas para abastecer sua rede de mais de
-        42 mil unidades de saude, incluindo hospitais, UPAs, UBS, CAPS e laboratorios
-        publicos. Cada uma dessas unidades demanda insumos continuos -- de seringas
-        e luvas a medicamentos de alta complexidade e equipamentos de diagnostico por
+        O Sistema Único de Saude (SUS) atende mais de 190 milhões de brasileiros e
+        depende integralmente de compras públicas para abastecer sua rede de mais de
+        42 mil unidades de saúde, incluindo hospitais, UPAs, UBS, CAPS e laboratórios
+        públicos. Cada uma dessas unidades demanda insumos continuos -- de seringas
+        e luvas a medicamentos de alta complexidade e equipamentos de diagnóstico por
         imagem.
       </p>
 
       <p>
-        O Portal Nacional de Contratacoes Publicas (PNCP) registra, mensalmente,
-        entre 8.000 e 14.000 publicacoes relacionadas ao setor de saude, abrangendo
+        O Portal Nacional de Contratações Públicas (PNCP) registra, mensalmente,
+        entre 8.000 e 14.000 publicações relacionadas ao setor de saúde, abrangendo
         todas as esferas (federal, estadual e municipal) e todas as modalidades
-        previstas na Lei 14.133/2021. Esse volume faz da saude o segundo maior setor
-        em numero de publicacoes, atras apenas de servicos administrativos e facilities.
+        previstas na Lei 14.133/2021. Esse volume faz da saúde o segundo maior setor
+        em número de publicações, atras apenas de serviços administrativos e facilities.
       </p>
 
       <p>
-        A estrutura de financiamento do SUS e tripartite: Uniao, estados e municipios
-        compartilham os custos. Na pratica, isso significa que um mesmo medicamento
-        pode ser objeto de licitacao federal (compra centralizada pelo Ministerio da
+        A estrutura de financiamento do SUS e tripartite: União, estados e municípios
+        compartilham os custos. Na prática, isso significa que um mesmo medicamento
+        pode ser objeto de licitação federal (compra centralizada pelo Ministerio da
         Saude), estadual (Secretaria Estadual de Saude) ou municipal (Fundo Municipal
-        de Saude). Cada esfera tem orcamento, cronograma e requisitos proprios, o que
-        multiplica as oportunidades -- mas tambem a complexidade para o fornecedor.
+        de Saude). Cada esfera tem orçamento, cronograma e requisitos próprios, o que
+        multiplica as oportunidades -- mas também a complexidade para o fornecedor.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Dados de referencia -- Compras publicas de saude em numeros
+          Dados de referência -- Compras públicas de saúde em números
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Orcamento SUS 2025:</strong> R$ 251,3 bilhoes (Ministerio da Saude,
-            LOA 2025), dos quais aproximadamente 35% destinam-se a aquisicao de bens
-            e servicos via licitacao.
+            <strong>Orcamento SUS 2025:</strong> R$ 251,3 bilhões (Ministerio da Saude,
+            LOA 2025), dos quais aproximadamente 35% destinam-se a aquisição de bens
+            e serviços via licitação.
           </li>
           <li>
-            <strong>Publicacoes mensais no PNCP (saude):</strong> 8.000 a 14.000 editais
-            entre pregoes, dispensas, inexigibilidades e atas de registro de preco.
+            <strong>Publicações mensais no PNCP (saúde):</strong> 8.000 a 14.000 editais
+            entre pregões, dispensas, inexigibilidades e atas de registro de preço.
           </li>
           <li>
             <strong>Compras centralizadas (MS):</strong> o Ministerio da Saude concentra
-            a compra de medicamentos estrategicos (oncologicos, antivirais, imunobiologicos)
-            atraves do Departamento de Assistencia Farmaceutica (DAF).
+            a compra de medicamentos estratégicos (oncológicos, antivirais, imunobiológicos)
+            atraves do Departamento de Assistência Farmaceutica (DAF).
           </li>
           <li>
-            <strong>Rede SUS:</strong> 42.400+ unidades de saude, 5.570 municipios com
+            <strong>Rede SUS:</strong> 42.400+ unidades de saúde, 5.570 municípios com
             Fundo Municipal de Saude ativo (DATASUS, 2024).
           </li>
         </ul>
       </div>
 
       <p>
-        Para quem esta comecando no mercado de licitacoes publicas, o setor de saude
-        oferece uma vantagem estrutural: a demanda e recorrente. Hospitais nao param de
-        consumir insumos, e contratos de fornecimento continuado sao renovados
+        Para quem esta comecando no mercado de licitações públicas, o setor de saúde
+        oferece uma vantagem estrutural: a demanda e recorrente. Hospitais não param de
+        consumir insumos, e contratos de fornecimento continuado são renovados
         anualmente. Isso cria previsibilidade de receita para fornecedores que
-        conseguem se estabelecer. Para uma visao geral de como participar de licitacoes
+        conseguem se estabelecer. Para uma visão geral de como participar de licitações
         pela primeira vez, consulte{' '}
-        <Link href="/blog/como-participar-primeira-licitacao-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
-          o guia completo para a primeira licitacao em 2026
+        <Link href="/blog/como-participar-primeira-licitação-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+          o guia completo para a primeira licitação em 2026
         </Link>.
       </p>
 
@@ -198,94 +198,94 @@ export default function LicitacoesSaude2026() {
       <h2>Subsetores: medicamentos, equipamentos e insumos hospitalares</h2>
 
       <p>
-        O setor de saude em licitacoes publicas se divide em tres grandes grupos de
-        objetos, cada um com dinamicas, requisitos regulatorios e faixas de valor
+        O setor de saúde em licitações públicas se divide em tres grandes grupos de
+        objetos, cada um com dinâmicas, requisitos regulatorios e faixas de valor
         distintos.
       </p>
 
       <h3>Medicamentos</h3>
 
       <p>
-        A aquisicao de medicamentos representa o maior volume financeiro dentro das
-        compras de saude. Inclui desde medicamentos basicos (listados na RENAME --
-        Relacao Nacional de Medicamentos Essenciais) ate medicamentos de alta
-        complexidade (oncologicos, biologicos, antirretrovirais). O fornecedor precisa
-        ter registro do produto na Anvisa vigente, AFE (Autorizacao de Funcionamento
-        de Empresa) e, em muitos casos, Certificado de Boas Praticas de Fabricacao
-        (CBPF) ou de Distribuicao e Armazenamento (CBPDA).
+        A aquisição de medicamentos representa o maior volume financeiro dentro das
+        compras de saúde. Inclui desde medicamentos básicos (listados na RENAME --
+        Relação Nacional de Medicamentos Essenciais) até medicamentos de alta
+        complexidade (oncológicos, biológicos, antirretrovirais). O fornecedor precisa
+        ter registro do produto na Anvisa vigente, AFE (Autorização de Funcionamento
+        de Empresa) e, em muitos casos, Certificado de Boas Praticas de Fabricação
+        (CBPF) ou de Distribuição e Armazenamento (CBPDA).
       </p>
 
       <p>
         A compra de medicamentos e fortemente regulada. O art. 26 do Decreto
-        7.508/2011 determina que o SUS so pode adquirir medicamentos listados na
-        RENAME, o que limita o escopo dos editais mas tambem cria previsibilidade --
+        7.508/2011 determina que o SUS só pode adquirir medicamentos listados na
+        RENAME, o que limita o escopo dos editais mas também cria previsibilidade --
         o fornecedor sabe exatamente quais produtos serao demandados. As compras
-        centralizadas do Ministerio da Saude, realizadas pelo DAF, movimentam bilhoes
+        centralizadas do Ministerio da Saude, realizadas pelo DAF, movimentam bilhões
         por ano e utilizam predominantemente{' '}
-        <Link href="/glossario#ata-de-registro-de-precos" className="text-brand-navy dark:text-brand-blue hover:underline">
-          atas de registro de precos
+        <Link href="/glossario#ata-de-registro-de-preços" className="text-brand-navy dark:text-brand-blue hover:underline">
+          atas de registro de preços
         </Link>{' '}
         com validade de 12 meses.
       </p>
 
-      <h3>Equipamentos medico-hospitalares</h3>
+      <h3>Equipamentos médico-hospitalares</h3>
 
       <p>
         Equipamentos variam desde itens de baixa complexidade (camas hospitalares,
-        macas, carrinhos de medicacao) ate equipamentos de alta tecnologia (tomografos,
-        ressonancias magneticas, ventiladores pulmonares). As licitacoes de equipamentos
-        tendem a ter valores unitarios mais altos (R$ 50.000 a R$ 15 milhoes por
-        unidade) e exigem documentacao tecnica detalhada: registro na Anvisa (classe I,
-        II, III ou IV conforme risco), manuais em portugues, assistencia tecnica
-        autorizada e, em muitos casos, treinamento operacional incluido.
+        macas, carrinhos de medicação) até equipamentos de alta tecnologia (tomografos,
+        ressonâncias magnéticas, ventiladores pulmonares). As licitações de equipamentos
+        tendem a ter valores unitarios mais altos (R$ 50.000 a R$ 15 milhões por
+        unidade) e exigem documentação técnica detalhada: registro na Anvisa (classe I,
+        II, III ou IV conforme risco), manuais em portugues, assistência técnica
+        autorizada e, em muitos casos, treinamento operacional incluído.
       </p>
 
       <p>
-        Apos a pandemia de COVID-19, a demanda por equipamentos de diagnostico,
-        monitorizacao e terapia intensiva se manteve elevada. Programas federais como o
-        Brasil Saude e o investimento em UPAs ampliaram o volume de licitacoes para
-        equipamentos de urgencia e emergencia.
+        Após a pandemia de COVID-19, a demanda por equipamentos de diagnóstico,
+        monitorização e terapia intensiva se manteve elevada. Programas federais como o
+        Brasil Saude é o investimento em UPAs ampliaram o volume de licitações para
+        equipamentos de urgência e emergência.
       </p>
 
       <h3>Insumos e materiais hospitalares</h3>
 
       <p>
         Insumos hospitalares incluem materiais de consumo (luvas, seringas, cateteres,
-        suturas, ataduras), materiais de laboratorio (reagentes, kits de diagnostico),
-        materiais medico-cirurgicos e orteses/proteses (OPME). O volume de compras e
-        altissimo e recorrente -- hospitais de medio porte consomem dezenas de milhares
-        de unidades de insumos por mes. As licitacoes sao tipicamente realizadas por{' '}
-        <Link href="/glossario#pregao-eletronico" className="text-brand-navy dark:text-brand-blue hover:underline">
-          pregao eletronico
+        suturas, ataduras), materiais de laboratório (reagentes, kits de diagnóstico),
+        materiais médico-cirúrgicos e orteses/proteses (OPME). O volume de compras e
+        altissimo e recorrente -- hospitais de médio porte consomem dezenas de milhares
+        de unidades de insumos por mes. As licitações são tipicamente realizadas por{' '}
+        <Link href="/glossario#pregao-eletrônico" className="text-brand-navy dark:text-brand-blue hover:underline">
+          pregao eletrônico
         </Link>{' '}
-        com criterio de menor preco por item ou por lote.
+        com critério de menor preço por item ou por lote.
       </p>
 
       <p>
-        Um segmento especialmente complexo e o de OPME (Orteses, Proteses e Materiais
-        Especiais), que inclui implantes ortopedicos, stents, valvulas cardiacas e
-        materiais de osteossintese. As compras de OPME sao frequentemente alvo de
-        auditoria do TCU e exigem especificacao tecnica precisa para evitar
+        Um segmento especialmente complexo é o de OPME (Orteses, Proteses e Materiais
+        Especiais), que inclui implantes ortopédicos, stents, valvulas cardiacas e
+        materiais de osteossintese. As compras de OPME são frequentemente alvo de
+        auditoria do TCU e exigem especificação técnica precisa para evitar
         direcionamento.
       </p>
 
       {/* Section 3: Modalidades */}
-      <h2>Modalidades mais utilizadas em licitacoes de saude</h2>
+      <h2>Modalidades mais utilizadas em licitações de saúde</h2>
 
       <p>
-        A Lei 14.133/2021 trouxe mudancas significativas nas modalidades de licitacao.
-        No setor de saude, tres modalidades concentram mais de 90% das publicacoes.
+        A Lei 14.133/2021 trouxe mudancas significativas nas modalidades de licitação.
+        No setor de saúde, tres modalidades concentram mais de 90% das publicações.
       </p>
 
-      <h3>Pregao eletronico</h3>
+      <h3>Pregao eletrônico</h3>
 
       <p>
-        O pregao eletronico e a modalidade dominante para aquisicao de bens de saude
-        (medicamentos, insumos, equipamentos). Cerca de 70% dos editais de saude
-        publicados no PNCP utilizam esta modalidade, que prioriza o criterio de menor
-        preco ou maior desconto. O pregao eletronico e obrigatorio para bens e servicos
-        comuns (art. 6, inciso XIII da Lei 14.133/2021), e a maioria dos insumos
-        hospitalares se enquadra nessa definicao.
+        O pregao eletrônico é a modalidade dominante para aquisição de bens de saúde
+        (medicamentos, insumos, equipamentos). Cerca de 70% dos editais de saúde
+        publicados no PNCP utilizam esta modalidade, que prioriza o critério de menor
+        preço ou maior desconto. O pregao eletrônico e obrigatório para bens e serviços
+        comuns (art. 6, inciso XIII da Lei 14.133/2021), é a maioria dos insumos
+        hospitalares se enquadra nessa definição.
       </p>
 
       <p>
@@ -299,52 +299,52 @@ export default function LicitacoesSaude2026() {
       <h3>Sistema de Registro de Precos (SRP)</h3>
 
       <p>
-        O SRP e amplamente utilizado em saude por uma razao pratica: hospitais nao
+        O SRP e amplamente utilizado em saúde por uma razão prática: hospitais não
         conseguem prever com exatidao a demanda de insumos ao longo de 12 meses.
-        O registro de precos permite que o orgao realize um unico pregao, registre
-        os precos vencedores e realize compras parceladas conforme a necessidade,
-        sem ultrapassar o quantitativo maximo da ata. Para o fornecedor, a vantagem
-        e a possibilidade de fornecimento continuado ao longo da vigencia da ata.
-        A desvantagem e que nao ha garantia de compra minima -- o orgao pode nao
+        O registro de preços permite que o órgão realize um único pregao, registre
+        os preços vencedores e realize compras parceladas conforme a necessidade,
+        sem ultrapassar o quantitativo máximo da ata. Para o fornecedor, a vantagem
+        é a possibilidade de fornecimento continuado ao longo da vigência da ata.
+        A desvantagem é que não há garantia de compra mínima -- o órgão pode não
         emitir nenhuma ordem de fornecimento.
       </p>
 
-      <h3>Dispensa de licitacao</h3>
+      <h3>Dispensa de licitação</h3>
 
       <p>
-        Dispensas representam entre 15% e 20% das contratacoes de saude. O art. 75
+        Dispensas representam entre 15% e 20% das contratações de saúde. O art. 75
         da Lei 14.133/2021 preve diversas hipoteses de dispensa, sendo as mais
-        comuns em saude: valor ate R$ 59.906,02 para compras (inciso II, atualizado
-        pelo Decreto 12.343/2024), emergencia ou calamidade publica (inciso VIII)
-        e compras da agricultura familiar para alimentacao hospitalar (Lei 11.947/2009).
-        Dispensas tendem a ter ciclos mais curtos (5 a 15 dias entre publicacao e
-        contratacao) e menor concorrencia.
+        comuns em saúde: valor até R$ 59.906,02 para compras (inciso II, atualizado
+        pelo Decreto 12.343/2024), emergência ou calamidade pública (inciso VIII)
+        e compras da agricultura familiar para alimentação hospitalar (Lei 11.947/2009).
+        Dispensas tendem a ter ciclos mais curtos (5 a 15 dias entre publicação e
+        contratação) e menor concorrência.
       </p>
 
       {/* Section 4: Faixas de valor */}
       <h2>Faixas de valor por subsetor</h2>
 
       <p>
-        Entender as faixas de valor tipicas e fundamental para avaliar a viabilidade
-        de cada edital. Um fornecedor de insumos basicos que tenta competir em uma
-        licitacao de R$ 50 milhoes para equipamentos de diagnostico esta fora do
+        Entender as faixas de valor típicas é fundamental para avaliar a viabilidade
+        de cada edital. Um fornecedor de insumos básicos que tenta competir em uma
+        licitação de R$ 50 milhões para equipamentos de diagnóstico está fora do
         seu segmento natural -- e vice-versa.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Faixas de valor tipicas -- Licitacoes de saude por subsetor
+          Faixas de valor típicas -- Licitações de saúde por subsetor
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Medicamentos basicos (RENAME):</strong> R$ 30.000 a R$ 2.000.000
-            por lote/ata. Pregoes municipais na faixa inferior; atas estaduais e
+            <strong>Medicamentos básicos (RENAME):</strong> R$ 30.000 a R$ 2.000.000
+            por lote/ata. Pregões municipais na faixa inferior; atas estaduais e
             federais na faixa superior.
           </li>
           <li>
             <strong>Medicamentos de alta complexidade:</strong> R$ 500.000 a
             R$ 200.000.000. Compras centralizadas pelo Ministerio da Saude para
-            oncologicos, biologicos e imunobiologicos.
+            oncológicos, biológicos e imunobiológicos.
           </li>
           <li>
             <strong>Equipamentos de baixa complexidade:</strong> R$ 10.000 a
@@ -352,12 +352,12 @@ export default function LicitacoesSaude2026() {
           </li>
           <li>
             <strong>Equipamentos de alta complexidade:</strong> R$ 500.000 a
-            R$ 15.000.000. Tomografos, ressonancias, raio-X digital, ultrassons.
+            R$ 15.000.000. Tomografos, ressonâncias, raio-X digital, ultrassons.
           </li>
           <li>
             <strong>Insumos e materiais hospitalares:</strong> R$ 5.000 a R$ 5.000.000.
-            Luvas, seringas, reagentes, kits de diagnostico. Alto volume, baixo valor
-            unitario.
+            Luvas, seringas, reagentes, kits de diagnóstico. Alto volume, baixo valor
+            unitário.
           </li>
           <li>
             <strong>OPME:</strong> R$ 50.000 a R$ 10.000.000. Proteses, implantes,
@@ -367,31 +367,31 @@ export default function LicitacoesSaude2026() {
       </div>
 
       <p>
-        A segmentacao por faixa de valor e um dos filtros mais eficientes na triagem de
-        editais. Fornecedores que definem claramente sua faixa de atuacao economizam
-        tempo e aumentam a taxa de adjudicacao. Para entender como essa logica se
+        A segmentação por faixa de valor é um dos filtros mais eficientes na triagem de
+        editais. Fornecedores que definem claramente sua faixa de atuação economizam
+        tempo e aumentam a taxa de adjudicação. Para entender como essa lógica se
         aplica a outros setores, veja{' '}
-        <Link href="/blog/licitacoes-engenharia-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
-          o guia de licitacoes de engenharia e construcao 2026
+        <Link href="/blog/licitações-engenharia-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+          o guia de licitações de engenharia e construção 2026
         </Link>.
       </p>
 
       {/* Section 5: UFs com maior volume */}
-      <h2>UFs com maior volume de editais de saude</h2>
+      <h2>UFs com maior volume de editais de saúde</h2>
 
       <p>
-        O volume de licitacoes de saude esta diretamente correlacionado com o tamanho
-        da rede publica de saude, o orcamento do Fundo Estadual e a populacao atendida.
-        Cinco estados concentram mais da metade das publicacoes.
+        O volume de licitações de saúde esta diretamente correlacionado com o tamanho
+        da rede pública de saúde, o orçamento do Fundo Estadual é a população atendida.
+        Cinco estados concentram mais da metade das publicações.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-surface-1 border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Top 5 UFs em volume de editais de saude (PNCP, dados 2024-2025)
+          Top 5 UFs em volume de editais de saúde (PNCP, dados 2024-2025)
         </p>
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li>
-            <strong>Sao Paulo (SP):</strong> Maior rede hospitalar publica do pais.
+            <strong>São Paulo (SP):</strong> Maior rede hospitalar pública do país.
             Hospital das Clinicas (HCFMUSP), Santa Casa de SP e centenas de UPAs.
             Lidera em volume e em valor total contratado.
           </li>
@@ -401,17 +401,17 @@ export default function LicitacoesSaude2026() {
             complexidade.
           </li>
           <li>
-            <strong>Minas Gerais (MG):</strong> 853 municipios, maior numero do Brasil.
-            Volume alto de pregoes municipais para insumos basicos e medicamentos.
+            <strong>Minas Gerais (MG):</strong> 853 municípios, maior número do Brasil.
+            Volume alto de pregões municipais para insumos básicos e medicamentos.
           </li>
           <li>
             <strong>Bahia (BA):</strong> Maior rede SUS do Nordeste. Destaque para
-            compras de medicamentos basicos e insumos de atencao primaria.
+            compras de medicamentos básicos e insumos de atenção primária.
           </li>
           <li>
             <strong>Rio Grande do Sul (RS):</strong> Hospital de Clinicas de Porto Alegre
-            (referencia nacional) e rede de saude consolidada. Volume significativo de
-            licitacoes para equipamentos e insumos laboratoriais.
+            (referência nacional) e rede de saúde consolidada. Volume significativo de
+            licitações para equipamentos e insumos laboratoriais.
           </li>
         </ul>
       </div>
@@ -419,86 +419,86 @@ export default function LicitacoesSaude2026() {
       <p>
         Embora SP, RJ, MG, BA e RS liderem em volume absoluto, fornecedores que
         atuam em estados do Norte e Centro-Oeste (AM, PA, MT, GO) frequentemente
-        encontram menor concorrencia e margens superiores, pois poucos fornecedores
-        locais possuem capacidade logistica para atender a demanda. A desvantagem
-        e o custo de frete e o risco de atraso na entrega em regioes com
-        infraestrutura logistica limitada.
+        encontram menor concorrência e margens superiores, pois poucos fornecedores
+        locais possuem capacidade logística para atender a demanda. A desvantagem
+        é o custo de frete é o risco de atraso na entrega em regiões com
+        infraestrutura logística limitada.
       </p>
 
       {/* Section 6: Requisitos */}
-      <h2>Requisitos de habilitacao: o que voce precisa para participar</h2>
+      <h2>Requisitos de habilitação: o que você precisa para participar</h2>
 
       <p>
-        O setor de saude e um dos mais regulados em termos de habilitacao. Alem
-        dos requisitos genericos da Lei 14.133/2021 (regularidade fiscal, trabalhista,
-        juridica e economico-financeira), existem exigencias setoriais especificas
+        O setor de saúde é um dos mais regulados em termos de habilitação. Além
+        dos requisitos genéricos da Lei 14.133/2021 (regularidade fiscal, trabalhista,
+        jurídica e econômico-financeira), existem exigências setoriais específicas
         que variam conforme o objeto.
       </p>
 
       <h3>Requisitos comuns a todos os subsetores</h3>
 
       <p>
-        Toda empresa que participa de licitacoes de saude precisa apresentar: CNPJ
-        com CNAE principal ou secundario compativel com o objeto, Certidao Negativa
+        Toda empresa que participa de licitações de saúde precisa apresentar: CNPJ
+        com CNAE principal ou secundário compatível com o objeto, Certidao Negativa
         de Debitos junto a Receita Federal, FGTS e Justica do Trabalho, Certidao
-        de Falencia e Recuperacao Judicial, e balanco patrimonial demonstrando
-        capacidade economico-financeira proporcional ao valor da contratacao.
+        de Falência e Recuperação Judicial, e balanco patrimonial demonstrando
+        capacidade econômico-financeira proporcional ao valor da contratação.
       </p>
 
-      <h3>Requisitos especificos para medicamentos</h3>
+      <h3>Requisitos específicos para medicamentos</h3>
 
       <p>
-        AFE (Autorizacao de Funcionamento de Empresa) emitida pela Anvisa. Registro
-        ou notificacao do produto na Anvisa em situacao regular (vigente). Alvara
-        Sanitario expedido pela vigilancia sanitaria estadual ou municipal. Certidao
+        AFE (Autorização de Funcionamento de Empresa) emitida pela Anvisa. Registro
+        ou notificação do produto na Anvisa em situação regular (vigente). Alvara
+        Sanitario expedido pela vigilância sanitária estadual ou municipal. Certidao
         de Regularidade Tecnica emitida pelo Conselho Regional de Farmacia (CRF).
-        Em licitacoes federais e em atas de registro de preco de grande porte, e
-        frequente a exigencia do CBPDA (Certificado de Boas Praticas de Distribuicao
-        e Armazenamento), emitido pela Anvisa apos inspecao.
+        Em licitações federais e em atas de registro de preço de grande porte, e
+        frequente a exigência do CBPDA (Certificado de Boas Praticas de Distribuição
+        e Armazenamento), emitido pela Anvisa após inspeção.
       </p>
 
-      <h3>Requisitos especificos para equipamentos</h3>
+      <h3>Requisitos específicos para equipamentos</h3>
 
       <p>
-        Registro do equipamento na Anvisa (classificacao por classe de risco: I, II,
-        III ou IV). Manual de operacao em portugues. Comprovacao de assistencia tecnica
+        Registro do equipamento na Anvisa (classificação por classe de risco: I, II,
+        III ou IV). Manual de operação em portugues. Comprovação de assistência técnica
         autorizada no estado de entrega. Em equipamentos de alta complexidade,
-        treinamento operacional incluido na proposta. Certificacao do Inmetro quando
-        aplicavel (equipamentos eletromedicos devem atender a NBR IEC 60601).
+        treinamento operacional incluído na proposta. Certificação do Inmetro quando
+        aplicável (equipamentos eletromédicos devem atender a NBR IEC 60601).
       </p>
 
-      <h3>Atestados de capacidade tecnica</h3>
+      <h3>Atestados de capacidade técnica</h3>
 
       <p>
-        A maioria dos editais de saude exige atestados de capacidade tecnica que
+        A maioria dos editais de saúde exige atestados de capacidade técnica que
         comprovem fornecimento anterior de quantitativos compatíveis com o objeto.
-        A Lei 14.133/2021 permite que o edital exija atestado de ate 50% do
+        A Lei 14.133/2021 permite que o edital exija atestado de até 50% do
         quantitativo licitado (art. 67, paragrafo 1). Atestados devem ser emitidos
-        por orgaos publicos ou privados, com indicacao de quantidades, prazos e
+        por órgãos públicos ou privados, com indicação de quantidades, prazos e
         qualidade do fornecimento. Quanto mais recentes e maiores os atestados,
-        melhor a posicao do fornecedor na habilitacao. Para uma visao detalhada dos
+        melhor a posição do fornecedor na habilitação. Para uma visão detalhada dos
         requisitos legais na nova lei, consulte{' '}
         <Link href="/blog/lei-14133-guia-fornecedores" className="text-brand-navy dark:text-brand-blue hover:underline">
-          o guia pratico da Lei 14.133/2021 para fornecedores
+          o guia prático da Lei 14.133/2021 para fornecedores
         </Link>.
       </p>
 
       {/* CTA at ~40% */}
       <BlogInlineCTA
-        slug="licitacoes-saude-2026"
+        slug="licitações-saúde-2026"
         campaign="guias"
         ctaHref="/explorar"
-        ctaText="Explorar licitacoes gratis"
+        ctaText="Explorar licitações gratis"
         ctaMessage="Descubra editais abertos no seu setor — busca gratuita"
       />
 
       {/* Section 7: Erros comuns */}
-      <h2>Erros comuns que eliminam fornecedores de saude</h2>
+      <h2>Erros comuns que eliminam fornecedores de saúde</h2>
 
       <p>
-        O setor de saude tem particularidades que geram armadilhas especificas para
+        O setor de saúde tem particularidades que geram armadilhas específicas para
         fornecedores inexperientes. Conhecer esses erros permite evita-los antes
-        de investir tempo e recursos na elaboracao da proposta.
+        de investir tempo e recursos na elaboração da proposta.
       </p>
 
       <h3>Erro 1: Validade de registro vencida ou prestes a vencer</h3>
@@ -506,119 +506,119 @@ export default function LicitacoesSaude2026() {
       <p>
         O registro de medicamentos e equipamentos na Anvisa tem prazo de validade
         (tipicamente 5 anos para medicamentos e 10 anos para equipamentos). Um erro
-        frequente e participar de licitacoes com registro proximo do vencimento,
-        sem ter solicitado a renovacao em tempo habil. O processo de renovacao pode
-        levar meses, e muitos editais exigem que o registro esteja vigente nao apenas
-        no momento da habilitacao, mas durante todo o periodo de fornecimento. A
-        recomendacao e iniciar a renovacao com pelo menos 12 meses de antecedencia.
+        frequente e participar de licitações com registro próximo do vencimento,
+        sem ter solicitado a renovação em tempo habil. O processo de renovação pode
+        levar meses, e muitos editais exigem que o registro esteja vigente não apenas
+        no momento da habilitação, mas durante todo o período de fornecimento. A
+        recomendação e iniciar a renovação com pelo menos 12 meses de antecedência.
       </p>
 
-      <h3>Erro 2: Nao atender ao lote minimo</h3>
+      <h3>Erro 2: Não atender ao lote mínimo</h3>
 
       <p>
         Editais de medicamentos e insumos frequentemente definem lotes com quantitativos
-        elevados. Um fornecedor que nao consegue demonstrar capacidade de producao ou
-        estoque para atender ao lote integral sera desclassificado. A solucao e verificar
-        o quantitativo total antes de iniciar a proposta e, se necessario, formar
-        consorcio com outros fornecedores ou concentrar esforcos em editais com lotes
-        compativeis com a capacidade.
+        elevados. Um fornecedor que não consegue demonstrar capacidade de produção ou
+        estoque para atender ao lote integral sera desclassificado. A solução e verificar
+        o quantitativo total antes de iniciar a proposta e, se necessário, formar
+        consorcio com outros fornecedores ou concentrar esforços em editais com lotes
+        compatíveis com a capacidade.
       </p>
 
-      <h3>Erro 3: Subestimar a logistica de distribuicao</h3>
+      <h3>Erro 3: Subestimar a logística de distribuição</h3>
 
       <p>
-        Muitos editais de saude exigem entrega em multiplos pontos (hospitais, UBS,
-        almoxarifados regionais) com prazos curtos (24 a 72 horas apos emissao da
-        ordem de fornecimento). Fornecedores que nao possuem estrutura logistica
-        propria ou parceria com operadores logisticos enfrentam dificuldades de
-        cumprimento, gerando sancoes (multa, suspensao) e perda de reputacao no
-        SICAF. A logistica deve ser planejada antes da participacao, nao depois da
-        adjudicacao.
+        Muitos editais de saúde exigem entrega em multiplos pontos (hospitais, UBS,
+        almoxarifados regionais) com prazos curtos (24 a 72 horas após emissao da
+        ordem de fornecimento). Fornecedores que não possuem estrutura logística
+        própria ou parceria com operadores logísticos enfrentam dificuldades de
+        cumprimento, gerando sanções (multa, suspensao) e perda de reputação no
+        SICAF. A logística deve ser planejada antes da participação, não depois da
+        adjudicação.
       </p>
 
       <h3>Erro 4: Ignorar a cadeia fria</h3>
 
       <p>
-        Medicamentos termolabeis (vacinas, insulinas, biologicos) exigem cadeia fria
+        Medicamentos termolabeis (vacinas, insulinas, biológicos) exigem cadeia fria
         ininterrupta (2 a 8 graus Celsius) do armazem ao ponto de entrega. O
         fornecedor precisa comprovar capacidade de transporte refrigerado, rastreamento
         de temperatura e estrutura de armazenamento adequada. A quebra da cadeia fria
-        durante o transporte resulta em rejeicao da entrega e potencial sancao
+        durante o transporte resulta em rejeição da entrega e potencial sanção
         contratual.
       </p>
 
-      <h3>Erro 5: Proposta com descricao generica</h3>
+      <h3>Erro 5: Proposta com descrição genérica</h3>
 
       <p>
-        Editais de saude exigem descricao precisa do produto ofertado, incluindo
-        principio ativo, concentracao, forma farmaceutica, apresentacao, fabricante
-        e numero de registro na Anvisa. Propostas com descricao generica (por exemplo,
-        &ldquo;paracetamol 500mg&rdquo; sem especificar forma, apresentacao e
-        fabricante) sao desclassificadas na fase de aceitabilidade. O fornecedor
-        deve espelhar exatamente a descricao do edital na proposta.
+        Editais de saúde exigem descrição precisa do produto ofertado, incluindo
+        principio ativo, concentração, forma farmacêutica, apresentação, fabricante
+        e número de registro na Anvisa. Propostas com descrição genérica (por exemplo,
+        &ldquo;paracetamol 500mg&rdquo; sem especificar forma, apresentação e
+        fabricante) são desclassificadas na fase de aceitabilidade. O fornecedor
+        deve espelhar exatamente a descrição do edital na proposta.
       </p>
 
-      {/* Section 8: Viabilidade no setor saude */}
-      <h2>Como avaliar viabilidade em licitacoes de saude</h2>
+      {/* Section 8: Viabilidade no setor saúde */}
+      <h2>Como avaliar viabilidade em licitações de saúde</h2>
 
       <p>
-        A analise de viabilidade no setor de saude segue os mesmos quatro fatores
-        aplicaveis a qualquer setor (modalidade, prazo, valor e geografia), mas com
+        A análise de viabilidade no setor de saúde segue os mesmos quatro fatores
+        aplicáveis a qualquer setor (modalidade, prazo, valor e geografia), mas com
         pesos ajustados as particularidades do segmento.
       </p>
 
       <p>
-        <strong>Modalidade (peso 25%):</strong> Pregoes eletronicos sao o campo
-        natural para fornecedores de insumos e medicamentos. Concorrencias e dialogos
-        competitivos aparecem em contratacoes de equipamentos de alta complexidade e
-        solucoes integradas (por exemplo, locacao de equipamentos com manutencao).
-        Se sua empresa atua em insumos, pregoes devem receber nota maxima; se atua
-        em equipamentos de ponta, concorrencias podem ser mais vantajosas.
+        <strong>Modalidade (peso 25%):</strong> Pregões eletrônicos são o campo
+        natural para fornecedores de insumos e medicamentos. Concorrências e dialogos
+        competitivos aparecem em contratações de equipamentos de alta complexidade e
+        soluções integradas (por exemplo, locação de equipamentos com manutenção).
+        Se sua empresa atua em insumos, pregões devem receber nota máxima; se atua
+        em equipamentos de ponta, concorrências podem ser mais vantajosas.
       </p>
 
       <p>
-        <strong>Prazo (peso 25%):</strong> No setor de saude, o prazo critico nao e
-        apenas o de elaboracao da proposta, mas o de entrega. Muitos editais exigem
-        entrega em 24 a 48 horas para insumos de urgencia. Avalie se sua cadeia de
+        <strong>Prazo (peso 25%):</strong> No setor de saúde, o prazo crítico não é
+        apenas o de elaboração da proposta, mas o de entrega. Muitos editais exigem
+        entrega em 24 a 48 horas para insumos de urgência. Avalie se sua cadeia de
         suprimentos comporta os prazos antes de decidir participar.
       </p>
 
       <p>
-        <strong>Valor (peso 25%):</strong> A margem em licitacoes de saude varia
-        significativamente por subsetor. Insumos basicos operam com margens
+        <strong>Valor (peso 25%):</strong> A margem em licitações de saúde varia
+        significativamente por subsetor. Insumos básicos operam com margens
         apertadas (5% a 12%), enquanto equipamentos e OPME oferecem margens
         maiores (15% a 35%). Avalie se o valor do edital, descontada a margem
-        tipica, cobre seus custos operacionais incluindo logistica.
+        típica, cobre seus custos operacionais incluindo logística.
       </p>
 
       <p>
-        <strong>Geografia (peso 25%):</strong> A logistica e fator decisivo em
-        saude. Fornecedores com centros de distribuicao regionais tem vantagem em
-        editais que exigem entrega rapida em multiplos pontos. Avalie o custo de
-        frete, a distancia ate o ponto de entrega e a infraestrutura rodoviaria
-        da regiao.
+        <strong>Geografia (peso 25%):</strong> A logística e fator decisivo em
+        saúde. Fornecedores com centros de distribuição regionais tem vantagem em
+        editais que exigem entrega rápida em multiplos pontos. Avalie o custo de
+        frete, a distância até o ponto de entrega é a infraestrutura rodoviária
+        da região.
       </p>
 
       <div className="not-prose my-6 sm:my-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 sm:p-6">
         <p className="text-sm font-semibold text-ink mb-3">
-          Exemplo pratico -- Viabilidade de pregao de insumos hospitalares
+          Exemplo prático -- Viabilidade de pregao de insumos hospitalares
         </p>
         <p className="text-sm text-ink-secondary mb-3">
-          Distribuidora de insumos em Belo Horizonte (MG) avalia pregao eletronico
+          Distribuidora de insumos em Belo Horizonte (MG) avalia pregao eletrônico
           para fornecimento de luvas e seringas ao Hospital das Clinicas de SP,
           valor estimado R$ 1.200.000, entrega em 72 horas:
         </p>
         <ul className="space-y-1.5 text-sm text-ink-secondary">
           <li>
-            <strong>Modalidade (25%):</strong> Pregao eletronico, modalidade
+            <strong>Modalidade (25%):</strong> Pregao eletrônico, modalidade
             natural para insumos = 9/10 x 0,25 = 2,25
           </li>
           <li>
-            <strong>Prazo (25%):</strong> 72h de entrega BH-SP, viavel com
+            <strong>Prazo (25%):</strong> 72h de entrega BH-SP, viável com
             transportadora parceira = 7/10 x 0,25 = 1,75
           </li>
           <li>
-            <strong>Valor (25%):</strong> R$ 1,2M dentro da faixa de atuacao
+            <strong>Valor (25%):</strong> R$ 1,2M dentro da faixa de atuação
             (R$ 200k-3M) = 8/10 x 0,25 = 2,00
           </li>
           <li>
@@ -626,86 +626,86 @@ export default function LicitacoesSaude2026() {
             frete competitivo = 7/10 x 0,25 = 1,75
           </li>
           <li className="pt-2 font-semibold">
-            Pontuacao total: 7,75/10 -- Viabilidade alta. Recomendado prosseguir
-            com analise detalhada do edital.
+            Pontuação total: 7,75/10 -- Viabilidade alta. Recomendado prosseguir
+            com análise detalhada do edital.
           </li>
         </ul>
       </div>
 
       <p>
-        Fornecedores que aplicam analise de viabilidade sistematicamente antes de
-        investir em propostas de saude relatam aumento de 40% a 60% na taxa de
-        adjudicacao. A chave e descartar os editais onde a logistica, o prazo ou
-        o valor nao fazem sentido -- liberando a equipe para focar nos editais
-        com real potencial de vitoria. Para aprofundar a analise de viabilidade
+        Fornecedores que aplicam análise de viabilidade sistematicamente antes de
+        investir em propostas de saúde relatam aumento de 40% a 60% na taxa de
+        adjudicação. A chave e descartar os editais onde a logística, o prazo ou
+        o valor não fazem sentido -- liberando a equipe para focar nos editais
+        com real potencial de vitória. Para aprofundar a análise de viabilidade
         em qualquer setor, veja{' '}
-        <Link href="/blog/licitacoes-limpeza-facilities-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
-          o guia de licitacoes de limpeza e facilities 2026
+        <Link href="/blog/licitações-limpeza-facilities-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+          o guia de licitações de limpeza e facilities 2026
         </Link>.
       </p>
 
-      {/* Section 9: Tendencias 2026 */}
-      <h2>Tendencias para licitacoes de saude em 2026</h2>
+      {/* Section 9: Tendências 2026 */}
+      <h2>Tendências para licitações de saúde em 2026</h2>
 
       <p>
-        O mercado de compras publicas de saude esta passando por transformacoes
+        O mercado de compras públicas de saúde esta passando por transformações
         relevantes que impactam diretamente a estrategia de fornecedores.
       </p>
 
       <p>
         <strong>Compras centralizadas ganhando escala:</strong> O Ministerio da
         Saude tem ampliado o escopo das compras centralizadas, incluindo novos
-        medicamentos e insumos na lista de aquisicao nacional. Isso reduz o
-        numero de pregoes municipais para esses itens, mas aumenta o volume e
-        o valor das atas federais. Fornecedores de medio porte precisam avaliar
+        medicamentos e insumos na lista de aquisição nacional. Isso reduz o
+        número de pregões municipais para esses itens, mas aumenta o volume é
+        o valor das atas federais. Fornecedores de médio porte precisam avaliar
         se tem capacidade para atender a escala federal ou se devem focar nos
         editais estaduais e municipais que permanecem descentralizados.
       </p>
 
       <p>
-        <strong>PNCP como portal obrigatorio:</strong> Desde 2024, todos os orgaos
-        publicos sao obrigados a publicar suas contratacoes no PNCP. Isso centraliza
-        a informacao e facilita o monitoramento, mas tambem aumenta a concorrencia,
-        pois fornecedores de todo o pais tem acesso as mesmas oportunidades. O
-        diferencial passa a ser a velocidade de triagem e a qualidade da analise
+        <strong>PNCP como portal obrigatório:</strong> Desde 2024, todos os órgãos
+        públicos são obrigados a publicar suas contratações no PNCP. Isso centraliza
+        a informação e facilita o monitoramento, mas também aumenta a concorrência,
+        pois fornecedores de todo o país tem acesso as mesmas oportunidades. O
+        diferencial passa a ser a velocidade de triagem é a qualidade da análise
         de viabilidade.
       </p>
 
       <p>
-        <strong>Exigencias ESG em editais:</strong> Editais de saude estao
-        incorporando criterios de sustentabilidade (art. 11, IV da Lei 14.133/2021),
-        exigindo certificacoes ambientais, rastreabilidade de insumos e planos de
-        descarte de residuos hospitalares. Fornecedores que ja possuem essas
-        certificacoes tem vantagem competitiva.
+        <strong>Exigências ESG em editais:</strong> Editais de saúde estao
+        incorporando critérios de sustentabilidade (art. 11, IV da Lei 14.133/2021),
+        exigindo certificações ambientais, rastreabilidade de insumos e planos de
+        descarte de resíduos hospitalares. Fornecedores que já possuem essas
+        certificações tem vantagem competitiva.
       </p>
 
       <p>
         <strong>Telemedicina e dispositivos conectados:</strong> A expansao da
-        telemedicina no SUS cria demanda por equipamentos de monitorizacao remota,
-        plataformas digitais e dispositivos IoT medicos. Esse segmento ainda e
-        incipiente em licitacoes, mas a tendencia e de crescimento acelerado,
-        especialmente em editais de dialogos competitivos e concorrencias tecnica
-        e preco.
+        telemedicina no SUS cria demanda por equipamentos de monitorização remota,
+        plataformas digitais e dispositivos IoT médicos. Esse segmento ainda é
+        incipiente em licitações, mas a tendência é de crescimento acelerado,
+        especialmente em editais de dialogos competitivos e concorrências técnica
+        e preço.
       </p>
 
       {/* CTA Section */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Monitore editais de saude com o SmartLic -- 14 dias gratis
+          Monitore editais de saúde com o SmartLic -- 14 dias gratis
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           O SmartLic agrega editais do PNCP e classifica por setor usando IA.
-          Receba apenas as licitacoes de saude compativeis com seu perfil --
+          Receba apenas as licitações de saúde compatíveis com seu perfil --
           medicamentos, equipamentos ou insumos.
         </p>
         <Link
-          href="/signup?source=blog&article=licitacoes-saude-2026&utm_source=blog&utm_medium=cta&utm_content=licitacoes-saude-2026&utm_campaign=guias"
+          href="/signup?source=blog&article=licitações-saúde-2026&utm_source=blog&utm_medium=cta&utm_content=licitações-saúde-2026&utm_campaign=guias"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
           Teste Gratis por 14 Dias
         </Link>
         <p className="text-xs text-ink-secondary mt-3">
-          Sem cartao de credito. Veja todas as funcionalidades na{' '}
+          Sem cartao de crédito. Veja todas as funcionalidades na{' '}
           <Link href="/features" className="underline hover:text-ink">
             pagina de recursos
           </Link>.
@@ -715,74 +715,74 @@ export default function LicitacoesSaude2026() {
       {/* FAQ Section */}
       <h2>Perguntas Frequentes</h2>
 
-      <h3>Quais registros sao obrigatorios para vender medicamentos ao governo?</h3>
+      <h3>Quais registros são obrigatorios para vender medicamentos ao governo?</h3>
       <p>
-        Para vender medicamentos ao governo e necessario possuir Autorizacao de
-        Funcionamento (AFE) da Anvisa, registro ou notificacao do produto na Anvisa
-        vigente, Alvara Sanitario estadual ou municipal, CNPJ com CNAE compativel
-        (4644-3/01 -- comercio atacadista de medicamentos) e Certidao de Regularidade
-        Tecnica junto ao CRF do estado. Em licitacoes federais, e comum a exigencia
-        adicional de Certificado de Boas Praticas de Distribuicao e Armazenamento
-        (CBPDA). A ausencia de qualquer um desses documentos resulta em inabilitacao.
+        Para vender medicamentos ao governo é necessário possuir Autorização de
+        Funcionamento (AFE) da Anvisa, registro ou notificação do produto na Anvisa
+        vigente, Alvara Sanitario estadual ou municipal, CNPJ com CNAE compatível
+        (4644-3/01 -- comércio atacadista de medicamentos) e Certidao de Regularidade
+        Tecnica junto ao CRF do estado. Em licitações federais, é comum a exigência
+        adicional de Certificado de Boas Praticas de Distribuição e Armazenamento
+        (CBPDA). A ausência de qualquer um desses documentos resulta em inabilitação.
       </p>
 
-      <h3>Como funciona o sistema de registro de precos para materiais hospitalares?</h3>
+      <h3>Como funciona o sistema de registro de preços para materiais hospitalares?</h3>
       <p>
-        O Sistema de Registro de Precos (SRP) funciona por meio de pregao eletronico
+        O Sistema de Registro de Precos (SRP) funciona por meio de pregao eletrônico
         que gera uma{' '}
-        <Link href="/glossario#ata-de-registro-de-precos" className="text-brand-navy dark:text-brand-blue hover:underline">
-          ata de registro de precos
+        <Link href="/glossario#ata-de-registro-de-preços" className="text-brand-navy dark:text-brand-blue hover:underline">
+          ata de registro de preços
         </Link>{' '}
-        com validade de ate 12 meses. O orgao gerenciador realiza o pregao, registra
-        os precos mais vantajosos e outros orgaos podem aderir a ata (carona). A
-        empresa vencedora nao e obrigada a fornecer imediatamente -- o fornecimento
-        ocorre sob demanda, conforme emissao de ordem de fornecimento. E importante
-        monitorar a execucao da ata para nao ser surpreendido por pedidos de grande
+        com validade de até 12 meses. O órgão gerenciador realiza o pregao, registra
+        os preços mais vantajosos e outros órgãos podem aderir a ata (carona). A
+        empresa vencedora não é obrigada a fornecer imediatamente -- o fornecimento
+        ocorre sob demanda, conforme emissao de ordem de fornecimento. É importante
+        monitorar a execução da ata para não ser surpreendido por pedidos de grande
         volume em prazos curtos.
       </p>
 
-      <h3>Empresas pequenas podem participar de licitacoes de saude?</h3>
+      <h3>Empresas pequenas podem participar de licitações de saúde?</h3>
       <p>
-        Sim. A Lei Complementar 123/2006 e a Lei 14.133/2021 preveem tratamento
-        diferenciado para ME e EPP, incluindo prioridade em itens de ate R$ 80.000
-        e cota reservada de ate 25% em licitacoes de bens divisiveis. Muitos editais
-        de saude sao divididos em lotes menores justamente para ampliar a participacao
-        de pequenas empresas. Alem disso, o criterio de desempate favorece ME/EPP
-        com margem de ate 5% sobre a melhor proposta (pregao) ou 10% (concorrencia).
+        Sim. A Lei Complementar 123/2006 é a Lei 14.133/2021 preveem tratamento
+        diferenciado para ME e EPP, incluindo prioridade em itens de até R$ 80.000
+        e cota reservada de até 25% em licitações de bens divisíveis. Muitos editais
+        de saúde são divididos em lotes menores justamente para ampliar a participação
+        de pequenas empresas. Além disso, o critério de desempate favorece ME/EPP
+        com margem de até 5% sobre a melhor proposta (pregao) ou 10% (concorrência).
       </p>
 
-      <h3>Qual o prazo medio de pagamento em contratos de saude publica?</h3>
+      <h3>Qual o prazo médio de pagamento em contratos de saúde pública?</h3>
       <p>
-        O prazo legal e de ate 30 dias apos o atesto da nota fiscal, conforme art. 141
-        da Lei 14.133/2021. Na pratica, contratos federais costumam pagar em 25 a
+        O prazo legal é de até 30 dias após o atesto da nota fiscal, conforme art. 141
+        da Lei 14.133/2021. Na prática, contratos federais costumam pagar em 25 a
         45 dias. Contratos estaduais variam entre 30 e 60 dias. Municipios menores
         podem atrasar entre 60 e 120 dias, especialmente no segundo semestre quando
-        o orcamento municipal tende a se esgotar. Verificar o historico de pagamento
-        do orgao no Portal da Transparencia antes de participar e uma medida prudente.
+        o orçamento municipal tende a se esgotar. Verificar o histórico de pagamento
+        do órgão no Portal da Transparência antes de participar é uma medida prudente.
       </p>
 
-      <h3>Como lidar com especificacoes tecnicas muito restritivas em editais de saude?</h3>
+      <h3>Como lidar com especificações técnicas muito restritivas em editais de saúde?</h3>
       <p>
-        Especificacoes que direcionam para uma marca especifica violam o art. 41
-        da Lei 14.133/2021, que veda a indicacao de marcas salvo quando
+        Especificações que direcionam para uma marca específica violam o art. 41
+        da Lei 14.133/2021, que veda a indicação de marcas salvo quando
         tecnicamente justificado. O fornecedor pode impugnar o edital no prazo
-        legal (ate 3 dias uteis antes da abertura) demonstrando que as exigencias
-        nao sao justificadas pela necessidade do orgao. Alternativamente, pode
-        solicitar esclarecimentos ao pregoeiro ou propor equivalentes tecnicos
-        comprovados por laudos de laboratorios acreditados pelo Inmetro ou pela
-        propria Anvisa.
+        legal (até 3 dias úteis antes da abertura) demonstrando que as exigências
+        não são justificadas pela necessidade do órgão. Alternativamente, pode
+        solicitar esclarecimentos ao pregoeiro ou propor equivalentes técnicos
+        comprovados por laudos de laboratórios acreditados pelo Inmetro ou pela
+        própria Anvisa.
       </p>
 
-      <h3>Quais UFs publicam mais editais de saude?</h3>
+      <h3>Quais UFs publicam mais editais de saúde?</h3>
       <p>
-        Sao Paulo lidera com o maior volume de publicacoes, seguido por Rio de Janeiro,
+        São Paulo lidera com o maior volume de publicações, seguido por Rio de Janeiro,
         Minas Gerais, Bahia e Rio Grande do Sul. Esses cinco estados concentram
-        aproximadamente 55% das publicacoes do setor no PNCP, considerando todas as
-        esferas. O volume esta diretamente relacionado ao tamanho da rede publica de
-        saude e ao orcamento do Fundo Estadual e dos Fundos Municipais de Saude.
-        Fornecedores que buscam menor concorrencia podem explorar oportunidades
+        aproximadamente 55% das publicações do setor no PNCP, considerando todas as
+        esferas. O volume esta diretamente relacionado ao tamanho da rede pública de
+        saúde e ao orçamento do Fundo Estadual é dos Fundos Municipais de Saude.
+        Fornecedores que buscam menor concorrência podem explorar oportunidades
         em estados do Norte (AM, PA, RO) e Centro-Oeste (MT, GO, MS), onde a
-        demanda existe mas o numero de fornecedores locais e reduzido.
+        demanda existe mas o número de fornecedores locais e reduzido.
       </p>
     </>
   );
