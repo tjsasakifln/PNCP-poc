@@ -50,14 +50,14 @@ try:
                 _arq_cron(ingestion_incremental_job, hour=set(INGESTION_INCREMENTAL_HOURS), minute=0, timeout=3600),
                 _arq_cron(ingestion_purge_job, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 2}, minute=0, timeout=600),
             ])
-            # Supplier contracts index: full 06 UTC, incremental 12/18/00 UTC
-            from ingestion.scheduler import contracts_full_crawl_job, contracts_incremental_job
+            # Supplier contracts index: weekly full crawl (Sunday 06 UTC = Sat 3am BRT)
+            # Weekly is sufficient — contracts don't change faster than bids
+            from ingestion.scheduler import contracts_full_crawl_job
             _contracts_enabled = __import__("os").getenv("CONTRACTS_INGESTION_ENABLED", "true").lower() in ("true", "1")
             if _contracts_enabled:
-                _worker_cron_jobs.extend([
-                    _arq_cron(contracts_full_crawl_job, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 1}, minute=0, timeout=28800),
-                    _arq_cron(contracts_incremental_job, hour={12, 18, 0}, minute=30, timeout=3600),
-                ])
+                _worker_cron_jobs.append(
+                    _arq_cron(contracts_full_crawl_job, weekday={0}, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 1}, minute=0, timeout=28800),
+                )
     except ImportError:
         pass
 except Exception:
@@ -100,11 +100,11 @@ class WorkerSettings:
         if _dl_enabled:
             from ingestion.scheduler import (
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
-                contracts_full_crawl_job, contracts_incremental_job,
+                contracts_full_crawl_job,
             )
             _ingestion_functions = [
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
-                contracts_full_crawl_job, contracts_incremental_job,
+                contracts_full_crawl_job,
             ]
     except ImportError:
         pass
