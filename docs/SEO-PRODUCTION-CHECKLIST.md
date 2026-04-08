@@ -1,7 +1,19 @@
 # SmartLic — Checklist de Verificacao em Producao: SEO & Crescimento Organico
-## Documento Espelho do SEO-ORGANIC-PLAYBOOK.md · v1.0 · 2026-04-08
+## Documento Espelho do SEO-ORGANIC-PLAYBOOK.md · v1.1 · Ultima verificacao: 2026-04-08
 
 > **Objetivo:** Verificar que TODAS as implementacoes descritas no playbook estao funcionando corretamente em producao (`https://smartlic.tech`). Cada item e acionavel — com URL, comando ou criterio de sucesso mensuravel.
+
+---
+
+## Issues Abertas (verificadas em producao)
+
+| ID | Titulo | Severidade | Item | Status |
+|----|--------|-----------|------|--------|
+| ISSUE-SEO-001 | robots.txt: Google-Extended bloqueado pelo bloco Cloudflare Managed | P1 | F.6.1 | FIXADO — aguardando deploy |
+| ISSUE-SEO-002 | Sitemap inclui URLs ?modalidade=X com canonical self-referencing | P1 | P0.3/F.4.2 | FIXADO — aguardando deploy |
+| ISSUE-SEO-003 | CNPJ individual profiles nao estao no sitemap (Onda 1 incompleta) | P2 | P3 | ABERTO |
+
+**Sessao de verificacao:** `docs/beta-testing/session-2026-04-08-041.md`
 
 ---
 
@@ -75,11 +87,11 @@
 
 | # | Verificacao | Como Verificar | Criterio de Sucesso |
 |---|------------|---------------|---------------------|
-| F.4.1 | [ ] Sitemap total de URLs | `curl -s https://smartlic.tech/sitemap.xml \| grep -c "<url>"` | >= 600 URLs |
-| F.4.2 | [ ] Paginas setor×UF no sitemap | `curl -s https://smartlic.tech/sitemap.xml \| grep "blog/licitacoes" \| head -5` | 405 URLs com `changefreq: daily` |
-| F.4.3 | [ ] `/analise/` nao indexada | `curl -s https://smartlic.tech/analise/test123 \| grep "noindex"` | `robots: { index: false }` presente |
-| F.4.4 | [ ] ISR funcionando (cache HIT) | `curl -sI https://smartlic.tech/blog/licitacoes/engenharia/sp \| grep x-nextjs-cache` | `x-nextjs-cache: HIT` |
-| F.4.5 | [ ] Cache-Control publico | `curl -sI https://smartlic.tech/licitacoes/engenharia \| grep cache-control` | `public, s-maxage=3600, stale-while-revalidate=86400` |
+| F.4.1 | [x] Sitemap total de URLs | `curl -s https://smartlic.tech/sitemap.xml \| grep -c "<url>"` | >= 600 URLs — **3.923 em 2026-04-08** |
+| F.4.2 | [!] Paginas setor×UF no sitemap | `curl -s https://smartlic.tech/sitemap.xml \| grep "blog/licitacoes" \| grep -v "blog/licitacoes-" \| grep -v "cidade" \| wc -l` | 405 URLs canonicas — **atual: 2.025 (inclui 1.620 URLs ?modalidade=X — ver ISSUE-SEO-002)** |
+| F.4.3 | [ ] `/analise/` nao indexada | `curl -sI https://smartlic.tech/analise/test123` | 404 (rota nao existe ainda) — OK por enquanto |
+| F.4.4 | [ ] ISR funcionando (cache HIT) | `curl -sI https://smartlic.tech/blog/licitacoes/engenharia/sp \| grep x-nextjs-cache` | Railway pode suprimir header; verificar via Cache-Control (F.4.5) |
+| F.4.5 | [x] Cache-Control publico | `curl -sI https://smartlic.tech/blog/licitacoes/engenharia/sp \| grep cache-control` | `public, s-maxage=3600, stale-while-revalidate=86400` ✅ |
 
 ### F.5 Internal Linking `[MENSAL]`
 
@@ -97,9 +109,9 @@
 
 | # | Verificacao | Como Verificar | Criterio de Sucesso |
 |---|------------|---------------|---------------------|
-| F.6.1 | [ ] robots.txt correto | `curl https://smartlic.tech/robots.txt` | `/api/`, `/admin/`, `/auth/`, `/dashboard/`, `/conta/`, `/buscar/`, `/pipeline/`, `/historico/`, `/mensagens/`, `/alertas/`, `/onboarding/` bloqueados; `/licitacoes/`, `/blog/`, `/calculadora/`, `/cnpj/`, `/casos/`, `/glossario/` permitidos |
-| F.6.2 | [ ] Canonical self-referencing setor×UF | `curl -s https://smartlic.tech/blog/licitacoes/engenharia/sp \| grep canonical` | Canonical aponta para propria URL |
-| F.6.3 | [ ] Trailing slash redirect | `curl -sI https://smartlic.tech/calculadora/` | HTTP 308 redirect para `/calculadora` (sem trailing slash) |
+| F.6.1 | [!] robots.txt correto | `curl https://smartlic.tech/robots.txt` | Blocos Disallow corretos ✅ — **PROBLEMA: Google-Extended bloqueado pelo bloco Cloudflare Managed (linha 50-51). Ver ISSUE-SEO-001** |
+| F.6.2 | [!] Canonical self-referencing setor×UF | `curl -s "https://smartlic.tech/blog/licitacoes/vestuario/ac?modalidade=4" \| grep canonical` | Canonical da URL base OK ✅ — **PROBLEMA: URLs ?modalidade=X tem canonical self-referencing em vez de apontar para base. Ver ISSUE-SEO-002** |
+| F.6.3 | [x] Trailing slash redirect | `curl -sI https://smartlic.tech/calculadora/` | HTTP 308 → `/calculadora` ✅ |
 | F.6.4 | [ ] PWA manifest | `curl -s https://smartlic.tech/manifest.json` | JSON valido com name, icons, theme_color, lang pt-BR |
 | F.6.5 | [ ] Preconnect hints | View source de qualquer pagina | `<link rel="preconnect">` para Supabase |
 | F.6.6 | [ ] JSON-LD inline (nao async) | View source de qualquer pagina | `<script type="application/ld+json">` (nao `<Script>` async) |
@@ -109,11 +121,11 @@
 
 | # | Verificacao | Como Verificar | Criterio de Sucesso |
 |---|------------|---------------|---------------------|
-| F.7.1 | [ ] IndexNow key acessivel | `curl -s https://smartlic.tech/e9fd5881ff34cea8b67399d910212300.txt` | HTTP 200, retorna a key |
+| F.7.1 | [x] IndexNow key acessivel | `curl -sI https://smartlic.tech/e9fd5881ff34cea8b67399d910212300.txt` | HTTP 200 ✅ |
 | F.7.2 | [ ] GitHub Action IndexNow | `gh run list --workflow=indexnow.yml --limit=3` | Ultimas 3 execucoes com status "success" |
 | F.7.3 | [ ] Secret INDEXNOW_KEY configurado | `gh secret list \| grep INDEXNOW_KEY` | Secret presente |
 | F.7.4 | [ ] Google Ping no workflow | Inspecionar `.github/workflows/indexnow.yml` | Step "Ping Google & Bing" presente com `if: always()` |
-| F.7.5 | [ ] Google Ping funcional | `curl -s "https://www.google.com/ping?sitemap=https://smartlic.tech/sitemap.xml"` | HTTP 200 |
+| F.7.5 | [x] Google Ping DEPRECATED | Nao testar — Google deprecou o ping em Jun/2023 (retorna 404 com msg explicativa) | **Substituir por:** submeter sitemap via GSC em Search Console > Sitemaps |
 
 ---
 
@@ -123,24 +135,24 @@
 
 | # | Verificacao | Como Verificar | Criterio de Sucesso |
 |---|------------|---------------|---------------------|
-| P0.1 | [ ] Sitemap acessivel | `curl -sI https://smartlic.tech/sitemap.xml` | HTTP 200, content-type XML |
-| P0.2 | [ ] Rotas `/blog/programmatic/[setor]` | `curl -s https://smartlic.tech/sitemap.xml \| grep "blog/programmatic"` | 15 URLs (1 por setor) |
-| P0.3 | [ ] Rotas `/blog/licitacoes/[setor]/[uf]` | `curl -s https://smartlic.tech/sitemap.xml \| grep "blog/licitacoes" \| grep -v "cidade" \| wc -l` | 405 URLs |
-| P0.4 | [ ] Rotas `/blog/panorama/[setor]` | `curl -s https://smartlic.tech/sitemap.xml \| grep "blog/panorama"` | 15 URLs |
+| P0.1 | [x] Sitemap acessivel | `curl -sI https://smartlic.tech/sitemap.xml` | HTTP 200 ✅ |
+| P0.2 | [x] Rotas `/blog/programmatic/[setor]` | `curl -s https://smartlic.tech/sitemap.xml \| grep "blog/programmatic"` | 15 URLs ✅ |
+| P0.3 | [!] Rotas `/blog/licitacoes/[setor]/[uf]` | `curl -s https://smartlic.tech/sitemap.xml \| grep "blog/licitacoes/" \| grep -v "cidade" \| grep -v "blog/licitacoes-" \| wc -l` | 405 canonical URLs — **atual: 2.025 (inclui variants ?modalidade=X). Ver ISSUE-SEO-002** |
+| P0.4 | [x] Rotas `/blog/panorama/[setor]` | `curl -s https://smartlic.tech/sitemap.xml \| grep "blog/panorama"` | 15 URLs ✅ |
 | P0.5 | [ ] Sitemap submetido ao GSC | GSC > Sitemaps | Status "Processado", sem erros |
-| P0.6 | [ ] Total de URLs | `curl -s https://smartlic.tech/sitemap.xml \| grep -c "<url>"` | >= 2.550 (com expansao programatica) |
+| P0.6 | [x] Total de URLs | `curl -s https://smartlic.tech/sitemap.xml \| grep -c "<url>"` | 3.923 (>= 2.550) ✅ — nota: inclui 1.620 params indesejados (ver P0.3) |
 
 ### P1 — Paginas Setor×UF (405) `[SEMANAL]`
 
 | # | Verificacao | Como Verificar | Criterio de Sucesso |
 |---|------------|---------------|---------------------|
-| P1.1 | [ ] Pagina responde HTTP 200 | `curl -sI https://smartlic.tech/blog/licitacoes/engenharia/sp` | HTTP 200 |
-| P1.2 | [ ] ISR cache ativo | Header `x-nextjs-cache` na resposta | `HIT` ou `STALE` |
+| P1.1 | [x] Pagina responde HTTP 200 | `curl -sI https://smartlic.tech/blog/licitacoes/engenharia/sp` | HTTP 200 ✅ |
+| P1.2 | [ ] ISR cache ativo | Header `x-nextjs-cache` na resposta | Railway suprime header — verificar via Cache-Control (F.4.5) |
 | P1.3 | [ ] Dados ao vivo no hero | Abrir pagina no browser | H1 com contagem de editais + valor medio + timestamp |
 | P1.4 | [ ] CTA contextual | Abrir pagina no browser | CTA com setor e UF pre-preenchidos no link `/signup?ref=...` |
-| P1.5 | [ ] Spot check — 5 combinacoes | Testar: `vestuario/ba`, `informatica/rs`, `saude/am`, `alimentos/ce`, `engenharia-rodoviaria/go` | Todos HTTP 200 |
-| P1.6 | [ ] Slug TI correto | `curl -sI https://smartlic.tech/blog/licitacoes/informatica/sp` | HTTP 200 (slug = `informatica`, NAO `tecnologia-informacao`) |
-| P1.7 | [ ] Title com mes corrente | View source de qualquer setor×UF | `<title>` contem mes/ano atual |
+| P1.5 | [x] Spot check — 5 combinacoes | Testado: `vestuario/ba`, `informatica/rs`, `saude/am`, `alimentos/ce`, `engenharia-rodoviaria/go` | Todos HTTP 200 ✅ |
+| P1.6 | [x] Slug TI correto | `curl -sI https://smartlic.tech/blog/licitacoes/informatica/sp` | HTTP 200 ✅ (slug = `informatica`) |
+| P1.7 | [x] Title com mes corrente | `curl -s https://smartlic.tech/blog/licitacoes/engenharia/sp \| grep '<title>'` | "Abril 2026" presente ✅ |
 
 ### P2 — Calculadora `/calculadora` `[SEMANAL]`
 

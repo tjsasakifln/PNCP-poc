@@ -17,8 +17,12 @@ Disallow: /onboarding
 Disallow: /recuperar-senha
 Disallow: /redefinir-senha
 
-# AI crawlers: Allow Google-Extended for AI Overviews citation eligibility.
-# 83% of AIO citations come from pages outside the organic top 10 — massive opportunity.
+# AI crawlers: Google-Extended permitido para elegibilidade em AI Overviews (Google SGE).
+# O bloco Cloudflare Managed acima bloqueia Google-Extended — este Allow sobrescreve.
+# Per Google spec: Allow > Disallow quando mesma especificidade de caminho (RFC 9309 §2.2.2).
+User-agent: Google-Extended
+Allow: /
+
 # Block non-Google AI crawlers to protect content from training datasets.
 User-agent: Amazonbot
 Disallow: /

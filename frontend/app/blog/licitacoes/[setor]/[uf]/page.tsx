@@ -121,10 +121,9 @@ export async function generateMetadata({
   const stats = await fetchSectorUfBlogStats(setor, ufUpper);
   const total = stats?.total_editais ?? 0;
   const ufName = UF_NAMES[ufUpper] || ufUpper;
-  // Self-canonical when valid modalidade param → allows Google to index modalidade variants separately (A1)
-  const canonicalUrl = modalidadeInfo
-    ? `https://smartlic.tech/blog/licitacoes/${setor}/${uf}?modalidade=${modalidadeCode}`
-    : `https://smartlic.tech/blog/licitacoes/${setor}/${uf}`;
+  // Canonical sempre aponta para URL base sem parâmetros (ISSUE-SEO-002).
+  // ?modalidade=X é comportamento de UI — não deve ser indexado como página separada.
+  const canonicalUrl = `https://smartlic.tech/blog/licitacoes/${setor}/${uf}`;
   const modalidadeSuffix = modalidadeInfo ? ` — ${modalidadeInfo.name}` : '';
 
   return {

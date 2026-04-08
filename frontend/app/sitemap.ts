@@ -117,26 +117,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // SEO-CAC-ZERO A1: Modalidade-specific pages (setor×UF×modalidade)
-  // 4 popular modalidades × 405 setor×UF = 1,620 additional URLs
-  const POPULAR_MODALIDADES = [
-    { code: 6, slug: 'pregao-eletronico' },
-    { code: 4, slug: 'concorrencia-eletronica' },
-    { code: 8, slug: 'dispensa' },
-    { code: 12, slug: 'credenciamento' },
-  ];
-
-  const modalidadeRoutes: MetadataRoute.Sitemap = [];
-  for (const { setor, uf } of generateLicitacoesParams()) {
-    for (const mod of POPULAR_MODALIDADES) {
-      modalidadeRoutes.push({
-        url: `${baseUrl}/blog/licitacoes/${setor}/${uf}?modalidade=${mod.code}`,
-        lastModified: today,
-        changeFrequency: 'daily' as const,
-        priority: 0.7,
-      });
-    }
-  }
+  // SEO-CAC-ZERO A1: Modalidade variants são parâmetros de UI — removidos do sitemap.
+  // Canonical de ?modalidade=X aponta para URL base → Google consolidaria ranking mesmo com estas no sitemap.
+  // Remoção elimina 1.620 URLs parasitas e concentra link equity nas 405 URLs canônicas.
+  // As páginas ainda são acessíveis via UI — só não ficam no sitemap.
 
   // SEO Frente 4: City pSEO pages (/blog/licitacoes/cidade/[cidade])
   const cidadeRoutes: MetadataRoute.Sitemap = CITIES.map((c) => ({
@@ -319,8 +303,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...programmaticSectorRoutes,
     // SEO-PLAYBOOK P0: Sector × UF pages (405 combinations)
     ...licitacoesUfRoutes,
-    // SEO-CAC-ZERO A1: Sector × UF × Modalidade pages (1,620 additional URLs)
-    ...modalidadeRoutes,
+    // SEO-CAC-ZERO A1: modalidadeRoutes removidas do sitemap (ISSUE-SEO-002)
+    // ?modalidade=X pages canonical → base URL; não precisam de entrada separada no sitemap.
     // SEO-PLAYBOOK P0: Panorama sector pages
     ...panoramaSectorRoutes,
     // SEO Frente 4: City pSEO pages
