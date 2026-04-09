@@ -2,6 +2,7 @@
 
 GET /v1/admin/search-trace/{search_id} — aggregates search journey data
 from multiple sources (search sessions, cache, jobs).
+POST /v1/admin/trigger-contracts-backfill — enqueue contracts full crawl to Worker.
 """
 
 import logging
@@ -15,6 +16,28 @@ from admin import require_admin
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/admin", tags=["admin"])
+
+
+@router.post("/trigger-contracts-backfill")
+async def trigger_contracts_backfill(user=Depends(require_admin)) -> dict:
+    """Enqueue contracts_full_crawl_job to ARQ Worker.
+
+    Runs on Railway Worker (better network for PNCP).
+    Safe to call multiple times — ARQ deduplicates by job name.
+    """
+    try:
+        from job_queue import get_arq_pool
+        pool = await get_arq_pool()
+        if not pool:
+            return {"status": "error", "detail": "ARQ pool unavailable — Worker offline?"}
+
+        job = await pool.enqueue_job("contracts_full_crawl_job")
+        if job:
+            return {"status": "enqueued", "job_id": job.job_id}
+        return {"status": "skipped", "detail": "Job already queued or duplicate"}
+    except Exception as e:
+        logger.error("trigger_contracts_backfill failed: %s", e)
+        return {"status": "error", "detail": str(e)}
 
 
 @router.get("/search-trace/{search_id}")

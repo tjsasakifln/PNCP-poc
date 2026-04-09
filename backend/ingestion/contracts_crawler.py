@@ -41,11 +41,11 @@ logger = logging.getLogger(__name__)
 
 PNCP_CONTRACTS_URL = "https://pncp.gov.br/api/consulta/v1/contratos"
 PAGE_SIZE = 50          # PNCP max tamanhoPagina for /contratos
-MAX_PAGES_PER_WINDOW = 2000   # Safety cap (~100k contracts per 365-day window)
-REQUEST_DELAY_S = 0.5   # Respectful crawling (2 req/s)
-HTTP_TIMEOUT = 30
-MAX_RETRIES = 3
-RETRY_BACKOFF_S = 2.0
+MAX_PAGES_PER_WINDOW = 5000   # Safety cap
+REQUEST_DELAY_S = 1.0   # 1 req/s — less aggressive to avoid PNCP drops
+HTTP_TIMEOUT = 45       # Longer timeout for slow pages
+MAX_RETRIES = 5         # More retries
+RETRY_BACKOFF_S = 5.0   # Longer backoff before retry
 
 # PNCP max date window: 365 days. We split 730-day full crawl into two windows.
 MAX_WINDOW_DAYS = 365
