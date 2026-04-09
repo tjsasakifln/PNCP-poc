@@ -454,6 +454,9 @@ async def run_full_crawl() -> dict[str, Any]:
     - Window-level checkpointing: completed windows are skipped on restart
     - Page-level resume: interrupted windows restart from last saved page
     - Adaptive inter-window delay: backs off on consecutive failures (2→60s)
+    - Month-anchored start: window boundaries are stable within a calendar month
+      so checkpoint keys don't shift daily (fixes checkpoint-miss bug where the
+      crawler restarted from page 1 every day and never completed Window 1).
 
     Returns aggregated stats across all windows.
     """
@@ -479,8 +482,13 @@ async def run_full_crawl() -> dict[str, Any]:
 
     consecutive_failures = 0
 
-    # Split into 365-day chunks from oldest to newest
-    start = today - timedelta(days=CONTRACTS_FULL_DAYS)
+    # Split into 365-day chunks from oldest to newest.
+    # Anchor start to first-of-month so window boundaries (and checkpoint keys)
+    # are stable across daily runs within the same month.  Without this, the
+    # sliding "today - 730" shifts by 1 day each run, creating new checkpoint
+    # keys every day and causing the crawler to restart from page 1 perpetually.
+    raw_start = today - timedelta(days=CONTRACTS_FULL_DAYS)
+    start = raw_start.replace(day=1)
     while start < today:
         end = min(start + timedelta(days=MAX_WINDOW_DAYS - 1), today)
         data_ini, data_fim = _fmt(start), _fmt(end)
