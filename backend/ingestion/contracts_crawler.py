@@ -7,7 +7,7 @@ in the pncp_supplier_contracts table, enabling O(1) supplier CNPJ lookups.
 This mirrors the pncp_raw_bids ingestion pattern but for the contracts side.
 
 Modes:
-  - full:        Last 730 days (two 365-day windows, PNCP max per request)
+  - full:        Last 730 days (~9 windows of 90 days each)
   - incremental: Last 3 days (daily cron, 3x/day)
   - backfill:    Arbitrary date range for one-time historical data load
 
@@ -47,15 +47,20 @@ HTTP_TIMEOUT = 45       # Longer timeout for slow pages
 MAX_RETRIES = 5         # More retries
 RETRY_BACKOFF_S = 5.0   # Longer backoff before retry
 
+# Shared timeout constant — used by both cron registration and manual enqueue.
+CONTRACTS_FULL_CRAWL_TIMEOUT = 28800   # 8h for full crawl
+CONTRACTS_INCREMENTAL_TIMEOUT = 3600   # 1h for incremental
+
 # Concurrency & rate limiting — all tuneable via env vars without redeploy.
-# Defaults calibrated for ~5 pages/s (250 rec/s) which completes 84K pages in ~5h.
+# Defaults calibrated for ~5 pages/s (250 rec/s) which completes ~5.4K pages/window in ~30 min.
 CONCURRENT_PAGES = int(__import__("os").getenv("CONTRACTS_CONCURRENT_PAGES", "5"))
 PAGE_BATCH_DELAY_S = float(__import__("os").getenv("CONTRACTS_PAGE_BATCH_DELAY_S", "1.0"))
-CONCURRENT_WINDOWS = int(__import__("os").getenv("CONTRACTS_CONCURRENT_WINDOWS", "2"))
+CONCURRENT_WINDOWS = int(__import__("os").getenv("CONTRACTS_CONCURRENT_WINDOWS", "1"))
 REQUEST_DELAY_S = float(__import__("os").getenv("CONTRACTS_REQUEST_DELAY_S", "0.5"))
 
-# PNCP max date window: 365 days. We split 730-day full crawl into two windows.
-MAX_WINDOW_DAYS = 365
+# 90-day windows: 730 days / 90 = ~9 windows. Each ~5.4K pages, completable in ~30 min.
+# Smaller windows = faster checkpoint completion = more resilient to interruptions.
+MAX_WINDOW_DAYS = 90
 
 CONTRACTS_FULL_DAYS = int(__import__("os").getenv("CONTRACTS_FULL_DAYS", "730"))
 CONTRACTS_INCREMENTAL_DAYS = int(__import__("os").getenv("CONTRACTS_INCREMENTAL_DAYS", "3"))
@@ -465,16 +470,17 @@ async def _check_circuit_breaker() -> bool:
 
 
 async def run_full_crawl() -> dict[str, Any]:
-    """Crawl last CONTRACTS_FULL_DAYS (default 730) in ≤365-day windows.
+    """Crawl last CONTRACTS_FULL_DAYS (default 730) in ≤90-day windows.
+
+    730 days / 90 = ~9 windows (~5.4K pages each, ~30 min per window).
+    Smaller windows complete faster and checkpoint independently.
 
     Resilience features:
     - Circuit breaker check before starting (aborts if PNCP is degraded)
     - Window-level checkpointing: completed windows are skipped on restart
     - Page-level resume: interrupted windows restart from last saved page
-    - Adaptive inter-window delay: backs off on consecutive failures (2→60s)
+    - Graceful shutdown: CancelledError/TimeoutError saves checkpoint before exit
     - Month-anchored start: window boundaries are stable within a calendar month
-      so checkpoint keys don't shift daily (fixes checkpoint-miss bug where the
-      crawler restarted from page 1 every day and never completed Window 1).
 
     Returns aggregated stats across all windows.
     """
@@ -548,6 +554,14 @@ async def run_full_crawl() -> dict[str, Any]:
                 logger.error("[ContractsCrawler] Window %s->%s failed: %s", w_ini, w_fim, exc)
                 await _save_window_checkpoint(w_ini, w_fim, "failed", w_start_page)
                 return None
+            except (asyncio.CancelledError, TimeoutError) as exc:
+                # ARQ timeout or worker shutdown — save checkpoint so next run resumes
+                logger.warning(
+                    "[ContractsCrawler] Window %s->%s interrupted (%s) — checkpoint saved",
+                    w_ini, w_fim, type(exc).__name__,
+                )
+                await _save_window_checkpoint(w_ini, w_fim, "interrupted", w_start_page)
+                raise
 
     tasks = [_crawl_one_window(wi, wf, sp) for wi, wf, sp in windows_to_crawl]
     results = await asyncio.gather(*tasks)

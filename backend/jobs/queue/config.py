@@ -54,13 +54,14 @@ try:
             # Daily full ensures checkpoint/resume makes continuous progress on 730-day backfill
             # Incremental (12, 18, 00 UTC) catches intraday contracts for real-time B2G intel
             from ingestion.scheduler import contracts_full_crawl_job, contracts_incremental_job
+            from ingestion.contracts_crawler import CONTRACTS_FULL_CRAWL_TIMEOUT, CONTRACTS_INCREMENTAL_TIMEOUT
             _contracts_enabled = __import__("os").getenv("CONTRACTS_INGESTION_ENABLED", "true").lower() in ("true", "1")
             if _contracts_enabled:
                 _worker_cron_jobs.append(
-                    _arq_cron(contracts_full_crawl_job, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 1}, minute=0, timeout=28800),
+                    _arq_cron(contracts_full_crawl_job, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 1}, minute=0, timeout=CONTRACTS_FULL_CRAWL_TIMEOUT),
                 )
                 _worker_cron_jobs.append(
-                    _arq_cron(contracts_incremental_job, hour={12, 18, 0}, minute=0, timeout=3600),
+                    _arq_cron(contracts_incremental_job, hour={12, 18, 0}, minute=0, timeout=CONTRACTS_INCREMENTAL_TIMEOUT),
                 )
     except ImportError:
         pass

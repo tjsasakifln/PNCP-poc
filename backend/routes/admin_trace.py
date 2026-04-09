@@ -27,13 +27,16 @@ async def trigger_contracts_backfill(user=Depends(require_admin)) -> dict:
     """
     try:
         from job_queue import get_arq_pool
+        from ingestion.contracts_crawler import CONTRACTS_FULL_CRAWL_TIMEOUT
         pool = await get_arq_pool()
         if not pool:
             return {"status": "error", "detail": "ARQ pool unavailable — Worker offline?"}
 
-        job = await pool.enqueue_job("contracts_full_crawl_job")
+        job = await pool.enqueue_job(
+            "contracts_full_crawl_job", _job_timeout=CONTRACTS_FULL_CRAWL_TIMEOUT,
+        )
         if job:
-            return {"status": "enqueued", "job_id": job.job_id}
+            return {"status": "enqueued", "job_id": job.job_id, "timeout_s": CONTRACTS_FULL_CRAWL_TIMEOUT}
         return {"status": "skipped", "detail": "Job already queued or duplicate"}
     except Exception as e:
         logger.error("trigger_contracts_backfill failed: %s", e)
