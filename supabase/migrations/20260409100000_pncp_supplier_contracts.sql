@@ -44,10 +44,12 @@ CREATE INDEX IF NOT EXISTS idx_psc_active
 -- RLS: public read (contracts are public data from PNCP)
 ALTER TABLE pncp_supplier_contracts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "psc_public_read" ON pncp_supplier_contracts;
 CREATE POLICY "psc_public_read" ON pncp_supplier_contracts
     FOR SELECT USING (TRUE);
 
 -- Service role gets full access (needed by ingestion worker)
+DROP POLICY IF EXISTS "psc_service_write" ON pncp_supplier_contracts;
 CREATE POLICY "psc_service_write" ON pncp_supplier_contracts
     FOR ALL USING (auth.role() = 'service_role');
 
@@ -60,6 +62,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_psc_updated_at ON pncp_supplier_contracts;
 CREATE TRIGGER trg_psc_updated_at
     BEFORE UPDATE ON pncp_supplier_contracts
     FOR EACH ROW EXECUTE FUNCTION update_psc_updated_at();

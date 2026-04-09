@@ -36,7 +36,7 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
-RAISE NOTICE 'DEBT-05: free_trial garantido em plans ✓';
+DO $$ BEGIN RAISE NOTICE 'DEBT-05: free_trial garantido em plans ✓'; END $$;
 
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -80,7 +80,7 @@ END $$;
 ALTER TABLE public.profiles
     DROP CONSTRAINT IF EXISTS profiles_plan_type_check;
 
-RAISE NOTICE 'DEBT-05/AC2 Step 1: profiles_plan_type_check CHECK removido ✓';
+DO $$ BEGIN RAISE NOTICE 'DEBT-05/AC2 Step 1: profiles_plan_type_check CHECK removido ✓'; END $$;
 
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -124,7 +124,7 @@ END $$;
 ALTER TABLE public.profiles
     VALIDATE CONSTRAINT profiles_plan_type_fk;
 
-RAISE NOTICE 'DEBT-05/AC2 Step 3: profiles_plan_type_fk VALIDATED ✓';
+DO $$ BEGIN RAISE NOTICE 'DEBT-05/AC2 Step 3: profiles_plan_type_fk VALIDATED ✓'; END $$;
 
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -160,7 +160,7 @@ COMMENT ON COLUMN public.pncp_raw_bids.is_active IS
     'Usado em: idx_pncp_raw_bids_dashboard_query (WHERE is_active=true), search_datalake RPC. '
     'TD-020/TD-NEW-002 investigados e encerrados em 2026-04-08.';
 
-RAISE NOTICE 'DEBT-05/AC4: is_active decision documentada — MANTER ✓';
+DO $$ BEGIN RAISE NOTICE 'DEBT-05/AC4: is_active decision documentada — MANTER ✓'; END $$;
 
 
 -- ════════════════════════════════════════════════════════════════════════════

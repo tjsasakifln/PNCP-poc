@@ -410,11 +410,11 @@ async def crawl_contracts_window(
                 break
 
             # Save page progress every N pages
-            if page % _PAGE_CHECKPOINT_INTERVAL < CONCURRENT_PAGES:
+            if page % _PAGE_CHECKPOINT_INTERVAL == 0:
                 await _save_page_progress(data_ini, data_fim, page)
 
             # Log progress every ~100 pages
-            if page % 100 < CONCURRENT_PAGES and known_total_pages:
+            if page % 100 == 0 and known_total_pages:
                 elapsed = time.monotonic() - t0
                 rate = round(stats["records_raw"] / elapsed, 1) if elapsed > 0 else 0
                 pct = round(page / known_total_pages * 100, 1)
