@@ -108,6 +108,7 @@ export async function generateMetadata({
       title: `${empresa.razao_social} — Score B2G: ${score}`,
       description: `${total_contratos_24m} contratos | ${valorFormatado}`,
     },
+    robots: { index: total_contratos_24m > 0, follow: true },
   };
 }
 

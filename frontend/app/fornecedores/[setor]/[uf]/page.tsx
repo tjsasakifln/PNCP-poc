@@ -53,6 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ufUpper = uf.toUpperCase();
   const ufName = UF_NAMES[ufUpper] || ufUpper;
   const year = new Date().getFullYear();
+  const data = await fetchFornecedoresStats(setor, ufUpper.toLowerCase());
+  const hasData = !!(data && data.total_suppliers > 0);
 
   return {
     title: `Fornecedores de ${sector.name} em ${ufName} ${year} — SmartLic`,
@@ -64,7 +66,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
       locale: 'pt_BR',
     },
-    robots: { index: true, follow: true },
+    robots: { index: hasData, follow: true },
   };
 }
 

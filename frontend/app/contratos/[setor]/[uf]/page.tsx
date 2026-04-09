@@ -50,6 +50,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ufUpper = uf.toUpperCase();
   const ufName = UF_NAMES[ufUpper] || ufUpper;
   const year = new Date().getFullYear();
+  const data = await fetchContratosStats(setor, ufUpper.toLowerCase());
+  const hasData = !!(data && data.total_contracts > 0);
 
   return {
     title: `Contratos Publicos de ${sector.name} em ${ufName} ${year} — SmartLic`,
@@ -61,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
       locale: 'pt_BR',
     },
-    robots: { index: true, follow: true },
+    robots: { index: hasData, follow: true },
   };
 }
 
