@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useClarity } from "../../hooks/useClarity";
 
 /**
  * STORY-320 AC6: Trial paywall overlay with blur effect.
@@ -50,12 +51,17 @@ function canDismiss(): boolean {
 
 export function TrialPaywall({ additionalCount, context = "search" }: TrialPaywallProps) {
   const { trackEvent } = useAnalytics();
+  const { clarityEvent, claritySet } = useClarity();
   const [dismissed, setDismissed] = useState(false);
 
   // Keep latest values in refs so the mount-only effect can read them
   // without needing to re-run (trackEvent is not memoized in useAnalytics).
   const trackEventRef = useRef(trackEvent);
   trackEventRef.current = trackEvent;
+  const clarityEventRef = useRef(clarityEvent);
+  clarityEventRef.current = clarityEvent;
+  const claritySetRef = useRef(claritySet);
+  claritySetRef.current = claritySet;
   const contextRef = useRef(context);
   contextRef.current = context;
   const additionalCountRef = useRef(additionalCount);
@@ -66,6 +72,8 @@ export function TrialPaywall({ additionalCount, context = "search" }: TrialPaywa
       setDismissed(true);
     } else {
       trackEventRef.current("trial_paywall_shown", { context: contextRef.current, additional: additionalCountRef.current });
+      clarityEventRef.current("trial_paywall_shown");
+      claritySetRef.current("paywall_context", contextRef.current);
     }
   }, []);
 

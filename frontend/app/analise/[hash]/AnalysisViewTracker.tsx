@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useClarity } from "@/hooks/useClarity";
 
 /**
  * SEO-PLAYBOOK P6: Client island to track analysis_viewed event on page load.
@@ -22,6 +23,7 @@ export function AnalysisViewTracker({
   bidUf: string | null;
 }) {
   const { trackEvent } = useAnalytics();
+  const { clarityEvent, claritySet } = useClarity();
 
   useEffect(() => {
     trackEvent("analysis_viewed", {
@@ -29,6 +31,7 @@ export function AnalysisViewTracker({
       viability_score: viabilityScore,
       uf: bidUf || "",
     });
+    claritySet("viability_score", String(viabilityScore));
 
     // Emit first_analysis_viewed exactly once per browser — the Day-3
     // activation predictor. localStorage is acceptable here because the
@@ -40,12 +43,13 @@ export function AnalysisViewTracker({
           viability_score: viabilityScore,
           uf: bidUf || "",
         });
+        clarityEvent("first_analysis_viewed");
         localStorage.setItem(FIRST_ANALYSIS_FLAG, new Date().toISOString());
       }
     } catch {
       // localStorage disabled (Safari private mode, strict cookies) — skip.
     }
-  }, [hash, viabilityScore, bidUf, trackEvent]);
+  }, [hash, viabilityScore, bidUf, trackEvent, clarityEvent, claritySet]);
 
   return null;
 }

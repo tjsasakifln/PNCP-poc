@@ -28,6 +28,22 @@ jest.mock('../../hooks/useAnalytics', () => ({
   captureUTMParams: jest.fn(),
 }));
 
+jest.mock('../../app/components/AuthProvider', () => ({
+  useAuth: () => ({ user: null, session: null, isAdmin: false, loading: false }),
+}));
+
+jest.mock('../../hooks/useUserProfile', () => ({
+  useUserProfile: () => ({ data: null, error: null, isLoading: false }),
+}));
+
+jest.mock('../../hooks/useClarity', () => ({
+  useClarity: () => ({
+    clarityIdentify: jest.fn(),
+    claritySet: jest.fn(),
+    clarityEvent: jest.fn(),
+  }),
+}));
+
 const mockMixpanel = mixpanel as jest.Mocked<typeof mixpanel>;
 const { getCookieConsent } = require('../../app/components/CookieConsentBanner');
 const { captureUTMParams } = require('../../hooks/useAnalytics');

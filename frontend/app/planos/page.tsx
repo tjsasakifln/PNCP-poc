@@ -6,6 +6,7 @@ import { useAuth } from "../components/AuthProvider";
 import LandingNavbar from "../components/landing/LandingNavbar";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useClarity } from "../../hooks/useClarity";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
 import { formatCurrency, ROI_DISCLAIMER } from '@/lib/copy/roi';
@@ -74,6 +75,7 @@ export default function PlanosPage() {
   const { session, user, isAdmin, loading: authLoading } = useAuth();
   const { planInfo, loading: planLoading } = usePlan();
   const { trackEvent } = useAnalytics();
+  const { clarityEvent, claritySet } = useClarity();
   const trackEventRef = useRef(trackEvent);
   trackEventRef.current = trackEvent;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -213,6 +215,9 @@ export default function PlanosPage() {
     if (!session) { window.location.href = "/login"; return; }
     setCheckoutLoading(true);
     trackEvent("checkout_initiated", { plan_id: "smartlic_pro", billing_period: billingPeriod, source: "planos_page" });
+    clarityEvent("checkout_initiated");
+    claritySet("selected_plan", "smartlic_pro");
+    claritySet("billing_period", billingPeriod);
     trackBeginCheckout({
       id: "smartlic_pro",
       name: "SmartLic Pro",
@@ -242,6 +247,9 @@ export default function PlanosPage() {
     if (!session) { window.location.href = "/login"; return; }
     setCheckoutLoading(true);
     trackEvent("checkout_initiated", { plan_id: "consultoria", billing_period: billingPeriod, source: "planos_page" });
+    clarityEvent("checkout_initiated");
+    claritySet("selected_plan", "consultoria");
+    claritySet("billing_period", billingPeriod);
     trackBeginCheckout({
       id: "consultoria",
       name: "SmartLic Consultoria",

@@ -6,6 +6,9 @@ import * as Sentry from '@sentry/nextjs';
 import { usePathname } from 'next/navigation';
 import { getCookieConsent, type CookieConsent } from './CookieConsentBanner';
 import { captureUTMParams } from '../../hooks/useAnalytics';
+import { useClarity } from '../../hooks/useClarity';
+import { useAuth } from './AuthProvider';
+import { useUserProfile } from '../../hooks/useUserProfile';
 
 // GTM-FIX-002: Explicit client-side Sentry initialization
 // withSentryConfig webpack plugin should auto-inject sentry.client.config.ts,
@@ -33,6 +36,10 @@ if (sentryDsn && !Sentry.getClient()) {
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const initializedRef = useRef(false);
+  const clarityIdentifiedRef = useRef(false);
+  const { user } = useAuth();
+  const { data: profileData } = useUserProfile();
+  const { clarityIdentify, claritySet } = useClarity();
 
   useEffect(() => {
     const token = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
@@ -137,6 +144,25 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('cookie-consent-changed', handleConsentChanged);
     };
   }, [pathname]);
+
+  // Identifica o usuário e tagueia sessão no Clarity quando auth + perfil estiverem disponíveis
+  useEffect(() => {
+    if (!user?.id || clarityIdentifiedRef.current) return;
+    const consent = getCookieConsent();
+    if (!consent?.analytics) return;
+
+    clarityIdentify(user.id);
+
+    if (profileData) {
+      const planId = String(profileData.plan_id ?? 'unknown');
+      const isTrial = planId === 'free_trial';
+      claritySet('plan_type', planId);
+      claritySet('is_trial', String(isTrial));
+      claritySet('user_segment', isTrial ? 'trial' : 'paid');
+    }
+
+    clarityIdentifiedRef.current = true;
+  }, [user?.id, profileData, clarityIdentify, claritySet]);
 
   return <>{children}</>;
 }
