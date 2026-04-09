@@ -3,6 +3,8 @@
 [![Backend Tests](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml/badge.svg)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/codeql.yml/badge.svg)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/codeql.yml)
 
+> **SOFTWARE PROPRIETÁRIO** — © 2024-2026 CONFENGE AVALIAÇÕES E INTELIGÊNCIA ARTIFICIAL LTDA. Todos os direitos reservados. Contato: tiago.sasaki@confenge.com.br | WhatsApp: +55 (48) 9 8834-4559
+
 **SmartLic** e uma plataforma de inteligencia em licitacoes publicas que automatiza a descoberta, analise e qualificacao de oportunidades para empresas B2G (Business-to-Government).
 
 **Production:** https://smartlic.tech | **Estagio:** POC avancado (v0.5) | **Backend:** 65+ modulos | **Frontend:** 22 paginas
@@ -268,10 +270,10 @@ Ver [User Guide](./.aios-core/user-guide.md) para lista completa de comandos.
 ## Testes
 
 ```bash
-# Backend (169 test files, ~3966 passing)
+# Backend (169 test files, 5131+ passing)
 cd backend && pytest
 
-# Frontend (135 test files, ~1921 passing)
+# Frontend (135 test files, 2681+ passing)
 cd frontend && npm test
 
 # E2E (Playwright, 60 critical flows)
@@ -292,7 +294,7 @@ O projeto inclui configuração completa do Docker Compose para ambiente de dese
 - ✅ Variáveis de ambiente injetadas de `.env`
 
 **Serviços:**
-- `backend` - FastAPI em Python 3.11 (porta 8000)
+- `backend` - FastAPI em Python 3.12 (porta 8000)
 - `frontend` - Placeholder nginx (porta 3000)
 
 ```bash
@@ -648,9 +650,9 @@ docker-compose exec backend env | grep -E "OPENAI|PNCP|LLM"
    - [Integration Guide](./docs/INTEGRATION.md) - Troubleshooting E2E
    - [PRD.md](./PRD.md) - Especificação técnica completa
 
-2. **Issues do GitHub:**
-   - Procure issues existentes: https://github.com/tjsasakifln/PNCP-poc/issues
-   - Crie nova issue se não encontrar solução
+2. **Suporte CONFENGE:**
+   - Email: tiago.sasaki@confenge.com.br
+   - WhatsApp: +55 (48) 9 8834-4559
 
 3. **Logs e Debugging:**
    ```bash
@@ -668,23 +670,26 @@ docker-compose exec backend env | grep -E "OPENAI|PNCP|LLM"
 
 ---
 
-## 🤝 Contribuindo
+## Contribuições
 
-1. Crie uma branch: `git checkout -b feature/nova-feature`
-2. Commit: `git commit -m "feat: adicionar nova feature"`
-3. Push: `git push origin feature/nova-feature`
-4. Abra um Pull Request
+Este é software proprietário da CONFENGE AVALIAÇÕES E INTELIGÊNCIA ARTIFICIAL LTDA. Contribuições externas não são aceitas sem autorização prévia e por escrito da CONFENGE.
 
-## Licenca e Propriedade
+Para propostas de parceria, licenciamento ou colaboração autorizada, entre em contato:
+- **Email:** tiago.sasaki@confenge.com.br
+- **WhatsApp:** +55 (48) 9 8834-4559
 
-Este software e de propriedade exclusiva da **CONFENGE AVALIACOES E INTELIGENCIA ARTIFICIAL LTDA**.
+## Licença e Propriedade
 
-**Todos os direitos reservados.** Este codigo-fonte, incluindo mas nao se limitando a algoritmos, arquitetura, documentacao, configuracoes, e quaisquer materiais relacionados, e propriedade intelectual da CONFENGE. E estritamente proibido o uso, copia, modificacao, distribuicao, sublicenciamento ou qualquer forma de reproducao deste software, no todo ou em parte, sem consentimento previo por escrito da CONFENGE.
+**© 2024-2026 CONFENGE AVALIAÇÕES E INTELIGÊNCIA ARTIFICIAL LTDA — Todos os direitos reservados.**
 
-**Contato para licenciamento:**
-- **Nome:** Tiago Sasaki
-- **Telefone:** +55 (48) 9 8834-4559
-- **Empresa:** CONFENGE Avaliacoes e Inteligencia Artificial LTDA
+Este software é de propriedade exclusiva da CONFENGE AVALIAÇÕES E INTELIGÊNCIA ARTIFICIAL LTDA. O código-fonte, algoritmos, arquitetura, documentação, configurações e quaisquer materiais relacionados são propriedade intelectual da CONFENGE. É estritamente proibido o uso, cópia, modificação, distribuição, sublicenciamento ou qualquer forma de reprodução deste software, no todo ou em parte, sem consentimento prévio por escrito da CONFENGE.
+
+Consulte o arquivo [LICENSE](./LICENSE) para os termos completos.
+
+**Contato para licenciamento e negociações:**
+- **Email:** tiago.sasaki@confenge.com.br
+- **WhatsApp:** +55 (48) 9 8834-4559
+- **Empresa:** CONFENGE Avaliações e Inteligência Artificial LTDA
 
 ## Links Uteis
 

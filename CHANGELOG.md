@@ -5,6 +5,19 @@ All notable changes to SmartLic will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-04-09 - CONTRACTS BACKFILL + SEO EXPANSION
+
+### Added — Ingestão de Contratos
+- **Backfill resiliente de contratos** — checkpoint/resume + circuit breaker check + adaptive delay
+- **Cron de contratos diário** — migrado de semanal para diário para backfill contínuo
+- **`contracts_incremental_job`** — registrado no worker ARQ com otimizações de resiliência
+
+### Added — SEO Content
+- **Wave 3.3** — 10 artigos sobre contratos públicos (+10 blog pages)
+- **Wave 2.3 + 3.1 + 3.2** — `/contratos/orgao`, pillar pages, daily digest (+2045 páginas)
+
+---
+
 ## [0.5.2] - 2026-02-27 - RELIABILITY SPRINT COMPLETE
 
 ### Added — Reliability Architecture

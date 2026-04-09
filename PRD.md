@@ -1,9 +1,12 @@
-# PRD Tecnico: SmartLic — v0.5
+# PRD Tecnico: SmartLic — v0.5.3
 
-**Versao:** 0.5
-**Data:** Fevereiro 2026
+> **SOFTWARE PROPRIETÁRIO** — © 2024-2026 CONFENGE AVALIAÇÕES E INTELIGÊNCIA ARTIFICIAL LTDA. Todos os direitos reservados.
+> Contato: tiago.sasaki@confenge.com.br | WhatsApp: +55 (48) 9 8834-4559
+
+**Versao:** 0.5.3
+**Data:** Abril 2026
 **Tipo:** Especificacao tecnica de implementacao
-**Status:** PRODUCTION — GTM Resilience Complete (2026-02-20)
+**Status:** PRODUCTION — Contracts Backfill + SEO Expansion (2026-04-09)
 **Produto:** SmartLic — Plataforma de inteligencia em licitacoes publicas
 **Empresa:** CONFENGE Avaliacoes e Inteligencia Artificial LTDA
 **Production:** https://smartlic.tech
