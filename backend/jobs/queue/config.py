@@ -57,8 +57,9 @@ try:
             from ingestion.contracts_crawler import CONTRACTS_FULL_CRAWL_TIMEOUT, CONTRACTS_INCREMENTAL_TIMEOUT
             _contracts_enabled = __import__("os").getenv("CONTRACTS_INGESTION_ENABLED", "true").lower() in ("true", "1")
             if _contracts_enabled:
+                _WDAY = {"mon": 0, "tues": 1, "wed": 2, "thurs": 3, "fri": 4, "sat": 5, "sun": 6}
                 _raw_weekdays = __import__("os").getenv("CONTRACTS_CRAWL_WEEKDAYS", "mon,wed,fri")
-                _contracts_weekdays = set(w.strip() for w in _raw_weekdays.split(",") if w.strip())
+                _contracts_weekdays = {_WDAY[w] for w in (d.strip() for d in _raw_weekdays.split(",")) if w in _WDAY}
                 _worker_cron_jobs.append(
                     _arq_cron(contracts_full_crawl_job, weekday=_contracts_weekdays, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 1}, minute=0, timeout=CONTRACTS_FULL_CRAWL_TIMEOUT),
                 )
