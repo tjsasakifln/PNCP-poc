@@ -151,9 +151,29 @@ async def contracts_full_crawl_job(ctx: dict) -> dict:
         duration_s = round(_time.monotonic() - start, 1)
         logger.error("[ContractsCrawler:Full] Failed after %.1fs: %s", duration_s, e, exc_info=True)
         await _notify_failure("ContractsFull", f"{type(e).__name__}: {e}", duration_s)
+        try:
+            from ingestion.metrics import CONTRACTS_RUNS_TOTAL, CONTRACTS_RUN_DURATION
+            CONTRACTS_RUNS_TOTAL.labels(run_type="full", status="failed").inc()
+            CONTRACTS_RUN_DURATION.labels(run_type="full").observe(duration_s)
+        except Exception:
+            pass
         return {"status": "failed", "error": str(e), "duration_s": duration_s}
+
     duration_s = round(_time.monotonic() - start, 1)
     logger.info("[ContractsCrawler:Full] Completed in %.1fs — ins=%d", duration_s, result.get("inserted", 0))
+
+    try:
+        from ingestion.metrics import CONTRACTS_INGESTED, CONTRACTS_PAGES_FETCHED, CONTRACTS_RUNS_TOTAL, CONTRACTS_RUN_DURATION
+        status = result.get("status", "completed")
+        CONTRACTS_RUNS_TOTAL.labels(run_type="full", status=status).inc()
+        CONTRACTS_RUN_DURATION.labels(run_type="full").observe(duration_s)
+        CONTRACTS_PAGES_FETCHED.labels(run_type="full").inc(result.get("pages_fetched", 0))
+        CONTRACTS_INGESTED.labels(action="inserted", run_type="full").inc(result.get("inserted", 0))
+        CONTRACTS_INGESTED.labels(action="updated", run_type="full").inc(result.get("updated", 0))
+        CONTRACTS_INGESTED.labels(action="unchanged", run_type="full").inc(result.get("unchanged", 0))
+    except Exception:
+        pass
+
     return {**result, "duration_s": duration_s}
 
 
@@ -177,9 +197,29 @@ async def contracts_incremental_job(ctx: dict) -> dict:
         duration_s = round(_time.monotonic() - start, 1)
         logger.error("[ContractsCrawler:Incr] Failed after %.1fs: %s", duration_s, e, exc_info=True)
         await _notify_failure("ContractsIncr", f"{type(e).__name__}: {e}", duration_s)
+        try:
+            from ingestion.metrics import CONTRACTS_RUNS_TOTAL, CONTRACTS_RUN_DURATION
+            CONTRACTS_RUNS_TOTAL.labels(run_type="incremental", status="failed").inc()
+            CONTRACTS_RUN_DURATION.labels(run_type="incremental").observe(duration_s)
+        except Exception:
+            pass
         return {"status": "failed", "error": str(e), "duration_s": duration_s}
+
     duration_s = round(_time.monotonic() - start, 1)
     logger.info("[ContractsCrawler:Incr] Completed in %.1fs — ins=%d", duration_s, result.get("inserted", 0))
+
+    try:
+        from ingestion.metrics import CONTRACTS_INGESTED, CONTRACTS_PAGES_FETCHED, CONTRACTS_RUNS_TOTAL, CONTRACTS_RUN_DURATION
+        status = result.get("status", "completed")
+        CONTRACTS_RUNS_TOTAL.labels(run_type="incremental", status=status).inc()
+        CONTRACTS_RUN_DURATION.labels(run_type="incremental").observe(duration_s)
+        CONTRACTS_PAGES_FETCHED.labels(run_type="incremental").inc(result.get("pages_fetched", 0))
+        CONTRACTS_INGESTED.labels(action="inserted", run_type="incremental").inc(result.get("inserted", 0))
+        CONTRACTS_INGESTED.labels(action="updated", run_type="incremental").inc(result.get("updated", 0))
+        CONTRACTS_INGESTED.labels(action="unchanged", run_type="incremental").inc(result.get("unchanged", 0))
+    except Exception:
+        pass
+
     return {**result, "duration_s": duration_s}
 
 

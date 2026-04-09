@@ -143,3 +143,32 @@ INGESTION_ROWS_IN_TABLE = _gauge(
     "smartlic_ingestion_pncp_raw_bids_rows",
     "Approximate row count in pncp_raw_bids (updated after each full crawl)",
 )
+
+# ---------------------------------------------------------------------------
+# Contracts crawler metrics
+# ---------------------------------------------------------------------------
+
+CONTRACTS_INGESTED = _counter(
+    "smartlic_contracts_ingested_total",
+    "Contracts upserted into pncp_supplier_contracts",
+    labelnames=["action", "run_type"],  # action: inserted | updated | unchanged; run_type: full | incremental
+)
+
+CONTRACTS_PAGES_FETCHED = _counter(
+    "smartlic_contracts_pages_fetched_total",
+    "PNCP /contratos pages successfully fetched",
+    labelnames=["run_type"],
+)
+
+CONTRACTS_RUNS_TOTAL = _counter(
+    "smartlic_contracts_runs_total",
+    "Total contracts crawl runs started",
+    labelnames=["run_type", "status"],  # run_type: full | incremental; status: completed | partial | failed | skipped
+)
+
+CONTRACTS_RUN_DURATION = _histogram(
+    "smartlic_contracts_run_duration_seconds",
+    "Total duration of a contracts crawl run",
+    labelnames=["run_type"],
+    buckets=[30, 60, 300, 600, 1800, 3600, 7200, 14400],
+)

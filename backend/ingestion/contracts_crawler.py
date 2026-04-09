@@ -62,7 +62,7 @@ _ESFERA_LABELS = {"F": "Federal", "E": "Estadual", "M": "Municipal", "D": "Distr
 # ---------------------------------------------------------------------------
 
 _CHECKPOINT_TTL = 7 * 24 * 3600  # 7 days: covers any reasonable retry window
-_PAGE_CHECKPOINT_INTERVAL = 100  # Save page progress every N pages
+_PAGE_CHECKPOINT_INTERVAL = 20   # Save page progress every N pages (1,000 records max re-fetch on restart)
 
 
 class CrawlWindowError(Exception):
@@ -390,6 +390,16 @@ async def crawl_contracts_window(
             if page % _PAGE_CHECKPOINT_INTERVAL == 0:
                 await _save_page_progress(data_ini, data_fim, page)
 
+            # Log intra-window progress every 100 pages for observability during long crawls
+            if page % 100 == 0 and total_pages > 0:
+                elapsed = time.monotonic() - t0
+                rate = round(stats["records_raw"] / elapsed, 1) if elapsed > 0 else 0
+                pct = round(page / min(total_pages, max_pages) * 100, 1)
+                logger.info(
+                    "[ContractsCrawler] %s->%s: page %d/%d (%.1f%%) — %.1f rec/s",
+                    data_ini, data_fim, page, min(total_pages, max_pages), pct, rate,
+                )
+
             await asyncio.sleep(REQUEST_DELAY_S)
 
     elapsed = round(time.monotonic() - t0, 1)
@@ -554,9 +564,13 @@ async def run_incremental_crawl() -> dict[str, Any]:
     """Crawl last CONTRACTS_INCREMENTAL_DAYS (default 3) for daily updates.
 
     +1 day overlap to catch late-arriving records.
+    Circuit breaker check mirrors run_full_crawl to avoid hammering a degraded PNCP.
     """
     if not CONTRACTS_ENABLED:
         return {"status": "skipped", "reason": "CONTRACTS_INGESTION_ENABLED=false"}
+
+    if await _check_circuit_breaker():
+        return {"status": "skipped", "reason": "pncp_circuit_breaker_open"}
 
     today = datetime.now(timezone.utc).date()
     start = today - timedelta(days=CONTRACTS_INCREMENTAL_DAYS + 1)  # +1 overlap

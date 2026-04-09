@@ -50,14 +50,17 @@ try:
                 _arq_cron(ingestion_incremental_job, hour=set(INGESTION_INCREMENTAL_HOURS), minute=0, timeout=3600),
                 _arq_cron(ingestion_purge_job, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 2}, minute=0, timeout=600),
             ])
-            # Supplier contracts index: daily full crawl (06 UTC = 3am BRT)
-            # Daily ensures checkpoint/resume makes continuous progress on 730-day backfill
-            # Checkpoint TTL=7d, so daily runs accumulate until full historical range is covered
-            from ingestion.scheduler import contracts_full_crawl_job
+            # Supplier contracts index: daily full crawl (06 UTC = 3am BRT) + 3x/day incremental
+            # Daily full ensures checkpoint/resume makes continuous progress on 730-day backfill
+            # Incremental (12, 18, 00 UTC) catches intraday contracts for real-time B2G intel
+            from ingestion.scheduler import contracts_full_crawl_job, contracts_incremental_job
             _contracts_enabled = __import__("os").getenv("CONTRACTS_INGESTION_ENABLED", "true").lower() in ("true", "1")
             if _contracts_enabled:
                 _worker_cron_jobs.append(
                     _arq_cron(contracts_full_crawl_job, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 1}, minute=0, timeout=28800),
+                )
+                _worker_cron_jobs.append(
+                    _arq_cron(contracts_incremental_job, hour={12, 18, 0}, minute=0, timeout=3600),
                 )
     except ImportError:
         pass
@@ -101,11 +104,11 @@ class WorkerSettings:
         if _dl_enabled:
             from ingestion.scheduler import (
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
-                contracts_full_crawl_job,
+                contracts_full_crawl_job, contracts_incremental_job,
             )
             _ingestion_functions = [
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
-                contracts_full_crawl_job,
+                contracts_full_crawl_job, contracts_incremental_job,
             ]
     except ImportError:
         pass
