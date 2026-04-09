@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 PNCP_CONTRACTS_URL = "https://pncp.gov.br/api/consulta/v1/contratos"
 PAGE_SIZE = 50          # PNCP max tamanhoPagina for /contratos
-MAX_PAGES_PER_WINDOW = 5000   # Safety cap
+MAX_PAGES_PER_WINDOW = 50000  # Safety cap — actual limit is ARQ job timeout (8h ≈ 28K pages at 1 req/s)
 REQUEST_DELAY_S = 1.0   # 1 req/s — less aggressive to avoid PNCP drops
 HTTP_TIMEOUT = 45       # Longer timeout for slow pages
 MAX_RETRIES = 5         # More retries
