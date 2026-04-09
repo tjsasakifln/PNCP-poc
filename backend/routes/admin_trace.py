@@ -33,7 +33,7 @@ async def trigger_contracts_backfill(user=Depends(require_admin)) -> dict:
             return {"status": "error", "detail": "ARQ pool unavailable — Worker offline?"}
 
         job = await pool.enqueue_job(
-            "contracts_full_crawl_job", _job_timeout=CONTRACTS_FULL_CRAWL_TIMEOUT,
+            "contracts_full_crawl_job", _timeout=CONTRACTS_FULL_CRAWL_TIMEOUT,
         )
         if job:
             return {"status": "enqueued", "job_id": job.job_id, "timeout_s": CONTRACTS_FULL_CRAWL_TIMEOUT}
