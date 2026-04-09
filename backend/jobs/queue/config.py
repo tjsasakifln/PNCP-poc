@@ -50,18 +50,20 @@ try:
                 _arq_cron(ingestion_incremental_job, hour=set(INGESTION_INCREMENTAL_HOURS), minute=0, timeout=3600),
                 _arq_cron(ingestion_purge_job, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 2}, minute=0, timeout=600),
             ])
-            # Supplier contracts index: daily full crawl (06 UTC = 3am BRT) + 3x/day incremental
-            # Daily full ensures checkpoint/resume makes continuous progress on 730-day backfill
-            # Incremental (12, 18, 00 UTC) catches intraday contracts for real-time B2G intel
+            # Supplier contracts index: 3x/week full crawl (Mon/Wed/Fri 06 UTC) + same days incremental
+            # CONTRACTS_CRAWL_WEEKDAYS env var: comma-separated weekday names (default: mon,wed,fri)
+            # Set CONTRACTS_CRAWL_WEEKDAYS=mon,tues,wed,thurs,fri,sat,sun for daily crawl
             from ingestion.scheduler import contracts_full_crawl_job, contracts_incremental_job
             from ingestion.contracts_crawler import CONTRACTS_FULL_CRAWL_TIMEOUT, CONTRACTS_INCREMENTAL_TIMEOUT
             _contracts_enabled = __import__("os").getenv("CONTRACTS_INGESTION_ENABLED", "true").lower() in ("true", "1")
             if _contracts_enabled:
+                _raw_weekdays = __import__("os").getenv("CONTRACTS_CRAWL_WEEKDAYS", "mon,wed,fri")
+                _contracts_weekdays = set(w.strip() for w in _raw_weekdays.split(",") if w.strip())
                 _worker_cron_jobs.append(
-                    _arq_cron(contracts_full_crawl_job, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 1}, minute=0, timeout=CONTRACTS_FULL_CRAWL_TIMEOUT),
+                    _arq_cron(contracts_full_crawl_job, weekday=_contracts_weekdays, hour={INGESTION_FULL_CRAWL_HOUR_UTC + 1}, minute=0, timeout=CONTRACTS_FULL_CRAWL_TIMEOUT),
                 )
                 _worker_cron_jobs.append(
-                    _arq_cron(contracts_incremental_job, hour={12, 18, 0}, minute=0, timeout=CONTRACTS_INCREMENTAL_TIMEOUT),
+                    _arq_cron(contracts_incremental_job, weekday=_contracts_weekdays, hour={12, 18, 0}, minute=0, timeout=CONTRACTS_INCREMENTAL_TIMEOUT),
                 )
     except ImportError:
         pass
