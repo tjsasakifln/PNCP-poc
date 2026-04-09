@@ -42,11 +42,17 @@ logger = logging.getLogger(__name__)
 
 PNCP_CONTRACTS_URL = "https://pncp.gov.br/api/consulta/v1/contratos"
 PAGE_SIZE = 50          # PNCP max tamanhoPagina for /contratos
-MAX_PAGES_PER_WINDOW = 50000  # Safety cap — actual limit is ARQ job timeout (8h ≈ 28K pages at 1 req/s)
-REQUEST_DELAY_S = 1.0   # 1 req/s — less aggressive to avoid PNCP drops
+MAX_PAGES_PER_WINDOW = 50000  # Safety cap — actual limit is ARQ job timeout (8h)
 HTTP_TIMEOUT = 45       # Longer timeout for slow pages
 MAX_RETRIES = 5         # More retries
 RETRY_BACKOFF_S = 5.0   # Longer backoff before retry
+
+# Concurrency & rate limiting — all tuneable via env vars without redeploy.
+# Defaults calibrated for ~5 pages/s (250 rec/s) which completes 84K pages in ~5h.
+CONCURRENT_PAGES = int(__import__("os").getenv("CONTRACTS_CONCURRENT_PAGES", "5"))
+PAGE_BATCH_DELAY_S = float(__import__("os").getenv("CONTRACTS_PAGE_BATCH_DELAY_S", "1.0"))
+CONCURRENT_WINDOWS = int(__import__("os").getenv("CONTRACTS_CONCURRENT_WINDOWS", "2"))
+REQUEST_DELAY_S = float(__import__("os").getenv("CONTRACTS_REQUEST_DELAY_S", "0.5"))
 
 # PNCP max date window: 365 days. We split 730-day full crawl into two windows.
 MAX_WINDOW_DAYS = 365
@@ -293,7 +299,11 @@ async def crawl_contracts_window(
     max_pages: int = MAX_PAGES_PER_WINDOW,
     start_page: int = 1,
 ) -> dict[str, Any]:
-    """Crawl all PNCP contracts in a date window.
+    """Crawl all PNCP contracts in a date window with concurrent page fetching.
+
+    Fetches CONCURRENT_PAGES pages in parallel per batch, with PAGE_BATCH_DELAY_S
+    between batches.  Adaptive backoff doubles the delay if any page in the batch
+    returns a hard failure (all retries exhausted).
 
     Args:
         data_ini: Start date YYYYMMDD (inclusive).
@@ -308,8 +318,6 @@ async def crawl_contracts_window(
 
     Raises:
         CrawlWindowError: When PNCP API exhausts all retries on any page.
-            Callers should save the failure checkpoint and not treat partial
-            data as a completed window.
     """
     stats: dict[str, Any] = {
         "window": f"{data_ini}->{data_fim}",
@@ -325,82 +333,92 @@ async def crawl_contracts_window(
 
     resumed = start_page > 1
     logger.info(
-        "[ContractsCrawler] Window %s->%s %s page=%d",
+        "[ContractsCrawler] Window %s->%s %s page=%d (concurrent=%d, delay=%.1fs)",
         data_ini, data_fim,
         "resuming from" if resumed else "starting at",
-        start_page,
+        start_page, CONCURRENT_PAGES, PAGE_BATCH_DELAY_S,
     )
     t0 = time.monotonic()
+    effective_delay = PAGE_BATCH_DELAY_S
+    known_total_pages: int | None = None
 
     async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:
         page = start_page
         while page <= max_pages:
-            result = await _fetch_page(client, data_ini, data_fim, page)
+            # --- Fetch a batch of pages concurrently ---
+            batch_end = min(page + CONCURRENT_PAGES, max_pages + 1)
+            page_range = list(range(page, batch_end))
 
-            if result is None:
-                # All retries exhausted — API is failing. Raise so the caller
-                # can mark the checkpoint as failed (not silently completed).
-                stats["errors"] += 1
-                raise CrawlWindowError(
-                    f"PNCP API failed after {MAX_RETRIES} retries on page {page} "
-                    f"(window {data_ini}->{data_fim})"
-                )
+            tasks = [_fetch_page(client, data_ini, data_fim, p) for p in page_range]
+            results = await asyncio.gather(*tasks)
 
-            items, total_records, total_pages = result
+            batch_had_failure = False
+            batch_empty = True
 
-            if not items:
-                if page == start_page:
-                    logger.info(
-                        "[ContractsCrawler] Window %s->%s: no records (total=%d)",
-                        data_ini, data_fim, total_records,
+            for p, result in zip(page_range, results):
+                if result is None:
+                    # All retries exhausted on this page — hard failure.
+                    stats["errors"] += 1
+                    raise CrawlWindowError(
+                        f"PNCP API failed after {MAX_RETRIES} retries on page {p} "
+                        f"(window {data_ini}->{data_fim})"
                     )
-                break
 
-            stats["records_raw"] += len(items)
-            stats["pages_fetched"] += 1
+                items, total_records, total_pages = result
 
-            # Normalize and filter invalid items
-            normalized = []
-            for item in items:
-                row = _normalize_contract(item)
-                if row:
-                    normalized.append(row)
+                if known_total_pages is None and total_pages > 0:
+                    known_total_pages = min(total_pages, max_pages)
+                    logger.info(
+                        "[ContractsCrawler] Window %s->%s: %d total records, %d pages",
+                        data_ini, data_fim, total_records, total_pages,
+                    )
 
-            stats["records_normalized"] += len(normalized)
+                if not items:
+                    continue
 
-            # Upsert in batches
-            if normalized:
-                counts = await _upsert_batch(normalized)
-                stats["inserted"] += counts["inserted"]
-                stats["updated"] += counts["updated"]
-                stats["unchanged"] += counts["unchanged"]
+                batch_empty = False
+                stats["records_raw"] += len(items)
+                stats["pages_fetched"] += 1
 
-            if page == start_page:
+                normalized = [r for item in items if (r := _normalize_contract(item))]
+                stats["records_normalized"] += len(normalized)
+
+                if normalized:
+                    counts = await _upsert_batch(normalized)
+                    stats["inserted"] += counts["inserted"]
+                    stats["updated"] += counts["updated"]
+                    stats["unchanged"] += counts["unchanged"]
+
+            # If the entire batch was empty, we've exhausted the data
+            if batch_empty and page == start_page:
                 logger.info(
-                    "[ContractsCrawler] Window %s->%s: %d total records, %d pages",
-                    data_ini, data_fim, total_records, total_pages,
+                    "[ContractsCrawler] Window %s->%s: no records at start page",
+                    data_ini, data_fim,
                 )
-
-            if page >= min(total_pages, max_pages):
+                break
+            if batch_empty:
                 break
 
-            page += 1
+            # Check if we've reached the last page
+            page = page_range[-1] + 1
+            if known_total_pages and page > known_total_pages:
+                break
 
-            # Save page progress every N pages (best-effort, allows resume on restart)
-            if page % _PAGE_CHECKPOINT_INTERVAL == 0:
+            # Save page progress every N pages
+            if page % _PAGE_CHECKPOINT_INTERVAL < CONCURRENT_PAGES:
                 await _save_page_progress(data_ini, data_fim, page)
 
-            # Log intra-window progress every 100 pages for observability during long crawls
-            if page % 100 == 0 and total_pages > 0:
+            # Log progress every ~100 pages
+            if page % 100 < CONCURRENT_PAGES and known_total_pages:
                 elapsed = time.monotonic() - t0
                 rate = round(stats["records_raw"] / elapsed, 1) if elapsed > 0 else 0
-                pct = round(page / min(total_pages, max_pages) * 100, 1)
+                pct = round(page / known_total_pages * 100, 1)
                 logger.info(
                     "[ContractsCrawler] %s->%s: page %d/%d (%.1f%%) — %.1f rec/s",
-                    data_ini, data_fim, page, min(total_pages, max_pages), pct, rate,
+                    data_ini, data_fim, page, known_total_pages, pct, rate,
                 )
 
-            await asyncio.sleep(REQUEST_DELAY_S)
+            await asyncio.sleep(effective_delay)
 
     elapsed = round(time.monotonic() - t0, 1)
     logger.info(
@@ -480,20 +498,18 @@ async def run_full_crawl() -> dict[str, Any]:
         "unchanged": 0,
     }
 
-    consecutive_failures = 0
-
     # Split into 365-day chunks from oldest to newest.
     # Anchor start to first-of-month so window boundaries (and checkpoint keys)
-    # are stable across daily runs within the same month.  Without this, the
-    # sliding "today - 730" shifts by 1 day each run, creating new checkpoint
-    # keys every day and causing the crawler to restart from page 1 perpetually.
+    # are stable across daily runs within the same month.
     raw_start = today - timedelta(days=CONTRACTS_FULL_DAYS)
     start = raw_start.replace(day=1)
+
+    # Build list of windows to crawl
+    windows_to_crawl: list[tuple[str, str, int]] = []  # (data_ini, data_fim, start_page)
     while start < today:
         end = min(start + timedelta(days=MAX_WINDOW_DAYS - 1), today)
         data_ini, data_fim = _fmt(start), _fmt(end)
 
-        # Check existing checkpoint — skip completed windows on restart
         ckpt = await _get_window_checkpoint(data_ini, data_fim)
         if ckpt and ckpt.get("status") == "completed":
             logger.info(
@@ -501,53 +517,50 @@ async def run_full_crawl() -> dict[str, Any]:
                 data_ini, data_fim,
             )
             total_stats["windows_skipped"] += 1
-            start = end + timedelta(days=1)
-            continue
-
-        # Resume from last saved page if window was previously interrupted
-        start_page = max(1, ckpt.get("last_page", 1)) if ckpt else 1
-        if start_page > 1:
-            logger.info(
-                "[ContractsCrawler] Resuming window %s->%s from page %d",
-                data_ini, data_fim, start_page,
-            )
-
-        await _save_window_checkpoint(data_ini, data_fim, "in_progress", start_page)
-
-        try:
-            window_stats = await crawl_contracts_window(
-                data_ini, data_fim, start_page=start_page
-            )
-            await _save_window_checkpoint(
-                data_ini, data_fim, "completed", window_stats["pages_fetched"]
-            )
-            total_stats["windows"].append(window_stats)
-            for key in ("pages_fetched", "records_raw", "records_normalized", "inserted", "updated", "unchanged"):
-                total_stats[key] = total_stats.get(key, 0) + window_stats.get(key, 0)
-            consecutive_failures = 0
-
-        except CrawlWindowError as exc:
-            logger.error(
-                "[ContractsCrawler] Window %s->%s failed: %s",
-                data_ini, data_fim, exc,
-            )
-            failed_page = start_page  # Checkpoint retains last known-good page
-            await _save_window_checkpoint(data_ini, data_fim, "failed", failed_page)
-            total_stats["windows_failed"] += 1
-            consecutive_failures += 1
-            if total_stats["status"] == "completed":
-                total_stats["status"] = "partial"
+        else:
+            start_page = max(1, ckpt.get("last_page", 1)) if ckpt else 1
+            windows_to_crawl.append((data_ini, data_fim, start_page))
 
         start = end + timedelta(days=1)
-        if start < today:
-            # Adaptive delay: back off exponentially on consecutive failures
-            delay = min(2.0 * (2 ** consecutive_failures), 60.0)
-            if delay > 2.0:
-                logger.info(
-                    "[ContractsCrawler] Backoff %.0fs after %d consecutive failure(s)",
-                    delay, consecutive_failures,
-                )
-            await asyncio.sleep(delay)
+
+    if not windows_to_crawl:
+        logger.info("[ContractsCrawler] All windows already completed")
+        return total_stats
+
+    logger.info(
+        "[ContractsCrawler] %d windows to crawl (concurrent=%d)",
+        len(windows_to_crawl), CONCURRENT_WINDOWS,
+    )
+
+    # Crawl windows with bounded concurrency
+    sem = asyncio.Semaphore(CONCURRENT_WINDOWS)
+
+    async def _crawl_one_window(w_ini: str, w_fim: str, w_start_page: int) -> dict | None:
+        async with sem:
+            if w_start_page > 1:
+                logger.info("[ContractsCrawler] Resuming %s->%s from page %d", w_ini, w_fim, w_start_page)
+            await _save_window_checkpoint(w_ini, w_fim, "in_progress", w_start_page)
+            try:
+                ws = await crawl_contracts_window(w_ini, w_fim, start_page=w_start_page)
+                await _save_window_checkpoint(w_ini, w_fim, "completed", ws["pages_fetched"])
+                return ws
+            except CrawlWindowError as exc:
+                logger.error("[ContractsCrawler] Window %s->%s failed: %s", w_ini, w_fim, exc)
+                await _save_window_checkpoint(w_ini, w_fim, "failed", w_start_page)
+                return None
+
+    tasks = [_crawl_one_window(wi, wf, sp) for wi, wf, sp in windows_to_crawl]
+    results = await asyncio.gather(*tasks)
+
+    for ws_result in results:
+        if ws_result is not None:
+            total_stats["windows"].append(ws_result)
+            for key in ("pages_fetched", "records_raw", "records_normalized", "inserted", "updated", "unchanged"):
+                total_stats[key] = total_stats.get(key, 0) + ws_result.get(key, 0)
+        else:
+            total_stats["windows_failed"] += 1
+            if total_stats["status"] == "completed":
+                total_stats["status"] = "partial"
 
     if total_stats["windows_failed"] > 0 and not total_stats["windows"]:
         total_stats["status"] = "failed"
