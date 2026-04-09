@@ -57,6 +57,7 @@ from routes.seo_admin import router as seo_admin_router
 from routes.sitemap_cnpjs import router as sitemap_cnpjs_router
 from routes.sitemap_orgaos import router as sitemap_orgaos_router
 from routes.orgao_publico import router as orgao_publico_router
+from routes.contratos_publicos import router as contratos_publicos_router
 
 _v1_routers = [
     admin_router, subscriptions_router, features_router, messages_router,
@@ -84,6 +85,7 @@ _v1_routers = [
     sitemap_cnpjs_router,
     sitemap_orgaos_router,
     orgao_publico_router,
+    contratos_publicos_router,
 ]
 
 

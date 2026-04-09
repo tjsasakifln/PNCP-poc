@@ -2327,21 +2327,21 @@ Com 10.000 URLs × 70% index rate × 20 buscas/mês médias × 10% CTR = **140.0
 
 **Impacto SEO:** Páginas de órgãos passam de "thin" para "data-rich". Metadata enriquecida captura queries de "contratos [órgão]".
 
-### 12.2 — Wave 2: Novos Clusters Programáticos (+2.810 URLs) — PENDENTE
+### 12.2 — Wave 2: Novos Clusters Programáticos (+2.810 URLs) — 12.2.1+12.2.2 IMPLEMENTADO
 
 #### 12.2.1 — `/contratos/[setor]/[uf]` — Spending Transparency (405 páginas)
 
 **Target:** "contratos públicos [setor] [estado]", "quanto o governo gasta em [setor] em [estado]"
 
-- [ ] Backend: `GET /v1/contratos/{setor}/{uf}/stats` em `routes/contratos_publicos.py`
+- [x] Backend: `GET /v1/contratos/{setor}/{uf}/stats` em `routes/contratos_publicos.py`
   - Response: total_contracts, total_value, avg_value, top_orgaos, top_fornecedores, monthly_trend, sample_contracts
   - Detecção de setor: reusar keywords de `sectors_data.yaml` com matching em `objeto_contrato`
   - Cache: InMemory 24h TTL
-- [ ] Frontend: `app/contratos/page.tsx` (hub) + `app/contratos/[setor]/[uf]/page.tsx`
+- [x] Frontend: `app/contratos/page.tsx` (hub) + `app/contratos/[setor]/[uf]/page.tsx`
   - JSON-LD: Dataset + BreadcrumbList + FAQPage
   - ISR: 86400 (24h), LeadCapture no footer
-- [ ] Internal linking: FROM `/blog/licitacoes/{setor}/{uf}`, `/cnpj/`, `/orgaos/`, `/alertas-publicos/`
-- [ ] Sitemap: 405 URLs adicionadas com priority 0.6
+- [x] Internal linking: FROM `/blog/licitacoes/{setor}/{uf}`, `/cnpj/`, `/orgaos/`, `/alertas-publicos/`
+- [x] Sitemap: 405 URLs adicionadas com priority 0.6
 
 **Estimativa tráfego:** 405 × 100 buscas/mês × 15% CTR = ~6.000 cliques/mês
 
@@ -2349,12 +2349,12 @@ Com 10.000 URLs × 70% index rate × 20 buscas/mês médias × 10% CTR = **140.0
 
 **Target:** "fornecedores do governo [setor] [estado]", "empresas que vendem para o governo"
 
-- [ ] Backend: `GET /v1/fornecedores/{setor}/{uf}/stats`
+- [x] Backend: `GET /v1/fornecedores/{setor}/{uf}/stats`
   - Response: total_suppliers, supplier ranking (top 50), top_orgaos_compradores
-- [ ] Frontend: `app/fornecedores/page.tsx` (hub) + `app/fornecedores/[setor]/[uf]/page.tsx`
+- [x] Frontend: `app/fornecedores/page.tsx` (hub) + `app/fornecedores/[setor]/[uf]/page.tsx`
   - JSON-LD: Dataset + ItemList + BreadcrumbList + FAQPage
   - Cada fornecedor linkado para `/cnpj/{cnpj}`
-- [ ] Sitemap: 405 URLs
+- [x] Sitemap: 405 URLs
 
 **Estimativa tráfego:** 405 × 60 buscas/mês × 15% CTR = ~3.600 cliques/mês
 
@@ -2410,8 +2410,8 @@ Preenche gap no conteúdo (todo conteúdo atual foca em licitações):
 | Wave | Páginas | Status | Timeline |
 |------|---------|--------|----------|
 | Wave 1: Cross-linking + Enriquecimento | 0 (melhora 7K existentes) | ✅ Implementado | 2026-04-08 |
-| Wave 2.1: /contratos/{setor}/{uf} | +405 | Pendente | Semana 2-3 |
-| Wave 2.2: /fornecedores/{setor}/{uf} | +405 | Pendente | Semana 3-4 |
+| Wave 2.1: /contratos/{setor}/{uf} | +405 | ✅ Implementado | 2026-04-08 |
+| Wave 2.2: /fornecedores/{setor}/{uf} | +405 | ✅ Implementado | 2026-04-08 |
 | Wave 2.3: /contratos/orgao/{cnpj} | +2.000 | Pendente | Semana 5-6 |
 | Wave 3: Content authority | +26 | Pendente | Semana 6+ |
 | **Total** | **+2.836** | | |

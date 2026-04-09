@@ -448,5 +448,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...cnpjRoutes,
     // SEO-PLAYBOOK Onda 2: Órgãos compradores pages from datalake (≥1 bid, top 2000)
     ...orgaoRoutes,
+    // SEO Wave 2 (12.2.1): Contratos hub + sector×UF pages (405)
+    {
+      url: `${baseUrl}/contratos`,
+      lastModified: today,
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    },
+    ...generateSectorUfParams().map(({ setor, uf }) => ({
+      url: `${baseUrl}/contratos/${setor}/${uf}`,
+      lastModified: today,
+      changeFrequency: 'daily' as const,
+      priority: 0.6,
+    })),
+    // SEO Wave 2 (12.2.2): Fornecedores hub + sector×UF pages (405)
+    {
+      url: `${baseUrl}/fornecedores`,
+      lastModified: today,
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    },
+    ...generateSectorUfParams().map(({ setor, uf }) => ({
+      url: `${baseUrl}/fornecedores/${setor}/${uf}`,
+      lastModified: today,
+      changeFrequency: 'daily' as const,
+      priority: 0.6,
+    })),
   ];
 }
