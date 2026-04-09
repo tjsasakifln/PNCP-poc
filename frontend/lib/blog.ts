@@ -1847,6 +1847,344 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
     ],
     authorSlug: 'tiago',
   },
+
+  // SEO-12.3.3 Art-01: como consultar contratos públicos PNCP
+  {
+    slug: 'como-consultar-contratos-publicos-pncp',
+    title: 'Como Consultar Contratos Públicos no PNCP: Guia Completo',
+    description:
+      'Aprenda a buscar, filtrar e interpretar contratos públicos no PNCP por CNPJ, órgão e setor. Guia completo com filtros de valor, UF, vigência e como o SmartLic automatiza esse processo.',
+    category: 'Guias',
+    tags: ['contratos públicos', 'PNCP', 'consultar contratos', 'fornecedores', 'inteligência de mercado'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(3000),
+    wordCount: 3000,
+    keywords: [
+      'consultar contratos públicos PNCP',
+      'como buscar contratos no PNCP',
+      'contratos públicos por CNPJ',
+      'filtrar contratos públicos',
+    ],
+    relatedSlugs: [
+      'pncp-guia-completo-empresas',
+      'lei-14133-guia-fornecedores',
+      'licitacoes-saude-2026',
+      'licitacoes-ti-software-2026',
+      'contratos-publicos-por-estado-ranking-gastos',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Decreto 10.764/2021 — Regulamento do PNCP',
+      'SmartLic datalake — análise de contratos por setor e UF, 2023-2025',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-02: contratos públicos por estado
+  {
+    slug: 'contratos-publicos-por-estado-ranking-gastos',
+    title: 'Contratos Públicos por Estado: Ranking de Gastos do Governo Brasileiro',
+    description:
+      'Veja o ranking dos estados que mais gastam em contratos públicos no Brasil, análise por macro-região, setores dominantes e como usar esses dados para prospectar com inteligência.',
+    category: 'Guias',
+    tags: ['contratos públicos', 'gastos do governo', 'ranking estados', 'PNCP', 'inteligência de mercado'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(2800),
+    wordCount: 2800,
+    keywords: [
+      'contratos públicos por estado',
+      'ranking gastos governo estadual',
+      'volume contratos públicos Brasil',
+      'onde o governo mais gasta em contratos',
+    ],
+    relatedSlugs: [
+      'licitacoes-saude-2026',
+      'licitacoes-ti-software-2026',
+      'licitacoes-engenharia-2026',
+      'pncp-guia-completo-empresas',
+      'lei-14133-guia-fornecedores',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Painel de Compras do Governo Federal (compras.gov.br/painel)',
+      'SmartLic datalake — análise de contratos por UF e setor, 2023-2025',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-03: diferença licitação contrato
+  {
+    slug: 'diferenca-licitacao-contrato-publico',
+    title: 'Diferença entre Licitação e Contrato Público: Guia Definitivo',
+    description:
+      'Entenda a diferença entre licitação e contrato público: etapas, base legal na Lei 14.133/2021, tipos, obrigações e como monitorar ambos os processos de forma eficiente.',
+    category: 'Guias',
+    tags: ['licitação', 'contrato público', 'Lei 14.133', 'compras governamentais', 'PNCP'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(2500),
+    wordCount: 2500,
+    keywords: [
+      'diferença licitação contrato público',
+      'licitação versus contrato',
+      'etapas licitação pública',
+      'tipos de contrato público',
+    ],
+    relatedSlugs: [
+      'como-consultar-contratos-publicos-pncp',
+      'lei-14133-guia-fornecedores',
+      'pncp-guia-completo-empresas',
+      'aditivos-contratuais-o-que-sao-como-monitorar',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos',
+      'Lei 8.666/1993 — Lei de Licitações (revogada, referência histórica)',
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'TCU — Tribunal de Contas da União (jurisprudência)',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-04: verificar empresa contratos governo
+  {
+    slug: 'como-verificar-empresa-contratos-governo',
+    title: 'Como Verificar se uma Empresa tem Contratos com o Governo',
+    description:
+      'Aprenda 3 métodos para verificar contratos governamentais de qualquer empresa por CNPJ: PNCP, Portal da Transparência e SmartLic. Due diligence e inteligência competitiva.',
+    category: 'Empresas B2G',
+    tags: ['contratos governo', 'due diligence', 'CNPJ', 'inteligência competitiva', 'PNCP'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(2800),
+    wordCount: 2800,
+    keywords: [
+      'verificar empresa contratos governo',
+      'consultar contratos por CNPJ',
+      'empresa com contrato público',
+      'due diligence fornecedor governo',
+    ],
+    relatedSlugs: [
+      'como-consultar-contratos-publicos-pncp',
+      'contratos-publicos-por-estado-ranking-gastos',
+      'pncp-guia-completo-empresas',
+      'orgaos-risco-atraso-pagamento-licitacao',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Portal da Transparência (transparencia.gov.br)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos',
+      'Lei 12.527/2011 — Lei de Acesso à Informação',
+      'SmartLic datalake — análise de contratos por CNPJ, 2023-2026',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-05: maiores contratos públicos 2026
+  {
+    slug: 'maiores-contratos-publicos-2026-ranking-setor',
+    title: 'Maiores Contratos Públicos de 2026: Ranking por Setor',
+    description:
+      'Ranking dos maiores contratos públicos de 2026 por setor: saúde, TI, engenharia, defesa e educação. Análise por modalidade, região e oportunidades para fornecedores.',
+    category: 'Guias',
+    tags: ['maiores contratos', 'ranking 2026', 'contratos públicos', 'gastos governo', 'setores'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(3000),
+    wordCount: 3000,
+    keywords: [
+      'maiores contratos públicos 2026',
+      'ranking contratos governo',
+      'grandes contratos por setor',
+      'gastos governo 2026',
+    ],
+    relatedSlugs: [
+      'contratos-publicos-por-estado-ranking-gastos',
+      'como-consultar-contratos-publicos-pncp',
+      'licitacoes-saude-2026',
+      'licitacoes-engenharia-2026',
+      'licitacoes-ti-software-2026',
+    ],
+    sources: [
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Painel de Compras do Governo Federal (compras.gov.br/painel)',
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos',
+      'SmartLic datalake — análise de contratos por valor e setor, 2024-2026',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-06: aditivos contratuais
+  {
+    slug: 'aditivos-contratuais-o-que-sao-como-monitorar',
+    title: 'Aditivos Contratuais: O que São e Como Monitorar',
+    description:
+      'Guia completo sobre aditivos contratuais em licitações: tipos, limites legais (25%/50%), red flags, fiscalização do TCU e como monitorar aditivos no PNCP.',
+    category: 'Guias',
+    tags: ['aditivos contratuais', 'contratos públicos', 'Lei 14.133', 'TCU', 'compliance'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(2500),
+    wordCount: 2500,
+    keywords: [
+      'aditivos contratuais licitação',
+      'limite aditivo contrato público',
+      'aditivo de prazo contrato',
+      'monitorar aditivos PNCP',
+    ],
+    relatedSlugs: [
+      'como-consultar-contratos-publicos-pncp',
+      'diferenca-licitacao-contrato-publico',
+      'prazo-vigencia-contratos-publicos-guia',
+      'lei-14133-guia-fornecedores',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Art. 124-136 (Alterações Contratuais)',
+      'TCU — Acórdãos sobre aditivos contratuais',
+      'AGU — Pareceres sobre limites de aditamento',
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-07: Subcontratação em licitações — contratos cluster
+  {
+    slug: 'subcontratacao-licitacoes-regras-lei-14133',
+    title: 'Subcontratação em Licitações: Regras da Lei 14.133/2021',
+    description:
+      'Guia completo sobre subcontratação em contratos públicos: Art. 122 da Lei 14.133/2021, limites percentuais, requisitos da subcontratada, responsabilidade solidária e roteiro prático para PMEs se tornarem subcontratadas em grandes contratos.',
+    category: 'Guias',
+    tags: [
+      'subcontratação',
+      'Lei 14.133',
+      'contratos públicos',
+      'Nova Lei de Licitações',
+      'PME licitação',
+      'PNCP',
+    ],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(2500),
+    wordCount: 2500,
+    keywords: [
+      'subcontratação licitações Lei 14.133',
+      'subcontratação contratos públicos',
+      'Art. 122 Lei 14.133 subcontratação',
+      'como ser subcontratada licitação',
+      'limite subcontratação contrato público',
+    ],
+    relatedSlugs: [
+      'lei-14133-guia-fornecedores',
+      'como-consultar-contratos-publicos-pncp',
+      'contratos-publicos-por-estado-ranking-gastos',
+      'analise-viabilidade-editais-guia',
+      'mei-microempresa-vantagens-licitacoes',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos Administrativos (Art. 122)',
+      'Decreto 11.462/2023 — Regulamentação de aspectos da Lei 14.133/2021',
+      'Lei Complementar 123/2006 — Estatuto Nacional da Microempresa e da EPP (Art. 48)',
+      'TCU — Acórdão 1.187/2013-Plenário',
+      'TCU — Acórdão 2.172/2019-Plenário',
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-08: prazo vigência contratos
+  {
+    slug: 'prazo-vigencia-contratos-publicos-guia',
+    title: 'Prazo de Vigência de Contratos Públicos: Guia Prático',
+    description:
+      'Guia prático sobre prazos de vigência de contratos públicos: limites da Lei 14.133/2021, prorrogação, renovação, serviços continuados e como monitorar vencimentos.',
+    category: 'Guias',
+    tags: ['vigência contratos', 'prorrogação', 'Lei 14.133', 'contratos públicos', 'renovação'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(2500),
+    wordCount: 2500,
+    keywords: [
+      'prazo vigência contratos públicos',
+      'prorrogação contrato público',
+      'duração contrato licitação',
+      'renovação contrato governo',
+    ],
+    relatedSlugs: [
+      'aditivos-contratuais-o-que-sao-como-monitorar',
+      'diferenca-licitacao-contrato-publico',
+      'como-consultar-contratos-publicos-pncp',
+      'lei-14133-guia-fornecedores',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Art. 105-114 (Duração dos Contratos)',
+      'Lei 8.666/1993 — Art. 57 (comparação histórica)',
+      'TCU — Tribunal de Contas da União (jurisprudência sobre prorrogações)',
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-09: empresa iniciante contratos governo
+  {
+    slug: 'empresa-iniciante-ganhar-contratos-governo',
+    title: 'Como uma Empresa Iniciante Pode Ganhar Contratos com o Governo',
+    description:
+      'Roteiro completo para empresas iniciantes conquistarem contratos públicos: cadastro no SICAF, vantagens para MEI/ME/EPP, primeiro pregão e como construir histórico técnico.',
+    category: 'Empresas B2G',
+    tags: ['empresa iniciante', 'contratos governo', 'SICAF', 'MEI licitação', 'primeiro pregão'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(3000),
+    wordCount: 3000,
+    keywords: [
+      'empresa iniciante contratos governo',
+      'como ganhar licitação primeira vez',
+      'MEI pode participar de licitação',
+      'cadastro SICAF passo a passo',
+    ],
+    relatedSlugs: [
+      'como-participar-primeira-licitacao-2026',
+      'mei-microempresa-vantagens-licitacoes',
+      'sicaf-como-cadastrar-manter-ativo-2026',
+      'checklist-habilitacao-licitacao-2026',
+      'como-consultar-contratos-publicos-pncp',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Nova Lei de Licitações e Contratos',
+      'Lei Complementar 123/2006 — Estatuto da Microempresa e EPP',
+      'SICAF — Sistema de Cadastramento Unificado de Fornecedores',
+      'PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br)',
+      'Sebrae — Guia de Licitações para Pequenas Empresas',
+    ],
+    authorSlug: 'tiago',
+  },
+
+  // SEO-12.3.3 Art-10: transparência compras públicas Lei 14.133
+  {
+    slug: 'transparencia-compras-publicas-lei-14133',
+    title: 'Transparência em Compras Públicas: Como a Lei 14.133 Mudou Tudo',
+    description:
+      'Como a Lei 14.133/2021 revolucionou a transparência em compras públicas: PNCP como fonte oficial, dados abertos, fiscalização cidadã e inteligência competitiva a partir de dados públicos.',
+    category: 'Guias',
+    tags: ['transparência', 'compras públicas', 'Lei 14.133', 'PNCP', 'dados abertos'],
+    publishDate: '2026-04-08',
+    readingTime: calculateReadingTime(2800),
+    wordCount: 2800,
+    keywords: [
+      'transparência compras públicas',
+      'Lei 14.133 transparência',
+      'PNCP dados abertos',
+      'fiscalização contratos públicos',
+    ],
+    relatedSlugs: [
+      'como-consultar-contratos-publicos-pncp',
+      'pncp-guia-completo-empresas',
+      'lei-14133-guia-fornecedores',
+      'como-verificar-empresa-contratos-governo',
+    ],
+    sources: [
+      'Lei 14.133/2021 — Art. 174-176 (PNCP)',
+      'Lei 12.527/2011 — Lei de Acesso à Informação',
+      'Constituição Federal — Art. 37 (princípios da administração)',
+      'TCU — Tribunal de Contas da União',
+      'CGU — Controladoria-Geral da União',
+    ],
+    authorSlug: 'tiago',
+  },
 ];
 
 export function getArticleBySlug(slug: string): BlogArticleMeta | undefined {

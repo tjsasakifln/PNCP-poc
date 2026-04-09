@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 interface BlogInlineCTAProps {
   slug: string;
-  campaign?: 'b2g' | 'consultorias' | 'guias';
+  campaign?: 'b2g' | 'consultorias' | 'guias' | 'contratos';
   ctaHref?: string;
   ctaText?: string;
   ctaMessage?: string;

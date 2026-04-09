@@ -2398,19 +2398,19 @@ CREATE INDEX IF NOT EXISTS idx_psc_uf_fornecedor ON pncp_supplier_contracts (uf,
 - [x] Frontend detail: `app/blog/licitacoes-do-dia/[date]/page.tsx` (NewsArticle + Dataset)
 - [x] Sitemap: hub + 30 URLs dinâmicos
 
-#### 12.3.3 — 10 Artigos sobre Contratos
+#### 12.3.3 — 10 Artigos sobre Contratos ✅ IMPLEMENTADO (2026-04-08)
 
 Preenche gap no conteúdo (todo conteúdo atual foca em licitações):
-1. "Como consultar contratos públicos no PNCP: Guia completo"
-2. "Contratos públicos por estado: Ranking de gastos do governo"
-3. "Diferença entre licitação e contrato público"
-4. "Como verificar se uma empresa tem contratos com o governo"
-5. "Maiores contratos públicos de {setor} em {year}"
-6. "Aditivos contratuais: O que são e como monitorar"
-7. "Subcontratação em licitações: Regras da Lei 14.133"
-8. "Prazo de vigência de contratos públicos: Guia prático"
-9. "Como uma empresa iniciante pode ganhar contratos com o governo"
-10. "Transparência em compras públicas: Como a Lei 14.133 mudou tudo"
+- [x] "Como consultar contratos públicos no PNCP: Guia completo" → `como-consultar-contratos-publicos-pncp`
+- [x] "Contratos públicos por estado: Ranking de gastos do governo" → `contratos-publicos-por-estado-ranking-gastos`
+- [x] "Diferença entre licitação e contrato público" → `diferenca-licitacao-contrato-publico`
+- [x] "Como verificar se uma empresa tem contratos com o governo" → `como-verificar-empresa-contratos-governo`
+- [x] "Maiores contratos públicos de 2026: Ranking por setor" → `maiores-contratos-publicos-2026-ranking-setor`
+- [x] "Aditivos contratuais: O que são e como monitorar" → `aditivos-contratuais-o-que-sao-como-monitorar`
+- [x] "Subcontratação em licitações: Regras da Lei 14.133" → `subcontratacao-licitacoes-regras-lei-14133`
+- [x] "Prazo de vigência de contratos públicos: Guia prático" → `prazo-vigencia-contratos-publicos-guia`
+- [x] "Como uma empresa iniciante pode ganhar contratos com o governo" → `empresa-iniciante-ganhar-contratos-governo`
+- [x] "Transparência em compras públicas: Como a Lei 14.133 mudou tudo" → `transparencia-compras-publicas-lei-14133`
 
 ### 12.4 — Roadmap de Escala
 
@@ -2422,7 +2422,7 @@ Preenche gap no conteúdo (todo conteúdo atual foca em licitações):
 | Wave 2.3: /contratos/orgao/{cnpj} | +2.000 | ✅ Implementado | 2026-04-08 |
 | Wave 3.1: /blog/contratos/{setor} | +15 | ✅ Implementado | 2026-04-08 |
 | Wave 3.2: /blog/licitacoes-do-dia | +30/mês | ✅ Implementado | 2026-04-08 |
-| Wave 3.3: Content articles | +10 | Pendente | Semana 6+ |
+| Wave 3.3: Content articles | +10 | ✅ Implementado | 2026-04-08 |
 | **Total** | **+2.836** | | |
 
 **Projeção de páginas totais:**

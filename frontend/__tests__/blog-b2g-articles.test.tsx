@@ -70,11 +70,11 @@ const B2G_SLUGS = [
 // ---------- AC20: All 15 B2G articles registered in blog.ts ----------
 
 describe('STORY-262 AC20: Blog registry completeness', () => {
-  it('has exactly 15 B2G articles registered', () => {
+  it('has at least 15 B2G articles registered', () => {
     const b2gArticles = BLOG_ARTICLES.filter(
       (a) => a.category === 'Empresas B2G',
     );
-    expect(b2gArticles.length).toBe(15);
+    expect(b2gArticles.length).toBeGreaterThanOrEqual(15);
   });
 
   it.each(B2G_SLUGS)('slug "%s" exists in BLOG_ARTICLES', (slug) => {
