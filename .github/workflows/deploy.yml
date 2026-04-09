@@ -279,8 +279,8 @@ jobs:
             exit 0
           fi
 
-          # Fallback to upload if redeploy fails
-          echo "Redeploy failed, trying upload..."
+          # Fallback: upload from repo root so Railway can resolve Root Directory = frontend
+          echo "Redeploy failed, trying upload from root..."
           for i in 1 2 3; do
             echo "Upload attempt $i..."
             if timeout 180 railway up --service bidiq-frontend --detach; then
@@ -292,7 +292,6 @@ jobs:
           done
           echo "All deploy attempts failed"
           exit 1
-        working-directory: frontend
 
       - name: Wait for deployment
         run: sleep 60
