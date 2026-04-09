@@ -54,6 +54,13 @@ class ModalidadeCount(BaseModel):
     count: int
 
 
+class FornecedorTop(BaseModel):
+    nome: str
+    cnpj: str
+    total_contratos: int
+    valor_total: float
+
+
 class OrgaoStatsResponse(BaseModel):
     nome: str
     cnpj: str
@@ -69,6 +76,7 @@ class OrgaoStatsResponse(BaseModel):
     top_modalidades: list[ModalidadeCount]
     top_setores: list[str]
     ultimas_licitacoes: list[LicitacaoRecente]
+    top_fornecedores: list[FornecedorTop] = []
     aviso_legal: str
 
 
@@ -261,6 +269,9 @@ async def _build_orgao_stats(cnpj: str) -> dict:
             "uf": (row.get("uf") or uf or "").strip().upper(),
         })
 
+    # Top fornecedores from pncp_supplier_contracts (graceful: empty if backfill not done)
+    top_fornecedores = await _fetch_top_fornecedores(cnpj)
+
     return {
         "nome": nome,
         "cnpj": cnpj,
@@ -276,8 +287,66 @@ async def _build_orgao_stats(cnpj: str) -> dict:
         "top_modalidades": top_modalidades,
         "top_setores": top_setores,
         "ultimas_licitacoes": ultimas_licitacoes,
+        "top_fornecedores": top_fornecedores,
         "aviso_legal": (
             "Dados de fontes públicas: Portal Nacional de Contratações Públicas (PNCP). "
             "Atualização diária."
         ),
     }
+
+
+async def _fetch_top_fornecedores(orgao_cnpj: str, limit: int = 10) -> list[dict]:
+    """Query pncp_supplier_contracts for top suppliers of this organ by contract value.
+
+    Returns empty list gracefully when table is empty (during/before backfill).
+    """
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        # Aggregate by supplier CNPJ — Supabase doesn't support GROUP BY directly,
+        # so we fetch up to 2000 rows and aggregate in Python (table grows large post-backfill;
+        # a proper RPC would be ideal but this is zero-infra and works for cache=24h).
+        resp = (
+            sb.table("pncp_supplier_contracts")
+            .select("ni_fornecedor,nome_fornecedor,valor_global")
+            .eq("orgao_cnpj", orgao_cnpj)
+            .eq("is_active", True)
+            .limit(2000)
+            .execute()
+        )
+
+        rows = resp.data or []
+        if not rows:
+            return []
+
+        # Aggregate
+        from collections import defaultdict
+        agg: dict[str, dict] = defaultdict(lambda: {"nome": "", "cnpj": "", "contratos": 0, "valor": 0.0})
+        for r in rows:
+            ni = r.get("ni_fornecedor") or ""
+            if not ni:
+                continue
+            agg[ni]["cnpj"] = ni
+            agg[ni]["nome"] = r.get("nome_fornecedor") or ni
+            agg[ni]["contratos"] += 1
+            try:
+                agg[ni]["valor"] += float(r.get("valor_global") or 0)
+            except (ValueError, TypeError):
+                pass
+
+        top = sorted(agg.values(), key=lambda x: x["valor"], reverse=True)[:limit]
+        return [
+            {
+                "nome": t["nome"],
+                "cnpj": t["cnpj"],
+                "total_contratos": t["contratos"],
+                "valor_total": round(t["valor"], 2),
+            }
+            for t in top
+            if t["valor"] > 0
+        ]
+
+    except Exception as exc:
+        logger.warning("top_fornecedores query failed for %s: %s", orgao_cnpj, exc)
+        return []

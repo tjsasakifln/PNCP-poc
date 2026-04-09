@@ -15,6 +15,13 @@ interface ModalidadeCount {
   count: number;
 }
 
+interface FornecedorTop {
+  nome: string;
+  cnpj: string;
+  total_contratos: number;
+  valor_total: number;
+}
+
 interface OrgaoStats {
   nome: string;
   cnpj: string;
@@ -30,6 +37,7 @@ interface OrgaoStats {
   top_modalidades: ModalidadeCount[];
   top_setores: string[];
   ultimas_licitacoes: LicitacaoRecente[];
+  top_fornecedores?: FornecedorTop[];
   aviso_legal: string;
 }
 
@@ -80,6 +88,7 @@ export default function OrgaoPerfilClient({ stats }: { stats: OrgaoStats }) {
     top_modalidades,
     top_setores,
     ultimas_licitacoes,
+    top_fornecedores,
     aviso_legal,
   } = stats;
 
@@ -268,6 +277,53 @@ export default function OrgaoPerfilClient({ stats }: { stats: OrgaoStats }) {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Principais Fornecedores */}
+      {top_fornecedores && top_fornecedores.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Principais Fornecedores</h2>
+          <p className="text-sm text-gray-500 mb-3">
+            Empresas com maior volume de contratos assinados com {nome} (últimos 24 meses).
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-3 px-2 font-semibold text-gray-600">Empresa</th>
+                  <th className="text-center py-3 px-2 font-semibold text-gray-600">Contratos</th>
+                  <th className="text-right py-3 px-2 font-semibold text-gray-600">Valor Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {top_fornecedores.map((f, i) => (
+                  <tr key={f.cnpj} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-2">
+                      <Link
+                        href={`/cnpj/${f.cnpj}`}
+                        className="font-medium text-blue-600 hover:underline"
+                      >
+                        {f.nome || formatCnpj(f.cnpj)}
+                      </Link>
+                      <span className="block text-xs text-gray-400 font-mono">{formatCnpj(f.cnpj)}</span>
+                    </td>
+                    <td className="py-3 px-2 text-center">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">
+                        {f.total_contratos}
+                      </span>
+                    </td>
+                    <td className="py-3 px-2 text-right font-medium text-gray-900">
+                      {formatBRL(f.valor_total)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-gray-400 mt-2 italic">
+            Fonte: PNCP — contratos assinados e publicados no portal.
+          </p>
         </div>
       )}
 
