@@ -186,8 +186,16 @@ class TestQueryDatalake:
             limit=500,
         )
 
-        _, rpc_params = mock_sb.rpc.call_args[0]
-        assert rpc_params["p_ufs"] == ["PR", "SC"]
+        # query_datalake paginates per-UF (PostgREST 1000-row cap), so the
+        # RPC is called once per UF.  Verify shared params from any call and
+        # confirm both UFs were queried.
+        assert mock_sb.rpc.call_count == 2
+        all_uf_params = [call[0][1]["p_ufs"] for call in mock_sb.rpc.call_args_list]
+        assert ["PR"] in all_uf_params
+        assert ["SC"] in all_uf_params
+
+        # Check shared (non-UF) params from the first call
+        _, rpc_params = mock_sb.rpc.call_args_list[0][0]
         assert rpc_params["p_date_start"] == "2026-03-01"
         assert rpc_params["p_date_end"] == "2026-03-31"
         assert rpc_params["p_modalidades"] == [5, 6]
