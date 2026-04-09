@@ -177,8 +177,8 @@ export default function RootLayout({
         >
           Pular para conteúdo principal
         </a>
-        <AnalyticsProvider>
           <AuthProvider>
+            <AnalyticsProvider>
             <SWRProvider>
             <UserProvider>
             <ThemeProvider>
@@ -197,8 +197,8 @@ export default function RootLayout({
             </ThemeProvider>
             </UserProvider>
             </SWRProvider>
+            </AnalyticsProvider>
           </AuthProvider>
-        </AnalyticsProvider>
       </body>
     </html>
   );
