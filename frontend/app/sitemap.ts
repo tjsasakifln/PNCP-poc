@@ -69,6 +69,48 @@ async function fetchSitemapFornecedoresCnpj(): Promise<string[]> {
   }
 }
 
+// Parte 13 Sprint 4: Cache for municípios slugs
+let _municipiosCache: string[] = [];
+let _municipiosFetched = false;
+
+async function fetchSitemapMunicipios(): Promise<string[]> {
+  if (_municipiosFetched) return _municipiosCache;
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const resp = await fetch(`${backendUrl}/v1/sitemap/municipios`, {
+      cache: 'no-store',
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    _municipiosCache = data.slugs || [];
+    _municipiosFetched = true;
+    return _municipiosCache;
+  } catch {
+    return [];
+  }
+}
+
+// Parte 13 Sprint 6: Cache for CATMAT codes
+let _itensCache: string[] = [];
+let _itensFetched = false;
+
+async function fetchSitemapItens(): Promise<string[]> {
+  if (_itensFetched) return _itensCache;
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const resp = await fetch(`${backendUrl}/v1/sitemap/itens`, {
+      cache: 'no-store',
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    _itensCache = data.catmats || [];
+    _itensFetched = true;
+    return _itensCache;
+  } catch {
+    return [];
+  }
+}
+
 async function fetchSitemapOrgaos(): Promise<string[]> {
   if (_orgaoFetched) return _orgaoCache;
   try {
@@ -186,6 +228,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: today,
     changeFrequency: 'weekly' as const,
     priority: 0.5,
+  }));
+
+  // Parte 13 Sprint 4: /municipios/{slug} — licitações por município
+  const municipiosList = await fetchSitemapMunicipios();
+  const municipiosRoutes: MetadataRoute.Sitemap = municipiosList.map((slug) => ({
+    url: `${baseUrl}/municipios/${slug}`,
+    lastModified: today,
+    changeFrequency: 'daily' as const,
+    priority: 0.7,
+  }));
+
+  // Parte 13 Sprint 6: /itens/{catmat} — benchmark de preços por CATMAT
+  const itensList = await fetchSitemapItens();
+  const itensRoutes: MetadataRoute.Sitemap = itensList.map((catmat) => ({
+    url: `${baseUrl}/itens/${catmat}`,
+    lastModified: today,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
   }));
 
   // S3: Alertas Publicos pages (15 sectors × 27 UFs = 405 pages)
@@ -480,6 +540,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...orgaoRoutes,
     // Parte 13 Sprint 3: /fornecedores/{cnpj} — perfis de fornecedores (top 5k por volume de contratos)
     ...fornecedoresCnpjRoutes,
+    // Parte 13 Sprint 4: /municipios — hub geográfico
+    {
+      url: `${baseUrl}/municipios`,
+      lastModified: today,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    // Parte 13 Sprint 4: /municipios/{slug} — licitações por município (200 pré-renderizados)
+    ...municipiosRoutes,
+    // Parte 13 Sprint 5: /compliance — hub de due diligence B2G
+    {
+      url: `${baseUrl}/compliance`,
+      lastModified: today,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    },
+    // Parte 13 Sprint 6: /itens — hub de benchmark de preços CATMAT
+    {
+      url: `${baseUrl}/itens`,
+      lastModified: today,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    },
+    // Parte 13 Sprint 6: /itens/{catmat} — benchmark por código CATMAT
+    ...itensRoutes,
     // SEO Wave 2 (12.2.1): Contratos hub + sector×UF pages (405)
     {
       url: `${baseUrl}/contratos`,

@@ -326,6 +326,35 @@ enrich_entities_func = arq_func(
 )
 
 
+async def enrich_municipios_job(ctx: dict) -> dict:
+    """ARQ job: Enriquece municipios com dados IBGE (populacao, nome oficial).
+
+    Sprint 4 Parte 13: popula enriched_entities para habilitar paginas
+    /municipios/{slug} com dados geograficos do IBGE.
+
+    Agendado diariamente as 09:00 UTC (6am BRT), 1h apos o enricher de fornecedores.
+    Criterio de staleness: 30 dias. Timeout ARQ: 1h (3600s).
+    """
+    from ingestion.config import DATALAKE_ENABLED
+    if not DATALAKE_ENABLED:
+        logger.info("[EnricherMunicipio] Ignorado — DATALAKE_ENABLED=false")
+        return {"status": "skipped", "reason": "DATALAKE_ENABLED=false"}
+
+    start = time.monotonic()
+    logger.info("[EnricherMunicipio] Iniciando enriquecimento de municipios")
+
+    try:
+        from ingestion.enricher import enrich_municipios_job as _run
+        result = await _run()
+    except Exception as e:
+        duration_s = round(time.monotonic() - start, 1)
+        logger.error("[EnricherMunicipio] Falha critica apos %.1fs: %s", duration_s, e, exc_info=True)
+        await _notify_failure("EnricherMunicipio", f"{type(e).__name__}: {e}", duration_s)
+        return {"status": "failed", "error": str(e), "duration_s": duration_s}
+
+    return result
+
+
 async def ingestion_purge_job(ctx: dict) -> dict:
     """ARQ job: Purge closed bids from pncp_raw_bids.
 

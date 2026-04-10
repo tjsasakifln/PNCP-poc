@@ -75,6 +75,12 @@ try:
             _worker_cron_jobs.append(
                 _arq_cron(enrich_entities_job, hour={8}, minute=0, timeout=7200),
             )
+            # Sprint 4 Parte 13: enriquecimento de municipios (IBGE)
+            # Diario as 09:00 UTC (6am BRT), 1h apos o enricher de fornecedores
+            from ingestion.scheduler import enrich_municipios_job
+            _worker_cron_jobs.append(
+                _arq_cron(enrich_municipios_job, hour={9}, minute=0, timeout=3600),
+            )
     except ImportError:
         pass
 except Exception:
@@ -120,12 +126,14 @@ class WorkerSettings:
                 ingestion_backfill_func,
                 contracts_full_crawl_func, contracts_incremental_func,
                 enrich_entities_func,
+                enrich_municipios_job,
             )
             _ingestion_functions = [
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
                 ingestion_backfill_func,
                 contracts_full_crawl_func, contracts_incremental_func,
                 enrich_entities_func,
+                enrich_municipios_job,
             ]
     except ImportError:
         pass

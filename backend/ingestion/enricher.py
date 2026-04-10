@@ -231,3 +231,230 @@ def _safe_capital(val: Any) -> float:
         return float(str(val).replace(",", ".").replace(" ", ""))
     except (ValueError, TypeError):
         return 0.0
+
+
+# ---------------------------------------------------------------------------
+# Sprint 4 Parte 13: enriquecimento de municipios com dados IBGE
+# ---------------------------------------------------------------------------
+
+# Municipios seed (ibge_code → slug) — subconjunto das capitais + polos regionais
+_IBGE_SEED: list[tuple[str, str]] = [
+    ("3550308", "sao-paulo-sp"),
+    ("3304557", "rio-de-janeiro-rj"),
+    ("5300108", "brasilia-df"),
+    ("2927408", "salvador-ba"),
+    ("2304400", "fortaleza-ce"),
+    ("3106200", "belo-horizonte-mg"),
+    ("1302603", "manaus-am"),
+    ("4106902", "curitiba-pr"),
+    ("2611606", "recife-pe"),
+    ("4314902", "porto-alegre-rs"),
+    ("1501402", "belem-pa"),
+    ("5208707", "goiania-go"),
+    ("2111300", "sao-luis-ma"),
+    ("2704302", "maceio-al"),
+    ("2408102", "natal-rn"),
+    ("2211001", "teresina-pi"),
+    ("5002704", "campo-grande-ms"),
+    ("2507507", "joao-pessoa-pb"),
+    ("2800308", "aracaju-se"),
+    ("1100205", "porto-velho-ro"),
+    ("1600303", "macapa-ap"),
+    ("5103403", "cuiaba-mt"),
+    ("4205407", "florianopolis-sc"),
+    ("3205309", "vitoria-es"),
+    ("1721000", "palmas-to"),
+    ("1200401", "rio-branco-ac"),
+    ("1400100", "boa-vista-rr"),
+    ("3509502", "campinas-sp"),
+    ("3518800", "guarulhos-sp"),
+    ("3543402", "ribeirao-preto-sp"),
+    ("3170206", "uberlandia-mg"),
+    ("4209102", "joinville-sc"),
+    ("4202404", "blumenau-sc"),
+    ("4113700", "londrina-pr"),
+    ("4115200", "maringa-pr"),
+    ("5107602", "rondonopolis-mt"),
+    ("2504009", "campina-grande-pb"),
+    ("2307304", "juazeiro-do-norte-ce"),
+    ("2312908", "sobral-ce"),
+    ("4313409", "novo-hamburgo-rs"),
+    ("4316907", "santa-maria-rs"),
+    ("4314407", "passo-fundo-rs"),
+    ("4304606", "canoas-rs"),
+    ("3106705", "betim-mg"),
+    ("3143302", "montes-claros-mg"),
+    ("3131307", "ipatinga-mg"),
+    ("3303302", "niteroi-rj"),
+    ("3301702", "duque-de-caxias-rj"),
+    ("3303500", "nova-iguacu-rj"),
+    ("2910800", "feira-de-santana-ba"),
+    ("5201405", "anapolis-go"),
+    ("5218805", "rio-verde-go"),
+    ("2105302", "imperatriz-ma"),
+    ("1506807", "santarem-pa"),
+    ("1500800", "ananindeua-pa"),
+    ("1504208", "maraba-pa"),
+]
+
+_IBGE_API_BASE = "https://servicodados.ibge.gov.br/api"
+_MUNICIPIO_STALENESS_DAYS = 30
+_MUNICIPIO_HTTP_TIMEOUT = 10.0
+_MUNICIPIO_CONCURRENCY = 5
+
+
+async def enrich_municipios_job() -> dict[str, Any]:
+    """Enriquece municipios da seed list com dados IBGE (populacao + nome oficial).
+
+    Sprint 4 Parte 13: popula enriched_entities para habilitar paginas
+    /municipios/{slug} com populacao, PIB per capita e nome oficial IBGE.
+
+    Criterio de staleness: 30 dias sem enriquecimento.
+    """
+    start = time.monotonic()
+    logger.info("[EnricherMunicipio] Iniciando enriquecimento de %d municipios", len(_IBGE_SEED))
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=_MUNICIPIO_STALENESS_DAYS)
+    cutoff_iso = cutoff.isoformat()
+
+    # Quais ja foram enriquecidos recentemente?
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    ibge_codes = [s[0] for s in _IBGE_SEED]
+    fresh: set[str] = set()
+    try:
+        resp = (
+            sb.table("enriched_entities")
+            .select("entity_id, enriched_at")
+            .eq("entity_type", "municipio")
+            .in_("entity_id", ibge_codes)
+            .gte("enriched_at", cutoff_iso)
+            .execute()
+        )
+        for row in (resp.data or []):
+            fresh.add(row["entity_id"])
+    except Exception as e:
+        logger.warning("[EnricherMunicipio] Falha ao checar freshness: %s", e)
+
+    stale = [(code, slug) for code, slug in _IBGE_SEED if code not in fresh]
+    if not stale:
+        logger.info("[EnricherMunicipio] Nenhum municipio desatualizado — job encerrado.")
+        return {
+            "status": "completed", "enriched": 0, "skipped": len(_IBGE_SEED),
+            "failed": 0, "duration_s": round(time.monotonic() - start, 1),
+        }
+
+    logger.info("[EnricherMunicipio] %d municipios para enriquecer", len(stale))
+
+    sem = asyncio.Semaphore(_MUNICIPIO_CONCURRENCY)
+    tasks = [_enrich_one_municipio(code, slug, sem) for code, slug in stale]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    records: list[dict] = []
+    enriched = 0
+    failed = 0
+
+    for (code, slug), res in zip(stale, results):
+        if isinstance(res, Exception):
+            logger.warning("[EnricherMunicipio] Municipio %s falhou: %s", code, res)
+            failed += 1
+        elif res is None:
+            failed += 1
+        else:
+            records.append(res)
+            enriched += 1
+
+    if records:
+        try:
+            await _upsert_batch(records)
+        except Exception as e:
+            logger.error("[EnricherMunicipio] Falha no upsert batch: %s", e, exc_info=True)
+
+    duration_s = round(time.monotonic() - start, 1)
+    logger.info(
+        "[EnricherMunicipio] Concluido em %.1fs — enriquecidos=%d, falhas=%d",
+        duration_s, enriched, failed,
+    )
+    return {
+        "status": "completed",
+        "enriched": enriched,
+        "skipped": len(_IBGE_SEED) - len(stale),
+        "failed": failed,
+        "total_fetched": len(stale),
+        "duration_s": duration_s,
+    }
+
+
+async def _enrich_one_municipio(ibge_code: str, slug: str, sem: asyncio.Semaphore) -> dict | None:
+    """Busca dados de um municipio no IBGE e monta registro para enriched_entities."""
+    async with sem:
+        async with httpx.AsyncClient(timeout=_MUNICIPIO_HTTP_TIMEOUT) as client:
+            # Nome, UF e regiao
+            r_local = await client.get(
+                f"{_IBGE_API_BASE}/v1/localidades/municipios/{ibge_code}",
+            )
+            if r_local.status_code != 200:
+                logger.debug(
+                    "[EnricherMunicipio] IBGE municipio %s retornou %d",
+                    ibge_code, r_local.status_code,
+                )
+                return None
+
+            local_data = r_local.json()
+            nome = local_data.get("nome") or ""
+            uf = (local_data.get("microrregiao", {})
+                  .get("mesorregiao", {})
+                  .get("UF", {})
+                  .get("sigla") or "")
+            regiao = (local_data.get("microrregiao", {})
+                      .get("mesorregiao", {})
+                      .get("UF", {})
+                      .get("regiao", {})
+                      .get("nome") or "")
+
+            # Populacao estimada (SIDRA agregado 1705, variavel 93)
+            populacao: Optional[int] = None
+            try:
+                r_pop = await client.get(
+                    f"{_IBGE_API_BASE}/v3/agregados/1705/periodos/2023/variaveis/93"
+                    f"?localidades=N6[{ibge_code}]",
+                )
+                if r_pop.status_code == 200:
+                    pop_data = r_pop.json()
+                    if pop_data and isinstance(pop_data, list):
+                        series = pop_data[0].get("resultados", [])
+                        if series:
+                            vals = series[0].get("series", [])
+                            if vals:
+                                serie_vals = vals[0].get("serie", {})
+                                # Pega o valor mais recente disponivel
+                                for _year in ["2023", "2022", "2021", "2020"]:
+                                    v = serie_vals.get(_year)
+                                    if v and v != "...":
+                                        try:
+                                            populacao = int(str(v).replace(".", "").replace(",", ""))
+                                        except ValueError:
+                                            pass
+                                        break
+            except Exception as e:
+                logger.debug("[EnricherMunicipio] Populacao falhou para %s: %s", ibge_code, e)
+
+    data = {
+        "nome": nome,
+        "slug": slug,
+        "uf": uf,
+        "regiao": regiao,
+        "ibge_code": ibge_code,
+        "populacao": populacao,
+        "pib_per_capita": None,  # reservado para expansao futura (SIDRA 5938)
+        "source": "ibge",
+        "source_updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    return {
+        "entity_type": "municipio",
+        "entity_id": ibge_code,
+        "data": data,
+        "enriched_at": datetime.now(timezone.utc).isoformat(),
+    }
