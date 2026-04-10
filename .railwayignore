@@ -1,0 +1,33 @@
+# Backend (not needed for frontend deploy from root)
+backend/
+
+# Large documentation and data directories
+docs/
+data/
+ux-audit/
+gtm-audit/
+gtm-inspection-05-resultados-facilities.png
+
+# Framework and tooling directories
+.aios-core/
+.aiox-core/
+.aios/
+.ai/
+.claude/
+.cursor/
+.gemini/
+.codex/
+.antigravity/
+.benchmarks/
+.playwright-mcp/
+
+# Scripts and infra
+scripts/
+supabase/
+
+# Git and CI
+.github/
+.git/
+
+# Misc
+squads/
