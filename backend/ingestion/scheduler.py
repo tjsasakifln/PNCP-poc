@@ -17,7 +17,10 @@ Timeouts (ARQ-enforced):
 import logging
 import time
 
+from arq import func as arq_func
+
 from ingestion.config import DATALAKE_ENABLED
+from ingestion.contracts_crawler import CONTRACTS_FULL_CRAWL_TIMEOUT, CONTRACTS_INCREMENTAL_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +133,7 @@ async def ingestion_incremental_job(ctx: dict) -> dict:
     return {**result, "duration_s": duration_s}
 
 
+@arq_func(timeout=CONTRACTS_FULL_CRAWL_TIMEOUT)
 async def contracts_full_crawl_job(ctx: dict) -> dict:
     """ARQ job: Full contracts crawl. Daily at 06:00 UTC (3am BRT).
 
@@ -177,6 +181,7 @@ async def contracts_full_crawl_job(ctx: dict) -> dict:
     return {**result, "duration_s": duration_s}
 
 
+@arq_func(timeout=CONTRACTS_INCREMENTAL_TIMEOUT)
 async def contracts_incremental_job(ctx: dict) -> dict:
     """ARQ job: Incremental contracts crawl. 3×/day (12:00, 18:00, 00:00 UTC).
 

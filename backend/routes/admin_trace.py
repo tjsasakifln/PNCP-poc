@@ -32,9 +32,9 @@ async def trigger_contracts_backfill(user=Depends(require_admin)) -> dict:
         if not pool:
             return {"status": "error", "detail": "ARQ pool unavailable — Worker offline?"}
 
-        job = await pool.enqueue_job(
-            "contracts_full_crawl_job", _timeout=CONTRACTS_FULL_CRAWL_TIMEOUT,
-        )
+        # Timeout set via @arq_func(timeout=CONTRACTS_FULL_CRAWL_TIMEOUT) on the function.
+        # Do NOT pass _timeout/_job_timeout as kwargs — ARQ forwards unknown kwargs to the function.
+        job = await pool.enqueue_job("contracts_full_crawl_job")
         if job:
             return {"status": "enqueued", "job_id": job.job_id, "timeout_s": CONTRACTS_FULL_CRAWL_TIMEOUT}
         return {"status": "skipped", "detail": "Job already queued or duplicate"}
