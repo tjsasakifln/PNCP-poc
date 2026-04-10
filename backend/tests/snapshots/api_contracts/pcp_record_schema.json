@@ -78,16 +78,16 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 469588,
+    "codigoLicitacao": 468357,
     "numeroLicitacao": null,
-    "identificacao": "9/2026",
-    "numero": "4/2026",
-    "resumo": "contratação de 01 (um) plano de serviço de internet de alta velocidade oferecido por meio de fibra óptica com velocidades mínimas de: download de 1.000 mb e upload de 500mb, consumo ilimitado, IP fixo válido, para acesso, com sua respectiva instalação...",
-    "razaoSocial": "Câmara Municipal de Vereadores de Sarandi",
-    "nomeUnidade": "Câmara Municipal de Vereadores de Sarandi",
+    "identificacao": "2026-X2B4R",
+    "numero": "44021/2026",
+    "resumo": "AQUISIÇÃO EMERGENCIAL DE INSTRUMENTAIS ESPECÍFICOS DESTINADOS A ATENDER ÀS DEMANDAS DOS PROCEDIMENTOS CIRÚRGICOS DAS ESPECIALIDADES DE NEUROCIRURGIA, CIRURGIA VASCULAR, ORTOPEDIA E CIRURGIA GERAL NO HOSPITAL ESTADUAL CENTRAL - HEC",
+    "razaoSocial": "Fundação Inova Capixaba",
+    "nomeUnidade": "Fundação Inova Capixaba",
     "status": {
-      "codigo": 1,
-      "descricao": "Recebendo Propostas"
+      "codigo": 9,
+      "descricao": "Sessão Pública Iniciada"
     },
     "situacao": {
       "codigo": 0,
@@ -96,38 +96,38 @@
     "tipoLicitacao": {
       "codigoModalidadeLicitacao": 0,
       "modalidadeLicitacao": "Dispensa",
-      "codigoTipoLicitacao": 34,
-      "siglaTipoLicitacao": null,
-      "tipoLicitacao": "Dispensa Presencial",
-      "tipoRealizacao": "Presencial",
+      "codigoTipoLicitacao": 10,
+      "siglaTipoLicitacao": "CD",
+      "tipoLicitacao": "Dispensa",
+      "tipoRealizacao": "Eletrônico",
       "tipoJulgamento": "Menor Preço"
     },
-    "codigoSituacaoEdital": 5,
+    "codigoSituacaoEdital": 1,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-04-09T02:59:00Z",
-    "dataHoraInicioPropostas": "2026-04-02T03:00:00Z",
-    "dataHoraFinalPropostas": "2026-04-09T02:59:00Z",
+    "dataHoraInicioLances": "2026-04-09T20:01:00Z",
+    "dataHoraInicioPropostas": "2026-04-06T20:00:00Z",
+    "dataHoraFinalPropostas": "2026-04-09T20:00:00Z",
     "dataHoraFinalLances": null,
-    "dataHoraPublicacao": "2026-04-01T18:41:00Z",
+    "dataHoraPublicacao": "2026-04-06T19:44:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 7438,
-      "nomeUnidadeCompradora": "Câmara Municipal de Vereadores de Sarandi",
-      "codigoComprador": 4289,
+      "codigoUnidadeCompradora": 5201,
+      "nomeUnidadeCompradora": "Fundação Inova Capixaba",
+      "codigoComprador": 2904,
       "nomeComprador": null,
-      "cidade": "Sarandi",
+      "cidade": "Vila Velha",
       "codigoMunicipioIbge": null,
-      "uf": "RS"
+      "uf": "ES"
     },
     "comprador": null,
-    "urlReferencia": "/rs/camara-municipal-de-vereadores-de-sarandi-4289/dp-4-2026-2026-469588",
+    "urlReferencia": "/es/fundacao-inova-capixaba-2904/de-44021-2026-2026-468357",
     "statusProcessoPublico": {
-      "codigo": 1,
-      "descricao": "Recebendo Propostas"
+      "codigo": 9,
+      "descricao": "Sessão Pública Iniciada"
     },
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-04-08T23:38:16.135922+00:00"
+  "captured_at": "2026-04-10T00:44:49.322981+00:00"
 }

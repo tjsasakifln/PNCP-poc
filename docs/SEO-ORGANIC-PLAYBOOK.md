@@ -1,5 +1,5 @@
 # SmartLic — Playbook de Crescimento Orgânico: CAC Mínimo via Conversão Máxima
-## Versão 3.3 · Atualizado: 2026-04-08 (Parte 12 — Contratos & Fornecedores: Expansão Programática via Dados de Contratos)
+## Versão 3.4 · Atualizado: 2026-04-10 (Parte 13 — APIs Públicas + Dados Supabase: Escala 5k → 50k Páginas)
 
 > **Premissa:** SEO impecável é o piso, não o teto. Quando alguém encontra o SmartLic —
 > por busca orgânica, indicação ou conteúdo — cada touchpoint subsequente deve funcionar
@@ -30,6 +30,7 @@
 | [10](#parte-10--modelo-de-mrr-de-tráfego-orgânico-a-r100k) | Modelo MRR | **Matemática reversa R$100K → clientes → trials → tráfego + alavancas** |
 | [11](#parte-11--expansão-programática-próxima-onda-de-páginas) | Expansão | **CNPJ +5K, órgãos +2K, cidade×setor +1.2K → 10K páginas** |
 | [12](#parte-12--contratos--fornecedores-expansão-programática-via-dados-de-contratos) | Contratos | **3 waves: cross-linking +0, /contratos +405, /fornecedores +405, /contratos/orgao +2K → +2.8K páginas** |
+| [13](#parte-13--apis-públicas--dados-supabase-escala-5k--50k-páginas) | APIs + Supabase | **7 APIs públicas (Portal Transparência, BrasilAPI, IBGE, TCU, CATMAT, Transfere.gov, TCEs) → /municipios +5.5k, /fornecedores +40k, /compliance +40k, /itens +4k** |
 
 ---
 
@@ -3103,4 +3104,221 @@ Execução paralela de 3 frentes implementando os itens pendentes de maior ROI d
 - ✅ `cd frontend && npx tsc --noEmit` → **exit 0**
 - ✅ `pytest tests/test_comparador.py` → **16/16 pass**
 - ✅ `pytest tests/test_alertas_publicos.py tests/test_calculadora.py tests/test_referral.py tests/test_stripe_webhook.py tests/test_blog_stats.py` → **94/94 pass, 2 pre-existing fails** (TestPanoramaStats — documentadas desde rodada 1)
+
+---
+
+## Parte 13 — APIs Públicas + Dados Supabase: Escala 5k → 50k Páginas
+
+> **Sessão:** 2026-04-10 — Pesquisa de APIs públicas brasileiras + diagnóstico SEO do codebase existente.
+>
+> **Diagnóstico:** A infraestrutura SEO está sólida (sitemap ~5k URLs, schema.org, ISR, blog 40+ artigos, pSEO 15×27). O próximo salto não é otimizar o que existe — é criar categorias inteiras de páginas que nenhum concorrente consegue produzir manualmente, usando dados governamentais abertos que o SmartLic já tem acesso ou pode obter sem custo.
+
+### Estado atual dos gaps (2026-04-10)
+
+Inspeção do codebase confirmou:
+
+| Rota | generateMetadata | BreadcrumbList | FAQPage | Status |
+|------|-----------------|---------------|---------|--------|
+| `/blog/licitacoes/[setor]/[uf]` | ✅ | ✅ via SchemaMarkup | ✅ dinâmica | Completo |
+| `/contratos/[setor]/[uf]` | ✅ | ✅ JSON-LD | ✅ JSON-LD | Completo |
+| `/fornecedores/[setor]/[uf]` | ✅ + ItemList | ✅ JSON-LD | ✅ JSON-LD | Completo |
+| `/perguntas/[slug]` | ✅ | ✅ | ⚠️ QAPage (não FAQPage) | Melhorar |
+| `layout.tsx` | N/A | N/A | N/A | Sem hreflang |
+| `StructuredData.tsx` | Organization + WebSite + SoftwareApplication | — | — | Completo |
+
+**Quick win pendente:** `/perguntas/[slug]` — adicionar FAQPage schema para as "perguntas relacionadas" renderizadas na página (~10 linhas de JSON-LD extra).
+
+---
+
+### APIs Públicas Identificadas
+
+#### P0 — Já temos acesso (zero esforço de auth)
+
+**1. Portal da Transparência** (`api.portaldatransparencia.gov.br`)
+- Token `PORTAL_TRANSPARENCIA_API_KEY` já em `.env` (header `chave-api-dados`)
+- Rate: 90 req/min (6h–23h59) · 300 req/min (00h–05h59)
+
+| Endpoint | Parâmetro chave | Alimenta |
+|----------|----------------|---------|
+| `GET /api-de-dados/pessoa-juridica/{cnpj}/contratos` | `{cnpj}` | `/fornecedores/{cnpj}` — histórico completo |
+| `GET /api-de-dados/ceis?cnpjSancionado={cnpj}` | `{cnpj}` | `/compliance/{cnpj}` — sanções |
+| `GET /api-de-dados/cnep?cnpjSancionado={cnpj}` | `{cnpj}` | `/compliance/{cnpj}` — multas |
+| `GET /api-de-dados/convenios?codigoIbge={ibge}` | código IBGE | `/municipios/{cidade}` — repasses federais |
+| `GET /api-de-dados/transferencias-voluntarias?codigoIbge={ibge}` | código IBGE | `/municipios/{cidade}` — transferências |
+
+**2. BrasilAPI** (`brasilapi.com.br/api`)
+- Sem auth · CDN 23 regiões · Sem rate limit documentado
+
+| Endpoint | Dados retornados | Alimenta |
+|----------|-----------------|---------|
+| `GET /cnpj/v1/{cnpj}` | Razão social, CNAE, sócios, Simples Nacional, MEI, endereço | `/fornecedores/{cnpj}` — dados cadastrais |
+| `GET /cep/v2/{cep}` | lat/lon, cidade | Geolocalização de contratos |
+| `GET /cnae/v1/{codigo}` | Descrição do CNAE | Mapeamento setor→CNAE |
+
+**3. IBGE** (`servicodados.ibge.gov.br/api`)
+- Sem auth · 100% gratuito
+
+| Endpoint | Dados retornados | Alimenta |
+|----------|-----------------|---------|
+| `GET /v1/localidades/municipios/{ibge}` | Nome, UF, região, código IBGE | `/municipios/{cidade}` — contexto base |
+| SIDRA agregado 1705 | Estimativa populacional | `/municipios/{cidade}` — população |
+| SIDRA agregado 5938 | PIB e PIB per capita | `/municipios/{cidade}` — contexto econômico |
+
+#### P1 — Médio prazo (60–120 dias)
+
+**4. TCU Certidões** (`certidoes-apf.apps.tcu.gov.br`)
+- Sem auth · `GET /api/rest/publico/certidoes/{cnpj}` → regular/irregular perante TCU
+- Alimenta: badge de compliance em `/fornecedores/{cnpj}` e `/compliance/{cnpj}`
+
+**5. CATMAT/CATSER** (`api.compras.dados.gov.br`)
+- Sem auth · catálogo completo de materiais e serviços governamentais
+- `GET /catmat/v1/materiais` + `/catser/v1/servicos` → catálogos
+- `GET /contratacoes/v1/contratacoes?codigoItemCatalogo=` → contratos reais por item
+- Alimenta: `/itens/{catmat}` — benchmark "quanto o governo paga por X?" (substitui Painel de Preços descontinuado em jul/2025 — **vacuum editorial**)
+
+#### P2 — Longo prazo (120+ dias)
+
+**6. TCE-RS / TCE-MG** (CKAN API padrão `https://dados.tce.rs.gov.br/api/3/action/`)
+- TCE-MG lançado nov/2024 — janela de first-mover
+- Cobertura de licitações estaduais/municipais fora do PNCP federal
+
+---
+
+### Novas Páginas Programáticas
+
+#### `/municipios/{slug}` — 5.570 páginas potenciais
+**Dados:** IBGE (pop, PIB per capita) + Portal Transparência (contratos + convênios) + PNCP datalake (editais abertos)
+
+**Título canônico:** `Licitações em {Cidade}-{UF} — {N} editais abertos | {pop} habitantes`
+
+**Valor diferenciado:** única fonte que cruza PIB municipal + editais em tempo real + convênios federais recebidos → sinal de "mercado aquecido"
+
+**ISR:** `revalidate: 86400` (24h)
+
+**Schema.org:** `City` + `Dataset` (com dados de licitações como distribuição)
+
+#### `/fornecedores/{cnpj}` — 40k+ páginas (seed: datalake)
+**Dados:** BrasilAPI (CNPJ) + Portal Transparência (histórico contratos) + PNCP datalake (contratos recentes) + TCU (certidão)
+
+**Título canônico:** `{Razão Social} — Histórico B2G | {N} contratos | R$ {valor_total}`
+
+**Valor diferenciado:** perfil completo de fornecedor gov: contratos históricos + compliance + CNAE + sócios
+
+**CTA:** "Monitore editais do setor desta empresa → trial SmartLic"
+
+**Schema.org:** `Organization` (name, legalName, address, numberOfEmployees estimado)
+
+#### `/compliance/{cnpj}` — 40k+ páginas (on-demand ISR)
+**Dados:** CEIS + CNEP + CEPIM (Portal Transparência) + TCU certidão
+
+**Título canônico:** `Due Diligence B2G: {Razão Social} | CEIS, CNEP, TCU`
+
+**Valor diferenciado:** agrega 4 cadastros de sanção em uma só página — termo "CEIS consulta CNPJ" tem alto volume SEO, baixíssima concorrência editorial
+
+**Geração:** on-demand ISR (sem `generateStaticParams` — gerado na primeira visita, cacheado 24h)
+
+#### `/itens/{catmat}` — ~4.000 páginas (P1)
+**Dados:** CATMAT código + contratos reais do PNCP/ComprasGov com esse item
+
+**Título canônico:** `Preço de Mercado: {Item} (CATMAT {codigo}) | Benchmark Governo`
+
+**Valor diferenciado:** substitui o Painel de Preços do ComprasGov (descontinuado jul/2025) com dados mais frescos
+
+**Schema.org:** `Product` + `PriceSpecification` (lowPrice=P10, highPrice=P90, price=P50 baseado em contratos reais)
+
+---
+
+### Arquitetura de Enriquecimento (Backend)
+
+```
+ARQ cron: enrich_entities_job (diário, 2h BRT, após ingestão do PNCP)
+
+Para cada CNPJ novo em pncp_supplier_contracts (últimas 24h):
+  ├── BrasilAPI /cnpj/v1/{cnpj}         → razão_social, cnae, simples, endereço
+  ├── Portal Transparência /contratos   → histórico de contratos (paginado)
+  ├── Portal Transparência /ceis        → sanções ativas
+  └── TCU /certidoes/{cnpj}             → situação TCU
+
+Para cada código IBGE novo em pncp_raw_bids (novos municípios):
+  ├── IBGE /localidades/municipios/{ibge} → nome completo, UF, região
+  ├── IBGE SIDRA 1705                     → população estimada
+  ├── IBGE SIDRA 5938                     → PIB per capita
+  └── Portal Transparência /convenios    → repasses federais
+
+Upsert em: enriched_entities (nova tabela Supabase)
+  entity_type TEXT        — 'fornecedor' | 'municipio' | 'orgao'
+  entity_id   TEXT        — cnpj | codigo_ibge (PK composta)
+  data        JSONB       — payload completo
+  enriched_at TIMESTAMPTZ — última atualização
+  INDEX: (entity_type, entity_id)
+```
+
+**Throttle:** respeitar 90 req/min do Portal da Transparência — usar semáforo asyncio com rate limiter existente em `redis_client.py`.
+
+---
+
+### Usando Dados Existentes do Supabase
+
+**`pncp_raw_bids` (~1M rows)**
+- Full-text index (GIN, português) já existe → reutilizar para widgets "editais abertos agora em {cidade}"
+- `uf` indexado → stats regionais em tempo real para páginas `/municipios/{slug}`
+- `orgao_cnpj` + `orgao_razao_social` → seed de órgãos para `/orgaos/{cnpj}`
+
+**`pncp_supplier_contracts` (~4M rows)**
+- `ni_fornecedor` indexado → O(log n) lookup para `/fornecedores/{cnpj}`
+- Ranking `ni_fornecedor` por `valor_global DESC` → "Top 10 fornecedores por setor×UF"
+- `objeto_contrato` → full-text para relevância de setor
+
+**RPCs existentes a reutilizar:**
+- `search_datalake()` já suporta UF + modalidade + valor + tsquery → reutilizar em API routes ISR para widgets das novas páginas sem código novo
+
+---
+
+### Roadmap de Implementação
+
+| Sprint | Entrega | Impacto SEO | Esforço |
+|--------|---------|-------------|---------|
+| **Sprint 1** (S1-S2) | FAQPage em `/perguntas/[slug]` + hreflang no layout | Quick win, 0 APIs novas | Baixo |
+| **Sprint 2** (S3-S4) | Tabela `enriched_entities` + job ARQ BrasilAPI + IBGE | Infraestrutura base | Médio |
+| **Sprint 3** (S5-S6) | Páginas `/fornecedores/{cnpj}` (top 5k seed) | +5k páginas indexáveis | Médio |
+| **Sprint 4** (S7-S8) | Páginas `/municipios/{slug}` (81 → 5.570) | +5k páginas geográficas | Médio |
+| **Sprint 5** (S9-S10) | Páginas `/compliance/{cnpj}` + CEIS/CNEP | Autoridade editorial compliance | Alto |
+| **Sprint 6** (S11-S12) | Páginas `/itens/{catmat}` + benchmark preços | Substitui vacuum do Painel de Preços | Alto |
+
+**Arquivos-chave a criar/modificar:**
+
+| Arquivo | Ação |
+|---------|------|
+| `supabase/migrations/XXXXXX_enriched_entities.sql` | Criar tabela enriched_entities |
+| `backend/ingestion/enricher.py` | Novo módulo — BrasilAPI + Portal Transparência + IBGE |
+| `backend/ingestion/scheduler.py` | Adicionar job `enrich_entities` (diário 2h BRT) |
+| `frontend/app/fornecedores/[cnpj]/page.tsx` | Nova página ISR + Organization schema |
+| `frontend/app/municipios/[slug]/page.tsx` | Nova página ISR + City schema |
+| `frontend/app/compliance/[cnpj]/page.tsx` | Nova página on-demand ISR + Report schema |
+| `frontend/app/itens/[catmat]/page.tsx` | Nova página ISR + Product + PriceSpecification (P1) |
+| `frontend/app/sitemap.ts` | Adicionar rotas /fornecedores + /municipios + /compliance |
+| `frontend/app/perguntas/[slug]/page.tsx` | Adicionar FAQPage schema para perguntas relacionadas |
+
+---
+
+### Métricas de Sucesso (90 dias)
+
+| Métrica | Baseline | Meta |
+|---------|----------|------|
+| Páginas indexadas (GSC) | ~2k | 15k+ |
+| Cliques orgânicos/mês | baseline atual | +200% |
+| "CEIS consulta CNPJ" — posição média | não rankeado | Top 20 |
+| Trial signups via /fornecedores + /municipios | 0 | 50+/mês |
+| Core Web Vitals LCP novas páginas | — | < 2,5s |
+
+---
+
+### Notas de Pesquisa (2026-04-10)
+
+- **Painel de Preços ComprasGov descontinuado jul/2025** — vacuum editorial que `/itens/{catmat}` pode ocupar imediatamente
+- **TCE-MG lançou portal CKAN nov/2024** — janela de first-mover para cobertura estadual
+- **BrasilAPI** inclui Simples Nacional e MEI dentro do endpoint `/cnpj/v1/{cnpj}` — não precisa de endpoint separado
+- **Portal da Transparência `/contratos`** requer `codigoOrgao` obrigatório (limitação conhecida); usar `/pessoa-juridica/{cnpj}/contratos` para lookup por fornecedor (funciona sem `codigoOrgao`)
+- **PNCP `/contratacoes` max 50 por página** (reduzido fev/2026 de 500 — >50 retorna HTTP 400 silencioso)
+- **OpenCNPJ BigQuery** — dataset público para enriquecimento offline em lote dos 40k+ CNPJs do datalake
 - ✅ Zero regressões introduzidas
