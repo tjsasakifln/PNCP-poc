@@ -65,7 +65,10 @@ COMMENT ON FUNCTION public.purge_old_bids(INTEGER) IS
 -- SECTION 2: Updated search_datalake()
 -- In "abertas" mode, the ONLY filter is data_encerramento > now().
 -- No publication date constraint — returns ALL open bids.
+-- Must DROP first because CREATE OR REPLACE cannot change return type.
 -- ============================================================
+
+DROP FUNCTION IF EXISTS public.search_datalake(TEXT[], DATE, DATE, TEXT, INTEGER[], NUMERIC, NUMERIC, TEXT[], TEXT, INTEGER);
 
 CREATE OR REPLACE FUNCTION public.search_datalake(
     p_ufs         TEXT[]             DEFAULT NULL,
