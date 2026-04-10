@@ -189,7 +189,24 @@ async def update_search_session_status(
     if total_filtered is not None:
         update_data["total_filtered"] = total_filtered
     if valor_total is not None:
-        update_data["valor_total"] = float(valor_total)
+        # STORY-419: Defensive cap matching NUMERIC(18,2) on the column.
+        # Even after the widening migration, a stray sum from the pipeline
+        # could still overflow (e.g. corrupt upstream data). Capping here
+        # is cheaper than catching SQLSTATE 22003 and retrying, and keeps
+        # the update idempotent. The cap is 1 decade below the column
+        # ceiling (1e16) to leave headroom for aggregations.
+        _VALOR_TOTAL_CEILING = 1e15
+        numeric_valor = float(valor_total)
+        if numeric_valor > _VALOR_TOTAL_CEILING:
+            logger.warning(
+                "STORY-419: valor_total %.2f exceeds NUMERIC(18,2) ceiling; "
+                "capping to %.2f for session %s***",
+                numeric_valor,
+                _VALOR_TOTAL_CEILING,
+                session_id[:8],
+            )
+            numeric_valor = _VALOR_TOTAL_CEILING
+        update_data["valor_total"] = numeric_valor
     if resumo_executivo is not None:
         update_data["resumo_executivo"] = resumo_executivo
     if destaques is not None:

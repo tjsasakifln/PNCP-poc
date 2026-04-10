@@ -3,7 +3,7 @@
 **Priority:** P1 — Medium (baixa frequência mas bug real em user input)
 **Effort:** S (0.5 day)
 **Squad:** @data-engineer + @dev
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7369847734/ (3 eventos)
 **Sprint:** Sprint seguinte (48h-1w)
@@ -130,3 +130,4 @@ Usuários com filtros de alto valor (ex: licitações de infraestrutura federal)
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. |
+| 2026-04-10 | @dev | Implementation. Nova migration `20260410131000_story419_widen_valor_total.sql` — `ALTER COLUMN valor_total TYPE NUMERIC(18, 2)` (metadata-only, no lock). `backend/schemas/search.py` ganha `@field_validator("valor_maximo", "valor_minimo")` rejeitando `> 1e15` (R$ 1 quatrilhão). `backend/quota/session_tracker.py` aplica defensive cap no momento do UPDATE (linha ~192). `frontend/app/buscar/hooks/execution/useSearchAPI.ts` clamp silencioso em `valorMinClamped` / `valorMaxClamped` antes do POST. 7 tests em `tests/test_story419_valor_total_overflow.py` passam. E2E Playwright deferido. Status Ready → InReview. |

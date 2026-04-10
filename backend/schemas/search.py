@@ -168,7 +168,11 @@ class BuscaRequest(BaseModel):
     valor_maximo: Optional[float] = Field(
         default=None,
         ge=0,
-        description="Valor máximo estimado da licitação em BRL. None = sem limite superior.",
+        description=(
+            "Valor máximo estimado da licitação em BRL. None = sem limite superior. "
+            "Ceiling: 1e15 (R$ 1 quatrilhão) — STORY-419 incident guard to match "
+            "NUMERIC(18,2) on search_sessions.valor_total."
+        ),
         examples=[5000000.0],
     )
 
@@ -253,6 +257,31 @@ class BuscaRequest(BaseModel):
     # -------------------------------------------------------------------------
     # Validators
     # -------------------------------------------------------------------------
+    # STORY-419: Hard ceiling on monetary inputs to match NUMERIC(18,2) on
+    # search_sessions.valor_total (PostgreSQL rejects anything with more than
+    # 16 integer digits with SQLSTATE 22003). We keep one decade of headroom
+    # vs. the column ceiling to avoid sum-overflow when aggregating many rows.
+    _VALOR_MAX_CEILING: float = 1e15  # R$ 1 quatrilhão
+
+    @field_validator("valor_maximo", "valor_minimo")
+    @classmethod
+    def validate_valor_ceiling(cls, v: Optional[float]) -> Optional[float]:
+        """STORY-419: reject values that would overflow NUMERIC(18,2).
+
+        The DB column is NUMERIC(18,2) — 16 integer digits, 2 decimal.
+        Any sum crossing that threshold would raise SQLSTATE 22003 at
+        insert time. We cap inputs at 1e15 (R$ 1 quatrilhão) to keep
+        enough headroom for aggregate fields computed downstream.
+        """
+        if v is None:
+            return v
+        if v > 1e15:
+            raise ValueError(
+                "Valor excede o limite suportado (R$ 1 quatrilhão / 1e15). "
+                "STORY-419: se o edital realmente é maior, contate o suporte."
+            )
+        return v
+
     @model_validator(mode="after")
     def validate_dates_and_values(self) -> "BuscaRequest":
         """

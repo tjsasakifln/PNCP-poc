@@ -213,6 +213,22 @@ export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
       const headers: Record<string, string> = { "Content-Type": "application/json", "X-Correlation-ID": correlationId };
       if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
 
+      // STORY-419: Clamp monetary inputs to the backend ceiling (1e15, R$ 1
+      // quatrilhão) that matches search_sessions.valor_total NUMERIC(18,2).
+      // Anything above that raises SQLSTATE 22003 server-side (Sentry issue
+      // 7369847734). We clamp silently here and let the FilterPanel show
+      // the user-facing toast — the clamp is defensive so that raw URL
+      // params / restored state cannot bypass the UI validation.
+      const VALOR_CEILING = 1e15;
+      const valorMinClamped =
+        typeof filters.valorMin === "number" && isFinite(filters.valorMin)
+          ? Math.min(Math.max(filters.valorMin, 0), VALOR_CEILING)
+          : filters.valorMin;
+      const valorMaxClamped =
+        typeof filters.valorMax === "number" && isFinite(filters.valorMax)
+          ? Math.min(Math.max(filters.valorMax, 0), VALOR_CEILING)
+          : filters.valorMax;
+
       logCorrelatedRequest("POST", "/api/buscar", correlationId);
       const response = await fetch("/api/buscar", {
         method: "POST", headers, signal: abortController.signal,
@@ -223,7 +239,7 @@ export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
           termos_busca: filters.searchMode === "termos" ? filters.termosArray.join(", ") : null,
           search_id: newSearchId, modo_busca: filters.modoBusca, status: filters.status,
           modalidades: filters.modalidades.length > 0 ? filters.modalidades : undefined,
-          valor_minimo: filters.valorMin, valor_maximo: filters.valorMax,
+          valor_minimo: valorMinClamped, valor_maximo: valorMaxClamped,
           esferas: filters.esferas.length > 0 && filters.esferas.length < 3 ? filters.esferas : undefined,
           municipios: filters.municipios.length > 0 ? filters.municipios.map(m => m.codigo) : undefined,
           ordenacao: filters.ordenacao, force_fresh: forceFresh || undefined,
