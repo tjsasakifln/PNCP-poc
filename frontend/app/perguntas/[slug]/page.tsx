@@ -1,9 +1,12 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { QUESTIONS, getQuestionBySlug, getAllQuestionSlugs, CATEGORY_META, getQuestionsByCategory } from '@/lib/questions';
 import { GLOSSARY_TERMS } from '@/lib/glossary-terms';
 import { buildCanonical, SITE_URL } from '@/lib/seo';
+import { stripMarkdown } from '@/lib/text';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
 
@@ -60,6 +63,10 @@ export default async function PerguntaPage({
     .filter((q) => q.slug !== slug)
     .slice(0, 5);
 
+  // Plain-text answer for schema.org consumers (AI Overviews, rich results).
+  // Markdown markers must be stripped so `**bold**` never leaks into search.
+  const plainAnswer = stripMarkdown(question.answer);
+
   /* QAPage JSON-LD — primary schema for AI Overviews */
   const qaPageLd = {
     '@context': 'https://schema.org',
@@ -71,7 +78,7 @@ export default async function PerguntaPage({
       answerCount: 1,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: question.answer,
+        text: plainAnswer,
         author: {
           '@type': 'Organization',
           name: 'SmartLic',
@@ -101,7 +108,7 @@ export default async function PerguntaPage({
           name: q.title,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: q.answer.slice(0, 500),
+            text: stripMarkdown(q.answer).slice(0, 500),
           },
         })),
       }
@@ -140,9 +147,9 @@ export default async function PerguntaPage({
           {/* Main content */}
           <article className="lg:col-span-2">
             <div className="prose prose-lg max-w-none text-ink-secondary leading-relaxed">
-              {question.answer.split('\n\n').map((paragraph, i) => (
-                <p key={i}>{paragraph}</p>
-              ))}
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {question.answer}
+              </ReactMarkdown>
             </div>
 
             {/* Related articles */}

@@ -29,7 +29,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition:
       'Ato formal pelo qual a autoridade competente atribui o objeto da licitação ao licitante que apresentou a proposta mais vantajosa. Na Lei 14.133/2021, a adjudicação ocorre após a habilitação e o julgamento dos recursos, consolidando o direito do vencedor a assinatura do contrato.',
     example:
-      'Após o pregão eletrônico para aquisição de 500 computadores, o pregoeiro adjudicou o objeto a empresa que ofertou R$ 2.800 por unidade, o menor preco valido após a fase de lances.',
+      'Após o pregão eletrônico para aquisição de 500 computadores, o pregoeiro adjudicou o objeto a empresa que ofertou R$ 2.800 por unidade, o menor preço válido após a fase de lances.',
     guideHref: '/blog',
     guideLabel: 'Como funciona o processo licitatório',
     legalBasis: 'Lei 14.133/2021, art. 71',
@@ -38,7 +38,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       {
         question: 'Qual a diferença entre adjudicação e homologação?',
         answer:
-          'A adjudicação é o ato do pregoeiro/comissão que atribui o objeto ao vencedor, enquanto a homologação é o ato da autoridade superior que ratifica todo o procedimento licitatório. A homologação ocorre após a adjudicação e autoriza a assinatura do contrato.',
+          'A adjudicação é o ato do pregoeiro/comissão que atribui o objeto ao vencedor, enquanto a homologação é o ato da autoridade superior que ratifica todo o procedimento licitatório. A homologação ocorre após a adjudicação é autoriza a assinatura do contrato.',
       },
       {
         question: 'A adjudicação garante a assinatura do contrato?',
@@ -51,7 +51,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Aditivo Contratual',
     slug: 'aditivo-contratual',
     definition:
-      'Instrumento jurídico utilizado para alterar cláusulas de um contrato administrativo vigente, podendo modificar prazos, valores ou escopo. A Lei 14.133 limita acrescimos e supressoes a 25% do valor original (50% para reformas de edificios ou equipamentos).',
+      'Instrumento jurídico utilizado para alterar cláusulas de um contrato administrativo vigente, podendo modificar prazos, valores ou escopo. A Lei 14.133 limita acréscimos e supressões a 25% do valor original (50% para reformas de edifícios ou equipamentos).',
     example:
       'Um contrato de manutenção predial de R$ 1.200.000 recebeu aditivo de 20% (R$ 240.000) para incluir a reforma do sistema de ar-condicionado, dentro do limite legal.',
     guideHref: '/blog',
@@ -75,18 +75,18 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Anulação',
     slug: 'anulacao',
     definition:
-      'Invalidacao de um processo licitatório ou contrato administrativo por vicio de legalidade identificado pela própria administracao ou pelo Judiciario. A anulação tem efeito retroativo (ex tunc), desfazendo todos os atos práticados desde a origem do vicio.',
+      'Invalidação de um processo licitatório ou contrato administrativo por vício de legalidade identificado pela própria administração ou pelo Judiciário. A anulação tem efeito retroativo (ex tunc), desfazendo todos os atos práticados desde a origem do vício.',
     example:
-      'O Tribunal de Contas determinou a anulação de um pregão porque o edital exigia certificacao ISO específica que restringia a competitividade sem justificativa técnica.',
+      'O Tribunal de Contas determinou a anulação de um pregão porque o edital exigia certificação ISO específica que restringia a competitividade sem justificativa técnica.',
     guideHref: '/blog',
-    guideLabel: 'Recursos e impugnacoes em licitações',
+    guideLabel: 'Recursos e impugnações em licitações',
     legalBasis: 'Lei 14.133/2021, art. 71, § 1º',
     relatedTerms: ['revogacao', 'impugnacao', 'recurso'],
     faqEntries: [
       {
         question: 'Qual a diferença entre anulação e revogação de licitação?',
         answer:
-          'A anulação ocorre por ilegalidade (vício formal ou material) e tem efeito retroativo, desfazendo todos os atos. A revogação ocorre por interesse público superveniente e tem efeito a partir da decisão (ex nunc). Ambas devem ser fundamentadas.',
+          'A anulação ocorre por ilegalidade (vício formal ou material) é tem efeito retroativo, desfazendo todos os atos. A revogação ocorre por interesse público superveniente e tem efeito a partir da decisão (ex nunc). Ambas devem ser fundamentadas.',
       },
       {
         question: 'A anulação gera direito a indenização para o vencedor?',
@@ -96,14 +96,14 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     ],
   },
   {
-    term: 'Ata de Registro de Precos',
+    term: 'Ata de Registro de Preços',
     slug: 'ata-de-registro-de-precos',
     definition:
-      'Documento vinculativo que formaliza precos, fornecedores, órgãos participantes e condições para aquisicoes futuras dentro do Sistema de Registro de Precos (SRP). A ata tem validade de até 1 ano (prorrogável por mais 1 ano na Lei 14.133) e não obriga o órgão a contratar.',
+      'Documento vinculativo que formaliza preços, fornecedores, órgãos participantes e condições para aquisições futuras dentro do Sistema de Registro de Preços (SRP). A ata tem validade de até 1 ano (prorrogável por mais 1 ano na Lei 14.133) e não obriga o órgão a contratar.',
     example:
-      'A Secretaria de Saude registrou precos de 30 tipos de medicamentos com 5 fornecedores. Durante 12 meses, qualquer hospital da rede pode emitir ordens de compra com os precos registrados sem nova licitação.',
+      'A Secretaria de Saúde registrou preços de 30 tipos de medicamentos com 5 fornecedores. Durante 12 meses, qualquer hospital da rede pode emitir ordens de compra com os preços registrados sem nova licitação.',
     guideHref: '/blog',
-    guideLabel: 'Sistema de Registro de Precos na prática',
+    guideLabel: 'Sistema de Registro de Preços na prática',
     legalBasis: 'Lei 14.133/2021, art. 82–86; Decreto 11.462/2023',
     relatedTerms: ['sistema-de-registro-de-precos', 'pregao-eletronico', 'nota-de-empenho'],
     faqEntries: [
@@ -123,9 +123,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Atestado de Capacidade Técnica',
     slug: 'atestado-de-capacidade-tecnica',
     definition:
-      'Documento emitido por pessoa jurídica de direito público ou privado, comprovando que a empresa executou anteriormente servico ou obra similar ao objeto licitado. E o principal instrumento de qualificação técnica na fase de habilitação.',
+      'Documento emitido por pessoa jurídica de direito público ou privado, comprovando que a empresa executou anteriormente serviço ou obra similar ao objeto licitado. E o principal instrumento de qualificação técnica na fase de habilitação.',
     example:
-      'Para participar de licitação de pavimentacao asfaltica de 15 km, a empresa apresentou atestado de prefeitura vizinha comprovando execução de 12 km de pavimentacao concluida em 2024.',
+      'Para participar de licitação de pavimentação asfáltica de 15 km, a empresa apresentou atestado de prefeitura vizinha comprovando execução de 12 km de pavimentação concluída em 2024.',
     guideHref: '/blog',
     guideLabel: 'Habilitação técnica em licitações',
     legalBasis: 'Lei 14.133/2021, art. 67, III',
@@ -145,12 +145,12 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
   },
   // B
   {
-    term: 'Balanco Patrimonial',
+    term: 'Balanço Patrimonial',
     slug: 'balanco-patrimonial',
     definition:
-      'Demonstracao contabil que apresenta a posicao financeira da empresa em determinada data, evidenciando ativos, passivos e patrimonio liquido. E exigido na habilitação econômico-financeira para comprovar indices como liquidez geral e endividamento.',
+      'Demonstração contábil que apresenta a posição financeira da empresa em determinada data, evidenciando ativos, passivos e patrimônio líquido. E exigido na habilitação econômico-financeira para comprovar índices como liquidez geral e endividamento.',
     example:
-      'O edital exigia Indice de Liquidez Geral >= 1,0. A empresa apresentou balanco patrimonial de 2025 com ativo circulante de R$ 3.200.000 e passivo circulante de R$ 2.100.000, resultando em ILG de 1,52 — aprovada na habilitação.',
+      'O edital exigia Índice de Liquidez Geral >= 1,0. A empresa apresentou balanço patrimonial de 2025 com ativo circulante de R$ 3.200.000 e passivo circulante de R$ 2.100.000, resultando em ILG de 1,52 — aprovada na habilitação.',
     guideHref: '/blog',
     guideLabel: 'Habilitação econômico-financeira',
     legalBasis: 'Lei 14.133/2021, art. 69, I',
@@ -172,11 +172,11 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'BDI (Beneficios e Despesas Indiretas)',
     slug: 'bdi',
     definition:
-      'Percentual aplicado sobre o custo direto de obras ou servicos que engloba despesas indiretas (administracao central, seguros, garantias), tributos e lucro. O BDI compoe o preco final da proposta e e objeto de analise detalhada pelos órgãos de controle.',
+      'Percentual aplicado sobre o custo direto de obras ou serviços que engloba despesas indiretas (administração central, seguros, garantias), tributos e lucro. O BDI compoe o preço final da proposta e e objeto de análise detalhada pelos órgãos de controle.',
     example:
-      'Em licitação de obra pública, a empresa calculou custo direto de R$ 800.000 e aplicou BDI de 28,5%, resultando em preco final de R$ 1.028.000. O TCU considerou o percentual compativel com a referência SINAPI.',
+      'Em licitação de obra pública, a empresa calculou custo direto de R$ 800.000 e aplicou BDI de 28,5%, resultando em preço final de R$ 1.028.000. O TCU considerou o percentual compatível com a referência SINAPI.',
     guideHref: '/blog',
-    guideLabel: 'Formacao de precos em obras públicas',
+    guideLabel: 'Formação de preços em obras públicas',
     legalBasis: 'Lei 14.133/2021, art. 23; Acórdão TCU 2622/2013',
     relatedTerms: ['preco-de-referencia', 'proposta-comercial', 'concorrencia'],
     faqEntries: [
@@ -196,9 +196,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'BEC (Bolsa Eletrônica de Compras)',
     slug: 'bec',
     definition:
-      'Sistema eletrônico de compras do governo do estado de Sao Paulo, utilizado para aquisição de bens e servicos por órgãos estaduais e municipais paulistas. Funciona como plataforma de pregão eletrônico e oferta de compra com catalogo de produtos padronizados.',
+      'Sistema eletrônico de compras do governo do estado de São Paulo, utilizado para aquisição de bens e serviços por órgãos estaduais e municipais paulistas. Funciona como plataforma de pregão eletrônico e oferta de compra com catalogo de produtos padronizados.',
     example:
-      'A Secretaria de Educacao de SP públicou oferta de compra na BEC para 10.000 cadeiras escolares. Fornecedores cadastrados no CAUFESP ofertaram precos diretamente na plataforma durante 3 dias.',
+      'A Secretaria de Educação de SP públicou oferta de compra na BEC para 10.000 cadeiras escolares. Fornecedores cadastrados no CAUFESP ofertaram preços diretamente na plataforma durante 3 dias.',
     guideHref: '/blog',
     guideLabel: 'Portais de compras estaduais',
     legalBasis: 'Decreto Estadual SP 47.297/2002',
@@ -207,7 +207,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       {
         question: 'Qual a diferença entre BEC e PNCP?',
         answer:
-          'A BEC é o portal de compras eletrônicas do governo do Estado de São Paulo, criado pelo Decreto 47.297/2002. O PNCP é o portal nacional obrigatório criado pela Lei 14.133/2021 para todos os entes federativos. São Paulo publica no PNCP e pode operar as compras pela BEC simultaneamente.',
+          'A BEC é o portal de compras eletrônicas do governo do Estado de São Paulo, criado pelo Decreto 47.297/2002. O PNCP é o portal nacional obrigatório criado pela Lei 14.133/2021 para todos os entes federativos. São Paulo pública no PNCP e pode operar as compras pela BEC simultaneamente.',
       },
       {
         question: 'Como me cadastrar na BEC para vender para o governo de SP?',
@@ -223,7 +223,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition:
       'O Sistema de Cadastramento Unificado de Fornecedores (SICAF) e o registro oficial do governo federal que centraliza dados cadastrais, habilitação jurídica, regularidade fiscal e qualificação econômica de empresas que fornecem ao poder público. O cadastro simplifica a participação em licitações federais.',
     example:
-      'Antes de participar do pregão do Ministerio da Saude, a empresa atualizou seu SICAF com certidoes negativas federais, estaduais e municipais, balanco patrimonial e contrato social atualizado.',
+      'Antes de participar do pregão do Ministério da Saúde, a empresa atualizou seu SICAF com certidões negativas federais, estaduais e municipais, balanço patrimonial e contrato social atualizado.',
     guideHref: '/blog',
     guideLabel: 'Como se cadastrar no SICAF',
     legalBasis: 'Lei 14.133/2021, art. 87–88; IN SEGES 3/2018',
@@ -242,12 +242,12 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     ],
   },
   {
-    term: 'Certidao Negativa',
+    term: 'Certidão Negativa',
     slug: 'certidao-negativa',
     definition:
-      'Documento oficial emitido por órgãos públicos que atesta a inexistencia de debitos ou pendencias do contribuinte. Na habilitação, sao exigidas certidoes negativas de debitos federais (CND/PGFN), estaduais, municipais, FGTS e trabalhistas (CNDT).',
+      'Documento oficial emitido por órgãos públicos que atesta a inexistência de débitos ou pendencias do contribuinte. Na habilitação, são exigidas certidões negativas de débitos federais (CND/PGFN), estaduais, municipais, FGTS e trabalhistas (CNDT).',
     example:
-      'A empresa foi inabilitada porque a Certidao Negativa de Debitos Trabalhistas (CNDT) estava vencida ha 3 dias na data da sessão do pregão — ressaltando a importancia de monitorar vencimentos.',
+      'A empresa foi inabilitada porque a Certidão Negativa de Débitos Trabalhistas (CNDT) estava vencida ha 3 dias na data da sessão do pregão — ressaltando a importância de monitorar vencimentos.',
     guideHref: '/blog',
     guideLabel: 'Documentos de habilitação',
     legalBasis: 'Lei 14.133/2021, art. 68, II; Lei 12.440/2011 (CNDT)',
@@ -269,11 +269,11 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Chamada Pública',
     slug: 'chamada-publica',
     definition:
-      'Modalidade simplificada de seleção utilizada principalmente para aquisição de alimentos da agricultura familiar no ambito do Programa Nacional de Alimentacao Escolar (PNAE). A Lei 11.947/2009 determina que no mínimo 30% dos recursos do PNAE sejam destinados a compras via chamada pública.',
+      'Modalidade simplificada de seleção utilizada principalmente para aquisição de alimentos da agricultura familiar no ambito do Programa Nacional de Alimentação Escolar (PNAE). A Lei 11.947/2009 determina que no mínimo 30% dos recursos do PNAE sejam destinados a compras via chamada pública.',
     example:
-      'A prefeitura públicou chamada pública para aquisição de 5 toneladas de hortalicas organicas de agricultores familiares locais para merenda escolar, com preco baseado no mercado atacadista regional.',
+      'A prefeitura públicou chamada pública para aquisição de 5 toneladas de hortaliças orgânicas de agricultores familiares locais para merenda escolar, com preço baseado no mercado atacadista regional.',
     guideHref: '/blog',
-    guideLabel: 'Vendendo para programas de alimentacao escolar',
+    guideLabel: 'Vendendo para programas de alimentação escolar',
     legalBasis: 'Lei 11.947/2009, art. 14; Resolução FNDE 6/2020',
     relatedTerms: ['dispensa-de-licitacao', 'edital', 'me-epp'],
     faqEntries: [
@@ -293,11 +293,11 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'ComprasNet',
     slug: 'comprasnet',
     definition:
-      'Portal eletrônico de compras do governo federal brasileiro, operado desde 2000, que concentra pregoes eletrônicos, cotacoes e licitações federais. Esta sendo gradualmente substituido pelo PNCP (Portal Nacional de Contratações Públicas) conforme a Lei 14.133/2021.',
+      'Portal eletrônico de compras do governo federal brasileiro, operado desde 2000, que concentra pregões eletrônicos, cotações e licitações federais. Esta sendo gradualmente substituido pelo PNCP (Portal Nacional de Contratações Públicas) conforme a Lei 14.133/2021.',
     example:
-      'Até 2025, o ComprasNet processou mais de R$ 50 bilhoes/ano em pregoes eletrônicos federais. Empresas que ja operavam no ComprasNet precisam migrar seus cadastros para o PNCP até o prazo de transicao.',
+      'Até 2025, o ComprasNet processou mais de R$ 50 bilhões/ano em pregões eletrônicos federais. Empresas que já operavam no ComprasNet precisam migrar seus cadastros para o PNCP até o prazo de transição.',
     guideHref: '/blog',
-    guideLabel: 'Migracao ComprasNet para PNCP',
+    guideLabel: 'Migração ComprasNet para PNCP',
     legalBasis: 'Decreto 10.947/2022 (transição para o PNCP)',
     relatedTerms: ['pncp', 'pregao-eletronico', 'bec'],
     faqEntries: [
@@ -317,9 +317,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Concorrência',
     slug: 'concorrencia',
     definition:
-      'Modalidade licitatória destinada a contratações de maior vulto, com ampla publicidade e prazos mais longos. Na Lei 14.133/2021, a concorrência e utilizada para obras, servicos de engenharia e compras acima dos limites do pregão, admitindo os critérios de julgamento menor preco, melhor técnica ou técnica e preco.',
+      'Modalidade licitatória destinada a contratações de maior vulto, com ampla publicidade e prazos mais longos. Na Lei 14.133/2021, a concorrência e utilizada para obras, serviços de engenharia e compras acima dos limites do pregão, admitindo os critérios de julgamento menor preço, melhor técnica ou técnica e preço.',
     example:
-      'O DNIT abriu concorrência para construcao de ponte com valor estimado de R$ 45 milhoes. O prazo de públicação do edital foi de 35 dias uteis, permitindo ampla participação de construtoras de todo o pais.',
+      'O DNIT abriu concorrência para construção de ponte com valor estimado de R$ 45 milhões. O prazo de públicação do edital foi de 35 dias úteis, permitindo ampla participação de construtoras de todo o país.',
     guideHref: '/blog',
     guideLabel: 'Modalidades de licitação',
     legalBasis: 'Lei 14.133/2021, art. 29, I',
@@ -343,7 +343,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition:
       'Agrupamento formal de duas ou mais empresas para participar conjuntamente de licitação, somando capacidades técnicas e financeiras. O consórcio não cria nova pessoa jurídica — cada consorciada mantem sua individualidade e responde solidariamente pelas obrigações.',
     example:
-      'Tres empresas de TI formaram consórcio para disputar contrato de R$ 80 milhoes de modernizacao de datacenter: uma com expertise em infraestrutura, outra em seguranca e a terceira em cloud migration.',
+      'Três empresas de TI formaram consórcio para disputar contrato de R$ 80 milhões de modernização de datacenter: uma com expertise em infraestrutura, outra em segurança e a terceira em cloud migration.',
     guideHref: '/blog',
     guideLabel: 'Consórcio em licitações',
     legalBasis: 'Lei 14.133/2021, art. 15',
@@ -365,9 +365,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Contrato Administrativo',
     slug: 'contrato-administrativo',
     definition:
-      'Acordo formal celebrado entre a administracao pública e o fornecedor vencedor da licitação, estabelecendo direitos, obrigações, prazos e condições de execução. Diferente dos contratos privados, o contrato administrativo possui cláusulas exorbitantes que conferem prerrogativas especiais ao poder público.',
+      'Acordo formal celebrado entre a administração pública e o fornecedor vencedor da licitação, estabelecendo direitos, obrigações, prazos e condições de execução. Diferente dos contratos privados, o contrato administrativo possui cláusulas exorbitantes que conferem prerrogativas especiais ao poder público.',
     example:
-      'Após adjudicação e homologação de pregão para servicos de limpeza, o hospital público assinou contrato administrativo de 12 meses com a empresa vencedora, no valor mensal de R$ 185.000, com cláusulas de fiscalização e penalidades.',
+      'Após adjudicação e homologação de pregão para serviços de limpeza, o hospital público assinou contrato administrativo de 12 meses com a empresa vencedora, no valor mensal de R$ 185.000, com cláusulas de fiscalização e penalidades.',
     guideHref: '/blog',
     guideLabel: 'Execução de contratos públicos',
     legalBasis: 'Lei 14.133/2021, art. 89–108',
@@ -390,9 +390,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Diálogo Competitivo',
     slug: 'dialogo-competitivo',
     definition:
-      'Modalidade licitatória introduzida pela Lei 14.133/2021 para contratações de objetos inovadores ou técnicamente complexos, onde a administracao dialoga com licitantes pre-selecionados para desenvolver solucoes antes da fase de propostas. E indicado quando o órgão não consegue definir específicacoes técnicas de forma precisa.',
+      'Modalidade licitatória introduzida pela Lei 14.133/2021 para contratações de objetos inovadores ou técnicamente complexos, onde a administração dialoga com licitantes pre-selecionados para desenvolver soluções antes da fase de propostas. E indicado quando o órgão não consegue definir específicacoes técnicas de forma precisa.',
     example:
-      'O Ministerio da Ciencia abriu diálogo competitivo para sistema de inteligencia artificial de monitoramento ambiental. Tres empresas foram selecionadas para 60 dias de diálogos técnicos antes de submeterem propostas finais.',
+      'O Ministério da Ciência abriu diálogo competitivo para sistema de inteligência artificial de monitoramento ambiental. Três empresas foram selecionadas para 60 dias de diálogos técnicos antes de submeterem propostas finais.',
     guideHref: '/blog',
     guideLabel: 'Novas modalidades da Lei 14.133',
     legalBasis: 'Lei 14.133/2021, art. 32',
@@ -414,9 +414,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Dispensa de Licitação',
     slug: 'dispensa-de-licitacao',
     definition:
-      'Hipotese de contratação direta prevista em lei, onde a licitação e dispensavel por razoes de valor (até R$ 59.906,02 para compras em 2026), emergencia, situação específica ou outros casos do art. 75 da Lei 14.133. Difere da inexigibilidade porque a competicao seria possivel, mas a lei autoriza sua dispensa.',
+      'Hipótese de contratação direta prevista em lei, onde a licitação é dispensável pôr razões de valor (até R$ 59.906,02 para compras em 2026), emergência, situação específica ou outros casos do art. 75 da Lei 14.133. Difere da inexigibilidade porque a competição seria possível, mas a lei autoriza sua dispensa.',
     example:
-      'A universidade contratou diretamente servico de conserto de ar-condicionado por R$ 42.000, enquadrado na dispensa por valor (limite de R$ 59.906,02 para servicos em 2026), com pesquisa de precos de 3 fornecedores.',
+      'A universidade contratou diretamente serviço de conserto de ar-condicionado pôr R$ 42.000, enquadrado na dispensa pôr valor (limite de R$ 59.906,02 para serviços em 2026), com pesquisa de preços de 3 fornecedores.',
     guideHref: '/blog',
     guideLabel: 'Contratação direta: dispensa e inexigibilidade',
     legalBasis: 'Lei 14.133/2021, art. 75',
@@ -438,9 +438,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Dotação Orçamentária',
     slug: 'dotacao-orcamentaria',
     definition:
-      'Previsão de recursos financeiros consignada no orçamento público (LOA) destinada a cobrir determinada despesa. Nenhuma licitação pode ser lancada sem dotação orçamentária que garanta os recursos necessarios para pagamento da contratação.',
+      'Previsão de recursos financeiros consignada no orçamento público (LOA) destinada a cobrir determinada despesa. Nenhuma licitação pode ser lancada sem dotação orçamentária que garanta os recursos necessários para pagamento da contratação.',
     example:
-      'O edital de pregão para mobiliario escolar indicou a dotação orçamentária 12.361.0001.2035 — Programa de Equipamentos Escolares, com credito disponivel de R$ 2.300.000 no exercicio de 2026.',
+      'O edital de pregão para mobiliário escolar indicou a dotação orçamentária 12.361.0001.2035 — Programa de Equipamentos Escolares, com crédito disponível de R$ 2.300.000 no exercicio de 2026.',
     guideHref: '/blog',
     guideLabel: 'Orçamento público e licitações',
     legalBasis: 'Lei 14.133/2021, art. 11, § 3º; Lei 4.320/1964',
@@ -463,9 +463,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Edital',
     slug: 'edital',
     definition:
-      'Instrumento convocatorio que estabelece todas as regras, exigencias, prazos e critérios de uma licitação. E a "lei interna" do processo licitatório — tudo o que não esta no edital não pode ser exigido, e tudo o que esta nele vincula tanto a administracao quanto os licitantes.',
+      'Instrumento convocatório que estabelece todas as regras, exigências, prazos e critérios de uma licitação. E a "lei interna" do processo licitatório — tudo o que não está no edital não pode ser exigido, e tudo o que está nele vincula tanto a administração quanto os licitantes.',
     example:
-      'O edital do Pregão Eletrônico 045/2026 da Prefeitura de Curitiba específicava: objeto (500 notebooks), prazo de entrega (60 dias), critério de julgamento (menor preco por lote), habilitação exigida e modelo de proposta.',
+      'O edital do Pregão Eletrônico 045/2026 da Prefeitura de Curitiba específicava: objeto (500 notebooks), prazo de entrega (60 dias), critério de julgamento (menor preço por lote), habilitação exigida e modelo de proposta.',
     guideHref: '/blog',
     guideLabel: 'Como analisar editais de licitação',
     legalBasis: 'Lei 14.133/2021, art. 25',
@@ -487,11 +487,11 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Estudo Técnico Preliminar (ETP)',
     slug: 'estudo-tecnico-preliminar',
     definition:
-      'Documento obrigatório na fase preparatoria da licitação (Lei 14.133, art. 18) que demonstra a necessidade da contratação, analisa solucoes disponiveis no mercado e define requisitos técnicos. O ETP embasa o Termo de Referência e e públicado no PNCP.',
+      'Documento obrigatório na fase preparatória da licitação (Lei 14.133, art. 18) que demonstra a necessidade da contratação, analisa soluções disponíveis no mercado e define requisitos técnicos. O ETP embasa o Termo de Referência e e públicado no PNCP.',
     example:
-      'Antes de licitar sistema de gestão hospitalar, o ETP comparou 4 solucoes de mercado (SaaS vs on-premise), analisou custos em 5 anos e concluiu que SaaS seria 35% mais econômico, justificando a opção técnica do Termo de Referência.',
+      'Antes de licitar sistema de gestão hospitalar, o ETP comparou 4 soluções de mercado (SaaS vs on-premise), analisou custos em 5 anos e concluiu que SaaS seria 35% mais econômico, justificando a opção técnica do Termo de Referência.',
     guideHref: '/blog',
-    guideLabel: 'Fase preparatoria na Lei 14.133',
+    guideLabel: 'Fase preparatória na Lei 14.133',
     legalBasis: 'Lei 14.133/2021, art. 18',
     relatedTerms: ['mapa-de-riscos', 'edital', 'pncp'],
     faqEntries: [
@@ -512,9 +512,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Fiscalização',
     slug: 'fiscalizacao',
     definition:
-      'Atividade exercida por servidor ou comissao designada pelo órgão contratante para acompanhar a execução do contrato, verificar qualidade, prazos e conformidade com as cláusulas pactuadas. A Lei 14.133 torna obrigatória a designacao de fiscal para todo contrato.',
+      'Atividade exercida por servidor ou comissão designada pelo órgão contratante para acompanhar a execução do contrato, verificar qualidade, prazos e conformidade com as cláusulas pactuadas. A Lei 14.133 torna obrigatória a designação de fiscal para todo contrato.',
     example:
-      'O fiscal do contrato de servicos de TI identificou que a equipe alocada estava com 2 profissionais a menos que o exigido. Notificou a empresa, que regularizou em 5 dias, evitando aplicação de multa contratual de 2%.',
+      'O fiscal do contrato de serviços de TI identificou que a equipe alocada estava com 2 profissionais a menos que o exigido. Notificou a empresa, que regularizou em 5 dias, evitando aplicação de multa contratual de 2%.',
     guideHref: '/blog',
     guideLabel: 'Fiscalização de contratos públicos',
     legalBasis: 'Lei 14.133/2021, art. 117',
@@ -537,9 +537,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Garantia Contratual',
     slug: 'garantia-contratual',
     definition:
-      'Garantia exigida do contratado para assegurar a execução do contrato, podendo ser caucao em dinheiro, seguro-garantia ou fianca bancaria. A Lei 14.133 permite exigir até 5% do valor do contrato (até 10% para obras de grande vulto).',
+      'Garantia exigida do contratado para assegurar a execução do contrato, podendo ser caução em dinheiro, seguro-garantia ou fianca bancária. A Lei 14.133 permite exigir até 5% do valor do contrato (até 10% para obras de grande vulto).',
     example:
-      'Para contrato de R$ 10 milhoes em obras de saneamento, a construtora apresentou seguro-garantia de R$ 500.000 (5%) emitido por seguradora autorizada pela SUSEP, com vigencia até 90 dias após o recebimento definitivo.',
+      'Para contrato de R$ 10 milhões em obras de saneamento, a construtora apresentou seguro-garantia de R$ 500.000 (5%) emitido por seguradora autorizada pela SUSEP, com vigência até 90 dias após o recebimento definitivo.',
     guideHref: '/blog',
     guideLabel: 'Garantias em contratos públicos',
     legalBasis: 'Lei 14.133/2021, art. 96–99',
@@ -563,7 +563,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition:
       'Garantia exigida na fase de licitação para assegurar a seriedade da proposta apresentada. A Lei 14.133 permite exigir garantia de até 1% do valor estimado da contratação, devolvida após a adjudicação.',
     example:
-      'Em concorrência para construcao de viaduto estimada em R$ 25 milhoes, o edital exigiu garantia de proposta de R$ 250.000 (1%). A empresa apresentou fianca bancaria, que foi devolvida 15 dias após a homologação.',
+      'Em concorrência para construção de viaduto estimada em R$ 25 milhões, o edital exigiu garantia de proposta de R$ 250.000 (1%). A empresa apresentou fianca bancária, que foi devolvida 15 dias após a homologação.',
     guideHref: '/blog',
     guideLabel: 'Garantias em licitações',
     legalBasis: 'Lei 14.133/2021, art. 58',
@@ -586,9 +586,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Habilitação',
     slug: 'habilitacao',
     definition:
-      'Fase do processo licitatório em que se verifica a documentacao jurídica, fiscal, trabalhista, técnica e econômico-financeira dos licitantes. Na Lei 14.133, a habilitação ocorre após o julgamento das propostas (inversão de fases), exceto quando o edital determina o contrario.',
+      'Fase do processo licitatório em que se verifica a documentação jurídica, fiscal, trabalhista, técnica e econômico-financeira dos licitantes. Na Lei 14.133, a habilitação ocorre após o julgamento das propostas (inversão de fases), exceto quando o edital determina o contrário.',
     example:
-      'Dos 12 participantes do pregão, 3 foram inabilitados: um por CNDT vencida, outro por falta de atestado técnico compativel e o terceiro por indice de liquidez abaixo do mínimo exigido de 1,0.',
+      'Dos 12 participantes do pregão, 3 foram inabilitados: um por CNDT vencida, outro por falta de atestado técnico compatível e o terceiro por índice de liquidez abaixo do mínimo exigido de 1,0.',
     guideHref: '/blog',
     guideLabel: 'Habilitação em licitações',
     legalBasis: 'Lei 14.133/2021, art. 62–70',
@@ -610,9 +610,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Homologação',
     slug: 'homologacao',
     definition:
-      'Ato da autoridade superior que ratifica todo o procedimento licitatório após verificar sua legalidade e conveniencia. A homologação e o último ato antes da convocação para assinatura do contrato e pode ser precedida de parecer jurídico.',
+      'Ato da autoridade superior que ratifica todo o procedimento licitatório após verificar sua legalidade e conveniência. A homologação e o último ato antes da convocação para assinatura do contrato e pode ser precedida de parecer jurídico.',
     example:
-      'O Secretario de Administracao homologou o pregão eletrônico 30 dias após a adjudicação, confirmando que todas as etapas foram conduzidas conforme a lei e autorizando a assinatura do contrato com o vencedor.',
+      'O Secretário de Administração homologou o pregão eletrônico 30 dias após a adjudicação, confirmando que todas as etapas foram conduzidas conforme a lei e autorizando a assinatura do contrato com o vencedor.',
     guideHref: '/blog',
     guideLabel: 'Etapas do processo licitatório',
     legalBasis: 'Lei 14.133/2021, art. 71',
@@ -635,9 +635,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Impugnação',
     slug: 'impugnacao',
     definition:
-      'Instrumento jurídico pelo qual qualquer cidadao ou licitante questiona termos do edital antes da realizacao da sessão pública. A impugnação deve ser apresentada em até 3 dias uteis antes da abertura (cidadao) ou até 3 dias uteis (licitante) na Lei 14.133.',
+      'Instrumento jurídico pelo qual qualquer cidadão ou licitante questiona termos do edital antes da realização da sessão pública. A impugnação deve ser apresentada em até 3 dias úteis antes da abertura (cidadão) ou até 3 dias úteis (licitante) na Lei 14.133.',
     example:
-      'Uma empresa de software impugnou edital que exigia "sistema desenvolvido em Java" sem justificativa técnica, argumentando que a específicacao de linguagem restringia a concorrência. A comissao acatou e alterou para "sistema web multiplataforma".',
+      'Uma empresa de software impugnou edital que exigia "sistema desenvolvido em Java" sem justificativa técnica, argumentando que a específicacao de linguagem restringia a concorrência. A comissão acatou e alterou para "sistema web multiplataforma".',
     guideHref: '/blog',
     guideLabel: 'Impugnação de editais',
     legalBasis: 'Lei 14.133/2021, art. 164',
@@ -659,9 +659,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Inexigibilidade',
     slug: 'inexigibilidade',
     definition:
-      'Contratação direta quando ha inviabilidade de competicao, ou seja, quando o objeto so pode ser fornecido por um único prestador ou quando a natureza do servico torna impossivel a comparação objetiva. Difere da dispensa, onde a competicao seria possivel mas e dispensada por lei.',
+      'Contratação direta quando ha inviabilidade de competição, ou seja, quando o objeto só pode ser fornecido por um único prestador ou quando a natureza do serviço torna impossível a comparação objetiva. Difere da dispensa, onde a competição seria possível mas e dispensada por lei.',
     example:
-      'A universidade contratou por inexigibilidade o único representante autorizado no Brasil de equipamento de ressonancia magnetica Siemens MAGNETOM para manutenção corretiva, pois a fabricante não credencia terceiros.',
+      'A universidade contratou por inexigibilidade o único representante autorizado no Brasil de equipamento de ressonância magnética Siemens MAGNETOM para manutenção corretiva, pois a fabricante não credencia terceiros.',
     guideHref: '/blog',
     guideLabel: 'Contratação direta: dispensa e inexigibilidade',
     legalBasis: 'Lei 14.133/2021, art. 74',
@@ -684,7 +684,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Leilão',
     slug: 'leilao',
     definition:
-      'Modalidade licitatória utilizada para alienação (venda) de bens moveis e imoveis da administracao pública ao maior lance. Na Lei 14.133, o leilão pode ser presencial ou eletrônico e exige avaliação prévia dos bens.',
+      'Modalidade licitatória utilizada para alienação (venda) de bens móveis e imóveis da administração pública ao maior lance. Na Lei 14.133, o leilão pode ser presencial ou eletrônico e exige avaliação prévia dos bens.',
     example:
       'O Exercito realizou leilão eletrônico de 50 veiculos descaracterizados com lance mínimo de R$ 8.000 cada. Os veiculos foram arrematados com agio medio de 45% sobre a avaliação.',
     guideHref: '/blog',
@@ -708,9 +708,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Licitação Deserta',
     slug: 'licitacao-deserta',
     definition:
-      'Situação em que nenhum interessado comparece ao processo licitatório. Quando a licitação e deserta, a administracao pode repetir o processo ou realizar contratação direta (dispensa) desde que mantenha as mesmas condições do edital original.',
+      'Situação em que nenhum interessado comparece ao processo licitatório. Quando a licitação e deserta, a administração pode repetir o processo ou realizar contratação direta (dispensa) desde que mantenha as mesmas condições do edital original.',
     example:
-      'O pregão para fornecimento de refeicoes em municipio do interior teve zero propostas. A prefeitura reabriu o certame com prazo estendido e, novamente deserto, contratou diretamente por dispensa (art. 75, III da Lei 14.133).',
+      'O pregão para fornecimento de refeições em municipio do interior teve zero propostas. A prefeitura reabriu o certame com prazo estendido e, novamente deserto, contratou diretamente por dispensa (art. 75, III da Lei 14.133).',
     guideHref: '/blog',
     guideLabel: 'Licitação deserta e fracassada',
     legalBasis: 'Lei 14.133/2021, art. 75, III',
@@ -732,9 +732,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Licitação Fracassada',
     slug: 'licitacao-fracassada',
     definition:
-      'Situação em que todos os licitantes sao inabilitados ou todas as propostas sao desclassificadas. Diferentemente da deserta (ninguem aparece), na fracassada houve participantes, mas nenhum atendeu aos requisitos. A Lei 14.133 permite fixar prazo para adequação antes de repetir.',
+      'Situação em que todos os licitantes são inabilitados ou todas as propostas são desclassificadas. Diferentemente da deserta (ninguem aparece), na fracassada houve participantes, mas nenhum atendeu aos requisitos. A Lei 14.133 permite fixar prazo para adequação antes de repetir.',
     example:
-      'Na concorrência para construcao de escola, as 5 propostas foram desclassificadas por precos acima do orçamento estimado. A comissao fixou prazo de 8 dias para readequação, conforme art. 75, III, da Lei 14.133.',
+      'Na concorrência para construção de escola, as 5 propostas foram desclassificadas por preços acima do orçamento estimado. A comissão fixou prazo de 8 dias para readequação, conforme art. 75, III, da Lei 14.133.',
     guideHref: '/blog',
     guideLabel: 'Licitação deserta e fracassada',
     legalBasis: 'Lei 14.133/2021, art. 75, III',
@@ -757,9 +757,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Mapa de Riscos',
     slug: 'mapa-de-riscos',
     definition:
-      'Documento elaborado na fase preparatoria da licitação que identifica os principais riscos do processo de contratação, suas probabilidades e impactos. A Lei 14.133 tornou obrigatória sua elaboração como parte do planejamento da contratação.',
+      'Documento elaborado na fase preparatória da licitação que identifica os principais riscos do processo de contratação, suas probabilidades e impactos. A Lei 14.133 tornou obrigatória sua elaboração como parte do planejamento da contratação.',
     example:
-      'O mapa de riscos de contratação de datacenter identificou 12 riscos, sendo o mais critico "indisponibilidade superior a 4h/mes" com probabilidade alta e impacto severo, levando a inclusão de SLA com multas progressivas no contrato.',
+      'O mapa de riscos de contratação de datacenter identificou 12 riscos, sendo o mais crítico "indisponibilidade superior a 4h/mês" com probabilidade alta e impacto severo, levando a inclusão de SLA com multas progressivas no contrato.',
     guideHref: '/blog',
     guideLabel: 'Gestão de riscos em contratações',
     legalBasis: 'Lei 14.133/2021, art. 18, X',
@@ -781,9 +781,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Matriz de Riscos',
     slug: 'matriz-de-riscos',
     definition:
-      'Cláusula contratual que distribui de forma objetiva as responsabilidades sobre eventos supervenientes entre contratante e contratado. Diferentemente do mapa de riscos (fase preparatoria), a matriz de riscos faz parte do contrato e vincula ambas as partes.',
+      'Cláusula contratual que distribui de forma objetiva as responsabilidades sobre eventos supervenientes entre contratante e contratado. Diferentemente do mapa de riscos (fase preparatória), a matriz de riscos faz parte do contrato e vincula ambas as partes.',
     example:
-      'Na matriz de riscos do contrato de obra rodoviaria, o risco de variacao do preco do asfalto acima de 10% ficou com a administracao (reequilíbrio automatico), enquanto o risco de atraso por falta de mao-de-obra ficou com a construtora.',
+      'Na matriz de riscos do contrato de obra rodoviária, o risco de variação do preço do asfalto acima de 10% ficou com a administração (reequilíbrio automático), enquanto o risco de atraso por falta de mao-de-obra ficou com a construtora.',
     guideHref: '/blog',
     guideLabel: 'Gestão de riscos em contratações',
     legalBasis: 'Lei 14.133/2021, art. 103',
@@ -805,9 +805,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'ME/EPP',
     slug: 'me-epp',
     definition:
-      'Microempresa (receita bruta anual até R$ 360.000) e Empresa de Pequeno Porte (receita até R$ 4.800.000) recebem tratamento diferenciado em licitações: direito de preferência quando a proposta for até 5% superior (pregão) ou 10% (demais modalidades) a melhor oferta, alem de prazo extra para regularização fiscal.',
+      'Microempresa (receita bruta anual até R$ 360.000) e Empresa de Pequeno Porte (receita até R$ 4.800.000) recebem tratamento diferenciado em licitações: direito de preferência quando a proposta for até 5% superior (pregão) ou 10% (demais modalidades) a melhor oferta, além de prazo extra para regularização fiscal.',
     example:
-      'No pregão para material de escritorio, a ME ofertou R$ 52.000 contra R$ 50.000 da empresa de grande porte. Como a diferenca foi inferior a 5%, a ME foi convocada para cobrir o lance e ofertou R$ 49.800, vencendo o certame.',
+      'No pregão para material de escritório, a ME ofertou R$ 52.000 contra R$ 50.000 da empresa de grande porte. Como a diferença foi inferior a 5%, a ME foi convocada para cobrir o lance e ofertou R$ 49.800, vencendo o certame.',
     guideHref: '/blog',
     guideLabel: 'Vantagens de ME/EPP em licitações',
     legalBasis: 'Lei Complementar 123/2006, art. 43–44; Lei 14.133/2021, art. 4º',
@@ -829,11 +829,11 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Medição',
     slug: 'medicao',
     definition:
-      'Procedimento periódico (geralmente mensal) de verificação e quantificacao dos servicos ou obras efetivamente executados pelo contratado, servindo como base para emissão da nota fiscal e pagamento. A medição e atestada pelo fiscal do contrato.',
+      'Procedimento periódico (geralmente mensal) de verificação e quantificação dos serviços ou obras efetivamente executados pelo contratado, servindo como base para emissão da nota fiscal e pagamento. A medição e atestada pelo fiscal do contrato.',
     example:
-      'Na 3a medição mensal do contrato de limpeza hospitalar, o fiscal verificou que 95% da area foi atendida (2 alas em reforma ficaram sem servico) e autorizou pagamento proporcional de R$ 142.500 sobre os R$ 150.000 mensais.',
+      'Na 3a medição mensal do contrato de limpeza hospitalar, o fiscal verificou que 95% da área foi atendida (2 alas em reforma ficaram sem serviço) e autorizou pagamento proporcional de R$ 142.500 sobre os R$ 150.000 mensais.',
     guideHref: '/blog',
-    guideLabel: 'Execução de contratos de servicos',
+    guideLabel: 'Execução de contratos de serviços',
     legalBasis: 'Lei 14.133/2021, art. 140',
     relatedTerms: ['fiscalizacao', 'recebimento-provisorio', 'recebimento-definitivo'],
     faqEntries: [
@@ -854,7 +854,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Nota de Empenho',
     slug: 'nota-de-empenho',
     definition:
-      'Documento emitido pelo órgão público que reserva dotação orçamentária para cobrir despesa específica. O empenho e a primeira fase da execução da despesa pública e precede a liquidacao e o pagamento. Em compras de pequeno valor, pode substituir o contrato formal.',
+      'Documento emitido pelo órgão público que reserva dotação orçamentária para cobrir despesa específica. O empenho e a primeira fase da execução da despesa pública e precede a liquidação e o pagamento. Em compras de pequeno valor, pode substituir o contrato formal.',
     example:
       'Após homologação do pregão de material de limpeza (R$ 38.000), o setor financeiro emitiu Nota de Empenho vinculada a dotação 3.3.90.30 — Material de Consumo, autorizando o fornecedor a iniciar a entrega.',
     guideHref: '/blog',
@@ -876,14 +876,14 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
   },
   // O
   {
-    term: 'Ordem de Servico',
+    term: 'Ordem de Serviço',
     slug: 'ordem-de-servico',
     definition:
-      'Documento emitido pelo órgão contratante que autoriza formalmente o inicio da execução do contrato ou de uma etapa específica. Define data de inicio, escopo da demanda e prazo de conclusão, sendo obrigatória em contratos de servicos continuados.',
+      'Documento emitido pelo órgão contratante que autoriza formalmente o início da execução do contrato ou de uma etapa específica. Define data de início, escopo da demanda e prazo de conclusão, sendo obrigatória em contratos de serviços continuados.',
     example:
-      'A Ordem de Servico n. 001/2026 autorizou a empresa de TI a iniciar o desenvolvimento do modulo de RH do sistema, com prazo de 90 dias e equipe mínima de 5 profissionais, conforme cronograma do contrato.',
+      'A Ordem de Serviço n. 001/2026 autorizou a empresa de TI a iniciar o desenvolvimento do modulo de RH do sistema, com prazo de 90 dias e equipe mínima de 5 profissionais, conforme cronograma do contrato.',
     guideHref: '/blog',
-    guideLabel: 'Gestão de contratos de servicos',
+    guideLabel: 'Gestão de contratos de serviços',
     legalBasis: 'Lei 14.133/2021, art. 116; IN SEGES 5/2017 (serviços)',
     relatedTerms: ['contrato-administrativo', 'fiscalizacao', 'medicao'],
     faqEntries: [
@@ -904,9 +904,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Penalidade/Sanção',
     slug: 'penalidade-sancao',
     definition:
-      'Punição aplicada ao fornecedor por descumprimento contratual ou conduta irregular em licitação. A Lei 14.133 preve 4 tipos: advertencia, multa (até 30% do contrato), impedimento de licitar (até 3 anos) e declaração de inidoneidade (3 a 6 anos). Sanções sao registradas no PNCP.',
+      'Punição aplicada ao fornecedor por descumprimento contratual ou conduta irregular em licitação. A Lei 14.133 preve 4 tipos: advertência, multa (até 30% do contrato), impedimento de licitar (até 3 anos) e declaração de inidoneidade (3 a 6 anos). Sanções são registradas no PNCP.',
     example:
-      'Após 3 notificacoes por atraso na entrega de medicamentos, o hospital aplicou multa de 10% do valor mensal (R$ 45.000) e impedimento de licitar por 2 anos, com registro no SICAF e PNCP.',
+      'Após 3 notificações por atraso na entrega de medicamentos, o hospital aplicou multa de 10% do valor mensal (R$ 45.000) e impedimento de licitar por 2 anos, com registro no SICAF e PNCP.',
     guideHref: '/blog',
     guideLabel: 'Sanções em contratos públicos',
     legalBasis: 'Lei 14.133/2021, art. 155–163',
@@ -928,9 +928,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Plano de Contratações Anual (PCA)',
     slug: 'plano-de-contratacoes-anual',
     definition:
-      'Instrumento de planejamento obrigatório (Lei 14.133, art. 12, VII) em que cada órgão lista todas as contratações previstas para o exercicio seguinte. O PCA e públicado no PNCP e permite que fornecedores se preparem com antecedencia para as licitações do ano.',
+      'Instrumento de planejamento obrigatório (Lei 14.133, art. 12, VII) em que cada órgão lista todas as contratações previstas para o exercicio seguinte. O PCA e públicado no PNCP e permite que fornecedores se preparem com antecedência para as licitações do ano.',
     example:
-      'O PCA 2026 do Ministerio da Educacao listou 847 itens de contratação, totalizando R$ 2,3 bilhoes. Empresas de TI identificaram 23 contratações relevantes e iniciaram preparacao de atestados e certidoes 6 meses antes dos pregoes.',
+      'O PCA 2026 do Ministério da Educação listou 847 itens de contratação, totalizando R$ 2,3 bilhões. Empresas de TI identificaram 23 contratações relevantes e iniciaram preparação de atestados e certidões 6 meses antes dos pregões.',
     guideHref: '/blog',
     guideLabel: 'Planejamento de contratações',
     legalBasis: 'Lei 14.133/2021, art. 12, VII; Decreto 10.947/2022',
@@ -952,9 +952,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'PNCP (Portal Nacional de Contratações Públicas)',
     slug: 'pncp',
     definition:
-      'Portal eletrônico oficial e obrigatório, criado pela Lei 14.133/2021, que centraliza a divulgacao de todas as licitações, contratações diretas, atas de registro de precos e contratos dos tres niveis de governo (federal, estadual e municipal). E a principal fonte de dados para monitoramento de oportunidades.',
+      'Portal eletrônico oficial é obrigatório, criado pela Lei 14.133/2021, que centraliza a divulgação de todas as licitações, contratações diretas, atas de registro de preços e contratos dos três níveis de governo (federal, estadual e municipal). E a principal fonte de dados para monitoramento de oportunidades.',
     example:
-      'O SmartLic monitora diariamente o PNCP para identificar novas licitações públicadas em 27 UFs, classificando automaticamente por setor e avaliando viabilidade. Em media, sao públicadas 2.000+ contratações/dia no portal.',
+      'O SmartLic monitora diariamente o PNCP para identificar novas licitações públicadas em 27 UFs, classificando automaticamente por setor e avaliando viabilidade. Em média, são públicadas 2.000+ contratações/dia no portal.',
     guideHref: '/blog',
     guideLabel: 'Como usar o PNCP',
     legalBasis: 'Lei 14.133/2021, art. 174–179',
@@ -973,14 +973,14 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     ],
   },
   {
-    term: 'Preco de Referência',
+    term: 'Preço de Referência',
     slug: 'preco-de-referencia',
     definition:
-      'Valor estimado pela administracao como parametro do preco justo para a contratação. E obtido por pesquisa de mercado (mínimo 3 cotacoes), consulta a bancos de precos (Painel de Precos, SINAPI, SICRO) ou contratações anteriores similares. O preco de referência define o teto aceitavel.',
+      'Valor estimado pela administração como parametro do preço justo para a contratação. E obtido por pesquisa de mercado (mínimo 3 cotações), consulta a bancos de preços (Painel de Preços, SINAPI, SICRO) ou contratações anteriores similares. O preço de referência define o teto aceitável.',
     example:
-      'Para licitação de notebooks, o órgão pesquisou: Painel de Precos (R$ 4.200), 3 cotacoes de mercado (media R$ 4.350) e ata de registro vigente (R$ 4.100). O preco de referência foi fixado em R$ 4.217 (media ponderada).',
+      'Para licitação de notebooks, o órgão pesquisou: Painel de Preços (R$ 4.200), 3 cotações de mercado (média R$ 4.350) e ata de registro vigente (R$ 4.100). O preço de referência foi fixado em R$ 4.217 (média ponderada).',
     guideHref: '/blog',
-    guideLabel: 'Pesquisa de precos em licitações',
+    guideLabel: 'Pesquisa de preços em licitações',
     legalBasis: 'Lei 14.133/2021, art. 23; Decreto 12.002/2024',
     relatedTerms: ['edital', 'proposta-comercial', 'bdi'],
     faqEntries: [
@@ -1000,9 +1000,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Pregão Eletrônico',
     slug: 'pregao-eletronico',
     definition:
-      'Modalidade licitatória realizada integralmente em plataforma digital, destinada a aquisição de bens e servicos comuns pelo critério de menor preco ou maior desconto. E a modalidade mais utilizada no Brasil, respondendo por mais de 80% das licitações federais. A fase de lances permite redução competitiva dos precos em tempo real.',
+      'Modalidade licitatória realizada integralmente em plataforma digital, destinada a aquisição de bens e serviços comuns pelo critério de menor preço ou maior desconto. E a modalidade mais utilizada no Brasil, respondendo por mais de 80% das licitações federais. A fase de lances permite redução competitiva dos preços em tempo real.',
     example:
-      'No pregão eletrônico para 1.000 licencas de antivirus, 8 empresas participaram da fase de lances que durou 15 minutos. O preco caiu de R$ 89/licenca para R$ 52/licenca — economia de 42% para a administracao.',
+      'No pregão eletrônico para 1.000 licencas de antivirus, 8 empresas participaram da fase de lances que durou 15 minutos. O preço caiu de R$ 89/licenca para R$ 52/licenca — economia de 42% para a administração.',
     guideHref: '/blog',
     guideLabel: 'Guia completo do pregão eletrônico',
     legalBasis: 'Lei 14.133/2021, art. 28, § 2º; Lei 10.520/2002 (revogada gradualmente)',
@@ -1024,9 +1024,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Proposta Comercial',
     slug: 'proposta-comercial',
     definition:
-      'Documento formal apresentado pelo licitante contendo precos, condições de pagamento, prazo de entrega e validade da oferta. Deve seguir rigorosamente o modelo exigido no edital. A proposta vincula o licitante, que não pode alterala após a abertura, exceto em negociação com o pregoeiro.',
+      'Documento formal apresentado pelo licitante contendo preços, condições de pagamento, prazo de entrega e validade da oferta. Deve seguir rigorosamente o modelo exigido no edital. A proposta vincula o licitante, que não pode alterala após a abertura, exceto em negociação com o pregoeiro.',
     example:
-      'A proposta comercial para fornecimento de 200 impressoras incluiu: preco unitario R$ 1.890, prazo de entrega 30 dias, garantia 36 meses on-site, validade da proposta 90 dias, conforme modelo do Anexo II do edital.',
+      'A proposta comercial para fornecimento de 200 impressoras incluiu: preço unitário R$ 1.890, prazo de entrega 30 dias, garantia 36 meses on-site, validade da proposta 90 dias, conforme modelo do Anexo II do edital.',
     guideHref: '/blog',
     guideLabel: 'Como elaborar propostas vencedoras',
     legalBasis: 'Lei 14.133/2021, art. 59',
@@ -1048,11 +1048,11 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Proposta Técnica',
     slug: 'proposta-tecnica',
     definition:
-      'Documento que descreve a solucao técnica, metodologia, equipe e plano de trabalho ofertados pelo licitante em licitações do tipo "técnica e preco" ou "melhor técnica". E avaliada por comissao técnica segundo critérios objetivos definidos no edital.',
+      'Documento que descreve a solução técnica, metodologia, equipe e plano de trabalho ofertados pelo licitante em licitações do tipo "técnica e preço" ou "melhor técnica". E avaliada por comissão técnica segundo critérios objetivos definidos no edital.',
     example:
-      'Na licitação de consultoria ambiental (técnica e preco, peso 60/40), a proposta técnica incluiu: metodologia de diagnostico em 3 fases, equipe de 8 especialistas com curriculos, cronograma detalhado de 180 dias e 3 estudos de caso similares.',
+      'Na licitação de consultoria ambiental (técnica e preço, peso 60/40), a proposta técnica incluiu: metodologia de diagnóstico em 3 fases, equipe de 8 especialistas com curriculos, cronograma detalhado de 180 dias e 3 estudos de caso similares.',
     guideHref: '/blog',
-    guideLabel: 'Licitações de técnica e preco',
+    guideLabel: 'Licitações de técnica e preço',
     legalBasis: 'Lei 14.133/2021, art. 36–37',
     relatedTerms: ['proposta-comercial', 'concorrencia', 'atestado-de-capacidade-tecnica'],
     faqEntries: [
@@ -1073,9 +1073,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Recebimento Definitivo',
     slug: 'recebimento-definitivo',
     definition:
-      'Ato formal que confirma a aceitacao final do objeto contratado após verificação completa de qualidade, quantidade e conformidade com as específicacoes. Ocorre após o recebimento provisorio e autoriza o pagamento integral remanescente. E realizado por comissao ou servidor designado.',
+      'Ato formal que confirma a aceitação final do objeto contratado após verificação completa de qualidade, quantidade e conformidade com as específicacoes. Ocorre após o recebimento provisório é autoriza o pagamento integral remanescente. É realizado por comissão ou servidor designado.',
     example:
-      'Após 15 dias de testes do sistema de gestão implantado, a comissao de recebimento emitiu o Termo de Recebimento Definitivo, atestando que os 47 requisitos funcionais do Termo de Referência foram atendidos integralmente.',
+      'Após 15 dias de testes do sistema de gestão implantado, a comissão de recebimento emitiu o Termo de Recebimento Definitivo, atestando que os 47 requisitos funcionais do Termo de Referência foram atendidos integralmente.',
     guideHref: '/blog',
     guideLabel: 'Recebimento de objetos contratuais',
     legalBasis: 'Lei 14.133/2021, art. 140, II',
@@ -1094,12 +1094,12 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     ],
   },
   {
-    term: 'Recebimento Provisorio',
+    term: 'Recebimento Provisório',
     slug: 'recebimento-provisorio',
     definition:
-      'Aceite inicial do objeto contratado, realizado pelo fiscal para fins de posterior verificação detalhada de conformidade. Não constitui aceite definitivo — e uma etapa intermediaria que permite a administracao conferir qualidade e quantidade antes do recebimento definitivo.',
+      'Aceite inicial do objeto contratado, realizado pelo fiscal para fins de posterior verificação detalhada de conformidade. Não constitui aceite definitivo — é uma etapa intermediária que permite a administração conferir qualidade e quantidade antes do recebimento definitivo.',
     example:
-      'O fiscal do contrato emitiu recebimento provisorio das 500 cadeiras escolares no ato da entrega, verificando apenas quantidade e integridade das embalagens. A conferencia detalhada (material, dimensoes, acabamento) foi realizada nos 15 dias seguintes.',
+      'O fiscal do contrato emitiu recebimento provisório das 500 cadeiras escolares no ato da entrega, verificando apenas quantidade e integridade das embalagens. A conferência detalhada (material, dimensões, acabamento) foi realizada nos 15 dias seguintes.',
     guideHref: '/blog',
     guideLabel: 'Recebimento de objetos contratuais',
     legalBasis: 'Lei 14.133/2021, art. 140, I',
@@ -1121,7 +1121,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Recurso',
     slug: 'recurso',
     definition:
-      'Instrumento processual pelo qual o licitante pede revisao de decisao tomada durante a licitação (habilitação, julgamento, adjudicação). Na Lei 14.133, o prazo para recurso e de 3 dias uteis após a públicação do ato, com efeito suspensivo automatico.',
+      'Instrumento processual pelo qual o licitante pede revisão de decisão tomada durante a licitação (habilitação, julgamento, adjudicação). Na Lei 14.133, o prazo para recurso e de 3 dias úteis após a públicação do ato, com efeito suspensivo automático.',
     example:
       'A empresa classificada em 2o lugar interpôs recurso contra a habilitação da vencedora, demonstrando que o atestado de capacidade técnica apresentado não atingia 50% do quantitativo exigido. O recurso foi provido e a recorrente foi declarada vencedora.',
     guideHref: '/blog',
@@ -1145,9 +1145,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Reequilíbrio Econômico-Financeiro',
     slug: 'reequilibrio-economico-financeiro',
     definition:
-      'Mecanismo de restauracao das condições econômicas originais do contrato quando eventos imprevisiveis e extraordinarios alteram significativamente os custos. Diferencia-se do reajuste (previsivel, por indice) por exigir comprovação de fato superveniente e impacto financeiro concreto.',
+      'Mecanismo de restauração das condições econômicas originais do contrato quando eventos imprevisíveis e extraordinários alteram significativamente os custos. Diferencia-se do reajuste (previsível, por índice) pôr exigir comprovação de fato superveniente e impacto financeiro concreto.',
     example:
-      'Após aumento de 40% no preco do aco em 3 meses devido a crise logistica global, a construtora solicitou reequilíbrio do contrato de obra, apresentando notas fiscais comparativas que demonstravam impacto de R$ 1,2 milhao sobre o custo original.',
+      'Após aumento de 40% no preço do aco em 3 meses devido a crise logística global, a construtora solicitou reequilíbrio do contrato de obra, apresentando notas fiscais comparativas que demonstravam impacto de R$ 1,2 milhão sobre o custo original.',
     guideHref: '/blog',
     guideLabel: 'Reequilíbrio e reajuste contratual',
     legalBasis: 'Constituição Federal, art. 37, XXI; Lei 14.133/2021, art. 124–125',
@@ -1169,9 +1169,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Reajuste',
     slug: 'reajuste',
     definition:
-      'Atualização periódica do valor contratual com base em indice de precos préviamente definido no contrato (IPCA, IGPM, INPC ou indice setorial). O reajuste e aplicado anualmente, a partir da data da proposta, e não depende de comprovação de desequilibrio — e automatico conforme cláusula contratual.',
+      'Atualização periódica do valor contratual com base em índice de preços préviamente definido no contrato (IPCA, IGPM, INPC ou índice setorial). O reajuste e aplicado anualmente, a partir da data da proposta, e não depende de comprovação de desequilíbrio — e automático conforme cláusula contratual.',
     example:
-      'O contrato de servicos de vigilancia prévia reajuste anual pelo IPCA. Após 12 meses, o indice acumulado foi de 4,87%, e o valor mensal foi reajustado de R$ 120.000 para R$ 125.844 automaticamente.',
+      'O contrato de serviços de vigilância prévia reajuste anual pelo IPCA. Após 12 meses, o índice acumulado foi de 4,87%, e o valor mensal foi reajustado de R$ 120.000 para R$ 125.844 automaticamente.',
     guideHref: '/blog',
     guideLabel: 'Reequilíbrio e reajuste contratual',
     legalBasis: 'Lei 14.133/2021, art. 92, V',
@@ -1193,9 +1193,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Revogação',
     slug: 'revogacao',
     definition:
-      'Anulação da licitação por razoes de interesse público superveniente, devidamente justificadas pela autoridade competente. Diferente da anulação (por ilegalidade), a revogação decorre de conveniencia administrativa e tem efeito a partir da decisao (ex nunc).',
+      'Anulação da licitação por razões de interesse público superveniente, devidamente justificadas pela autoridade competente. Diferente da anulação (por ilegalidade), a revogação decorre de conveniência administrativa e tem efeito a partir da decisão (ex nunc).',
     example:
-      'A prefeitura revogou a licitação para construcao de quadra esportiva porque o terreno previsto foi desaprópriado para passagem de via expressa estadual, inviabilizando o projeto original.',
+      'A prefeitura revogou a licitação para construção de quadra esportiva porque o terreno previsto foi desaprópriado para passagem de via expressa estadual, inviabilizando o projeto original.',
     guideHref: '/blog',
     guideLabel: 'Anulação e revogação de licitações',
     legalBasis: 'Lei 14.133/2021, art. 71',
@@ -1215,12 +1215,12 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
   },
   // S
   {
-    term: 'Sistema de Registro de Precos (SRP)',
+    term: 'Sistema de Registro de Preços (SRP)',
     slug: 'sistema-de-registro-de-precos',
     definition:
-      'Conjunto de procedimentos para registro formal de precos com fornecedores, permitindo contratações futuras nas quantidades e prazos necessarios, sem obrigatoriedade de compra. E formalizado por Ata de Registro de Precos com validade de até 1 ano. Ideal para compras frequentes com quantidades incertas.',
+      'Conjunto de procedimentos para registro formal de preços com fornecedores, permitindo contratações futuras nas quantidades e prazos necessários, sem obrigatoriedade de compra. É formalizado por Ata de Registro de Preços com validade de até 1 ano. Ideal para compras frequentes com quantidades incertas.',
     example:
-      'O governo estadual registrou precos de 200 itens de informatica via SRP. Durante 12 meses, 45 órgãos participantes emitiram 312 ordens de compra totalizando R$ 18 milhoes — sem precisar realizar nova licitação para cada aquisição.',
+      'O governo estadual registrou preços de 200 itens de informática via SRP. Durante 12 meses, 45 órgãos participantes emitiram 312 ordens de compra totalizando R$ 18 milhões — sem precisar realizar nova licitação para cada aquisição.',
     guideHref: '/blog',
     guideLabel: 'SRP: vantagens e como participar',
     legalBasis: 'Lei 14.133/2021, art. 82–86; Decreto 11.462/2023',

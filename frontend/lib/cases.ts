@@ -45,11 +45,11 @@ const CASES: CaseStudy[] = [
     companyProfile:
       'EPP com capital social de R$ 1,4M, 18 anos de mercado, especializada em obras civis e infraestrutura urbana. Equipe de 12 pessoas.',
     problem:
-      'A construtora participava de 2 a 3 editais por mês no setor de engenharia, escolhidos manualmente. O processo de triagem ocupava 6 horas semanais do engenheiro responsável. Dos editais analisados, cerca de 60% eram incompatíveis por valor acima da capacidade técnica ou distância geográfica inviável — mas só eram descartados depois de horas de leitura. A empresa não tinha visibilidade do volume real de oportunidades publicadas no Espírito Santo.',
+      'A construtora participava de 2 a 3 editais por mês no setor de engenharia, escolhidos manualmente. O processo de triagem ocupava 6 horas semanais do engenheiro responsável. Dos editais analisados, cerca de 60% eram incompatíveis pôr valor acima da capacidade técnica ou distância geográfica inviável — mas só eram descartados depois de horas de leitura. A empresa não tinha visibilidade do volume real de oportunidades publicadas no Espírito Santo.',
     process:
-      'Em março de 2026, rodou uma análise completa no SmartLic: setor Engenharia, UF Espírito Santo, período de 10 dias. Em menos de 2 minutos, o sistema identificou 8 editais publicados no período. Desses, descartou automaticamente 5 — 3 por valor acima de R$ 20M (fora do range da empresa) e 2 por modalidade de inexigibilidade. Os 3 restantes receberam score de viabilidade acima de 70/100, todos em municípios a menos de 100km de Vitória, eliminando custos de mobilização.',
+      'Em março de 2026, rodou uma análise completa no SmartLic: setor Engenharia, UF Espírito Santo, período de 10 dias. Em menos de 2 minutos, o sistema identificou 8 editais publicados no período. Desses, descartou automaticamente 5 — 3 pôr valor acima de R$ 20M (fora do range da empresa) e 2 pôr modalidade de inexigibilidade. Os 3 restantes receberam score de viabilidade acima de 70/100, todos em municípios a menos de 100km de Vitória, eliminando custos de mobilização.',
     result:
-      'Valor total dos 3 contratos identificados com viabilidade alta: R$ 17,1M. Todos os editais estavam dentro da capacidade técnica comprovada da empresa (acervo de CATs). A análise revelou que a construtora estava perdendo em média 5 editais compatíveis por mês por não monitorar o PNCP sistematicamente. Tempo de triagem semanal reduzido de 6 horas para 20 minutos.',
+      'Valor total dos 3 contratos identificados com viabilidade alta: R$ 17,1M. Todos os editais estavam dentro da capacidade técnica comprovada da empresa (acervo de CATs). A análise revelou que a construtora estava perdendo em média 5 editais compatíveis por mês pôr não monitorar o PNCP sistematicamente. Tempo de triagem semanal reduzido de 6 horas para 20 minutos.',
     metrics: {
       editaisAnalisados: 8,
       valorIdentificado: 'R$ 17,1M',

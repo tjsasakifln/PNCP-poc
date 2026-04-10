@@ -874,7 +874,7 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
   // CONS-15
   {
     slug: 'consultorias-dados-retem-mais-clientes-b2g',
-    title: 'Por que Consultorias que Usam Dados Retêm mais Clientes B2G',
+    title: 'Pôr que Consultorias que Usam Dados Retêm mais Clientes B2G',
     description:
       'Consultorias data-driven retêm 3x mais clientes B2G do que as tradicionais. Veja os dados, o framework e como implementar uma cultura de dados na prática.',
     category: 'Consultorias de Licitação',

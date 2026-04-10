@@ -16,12 +16,12 @@ const ERROR_MAP: Record<string, string> = {
   "ERR_CERT": "Problema de segurança no servidor. Tente novamente em instantes.",
 
   // HTTP status errors (TD-006 AC2: all 10 codes mapped)
-  "400": "Requisição inválida. Verifique os dados e tente novamente.",
+  "400": "Requisição inválida. Verifique os dados é tente novamente.",
   "503": "Serviço temporariamente indisponível. Tente em alguns minutos.",
   "502": "O servidor está temporariamente indisponível. Tente novamente em instantes.",
-  "504": "A busca esta demorando. Tente novamente em alguns minutos.",
+  "504": "A busca está demorando. Tente novamente em alguns minutos.",
   "500": "Erro interno do servidor. Tente novamente.",
-  "429": "Muitas requisições. Aguarde um momento e tente novamente.",
+  "429": "Muitas requisições. Aguarde um momento é tente novamente.",
   "401": "Sessão expirada. Faça login novamente.",
   "403": "Acesso negado. Verifique suas permissões.",
   "404": "Recurso não encontrado.",
@@ -56,9 +56,9 @@ const ERROR_MAP: Record<string, string> = {
   "Quota excedida": "Suas análises do mês acabaram. Faça upgrade para continuar.",
 
   // Timeout / PNCP specific (from backend detail messages)
-  "excedeu o tempo limite": "A busca esta demorando. Tente novamente em alguns minutos.",
-  "PNCP está temporariamente": "Uma das fontes esta temporariamente indisponivel. Tente novamente em instantes.",
-  "tempo limite de": "A busca esta demorando. Tente novamente em alguns minutos.",
+  "excedeu o tempo limite": "A busca está demorando. Tente novamente em alguns minutos.",
+  "PNCP está temporariamente": "Uma das fontes está temporariamente indisponivel. Tente novamente em instantes.",
+  "tempo limite de": "A busca está demorando. Tente novamente em alguns minutos.",
 
   // UX FIX: Plan limit errors (date range)
   "período da análise não pode exceder": "keep_original", // Let the full message through
@@ -224,7 +224,7 @@ export function getRetryMessage(httpStatus: number | null, rawMessage?: string):
 
   // Timeout errors (no HTTP codes or technical details exposed)
   if (httpStatus === 504 || httpStatus === CLIENT_TIMEOUT_STATUS || msg.includes('timeout') || msg.includes('demorou') || msg.includes('tempo limite')) {
-    return 'A busca esta demorando. Estamos tentando novamente automaticamente.';
+    return 'A busca está demorando. Estamos tentando novamente automaticamente.';
   }
 
   // Service unavailable
@@ -244,7 +244,7 @@ export function getRetryMessage(httpStatus: number | null, rawMessage?: string):
     msg.includes('conexão') ||
     msg.includes('conexao')
   ) {
-    return 'Verificando conexao. Tentando novamente automaticamente.';
+    return 'Verificando conexão. Tentando novamente automaticamente.';
   }
 
   // Generic transient
@@ -325,11 +325,11 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
   BACKEND_UNAVAILABLE: "Estamos voltando em instantes. Tente novamente em alguns segundos.",
   SOURCE_UNAVAILABLE: "As fontes de dados estão temporariamente em manutenção. Tente novamente em breve.",
   ALL_SOURCES_FAILED: "Nenhuma fonte respondeu a tempo. Tente novamente em 2-3 minutos.",
-  TIMEOUT: "A busca esta demorando. Estamos tentando novamente automaticamente.",
-  CLIENT_TIMEOUT: "A busca esta demorando. Estamos tentando novamente automaticamente.",
-  RATE_LIMIT: "Muitas análises em sequência. Aguarde 1 minuto e tente novamente.",
+  TIMEOUT: "A busca está demorando. Estamos tentando novamente automaticamente.",
+  CLIENT_TIMEOUT: "A busca está demorando. Estamos tentando novamente automaticamente.",
+  RATE_LIMIT: "Muitas análises em sequência. Aguarde 1 minuto é tente novamente.",
   QUOTA_EXCEEDED: "Suas análises deste mês foram utilizadas. Faça upgrade para continuar.",
-  VALIDATION_ERROR: "Verifique os filtros selecionados e tente novamente.",
+  VALIDATION_ERROR: "Verifique os filtros selecionados é tente novamente.",
   INTERNAL_ERROR: "Algo deu errado do nosso lado. Nossa equipe já foi avisada.",
 };
 
@@ -365,7 +365,7 @@ export function getHumanizedError(
   // Timeout errors (504, client-side timeout, etc.)
   if (httpStatus === 504 || httpStatus === CLIENT_TIMEOUT_STATUS || msg.includes("timeout") || msg.includes("demorou")) {
     return {
-      message: "A busca esta demorando. Estamos tentando novamente automaticamente.",
+      message: "A busca está demorando. Estamos tentando novamente automaticamente.",
       actionLabel: "Tentar novamente",
       secondaryActionLabel: "Reduzir escopo",
       tone: "blue",
@@ -411,7 +411,7 @@ export function getHumanizedError(
     msg.includes("network error")
   ) {
     return {
-      message: "Erro de conexão. Verifique sua internet e tente novamente.",
+      message: "Erro de conexão. Verifique sua internet é tente novamente.",
       actionLabel: "Tentar novamente",
       tone: "yellow",
       suggestReduceScope: false,
