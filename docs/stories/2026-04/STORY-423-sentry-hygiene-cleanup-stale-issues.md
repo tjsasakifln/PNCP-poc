@@ -3,7 +3,7 @@
 **Priority:** P2 — Medium (backlog poluído dificulta triagem futura)
 **Effort:** S (0.5-1 day)
 **Squad:** @devops
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sprint:** Sprint rotina (1w-2w)
 
@@ -52,7 +52,16 @@ A análise de 2026-04-10 identificou 69 issues ativos no Sentry `confenge` em ja
 - [ ] Adicionar ao calendário de cerimônias do squad
 
 ### AC4: Sentry Alert Rules — elevar sinal
-- [ ] Criar alert rule no Sentry: **"Fatal or Escalating"**
+
+**Pré-requisito (@pm 2026-04-10 — Dia 0):**
+- [ ] **Criar canal Slack `#incident-response`** antes de qualquer outra ação de AC4
+- [ ] **Criar canal Slack `#sentry-new-issues`**
+- [ ] Webhook URL em env var `SENTRY_SLACK_WEBHOOK` — **NUNCA commitar no repo**
+- [ ] **Fallback email** se Slack indisponível: `tiago.sasaki@gmail.com`
+- [ ] Se workspace Slack não existir, avaliar alternativa: Discord (grátis) ou trial Slack
+
+**Alert rules no Sentry:**
+- [ ] Criar alert rule: **"Fatal or Escalating"**
   - [ ] Condição: `level:fatal OR status:escalating`
   - [ ] Notificação: imediata (não agregada)
   - [ ] Canal: Slack #incident-response + email tiago.sasaki@gmail.com
@@ -119,3 +128,5 @@ A análise de 2026-04-10 identificou 69 issues ativos no Sentry `confenge` em ja
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (8.5/10). Status Draft → Ready. |
+| 2026-04-10 | @pm (Morgan) | Decisão AC4: criar canais Slack `#incident-response` + `#sentry-new-issues` **como pré-requisito Dia 0** antes de configurar alert rules. Fallback: email para `tiago.sasaki@gmail.com` se Slack indisponível. Webhook em env var, nunca no repo. |

@@ -3,7 +3,7 @@
 **Priority:** P0 — Blocks Stripe Reconciliation
 **Effort:** S (0.5 day)
 **Squad:** @data-engineer
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7388075442/ (6+ eventos)
 **Sprint:** Emergencial (0-48h)
@@ -54,29 +54,35 @@ APIError: record "new" has no field "is_master" (code 42703)
 
 ## Acceptance Criteria
 
-### AC1: Decisão de fix (investigar primeiro)
-- [ ] Confirmar se `profiles.is_master` existe via `psql` ou Supabase dashboard — se não existe, confirmar decisão via `git log -p supabase/migrations/ | grep -i "is_master"`
-- [ ] Consultar feature owner: a funcionalidade `is_master` ainda é necessária? Ver `backend/auth.py`, `backend/authorization.py`, `routes/admin.py` para uso
-- [ ] **Opção A:** Adicionar coluna `is_master BOOLEAN DEFAULT FALSE` em `profiles` (se feature ainda ativa)
-- [ ] **Opção B:** Remover referência a `NEW.is_master` do trigger (se feature descontinuada)
-- [ ] Documentar decisão no Dev Notes
+### AC1: Decisão de fix — **OPÇÃO B SELECIONADA** ✅
+- [x] **Investigação @pm 2026-04-10 (grep -rn "is_master" backend/):**
+  - **Achado crítico:** `is_master` **NÃO é coluna** de `profiles` — é **derivado** em `backend/authorization.py:81`:
+    ```python
+    is_master = is_admin or plan_type == "master"
+    ```
+  - Feature está **LIVE** e usada ativamente em 15+ locais: `auth.py`, `authorization.py`, `search_context.py`, `pipeline/stages/validate.py`, `routes/search.py`, `routes/user.py`, `routes/pipeline.py`, `routes/mfa.py`
+  - Tests cobrem extensivamente em `test_authorization.py` (10 assertions)
+  - **Conclusão:** trigger da migration `20260404000000` foi **bug desde o dia 1** — referenciou `NEW.is_master` assumindo coluna que nunca existiu
+- [x] **Decisão @pm 2026-04-10:** **Opção B** — remover `NEW.is_master IS DISTINCT FROM OLD.is_master` do trigger
+- [x] **Rationale:** feature funciona via `plan_type` — o trigger apenas precisa proteger `is_admin` e `plan_type` (que já protegem `is_master` derivado por transitividade)
+- [ ] ~~**Opção A:** Adicionar coluna `is_master`~~ — **REJEITADA** (adicionaria coluna dupla com lógica derivada existente, quebraria `authorization.py`)
 
-### AC2: Migration de correção
-- [ ] Criar `supabase/migrations/2026041001_fix_is_master_trigger.sql`
-- [ ] **Se Opção A:**
-  ```sql
-  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_master BOOLEAN NOT NULL DEFAULT FALSE;
-  -- Trigger já deve funcionar após isso
-  ```
-- [ ] **Se Opção B:**
+### AC2: Migration de correção — **Opção B**
+- [ ] Criar `supabase/migrations/2026041001_fix_is_master_trigger.sql`:
   ```sql
   CREATE OR REPLACE FUNCTION prevent_privilege_escalation()
   RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
   AS $$
+  DECLARE v_role TEXT;
   BEGIN
+      -- is_master é DERIVADO de plan_type em authorization.py:81
+      -- Proteger plan_type + is_admin protege is_master por transitividade
       IF (NEW.is_admin IS DISTINCT FROM OLD.is_admin) OR
          (NEW.plan_type IS DISTINCT FROM OLD.plan_type) THEN
-          -- ... validation sem is_master ...
+          SELECT auth.jwt() ->> 'role' INTO v_role;
+          IF v_role IS DISTINCT FROM 'service_role' THEN
+              RAISE EXCEPTION 'Privilege escalation attempt blocked';
+          END IF;
       END IF;
       RETURN NEW;
   END;
@@ -138,7 +144,19 @@ APIError: record "new" has no field "is_master" (code 42703)
 
 ## Dev Notes (preencher durante implementação)
 
-<!-- @data-engineer: documentar decisão feita (A ou B) e razão -->
+**Investigação @pm 2026-04-10:**
+- `grep -rn "is_master" backend/` revelou 15+ locais de uso ativo
+- `authorization.py:81`: `is_master = is_admin or plan_type == "master"` — **DERIVADO, não coluna**
+- Trigger `20260404000000` foi copy-paste error — referenciou field inexistente
+- Todo código aplicativo já usa lógica derivada de `plan_type`, não coluna
+- Fix = apenas remover referência do trigger SQL
+
+**Decisão selecionada: Opção B (@pm 2026-04-10)**
+- Remove `NEW.is_master` do trigger
+- Nenhuma mudança em código Python necessária (feature continua funcionando via `plan_type`)
+- Proteção mantida: trigger protege `is_admin` e `plan_type`, que protegem `is_master` por transitividade
+
+<!-- @data-engineer: preencher resto durante implementação -->
 
 ---
 
@@ -156,3 +174,5 @@ APIError: record "new" has no field "is_master" (code 42703)
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. Nota: decisão de manter/descontinuar `is_master` como feature precisa alinhamento com @pm durante AC1. |
+| 2026-04-10 | @pm (Morgan) | Decisão AC1: **Opção B** (remover ref do trigger). Investigação revelou que `is_master` é DERIVADO de `plan_type` em `authorization.py:81`, nunca foi coluna. Trigger `20260404000000` foi bug desde o dia 1. Nenhum refactor de código necessário — feature continua LIVE via lógica derivada. |

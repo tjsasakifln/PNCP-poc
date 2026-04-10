@@ -3,7 +3,7 @@
 **Priority:** P1 — Medium (baixa frequência mas bug real em user input)
 **Effort:** S (0.5 day)
 **Squad:** @data-engineer + @dev
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7369847734/ (3 eventos)
 **Sprint:** Sprint seguinte (48h-1w)
@@ -129,3 +129,4 @@ Usuários com filtros de alto valor (ex: licitações de infraestrutura federal)
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. |

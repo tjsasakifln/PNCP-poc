@@ -3,7 +3,7 @@
 **Priority:** P0 — Prevent Recurrence
 **Effort:** M (1-2 days)
 **Squad:** @data-engineer + @devops
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7401448164/ (Fatal)
 **Sprint:** Emergencial (0-48h)
@@ -37,11 +37,24 @@ O schema contract gate em `backend/schemas/contract.py:35-75` define `CRITICAL_S
 - [ ] Aplicar migrations pendentes (se houver) com `supabase db push --include-all` em janela controlada
 - [ ] Confirmar que o CI workflow `migration-check.yml` está rodando e detectando gaps (se falhou em detectar, documentar o porquê)
 
-### AC2: Gate ativo em staging (fail-fast)
+### AC2: Gate ativo em staging (fail-fast) + **rollout faseado em prod (@pm 2026-04-10)**
 - [ ] Adicionar flag env `SCHEMA_CONTRACT_STRICT` (default `false` em prod, `true` em staging)
 - [ ] Quando `true`, violação no gate deve **bloquear startup** com exit code 1
 - [ ] Log estruturado: `{"level": "fatal", "event": "schema_contract_violation", "missing": [...], "action": "startup_blocked"}`
 - [ ] Sentry event com `level=fatal` e tag `schema_contract_violation=true`
+
+**Rollout plan para ativar `SCHEMA_CONTRACT_STRICT=true` em PROD:**
+
+| Fase | Prazo | Ação | Critério de passagem |
+|:---:|---|---|---|
+| **P1** | Dia 0 (deploy desta story) | `false` em prod, `true` em staging | Deploy sem regressão |
+| **P2** | Dia 1-7 | Monitor staging: contar false positives (PGRST002 transientes) | **0 false positives em 7d** |
+| **P3** | Dia 7-14 | Implementar retry 3x em PGRST002 antes de emitir Fatal (melhoria do gate) | Gate resiliente a transientes |
+| **P4** | Dia 14 (janela quieta, ex: sábado 2am BRT) | Flipar prod para `true` em deploy não-comercial | Monitor 2h pós-deploy |
+
+- [ ] **Abort criteria:** Qualquer false positive em staging → estender monitoramento +7d
+- [ ] **Rollback:** env var flip (sem mudança de código)
+- [ ] Documentar cada fase em `docs/incidents/2026-04-10-multi-cause.md` com timestamps reais
 
 ### AC3: CI workflow estendido
 - [ ] Estender `.github/workflows/migration-check.yml` para executar `python -m backend.schemas.contract --validate` contra staging após `supabase db push`
@@ -127,3 +140,5 @@ O schema contract gate em `backend/schemas/contract.py:35-75` define `CRITICAL_S
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9.5/10). Status Draft → Ready. |
+| 2026-04-10 | @pm (Morgan) | Decisão AC2: rollout faseado P1-P4 em 14 dias para ativar `SCHEMA_CONTRACT_STRICT=true` em prod. Rationale: evita outage imediato caso haja drift residual após STORY-412 + dá janela para estabilizar false positives PGRST002. |

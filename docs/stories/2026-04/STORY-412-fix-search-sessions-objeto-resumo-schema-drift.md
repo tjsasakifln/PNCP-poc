@@ -3,7 +3,7 @@
 **Priority:** P0 — Production Incident (Escalating)
 **Effort:** S (0.5-1 day)
 **Squad:** @data-engineer + @dev
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7396988861/
 **Sprint:** Emergencial (0-48h)
@@ -42,10 +42,18 @@ Este bug é **intrinsecamente ligado à STORY-414** (Schema Contract Gate) — o
 - [ ] Verificar schema atual do Supabase em produção via `supabase db pull` ou SQL direto no dashboard
 - [ ] Documentar no Dev Notes abaixo qual foi a causa: (a) coluna nunca criada, (b) removida sem migration, (c) adicionada via UI Supabase e não sincronizada
 
-### AC2: Decisão de fix (escolher UMA opção baseada na AC1)
-- [ ] **Opção A:** Criar migration `supabase/migrations/2026041000_restore_objeto_resumo_search_sessions.sql` com `ALTER TABLE search_sessions ADD COLUMN objeto_resumo TEXT NULL;` + backfill se necessário
-- [ ] **Opção B:** Alterar query em `routes/analytics.py` para não referenciar a coluna; derivar campo de outro lugar (ex: `search_params->>'objeto'`) se `get_trial_value` precisa mesmo do dado
-- [ ] **Opção C:** Remover o campo do payload de retorno de `get_trial_value` se não for usado no frontend (verificar `frontend/app/buscar/` e `frontend/app/conta/`)
+### AC2: Decisão de fix — **OPÇÃO C SELECIONADA** ✅
+- [x] **Decisão @pm 2026-04-10:** Opção C — remover campo `objeto_resumo` do SELECT e do payload
+- [x] **Investigação prévia confirmou:**
+  - `grep -rn "objeto_resumo" frontend/` → **0 matches** (frontend não consome)
+  - `grep -rn "objeto_resumo" backend/` → usado apenas em `analytics.py:314, 344`
+  - Fallback já existe: `top_session.get("objeto_resumo") or "Oportunidade identificada"` (linha 344)
+  - Git log: campo adicionado em commit `c20da562 feat(trial): implement trial-to-paid conversion flow (GTM-010)` — coluna nunca foi criada via migration, drift puro desde o dia 1
+- [ ] Aplicar fix em `backend/routes/analytics.py`:
+  - Linha 313-315: remover `objeto_resumo` do SELECT → `"total_filtered, valor_total, created_at"`
+  - Linha 344: trocar `top_session.get("objeto_resumo") or "Oportunidade identificada"` por `"Oportunidade identificada"` direto
+- [ ] ~~**Opção A:** Criar migration `ALTER TABLE ... ADD COLUMN`~~ — **REJEITADA** (campo não usado no frontend)
+- [ ] ~~**Opção B:** Alterar query para `search_params->>'objeto'`~~ — **REJEITADA** (complexidade desnecessária para campo descartável)
 
 ### AC3: Aplicar fix
 - [ ] Código ou migration aplicada via `supabase db push` (se for migration)
@@ -58,8 +66,7 @@ Este bug é **intrinsecamente ligado à STORY-414** (Schema Contract Gate) — o
 - [ ] Novo teste: mockar Supabase retornando dados sem `objeto_resumo` e validar fallback gracioso
 
 ### AC5: Atualizar Schema Contract
-- [ ] Se Opção A (manter coluna): adicionar `"objeto_resumo"` em `CRITICAL_SCHEMA["search_sessions"]` em `backend/schemas/contract.py:35-75`
-- [ ] Se Opção B ou C (remover referência): garantir que `CRITICAL_SCHEMA` não lista a coluna
+- [ ] **Opção C selecionada:** garantir que `CRITICAL_SCHEMA["search_sessions"]` em `backend/schemas/contract.py:35-75` **NÃO** lista `objeto_resumo` (remover se estiver listada)
 
 ### AC6: Verificação pós-deploy
 - [ ] Monitorar Sentry issue 7396988861 por 6h — deve ficar em 0 eventos novos
@@ -91,7 +98,18 @@ Este bug é **intrinsecamente ligado à STORY-414** (Schema Contract Gate) — o
 
 ## Dev Notes (preencher durante implementação)
 
-<!-- @dev: documentar aqui a causa raiz descoberta na AC1 e qual opção foi escolhida na AC2 -->
+**Causa raiz (investigação @pm 2026-04-10):**
+- Campo `objeto_resumo` foi introduzido no commit `c20da562 feat(trial): implement trial-to-paid conversion flow (GTM-010)` como parte do query de analytics
+- **Nenhuma migration foi criada** para adicionar a coluna em `search_sessions` — drift puro do code vs schema
+- Causa = opção (a) coluna nunca criada via migration — classic schema drift from code-first assumption
+- Ver STORY-414 para fix do contract gate que deveria ter detectado isso
+
+**Decisão selecionada: Opção C (@pm 2026-04-10)**
+- Investigação mostrou zero uso no frontend
+- Fallback `"Oportunidade identificada"` já existe em `analytics.py:344`
+- Remover campo é mais simples, seguro e alinha com principle "don't add features that weren't requested"
+
+<!-- @dev: preencher resto conforme implementar -->
 
 ---
 
@@ -109,3 +127,5 @@ Este bug é **intrinsecamente ligado à STORY-414** (Schema Contract Gate) — o
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9.5/10). Status Draft → Ready. |
+| 2026-04-10 | @pm (Morgan) | Decisão AC2: **Opção C** (remover campo). Investigação confirmou zero uso no frontend e fallback já existente em `analytics.py:344`. AC4 ajustado — teste de regressão cobre `top_opportunity.title` com fallback literal. |

@@ -3,7 +3,7 @@
 **Priority:** P1 — High (slow_requests aproximando limite Railway)
 **Effort:** M (1-2 days)
 **Squad:** @dev + @architect
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7398756337/ (42 eventos perfil-b2g ReadTimeout)
@@ -69,14 +69,27 @@ O endpoint `GET /v1/empresa/{cnpj}/perfil-b2g` em `backend/routes/empresa_public
   ```
 - [ ] Frontend (já tem `PartialResultsPrompt`) deve tratar gracefully
 
-### AC4: Fix `orgao_stats` statement timeout
+### AC4: Fix `orgao_stats` statement timeout — **Abordagem faseada A+C (@pm 2026-04-10)**
+
+**Fase 1 — Quick win (0.5 dia) — deploy primeiro:**
 - [ ] Auditar query em `routes/orgao_publico.py::orgao_stats`
 - [ ] Adicionar `SET LOCAL statement_timeout = '20s'` na query (previne kills de 30s padrão)
-- [ ] Se query continua lenta após timeout curto, considerar:
-  - [ ] **Opção A:** criar materialized view `mv_orgao_stats` refreshed a cada 1h
-  - [ ] **Opção B:** adicionar índices compostos em `pncp_supplier_contracts(orgao_cnpj, data_publicacao)`
-  - [ ] **Opção C:** cache Redis agressivo (TTL 15 min)
-- [ ] Documentar decisão e benchmark antes/depois
+- [ ] Implementar **Redis cache 15min** sobre query existente (Opção C) — corta ~90% dos timeouts imediatamente
+- [ ] Deploy Fase 1 isolado para validar redução antes de Fase 2
+
+**Fase 2 — Proper fix (1.5 dias) — após Fase 1 estável:**
+- [ ] Criar **materialized view `mv_orgao_stats`** (Opção A) com mesma estrutura de saída da query atual
+- [ ] Criar ARQ cron `refresh_mv_orgao_stats` com schedule a cada 1h (alinhado com ingestão)
+- [ ] Migração: `supabase/migrations/2026041005_mv_orgao_stats.sql` com `CREATE MATERIALIZED VIEW` + `REFRESH MATERIALIZED VIEW CONCURRENTLY`
+- [ ] Atualizar `orgao_stats` route para ler da MV em vez da query direta
+- [ ] Redis cache passa a servir da MV (latência ~1ms)
+
+**Fase 3 — Backup (opcional, se Fase 2 insuficiente):**
+- [ ] Índice composto `(orgao_cnpj, data_publicacao)` para acelerar refresh da MV
+- [ ] Migration separada: `supabase/migrations/2026041006_idx_orgao_contracts.sql`
+
+- [ ] Documentar decisão e benchmark antes/depois em `docs/incidents/2026-04-10-multi-cause.md`
+- [ ] **Staleness aceitável:** 15min-1h (endpoint de estatísticas, não transacional)
 
 ### AC5: Fix `orgao_contratos` statement timeout
 - [ ] Aplicar mesmo tratamento da AC4 em `routes/contratos_publicos.py::orgao_contratos_stats`
@@ -145,3 +158,5 @@ O endpoint `GET /v1/empresa/{cnpj}/perfil-b2g` em `backend/routes/empresa_public
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. |
+| 2026-04-10 | @pm (Morgan) | Decisão AC4: **abordagem faseada A+C** (Redis quick-win → Materialized View proper fix → índice backup). Rationale: `orgao_stats` é read-heavy + slow-changing = textbook fit para MV. Redis L2 cobre hot CNPJs. Efeito combinado elimina timeouts. |

@@ -3,7 +3,7 @@
 **Priority:** P1 — High (emails de trial perdidos silenciosamente)
 **Effort:** M (1-2 days)
 **Squad:** @dev
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7298651577/ (trial email #4 day=10 — 19 eventos)
@@ -155,3 +155,4 @@
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (10/10). Status Draft → Ready. |

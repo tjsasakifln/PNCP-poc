@@ -3,7 +3,7 @@
 **Priority:** P1 — High
 **Effort:** L (2-3 days)
 **Squad:** @architect + @dev
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7362741373/ (pipeline)
@@ -53,7 +53,7 @@ Esta story está relacionada à STORY-418 (trial email resilience) e à STORY-41
   - [ ] ConnectionTerminated HTTP/2 stream?
 - [ ] Documentar causa raiz no Dev Notes + postmortem `docs/incidents/2026-04-10-multi-cause.md`
 
-### AC2: Segregar CBs por categoria
+### AC2: Segregar CBs por categoria + **modo híbrido AND/OR (@pm 2026-04-10)**
 - [ ] Refatorar `SupabaseCircuitBreaker` para suportar **múltiplas instâncias** por categoria:
   - `read_cb` — SELECT operations
   - `write_cb` — INSERT/UPDATE/DELETE
@@ -61,6 +61,20 @@ Esta story está relacionada à STORY-418 (trial email resilience) e à STORY-41
 - [ ] Thresholds independentes por categoria (reads podem ser mais tolerantes que writes)
 - [ ] `sb_execute(operation, category="read"|"write"|"rpc")` — signature nova
 - [ ] Migration transparent: se category não passada, usar `read` por default
+
+**Configuração dos thresholds (modo híbrido):**
+```python
+# Abre CB se: (5 consecutivas) OU (failure_rate > 0.7 AND window >= 10)
+_CB_CONSECUTIVE_FAILURES = 5        # novo
+_CB_FAILURE_RATE = 0.7              # elevado de 0.5 → 0.7
+_CB_WINDOW_SIZE = 10                # mantido
+_CB_TRIAL_CALLS = 2                 # reduzido de 3 → 2 (close mais rápido)
+_CB_COOLDOWN_S = 60.0               # mantido
+```
+
+- [ ] Todos os thresholds **configuráveis via env var** (`SB_CB_CONSECUTIVE_FAILURES`, etc) para ajuste sem redeploy
+- [ ] Per-category thresholds: `write_cb` pode ter `CONSECUTIVE_FAILURES=3` (mais estrito), `read_cb` = 5
+- [ ] Implementar lógica híbrida AND/OR em `SupabaseCircuitBreaker._should_open()`
 
 ### AC3: Observability
 - [ ] Métrica Prometheus `smartlic_sb_circuit_breaker_state{category}` com valores `0=closed, 1=half_open, 2=open`
@@ -140,3 +154,5 @@ Esta story está relacionada à STORY-418 (trial email resilience) e à STORY-41
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9.5/10). Status Draft → Ready. |
+| 2026-04-10 | @pm (Morgan) | Decisão AC2: **modo híbrido AND/OR** — abre CB se `(consecutive_failures >= 5) OR (failure_rate > 0.7 AND window >= 10)`. Threshold elevado de 0.5 → 0.7 para reduzir flakiness. `trial_calls` reduzido 3 → 2 para fechar mais rápido. Todos configuráveis via env var. |

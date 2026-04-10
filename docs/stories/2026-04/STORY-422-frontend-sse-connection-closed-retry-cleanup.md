@@ -3,7 +3,7 @@
 **Priority:** P2 — Medium (34 eventos mas causa UX ruim ao cancelar buscas)
 **Effort:** M (1-2 days)
 **Squad:** @dev
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7387910087/ (34 eventos)
@@ -143,3 +143,4 @@ Frontend está gerando `Error: Connection closed` em 34+ eventos Sentry durante 
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. |

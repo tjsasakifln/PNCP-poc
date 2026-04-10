@@ -3,7 +3,7 @@
 **Priority:** P2 — Medium (checkout quebrado para alguns usuários)
 **Effort:** S (0.5 day)
 **Squad:** @dev
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7397513115/ (InvalidRequestError)
@@ -40,10 +40,16 @@ is enabled for any preview features that you are trying to use.
 
 ## Acceptance Criteria
 
-### AC1: Decisão estratégica
-- [ ] Consultar @pm sobre PIX: o produto **precisa** oferecer PIX ou foi aspiracional?
-- [ ] Se PIX é necessário: investigar como Stripe Brasil recomenda habilitá-lo (pode ser via `payment_method_options.pix` ou via outro produto Stripe)
-- [ ] Se PIX não é necessário: remover do array e documentar decisão
+### AC1: Decisão estratégica — **OPÇÃO B SELECIONADA** ✅
+- [x] **Decisão @pm 2026-04-10:** **Opção B — Remover PIX** do `payment_method_types`
+- [x] **Rationale:**
+  - SmartLic é B2B SaaS com subscription recorrente (R$397/mês) → cartão corporativo domina
+  - Boleto já disponível como segunda opção para quem não pode cartão
+  - PIX subscription no Stripe Brasil ainda é área cinza (pode não ser suportado em checkout session)
+  - Sangria atual (2 dias de checkout quebrado) > ganho teórico de PIX futuro
+  - Fix de horas (Opção B) vs sprint completo (Opção A)
+- [x] **Follow-up criado:** STORY-424 em backlog P3 — "Enable PIX via Stripe checkout session options" para avaliação em Q2/2026
+- [x] **Trigger de re-priorização:** Se support receber >5 pedidos/mês "posso pagar via PIX?", elevar STORY-424 para P2
 
 ### AC2: Fix de código (Opção B — remover PIX)
 - [ ] Em `backend/routes/billing.py:122`, alterar:
@@ -53,19 +59,13 @@ is enabled for any preview features that you are trying to use.
 - [ ] Revisar se `boleto` está realmente habilitado no dashboard Stripe antes de deploy (smoke test)
 - [ ] Atualizar documentação em `docs/guides/billing.md` (se existir) removendo menções a PIX
 
-### AC3: Fix de código (Opção A — habilitar PIX corretamente)
-- [ ] Seguir documentação Stripe: https://docs.stripe.com/payments/pix
-- [ ] Habilitar PIX no dashboard Stripe (via @devops)
-- [ ] Usar `payment_method_options.pix` em vez de `payment_method_types`:
-  ```python
-  "payment_method_types": ["card", "boleto"],
-  "payment_method_options": {"pix": {...}},  # verificar se suportado
-  ```
-- [ ] Testar fluxo completo em ambiente Stripe test mode
+### AC3: ~~Fix de código (Opção A — habilitar PIX corretamente)~~ — **REJEITADA**
+- [ ] ~~Opção A rejeitada em favor de Opção B (ver AC1). Escopo movido para STORY-424 P3.~~
 
 ### AC4: Frontend
-- [ ] Se Opção B (remover): verificar `frontend/app/planos/` e `frontend/app/pricing/` para remover menções visuais a PIX
-- [ ] Se Opção A (manter): garantir que UI mostra corretamente a opção PIX no checkout (redirect Stripe Checkout)
+- [ ] Verificar `frontend/app/planos/` e `frontend/app/pricing/` — remover qualquer menção visual a PIX (badges, icons, copy de marketing)
+- [ ] Atualizar alt-text + screen reader labels se existirem
+- [ ] Teste visual: página `/planos` não deve mencionar "PIX" em lugar algum
 
 ### AC5: Testes
 - [ ] Unit test em `backend/tests/test_billing.py`:
@@ -108,7 +108,22 @@ is enabled for any preview features that you are trying to use.
 
 ## Dev Notes (preencher durante implementação)
 
-<!-- @dev: documentar decisão (Opção A ou B) e consulta com @pm -->
+**Decisão @pm 2026-04-10: Opção B (Remover PIX)**
+
+Análise de negócio:
+- SmartLic target: empresas B2G → corporate cards dominam (~75% B2B SaaS BR)
+- Subscription recorrente (R$397/mês mensal, R$297/mês anual) → PIX subscription não é padrão Stripe Brasil
+- Boleto disponível como alternativa para quem não usa cartão
+
+Follow-up planejado:
+- **STORY-424** (P3 backlog): "Enable PIX via Stripe checkout session options" — avaliar em Q2/2026
+- **Re-priorização se:** support receber >5 pedidos/mês "posso pagar via PIX?" → elevar para P2
+
+Pré-deploy check:
+- @devops deve confirmar no Stripe Dashboard que `boleto` está **ativado** antes do deploy
+- Se `boleto` não estiver ativo, fallback para `["card"]` apenas
+
+<!-- @dev: preencher resto durante implementação -->
 
 ---
 
@@ -126,3 +141,5 @@ is enabled for any preview features that you are trying to use.
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO condicional (8.5/10). Status Draft → Ready. Bloqueio antes de AC2: decisão de @pm sobre manter/remover PIX (AC1). |
+| 2026-04-10 | @pm (Morgan) | Decisão AC1: **Opção B** (remover PIX). Análise: B2B SaaS recorrente → cartão + boleto cobrem >95%. Follow-up: STORY-424 P3 criada. Bloqueio de @po resolvido — story destravada para @dev executar. |

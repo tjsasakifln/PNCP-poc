@@ -3,7 +3,7 @@
 **Priority:** P0 — Production Incident (Regressed)
 **Effort:** M (1-2 days)
 **Squad:** @dev + @architect
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7400217484/ (44 eventos, Escalating)
@@ -114,3 +114,4 @@
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
+| 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. |
