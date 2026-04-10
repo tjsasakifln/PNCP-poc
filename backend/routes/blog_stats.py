@@ -87,10 +87,15 @@ def _strip_accents(text: str) -> str:
 
 # Reverse mapping: city → UF (keyed by both accented and ASCII-stripped lowercase)
 _CITY_TO_UF: dict[str, str] = {}
+# City slug → accented display name (e.g. "sao paulo" → "São Paulo"). Used to
+# build ilike patterns that match the accented strings stored in the database.
+_CITY_DISPLAY: dict[str, str] = {}
 for _uf, _cities in UF_CITIES.items():
     for _city in _cities:
         _CITY_TO_UF[_city.lower()] = _uf
         _CITY_TO_UF[_strip_accents(_city)] = _uf
+        _CITY_DISPLAY[_city.lower()] = _city
+        _CITY_DISPLAY[_strip_accents(_city)] = _city
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +215,48 @@ class ContratosSetorStats(BaseModel):
     top_fornecedores: list[ContratosSetorTopEntry]
     monthly_trend: list[ContratosSetorTrend]
     by_uf: list[ContratosSetorUfEntry]
+    last_updated: str
+
+
+class ContratosSetorUfStats(BaseModel):
+    """Sector × UF filtered contract stats (fallback for zero-editais blog pages)."""
+    sector_id: str
+    sector_name: str
+    uf: str
+    total_contracts: int
+    total_value: float
+    avg_value: float
+    top_orgaos: list[ContratosSetorTopEntry]
+    top_fornecedores: list[ContratosSetorTopEntry]
+    monthly_trend: list[ContratosSetorTrend]
+    last_updated: str
+
+
+class ContratosCidadeStats(BaseModel):
+    """City-level contract stats (all sectors) for zero-editais cidade blog pages."""
+    cidade: str
+    uf: str
+    total_contracts: int
+    total_value: float
+    avg_value: float
+    top_orgaos: list[ContratosSetorTopEntry]
+    top_fornecedores: list[ContratosSetorTopEntry]
+    monthly_trend: list[ContratosSetorTrend]
+    last_updated: str
+
+
+class ContratosCidadeSetorStats(BaseModel):
+    """City × Sector filtered contract stats for zero-editais cidade×setor pages."""
+    cidade: str
+    uf: str
+    sector_id: str
+    sector_name: str
+    total_contracts: int
+    total_value: float
+    avg_value: float
+    top_orgaos: list[ContratosSetorTopEntry]
+    top_fornecedores: list[ContratosSetorTopEntry]
+    monthly_trend: list[ContratosSetorTrend]
     last_updated: str
 
 
@@ -749,48 +796,63 @@ def _safe_float_blog(val) -> float:
         return 0.0
 
 
-@router.get("/contratos/{setor_id}", response_model=ContratosSetorStats)
-async def get_contratos_setor_stats(setor_id: str):
-    """National contract stats by sector from pncp_supplier_contracts.
+def _compute_contratos_stats(
+    sector: Optional[SectorConfig] = None,
+    *,
+    uf: Optional[str] = None,
+    municipio_pattern: Optional[str] = None,
+) -> dict:
+    """Query pncp_supplier_contracts with optional UF/municipio filters, aggregate.
 
-    Public (no auth). Cached 6h.
+    Returns a dict containing the common aggregation fields (total_contracts,
+    total_value, avg_value, top_orgaos, top_fornecedores, monthly_trend, by_uf).
+    Endpoint wrappers add their specific fields (sector_id, cidade, etc).
+
+    Raises HTTPException(502) on DB failure.
     """
-    sector = _validate_sector(setor_id)
-    cache_key = f"contratos_setor:{sector.id}"
-
-    cached = _cache_get(cache_key)
-    if cached:
-        return ContratosSetorStats(**cached)
-
-    keywords_lower = {kw.lower() for kw in sector.keywords}
-
     try:
         from supabase_client import get_supabase
         sb = get_supabase()
 
-        resp = (
+        query = (
             sb.table("pncp_supplier_contracts")
             .select(
                 "ni_fornecedor,nome_fornecedor,orgao_cnpj,orgao_nome,"
-                "valor_global,data_assinatura,objeto_contrato,uf"
+                "valor_global,data_assinatura,objeto_contrato,uf,municipio"
             )
             .eq("is_active", True)
+        )
+        if uf:
+            query = query.eq("uf", uf)
+        if municipio_pattern:
+            # pncp_supplier_contracts.municipio is free-text — case-insensitive
+            # substring match via ilike (handles variations like "São Paulo" vs "SAO PAULO").
+            query = query.ilike("municipio", f"%{municipio_pattern}%")
+
+        resp = (
+            query
             .order("data_assinatura", desc=True)
             .limit(5000)
             .execute()
         )
     except Exception as e:
-        logger.error("contratos_setor DB query failed for %s: %s", sector.id, e)
+        logger.error(
+            "contratos DB query failed (sector=%s uf=%s municipio=%s): %s",
+            sector.id if sector else None, uf, municipio_pattern, e,
+        )
         raise HTTPException(status_code=502, detail="Erro ao consultar o datalake de contratos")
 
     rows = resp.data or []
 
-    # Filter by sector keywords
-    matched = []
-    for row in rows:
-        text = (row.get("objeto_contrato") or "").lower()
-        if any(kw in text for kw in keywords_lower):
-            matched.append(row)
+    # Filter by sector keywords (if sector provided)
+    if sector is not None:
+        keywords_lower = {kw.lower() for kw in sector.keywords}
+        matched = [
+            row for row in rows
+            if any(kw in (row.get("objeto_contrato") or "").lower() for kw in keywords_lower)
+        ]
+    else:
+        matched = rows
 
     # Aggregations
     total_value = 0.0
@@ -818,12 +880,12 @@ async def get_contratos_setor_stats(setor_id: str):
             forn_agg[ni]["contratos"] += 1
             forn_agg[ni]["valor"] += valor
 
-        uf = (row.get("uf") or "").upper()
-        if uf:
-            if uf not in uf_agg:
-                uf_agg[uf] = {"uf": uf, "contratos": 0, "valor": 0.0}
-            uf_agg[uf]["contratos"] += 1
-            uf_agg[uf]["valor"] += valor
+        row_uf = (row.get("uf") or "").upper()
+        if row_uf:
+            if row_uf not in uf_agg:
+                uf_agg[row_uf] = {"uf": row_uf, "contratos": 0, "valor": 0.0}
+            uf_agg[row_uf]["contratos"] += 1
+            uf_agg[row_uf]["valor"] += valor
 
         data_str = (row.get("data_assinatura") or "")[:7]
         if data_str:
@@ -850,9 +912,7 @@ async def get_contratos_setor_stats(setor_id: str):
         })
     trend.reverse()
 
-    data = {
-        "sector_id": sector.id,
-        "sector_name": sector.name,
+    return {
         "total_contracts": total_contracts,
         "total_value": round(total_value, 2),
         "avg_value": avg_value,
@@ -871,5 +931,132 @@ async def get_contratos_setor_stats(setor_id: str):
         ],
         "last_updated": now.isoformat(),
     }
+
+
+@router.get("/contratos/{setor_id}", response_model=ContratosSetorStats)
+async def get_contratos_setor_stats(setor_id: str):
+    """National contract stats by sector from pncp_supplier_contracts.
+
+    Public (no auth). Cached 6h.
+    """
+    sector = _validate_sector(setor_id)
+    cache_key = f"contratos_setor:{sector.id}"
+
+    cached = _cache_get(cache_key)
+    if cached:
+        return ContratosSetorStats(**cached)
+
+    base = _compute_contratos_stats(sector)
+    data = {"sector_id": sector.id, "sector_name": sector.name, **base}
     _cache_set(cache_key, data)
     return ContratosSetorStats(**data)
+
+
+@router.get("/contratos/{setor_id}/uf/{uf}", response_model=ContratosSetorUfStats)
+async def get_contratos_setor_uf_stats(setor_id: str, uf: str):
+    """Sector × UF contract stats — fallback for blog pages with zero open editais.
+
+    Queries pncp_supplier_contracts filtered by uf (idx_psc_uf_data) and sector
+    keywords. Public (no auth). Cached 6h.
+    """
+    uf = uf.upper().strip()
+    if uf not in ALL_UFS:
+        raise HTTPException(status_code=404, detail=f"UF '{uf}' não encontrada")
+
+    sector = _validate_sector(setor_id)
+    cache_key = f"contratos_setor_uf:{sector.id}:{uf}"
+
+    cached = _cache_get(cache_key)
+    if cached:
+        return ContratosSetorUfStats(**cached)
+
+    base = _compute_contratos_stats(sector, uf=uf)
+    # Drop by_uf (always single UF in this scope — keeps payload lean)
+    base.pop("by_uf", None)
+    data = {
+        "sector_id": sector.id,
+        "sector_name": sector.name,
+        "uf": uf,
+        **base,
+    }
+    _cache_set(cache_key, data)
+    return ContratosSetorUfStats(**data)
+
+
+@router.get("/contratos/cidade/{cidade}", response_model=ContratosCidadeStats)
+async def get_contratos_cidade_stats(cidade: str):
+    """City-level contract stats (all sectors) — fallback for blog cidade pages.
+
+    Public (no auth). Cached 6h.
+    """
+    cidade_normalized = cidade.lower().replace("-", " ").strip()
+    cidade_ascii = _strip_accents(cidade.replace("-", " ").strip())
+    cache_key = f"contratos_cidade:{cidade_ascii}"
+
+    cached = _cache_get(cache_key)
+    if cached:
+        return ContratosCidadeStats(**cached)
+
+    uf = _CITY_TO_UF.get(cidade_normalized) or _CITY_TO_UF.get(cidade_ascii)
+    if not uf:
+        raise HTTPException(status_code=404, detail=f"Cidade '{cidade}' não encontrada")
+
+    # Use the accented official name for the ilike pattern (DB stores accented
+    # values — "São Paulo", not "Sao Paulo"). Fallback to title-cased slug.
+    municipio_display = (
+        _CITY_DISPLAY.get(cidade_normalized)
+        or _CITY_DISPLAY.get(cidade_ascii)
+        or cidade.replace("-", " ").title()
+    )
+
+    # Filter by UF first (indexed) + ilike on municipio (free-text)
+    base = _compute_contratos_stats(uf=uf, municipio_pattern=municipio_display)
+    base.pop("by_uf", None)
+    data = {
+        "cidade": municipio_display,
+        "uf": uf,
+        **base,
+    }
+    _cache_set(cache_key, data)
+    return ContratosCidadeStats(**data)
+
+
+@router.get(
+    "/contratos/cidade/{cidade}/setor/{setor_id}",
+    response_model=ContratosCidadeSetorStats,
+)
+async def get_contratos_cidade_setor_stats(cidade: str, setor_id: str):
+    """City × Sector contract stats — fallback for blog cidade×setor pages.
+
+    Public (no auth). Cached 6h.
+    """
+    cidade_normalized = cidade.lower().replace("-", " ").strip()
+    cidade_ascii = _strip_accents(cidade.replace("-", " ").strip())
+    cache_key = f"contratos_cidade_setor:{cidade_ascii}:{setor_id}"
+
+    cached = _cache_get(cache_key)
+    if cached:
+        return ContratosCidadeSetorStats(**cached)
+
+    uf = _CITY_TO_UF.get(cidade_normalized) or _CITY_TO_UF.get(cidade_ascii)
+    if not uf:
+        raise HTTPException(status_code=404, detail=f"Cidade '{cidade}' não encontrada")
+
+    sector = _validate_sector(setor_id)
+    municipio_display = (
+        _CITY_DISPLAY.get(cidade_normalized)
+        or _CITY_DISPLAY.get(cidade_ascii)
+        or cidade.replace("-", " ").title()
+    )
+
+    base = _compute_contratos_stats(sector, uf=uf, municipio_pattern=municipio_display)
+    base.pop("by_uf", None)
+    data = {
+        "cidade": municipio_display,
+        "uf": uf,
+        "sector_id": sector.id,
+        "sector_name": sector.name,
+        **base,
+    }
+    _cache_set(cache_key, data)
+    return ContratosCidadeSetorStats(**data)

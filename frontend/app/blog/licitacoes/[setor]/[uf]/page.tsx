@@ -6,16 +6,21 @@ import Footer from '@/app/components/Footer';
 import SchemaMarkup from '@/components/blog/SchemaMarkup';
 import BlogCTA from '@/components/blog/BlogCTA';
 import RelatedPages from '@/components/blog/RelatedPages';
+import HistoricalContractsFallback from '@/components/blog/HistoricalContractsFallback';
 import {
   generateLicitacoesParams,
   fetchSectorUfBlogStats,
   getSectorFromSlug,
   formatBRL,
-  generateLicitacoesFAQs,
   getRegionalEditorial,
   ALL_UFS,
   UF_NAMES,
 } from '@/lib/programmatic';
+import {
+  fetchContratosSetorUfStats,
+  buildContractsContext,
+  generateLicitacoesFAQsWithFallback,
+} from '@/lib/contracts-fallback';
 import { getCitiesByUf } from '@/lib/cities';
 import { getFreshnessLabel } from '@/lib/seo';
 
@@ -163,7 +168,23 @@ export default async function LicitacoesSectorUfPage({
   const stats = await fetchSectorUfBlogStats(setor, ufUpper);
   const ufName = UF_NAMES[ufUpper] || ufUpper;
   const monthYear = getMonthYear();
-  const faqs = generateLicitacoesFAQs(sector.name, ufName, stats?.total_editais, stats?.avg_value);
+
+  // Zero-state fallback: if no open editais, try to surface historical contracts
+  // from pncp_supplier_contracts so the page still delivers real value (and the
+  // FAQ stops contradicting the "0 editais" counter).
+  const hasZeroEditais = !stats || stats.total_editais === 0;
+  const contractsFallback = hasZeroEditais
+    ? await fetchContratosSetorUfStats(setor, ufUpper)
+    : null;
+  const contractsContext = buildContractsContext(contractsFallback);
+
+  const faqs = generateLicitacoesFAQsWithFallback(
+    sector.name,
+    ufName,
+    stats?.total_editais,
+    stats?.avg_value,
+    contractsContext,
+  );
   const modalidadeFaqs = modalidadeInfo ? [
     {
       question: `Como funciona o ${modalidadeInfo.name} para ${sector.name} em ${ufName}?`,
@@ -378,17 +399,30 @@ export default async function LicitacoesSectorUfPage({
             </div>
           </section>
 
-          {/* Thin content mitigation: show suggestion when 0 results */}
-          {(!stats || stats.total_editais === 0) && (
-            <div className="mb-10 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800 font-medium mb-2">
-                Nenhuma licitação ativa neste período para {sector.name} em {ufName}.
-              </p>
-              <p className="text-sm text-yellow-700">
-                Isso pode variar — licitações são publicadas diariamente. Confira UFs vizinhas ou
-                teste o SmartLic para receber alertas automáticos quando novas oportunidades surgirem.
-              </p>
-            </div>
+          {/* Zero-editais fallback: prefer historical contracts from pncp_supplier_contracts
+              (genuine value for SEO visitors) and fall back to honest warning only if
+              there is no contract history either. */}
+          {hasZeroEditais && (
+            contractsFallback && contractsFallback.total_contracts > 0 ? (
+              <HistoricalContractsFallback
+                scope="sector-uf"
+                sectorName={sector.name}
+                ufName={ufName}
+                data={contractsFallback}
+                ctaSlug={`${setor}-${uf}`}
+              />
+            ) : (
+              <div className="mb-10 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800 font-medium mb-2">
+                  Nenhuma licitação ativa neste período para {sector.name} em {ufName}.
+                </p>
+                <p className="text-sm text-yellow-700">
+                  Também não identificamos contratos recentes deste setor neste estado. Confira UFs
+                  vizinhas ou teste o SmartLic para receber alertas automáticos quando novas
+                  oportunidades surgirem.
+                </p>
+              </div>
+            )
           )}
 
           {/* A1: Modalidade-specific FAQ for unique content */}

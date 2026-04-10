@@ -6,6 +6,7 @@ import Footer from '@/app/components/Footer';
 import SchemaMarkup from '@/components/blog/SchemaMarkup';
 import BlogCTA from '@/components/blog/BlogCTA';
 import BreadcrumbNav from '@/components/seo/BreadcrumbNav';
+import HistoricalContractsFallback from '@/components/blog/HistoricalContractsFallback';
 import {
   CITIES,
   getCityBySlug,
@@ -16,8 +17,12 @@ import {
   UF_NAMES,
   formatBRL,
   getCidadeSectorEditorial,
-  generateCidadeSectorFAQs,
 } from '@/lib/programmatic';
+import {
+  fetchContratosCidadeSetorStats,
+  buildContractsContext,
+  generateCidadeSectorFAQsWithFallback,
+} from '@/lib/contracts-fallback';
 import { SECTORS, getSectorBySlug } from '@/lib/sectors';
 import { getFreshnessLabel } from '@/lib/seo';
 
@@ -126,13 +131,22 @@ export default async function LicitacoesCidadeSetorPage({
     { name: sector.name, url },
   ];
 
+  // Zero-state fallback: when there are no open editais, look up historical
+  // contract activity in pncp_supplier_contracts for this city × sector.
+  const hasZeroEditais = total === 0;
+  const contractsFallback = hasZeroEditais
+    ? await fetchContratosCidadeSetorStats(city.slug, sector.slug)
+    : null;
+  const contractsContext = buildContractsContext(contractsFallback);
+
   const editorial = getCidadeSectorEditorial(city.name, city.uf, ufName, sector.name);
-  const faqs = generateCidadeSectorFAQs(
+  const faqs = generateCidadeSectorFAQsWithFallback(
     city.name,
     city.uf,
     sector.name,
     stats?.total_editais,
     stats?.avg_value,
+    contractsContext,
   );
 
   const nearbyCities = getCitiesByUf(city.uf).filter((c) => c.slug !== city.slug);
@@ -329,16 +343,29 @@ export default async function LicitacoesCidadeSetorPage({
             </div>
           </section>
 
-          {/* Thin content fallback */}
-          {!hasSufficientData && (
+          {/* Zero-editais fallback: prefer historical contracts from
+              pncp_supplier_contracts (genuine value for SEO visitors). Falls
+              back to an honest warning + nav links only if there is also no
+              contract history. For "reduced volume" (not strictly zero), keeps
+              the original internal-link panel. */}
+          {hasZeroEditais && contractsFallback && contractsFallback.total_contracts > 0 ? (
+            <HistoricalContractsFallback
+              scope="cidade-setor"
+              sectorName={sector.name}
+              cityName={city.name}
+              data={contractsFallback}
+              ctaSlug={`cidade-${city.slug}-${sector.slug}`}
+            />
+          ) : !hasSufficientData ? (
             <div className="mb-10 p-5 rounded-lg border-l-4 border-amber-400 bg-amber-50 dark:bg-amber-950/20">
               <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-2">
                 Volume reduzido de editais nesta combinação
               </p>
               <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
                 No momento, o volume de editais de {sector.name.toLowerCase()} especificamente em{' '}
-                {city.name} é reduzido. Isso é comum em períodos de transição orçamentária ou para
-                combinações cidade/setor mais específicas. Recomendamos acompanhar também:
+                {city.name} é reduzido e também não identificamos contratos recentes deste setor no
+                município. Isso é comum em períodos de transição orçamentária ou para combinações
+                cidade/setor mais específicas. Recomendamos acompanhar também:
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
@@ -355,7 +382,7 @@ export default async function LicitacoesCidadeSetorPage({
                 </Link>
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* FAQ */}
           <section className="mb-10">

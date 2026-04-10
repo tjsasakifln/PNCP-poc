@@ -6,8 +6,14 @@ import Footer from '@/app/components/Footer';
 import SchemaMarkup from '@/components/blog/SchemaMarkup';
 import BlogCTA from '@/components/blog/BlogCTA';
 import BreadcrumbNav from '@/components/seo/BreadcrumbNav';
+import HistoricalContractsFallback from '@/components/blog/HistoricalContractsFallback';
 import { CITIES, getCityBySlug, fetchCidadeStats, getCitiesByUf } from '@/lib/cities';
 import { UF_NAMES, formatBRL } from '@/lib/programmatic';
+import {
+  fetchContratosCidadeStats,
+  buildContractsContext,
+  generateCidadeFAQsWithFallback,
+} from '@/lib/contracts-fallback';
 import { SECTORS } from '@/lib/sectors';
 
 /**
@@ -108,45 +114,23 @@ export default async function LicitacoesCidadePage({
     { name: `${city.name}/${city.uf}`, url },
   ];
 
-  const faqs = [
-    {
-      question: `Como encontrar licitações abertas em ${city.name}?`,
-      answer:
-        `No SmartLic você acompanha em tempo real todos os editais publicados por órgãos ` +
-        `públicos de ${city.name} (${ufName}) e do restante do Brasil. A plataforma consolida ` +
-        `dados de PNCP, PCP e ComprasGov, aplica classificação por setor via IA e envia alertas ` +
-        `automáticos de novas oportunidades.`,
-    },
-    {
-      question: `Quantas licitações existem atualmente em ${city.name}?`,
-      answer:
-        hasData
-          ? `Nos últimos 10 dias foram identificados ${total} editais em ${city.name}. ` +
-            `${stats && stats.avg_value > 0 ? `O valor médio estimado é ${formatBRL(stats.avg_value)}. ` : ''}` +
-            `Esse número varia diariamente conforme novas publicações.`
-          : `O volume de editais publicados em ${city.name} varia semana a semana. ` +
-            `Cadastre-se no SmartLic para receber alertas assim que novas licitações forem abertas.`,
-    },
-    {
-      question: `Quais órgãos mais compram em ${city.name}?`,
-      answer:
-        stats && stats.orgaos_frequentes.length > 0
-          ? `Os órgãos mais ativos recentemente são: ${stats.orgaos_frequentes
-              .slice(0, 3)
-              .map((o) => o.name)
-              .join(', ')}. No SmartLic você acompanha cada um deles individualmente.`
-          : `Prefeituras, secretarias e autarquias locais são os compradores mais frequentes ` +
-            `em ${city.name}. Use o SmartLic para mapear o histórico de compras de cada órgão.`,
-    },
-    {
-      question: `Como participar de uma licitação em ${city.name}/${city.uf}?`,
-      answer:
-        `Para participar de uma licitação em ${city.name}, sua empresa precisa estar regular ` +
-        `(CNDs, SICAF quando aplicável), ter objeto social compatível com o edital e apresentar ` +
-        `proposta no portal indicado (PNCP, Comprasnet ou portal próprio). O SmartLic ajuda a ` +
-        `filtrar apenas os editais em que você é elegível.`,
-    },
-  ];
+  // Zero-state fallback: when there are no open editais, fetch historical
+  // contract activity (all sectors) for this city from pncp_supplier_contracts.
+  const hasZeroEditais = total === 0;
+  const contractsFallback = hasZeroEditais
+    ? await fetchContratosCidadeStats(city.slug)
+    : null;
+  const contractsContext = buildContractsContext(contractsFallback);
+
+  const liveTopOrgaos = stats?.orgaos_frequentes?.map((o) => o.name);
+  const faqs = generateCidadeFAQsWithFallback(
+    city.name,
+    city.uf,
+    stats?.total_editais,
+    stats?.avg_value,
+    contractsContext,
+    liveTopOrgaos,
+  );
 
   const nearbyCities = getCitiesByUf(city.uf).filter((c) => c.slug !== city.slug);
 
@@ -280,7 +264,7 @@ export default async function LicitacoesCidadePage({
                 valor e geografia — ajudando a priorizar apenas as oportunidades onde sua empresa tem
                 chances reais de ganhar.
               </p>
-              {!hasData && (
+              {!hasData && !contractsFallback && (
                 <p className="text-ink-muted italic">
                   No momento não identificamos editais ativos para {city.name} nos últimos 10 dias.
                   Esse número oscila diariamente — cadastre-se para receber alertas automáticos.
@@ -288,6 +272,16 @@ export default async function LicitacoesCidadePage({
               )}
             </div>
           </section>
+
+          {/* Zero-editais fallback: historical contract activity (all sectors) */}
+          {hasZeroEditais && contractsFallback && contractsFallback.total_contracts > 0 && (
+            <HistoricalContractsFallback
+              scope="cidade"
+              cityName={city.name}
+              data={contractsFallback}
+              ctaSlug={`cidade-${city.slug}`}
+            />
+          )}
 
           {/* Explore by sector in city */}
           <section className="mb-10">

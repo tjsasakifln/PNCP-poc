@@ -488,3 +488,291 @@ class TestSectorUfStatsEnhanced:
             for point in trend:
                 assert point["count"] >= 1
                 assert point["avg_value"] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Contratos endpoints (pncp_supplier_contracts fallback for zero-editais pages)
+# ---------------------------------------------------------------------------
+
+# Sample rows from pncp_supplier_contracts (uniform/vestuario sector keywords)
+MOCK_CONTRACT_ROWS = [
+    {
+        "ni_fornecedor": "12345678000101",
+        "nome_fornecedor": "Uniformes Brasil LTDA",
+        "orgao_cnpj": "00000000000111",
+        "orgao_nome": "Secretaria de Segurança Pública SP",
+        "valor_global": 180000.00,
+        "data_assinatura": "2026-01-15",
+        "objeto_contrato": "Aquisição de uniformes para equipe de segurança",
+        "uf": "SP",
+        "municipio": "São Paulo",
+    },
+    {
+        "ni_fornecedor": "98765432000199",
+        "nome_fornecedor": "Fardamentos Militares S.A.",
+        "orgao_cnpj": "00000000000222",
+        "orgao_nome": "Polícia Militar SP",
+        "valor_global": 320000.00,
+        "data_assinatura": "2026-02-03",
+        "objeto_contrato": "Fardamentos militares para batalhão de choque",
+        "uf": "SP",
+        "municipio": "São Paulo",
+    },
+    {
+        "ni_fornecedor": "12345678000101",
+        "nome_fornecedor": "Uniformes Brasil LTDA",
+        "orgao_cnpj": "00000000000333",
+        "orgao_nome": "Prefeitura de Campinas",
+        "valor_global": 95000.00,
+        "data_assinatura": "2026-02-20",
+        "objeto_contrato": "Uniformes escolares para rede municipal",
+        "uf": "SP",
+        "municipio": "Campinas",
+    },
+    {
+        "ni_fornecedor": "55555555000155",
+        "nome_fornecedor": "Confecções do Norte",
+        "orgao_cnpj": "00000000000444",
+        "orgao_nome": "Prefeitura de Manaus",
+        "valor_global": 60000.00,
+        "data_assinatura": "2026-01-08",
+        "objeto_contrato": "Aquisição de uniformes para agentes de saúde",
+        "uf": "AM",
+        "municipio": "Manaus",
+    },
+    # Non-matching row (should be filtered out by sector keywords)
+    {
+        "ni_fornecedor": "99999999000199",
+        "nome_fornecedor": "Papelaria Central",
+        "orgao_cnpj": "00000000000555",
+        "orgao_nome": "Secretaria de Educação SP",
+        "valor_global": 25000.00,
+        "data_assinatura": "2026-02-18",
+        "objeto_contrato": "Aquisição de material de escritório e papelaria",
+        "uf": "SP",
+        "municipio": "São Paulo",
+    },
+]
+
+
+class _ContractsQueryBuilder:
+    """Chainable mock that mirrors supabase-py query builder for pncp_supplier_contracts.
+
+    Captures invoked filter kwargs so tests can assert UF/municipio were applied.
+    """
+    def __init__(self, rows):
+        self._rows = rows
+        self.filters = {}
+
+    def select(self, *_a, **_kw):
+        return self
+
+    def eq(self, key, value):
+        self.filters[f"eq:{key}"] = value
+        return self
+
+    def ilike(self, key, pattern):
+        self.filters[f"ilike:{key}"] = pattern
+        return self
+
+    def order(self, *_a, **_kw):
+        return self
+
+    def limit(self, *_a, **_kw):
+        return self
+
+    def execute(self):
+        rows = list(self._rows)
+        uf = self.filters.get("eq:uf")
+        if uf is not None:
+            rows = [r for r in rows if (r.get("uf") or "") == uf]
+        municipio_ilike = self.filters.get("ilike:municipio")
+        if municipio_ilike is not None:
+            # strip the surrounding %…% wildcards, case-insensitive substring
+            needle = municipio_ilike.strip("%").lower()
+            rows = [r for r in rows if needle in (r.get("municipio") or "").lower()]
+        resp = MagicMock()
+        resp.data = rows
+        return resp
+
+
+def _make_contracts_supabase_mock(rows=None):
+    """Return (mock_supabase, builder_ref) — builder_ref holds the last builder created."""
+    rows = rows if rows is not None else MOCK_CONTRACT_ROWS
+    builder_ref = {}
+
+    def _table(name):
+        assert name == "pncp_supplier_contracts", f"Unexpected table: {name}"
+        builder = _ContractsQueryBuilder(rows)
+        builder_ref["last"] = builder
+        return builder
+
+    mock_sb = MagicMock()
+    mock_sb.table.side_effect = _table
+    return mock_sb, builder_ref
+
+
+class TestContratosSetorUfStats:
+    """GET /v1/blog/stats/contratos/{setor_id}/uf/{uf}"""
+
+    def test_sector_uf_contratos_success(self, client):
+        mock_sb, builder_ref = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            assert res.status_code == 200
+
+            # UF filter was applied at query level
+            assert builder_ref["last"].filters.get("eq:uf") == "SP"
+            assert builder_ref["last"].filters.get("eq:is_active") is True
+
+            data = res.json()
+            assert data["sector_id"] == "vestuario"
+            assert data["sector_name"] == "Vestuário e Uniformes"
+            assert data["uf"] == "SP"
+            # 3 of 4 SP rows match sector keywords (uniformes/fardamentos), papelaria excluded
+            assert data["total_contracts"] == 3
+            assert data["total_value"] == round(180000.0 + 320000.0 + 95000.0, 2)
+            assert data["avg_value"] > 0
+            assert len(data["top_orgaos"]) >= 1
+            assert len(data["top_fornecedores"]) >= 1
+            assert len(data["monthly_trend"]) == 12
+            # ContratosSetorUfStats doesn't include by_uf (single-UF scope)
+            assert "by_uf" not in data
+
+    def test_sector_uf_contratos_invalid_uf(self, client):
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/XX")
+            assert res.status_code == 404
+
+    def test_sector_uf_contratos_invalid_sector(self, client):
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/nonexistent/uf/SP")
+            assert res.status_code == 404
+
+    def test_sector_uf_contratos_cached(self, client):
+        """Second call hits the cache — supabase should not be called twice."""
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb) as mock_fn:
+            res1 = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            res2 = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            assert res1.status_code == 200
+            assert res2.status_code == 200
+            assert res1.json() == res2.json()
+            assert mock_fn.call_count == 1
+
+    def test_sector_uf_contratos_cache_key_distinct_per_uf(self, client):
+        """Different UFs must use different cache keys (no cross-contamination)."""
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res_sp = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            res_am = client.get("/v1/blog/stats/contratos/vestuario/uf/AM")
+            assert res_sp.status_code == 200
+            assert res_am.status_code == 200
+            assert res_sp.json()["total_contracts"] == 3  # SP matches
+            assert res_am.json()["total_contracts"] == 1  # AM has 1 matching row
+
+    def test_sector_uf_contratos_zero_matches(self, client):
+        """Sector with no keyword matches returns zero but still 200."""
+        mock_sb, _ = _make_contracts_supabase_mock(rows=[MOCK_CONTRACT_ROWS[4]])  # papelaria only
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["total_contracts"] == 0
+            assert data["total_value"] == 0.0
+            assert data["avg_value"] == 0.0
+            assert data["top_orgaos"] == []
+            assert data["top_fornecedores"] == []
+
+    def test_sector_uf_contratos_db_failure_502(self, client):
+        mock_sb = MagicMock()
+        mock_sb.table.side_effect = RuntimeError("connection refused")
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            assert res.status_code == 502
+
+
+class TestContratosCidadeStats:
+    """GET /v1/blog/stats/contratos/cidade/{cidade}"""
+
+    def test_cidade_contratos_success(self, client):
+        mock_sb, builder_ref = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/cidade/sao-paulo")
+            assert res.status_code == 200
+
+            # UF resolved + municipio ilike applied
+            assert builder_ref["last"].filters.get("eq:uf") == "SP"
+            assert builder_ref["last"].filters.get("ilike:municipio", "").startswith("%")
+
+            data = res.json()
+            assert data["cidade"] == "São Paulo"  # accented official name from _CITY_DISPLAY
+            assert data["uf"] == "SP"
+            # All São Paulo rows included (no sector filter): 3 rows match (uniforms + fardamentos + papelaria)
+            # Campinas is filtered out by ilike
+            assert data["total_contracts"] == 3
+            assert "top_orgaos" in data
+            assert "monthly_trend" in data
+            assert len(data["monthly_trend"]) == 12
+
+    def test_cidade_contratos_invalid_city(self, client):
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/cidade/nonexistent-city")
+            assert res.status_code == 404
+
+    def test_cidade_contratos_db_failure_502(self, client):
+        mock_sb = MagicMock()
+        mock_sb.table.side_effect = RuntimeError("db down")
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/cidade/sao-paulo")
+            assert res.status_code == 502
+
+
+class TestContratosCidadeSetorStats:
+    """GET /v1/blog/stats/contratos/cidade/{cidade}/setor/{setor_id}"""
+
+    def test_cidade_setor_contratos_success(self, client):
+        mock_sb, builder_ref = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/cidade/sao-paulo/setor/vestuario")
+            assert res.status_code == 200
+
+            # All 3 filters present: is_active + uf + municipio ilike
+            filt = builder_ref["last"].filters
+            assert filt.get("eq:is_active") is True
+            assert filt.get("eq:uf") == "SP"
+            assert "ilike:municipio" in filt
+
+            data = res.json()
+            assert data["cidade"] == "São Paulo"
+            assert data["uf"] == "SP"
+            assert data["sector_id"] == "vestuario"
+            # Only uniforms/fardamentos rows that are in São Paulo (not Campinas) — 2 rows
+            assert data["total_contracts"] == 2
+
+    def test_cidade_setor_contratos_invalid_sector(self, client):
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/cidade/sao-paulo/setor/nonexistent")
+            assert res.status_code == 404
+
+    def test_cidade_setor_contratos_invalid_city(self, client):
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/cidade/nonexistent/setor/vestuario")
+            assert res.status_code == 404
+
+    def test_cidade_setor_contratos_cache_key_distinct(self, client):
+        """Different city+sector combinations must not cross-contaminate cache."""
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res1 = client.get("/v1/blog/stats/contratos/cidade/sao-paulo/setor/vestuario")
+            res2 = client.get("/v1/blog/stats/contratos/cidade/campinas/setor/vestuario")
+            assert res1.status_code == 200
+            assert res2.status_code == 200
+            # SP: 2 São Paulo rows, Campinas: 1 (uniformes escolares)
+            assert res1.json()["total_contracts"] == 2
+            assert res2.json()["total_contracts"] == 1
