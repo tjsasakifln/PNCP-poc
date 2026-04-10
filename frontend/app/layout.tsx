@@ -100,9 +100,13 @@ export const metadata: Metadata = {
     images: ["/api/og"],
     // No Twitter/X profile — omit creator/site handles
   },
-  // GTM-COPY-006 AC9: Canonical URL
+  // GTM-COPY-006 AC9: Canonical URL + hreflang (pt-BR only site)
   alternates: {
     canonical: "https://smartlic.tech",
+    languages: {
+      'pt-BR': 'https://smartlic.tech',
+      'x-default': 'https://smartlic.tech',
+    },
   },
   robots: {
     index: true,

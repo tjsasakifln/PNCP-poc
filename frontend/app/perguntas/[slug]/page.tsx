@@ -91,6 +91,22 @@ export default async function PerguntaPage({
     ],
   };
 
+  /* FAQPage JSON-LD — rich snippets para perguntas relacionadas da sidebar */
+  const faqPageLd = relatedQuestions.length > 0
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: relatedQuestions.map((q) => ({
+          '@type': 'Question',
+          name: q.title,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: q.answer.slice(0, 500),
+          },
+        })),
+      }
+    : null;
+
   return (
     <>
       <LandingNavbar />
@@ -216,6 +232,9 @@ export default async function PerguntaPage({
         {/* JSON-LD */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(qaPageLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+        {faqPageLd && (
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageLd) }} />
+        )}
       </main>
       <Footer />
     </>
