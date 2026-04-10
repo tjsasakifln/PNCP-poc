@@ -43,6 +43,22 @@ async def trigger_contracts_backfill(user=Depends(require_admin)) -> dict:
         return {"status": "error", "detail": str(e)}
 
 
+@router.post("/clear-contracts-checkpoints")
+async def clear_contracts_checkpoints(user=Depends(require_admin)) -> dict:
+    """Clear all Redis checkpoints for contracts crawler.
+
+    Use before re-triggering a full crawl when stale checkpoints
+    cause windows to be incorrectly skipped.
+    """
+    try:
+        from ingestion.contracts_crawler import clear_all_checkpoints
+        deleted = await clear_all_checkpoints()
+        return {"status": "ok", "checkpoints_deleted": deleted}
+    except Exception as e:
+        logger.error("clear_contracts_checkpoints failed: %s", e)
+        return {"status": "error", "detail": str(e)}
+
+
 @router.get("/search-trace/{search_id}")
 async def get_search_trace(search_id: str, user=Depends(require_admin)) -> dict[str, Any]:
     """Reconstruct complete search journey from search_id.

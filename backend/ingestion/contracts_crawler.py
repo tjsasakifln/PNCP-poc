@@ -122,6 +122,24 @@ async def _save_window_checkpoint(
         logger.debug("[ContractsCrawler] Checkpoint write error: %s", exc)
 
 
+async def clear_all_checkpoints() -> int:
+    """Delete all contracts:ckpt:* keys from Redis. Returns count deleted."""
+    try:
+        redis = await get_redis_pool()
+        if redis is None:
+            return 0
+        keys: list[str] = []
+        async for key in redis.scan_iter("contracts:ckpt:*"):
+            keys.append(key)
+        if keys:
+            await redis.delete(*keys)
+        logger.info("[ContractsCrawler] Cleared %d checkpoint keys", len(keys))
+        return len(keys)
+    except Exception as exc:
+        logger.error("[ContractsCrawler] Failed to clear checkpoints: %s", exc)
+        return 0
+
+
 async def _save_page_progress(data_ini: str, data_fim: str, page: int) -> None:
     """Update last_page in an existing checkpoint (best-effort)."""
     try:
@@ -322,7 +340,7 @@ async def crawl_contracts_window(
         Stats dict: pages_fetched, records_raw, records_normalized, upserted totals.
 
     Raises:
-        CrawlWindowError: When PNCP API exhausts all retries on any page.
+        CrawlWindowError: When pages remain irrecoverable after exhaustive retry.
     """
     stats: dict[str, Any] = {
         "window": f"{data_ini}->{data_fim}",
@@ -346,6 +364,28 @@ async def crawl_contracts_window(
     t0 = time.monotonic()
     effective_delay = PAGE_BATCH_DELAY_S
     known_total_pages: int | None = None
+    failed_pages: list[int] = []  # Collect failed pages for sequential retry
+
+    async def _process_items(items: list[dict], total_records: int, total_pages: int) -> None:
+        """Process fetched items: normalize + upsert. Updates stats + known_total_pages."""
+        nonlocal known_total_pages
+        if known_total_pages is None and total_pages > 0:
+            known_total_pages = min(total_pages, max_pages)
+            logger.info(
+                "[ContractsCrawler] Window %s->%s: %d total records, %d pages",
+                data_ini, data_fim, total_records, total_pages,
+            )
+        if not items:
+            return
+        stats["records_raw"] += len(items)
+        stats["pages_fetched"] += 1
+        normalized = [r for item in items if (r := _normalize_contract(item))]
+        stats["records_normalized"] += len(normalized)
+        if normalized:
+            counts = await _upsert_batch(normalized)
+            stats["inserted"] += counts["inserted"]
+            stats["updated"] += counts["updated"]
+            stats["unchanged"] += counts["unchanged"]
 
     async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:
         page = start_page
@@ -357,52 +397,35 @@ async def crawl_contracts_window(
             tasks = [_fetch_page(client, data_ini, data_fim, p) for p in page_range]
             results = await asyncio.gather(*tasks)
 
-            batch_had_failure = False
             batch_empty = True
 
             for p, result in zip(page_range, results):
                 if result is None:
-                    # All retries exhausted on this page — hard failure.
+                    # Collect for sequential retry later — do NOT abort window
                     stats["errors"] += 1
-                    raise CrawlWindowError(
-                        f"PNCP API failed after {MAX_RETRIES} retries on page {p} "
-                        f"(window {data_ini}->{data_fim})"
+                    failed_pages.append(p)
+                    logger.warning(
+                        "[ContractsCrawler] Page %d failed in batch — queued for retry (%d queued)",
+                        p, len(failed_pages),
                     )
-
-                items, total_records, total_pages = result
-
-                if known_total_pages is None and total_pages > 0:
-                    known_total_pages = min(total_pages, max_pages)
-                    logger.info(
-                        "[ContractsCrawler] Window %s->%s: %d total records, %d pages",
-                        data_ini, data_fim, total_records, total_pages,
-                    )
-
-                if not items:
                     continue
 
-                batch_empty = False
-                stats["records_raw"] += len(items)
-                stats["pages_fetched"] += 1
+                items, total_records, total_pages = result
+                await _process_items(items, total_records, total_pages)
+                if items:
+                    batch_empty = False
 
-                normalized = [r for item in items if (r := _normalize_contract(item))]
-                stats["records_normalized"] += len(normalized)
-
-                if normalized:
-                    counts = await _upsert_batch(normalized)
-                    stats["inserted"] += counts["inserted"]
-                    stats["updated"] += counts["updated"]
-                    stats["unchanged"] += counts["unchanged"]
-
-            # If the entire batch was empty, we've exhausted the data
-            if batch_empty and page == start_page:
+            # If the entire batch was empty (and no failures), we've exhausted the data
+            if batch_empty and not failed_pages and page == start_page:
                 logger.info(
                     "[ContractsCrawler] Window %s->%s: no records at start page",
                     data_ini, data_fim,
                 )
                 break
-            if batch_empty:
-                break
+            if batch_empty and not any(r is not None and r[0] for r in results):
+                # All pages returned empty data (not failures) — end of data
+                if not any(r is None for r in results):
+                    break
 
             # Check if we've reached the last page
             page = page_range[-1] + 1
@@ -419,21 +442,53 @@ async def crawl_contracts_window(
                 rate = round(stats["records_raw"] / elapsed, 1) if elapsed > 0 else 0
                 pct = round(page / known_total_pages * 100, 1)
                 logger.info(
-                    "[ContractsCrawler] %s->%s: page %d/%d (%.1f%%) — %.1f rec/s",
-                    data_ini, data_fim, page, known_total_pages, pct, rate,
+                    "[ContractsCrawler] %s->%s: page %d/%d (%.1f%%) — %.1f rec/s, %d queued retries",
+                    data_ini, data_fim, page, known_total_pages, pct, rate, len(failed_pages),
                 )
 
             await asyncio.sleep(effective_delay)
 
+        # --- Sequential retry pass for pages that failed in concurrent batches ---
+        if failed_pages:
+            logger.info(
+                "[ContractsCrawler] Window %s->%s: retrying %d failed pages sequentially",
+                data_ini, data_fim, len(failed_pages),
+            )
+            permanently_failed: list[int] = []
+            for fp in failed_pages:
+                recovered = False
+                for attempt in range(1, MAX_RETRIES + 1):
+                    await asyncio.sleep(RETRY_BACKOFF_S * attempt * 2)  # Longer backoff
+                    result = await _fetch_page(client, data_ini, data_fim, fp)
+                    if result is not None:
+                        items, total_records, total_pages = result
+                        await _process_items(items, total_records, total_pages)
+                        recovered = True
+                        logger.info("[ContractsCrawler] Page %d recovered on retry %d", fp, attempt)
+                        break
+                if not recovered:
+                    permanently_failed.append(fp)
+
+            if permanently_failed:
+                logger.error(
+                    "[ContractsCrawler] Window %s->%s: %d pages permanently failed: %s",
+                    data_ini, data_fim, len(permanently_failed), permanently_failed[:20],
+                )
+                raise CrawlWindowError(
+                    f"{len(permanently_failed)} pages irrecoverable in window "
+                    f"{data_ini}->{data_fim}: {permanently_failed[:10]}"
+                )
+
     elapsed = round(time.monotonic() - t0, 1)
     logger.info(
         "[ContractsCrawler] Window %s->%s done in %.1fs — "
-        "pages=%d raw=%d norm=%d ins=%d upd=%d",
+        "pages=%d raw=%d norm=%d ins=%d upd=%d retried=%d",
         data_ini, data_fim, elapsed,
         stats["pages_fetched"], stats["records_raw"], stats["records_normalized"],
-        stats["inserted"], stats["updated"],
+        stats["inserted"], stats["updated"], len(failed_pages),
     )
     stats["duration_s"] = elapsed
+    stats["retried_pages"] = len(failed_pages)
     return stats
 
 
