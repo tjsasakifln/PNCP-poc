@@ -3,6 +3,7 @@
 GET /v1/admin/search-trace/{search_id} — aggregates search journey data
 from multiple sources (search sessions, cache, jobs).
 POST /v1/admin/trigger-contracts-backfill — enqueue contracts full crawl to Worker.
+POST /v1/admin/trigger-bids-backfill — enqueue historical bids backfill to Worker.
 """
 
 import logging
@@ -40,6 +41,29 @@ async def trigger_contracts_backfill(user=Depends(require_admin)) -> dict:
         return {"status": "skipped", "detail": "Job already queued or duplicate"}
     except Exception as e:
         logger.error("trigger_contracts_backfill failed: %s", e)
+        return {"status": "error", "detail": str(e)}
+
+
+@router.post("/trigger-bids-backfill")
+async def trigger_bids_backfill(user=Depends(require_admin)) -> dict:
+    """Enqueue ingestion_backfill_job to ARQ Worker.
+
+    One-time historical crawl: fetches up to 365 days of PNCP bids
+    to capture all currently open opportunities.
+    Expected runtime: 4-8h. Safe to call multiple times (ARQ dedup).
+    """
+    try:
+        from job_queue import get_arq_pool
+        pool = await get_arq_pool()
+        if not pool:
+            return {"status": "error", "detail": "ARQ pool unavailable — Worker offline?"}
+
+        job = await pool.enqueue_job("ingestion_backfill_job")
+        if job:
+            return {"status": "enqueued", "job_id": job.job_id, "timeout_s": 36000}
+        return {"status": "skipped", "detail": "Job already queued or duplicate"}
+    except Exception as e:
+        logger.error("trigger_bids_backfill failed: %s", e)
         return {"status": "error", "detail": str(e)}
 
 
