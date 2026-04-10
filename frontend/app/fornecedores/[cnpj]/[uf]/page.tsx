@@ -13,7 +13,12 @@ export function generateStaticParams() {
   return generateSectorUfParams();
 }
 
-type Props = { params: Promise<{ setor: string; uf: string }> };
+// Param is named 'cnpj' to match the parent [cnpj] directory slug.
+// Semantically it holds a sector slug (e.g. 'vestuario'), not a CNPJ number.
+// The parent directory was renamed from [setor] to [cnpj] to resolve the
+// Next.js error "You cannot use different slug names for the same dynamic path"
+// caused by having both [setor]/[uf] and [cnpj] at the same level.
+type Props = { params: Promise<{ cnpj: string; uf: string }> };
 
 interface SupplierEntry {
   nome: string;
@@ -47,7 +52,7 @@ async function fetchFornecedoresStats(setor: string, uf: string): Promise<Fornec
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { setor, uf } = await params;
+  const { cnpj: setor, uf } = await params;
   const sector = getSectorFromSlug(setor);
   if (!sector) return {};
   const ufUpper = uf.toUpperCase();
@@ -71,7 +76,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function FornecedoresSetorUfPage({ params }: Props) {
-  const { setor, uf } = await params;
+  const { cnpj: setor, uf } = await params;
   const sector = getSectorFromSlug(setor);
   if (!sector) notFound();
 
