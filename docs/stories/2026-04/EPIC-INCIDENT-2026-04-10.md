@@ -33,14 +33,14 @@ Em 2026-04-10, análise consolidada de Sentry (`confenge`, 69 issues ativos em j
 
 | Story | Priority | Effort | Squad | Status | Causa Raiz |
 |-------|---------:|:------:|-------|:------:|------------|
-| [STORY-412](STORY-412-fix-search-sessions-objeto-resumo-schema-drift.md) | **P0** | S | @data-engineer + @dev | Ready | Schema drift `objeto_resumo` |
-| [STORY-413](STORY-413-fix-asgi-middleware-typeerror-coroutine-missing.md) | **P0** | M | @dev + @architect | Ready | TypeError crash loop |
-| [STORY-414](STORY-414-harden-schema-contract-gate-ci-validation.md) | **P0** | M | @data-engineer + @devops | Ready | Schema contract gate passivo |
-| [STORY-415](STORY-415-fix-trigger-prevent-privilege-escalation-is-master.md) | **P0** | S | @data-engineer | Ready | Trigger `is_master` quebrado |
-| [STORY-416](STORY-416-stabilize-supabase-circuit-breaker-cascade.md) | P1 | L | @architect + @dev | Ready | Supabase CB cascade global |
-| [STORY-417](STORY-417-fix-perfil-b2g-brasilapi-timeout-circuit-breaker.md) | P1 | M | @dev + @architect | Ready | BrasilAPI timeout sem CB |
-| [STORY-418](STORY-418-trial-email-pipeline-resilience-retry-dlq.md) | P1 | M | @dev | Ready | Trial email sem retry/DLQ |
-| [STORY-419](STORY-419-fix-search-sessions-valor-total-numeric-overflow.md) | P1 | S | @data-engineer + @dev | Ready | NUMERIC(14,2) overflow |
+| [STORY-412](STORY-412-fix-search-sessions-objeto-resumo-schema-drift.md) | **P0** | S | @data-engineer + @dev | InReview | Schema drift `objeto_resumo` |
+| [STORY-413](STORY-413-fix-asgi-middleware-typeerror-coroutine-missing.md) | **P0** | M | @dev + @architect | InReview | TypeError crash loop |
+| [STORY-414](STORY-414-harden-schema-contract-gate-ci-validation.md) | **P0** | M | @data-engineer + @devops | InReview | Schema contract gate passivo |
+| [STORY-415](STORY-415-fix-trigger-prevent-privilege-escalation-is-master.md) | **P0** | S | @data-engineer | InReview | Trigger `is_master` quebrado |
+| [STORY-416](STORY-416-stabilize-supabase-circuit-breaker-cascade.md) | P1 | L | @architect + @dev | InReview | Supabase CB cascade global |
+| [STORY-417](STORY-417-fix-perfil-b2g-brasilapi-timeout-circuit-breaker.md) | P1 | M | @dev + @architect | InReview | BrasilAPI timeout sem CB |
+| [STORY-418](STORY-418-trial-email-pipeline-resilience-retry-dlq.md) | P1 | M | @dev | InReview | Trial email sem retry/DLQ |
+| [STORY-419](STORY-419-fix-search-sessions-valor-total-numeric-overflow.md) | P1 | S | @data-engineer + @dev | InReview | NUMERIC(14,2) overflow |
 | [STORY-420](STORY-420-remove-invalid-stripe-pix-payment-method.md) | P2 | S | @dev | Ready | Stripe PIX inválido |
 | [STORY-421](STORY-421-fix-nextjs-login-rsc-invariant-error.md) | P2 | M | @dev + @ux-design-expert | Ready | Next.js RSC InvariantError |
 | [STORY-422](STORY-422-frontend-sse-connection-closed-retry-cleanup.md) | P2 | M | @dev | Ready | SSE abort sem retry |
@@ -86,12 +86,12 @@ Em 2026-04-10, análise consolidada de Sentry (`confenge`, 69 issues ativos em j
 
 ## Definition of Done (Epic)
 
-- [ ] Todas as 12 stories em status `Done`
-- [ ] Zero eventos **Escalating** ou **Regressed** no Sentry para os 11 issues referenciados
-- [ ] Zero eventos dos error codes cobertos nas últimas 24h após último deploy
-- [ ] Runbooks novos criados: `docs/runbook/supabase-circuit-breaker.md`, `docs/runbook/trial-email-pipeline.md`, `docs/runbook/sentry-triage.md`
-- [ ] `migration-check.yml` workflow estendido com validação do schema contract (STORY-414 AC3)
-- [ ] Postmortem em `docs/incidents/2026-04-10-multi-cause.md` documentando timeline, causa raiz e aprendizados
+- [ ] Todas as 12 stories em status `Done` _(8 stories em InReview após implementation 2026-04-10: 412/413/414/415/416/417/418/419. P2 stories 420-423 ainda Ready.)_
+- [ ] Zero eventos **Escalating** ou **Regressed** no Sentry para os 11 issues referenciados _(aguarda deploy + janela de observação 6h)_
+- [ ] Zero eventos dos error codes cobertos nas últimas 24h após último deploy _(aguarda deploy)_
+- [x] Runbooks novos criados: `docs/runbook/supabase-circuit-breaker.md`, `docs/runbook/trial-email-pipeline.md` _(STORY-416, STORY-418 entregaram)_ — resta `docs/runbook/sentry-triage.md` (STORY-423)
+- [ ] `migration-check.yml` workflow estendido com validação do schema contract (STORY-414 AC3) _(deferido — P2/P3 do rollout faseado, fora da sprint emergencial)_
+- [ ] Postmortem em `docs/incidents/2026-04-10-multi-cause.md` documentando timeline, causa raiz e aprendizados _(task pós-deploy)_
 
 ---
 
@@ -151,3 +151,4 @@ Análise completa em conversação `docs/sessions/` (transcript @pm post-valida�
 | 2026-04-10 | @sm (River) | Epic criado a partir de análise Sentry/Railway consolidada |
 | 2026-04-10 | @po (Sarah) | Validação `*validate-story-draft` das 12 stories concluída. Todas GO (scores 8.5-10/10). Status Draft → Ready para todas. Pronto para `*dev develop-story`. |
 | 2026-04-10 | @pm (Morgan) | 8 decisões elucidadas e aplicadas às stories (ver seção "Decisões Tomadas"). Investigações prévias resolveram condicionais em 412 (Opção C) e 415 (Opção B). Merge order P0 definido: 413 → 415 → 412 → 414. STORY-424 criada em backlog P3 como follow-up do PIX. |
+| 2026-04-10 | @dev | Implementation YOLO sprint — 8 stories (412/413/414/415/416/417/418/419) entregues em paralelo. 62 novos tests passando em `backend/tests/test_story41{2..9}_*.py` + `tests/test_trial_endpoints.py`. Zero regressões em suites existentes (10 failures remanescentes em `test_debt110` / `test_supabase_circuit_breaker::test_check_quota_fail_open_when_cb_open_no_cache` são **pre-existing**, confirmados via `git stash`). 3 migrations novas (415 trigger fix, 418 DLQ, 419 widen). 2 runbooks novos. StarletteIntegration removido do Sentry (root cause secundária do STORY-413). Todas em `InReview` aguardando deploy + janela de observação Sentry 6h antes de `Done`. P2 stories 420-423 + STORY-424 backlog seguem Ready/Backlog. |
