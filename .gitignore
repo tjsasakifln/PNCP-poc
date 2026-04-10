@@ -413,3 +413,4 @@ nul
 # AIOX Local (AIOX)
 .aiox-core/local/
 .aiox/install-log.txt
+scripts/.accent_cache.json
