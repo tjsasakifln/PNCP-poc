@@ -4,6 +4,13 @@ TaskRegistry replaces ad-hoc task management in lifespan with a single
 registry that handles startup, shutdown, and health reporting for all
 background tasks.
 
+STORY-413: Adds fail-fast signature validation at register time so that
+a task with the wrong callable shape raises immediately (at import/boot)
+instead of crashing the ASGI middleware stack later. Also logs structured
+diagnostics before start_all() so any regression shows up in Sentry with
+the name of the offending task instead of an opaque TypeError deep inside
+``AsyncExitStackMiddleware``.
+
 Usage:
     registry = TaskRegistry()
     registry.register("cache_cleanup", start_cache_cleanup_task)
@@ -14,12 +21,22 @@ Usage:
 """
 
 import asyncio
+import inspect
 import logging
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
+
+class TaskRegistrationError(TypeError):
+    """STORY-413: Raised when a background task is registered with a shape
+    incompatible with its declared mode (coroutine vs task factory).
+
+    Inherits from TypeError so that existing exception handlers keep working,
+    but exposes a distinct class so upstream code can disambiguate.
+    """
 
 
 @dataclass
@@ -62,7 +79,54 @@ class TaskRegistry:
             start_fn: Async callable. If ``is_coroutine=False`` (default),
                 calling it should return an ``asyncio.Task``.  If ``True``,
                 calling it returns a coroutine wrapped with ``create_task``.
+
+        Raises:
+            TaskRegistrationError: If ``start_fn`` is not callable, is not an
+                async function when ``is_coroutine=True``, or has required
+                positional parameters that would fail the zero-arg invocation
+                in ``start_all``. STORY-413 — fail fast at import/boot to
+                prevent crash loops inside the ASGI middleware stack.
         """
+        if not callable(start_fn):
+            raise TaskRegistrationError(
+                f"TaskRegistry.register('{name}'): start_fn is not callable "
+                f"(got {type(start_fn).__name__})"
+            )
+
+        # STORY-413: Validate that the shape of start_fn matches the declared
+        # mode. The registry invokes ``start_fn()`` with zero arguments in
+        # start_all(), so any required positional parameter would raise a
+        # TypeError("... missing 1 required positional argument: ...") at
+        # startup — which is exactly the crash loop we are protecting against.
+        try:
+            sig = inspect.signature(start_fn)
+        except (TypeError, ValueError):
+            sig = None
+
+        if sig is not None:
+            required_positional = [
+                p
+                for p in sig.parameters.values()
+                if p.kind
+                in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                and p.default is inspect.Parameter.empty
+            ]
+            if required_positional:
+                raise TaskRegistrationError(
+                    f"TaskRegistry.register('{name}'): start_fn has required "
+                    f"positional arguments {[p.name for p in required_positional]!r}; "
+                    f"registry invokes start_fn() with zero arguments. "
+                    f"Wrap the factory in a zero-arg lambda or set defaults."
+                )
+
+        if is_coroutine and not inspect.iscoroutinefunction(start_fn):
+            raise TaskRegistrationError(
+                f"TaskRegistry.register('{name}'): is_coroutine=True but "
+                f"start_fn is not an async function "
+                f"(inspect.iscoroutinefunction returned False). "
+                f"Either pass an `async def` or set is_coroutine=False."
+            )
+
         if name in self._entries:
             logger.warning("TaskRegistry: duplicate registration for '%s' — overwriting", name)
         self._entries[name] = _TaskEntry(name=name, start_fn=start_fn, is_coroutine=is_coroutine)
@@ -74,6 +138,22 @@ class TaskRegistry:
         Returns:
             Dict mapping task name to success (True) or failure (False).
         """
+        # STORY-413: Structured pre-start log so that if the middleware stack
+        # crashes during task scheduling, Sentry/Railway logs show exactly
+        # which tasks were about to be started and in which mode.
+        logger.info(
+            "TaskRegistry.start_all: about to start %d tasks: %s",
+            len(self._start_order),
+            [
+                {
+                    "name": n,
+                    "mode": "coroutine" if self._entries[n].is_coroutine else "factory",
+                    "qualname": getattr(self._entries[n].start_fn, "__qualname__", repr(self._entries[n].start_fn)),
+                }
+                for n in self._start_order
+            ],
+        )
+
         results: Dict[str, bool] = {}
         for name in self._start_order:
             entry = self._entries[name]
@@ -89,7 +169,13 @@ class TaskRegistry:
             except Exception as e:
                 entry.error = f"{type(e).__name__}: {e}"
                 results[name] = False
-                logger.error("TaskRegistry: failed to start '%s': %s", name, entry.error)
+                logger.error(
+                    "TaskRegistry: failed to start '%s' (mode=%s, qualname=%s): %s",
+                    name,
+                    "coroutine" if entry.is_coroutine else "factory",
+                    getattr(entry.start_fn, "__qualname__", repr(entry.start_fn)),
+                    entry.error,
+                )
 
         started = sum(1 for v in results.values() if v)
         failed = sum(1 for v in results.values() if not v)

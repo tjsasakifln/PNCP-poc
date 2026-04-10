@@ -7,7 +7,11 @@ import re
 import httpx
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
-from sentry_sdk.integrations.starlette import StarletteIntegration
+
+# STORY-413: StarletteIntegration intentionally NOT imported — see init_sentry()
+# for the full rationale. Importing it is harmless on its own, but keeping it
+# out of the import list enforces the contract that no future refactor will
+# accidentally re-enable it.
 
 from log_sanitizer import mask_email, mask_token, mask_user_id, mask_ip_address, sanitize_dict, sanitize_string
 
@@ -119,15 +123,23 @@ def init_sentry(env: str, version: str) -> None:
     dsn = os.getenv("SENTRY_DSN")
     if dsn:
         from supabase_client import CircuitBreakerOpenError
-        # CRIT-SIGSEGV: StarletteIntegration DISABLED — causes Segmentation Fault
-        # on POST requests with Python 3.12 + cryptography>=46 (sentry-python#3421).
-        # The _sentry_receive hook in starlette.py triggers SIGSEGV during TLS
-        # handshake in auth middleware. FastApiIntegration alone captures errors fine.
+        # CRIT-SIGSEGV + STORY-413: StarletteIntegration DISABLED for TWO reasons:
+        #   1. CRIT-SIGSEGV — causes Segmentation Fault on POST requests with
+        #      Python 3.12 + cryptography>=46 (sentry-python#3421). The
+        #      ``_sentry_receive`` hook in starlette.py triggers SIGSEGV during
+        #      the TLS handshake in auth middleware.
+        #   2. STORY-413 — the same integration patches
+        #      ``AsyncExitStackMiddleware.__call__`` and exposes a
+        #      ``TypeError: func() missing 1 required positional argument:
+        #      'coroutine'`` crash loop (Sentry issues 7400217484 /
+        #      7282829485 / 7282829484, 132 events on 2026-04-10).
+        # FastApiIntegration alone captures errors fine for both routes and
+        # startup, so we register only that one. Do NOT re-add
+        # StarletteIntegration without reproducing both failures first.
         sentry_sdk.init(
             dsn=dsn,
             integrations=[
                 FastApiIntegration(transaction_style="endpoint"),
-                StarletteIntegration(transaction_style="endpoint", failed_request_status_codes=set()),
             ],
             traces_sampler=_traces_sampler,
             environment=env,
@@ -136,7 +148,8 @@ def init_sentry(env: str, version: str) -> None:
             ignore_errors=[CircuitBreakerOpenError],
             enable_tracing=False,  # Disable performance tracing (SIGSEGV source)
             profiles_sample_rate=0,  # Disable profiling (SIGSEGV source)
+            auto_enabling_integrations=False,  # STORY-413: prevent auto-enable of StarletteIntegration
         )
-        logger.info("Sentry initialized for error tracking")
+        logger.info("Sentry initialized for error tracking (STORY-413: StarletteIntegration disabled)")
     else:
         logger.info("Sentry DSN not configured — error tracking disabled")
