@@ -33,6 +33,15 @@ jobs:
           cd frontend
           npm ci
 
+      # Content quality gate: ensures all static content (questions, glossary,
+      # programmatic SEO, etc.) has proper Portuguese accents. Blocks merge if
+      # any unaccented token is found inside string literals of frontend/lib/*.ts.
+      # See docs/content-authoring-guide.md for fixing instructions.
+      - name: Content accents check
+        run: |
+          python3 -V
+          python3 scripts/check_content_accents.py
+
       # CI-002: Advisory security audit — runs early so results are visible even if tests fail.
       # The blocking critical-level audit (DEBT-123 AC2) runs after tests.
       - name: Security audit (advisory — high level)
