@@ -65,20 +65,20 @@ def test_trial_value_with_sessions(client, mock_db):
     }
     profile_mock.select.return_value.eq.return_value.single.return_value.execute.return_value = profile_result
 
-    # Sessions mock chain
+    # Sessions mock chain.
+    # STORY-412: objeto_resumo deliberately removed — the production schema
+    # never had that column, and the endpoint must render a literal title.
     sessions_mock = MagicMock()
     sessions_result = MagicMock()
     sessions_result.data = [
         {
             "total_filtered": 25,
             "valor_total": "5000000.00",
-            "objeto_resumo": "Uniformes escolares - SP",
             "created_at": "2026-02-10T10:00:00+00:00",
         },
         {
             "total_filtered": 22,
             "valor_total": "3500000.00",
-            "objeto_resumo": "Materiais de limpeza - RJ",
             "created_at": "2026-02-12T14:00:00+00:00",
         },
     ]
@@ -97,7 +97,8 @@ def test_trial_value_with_sessions(client, mock_db):
     assert data["searches_executed"] == 2
     assert data["avg_opportunity_value"] == pytest.approx(180851.06, abs=1)  # 8.5M / 47
     assert data["top_opportunity"] is not None
-    assert data["top_opportunity"]["title"] == "Uniformes escolares - SP"
+    # STORY-412: Title is now always the literal fallback (no PII leakage).
+    assert data["top_opportunity"]["title"] == "Oportunidade identificada"
     assert data["top_opportunity"]["value"] == 5000000.0
 
 
@@ -141,6 +142,47 @@ def test_trial_value_db_error(client, mock_db):
     # CRIT-005 AC26: Surface error instead of swallowing with zero defaults
     assert response.status_code == 503
     assert "indisponível" in response.json()["detail"].lower()
+
+
+def test_trial_value_query_does_not_select_objeto_resumo(client, mock_db):
+    """STORY-412: regression guard for the schema drift.
+
+    The endpoint must NEVER ask PostgREST for ``objeto_resumo`` — that
+    column never existed and caused 213 Sentry events on 2026-04-10
+    (issue 7396988861). We assert this at the call-site level so any
+    future edit that re-introduces the column shows up red in CI
+    without needing a full integration run against Supabase.
+    """
+    profile_mock = MagicMock()
+    profile_result = MagicMock()
+    profile_result.data = {
+        "created_at": "2026-02-05T10:00:00+00:00",
+        "trial_expires_at": "2026-02-12T10:00:00+00:00",
+    }
+    profile_mock.select.return_value.eq.return_value.single.return_value.execute.return_value = profile_result
+
+    sessions_mock = MagicMock()
+    sessions_result = MagicMock()
+    sessions_result.data = []
+    sessions_mock.select.return_value.eq.return_value.gte.return_value.lte.return_value.order.return_value.execute.return_value = sessions_result
+
+    mock_db.table.side_effect = _make_table_side_effect(profile_mock, sessions_mock)
+
+    response = client.get("/v1/analytics/trial-value")
+    assert response.status_code == 200
+
+    # Every .select(...) call made on the sessions table must NOT include
+    # objeto_resumo in the projection string.
+    select_calls = sessions_mock.select.call_args_list
+    assert select_calls, "endpoint must call .select() on search_sessions"
+    for call in select_calls:
+        args, _kwargs = call
+        for projection in args:
+            assert "objeto_resumo" not in projection, (
+                "STORY-412 regression: analytics.get_trial_value must not "
+                "select objeto_resumo from search_sessions — that column "
+                f"does not exist (got projection: {projection!r})."
+            )
 
 
 # ============================================================================

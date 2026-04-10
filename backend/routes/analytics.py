@@ -309,9 +309,15 @@ async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)
         trial_start = profile.get("created_at")
         trial_end = profile.get("trial_expires_at")
 
-        # Query search sessions within trial period
+        # Query search sessions within trial period.
+        # STORY-412: ``objeto_resumo`` was referenced here but never
+        # existed as a column on search_sessions — the drift caused
+        # 213 Sentry events (issue 7396988861, "column does not exist")
+        # on the trial-value endpoint. The top opportunity title already
+        # falls back to a literal string below, so the column is not
+        # needed at all.
         query = db.table("search_sessions").select(
-            "total_filtered, valor_total, objeto_resumo, created_at"
+            "total_filtered, valor_total, created_at"
         ).eq("user_id", user_id)
 
         if trial_start:
@@ -336,12 +342,17 @@ async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)
         searches_executed = len(sessions)
         avg_opportunity_value = total_value / total_opportunities if total_opportunities > 0 else 0.0
 
-        # Top opportunity = session with highest valor_total
+        # Top opportunity = session with highest valor_total.
+        # STORY-412: ``objeto_resumo`` removed from the query above, so
+        # the title is always the literal fallback. Keeping the literal
+        # here (instead of interpolating any session field) avoids
+        # accidental PII leakage through search titles and matches the
+        # copy already reviewed by product.
         top_session = sessions[0] if sessions else None
         top_opportunity = None
         if top_session and float(Decimal(str(top_session.get("valor_total") or 0))) > 0:
             top_opportunity = TopOpportunity(
-                title=top_session.get("objeto_resumo") or "Oportunidade identificada",
+                title="Oportunidade identificada",
                 value=float(Decimal(str(top_session.get("valor_total") or 0))),
             )
 

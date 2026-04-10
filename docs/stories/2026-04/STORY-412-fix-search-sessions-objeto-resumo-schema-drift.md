@@ -3,7 +3,7 @@
 **Priority:** P0 — Production Incident (Escalating)
 **Effort:** S (0.5-1 day)
 **Squad:** @data-engineer + @dev
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7396988861/
 **Sprint:** Emergencial (0-48h)
@@ -129,3 +129,4 @@ Este bug é **intrinsecamente ligado à STORY-414** (Schema Contract Gate) — o
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9.5/10). Status Draft → Ready. |
 | 2026-04-10 | @pm (Morgan) | Decisão AC2: **Opção C** (remover campo). Investigação confirmou zero uso no frontend e fallback já existente em `analytics.py:344`. AC4 ajustado — teste de regressão cobre `top_opportunity.title` com fallback literal. |
+| 2026-04-10 | @dev | Implementation. `backend/routes/analytics.py:313-315` — SELECT sem `objeto_resumo`. Linha 344 — título literal `"Oportunidade identificada"`. `backend/tests/test_trial_endpoints.py` atualizado (9 passam) + novo teste de regressão que inspeciona `.select(...)` call_args para garantir que `objeto_resumo` nunca mais entra na query. Status Ready → InReview. |
