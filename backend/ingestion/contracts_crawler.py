@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 PNCP_CONTRACTS_URL = "https://pncp.gov.br/api/consulta/v1/contratos"
-PAGE_SIZE = 50          # PNCP max tamanhoPagina for /contratos
-MAX_PAGES_PER_WINDOW = 50000  # Safety cap — actual limit is ARQ job timeout (8h)
+PAGE_SIZE = 500         # PNCP max for /v1/contratos (tested 2026-04-09: 500→200, 501→400)
+MAX_PAGES_PER_WINDOW = 10000  # Safety cap — 10x fewer pages with PAGE_SIZE=500
 HTTP_TIMEOUT = 45       # Longer timeout for slow pages
 MAX_RETRIES = 5         # More retries
 RETRY_BACKOFF_S = 5.0   # Longer backoff before retry
@@ -52,13 +52,13 @@ CONTRACTS_FULL_CRAWL_TIMEOUT = 28800   # 8h for full crawl
 CONTRACTS_INCREMENTAL_TIMEOUT = 3600   # 1h for incremental
 
 # Concurrency & rate limiting — all tuneable via env vars without redeploy.
-# Defaults calibrated for ~5 pages/s (250 rec/s) which completes ~5.4K pages/window in ~30 min.
+# Defaults calibrated for ~5 pages/s (2,500 rec/s) which completes ~540 pages/window in ~3 min.
 CONCURRENT_PAGES = int(__import__("os").getenv("CONTRACTS_CONCURRENT_PAGES", "5"))
 PAGE_BATCH_DELAY_S = float(__import__("os").getenv("CONTRACTS_PAGE_BATCH_DELAY_S", "1.0"))
-CONCURRENT_WINDOWS = int(__import__("os").getenv("CONTRACTS_CONCURRENT_WINDOWS", "1"))
+CONCURRENT_WINDOWS = int(__import__("os").getenv("CONTRACTS_CONCURRENT_WINDOWS", "2"))
 REQUEST_DELAY_S = float(__import__("os").getenv("CONTRACTS_REQUEST_DELAY_S", "0.5"))
 
-# 90-day windows: 730 days / 90 = ~9 windows. Each ~5.4K pages, completable in ~30 min.
+# 90-day windows: 730 days / 90 = ~9 windows. Each ~540 pages, completable in ~3 min.
 # Smaller windows = faster checkpoint completion = more resilient to interruptions.
 MAX_WINDOW_DAYS = 90
 
@@ -73,7 +73,7 @@ _ESFERA_LABELS = {"F": "Federal", "E": "Estadual", "M": "Municipal", "D": "Distr
 # ---------------------------------------------------------------------------
 
 _CHECKPOINT_TTL = 7 * 24 * 3600  # 7 days: covers any reasonable retry window
-_PAGE_CHECKPOINT_INTERVAL = 20   # Save page progress every N pages (1,000 records max re-fetch on restart)
+_PAGE_CHECKPOINT_INTERVAL = 10   # Save page progress every N pages (5,000 records max re-fetch on restart)
 
 
 class CrawlWindowError(Exception):
@@ -195,7 +195,7 @@ def _normalize_contract(item: dict) -> dict | None:
         "uf": (unidade.get("ufSigla") or "")[:2] or None,
         "municipio": (unidade.get("municipioNome") or "")[:100] or None,
         "esfera": (orgao.get("esferaId") or "")[:1] or None,
-        "valor_global": str(round(valor, 2)) if valor is not None else None,
+        "valor_global": round(valor, 2) if valor is not None else None,
         "data_assinatura": data_assinatura,
         "objeto_contrato": objeto or None,
         "content_hash": content_hash,
@@ -487,6 +487,14 @@ async def run_full_crawl() -> dict[str, Any]:
     if not CONTRACTS_ENABLED:
         return {"status": "skipped", "reason": "CONTRACTS_INGESTION_ENABLED=false"}
 
+    # Pre-flight: verify table exists (migration applied) before making thousands of API calls
+    try:
+        sb = get_supabase()
+        sb.table("pncp_supplier_contracts").select("id", count="exact").limit(0).execute()
+    except Exception as exc:
+        logger.error("[ContractsCrawler] Table pncp_supplier_contracts not found — run migration: %s", exc)
+        return {"status": "failed", "reason": "table_not_found", "error": str(exc)}
+
     if await _check_circuit_breaker():
         return {"status": "skipped", "reason": "pncp_circuit_breaker_open"}
 
@@ -603,6 +611,13 @@ async def run_incremental_crawl() -> dict[str, Any]:
     """
     if not CONTRACTS_ENABLED:
         return {"status": "skipped", "reason": "CONTRACTS_INGESTION_ENABLED=false"}
+
+    try:
+        sb = get_supabase()
+        sb.table("pncp_supplier_contracts").select("id", count="exact").limit(0).execute()
+    except Exception as exc:
+        logger.error("[ContractsCrawler] Table pncp_supplier_contracts not found — run migration: %s", exc)
+        return {"status": "failed", "reason": "table_not_found", "error": str(exc)}
 
     if await _check_circuit_breaker():
         return {"status": "skipped", "reason": "pncp_circuit_breaker_open"}
