@@ -7,6 +7,7 @@ Endpoints:
   GET /contratos/{setor}/{uf}/stats       — spending transparency (12.2.1)
   GET /fornecedores/{setor}/{uf}/stats    — supplier directory (12.2.2)
   GET /contratos/orgao/{cnpj}/stats       — org contract profile (12.2.3)
+  GET /fornecedores/{cnpj}/profile        — supplier profile page (Sprint 3 Parte 13)
 """
 
 import logging
@@ -28,6 +29,7 @@ _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h
 _contratos_cache: dict[str, tuple[dict, float]] = {}
 _fornecedores_cache: dict[str, tuple[dict, float]] = {}
 _orgao_contratos_cache: dict[str, tuple[dict, float]] = {}
+_fornecedor_profile_cache: dict[str, tuple[dict, float]] = {}
 
 _CNPJ_RE = re.compile(r"^\d{14}$")
 
@@ -515,3 +517,226 @@ def _safe_float(val) -> float:
         return float(val)
     except (ValueError, TypeError):
         return 0.0
+
+
+# ---------------------------------------------------------------------------
+# Response models — Fornecedor Profile (Sprint 3 Parte 13)
+# ---------------------------------------------------------------------------
+
+class FaqItem(BaseModel):
+    question: str
+    answer: str
+
+
+class RecentContract(BaseModel):
+    objeto: str
+    orgao: str
+    valor: Optional[float] = None
+    data_assinatura: str
+    uf: str
+
+
+class FornecedorProfileResponse(BaseModel):
+    cnpj: str
+    razao_social: str
+    cnae_descricao: str
+    municipio: str
+    uf_sede: str
+    simples_nacional: bool
+    mei: bool
+    total_contratos: int
+    valor_total: float
+    ufs_atuantes: list[str]
+    anos_atividade: list[int]
+    top_compradores: list[OrgaoRank]
+    contratos_recentes: list[RecentContract]
+    faq_items: list[FaqItem]
+    last_updated: str
+    aviso_legal: str
+
+
+# ---------------------------------------------------------------------------
+# Endpoint: Fornecedor Profile (Sprint 3 Parte 13)
+# DEVE ser declarado ANTES de /fornecedores/{setor}/{uf}/stats para evitar
+# conflito de rota — "cnpj" (14 digitos) colide com "setor" (slug) no FastAPI.
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/fornecedores/{cnpj}/profile",
+    response_model=FornecedorProfileResponse,
+    summary="Perfil completo de um fornecedor do governo (por CNPJ)",
+)
+async def fornecedor_profile(cnpj: str):
+    """Agrega historico de contratos do PNCP + dados cadastrais (BrasilAPI via
+    enriched_entities) para a pagina /fornecedores/{cnpj}.
+
+    Publico, sem auth. Cache: 24h TTL em memoria.
+    """
+    cnpj_clean = cnpj.strip()
+    if not _CNPJ_RE.match(cnpj_clean):
+        raise HTTPException(status_code=400, detail="CNPJ invalido (esperado 14 digitos numericos)")
+
+    cache_key = f"fornecedor_profile:{cnpj_clean}"
+    cached = _get_cached(_fornecedor_profile_cache, cache_key)
+    if cached:
+        return FornecedorProfileResponse(**cached)
+
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    # --- Contratos do fornecedor (pncp_supplier_contracts) ---
+    try:
+        resp = (
+            sb.table("pncp_supplier_contracts")
+            .select(
+                "ni_fornecedor,nome_fornecedor,orgao_cnpj,orgao_nome,"
+                "valor_global,data_assinatura,objeto_contrato,uf"
+            )
+            .eq("ni_fornecedor", cnpj_clean)
+            .eq("is_active", True)
+            .order("data_assinatura", desc=True)
+            .limit(500)
+            .execute()
+        )
+    except Exception as e:
+        logger.error("fornecedor_profile contratos query falhou para %s: %s", cnpj_clean, e)
+        raise HTTPException(status_code=502, detail="Erro ao consultar o datalake de contratos")
+
+    rows = resp.data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Fornecedor nao encontrado no datalake de contratos")
+
+    # --- Dados cadastrais (enriched_entities — opcional) ---
+    enriched_data: dict = {}
+    try:
+        enrich_resp = (
+            sb.table("enriched_entities")
+            .select("data")
+            .eq("entity_type", "fornecedor")
+            .eq("entity_id", cnpj_clean)
+            .limit(1)
+            .execute()
+        )
+        if enrich_resp.data:
+            enriched_data = enrich_resp.data[0].get("data") or {}
+    except Exception as e:
+        logger.warning("enriched_entities query falhou para %s (continuando sem enrichment): %s", cnpj_clean, e)
+
+    # --- Agregacoes ---
+    total_value = 0.0
+    ufs_set: set[str] = set()
+    anos_set: set[int] = set()
+    orgao_agg: dict[str, dict] = defaultdict(lambda: {"nome": "", "cnpj": "", "contratos": 0, "valor": 0.0})
+
+    razao_social = ""
+    for row in rows:
+        valor = _safe_float(row.get("valor_global"))
+        total_value += valor
+
+        if not razao_social:
+            razao_social = (row.get("nome_fornecedor") or "").strip()
+
+        uf = (row.get("uf") or "").strip().upper()
+        if uf:
+            ufs_set.add(uf)
+
+        data_str = (row.get("data_assinatura") or "")[:4]
+        if data_str.isdigit():
+            anos_set.add(int(data_str))
+
+        org_cnpj = row.get("orgao_cnpj") or ""
+        if org_cnpj:
+            orgao_agg[org_cnpj]["cnpj"] = org_cnpj
+            orgao_agg[org_cnpj]["nome"] = (row.get("orgao_nome") or org_cnpj).strip()
+            orgao_agg[org_cnpj]["contratos"] += 1
+            orgao_agg[org_cnpj]["valor"] += valor
+
+    top_compradores = sorted(orgao_agg.values(), key=lambda x: x["valor"], reverse=True)[:10]
+
+    # Contratos recentes (top 20 por data)
+    contratos_recentes = []
+    for row in rows[:20]:
+        obj = (row.get("objeto_contrato") or "").strip()
+        if len(obj) > 200:
+            obj = obj[:197] + "..."
+        contratos_recentes.append({
+            "objeto": obj or "Nao informado",
+            "orgao": (row.get("orgao_nome") or "").strip() or "Nao informado",
+            "valor": _safe_float(row.get("valor_global")) or None,
+            "data_assinatura": (row.get("data_assinatura") or "")[:10],
+            "uf": (row.get("uf") or "").strip().upper(),
+        })
+
+    # Enriquecimento cadastral (prioriza dados da BrasilAPI se disponivel)
+    razao_social = enriched_data.get("razao_social") or razao_social or cnpj_clean
+    cnae_descricao = enriched_data.get("cnae_fiscal_descricao") or ""
+    municipio = enriched_data.get("municipio") or ""
+    uf_sede = enriched_data.get("uf") or ""
+    simples_nacional = bool(enriched_data.get("simples_nacional", False))
+    mei = bool(enriched_data.get("mei", False))
+
+    # FAQ dinamico
+    ufs_label = ", ".join(sorted(ufs_set)[:5]) or "todo o Brasil"
+    faq_items = [
+        {
+            "question": f"Quantos contratos o fornecedor {razao_social} tem com o governo?",
+            "answer": (
+                f"{razao_social} possui {len(rows)} contrato{'s' if len(rows) != 1 else ''} "
+                f"registrado{'s' if len(rows) != 1 else ''} no PNCP, "
+                f"totalizando {_format_brl(total_value)} em valor global."
+            ),
+        },
+        {
+            "question": f"Em quais estados o fornecedor {razao_social} atua?",
+            "answer": (
+                f"{razao_social} possui contratos publicos nos seguintes estados: {ufs_label}."
+                " Os dados sao atualizados diariamente a partir do PNCP."
+            ),
+        },
+        {
+            "question": f"Como consultar os contratos de {razao_social} com o governo?",
+            "answer": (
+                "Todos os contratos listados nesta pagina sao dados publicos do Portal Nacional "
+                "de Contratacoes Publicas (PNCP). Para monitorar novos editais deste setor, "
+                "o SmartLic oferece alertas automaticos com trial gratuito de 14 dias."
+            ),
+        },
+    ]
+
+    now = datetime.now(timezone.utc)
+    response_data = {
+        "cnpj": cnpj_clean,
+        "razao_social": razao_social,
+        "cnae_descricao": cnae_descricao,
+        "municipio": municipio,
+        "uf_sede": uf_sede,
+        "simples_nacional": simples_nacional,
+        "mei": mei,
+        "total_contratos": len(rows),
+        "valor_total": round(total_value, 2),
+        "ufs_atuantes": sorted(ufs_set),
+        "anos_atividade": sorted(anos_set),
+        "top_compradores": [
+            {"nome": o["nome"], "cnpj": o["cnpj"], "total_contratos": o["contratos"], "valor_total": round(o["valor"], 2)}
+            for o in top_compradores if o["valor"] > 0
+        ],
+        "contratos_recentes": contratos_recentes,
+        "faq_items": faq_items,
+        "last_updated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "aviso_legal": (
+            "Dados de fontes publicas: Portal Nacional de Contratacoes Publicas (PNCP). "
+            "Atualizacao diaria. CNPJ e dados cadastrais via BrasilAPI."
+        ),
+    }
+
+    _set_cached(_fornecedor_profile_cache, cache_key, response_data)
+    return FornecedorProfileResponse(**response_data)
+
+
+def _format_brl(value: float) -> str:
+    """Formata valor monetario em BRL para exibicao em texto (FAQ, descricoes)."""
+    if value >= 1_000_000:
+        return f"R$ {value / 1_000_000:.1f} milhoes"
+    if value >= 1_000:
+        return f"R$ {value / 1_000:.0f} mil"
+    return f"R$ {value:.2f}"

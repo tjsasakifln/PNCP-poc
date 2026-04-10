@@ -1,12 +1,13 @@
-"""SEO Onda 1: Public endpoint for sitemap CNPJ expansion.
+"""SEO Onda 1 + Sprint 3 Parte 13: Public endpoints for sitemap CNPJ expansion.
 
-Returns top CNPJs (orgao_cnpj) from pncp_raw_bids with ≥1 bid,
-enabling the frontend sitemap to generate /cnpj/{cnpj} URLs for
-Google discovery. Public (no auth). Cache: InMemory 24h TTL.
+/sitemap/cnpjs: top orgao_cnpj de pncp_raw_bids (compradores, Onda 1)
+/sitemap/fornecedores-cnpj: top ni_fornecedor de pncp_supplier_contracts (Sprint 3 Parte 13)
 
-Implementation layers:
-1. get_sitemap_cnpjs_json RPC (RETURNS json scalar — bypasses PostgREST max-rows=1000)
-2. Fallback: paginated table query (loop 1k/page until exhausted)
+Publico (sem auth). Cache: InMemory 24h TTL.
+
+Layers de implementacao (/sitemap/cnpjs):
+1. get_sitemap_cnpjs_json RPC (RETURNS json scalar — bypassa PostgREST max-rows=1000)
+2. Fallback: paginated table query (loop 1k/page ate esgotar)
 """
 
 import logging
@@ -49,6 +50,17 @@ class SitemapCnpjsResponse(BaseModel):
     updated_at: str
 
 
+class SitemapFornecedoresCnpjResponse(BaseModel):
+    cnpjs: list[str]
+    total: int
+    updated_at: str
+
+
+_MAX_FORNECEDORES_CNPJS = 5000
+
+_fornecedores_sitemap_cache: dict[str, tuple[dict, float]] = {}
+
+
 def _get_cached(key: str) -> Optional[dict]:
     if key not in _sitemap_cache:
         return None
@@ -61,6 +73,20 @@ def _get_cached(key: str) -> Optional[dict]:
 
 def _set_cached(key: str, data: dict) -> None:
     _sitemap_cache[key] = (data, time.time())
+
+
+def _get_fornecedores_cached(key: str) -> Optional[dict]:
+    if key not in _fornecedores_sitemap_cache:
+        return None
+    data, ts = _fornecedores_sitemap_cache[key]
+    if time.time() - ts >= _CACHE_TTL_SECONDS:
+        del _fornecedores_sitemap_cache[key]
+        return None
+    return data
+
+
+def _set_fornecedores_cached(key: str, data: dict) -> None:
+    _fornecedores_sitemap_cache[key] = (data, time.time())
 
 
 @router.get(
@@ -180,6 +206,91 @@ async def _fetch_top_cnpjs() -> dict:
 
     except Exception as e:
         logger.error("sitemap_cnpjs failed: %s", e)
+        return {
+            "cnpjs": [],
+            "total": 0,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+
+# ---------------------------------------------------------------------------
+# Sprint 3 Parte 13: sitemap de fornecedores por CNPJ (/fornecedores/{cnpj})
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/sitemap/fornecedores-cnpj",
+    response_model=SitemapFornecedoresCnpjResponse,
+    summary="Top CNPJs de fornecedores com contratos no datalake (para sitemap)",
+)
+async def sitemap_fornecedores_cnpj():
+    """Retorna os CNPJs de fornecedores com mais contratos em pncp_supplier_contracts.
+
+    Usado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.
+    Limite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).
+    Cache: 24h em memoria.
+    """
+    cached = _get_fornecedores_cached("fornecedores_cnpj")
+    if cached:
+        return SitemapFornecedoresCnpjResponse(**cached)
+
+    data = await _fetch_top_fornecedores_cnpjs()
+    _set_fornecedores_cached("fornecedores_cnpj", data)
+    return SitemapFornecedoresCnpjResponse(**data)
+
+
+async def _fetch_top_fornecedores_cnpjs() -> dict:
+    """Busca os CNPJs de fornecedores mais ativos em pncp_supplier_contracts.
+
+    Estrategia: paginated scan para contar contratos por ni_fornecedor,
+    ordenar por volume e retornar os top _MAX_FORNECEDORES_CNPJS.
+    """
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        counts: dict[str, int] = {}
+        page_size = 1000
+        offset = 0
+        while len(counts) < _MAX_FORNECEDORES_CNPJS * 5:
+            resp = (
+                sb.table("pncp_supplier_contracts")
+                .select("ni_fornecedor")
+                .eq("is_active", True)
+                .not_.is_("ni_fornecedor", "null")
+                .neq("ni_fornecedor", "")
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+            if not resp.data:
+                break
+            for row in resp.data:
+                cnpj = (row.get("ni_fornecedor") or "").strip()
+                # Aceitar apenas CNPJs de 14 digitos numericos
+                if cnpj and len(cnpj) == 14 and cnpj.isdigit():
+                    counts[cnpj] = counts.get(cnpj, 0) + 1
+            if len(resp.data) < page_size:
+                break
+            offset += page_size
+
+        cnpj_list = [
+            cnpj
+            for cnpj, _ in sorted(counts.items(), key=lambda x: x[1], reverse=True)
+        ][:_MAX_FORNECEDORES_CNPJS]
+
+        logger.info(
+            "sitemap_fornecedores_cnpj: %d CNPJs de %d distintos",
+            len(cnpj_list),
+            len(counts),
+        )
+
+        return {
+            "cnpjs": cnpj_list,
+            "total": len(cnpj_list),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    except Exception as e:
+        logger.error("sitemap_fornecedores_cnpj failed: %s", e)
         return {
             "cnpjs": [],
             "total": 0,

@@ -69,6 +69,12 @@ try:
                 _worker_cron_jobs.append(
                     _arq_cron(contracts_incremental_job, weekday=_contracts_weekdays, hour={12, 18, 0}, minute=0, timeout=CONTRACTS_INCREMENTAL_TIMEOUT),
                 )
+            # Sprint 2 Parte 13: enriquecimento de fornecedores (BrasilAPI)
+            # Diario as 08:00 UTC (5am BRT), apos o contracts crawl das 06:00 UTC
+            from ingestion.scheduler import enrich_entities_job
+            _worker_cron_jobs.append(
+                _arq_cron(enrich_entities_job, hour={8}, minute=0, timeout=7200),
+            )
     except ImportError:
         pass
 except Exception:
@@ -113,11 +119,13 @@ class WorkerSettings:
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
                 ingestion_backfill_func,
                 contracts_full_crawl_func, contracts_incremental_func,
+                enrich_entities_func,
             )
             _ingestion_functions = [
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
                 ingestion_backfill_func,
                 contracts_full_crawl_func, contracts_incremental_func,
+                enrich_entities_func,
             ]
     except ImportError:
         pass

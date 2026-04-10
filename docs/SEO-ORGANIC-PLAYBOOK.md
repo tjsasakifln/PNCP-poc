@@ -3276,14 +3276,14 @@ Upsert em: enriched_entities (nova tabela Supabase)
 
 ### Roadmap de Implementação
 
-| Sprint | Entrega | Impacto SEO | Esforço |
-|--------|---------|-------------|---------|
-| **Sprint 1** (S1-S2) | FAQPage em `/perguntas/[slug]` + hreflang no layout | Quick win, 0 APIs novas | Baixo |
-| **Sprint 2** (S3-S4) | Tabela `enriched_entities` + job ARQ BrasilAPI + IBGE | Infraestrutura base | Médio |
-| **Sprint 3** (S5-S6) | Páginas `/fornecedores/{cnpj}` (top 5k seed) | +5k páginas indexáveis | Médio |
-| **Sprint 4** (S7-S8) | Páginas `/municipios/{slug}` (81 → 5.570) | +5k páginas geográficas | Médio |
-| **Sprint 5** (S9-S10) | Páginas `/compliance/{cnpj}` + CEIS/CNEP | Autoridade editorial compliance | Alto |
-| **Sprint 6** (S11-S12) | Páginas `/itens/{catmat}` + benchmark preços | Substitui vacuum do Painel de Preços | Alto |
+| Sprint | Entrega | Impacto SEO | Esforço | Status |
+|--------|---------|-------------|---------|--------|
+| **Sprint 1** (S1-S2) | FAQPage em `/perguntas/[slug]` + hreflang no layout | Quick win, 0 APIs novas | Baixo | ✅ 2026-04-10 |
+| **Sprint 2** (S3-S4) | Tabela `enriched_entities` + job ARQ BrasilAPI + IBGE | Infraestrutura base | Médio | ✅ 2026-04-10 |
+| **Sprint 3** (S5-S6) | Páginas `/fornecedores/{cnpj}` (top 5k seed) | +5k páginas indexáveis | Médio | ✅ 2026-04-10 |
+| **Sprint 4** (S7-S8) | Páginas `/municipios/{slug}` (81 → 5.570) | +5k páginas geográficas | Médio | ⬜ pendente |
+| **Sprint 5** (S9-S10) | Páginas `/compliance/{cnpj}` + CEIS/CNEP | Autoridade editorial compliance | Alto | ⬜ pendente |
+| **Sprint 6** (S11-S12) | Páginas `/itens/{catmat}` + benchmark preços | Substitui vacuum do Painel de Preços | Alto | ⬜ pendente |
 
 **Arquivos-chave a criar/modificar:**
 

@@ -288,6 +288,44 @@ ingestion_backfill_func = arq_func(
 )
 
 
+async def enrich_entities_job(ctx: dict) -> dict:
+    """ARQ job: Enriquece fornecedores com dados cadastrais da BrasilAPI.
+
+    Sprint 2 Parte 13: popula enriched_entities para habilitar paginas
+    /fornecedores/{cnpj} com razao social, CNAE, Simples Nacional, etc.
+
+    Agendado diariamente as 08:00 UTC (5am BRT), apos o contracts crawl.
+    Criterio de staleness: 30 dias sem enriquecimento.
+    Teto por execucao: 5.000 CNPJs. Timeout ARQ: 2h (7200s).
+
+    Returns:
+        dict com status, enriched, skipped, failed, total_fetched, duration_s.
+    """
+    from ingestion.config import DATALAKE_ENABLED
+    if not DATALAKE_ENABLED:
+        logger.info("[Enricher] Ignorado — DATALAKE_ENABLED=false")
+        return {"status": "skipped", "reason": "DATALAKE_ENABLED=false"}
+
+    start = time.monotonic()
+    logger.info("[Enricher] Iniciando enriquecimento de fornecedores")
+
+    try:
+        from ingestion.enricher import enrich_entities_job as _run
+        result = await _run()
+    except Exception as e:
+        duration_s = round(time.monotonic() - start, 1)
+        logger.error("[Enricher] Falha critica apos %.1fs: %s", duration_s, e, exc_info=True)
+        await _notify_failure("Enricher", f"{type(e).__name__}: {e}", duration_s)
+        return {"status": "failed", "error": str(e), "duration_s": duration_s}
+
+    return result
+
+
+enrich_entities_func = arq_func(
+    enrich_entities_job, timeout=7200,  # 2h safety
+)
+
+
 async def ingestion_purge_job(ctx: dict) -> dict:
     """ARQ job: Purge closed bids from pncp_raw_bids.
 

@@ -48,6 +48,27 @@ async function fetchSitemapCnpjs(): Promise<string[]> {
 let _orgaoCache: string[] = [];
 let _orgaoFetched = false;
 
+// Parte 13 Sprint 3: Cache for fornecedores por CNPJ
+let _fornecedoresCnpjCache: string[] = [];
+let _fornecedoresCnpjFetched = false;
+
+async function fetchSitemapFornecedoresCnpj(): Promise<string[]> {
+  if (_fornecedoresCnpjFetched) return _fornecedoresCnpjCache;
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const resp = await fetch(`${backendUrl}/v1/sitemap/fornecedores-cnpj`, {
+      cache: 'no-store',
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    _fornecedoresCnpjCache = data.cnpjs || [];
+    _fornecedoresCnpjFetched = true;
+    return _fornecedoresCnpjCache;
+  } catch {
+    return [];
+  }
+}
+
 async function fetchSitemapOrgaos(): Promise<string[]> {
   if (_orgaoFetched) return _orgaoCache;
   try {
@@ -153,6 +174,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const orgaoList = await fetchSitemapOrgaos();
   const orgaoRoutes: MetadataRoute.Sitemap = orgaoList.map((cnpj) => ({
     url: `${baseUrl}/orgaos/${cnpj}`,
+    lastModified: today,
+    changeFrequency: 'weekly' as const,
+    priority: 0.5,
+  }));
+
+  // Parte 13 Sprint 3: /fornecedores/{cnpj} — perfis de fornecedores do governo
+  const fornecedoresCnpjList = await fetchSitemapFornecedoresCnpj();
+  const fornecedoresCnpjRoutes: MetadataRoute.Sitemap = fornecedoresCnpjList.map((cnpj) => ({
+    url: `${baseUrl}/fornecedores/${cnpj}`,
     lastModified: today,
     changeFrequency: 'weekly' as const,
     priority: 0.5,
@@ -448,6 +478,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...cnpjRoutes,
     // SEO-PLAYBOOK Onda 2: Órgãos compradores pages from datalake (≥1 bid, top 2000)
     ...orgaoRoutes,
+    // Parte 13 Sprint 3: /fornecedores/{cnpj} — perfis de fornecedores (top 5k por volume de contratos)
+    ...fornecedoresCnpjRoutes,
     // SEO Wave 2 (12.2.1): Contratos hub + sector×UF pages (405)
     {
       url: `${baseUrl}/contratos`,
