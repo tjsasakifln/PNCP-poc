@@ -86,6 +86,52 @@ class OrgaoStatsResponse(BaseModel):
 # Endpoint
 # ---------------------------------------------------------------------------
 
+# STORY-417 Fase 1: Redis quick-win cache (15min TTL).
+# The underlying query scans up to 5000 rows in pncp_raw_bids and was
+# showing statement_timeout (57014) on 25 events during the 2026-04-10
+# incident. In-memory cache alone is per-worker — Redis lets two
+# Gunicorn workers share a single expensive computation, cutting p95
+# latency on a cache miss from ~5s to ~0 for the other worker.
+_REDIS_CACHE_TTL_SECONDS = 15 * 60  # 15 minutes
+_REDIS_CACHE_PREFIX = "orgao_stats:v1:"
+
+
+async def _redis_get(cnpj: str) -> Optional[dict]:
+    try:
+        from redis_pool import get_redis_pool
+
+        redis = await get_redis_pool()
+        if redis is None:
+            return None
+        raw = await redis.get(_REDIS_CACHE_PREFIX + cnpj)
+        if raw is None:
+            return None
+        import json as _json
+
+        return _json.loads(raw)
+    except Exception as e:
+        logger.debug("STORY-417: orgao_stats Redis get failed (%s) — falling back", e)
+        return None
+
+
+async def _redis_set(cnpj: str, data: dict) -> None:
+    try:
+        from redis_pool import get_redis_pool
+
+        redis = await get_redis_pool()
+        if redis is None:
+            return
+        import json as _json
+
+        await redis.setex(
+            _REDIS_CACHE_PREFIX + cnpj,
+            _REDIS_CACHE_TTL_SECONDS,
+            _json.dumps(data, default=str),
+        )
+    except Exception as e:
+        logger.debug("STORY-417: orgao_stats Redis set failed (%s) — cache skipped", e)
+
+
 @router.get(
     "/orgao/{cnpj}/stats",
     response_model=OrgaoStatsResponse,
@@ -97,12 +143,20 @@ async def orgao_stats(cnpj: str):
     if not _CNPJ_RE.match(cnpj_clean):
         raise HTTPException(status_code=400, detail="CNPJ inválido — informe 14 dígitos numéricos")
 
+    # In-memory cache first (free, no network hop)
     cached = _get_cached(cnpj_clean)
     if cached:
         return OrgaoStatsResponse(**cached)
 
+    # STORY-417 Fase 1: Redis cross-worker cache (15 min TTL).
+    redis_cached = await _redis_get(cnpj_clean)
+    if redis_cached is not None:
+        _set_cached(cnpj_clean, redis_cached)
+        return OrgaoStatsResponse(**redis_cached)
+
     data = await _build_orgao_stats(cnpj_clean)
     _set_cached(cnpj_clean, data)
+    await _redis_set(cnpj_clean, data)
     return OrgaoStatsResponse(**data)
 
 

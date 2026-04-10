@@ -26,11 +26,60 @@ _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h
 _perfil_cache: dict[str, tuple[dict, float]] = {}
 
 _CNPJ_RE = re.compile(r"^\d{14}$")
-_BRASILAPI_TIMEOUT = 15
+# STORY-417: Timeout reduced 15→8s so a BrasilAPI hang cannot blow the
+# 120s Railway proxy budget when combined with the downstream PNCP
+# lookup. 8s still comfortably covers p99 BrasilAPI latency (<2s).
+_BRASILAPI_TIMEOUT = 8
 _PT_TIMEOUT = 20
 _PNCP_TIMEOUT = 25
 _PNCP_BASE = "https://pncp.gov.br/api/consulta/v1"
 _ESFERA_LABELS = {"F": "Federal", "E": "Estadual", "M": "Municipal", "D": "Distrital"}
+
+# ---------------------------------------------------------------------------
+# STORY-417: Lightweight per-host circuit breaker for BrasilAPI
+# ---------------------------------------------------------------------------
+#
+# We intentionally do NOT reuse the Supabase CB here — BrasilAPI is a
+# different upstream with different failure characteristics (public,
+# rate-limited, no SLA). A dedicated process-local counter is enough to
+# stop hammering a downed host without adding Redis coupling to an
+# endpoint that must stay cheap and public. The counter is reset on a
+# successful call or after a 60s cooldown window.
+
+_BRASILAPI_CB_THRESHOLD = 3           # consecutive failures to trip
+_BRASILAPI_CB_COOLDOWN_S = 60.0       # stay OPEN this long before a probe
+_brasilapi_cb_state: dict[str, float] = {
+    "consecutive_failures": 0,
+    "opened_at": 0.0,
+}
+
+
+def _brasilapi_cb_should_skip() -> bool:
+    """Return True if the BrasilAPI CB is currently OPEN (fast-fail)."""
+    if _brasilapi_cb_state["opened_at"] == 0.0:
+        return False
+    age = time.time() - _brasilapi_cb_state["opened_at"]
+    if age >= _BRASILAPI_CB_COOLDOWN_S:
+        # Cooldown expired — let the next probe through (HALF_OPEN).
+        _brasilapi_cb_state["opened_at"] = 0.0
+        _brasilapi_cb_state["consecutive_failures"] = 0
+        return False
+    return True
+
+
+def _brasilapi_cb_record_failure() -> None:
+    _brasilapi_cb_state["consecutive_failures"] += 1
+    if _brasilapi_cb_state["consecutive_failures"] >= _BRASILAPI_CB_THRESHOLD:
+        _brasilapi_cb_state["opened_at"] = time.time()
+        logger.warning(
+            "STORY-417: BrasilAPI CB OPEN after %d consecutive failures",
+            _brasilapi_cb_state["consecutive_failures"],
+        )
+
+
+def _brasilapi_cb_record_success() -> None:
+    _brasilapi_cb_state["consecutive_failures"] = 0
+    _brasilapi_cb_state["opened_at"] = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +126,11 @@ class PerfilB2GResponse(BaseModel):
     valor_total_24m: float
     ufs_atuacao: list[str]
     aviso_legal: str
+    # STORY-417: "ok" when BrasilAPI returned data; "unavailable" when
+    # the circuit breaker is open or the call timed out. The frontend
+    # uses this to render a partial/degraded company card instead of a
+    # hard 502.
+    brasilapi_status: str = "ok"
 
 
 # ---------------------------------------------------------------------------
@@ -125,18 +179,48 @@ def _set_cached(key: str, data: dict) -> None:
 # BrasilAPI
 # ---------------------------------------------------------------------------
 
+class BrasilAPIUnavailable(Exception):
+    """STORY-417: BrasilAPI is unavailable (timeout / 5xx / CB open)."""
+
+
 async def _fetch_brasilapi(cnpj: str) -> dict:
-    """Fetch company data from BrasilAPI (public, no auth)."""
+    """Fetch company data from BrasilAPI (public, no auth).
+
+    STORY-417: adds a 3-state failure handling:
+      * 404 → surface as HTTP 404 (CNPJ truly not found).
+      * transient (timeout, 5xx, CB open) → raise ``BrasilAPIUnavailable``
+        so the caller can fall back to a partial response.
+      * 200 → record success, return payload.
+    """
+    if _brasilapi_cb_should_skip():
+        logger.warning("STORY-417: BrasilAPI CB open — skipping call for %s", cnpj)
+        raise BrasilAPIUnavailable("BrasilAPI CB OPEN")
+
     url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
-    async with httpx.AsyncClient(timeout=_BRASILAPI_TIMEOUT) as client:
-        resp = await client.get(url)
+    try:
+        async with httpx.AsyncClient(timeout=_BRASILAPI_TIMEOUT) as client:
+            resp = await client.get(url)
+    except (httpx.TimeoutException, httpx.TransportError) as e:
+        _brasilapi_cb_record_failure()
+        logger.warning("STORY-417: BrasilAPI transport error for %s: %s", cnpj, e)
+        raise BrasilAPIUnavailable(f"BrasilAPI transport error: {e}")
 
     if resp.status_code == 404:
+        # 404 is a meaningful business signal, not a transport failure —
+        # it must surface as HTTP 404 to the client and must NOT advance
+        # the CB counter (otherwise a burst of bad CNPJs would trip us).
         raise HTTPException(status_code=404, detail="CNPJ não encontrado na base de dados")
+
+    if resp.status_code >= 500:
+        _brasilapi_cb_record_failure()
+        logger.warning("BrasilAPI 5xx %d for %s", resp.status_code, cnpj)
+        raise BrasilAPIUnavailable(f"BrasilAPI {resp.status_code}")
+
     if resp.status_code != 200:
         logger.warning("BrasilAPI error %d for %s", resp.status_code, cnpj)
         raise HTTPException(status_code=502, detail="Erro ao consultar dados da empresa")
 
+    _brasilapi_cb_record_success()
     return resp.json()
 
 
@@ -418,8 +502,18 @@ def _to_edital_amostra(bid: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 async def _build_perfil(cnpj: str) -> dict:
-    # 1. Company data
-    bapi = await _fetch_brasilapi(cnpj)
+    # 1. Company data — STORY-417: if BrasilAPI is unavailable we fall
+    # through with placeholder company fields and a ``brasilapi_status``
+    # flag in the response. The rest of the profile (contracts + open
+    # bids) is still valuable even without company metadata, and the
+    # frontend can render a degraded card instead of crashing with 502.
+    brasilapi_status = "ok"
+    try:
+        bapi = await _fetch_brasilapi(cnpj)
+    except BrasilAPIUnavailable as e:
+        logger.warning("STORY-417: BrasilAPI unavailable for %s: %s", cnpj, e)
+        bapi = {}
+        brasilapi_status = "unavailable"
 
     razao_social = bapi.get("razao_social") or bapi.get("nome_fantasia") or "Empresa"
     cnae_raw = bapi.get("cnae_fiscal") or bapi.get("cnae_fiscal_principal") or ""
@@ -496,4 +590,8 @@ async def _build_perfil(cnpj: str) -> dict:
         "valor_total_24m": round(valor_total, 2),
         "ufs_atuacao": sorted(ufs_set),
         "aviso_legal": "Dados de fontes públicas: CNPJ aberto (BrasilAPI) e PNCP/Portal da Transparência.",
+        # STORY-417: expose upstream availability so the frontend can
+        # render a "company info temporariamente indisponível" banner
+        # instead of the usual full-detail card.
+        "brasilapi_status": brasilapi_status,
     }
