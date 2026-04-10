@@ -21,14 +21,20 @@ class TestCircuitBreakerEnvConfig:
     """AC1: SUPABASE_CB_* env vars configure the supabase_cb singleton."""
 
     def test_default_values_applied_to_singleton(self):
-        """Singleton is built with default values when no env vars are set."""
+        """Singleton is built with default values when no env vars are set.
+
+        STORY-416 update: the default failure rate threshold was raised
+        from 0.5 to 0.7 (reduce flakiness on slow drift) and the default
+        trial_calls_max was lowered from 3 to 2 (faster recovery after
+        a transient upstream blip). The legacy window/cooldown stay.
+        """
         import supabase_client
 
         cb = supabase_client.supabase_cb
         assert cb._window_size == 10
-        assert cb._failure_rate_threshold == 0.5
+        assert cb._failure_rate_threshold == 0.7  # STORY-416 raised from 0.5
         assert cb._cooldown == 60.0
-        assert cb._trial_calls_max == 3
+        assert cb._trial_calls_max == 2  # STORY-416 lowered from 3
 
     def test_env_vars_are_read_at_module_load_time(self, monkeypatch):
         """_CB_* module-level vars reflect env at import time."""

@@ -975,22 +975,35 @@ class TestCrit042CanaryIsolation:
 
     @pytest.mark.asyncio
     async def test_ac11_real_app_error_opens_cb(self):
-        """AC11: Real application connection error → supabase_cb opens normally.
+        """AC11: Real application connection error → the category CB for
+        the failing path opens normally.
 
-        sb_execute (used by app code) still records failures in the CB.
+        STORY-416 update: sb_execute now routes through the segregated
+        per-category CBs, and the default category is ``read``. A
+        sustained ConnectionError stream trips ``read_cb`` after
+        ``SUPABASE_CB_READ_STREAK`` (5) consecutive failures — much
+        faster than the pre-STORY-416 legacy CB, which needed a full
+        10-call window to compute the failure rate. Once read_cb opens,
+        subsequent sb_execute calls fast-fail with
+        ``CircuitBreakerOpenError`` instead of the raw ConnectionError.
         """
-        from supabase_client import supabase_cb, sb_execute
+        from supabase_client import read_cb, sb_execute, CircuitBreakerOpenError
 
         mock_query = Mock()
         mock_query.execute.side_effect = ConnectionError("Connection refused")
 
+        raised_types: list[type] = []
         with patch("metrics.SUPABASE_EXECUTE_DURATION"):
             for _ in range(10):
-                with pytest.raises(ConnectionError):
+                try:
                     await sb_execute(mock_query)
+                except (ConnectionError, CircuitBreakerOpenError) as e:
+                    raised_types.append(type(e))
 
-        # CB should be OPEN — 10 consecutive failures (100% rate in window of 10)
-        assert supabase_cb.state == "OPEN"
+        # read_cb should be OPEN after the streak trip (STORY-416).
+        assert read_cb.state == "OPEN"
+        # And at least one call fast-failed with the CB error (after the trip).
+        assert any(t is CircuitBreakerOpenError for t in raised_types)
 
     @pytest.mark.asyncio
     async def test_ac12_sb_execute_direct_works_when_cb_open(self):

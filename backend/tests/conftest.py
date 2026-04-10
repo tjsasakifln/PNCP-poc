@@ -220,16 +220,25 @@ def _reset_rate_limiter_state():
 
 @pytest.fixture(autouse=True)
 def _reset_supabase_circuit_breaker():
-    """STORY-291: Reset Supabase circuit breaker between tests.
+    """STORY-291 + STORY-416: Reset Supabase circuit breakers between tests.
 
     The global supabase_cb singleton retains state across tests. If one test
     triggers the CB to go OPEN (e.g., through repeated failures), subsequent
     tests that use sb_execute() will fail because the CB rejects calls.
+
+    STORY-416 added per-category CBs (read/write/rpc) that share the same
+    failure pollution problem — reset them together to keep test isolation.
     """
-    from supabase_client import supabase_cb
+    from supabase_client import supabase_cb, read_cb, write_cb, rpc_cb
     supabase_cb.reset()
+    read_cb.reset()
+    write_cb.reset()
+    rpc_cb.reset()
     yield
     supabase_cb.reset()
+    read_cb.reset()
+    write_cb.reset()
+    rpc_cb.reset()
 
 
 @pytest.fixture(autouse=True)

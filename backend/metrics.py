@@ -529,6 +529,35 @@ SUPABASE_CB_TRANSITIONS = _create_counter(
     labelnames=["from_state", "to_state", "source"],
 )
 
+# STORY-416: Per-category Supabase CB state gauge. The existing
+# SUPABASE_CB_STATE stays as the legacy global signal, and this new
+# gauge exposes the segregated read/write/rpc CBs so dashboards can
+# pinpoint which category is flapping without deducing it from labels.
+SUPABASE_CB_STATE_BY_CATEGORY = _create_gauge(
+    "smartlic_supabase_cb_state_by_category",
+    "Supabase CB state per category (0=closed, 1=open, 2=half_open)",
+    labelnames=["category"],  # read, write, rpc, legacy
+)
+
+# STORY-418: Trial email DLQ observability
+TRIAL_EMAIL_DLQ_ENQUEUED = _create_counter(
+    "smartlic_trial_email_dlq_enqueued_total",
+    "Trial emails routed into the dead-letter queue",
+    labelnames=["email_type", "reason"],
+)
+
+TRIAL_EMAIL_DLQ_REPROCESSED = _create_counter(
+    "smartlic_trial_email_dlq_reprocessed_total",
+    "Trial emails successfully reprocessed from the dead-letter queue",
+    labelnames=["email_type"],
+)
+
+TRIAL_EMAIL_DLQ_SIZE = _create_gauge(
+    "smartlic_trial_email_dlq_size",
+    "Current trial_email_dlq row count by state",
+    labelnames=["state"],  # pending, abandoned
+)
+
 # ============================================================================
 # STORY-309: Dunning metrics
 # ============================================================================
