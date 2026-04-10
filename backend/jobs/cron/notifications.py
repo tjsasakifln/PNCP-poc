@@ -114,6 +114,20 @@ async def _trial_sequence_loop() -> None:
             from services.trial_email_sequence import process_trial_emails
             result = await process_trial_emails(batch_size=TRIAL_SEQUENCE_BATCH_SIZE)
             logger.info("STORY-310 trial sequence cycle: %s", result)
+
+            # STORY-418: drain the DLQ right after the forward pass so
+            # any transient failure from this cycle (or previous ones)
+            # gets a retry without waiting a full day for the next
+            # scheduled run. ``reprocess_pending`` is already idempotent
+            # and best-effort, so any error is logged and swallowed.
+            try:
+                from services.trial_email_dlq import reprocess_pending
+                dlq_stats = await reprocess_pending(limit=100)
+                if dlq_stats.get("considered", 0) > 0:
+                    logger.info("STORY-418 trial_email_dlq cycle: %s", dlq_stats)
+            except Exception as dlq_err:
+                logger.error("STORY-418: DLQ reprocess failed: %s", dlq_err)
+
             await asyncio.sleep(TRIAL_SEQUENCE_INTERVAL_SECONDS)
         except asyncio.CancelledError:
             logger.info("Trial email sequence task cancelled")

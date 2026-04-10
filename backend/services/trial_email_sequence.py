@@ -445,6 +445,29 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                             f"Failed to send trial email #{email_number} "
                             f"({email_type}) to {user_id[:8]}***: {render_err}"
                         )
+                        # STORY-418: enqueue into the DLQ so the daily
+                        # reprocess cron can retry with exponential
+                        # backoff. Best-effort — the helper never raises.
+                        try:
+                            from services.trial_email_dlq import enqueue as _dlq_enqueue
+
+                            await _dlq_enqueue(
+                                user_id=user_id,
+                                email_address=email_addr,
+                                email_type=email_type,
+                                email_number=email_number,
+                                payload={
+                                    "user_name": user_name,
+                                    "stats": stats if isinstance(stats, dict) else {},
+                                    "day": day,
+                                },
+                                error=render_err,
+                            )
+                        except Exception as dlq_err:
+                            logger.error(
+                                "STORY-418: DLQ enqueue failed for "
+                                f"user={user_id[:8]}*** email_type={email_type}: {dlq_err}"
+                            )
 
             except Exception as milestone_err:
                 errors += 1
