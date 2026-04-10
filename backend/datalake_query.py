@@ -37,8 +37,14 @@ def _cache_key(
     tsquery: str | None,
     modo_busca: str,
 ) -> str:
-    """Deterministic cache key from query parameters."""
+    """Deterministic cache key from query parameters.
+
+    For "abertas" mode, the key is date-independent because the RPC
+    ignores date params and only filters by data_encerramento > now().
+    """
     ufs_sorted = ",".join(sorted(ufs))
+    if modo_busca == "abertas":
+        return f"{ufs_sorted}|abertas|{tsquery or ''}"
     return f"{ufs_sorted}|{data_inicial}|{data_final}|{tsquery or ''}|{modo_busca}"
 
 

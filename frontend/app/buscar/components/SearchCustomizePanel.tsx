@@ -193,8 +193,8 @@ export default function SearchCustomizePanel({
                     : status === "em_julgamento"
                     ? "Buscando licitações em julgamento — propostas encerradas, em análise"
                     : status === "todos"
-                    ? "Oportunidades recentes — todos os status incluídos"
-                    : "Oportunidades recentes — somente licitações com prazo aberto"}
+                    ? "Todas as licitações abertas — todos os status incluídos"
+                    : "Todas as licitações abertas para propostas"}
                 </p>
               </div>
             ) : (

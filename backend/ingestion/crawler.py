@@ -22,6 +22,8 @@ from typing import Any
 
 from pncp_client import AsyncPNCPClient
 from ingestion.config import (
+    INGESTION_BACKFILL_CHUNK_DAYS,
+    INGESTION_BACKFILL_DAYS,
     INGESTION_BATCH_DELAY_S,
     INGESTION_BATCH_SIZE_UFS,
     INGESTION_CONCURRENT_UFS,
@@ -29,7 +31,7 @@ from ingestion.config import (
     INGESTION_INCREMENTAL_DAYS,
     INGESTION_MAX_PAGES,
     INGESTION_MODALIDADES,
-    INGESTION_RETENTION_DAYS,
+    INGESTION_PURGE_GRACE_DAYS,
     INGESTION_UFS,
 )
 from ingestion.transformer import transform_batch
@@ -295,8 +297,8 @@ async def crawl_full(
                 else:
                     ufs_completed_list.append(uf)
 
-    # Purge old rows after successful crawl
-    deleted = await purge_old_bids(INGESTION_RETENTION_DAYS)
+    # Purge closed bids (by data_encerramento, not data_publicacao)
+    deleted = await purge_old_bids(INGESTION_PURGE_GRACE_DAYS)
     totals["purged"] = deleted
 
     # Determine final status
@@ -442,6 +444,142 @@ async def crawl_incremental(
         totals["unchanged"],
         len(ufs_completed_list),
         len(ufs_failed_list),
+    )
+    return totals
+
+
+# ---------------------------------------------------------------------------
+# Backfill crawl (one-time historical catch-up)
+# ---------------------------------------------------------------------------
+
+async def crawl_backfill(
+    *,
+    total_days: int = INGESTION_BACKFILL_DAYS,
+    chunk_days: int = INGESTION_BACKFILL_CHUNK_DAYS,
+    crawl_batch_id: str | None = None,
+) -> dict[str, Any]:
+    """One-time backfill: crawl historical bids to capture all open opportunities.
+
+    Iterates backward from today in chunk_days windows (default 7 days) up to
+    total_days (default 365 — PNCP API max date range).
+
+    Uses reduced concurrency (3 parallel UFs, 3s delay) to avoid
+    overwhelming the PNCP API while running alongside normal crawls.
+
+    Does NOT purge at the end — backfill adds data, never removes.
+
+    The upsert_pncp_raw_bids RPC handles dedup via content_hash, so
+    re-crawling overlapping windows is safe (records are skipped if unchanged).
+
+    Returns:
+        Aggregated statistics dict with total records across all chunks.
+    """
+    if not crawl_batch_id:
+        crawl_batch_id = f"backfill_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+
+    today = date.today()
+    backfill_concurrent_ufs = min(INGESTION_CONCURRENT_UFS, 3)
+    backfill_batch_delay = max(INGESTION_BATCH_DELAY_S, 3.0)
+
+    # Build date windows: [today-chunk, today], [today-2*chunk, today-chunk], ...
+    windows: list[tuple[date, date]] = []
+    offset = 0
+    while offset < total_days:
+        window_end = today - timedelta(days=offset)
+        window_start = today - timedelta(days=min(offset + chunk_days, total_days))
+        windows.append((window_start, window_end))
+        offset += chunk_days
+
+    logger.info(
+        "crawl_backfill: starting batch_id=%s total_days=%d chunk_days=%d "
+        "windows=%d ufs=%d modalidades=%s concurrent=%d",
+        crawl_batch_id,
+        total_days,
+        chunk_days,
+        len(windows),
+        len(INGESTION_UFS),
+        INGESTION_MODALIDADES,
+        backfill_concurrent_ufs,
+    )
+
+    await create_ingestion_run(crawl_batch_id, run_type="backfill")
+
+    run_start = datetime.utcnow()
+    totals = _empty_run_stats()
+    ufs_completed_list: list[str] = []
+    ufs_failed_list: list[str] = []
+    semaphore = asyncio.Semaphore(backfill_concurrent_ufs)
+
+    async with AsyncPNCPClient() as client:
+        for window_idx, (window_start, window_end) in enumerate(windows):
+            logger.info(
+                "crawl_backfill: window %d/%d — %s to %s",
+                window_idx + 1,
+                len(windows),
+                window_start,
+                window_end,
+            )
+
+            uf_batches = _chunk(INGESTION_UFS, INGESTION_BATCH_SIZE_UFS)
+
+            for batch_idx, uf_batch in enumerate(uf_batches):
+                if batch_idx > 0:
+                    await asyncio.sleep(backfill_batch_delay)
+
+                tasks = [
+                    _crawl_uf_all_modalidades(
+                        client=client,
+                        uf=uf,
+                        modalidades=INGESTION_MODALIDADES,
+                        date_start=window_start,
+                        date_end=window_end,
+                        crawl_batch_id=crawl_batch_id,
+                        semaphore=semaphore,
+                    )
+                    for uf in uf_batch
+                ]
+
+                batch_results = await asyncio.gather(*tasks, return_exceptions=False)
+
+                for uf, result in zip(uf_batch, batch_results):
+                    _accumulate(totals, result)
+
+            logger.info(
+                "crawl_backfill: window %d/%d done — cumulative fetched=%d inserted=%d",
+                window_idx + 1,
+                len(windows),
+                totals["fetched"],
+                totals["inserted"],
+            )
+
+    # Collect UF stats (simplified — backfill doesn't track per-UF)
+    final_status = "completed" if totals.get("ufs_failed", 0) == 0 else "partial"
+
+    elapsed = (datetime.utcnow() - run_start).total_seconds()
+    INGESTION_RUN_DURATION.labels(run_type="backfill").observe(elapsed)
+
+    await complete_ingestion_run(
+        crawl_batch_id,
+        status=final_status,
+        total_fetched=totals["fetched"],
+        inserted=totals["inserted"],
+        updated=totals["updated"],
+        unchanged=totals["unchanged"],
+        ufs_completed=INGESTION_UFS,
+        ufs_failed=[],
+    )
+
+    logger.info(
+        "crawl_backfill: DONE batch_id=%s status=%s elapsed=%.1fs "
+        "fetched=%d inserted=%d updated=%d unchanged=%d windows=%d",
+        crawl_batch_id,
+        final_status,
+        elapsed,
+        totals["fetched"],
+        totals["inserted"],
+        totals["updated"],
+        totals["unchanged"],
+        len(windows),
     )
     return totals
 

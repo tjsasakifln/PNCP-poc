@@ -238,15 +238,68 @@ contracts_incremental_func = arq_func(
 )
 
 
+async def ingestion_backfill_job(ctx: dict) -> dict:
+    """ARQ job: One-time historical backfill of PNCP bids.
+
+    Crawls up to 365 days back in 7-day chunks to capture all currently
+    open bids that were published before the regular crawl window.
+
+    Feature flag: DATALAKE_ENABLED must be true.
+    NOT scheduled on cron — triggered manually via enqueue_job.
+    Expected runtime: 4-8h. Timeout: 10h safety.
+
+    Returns:
+        dict with status, records_upserted, duration_s.
+    """
+    if not DATALAKE_ENABLED:
+        logger.info("[Ingestion:Backfill] Skipped — DATALAKE_ENABLED=false")
+        return {"status": "skipped", "reason": "DATALAKE_ENABLED=false"}
+
+    start = time.monotonic()
+    logger.info("[Ingestion:Backfill] Starting historical backfill")
+
+    try:
+        from ingestion.crawler import crawl_backfill
+        result = await crawl_backfill()
+    except Exception as e:
+        duration_s = round(time.monotonic() - start, 1)
+        logger.error(
+            f"[Ingestion:Backfill] Failed after {duration_s}s: {type(e).__name__}: {e}",
+            exc_info=True,
+        )
+        await _notify_failure("Backfill", f"{type(e).__name__}: {e}", duration_s)
+        return {
+            "status": "failed",
+            "error": str(e),
+            "duration_s": duration_s,
+        }
+
+    duration_s = round(time.monotonic() - start, 1)
+    logger.info(
+        f"[Ingestion:Backfill] Completed in {duration_s}s — "
+        f"records={result.get('inserted', 0)}"
+    )
+    return {**result, "duration_s": duration_s}
+
+
+# arq.func() wrapper for manual enqueue_job() invocation
+ingestion_backfill_func = arq_func(
+    ingestion_backfill_job, timeout=36000,  # 10h safety
+)
+
+
 async def ingestion_purge_job(ctx: dict) -> dict:
-    """ARQ job: Purge old bids older than retention_days from pncp_raw_bids.
+    """ARQ job: Purge closed bids from pncp_raw_bids.
+
+    Purges bids whose data_encerramento passed more than PURGE_GRACE_DAYS ago.
+    Open bids (data_encerramento in the future) are NEVER purged.
 
     Runs daily 2h after full crawl (07:00 UTC = 4am BRT).
     Feature flag: DATALAKE_ENABLED must be true.
     Expected runtime: < 1 min. Timeout: 10 min safety.
 
     Returns:
-        dict with status, deleted, retention_days, duration_s.
+        dict with status, deleted, grace_days, duration_s.
     """
     if not DATALAKE_ENABLED:
         logger.info("[Ingestion:Purge] Skipped — DATALAKE_ENABLED=false")
@@ -254,42 +307,41 @@ async def ingestion_purge_job(ctx: dict) -> dict:
 
     start = time.monotonic()
 
-    from ingestion.config import INGESTION_RETENTION_DAYS
+    from ingestion.config import INGESTION_PURGE_GRACE_DAYS
     logger.info(
-        f"[Ingestion:Purge] Starting purge — retention_days={INGESTION_RETENTION_DAYS}"
+        f"[Ingestion:Purge] Starting purge — grace_days={INGESTION_PURGE_GRACE_DAYS}"
     )
 
     try:
         from ingestion.loader import purge_old_bids
-        deleted = await purge_old_bids(INGESTION_RETENTION_DAYS)
+        deleted = await purge_old_bids(INGESTION_PURGE_GRACE_DAYS)
     except Exception as e:
         duration_s = round(time.monotonic() - start, 1)
         logger.error(
             f"[Ingestion:Purge] Failed after {duration_s}s: {type(e).__name__}: {e}",
             exc_info=True,
         )
-        # DEBT-04 AC4: Notify Slack + Sentry on ingestion failure
         await _notify_failure(
             "Purge",
             f"{type(e).__name__}: {e}",
             duration_s,
-            {"retention_days": INGESTION_RETENTION_DAYS},
+            {"grace_days": INGESTION_PURGE_GRACE_DAYS},
         )
         return {
             "status": "failed",
             "error": str(e),
-            "retention_days": INGESTION_RETENTION_DAYS,
+            "grace_days": INGESTION_PURGE_GRACE_DAYS,
             "duration_s": duration_s,
         }
 
     duration_s = round(time.monotonic() - start, 1)
     logger.info(
         f"[Ingestion:Purge] Completed in {duration_s}s — deleted={deleted} rows "
-        f"(retention={INGESTION_RETENTION_DAYS} days)"
+        f"(grace={INGESTION_PURGE_GRACE_DAYS} days after encerramento)"
     )
     return {
         "status": "completed",
         "deleted": deleted,
-        "retention_days": INGESTION_RETENTION_DAYS,
+        "grace_days": INGESTION_PURGE_GRACE_DAYS,
         "duration_s": duration_s,
     }

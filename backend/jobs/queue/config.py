@@ -111,10 +111,12 @@ class WorkerSettings:
         if _dl_enabled:
             from ingestion.scheduler import (
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
+                ingestion_backfill_func,
                 contracts_full_crawl_func, contracts_incremental_func,
             )
             _ingestion_functions = [
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
+                ingestion_backfill_func,
                 contracts_full_crawl_func, contracts_incremental_func,
             ]
     except ImportError:

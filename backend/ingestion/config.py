@@ -81,8 +81,25 @@ INGESTION_UFS = os.getenv(
 ).split(",")
 
 # ---------------------------------------------------------------------------
-# Retention
+# Retention / Purge
 # ---------------------------------------------------------------------------
 
-# Delete rows older than this many days from pncp_raw_bids
-INGESTION_RETENTION_DAYS = int(os.getenv("INGESTION_RETENTION_DAYS", "12"))
+# Legacy alias kept for backward compat — prefer INGESTION_PURGE_GRACE_DAYS
+INGESTION_RETENTION_DAYS = int(os.getenv("INGESTION_RETENTION_DAYS", "30"))
+
+# Days after data_encerramento before a closed bid is purged (default 30).
+# Bids still open (data_encerramento in the future) are NEVER purged.
+INGESTION_PURGE_GRACE_DAYS = int(os.getenv(
+    "INGESTION_PURGE_GRACE_DAYS",
+    str(INGESTION_RETENTION_DAYS),
+))
+
+# ---------------------------------------------------------------------------
+# Backfill (one-time historical crawl)
+# ---------------------------------------------------------------------------
+
+# Total days to backfill (API max = 365)
+INGESTION_BACKFILL_DAYS = int(os.getenv("INGESTION_BACKFILL_DAYS", "365"))
+
+# Chunk size in days — keeps results under 50-page cap for high-volume UFs
+INGESTION_BACKFILL_CHUNK_DAYS = int(os.getenv("INGESTION_BACKFILL_CHUNK_DAYS", "7"))

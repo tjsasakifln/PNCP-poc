@@ -48,7 +48,7 @@ export default function SearchForm(props: SearchFormProps) {
       parts.push(`${modalidades.length} modalidade${modalidades.length !== 1 ? 's' : ''}`);
     }
     if (modoBusca === 'abertas') {
-      parts.push("Oportunidades recentes");
+      parts.push("Todas abertas");
     } else if (dataInicial && dataFinal) {
       const days = dateDiffInDays(dataInicial, dataFinal);
       parts.push(`${days} dia${days !== 1 ? 's' : ''}`);
