@@ -250,16 +250,27 @@ async def lifespan(app_instance: FastAPI):
     await comprasgov_cb.initialize()
     logger.info("GTM-CRIT-005: Circuit breakers initialized from Redis (pncp, pcp, comprasgov)")
 
-    # Schema contract validation
-    from schemas.contract import validate_schema_contract
+    # Schema contract validation — STORY-414 strict-mode gate.
+    # When SCHEMA_CONTRACT_STRICT=true, a contract violation raises
+    # SchemaContractViolation which we re-raise here to abort startup;
+    # Gunicorn + Railway treat the RuntimeError as a failed boot and
+    # trigger a redeploy/rollback instead of serving broken traffic.
+    # When false (default), we log CRITICAL and proceed degraded — the
+    # pre-STORY-414 behaviour, kept during the 14d rollout window.
+    from schemas.contract import enforce_schema_contract, SchemaContractViolation
     try:
         from supabase_client import get_supabase
         db = get_supabase()
-        passed, missing = validate_schema_contract(db)
-        if not passed:
-            logger.critical(f"SCHEMA CONTRACT VIOLATED: missing {missing}. Run migrations. SERVICE DEGRADED.")
-        else:
-            logger.info("CRIT-004: Schema contract validated — 0 missing columns")
+        try:
+            enforce_schema_contract(db)
+        except SchemaContractViolation:
+            logger.critical(
+                "STORY-414: Aborting startup because SCHEMA_CONTRACT_STRICT=true "
+                "and the contract is violated. Apply migrations before re-deploying."
+            )
+            raise
+    except SchemaContractViolation:
+        raise
     except Exception as e:
         logger.warning(f"CRIT-004: Schema validation could not run ({e}) — proceeding with caution")
 

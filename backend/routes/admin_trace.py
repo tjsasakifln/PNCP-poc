@@ -144,3 +144,51 @@ async def get_search_trace(search_id: str, user=Depends(require_admin)) -> dict[
         trace["cache"] = {"error": str(e)}
 
     return trace
+
+
+# ---------------------------------------------------------------------------
+# STORY-414: Schema contract status endpoint
+# ---------------------------------------------------------------------------
+
+
+@router.post("/cb/reset")
+async def reset_circuit_breakers(user=Depends(require_admin)) -> dict[str, Any]:
+    """STORY-416 AC5: Reset all segregated Supabase CBs to CLOSED.
+
+    Intended for on-call use after an upstream incident has been mitigated
+    and the CBs are still in OPEN/HALF_OPEN due to the cooldown. Returns
+    the previous state per category so the action is auditable in logs.
+    Admin only — never expose this without authentication.
+    """
+    from supabase_client import reset_all_circuit_breakers
+
+    previous = reset_all_circuit_breakers()
+    return {
+        "status": "ok",
+        "previous_states": previous,
+        "reset_by": user.get("id") if isinstance(user, dict) else str(user),
+    }
+
+
+@router.get("/schema-contract-status")
+async def get_schema_contract_status(user=Depends(require_admin)) -> dict[str, Any]:
+    """STORY-414 AC4: Expose the last schema-contract validation result.
+
+    Returns the cached result from the startup check plus a ``stale``
+    flag that tells callers whether a fresh run is advisable (the cache
+    lives for ``schemas.contract.STATUS_CACHE_TTL`` seconds — 5 min by
+    default). Forcing a re-validation is out of scope here because it
+    would defeat the point of the cache on a polled dashboard.
+    """
+    from schemas.contract import get_last_status
+
+    status = get_last_status()
+    # Never expose raw exception strings or DB internals — the cache is
+    # already sanitised by enforce_schema_contract.
+    return {
+        "passed": status.get("passed"),
+        "missing": status.get("missing", []),
+        "strict_mode": status.get("strict_mode", False),
+        "checked_at": status.get("checked_at", 0.0),
+        "stale": status.get("stale", True),
+    }

@@ -3,7 +3,7 @@
 **Priority:** P0 — Prevent Recurrence
 **Effort:** M (1-2 days)
 **Squad:** @data-engineer + @devops
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7401448164/ (Fatal)
 **Sprint:** Emergencial (0-48h)
@@ -142,3 +142,4 @@ O schema contract gate em `backend/schemas/contract.py:35-75` define `CRITICAL_S
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9.5/10). Status Draft → Ready. |
 | 2026-04-10 | @pm (Morgan) | Decisão AC2: rollout faseado P1-P4 em 14 dias para ativar `SCHEMA_CONTRACT_STRICT=true` em prod. Rationale: evita outage imediato caso haja drift residual após STORY-412 + dá janela para estabilizar false positives PGRST002. |
+| 2026-04-10 | @dev | Implementation P1. Feature flag `SCHEMA_CONTRACT_STRICT` (default false) em `config/features.py` + registry. `schemas/contract.py` ganha `enforce_schema_contract(db, *, strict)` que faz `raise SchemaContractViolation` quando strict. `startup/lifespan.py` chama `enforce_schema_contract` e re-raise p/ abortar startup em strict. Novo endpoint `GET /v1/admin/schema-contract-status` em `routes/admin_trace.py` serve cache JSON-safe. 7 testes em `tests/test_story414_schema_contract_gate.py` passam. Status Ready → InReview. Rollout P2-P4 permanece monitoring task manual pós-deploy. |

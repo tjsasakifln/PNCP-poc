@@ -1,13 +1,21 @@
-"""CRIT-004: Schema contract for critical tables.
+"""CRIT-004 + STORY-414: Schema contract for critical tables.
 
 Defines the minimum required schema for the application to operate.
-Critical tables block startup if schema diverges.
-Optional RPCs degrade gracefully with recurring warnings.
+Critical tables block startup if schema diverges **when
+``SCHEMA_CONTRACT_STRICT=true``**; otherwise the gate is passive and
+only logs CRITICAL warnings (the pre-STORY-414 behaviour).
+
+Rollout plan (STORY-414, decided 2026-04-10):
+    * P1 (Dia 0):   STRICT=false in production, STRICT=true in staging.
+    * P2 (Dia 1-7): observe staging — zero false positives PGRST002.
+    * P3 (Dia 7-14): add PGRST002 retries if needed, monitor.
+    * P4 (Dia 14):  flip production in a quiet window.
 
 Moved from backend/schema_contract.py as part of DEBT-208 schema consolidation.
 """
 import logging
 import time
+from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +38,18 @@ OPTIONAL_RPCS: list[str] = [
 
 _last_warning_time: dict[str, float] = {}
 WARNING_INTERVAL_SECONDS = 300  # 5 minutes
+
+# STORY-414: Cached last-known validation result used by the admin endpoint
+# /admin/schema-contract-status so it can return quickly without hammering
+# Supabase on every poll. Refreshed by enforce_schema_contract() at startup
+# and by the admin endpoint when older than STATUS_CACHE_TTL seconds.
+_last_status: dict[str, object] = {
+    "passed": None,
+    "missing": [],
+    "checked_at": 0.0,
+    "strict_mode": False,
+}
+STATUS_CACHE_TTL = 300  # 5 minutes
 
 
 def validate_schema_contract(db) -> tuple[bool, list[str]]:
@@ -82,3 +102,82 @@ def emit_degradation_warning(component: str, message: str) -> None:
     if now - last >= WARNING_INTERVAL_SECONDS:
         logger.warning(f"CRIT-004: {component} — {message}")
         _last_warning_time[component] = now
+
+
+class SchemaContractViolation(RuntimeError):
+    """STORY-414: Raised when the schema contract is violated and the gate
+    is running in strict mode. Carries the list of missing items so the
+    admin endpoint and Sentry can surface the exact delta.
+    """
+
+    def __init__(self, missing: list[str]) -> None:
+        self.missing = missing
+        super().__init__(
+            f"Schema contract violated — missing items: {missing}. "
+            "Set SCHEMA_CONTRACT_STRICT=false to unblock startup while "
+            "migrations catch up."
+        )
+
+
+def enforce_schema_contract(db, *, strict: bool | None = None) -> Tuple[bool, list[str]]:
+    """STORY-414: Wrapper around ``validate_schema_contract`` that honours
+    the ``SCHEMA_CONTRACT_STRICT`` feature flag and updates the status
+    cache consumed by the admin endpoint.
+
+    Args:
+        db: Supabase client (admin — service_role).
+        strict: Override the feature flag (useful for tests). When None,
+            reads ``SCHEMA_CONTRACT_STRICT`` via ``get_feature_flag``.
+
+    Returns:
+        ``(passed, missing)``. When strict=True and passed=False, raises
+        ``SchemaContractViolation`` after updating the cache and logs.
+    """
+    if strict is None:
+        try:
+            from config.features import get_feature_flag
+
+            strict = get_feature_flag("SCHEMA_CONTRACT_STRICT", default=False)
+        except Exception:
+            # Import cycle / unit-test path — fall back to passive mode.
+            strict = False
+
+    passed, missing = validate_schema_contract(db)
+    _last_status.update(
+        {
+            "passed": passed,
+            "missing": missing,
+            "checked_at": time.time(),
+            "strict_mode": bool(strict),
+        }
+    )
+
+    if passed:
+        logger.info(
+            "STORY-414: Schema contract validated — 0 missing columns "
+            "(strict=%s)",
+            strict,
+        )
+        return True, []
+
+    logger.critical(
+        "STORY-414: SCHEMA CONTRACT VIOLATED — missing %s (strict=%s). "
+        "Run migrations immediately.",
+        missing,
+        strict,
+    )
+    if strict:
+        raise SchemaContractViolation(missing)
+    return False, missing
+
+
+def get_last_status() -> dict:
+    """STORY-414: Return a JSON-safe copy of the last validation result.
+
+    Used by ``GET /admin/schema-contract-status`` so ops can poll without
+    hammering Supabase (the cache is refreshed at startup and stays warm
+    for ``STATUS_CACHE_TTL`` seconds). The dict is safe to json.dumps.
+    """
+    status = dict(_last_status)
+    status["stale"] = (time.time() - float(status.get("checked_at") or 0)) > STATUS_CACHE_TTL
+    return status

@@ -10,6 +10,13 @@ logger = logging.getLogger("config")
 # Feature Flag: New Pricing Model (STORY-165)
 ENABLE_NEW_PRICING: bool = str_to_bool(os.getenv("ENABLE_NEW_PRICING", "true"))
 
+# STORY-414: Schema Contract Gate (Rollout faseado 14d)
+# Default False in production (passive / log-only) so we do not block
+# startup on transient PGRST002 errors; set to True on staging first
+# and flip production only after a 7-14 day observation window. When
+# True, a contract violation raises SystemExit at lifespan boot time.
+SCHEMA_CONTRACT_STRICT: bool = str_to_bool(os.getenv("SCHEMA_CONTRACT_STRICT", "false"))
+
 # ============================================
 # LLM Arbiter Configuration (STORY-179 AC6)
 # ============================================
@@ -220,6 +227,8 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "USER_FEEDBACK_ENABLED": ("USER_FEEDBACK_ENABLED", "true"),
     "USE_REDIS_CIRCUIT_BREAKER": ("USE_REDIS_CIRCUIT_BREAKER", "true"),
     "COMPRASGOV_CB_ENABLED": ("COMPRASGOV_CB_ENABLED", "true"),
+    # --- STORY-414: Schema contract gate (faseado 14d, default off in prod) ---
+    "SCHEMA_CONTRACT_STRICT": ("SCHEMA_CONTRACT_STRICT", "false"),
 }
 
 
