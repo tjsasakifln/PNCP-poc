@@ -133,7 +133,6 @@ async def ingestion_incremental_job(ctx: dict) -> dict:
     return {**result, "duration_s": duration_s}
 
 
-@arq_func(timeout=CONTRACTS_FULL_CRAWL_TIMEOUT)
 async def contracts_full_crawl_job(ctx: dict) -> dict:
     """ARQ job: Full contracts crawl. Daily at 06:00 UTC (3am BRT).
 
@@ -181,7 +180,6 @@ async def contracts_full_crawl_job(ctx: dict) -> dict:
     return {**result, "duration_s": duration_s}
 
 
-@arq_func(timeout=CONTRACTS_INCREMENTAL_TIMEOUT)
 async def contracts_incremental_job(ctx: dict) -> dict:
     """ARQ job: Incremental contracts crawl. 3×/day (12:00, 18:00, 00:00 UTC).
 
@@ -226,6 +224,18 @@ async def contracts_incremental_job(ctx: dict) -> dict:
         pass
 
     return {**result, "duration_s": duration_s}
+
+
+# arq.func() wraps coroutines with per-job timeout for WorkerSettings.functions
+# (used when jobs are manually enqueued via enqueue_job()).
+# arq.cron() expects raw coroutines — do NOT pass Function objects to cron().
+# config.py imports both: raw for cron(), _func for WorkerSettings.functions.
+contracts_full_crawl_func = arq_func(
+    contracts_full_crawl_job, timeout=CONTRACTS_FULL_CRAWL_TIMEOUT,
+)
+contracts_incremental_func = arq_func(
+    contracts_incremental_job, timeout=CONTRACTS_INCREMENTAL_TIMEOUT,
+)
 
 
 async def ingestion_purge_job(ctx: dict) -> dict:

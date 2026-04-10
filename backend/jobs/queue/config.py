@@ -53,7 +53,10 @@ try:
             # Supplier contracts index: 3x/week full crawl (Mon/Wed/Fri 06 UTC) + same days incremental
             # CONTRACTS_CRAWL_WEEKDAYS env var: comma-separated weekday names (default: mon,wed,fri)
             # Set CONTRACTS_CRAWL_WEEKDAYS=mon,tues,wed,thurs,fri,sat,sun for daily crawl
-            from ingestion.scheduler import contracts_full_crawl_job, contracts_incremental_job
+            from ingestion.scheduler import (
+                contracts_full_crawl_job, contracts_full_crawl_func,
+                contracts_incremental_job, contracts_incremental_func,
+            )
             from ingestion.contracts_crawler import CONTRACTS_FULL_CRAWL_TIMEOUT, CONTRACTS_INCREMENTAL_TIMEOUT
             _contracts_enabled = __import__("os").getenv("CONTRACTS_INGESTION_ENABLED", "true").lower() in ("true", "1")
             if _contracts_enabled:
@@ -108,11 +111,11 @@ class WorkerSettings:
         if _dl_enabled:
             from ingestion.scheduler import (
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
-                contracts_full_crawl_job, contracts_incremental_job,
+                contracts_full_crawl_func, contracts_incremental_func,
             )
             _ingestion_functions = [
                 ingestion_full_crawl_job, ingestion_incremental_job, ingestion_purge_job,
-                contracts_full_crawl_job, contracts_incremental_job,
+                contracts_full_crawl_func, contracts_incremental_func,
             ]
     except ImportError:
         pass
