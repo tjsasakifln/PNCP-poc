@@ -12,8 +12,10 @@ watchPatterns = ["**"]
 
 [deploy]
 healthcheckPath = "/api/health"
-# SLA-001: 300s timeout for cold starts (Next.js 16 + Sentry + Google Fonts init)
-healthcheckTimeout = 300
+# SLA-001: 600s timeout — image pull (131MB) + cold start takes >5min on Railway
+# Previously 300s caused healthcheck to fail before container was ready on first deploy.
+# restart policy would eventually recover, but deployment was marked "failed".
+healthcheckTimeout = 600
 restartPolicyType = "ON_FAILURE"
 # SLA-001: 10 retries before giving up (was 3 — too aggressive for transient OOM)
 restartPolicyMaxRetries = 10
