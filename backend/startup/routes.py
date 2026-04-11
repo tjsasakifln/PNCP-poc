@@ -64,6 +64,7 @@ from routes.compliance_publicos import router as compliance_publicos_router
 from routes.itens_publicos import router as itens_publicos_router
 from routes.observatorio import router as observatorio_router
 from routes.sitemap_licitacoes import router as sitemap_licitacoes_router
+from routes.indice_municipal import router as indice_municipal_router
 
 _v1_routers = [
     admin_router, subscriptions_router, features_router, messages_router,
@@ -98,6 +99,7 @@ _v1_routers = [
     itens_publicos_router,
     observatorio_router,
     sitemap_licitacoes_router,
+    indice_municipal_router,
 ]
 
 
