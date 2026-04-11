@@ -2039,6 +2039,62 @@
           "title": "ComparadorSearchResponse",
           "type": "object"
         },
+        "ComplianceProfileResponse": {
+          "properties": {
+            "aviso_legal": {
+              "title": "Aviso Legal",
+              "type": "string"
+            },
+            "cnpj": {
+              "title": "Cnpj",
+              "type": "string"
+            },
+            "fonte_dados": {
+              "title": "Fonte Dados",
+              "type": "string"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "razao_social": {
+              "title": "Razao Social",
+              "type": "string"
+            },
+            "sancoes": {
+              "items": {
+                "$ref": "#/components/schemas/SancaoEntry"
+              },
+              "title": "Sancoes",
+              "type": "array"
+            },
+            "situacao_geral": {
+              "title": "Situacao Geral",
+              "type": "string"
+            },
+            "total_sancoes_ceis": {
+              "title": "Total Sancoes Ceis",
+              "type": "integer"
+            },
+            "total_sancoes_cnep": {
+              "title": "Total Sancoes Cnep",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "cnpj",
+            "razao_social",
+            "situacao_geral",
+            "total_sancoes_ceis",
+            "total_sancoes_cnep",
+            "sancoes",
+            "fonte_dados",
+            "last_updated",
+            "aviso_legal"
+          ],
+          "title": "ComplianceProfileResponse",
+          "type": "object"
+        },
         "ContratoPublico": {
           "properties": {
             "data_inicio": {
@@ -2110,6 +2166,39 @@
             "descricao"
           ],
           "title": "ContratoPublico",
+          "type": "object"
+        },
+        "ContratoReferencia": {
+          "properties": {
+            "data_assinatura": {
+              "title": "Data Assinatura",
+              "type": "string"
+            },
+            "objeto": {
+              "title": "Objeto",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "valor": {
+              "title": "Valor",
+              "type": "number"
+            }
+          },
+          "required": [
+            "objeto",
+            "orgao",
+            "valor",
+            "data_assinatura",
+            "uf"
+          ],
+          "title": "ContratoReferencia",
           "type": "object"
         },
         "ContratosSetorStats": {
@@ -3589,6 +3678,24 @@
           "title": "FPKeywordSuggestion",
           "type": "object"
         },
+        "FaqItem": {
+          "properties": {
+            "answer": {
+              "title": "Answer",
+              "type": "string"
+            },
+            "question": {
+              "title": "Question",
+              "type": "string"
+            }
+          },
+          "required": [
+            "question",
+            "answer"
+          ],
+          "title": "FaqItem",
+          "type": "object"
+        },
         "FeatureFlagItem": {
           "properties": {
             "default": {
@@ -4245,6 +4352,109 @@
           "title": "FirstAnalysisResponse",
           "type": "object"
         },
+        "FornecedorProfileResponse": {
+          "properties": {
+            "anos_atividade": {
+              "items": {
+                "type": "integer"
+              },
+              "title": "Anos Atividade",
+              "type": "array"
+            },
+            "aviso_legal": {
+              "title": "Aviso Legal",
+              "type": "string"
+            },
+            "cnae_descricao": {
+              "title": "Cnae Descricao",
+              "type": "string"
+            },
+            "cnpj": {
+              "title": "Cnpj",
+              "type": "string"
+            },
+            "contratos_recentes": {
+              "items": {
+                "$ref": "#/components/schemas/RecentContract"
+              },
+              "title": "Contratos Recentes",
+              "type": "array"
+            },
+            "faq_items": {
+              "items": {
+                "$ref": "#/components/schemas/FaqItem"
+              },
+              "title": "Faq Items",
+              "type": "array"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "mei": {
+              "title": "Mei",
+              "type": "boolean"
+            },
+            "municipio": {
+              "title": "Municipio",
+              "type": "string"
+            },
+            "razao_social": {
+              "title": "Razao Social",
+              "type": "string"
+            },
+            "simples_nacional": {
+              "title": "Simples Nacional",
+              "type": "boolean"
+            },
+            "top_compradores": {
+              "items": {
+                "$ref": "#/components/schemas/OrgaoRank"
+              },
+              "title": "Top Compradores",
+              "type": "array"
+            },
+            "total_contratos": {
+              "title": "Total Contratos",
+              "type": "integer"
+            },
+            "uf_sede": {
+              "title": "Uf Sede",
+              "type": "string"
+            },
+            "ufs_atuantes": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Ufs Atuantes",
+              "type": "array"
+            },
+            "valor_total": {
+              "title": "Valor Total",
+              "type": "number"
+            }
+          },
+          "required": [
+            "cnpj",
+            "razao_social",
+            "cnae_descricao",
+            "municipio",
+            "uf_sede",
+            "simples_nacional",
+            "mei",
+            "total_contratos",
+            "valor_total",
+            "ufs_atuantes",
+            "anos_atividade",
+            "top_compradores",
+            "contratos_recentes",
+            "faq_items",
+            "last_updated",
+            "aviso_legal"
+          ],
+          "title": "FornecedorProfileResponse",
+          "type": "object"
+        },
         "FornecedorRank": {
           "properties": {
             "cnpj": {
@@ -4551,6 +4761,114 @@
             "email"
           ],
           "title": "InviteMemberRequest",
+          "type": "object"
+        },
+        "ItemProfileResponse": {
+          "properties": {
+            "aviso_legal": {
+              "title": "Aviso Legal",
+              "type": "string"
+            },
+            "categoria": {
+              "title": "Categoria",
+              "type": "string"
+            },
+            "catmat": {
+              "title": "Catmat",
+              "type": "string"
+            },
+            "contratos_referencia": {
+              "items": {
+                "$ref": "#/components/schemas/ContratoReferencia"
+              },
+              "title": "Contratos Referencia",
+              "type": "array"
+            },
+            "faq_items": {
+              "items": {
+                "$ref": "#/components/schemas/FaqItem"
+              },
+              "title": "Faq Items",
+              "type": "array"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "nome_item": {
+              "title": "Nome Item",
+              "type": "string"
+            },
+            "periodo_referencia": {
+              "title": "Periodo Referencia",
+              "type": "string"
+            },
+            "total_contratos": {
+              "title": "Total Contratos",
+              "type": "integer"
+            },
+            "unidade_referencia": {
+              "title": "Unidade Referencia",
+              "type": "string"
+            },
+            "valor_medio": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor Medio"
+            },
+            "valor_p10": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor P10"
+            },
+            "valor_p50": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor P50"
+            },
+            "valor_p90": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor P90"
+            }
+          },
+          "required": [
+            "catmat",
+            "nome_item",
+            "categoria",
+            "total_contratos",
+            "unidade_referencia",
+            "contratos_referencia",
+            "faq_items",
+            "periodo_referencia",
+            "last_updated",
+            "aviso_legal"
+          ],
+          "title": "ItemProfileResponse",
           "type": "object"
         },
         "LeadCaptureRequest": {
@@ -4963,45 +5281,6 @@
           "title": "LicitacaoItem",
           "type": "object"
         },
-        "LicitacaoRecente": {
-          "properties": {
-            "data_publicacao": {
-              "title": "Data Publicacao",
-              "type": "string"
-            },
-            "modalidade_nome": {
-              "title": "Modalidade Nome",
-              "type": "string"
-            },
-            "objeto_compra": {
-              "title": "Objeto Compra",
-              "type": "string"
-            },
-            "uf": {
-              "title": "Uf",
-              "type": "string"
-            },
-            "valor_total_estimado": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Valor Total Estimado"
-            }
-          },
-          "required": [
-            "objeto_compra",
-            "modalidade_nome",
-            "data_publicacao",
-            "uf"
-          ],
-          "title": "LicitacaoRecente",
-          "type": "object"
-        },
         "MessageResponse": {
           "description": "Single message in a conversation thread.",
           "properties": {
@@ -5155,6 +5434,86 @@
             "value"
           ],
           "title": "MonthlyTrend",
+          "type": "object"
+        },
+        "MunicipioProfileResponse": {
+          "properties": {
+            "aviso_legal": {
+              "title": "Aviso Legal",
+              "type": "string"
+            },
+            "faq_items": {
+              "items": {
+                "$ref": "#/components/schemas/FaqItem"
+              },
+              "title": "Faq Items",
+              "type": "array"
+            },
+            "ibge_code": {
+              "title": "Ibge Code",
+              "type": "string"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "licitacoes_recentes": {
+              "items": {
+                "$ref": "#/components/schemas/routes__municipios_publicos__LicitacaoRecente"
+              },
+              "title": "Licitacoes Recentes",
+              "type": "array"
+            },
+            "nome": {
+              "title": "Nome",
+              "type": "string"
+            },
+            "pib_per_capita": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pib Per Capita"
+            },
+            "populacao": {
+              "title": "Populacao",
+              "type": "integer"
+            },
+            "slug": {
+              "title": "Slug",
+              "type": "string"
+            },
+            "total_licitacoes_abertas": {
+              "title": "Total Licitacoes Abertas",
+              "type": "integer"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "valor_total_licitacoes": {
+              "title": "Valor Total Licitacoes",
+              "type": "number"
+            }
+          },
+          "required": [
+            "slug",
+            "nome",
+            "uf",
+            "ibge_code",
+            "populacao",
+            "total_licitacoes_abertas",
+            "valor_total_licitacoes",
+            "licitacoes_recentes",
+            "faq_items",
+            "last_updated",
+            "aviso_legal"
+          ],
+          "title": "MunicipioProfileResponse",
           "type": "object"
         },
         "NewOpportunitiesResponse": {
@@ -5364,7 +5723,7 @@
             },
             "ultimas_licitacoes": {
               "items": {
-                "$ref": "#/components/schemas/LicitacaoRecente"
+                "$ref": "#/components/schemas/routes__orgao_publico__LicitacaoRecente"
               },
               "title": "Ultimas Licitacoes",
               "type": "array"
@@ -6271,6 +6630,45 @@
           "title": "PublicFeatureFlagListResponse",
           "type": "object"
         },
+        "RecentContract": {
+          "properties": {
+            "data_assinatura": {
+              "title": "Data Assinatura",
+              "type": "string"
+            },
+            "objeto": {
+              "title": "Objeto",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "valor": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor"
+            }
+          },
+          "required": [
+            "objeto",
+            "orgao",
+            "data_assinatura",
+            "uf"
+          ],
+          "title": "RecentContract",
+          "type": "object"
+        },
         "Recomendacao": {
           "description": "Actionable recommendation for a specific procurement opportunity.\n\nGenerated by the LLM consultant or heuristic fallback.\nEach recommendation includes a concrete action and justification.",
           "properties": {
@@ -7018,6 +7416,56 @@
           "title": "SampleItem",
           "type": "object"
         },
+        "SancaoEntry": {
+          "properties": {
+            "data_fim": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Data Fim"
+            },
+            "data_inicio": {
+              "title": "Data Inicio",
+              "type": "string"
+            },
+            "motivo": {
+              "title": "Motivo",
+              "type": "string"
+            },
+            "orgao_sancionador": {
+              "title": "Orgao Sancionador",
+              "type": "string"
+            },
+            "tipo": {
+              "title": "Tipo",
+              "type": "string"
+            },
+            "valor_multa": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor Multa"
+            }
+          },
+          "required": [
+            "tipo",
+            "orgao_sancionador",
+            "data_inicio",
+            "motivo"
+          ],
+          "title": "SancaoEntry",
+          "type": "object"
+        },
         "SanctionsSummarySchema": {
           "description": "Lightweight sanctions summary for search result enrichment (STORY-256 AC11).\n\nShown as a badge on each search result when check_sanctions=true.",
           "properties": {
@@ -7729,6 +8177,84 @@
             "updated_at"
           ],
           "title": "SitemapCnpjsResponse",
+          "type": "object"
+        },
+        "SitemapFornecedoresCnpjResponse": {
+          "properties": {
+            "cnpjs": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Cnpjs",
+              "type": "array"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            },
+            "updated_at": {
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "cnpjs",
+            "total",
+            "updated_at"
+          ],
+          "title": "SitemapFornecedoresCnpjResponse",
+          "type": "object"
+        },
+        "SitemapItensResponse": {
+          "properties": {
+            "catmats": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Catmats",
+              "type": "array"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            },
+            "updated_at": {
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "catmats",
+            "total",
+            "updated_at"
+          ],
+          "title": "SitemapItensResponse",
+          "type": "object"
+        },
+        "SitemapMunicipiosResponse": {
+          "properties": {
+            "slugs": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Slugs",
+              "type": "array"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            },
+            "updated_at": {
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "slugs",
+            "total",
+            "updated_at"
+          ],
+          "title": "SitemapMunicipiosResponse",
           "type": "object"
         },
         "SitemapOrgaosResponse": {
@@ -8816,6 +9342,84 @@
           ],
           "title": "TrendPoint",
           "type": "object"
+        },
+        "routes__municipios_publicos__LicitacaoRecente": {
+          "properties": {
+            "data_publicacao": {
+              "title": "Data Publicacao",
+              "type": "string"
+            },
+            "modalidade": {
+              "title": "Modalidade",
+              "type": "string"
+            },
+            "objeto": {
+              "title": "Objeto",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "valor": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor"
+            }
+          },
+          "required": [
+            "objeto",
+            "orgao",
+            "data_publicacao",
+            "modalidade"
+          ],
+          "title": "LicitacaoRecente",
+          "type": "object"
+        },
+        "routes__orgao_publico__LicitacaoRecente": {
+          "properties": {
+            "data_publicacao": {
+              "title": "Data Publicacao",
+              "type": "string"
+            },
+            "modalidade_nome": {
+              "title": "Modalidade Nome",
+              "type": "string"
+            },
+            "objeto_compra": {
+              "title": "Objeto Compra",
+              "type": "string"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "valor_total_estimado": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor Total Estimado"
+            }
+          },
+          "required": [
+            "objeto_compra",
+            "modalidade_nome",
+            "data_publicacao",
+            "uf"
+          ],
+          "title": "LicitacaoRecente",
+          "type": "object"
         }
       },
       "securitySchemes": {
@@ -9225,6 +9829,35 @@
             }
           ],
           "summary": "Inspect Cache Entry Endpoint",
+          "tags": [
+            "admin"
+          ]
+        }
+      },
+      "/v1/admin/clear-contracts-checkpoints": {
+        "post": {
+          "description": "Clear all Redis checkpoints for contracts crawler.\n\nUse before re-triggering a full crawl when stale checkpoints\ncause windows to be incorrectly skipped.",
+          "operationId": "clear_contracts_checkpoints_v1_admin_clear_contracts_checkpoints_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "title": "Response Clear Contracts Checkpoints V1 Admin Clear Contracts Checkpoints Post",
+                    "type": "object"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Clear Contracts Checkpoints",
           "tags": [
             "admin"
           ]
@@ -9948,6 +10581,35 @@
             }
           ],
           "summary": "Get Trial Metrics",
+          "tags": [
+            "admin"
+          ]
+        }
+      },
+      "/v1/admin/trigger-bids-backfill": {
+        "post": {
+          "description": "Enqueue ingestion_backfill_job to ARQ Worker.\n\nOne-time historical crawl: fetches up to 365 days of PNCP bids\nto capture all currently open opportunities.\nExpected runtime: 4-8h. Safe to call multiple times (ARQ dedup).",
+          "operationId": "trigger_bids_backfill_v1_admin_trigger_bids_backfill_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "title": "Response Trigger Bids Backfill V1 Admin Trigger Bids Backfill Post",
+                    "type": "object"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Trigger Bids Backfill",
           "tags": [
             "admin"
           ]
@@ -12904,6 +13566,49 @@
           ]
         }
       },
+      "/v1/compliance/{cnpj}/profile": {
+        "get": {
+          "description": "Agrega registros CEIS e CNEP do Portal da Transparencia para um CNPJ.\n\nPublico, sem auth. Cache: 24h por CNPJ.\nEm caso de falha do Portal da Transparencia, retorna dados parciais.",
+          "operationId": "compliance_profile_v1_compliance__cnpj__profile_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "cnpj",
+              "required": true,
+              "schema": {
+                "title": "Cnpj",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ComplianceProfileResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Perfil de due diligence B2G: CEIS + CNEP por CNPJ",
+          "tags": [
+            "compliance-publicos"
+          ]
+        }
+      },
       "/v1/contratos/orgao/{cnpj}/stats": {
         "get": {
           "operationId": "orgao_contratos_stats_v1_contratos_orgao__cnpj__stats_get",
@@ -13337,6 +14042,49 @@
           ]
         }
       },
+      "/v1/fornecedores/{cnpj}/profile": {
+        "get": {
+          "description": "Agrega historico de contratos do PNCP + dados cadastrais (BrasilAPI via\nenriched_entities) para a pagina /fornecedores/{cnpj}.\n\nPublico, sem auth. Cache: 24h TTL em memoria.",
+          "operationId": "fornecedor_profile_v1_fornecedores__cnpj__profile_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "cnpj",
+              "required": true,
+              "schema": {
+                "title": "Cnpj",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FornecedorProfileResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Perfil completo de um fornecedor do governo (por CNPJ)",
+          "tags": [
+            "contratos-publicos"
+          ]
+        }
+      },
       "/v1/fornecedores/{setor}/{uf}/stats": {
         "get": {
           "operationId": "fornecedores_stats_v1_fornecedores__setor___uf__stats_get",
@@ -13445,6 +14193,49 @@
           "summary": "Background Tasks Health",
           "tags": [
             "health"
+          ]
+        }
+      },
+      "/v1/itens/{catmat}/profile": {
+        "get": {
+          "description": "Calcula P10/P50/P90 de contratos do PNCP datalake para um item CATMAT.\n\nPublico, sem auth. Cache: 24h. Substitui o Painel de Precos do ComprasGov\n(descontinuado jul/2025).",
+          "operationId": "item_profile_v1_itens__catmat__profile_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "catmat",
+              "required": true,
+              "schema": {
+                "title": "Catmat",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ItemProfileResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Benchmark de precos governamentais por codigo CATMAT",
+          "tags": [
+            "itens-publicos"
           ]
         }
       },
@@ -13797,6 +14588,49 @@
           "summary": "Verify Recovery Code",
           "tags": [
             "MFA"
+          ]
+        }
+      },
+      "/v1/municipios/{slug}/profile": {
+        "get": {
+          "description": "Agrega licitacoes abertas do PNCP datalake + dados IBGE para a pagina\n/municipios/{slug}. Publico, sem auth. Cache: 24h TTL em memoria.",
+          "operationId": "municipio_profile_v1_municipios__slug__profile_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "slug",
+              "required": true,
+              "schema": {
+                "title": "Slug",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MunicipioProfileResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Perfil de municipio com licitacoes abertas (por slug)",
+          "tags": [
+            "municipios-publicos"
           ]
         }
       },
@@ -15596,6 +16430,71 @@
           "summary": "CNPJs com \u22651 licita\u00e7\u00e3o no datalake (para sitemap)",
           "tags": [
             "sitemap"
+          ]
+        }
+      },
+      "/v1/sitemap/fornecedores-cnpj": {
+        "get": {
+          "description": "Retorna os CNPJs de fornecedores com mais contratos em pncp_supplier_contracts.\n\nUsado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.\nLimite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).\nCache: 24h em memoria.",
+          "operationId": "sitemap_fornecedores_cnpj_v1_sitemap_fornecedores_cnpj_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SitemapFornecedoresCnpjResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Top CNPJs de fornecedores com contratos no datalake (para sitemap)",
+          "tags": [
+            "sitemap"
+          ]
+        }
+      },
+      "/v1/sitemap/itens": {
+        "get": {
+          "operationId": "sitemap_itens_v1_sitemap_itens_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SitemapItensResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Lista de codigos CATMAT para sitemap.xml",
+          "tags": [
+            "itens-publicos"
+          ]
+        }
+      },
+      "/v1/sitemap/municipios": {
+        "get": {
+          "description": "Retorna slugs dos municipios pre-cadastrados para o sitemap.xml.\nCache: 24h em memoria.",
+          "operationId": "sitemap_municipios_v1_sitemap_municipios_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SitemapMunicipiosResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Lista de slugs de municipios para sitemap.xml",
+          "tags": [
+            "municipios-publicos"
           ]
         }
       },

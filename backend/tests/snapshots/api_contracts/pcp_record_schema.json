@@ -78,11 +78,11 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 468357,
+    "codigoLicitacao": 470567,
     "numeroLicitacao": null,
-    "identificacao": "2026-X2B4R",
-    "numero": "44021/2026",
-    "resumo": "AQUISIÇÃO EMERGENCIAL DE INSTRUMENTAIS ESPECÍFICOS DESTINADOS A ATENDER ÀS DEMANDAS DOS PROCEDIMENTOS CIRÚRGICOS DAS ESPECIALIDADES DE NEUROCIRURGIA, CIRURGIA VASCULAR, ORTOPEDIA E CIRURGIA GERAL NO HOSPITAL ESTADUAL CENTRAL - HEC",
+    "identificacao": "2026-3HG00",
+    "numero": "97086/2026",
+    "resumo": "CONTRATAÇÃO EMERGENCIAL DE SERVIÇO DE CONFECÇÃO E INSTALAÇÃO DE VIDROS,TELAS MOSQUITEIRAS E INSULFILM NAS JANELAS DO HOSPITAL DOUTOR DÓRIO SILVA, CONFORME TERMO DE REFERENCIA.",
     "razaoSocial": "Fundação Inova Capixaba",
     "nomeUnidade": "Fundação Inova Capixaba",
     "status": {
@@ -102,14 +102,14 @@
       "tipoRealizacao": "Eletrônico",
       "tipoJulgamento": "Menor Preço"
     },
-    "codigoSituacaoEdital": 1,
+    "codigoSituacaoEdital": 5,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-04-09T20:01:00Z",
-    "dataHoraInicioPropostas": "2026-04-06T20:00:00Z",
-    "dataHoraFinalPropostas": "2026-04-09T20:00:00Z",
+    "dataHoraInicioLances": "2026-04-10T19:01:00Z",
+    "dataHoraInicioPropostas": "2026-04-07T19:00:00Z",
+    "dataHoraFinalPropostas": "2026-04-10T19:00:00Z",
     "dataHoraFinalLances": null,
-    "dataHoraPublicacao": "2026-04-06T19:44:00Z",
+    "dataHoraPublicacao": "2026-04-07T18:54:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
       "codigoUnidadeCompradora": 5201,
@@ -121,7 +121,7 @@
       "uf": "ES"
     },
     "comprador": null,
-    "urlReferencia": "/es/fundacao-inova-capixaba-2904/de-44021-2026-2026-468357",
+    "urlReferencia": "/es/fundacao-inova-capixaba-2904/de-97086-2026-2026-470567",
     "statusProcessoPublico": {
       "codigo": 9,
       "descricao": "Sessão Pública Iniciada"
@@ -129,5 +129,5 @@
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-04-10T00:44:49.322981+00:00"
+  "captured_at": "2026-04-10T15:03:54.123922+00:00"
 }
