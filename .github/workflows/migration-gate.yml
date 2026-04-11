@@ -72,33 +72,85 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      # STORY-414 AC3: Validate schema contract on every PR (warns, does not block merge)
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Supabase Python client
+        run: pip install supabase --quiet
+
+      - name: Check schema contract
+        id: schema
+        run: |
+          set +e
+          python -m backend.schemas.contract --validate 2>&1 | tee /tmp/schema_out.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$EXIT_CODE" -eq 1 ]; then
+            MISSING=$(grep "^  - " /tmp/schema_out.txt \
+              | sed 's/^  - //' | tr '\n' ',' | sed 's/,$//')
+            echo "has_violations=true" >> "$GITHUB_OUTPUT"
+            echo "missing=${MISSING}" >> "$GITHUB_OUTPUT"
+            echo "::warning::Schema contract violations detected: ${MISSING}"
+          elif [ "$EXIT_CODE" -eq 2 ]; then
+            echo "has_violations=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Schema contract check skipped (config — SUPABASE secrets not available)."
+          else
+            echo "has_violations=false" >> "$GITHUB_OUTPUT"
+          fi
+          # Always exit 0 — gate is informational on PRs (migration-check.yml blocks on push)
+          exit 0
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Post PR comment
-        if: steps.check.outputs.has_pending == 'true'
+        if: steps.check.outputs.has_pending == 'true' || steps.schema.outputs.has_violations == 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const unapplied = fs.readFileSync('/tmp/unapplied_migrations.txt', 'utf8').trim();
+            const hasMigrations = '${{ steps.check.outputs.has_pending }}' === 'true';
+            const hasSchemaViolations = '${{ steps.schema.outputs.has_violations }}' === 'true';
             const count = '${{ steps.check.outputs.count }}';
+            const missingColumns = '${{ steps.schema.outputs.missing }}';
+            const sections = [];
 
-            const body = `## ⚠️ Migration Gate — ${count} Pending Migration(s)
+            if (hasMigrations) {
+              const unapplied = fs.readFileSync('/tmp/unapplied_migrations.txt', 'utf8').trim();
+              sections.push(
+                '## \u26a0\ufe0f Migration Gate \u2014 ' + count + ' Pending Migration(s)\n\n' +
+                'The following migration(s) exist locally but are **not yet applied** to production:\n\n' +
+                '```\n' + unapplied + '\n```\n\n' +
+                '**This is a warning, not a blocker.** The deploy workflow will auto-apply these ' +
+                'migrations via `supabase db push --include-all` after the backend deploys.\n\n' +
+                '### What to verify before merging:\n' +
+                '- [ ] Migration SQL is idempotent or safe to apply\n' +
+                '- [ ] No destructive operations (DROP TABLE, DROP COLUMN) without review\n' +
+                '- [ ] Backend code handles the schema transition gracefully'
+              );
+            }
 
-            The following migration(s) exist locally but are **not yet applied** to production:
+            if (hasSchemaViolations) {
+              const cols = missingColumns.split(',')
+                .map(c => '  - `' + c.trim() + '`').join('\n');
+              sections.push(
+                '## \ud83d\udd34 Schema Contract Violations Detected (STORY-414)\n\n' +
+                'The following critical columns are **missing from the database schema**:\n\n' +
+                cols + '\n\n' +
+                'These columns are required by `backend/schemas/contract.py` for the application ' +
+                'to function correctly.\n' +
+                'Apply the relevant migrations before merging to prevent a production incident.\n\n' +
+                '> _Detected by STORY-414 schema contract gate._'
+              );
+            }
 
-            \`\`\`
-            ${unapplied}
-            \`\`\`
+            const body = sections.join('\n\n---\n\n') +
+              '\n\n> _Powered by CRIT-050 migration gate \u2014 prevents CRIT-039/CRIT-045 recurrence._';
 
-            **This is a warning, not a blocker.** The deploy workflow will auto-apply these migrations via \`supabase db push --include-all\` after the backend deploys.
-
-            ### What to verify before merging:
-            - [ ] Migration SQL is idempotent or safe to apply
-            - [ ] No destructive operations (DROP TABLE, DROP COLUMN) without review
-            - [ ] Backend code handles the schema transition gracefully
-
-            > _Powered by CRIT-050 migration gate — prevents CRIT-039/CRIT-045 recurrence._`;
-
-            // Find and update existing comment or create new
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,

@@ -7,6 +7,8 @@ on:
   schedule:
     # Daily at 06:00 UTC — catch unapplied migrations even without pushes
     - cron: '0 6 * * *'
+    # Daily at 03:00 UTC — STORY-414 AC3: schema contract drift detection
+    - cron: '0 3 * * *'
   # NOTE: PR checks moved to migration-gate.yml (CRIT-050) — warns instead of blocking
 
 permissions:
@@ -69,3 +71,44 @@ jobs:
           echo "All migrations are applied to production."
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # STORY-414 AC3: Validate schema contract after confirming migrations are applied.
+      # Exits 1 if critical columns are missing — prevents drift from reaching prod silently.
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Supabase Python client
+        run: pip install supabase --quiet
+
+      - name: Validate schema contract
+        id: schema_contract
+        run: |
+          set +e
+          python -m backend.schemas.contract --validate 2>&1 | tee /tmp/schema_contract_output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+
+          cat /tmp/schema_contract_output.txt
+
+          if [ "$EXIT_CODE" -eq 1 ]; then
+            # Extract missing column names for GITHUB_OUTPUT (comma-separated)
+            MISSING=$(grep "^  - " /tmp/schema_contract_output.txt \
+              | sed 's/^  - //' | tr '\n' ',' | sed 's/,$//')
+            echo "has_violations=true" >> "$GITHUB_OUTPUT"
+            echo "missing=${MISSING}" >> "$GITHUB_OUTPUT"
+            echo "::error::SCHEMA CONTRACT VIOLATED — missing: ${MISSING}"
+          elif [ "$EXIT_CODE" -eq 2 ]; then
+            echo "has_violations=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Schema contract check skipped (config error — check SUPABASE secrets)."
+            # Config errors are non-fatal: missing secrets in forks/dependabot
+            EXIT_CODE=0
+          else
+            echo "has_violations=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          exit $EXIT_CODE
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

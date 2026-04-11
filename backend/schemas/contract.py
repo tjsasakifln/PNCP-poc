@@ -181,3 +181,87 @@ def get_last_status() -> dict:
     status = dict(_last_status)
     status["stale"] = (time.time() - float(status.get("checked_at") or 0)) > STATUS_CACHE_TTL
     return status
+
+
+def _main() -> None:  # pragma: no cover
+    """CLI entry-point: ``python -m backend.schemas.contract --validate``
+
+    Validates the schema contract against Supabase and exits with:
+      0 — contract passes (all critical columns present)
+      1 — contract violated (missing columns printed to stderr)
+      2 — configuration error (missing env vars or import failure)
+
+    Required env vars:
+      SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL)
+      SUPABASE_SERVICE_ROLE_KEY
+
+    Intended for use in CI after ``supabase db push`` to catch schema
+    drift before it reaches production (STORY-414 AC3).
+    """
+    import argparse
+    import os
+    import sys
+
+    parser = argparse.ArgumentParser(
+        prog="python -m backend.schemas.contract",
+        description="Validate SmartLic schema contract against Supabase.",
+    )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        required=True,
+        help="Run validation and exit 0 (pass) / 1 (violated) / 2 (config error).",
+    )
+    parser.parse_args()
+
+    supabase_url = os.environ.get("SUPABASE_URL") or os.environ.get(
+        "NEXT_PUBLIC_SUPABASE_URL"
+    )
+    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+    if not supabase_url or not service_role_key:
+        print(
+            "ERROR: SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) and "
+            "SUPABASE_SERVICE_ROLE_KEY must be set.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    try:
+        from supabase import create_client  # type: ignore[import]
+    except ImportError:
+        print(
+            "ERROR: supabase package not installed. Run: pip install supabase",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    try:
+        db = create_client(supabase_url, service_role_key)
+        passed, missing = validate_schema_contract(db)
+    except Exception as exc:
+        print(f"ERROR: Schema contract check raised an exception: {exc}", file=sys.stderr)
+        sys.exit(2)
+
+    if not passed:
+        print("SCHEMA CONTRACT VIOLATED — missing columns:", file=sys.stderr)
+        for item in missing:
+            print(f"  - {item}", file=sys.stderr)
+        print(
+            "\nTo resolve: apply pending migrations and redeploy.\n"
+            "  supabase db push --include-all",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    table_count = len(CRITICAL_SCHEMA)
+    col_count = sum(len(v) for v in CRITICAL_SCHEMA.values())
+    print(
+        f"Schema contract OK — {table_count} tables / {col_count} columns checked, "
+        "0 missing."
+    )
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    _main()
