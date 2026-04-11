@@ -57,6 +57,13 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
             >
               Calculadora
             </Link>
+            {/* STORY-431 AC1: Observatório no menu de navegação */}
+            <Link
+              href="/observatorio"
+              className="text-sm text-ink-secondary/80 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
+            >
+              Observatório
+            </Link>
             <Link
               href="/casos"
               className="text-sm text-ink-secondary/80 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"

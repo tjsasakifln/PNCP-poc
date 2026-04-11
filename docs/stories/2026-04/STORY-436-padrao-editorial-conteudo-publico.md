@@ -117,7 +117,7 @@ O problema não é usar dados gerados automaticamente — é usar **texto** gera
 
 As páginas municipais do Índice gerarão texto automaticamente para 5.570 municípios. O texto precisa ser gerado por template com variáveis, não por LLM livre.
 
-- [ ] Criar `frontend/content/templates/indice-municipal-descricao.ts` com template aprovado:
+- [x] Criar `frontend/content/templates/indice-municipal-descricao.ts` com template aprovado:
 
 ```typescript
 // Template aprovado — revisado por humano, sem termos proibidos
@@ -142,8 +142,8 @@ export function gerarDescricaoMunicipio(
 }
 ```
 
-- [ ] O template NÃO usa LLM — é string concatenation com variáveis. O texto-base foi escrito e aprovado por humano.
-- [ ] Variáveis dinâmicas são apenas dados (números, nomes) — nunca texto livre gerado por IA.
+- [x] O template NÃO usa LLM — é string concatenation com variáveis. O texto-base foi escrito e aprovado por humano.
+- [x] Variáveis dinâmicas são apenas dados (números, nomes) — nunca texto livre gerado por IA.
 - [ ] Template revisado e aprovado pelo founder antes de ir ao ar.
 
 ### AC5: Guia para o Observatório (relatório mensal)

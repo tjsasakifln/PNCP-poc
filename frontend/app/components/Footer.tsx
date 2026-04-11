@@ -55,6 +55,10 @@ export default function Footer() {
                 <FooterLink href="/calculadora">Calculadora de Oportunidades</FooterLink>
               </li>
               <li>
+                {/* STORY-431 AC1: link Observatório no footer */}
+                <FooterLink href="/observatorio">Observatório de Licitações</FooterLink>
+              </li>
+              <li>
                 <FooterLink href="/cnpj">Consulta CNPJ B2G</FooterLink>
               </li>
               <li>

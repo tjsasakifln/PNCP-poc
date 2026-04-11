@@ -44,11 +44,11 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 
 ### AC2: Implementar lógica de noindex dinâmico nas páginas programáticas
 - [x] Em `frontend/app/blog/licitacoes/[setor]/[uf]/page.tsx`: adicionar lógica em `generateMetadata()` — se total de licitações ativas < 5 → retornar `robots: { index: false, follow: false }`
-- [ ] Em `frontend/app/blog/programmatic/[setor]/[uf]/page.tsx`: mesma lógica
-- [ ] Em `frontend/app/alertas-publicos/[setor]/[uf]/page.tsx`: mesma lógica
+- [x] Em `frontend/app/blog/programmatic/[setor]/[uf]/page.tsx`: mesma lógica
+- [x] Em `frontend/app/alertas-publicos/[setor]/[uf]/page.tsx`: mesma lógica
 - [ ] Em `frontend/app/contratos/[setor]/[uf]/page.tsx`: mesma lógica
 - [x] O threshold (5) deve ser configurável via env var `MIN_ACTIVE_BIDS_FOR_INDEX` (default: 5)
-- [ ] TypeScript compila sem erros (`npx tsc --noEmit`)
+- [x] TypeScript compila sem erros (`npx tsc --noEmit`)
 
 ### AC3: Canonical tag para páginas com conteúdo duplicado da versão pai
 - [ ] Em páginas `[setor]/[uf]` que têm conteúdo idêntico (≤10% diferença) da versão `[setor]` sem UF → adicionar `alternates: { canonical: '/blog/licitacoes/[setor]' }` no metadata
@@ -72,7 +72,7 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 
 ### AC7: Testes
 - [x] `npm test` passa sem regressões
-- [x] Teste unitário cobrindo a lógica de threshold: `generateMetadata` retorna `robots.index = false` quando count < MIN_ACTIVE_BIDS_FOR_INDEX
+- [x] Teste unitário cobrindo a lógica de threshold: `generateMetadata` retorna `robots.index = false` quando count < MIN_ACTIVE_BIDS_FOR_INDEX — cobre programmatic e alertas-publicos
 - [x] Teste cobrindo o caso positivo: `robots.index = true` quando count ≥ threshold
 
 ---

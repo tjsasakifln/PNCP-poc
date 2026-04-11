@@ -230,6 +230,10 @@ export async function middleware(request: NextRequest) {
     pathname === route || pathname.startsWith(`${route}/`)
   );
 
+  // Rotas de embed públicas que precisam ser embutíveis em iframes cross-origin
+  const EMBED_ROUTES = ["/calculadora/embed", "/observatorio/embed"];
+  const isEmbedRoute = EMBED_ROUTES.some((r) => pathname.startsWith(r));
+
   if (!isProtectedRoute) {
     const response = addSecurityHeaders(NextResponse.next());
     // SEO: Enable Cloudflare CDN caching for public content pages.
@@ -237,6 +241,11 @@ export async function middleware(request: NextRequest) {
     // Overriding this allows Cloudflare to cache and serve with low TTFB.
     if (isPublicContentRoute(pathname)) {
       response.headers.set("Cache-Control", PUBLIC_CACHE_CONTROL);
+    }
+    // STORY-431 AC5 / STORY-432: embed pages devem ser embutíveis em iframes externos.
+    // X-Frame-Options: DENY bloquearia embedding cross-origin.
+    if (isEmbedRoute) {
+      response.headers.delete("X-Frame-Options");
     }
     return response;
   }

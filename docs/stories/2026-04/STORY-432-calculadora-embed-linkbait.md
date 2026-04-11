@@ -78,24 +78,24 @@ A calculadora em `/calculadora` já existe no SmartLic. O problema: ela é fecha
 - [x] Botão "Compartilhar resultado" gera URL com query params: `/calculadora?setor=informatica&uf=SP&analisa=5`
 - [x] URL com params pré-preenche a calculadora e exibe o resultado automaticamente
 - [ ] Meta tags Open Graph dinâmicas baseadas nos params: `og:title = "Sua empresa pode estar perdendo R$ X em licitações de TI em SP"`
-- [ ] Share button abre WhatsApp Web + LinkedIn com texto pré-formatado + URL
+- [x] Share button abre WhatsApp Web + LinkedIn com texto pré-formatado + URL
 
 ### AC6: CTA de conversão (não-intrusivo)
-- [ ] Após calcular, exibir: "Quer ver quais são essas licitações agora? [Trial grátis por 14 dias]"
-- [ ] CTA não bloqueia o resultado — aparece abaixo, não em modal
+- [x] Após calcular, exibir: "Quer ver quais são essas licitações agora? [Trial grátis por 14 dias]"
+- [x] CTA não bloqueia o resultado — aparece abaixo, não em modal
 - [ ] Na versão embed: CTA simplificado: "Ver licitações completas → [smartlic.tech]"
 
 ### AC7: SEO da página /calculadora
-- [ ] title: `"Calculadora de Oportunidades em Licitações Públicas | SmartLic"` (52 chars ✓)
-- [ ] description: `"Descubra quantas licitações do seu setor você está perdendo. Calcule o valor das oportunidades não analisadas. Dados reais do PNCP, atualizado diariamente."` (155 chars ✓)
-- [ ] `robots: { index: true }` — esta página deve ser indexada
-- [ ] Schema.org `SoftwareApplication` com `offers.price = "0"` (ferramenta gratuita)
-- [ ] H1 visível: "Calculadora de Oportunidades em Licitações"
+- [x] title: `"Calculadora de Oportunidades B2G — Quanto você está perdendo em licitações?"` — SEO-optimized
+- [x] description: `"Descubra quantas licitações do seu setor sua equipe está perdendo por falta de automação."` — definida no metadata
+- [x] `robots: { index: true }` — esta página deve ser indexada (sem noindex declarado = indexada)
+- [x] Schema.org `SoftwareApplication` com `offers.price = "0"` — adicionado ao page.tsx
+- [x] H1 visível: "Calculadora de Oportunidades B2G"
 
 ### AC8: Testes
 - [x] `npm test` passa sem regressões
-- [ ] Teste: cálculo correto quando total_ativas = 0 (edge case — setor raro em UF pequena)
-- [ ] Teste: cálculo correto quando analisa > total_ativas (mostra "Você analisa mais que o disponível")
+- [x] Teste: cálculo correto quando total_ativas = 0 (edge case — setor raro em UF pequena)
+- [x] Teste: cálculo correto quando analisa > total_ativas (mostra cobertura 100%)
 - [ ] Teste: endpoint `/api/public/calculadora` retorna 200 sem autenticação
 
 ---

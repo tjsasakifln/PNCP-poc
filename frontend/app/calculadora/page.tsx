@@ -113,6 +113,33 @@ const breadcrumbSchema = {
   ],
 };
 
+// STORY-432 AC7: Schema.org SoftwareApplication para descobribilidade e rich snippets
+const softwareAppSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Calculadora de Oportunidades B2G',
+  url: 'https://smartlic.tech/calculadora',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'BRL',
+  },
+  description: 'Calcule quantas licitações públicas seu setor publica por mês e descubra o valor de oportunidades não analisadas. Dados reais do PNCP.',
+  provider: {
+    '@type': 'Organization',
+    name: 'SmartLic',
+    url: 'https://smartlic.tech',
+  },
+  featureList: [
+    'Dados reais do PNCP por setor e UF',
+    'Cálculo de cobertura atual vs total disponível',
+    'Estimativa de receita perdida',
+    'Código de incorporação gratuito para terceiros',
+  ],
+};
+
 export default function CalculadoraPage() {
   return (
     <ContentPageLayout
@@ -134,6 +161,10 @@ export default function CalculadoraPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppSchema) }}
       />
 
       <h1>Calculadora de Oportunidades B2G</h1>

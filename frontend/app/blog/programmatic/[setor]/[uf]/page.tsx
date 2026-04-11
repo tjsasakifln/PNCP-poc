@@ -43,8 +43,18 @@ export async function generateMetadata({
   const ufName = UF_NAMES[ufUpper] || ufUpper;
   const canonicalUrl = `https://smartlic.tech/blog/programmatic/${setor}/${uf}`;
 
+  // STORY-430 AC2: noindex quando abaixo do limiar de conteúdo ativo
+  const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? '5', 10);
+  if (total < minBids) {
+    return {
+      title: `Licitações de ${sector.name} em ${ufName} | SmartLic`,
+      description: `Licitações de ${sector.name} em ${ufName}. Dados do PNCP atualizados diariamente.`,
+      robots: { index: false, follow: false },
+    };
+  }
+
   return {
-    title: `Licitações de ${sector.name} em ${ufName} — ${total > 0 ? `${total} Editais` : 'Oportunidades'}`,
+    title: `Licitações de ${sector.name} em ${ufName} — ${total} Editais`,
     description: `${total} licitações de ${sector.name} em ${ufName} (${ufUpper}). Top oportunidades da semana, valor médio e análise de viabilidade com IA.`,
     alternates: { canonical: canonicalUrl },
     openGraph: {

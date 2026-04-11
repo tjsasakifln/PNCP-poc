@@ -13,6 +13,7 @@ import { buildCanonical, getFreshnessLabel } from '@/lib/seo';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
 
+
 export const revalidate = 3600; // 1h ISR
 
 export function generateStaticParams() {
@@ -30,6 +31,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const now = new Date();
   const month = now.toLocaleString('pt-BR', { month: 'long' });
   const year = now.getFullYear();
+
+  // STORY-430 AC2: checar contagem de editais para noindex dinâmico
+  const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? '5', 10);
+  const data = await fetchAlertasPublicos(setor, ufUpper);
+  const total = data?.total ?? (data?.bids?.length ?? 0);
+
+  if (total < minBids) {
+    return {
+      title: `Alertas de ${sector.name} em ${ufName} | SmartLic`,
+      description: `Alertas de licitações de ${sector.name} em ${ufName}. Dados do PNCP atualizados a cada hora.`,
+      robots: { index: false, follow: false },
+    };
+  }
 
   return {
     title: `Alertas de Licitações de ${sector.name} em ${ufName} — ${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`,

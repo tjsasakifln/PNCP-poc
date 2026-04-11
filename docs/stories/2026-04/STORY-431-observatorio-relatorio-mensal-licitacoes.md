@@ -36,7 +36,7 @@ O maior ativo do SmartLic para crescimento orgânico não é o software — é o
 - [x] Criar `frontend/app/observatorio/[mes]-[ano]/page.tsx` — página individual de cada relatório
 - [x] Slug format: `raio-x-abril-2026`, `raio-x-maio-2026`, etc. (kebab-case, mês em português)
 - [x] Metadata completa: title `"Raio-X das Licitações — {Mês} {Ano} | SmartLic Observatório"`, description com destaques do relatório, `robots: { index: true }`, `openGraph.type: 'article'`
-- [ ] Link no footer e menu de navegação principal (texto: "Observatório")
+- [x] Link no footer e menu de navegação principal (texto: "Observatório")
 
 ### AC2: Endpoint de dados do relatório no backend
 - [x] Criar `backend/routes/observatorio.py` com endpoint `GET /v1/observatorio/relatorio/{mes}/{ano}`
@@ -77,7 +77,7 @@ O maior ativo do SmartLic para crescimento orgânico não é o software — é o
   ```
 - [x] Criar rota `frontend/app/observatorio/embed/[slug]/page.tsx` — versão stripped (sem nav, footer) do gráfico individual
 - [x] Página embed inclui link para relatório completo no SmartLic (backlink automático)
-- [ ] CORS configurado para permitir embed em qualquer domínio (header no endpoint de relatório pendente)
+- [x] CORS configurado para permitir embed em qualquer domínio (header no endpoint de relatório pendente)
 
 ### AC6: Primeiro relatório publicado (Março 2026 — dados históricos)
 - [ ] Publicar o primeiro relatório em `/observatorio/raio-x-marco-2026` usando dados do datalake
