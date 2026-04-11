@@ -3,7 +3,7 @@
 **Priority:** P2 — Medium (backlog poluído dificulta triagem futura)
 **Effort:** S (0.5-1 day)
 **Squad:** @devops
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sprint:** Sprint rotina (1w-2w)
 
@@ -130,3 +130,4 @@ A análise de 2026-04-10 identificou 69 issues ativos no Sentry `confenge` em ja
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (8.5/10). Status Draft → Ready. |
 | 2026-04-10 | @pm (Morgan) | Decisão AC4: criar canais Slack `#incident-response` + `#sentry-new-issues` **como pré-requisito Dia 0** antes de configurar alert rules. Fallback: email para `tiago.sasaki@gmail.com` se Slack indisponível. Webhook em env var, nunca no repo. |
+| 2026-04-11 | @dev (YOLO P2 sprint) | Parte automatizável entregue: `docs/runbook/sentry-triage.md` novo — runbook semanal 30min com processo 4 passos, tabela de decisão (Resolved/Ignored/Linked/New/Escalate), templates de comentário, critérios de escalação P0, playbooks específicos (issue resolvido mas unresolved / ruidoso / single-event), snapshots tracking. `docs/operations/alerting-runbook.md` estendido com seção 1.2b (3 alert rules novas: Fatal/Escalating imediato, Burst >100/h, New issue prod agregado 15min) + checklist pré-deploy + setup manual Sentry UI. AC1/AC2/AC5/AC6 (ações no Sentry UI externo) e criação de canais Slack permanecem como follow-up operacional @devops documentado no runbook. Status Ready → InReview aguardando execução @devops.<br>**File List:** `docs/runbook/sentry-triage.md`, `docs/operations/alerting-runbook.md` |

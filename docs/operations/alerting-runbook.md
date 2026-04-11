@@ -30,6 +30,34 @@
 | 12 | Response Latency P99 High | Transaction p99 > 10s on `/buscar` | Warning | smartlic-backend | A configurar |
 | 13 | Error Rate > 5% | Error rate > 5% of all transactions in 10min | Critical | smartlic-backend | A configurar |
 
+### 1.2b Sentry Alerts (STORY-423 — EPIC-INCIDENT-2026-04-10)
+
+Alert rules complementares que cobrem o ruído e as regressões identificadas
+no incidente 2026-04-10. Pré-requisito: canais Slack `#incident-response`
+e `#sentry-new-issues` criados + `SENTRY_SLACK_WEBHOOK` setado no Railway.
+
+| # | Nome | Condicao | Destino | Severidade | Projeto |
+|---|------|----------|---------|------------|---------|
+| 14 | Fatal or Escalating (imediato) | Issue level == `fatal` OR status == `escalating` | Slack `#incident-response` + email tiago.sasaki@gmail.com | Critical | ambos |
+| 15 | Burst >100 events/1h (early warning) | Event count > 100 in 1h para qualquer issue | Slack `#sentry-new-issues` | Warning | ambos |
+| 16 | New issue em prod (15min agregado) | A new issue is created in `environment:production` | Slack `#sentry-new-issues` (batched 15min) | Info | ambos |
+
+**Setup manual (Sentry UI):**
+1. Abrir cada projeto (`smartlic-backend`, `smartlic-frontend`) em
+   `Settings → Alerts → Create Alert Rule → Issue Alert`
+2. Definir as condições acima.
+3. Em `Actions`, usar `Send a notification to a Slack workspace` apontando
+   para `SENTRY_SLACK_WEBHOOK` + fallback `Send a notification via email`.
+4. Salvar e verificar que o alert dispara enviando um evento de teste via
+   `sentry-cli send-event -m 'test fatal'`.
+
+**Checklist pré-deploy:**
+- [ ] Canais Slack criados e bot `Sentry Integration` adicionado.
+- [ ] `SENTRY_SLACK_WEBHOOK` definido no Railway (`railway variables set ...`).
+- [ ] Alert rules 14/15/16 ativas em ambos os projetos.
+- [ ] Teste manual disparado e recebido em `#incident-response`.
+- [ ] Runbook `docs/runbook/sentry-triage.md` linkado no canal como pinned.
+
 ### 1.3 Railway Alerts (Nativos)
 
 | # | Metrica | Threshold Warning | Threshold Critical | Status |
@@ -351,3 +379,4 @@ Para validar que alertas estao funcionando:
 | Data | Alteracao | Story |
 |------|-----------|-------|
 | 2026-03-11 | Documento criado: inventario de alertas + runbooks CB/error rate/latency | DEBT-129 |
+| 2026-04-10 | Alert rules 14/15/16 para EPIC-INCIDENT (Fatal/Escalating, Burst, New issue prod) + link para sentry-triage runbook | STORY-423 |

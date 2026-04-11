@@ -41,10 +41,10 @@ Em 2026-04-10, análise consolidada de Sentry (`confenge`, 69 issues ativos em j
 | [STORY-417](STORY-417-fix-perfil-b2g-brasilapi-timeout-circuit-breaker.md) | P1 | M | @dev + @architect | InReview | BrasilAPI timeout sem CB |
 | [STORY-418](STORY-418-trial-email-pipeline-resilience-retry-dlq.md) | P1 | M | @dev | InReview | Trial email sem retry/DLQ |
 | [STORY-419](STORY-419-fix-search-sessions-valor-total-numeric-overflow.md) | P1 | S | @data-engineer + @dev | InReview | NUMERIC(14,2) overflow |
-| [STORY-420](STORY-420-remove-invalid-stripe-pix-payment-method.md) | P2 | S | @dev | Ready | Stripe PIX inválido |
-| [STORY-421](STORY-421-fix-nextjs-login-rsc-invariant-error.md) | P2 | M | @dev + @ux-design-expert | Ready | Next.js RSC InvariantError |
-| [STORY-422](STORY-422-frontend-sse-connection-closed-retry-cleanup.md) | P2 | M | @dev | Ready | SSE abort sem retry |
-| [STORY-423](STORY-423-sentry-hygiene-cleanup-stale-issues.md) | P2 | S | @devops | Ready | Sentry backlog poluído |
+| [STORY-420](STORY-420-remove-invalid-stripe-pix-payment-method.md) | P2 | S | @dev | InReview | Stripe PIX inválido |
+| [STORY-421](STORY-421-fix-nextjs-login-rsc-invariant-error.md) | P2 | M | @dev + @ux-design-expert | InReview | Next.js RSC InvariantError |
+| [STORY-422](STORY-422-frontend-sse-connection-closed-retry-cleanup.md) | P2 | M | @dev | InReview | SSE abort sem retry |
+| [STORY-423](STORY-423-sentry-hygiene-cleanup-stale-issues.md) | P2 | S | @devops | InReview | Sentry backlog poluído |
 | [STORY-424](STORY-424-enable-pix-via-stripe-checkout-session-options.md) | P3 | L | @dev + @devops | Backlog | Follow-up PIX (Q2/2026) |
 
 ---
@@ -86,12 +86,12 @@ Em 2026-04-10, análise consolidada de Sentry (`confenge`, 69 issues ativos em j
 
 ## Definition of Done (Epic)
 
-- [ ] Todas as 12 stories em status `Done` _(8 stories em InReview após implementation 2026-04-10: 412/413/414/415/416/417/418/419. P2 stories 420-423 ainda Ready.)_
+- [ ] Todas as 12 stories em status `Done` _(12 stories em InReview após YOLO P2 sprint 2026-04-11: 412-423. Aguardando janela de observação Sentry 48h para transição final → Done.)_
 - [ ] Zero eventos **Escalating** ou **Regressed** no Sentry para os 11 issues referenciados _(aguarda deploy + janela de observação 6h)_
 - [ ] Zero eventos dos error codes cobertos nas últimas 24h após último deploy _(aguarda deploy)_
-- [x] Runbooks novos criados: `docs/runbook/supabase-circuit-breaker.md`, `docs/runbook/trial-email-pipeline.md` _(STORY-416, STORY-418 entregaram)_ — resta `docs/runbook/sentry-triage.md` (STORY-423)
+- [x] Runbooks novos criados: `docs/runbook/supabase-circuit-breaker.md`, `docs/runbook/trial-email-pipeline.md`, `docs/runbook/sentry-triage.md` _(STORY-416, STORY-418, STORY-423 entregaram)_
 - [ ] `migration-check.yml` workflow estendido com validação do schema contract (STORY-414 AC3) _(deferido — P2/P3 do rollout faseado, fora da sprint emergencial)_
-- [ ] Postmortem em `docs/incidents/2026-04-10-multi-cause.md` documentando timeline, causa raiz e aprendizados _(task pós-deploy)_
+- [x] Postmortem em `docs/incidents/2026-04-10-multi-cause.md` documentando timeline, causa raiz e aprendizados _(entregue 2026-04-11 — ações pós-deploy listadas na seção Follow-ups)_
 
 ---
 
@@ -152,3 +152,4 @@ Análise completa em conversação `docs/sessions/` (transcript @pm post-valida�
 | 2026-04-10 | @po (Sarah) | Validação `*validate-story-draft` das 12 stories concluída. Todas GO (scores 8.5-10/10). Status Draft → Ready para todas. Pronto para `*dev develop-story`. |
 | 2026-04-10 | @pm (Morgan) | 8 decisões elucidadas e aplicadas às stories (ver seção "Decisões Tomadas"). Investigações prévias resolveram condicionais em 412 (Opção C) e 415 (Opção B). Merge order P0 definido: 413 → 415 → 412 → 414. STORY-424 criada em backlog P3 como follow-up do PIX. |
 | 2026-04-10 | @dev | Implementation YOLO sprint — 8 stories (412/413/414/415/416/417/418/419) entregues em paralelo. 62 novos tests passando em `backend/tests/test_story41{2..9}_*.py` + `tests/test_trial_endpoints.py`. Zero regressões em suites existentes (10 failures remanescentes em `test_debt110` / `test_supabase_circuit_breaker::test_check_quota_fail_open_when_cb_open_no_cache` são **pre-existing**, confirmados via `git stash`). 3 migrations novas (415 trigger fix, 418 DLQ, 419 widen). 2 runbooks novos. StarletteIntegration removido do Sentry (root cause secundária do STORY-413). Todas em `InReview` aguardando deploy + janela de observação Sentry 6h antes de `Done`. P2 stories 420-423 + STORY-424 backlog seguem Ready/Backlog. |
+| 2026-04-11 | @dev (YOLO P2 sprint) | 4 stories P2 entregues em paralelo (420/421/422/423). **STORY-420:** `payment_method_types=["card","boleto"]` + try/except InvalidRequestError→400 / StripeError→503; novo `test_story420_stripe_pix_removed.py` (5 tests); frontend/app/planos cleanup. **STORY-421:** novo `frontend/app/login/error.tsx` client component com detecção RSC invariant + hard-reload branch; `login-error-boundary.test.tsx` (6 tests) + E2E `login-rsc.spec.ts`. **STORY-422:** instrumentação completa de `close_reason` em `useSearchAPI.ts` (DOMException TIMEOUT + signal.reason inspection + Sentry breadcrumb/setTag + early return USER_CANCELLED); `cancelSearch()` exposto; `sentry.client.config.ts` beforeSend drop de USER_CANCELLED/NAVIGATION/bare AbortError; testes `sentry-close-reason-filter.test.ts` (9 casos) + `useSearchAPI-close-reason.test.ts` (6 guards). **STORY-423:** `docs/runbook/sentry-triage.md` novo runbook semanal 30min + `docs/operations/alerting-runbook.md` seção 1.2b com 3 alert rules novas (Fatal/Escalating, Burst>100/h, New issue prod). Postmortem `docs/incidents/2026-04-10-multi-cause.md` criado. EPIC DoD atualizado: 12/12 stories em InReview, 3 runbooks entregues, postmortem entregue. Aguarda deploy + observação Sentry 48h para transição final Done. |
