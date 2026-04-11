@@ -290,46 +290,26 @@ def invalidate_blog_cache() -> None:
 async def _query_pncp_for_sector(
     sector: SectorConfig,
     ufs: list[str],
-    days: int = 10,
+    days: int = 30,
 ) -> list[dict]:
-    """Query PNCP for sector-relevant results across given UFs."""
-    from pncp_client import AsyncPNCPClient
+    """Query datalake for sector-relevant results across given UFs."""
+    from datalake_query import query_datalake
 
     now = datetime.now(timezone.utc)
     data_final = now.strftime("%Y-%m-%d")
     data_inicial = (now - timedelta(days=days)).strftime("%Y-%m-%d")
 
-    all_results: list[dict] = []
     try:
-        async with AsyncPNCPClient(max_concurrent=5) as client:
-            result = await client.buscar_todas_ufs_paralelo(
-                ufs=ufs,
-                data_inicial=data_inicial,
-                data_final=data_final,
-                max_pages_per_uf=1,
-            )
-            # Tag each item with UF if missing
-            for item in result.items:
-                if "uf" not in item:
-                    uf_val = (
-                        item.get("unidadeFederativa")
-                        or item.get("ufSigla")
-                        or ""
-                    )
-                    item["uf"] = uf_val
-            all_results.extend(result.items)
+        return await query_datalake(
+            ufs=ufs,
+            data_inicial=data_inicial,
+            data_final=data_final,
+            keywords=list(sector.keywords),
+            limit=2000,
+        )
     except Exception as e:
-        logger.warning("Failed to query PNCP for blog stats sector=%s: %s", sector.id, e)
-
-    # Filter by sector keywords
-    keywords_lower = {kw.lower() for kw in sector.keywords}
-    matched = []
-    for item in all_results:
-        text = _extract_text(item).lower()
-        if any(kw in text for kw in keywords_lower):
-            matched.append(item)
-
-    return matched
+        logger.warning("Datalake query failed for blog stats sector=%s: %s", sector.id, e)
+        return []
 
 
 def _extract_text(item: dict) -> str:
@@ -368,13 +348,23 @@ def _extract_orgao(item: dict) -> str:
 
 
 def _extract_date(item: dict) -> str:
-    d = item.get("dataPublicacaoPncp") or item.get("dataAbertura") or item.get("data_publicacao") or ""
+    d = (
+        item.get("dataPublicacaoFormatted")
+        or item.get("dataPublicacaoPncp")
+        or item.get("dataAbertura")
+        or item.get("data_publicacao")
+        or ""
+    )
     if d and len(d) > 10:
         d = d[:10]
     return d
 
 
 def _extract_city(item: dict) -> str:
+    # Datalake returns flat `municipio` field; PNCP API returns nested orgaoEntidade
+    flat_city = item.get("municipio") or ""
+    if flat_city:
+        return flat_city
     org = item.get("orgaoEntidade", {})
     if isinstance(org, dict):
         return org.get("municipioNome") or org.get("municipio") or ""
@@ -565,25 +555,24 @@ async def get_cidade_stats(cidade: str):
     if not uf:
         raise HTTPException(status_code=404, detail=f"Cidade '{cidade}' não encontrada")
 
-    # Query PNCP for this UF without sector filter
-    from pncp_client import AsyncPNCPClient
+    # Query datalake for this UF without sector keyword filter
+    from datalake_query import query_datalake
 
     now = datetime.now(timezone.utc)
     data_final = now.strftime("%Y-%m-%d")
-    data_inicial = (now - timedelta(days=10)).strftime("%Y-%m-%d")
+    data_inicial = (now - timedelta(days=30)).strftime("%Y-%m-%d")
 
     all_results: list[dict] = []
     try:
-        async with AsyncPNCPClient(max_concurrent=2) as client:
-            result = await client.buscar_todas_ufs_paralelo(
-                ufs=[uf],
-                data_inicial=data_inicial,
-                data_final=data_final,
-                max_pages_per_uf=1,
-            )
-            all_results.extend(result.items)
+        all_results = await query_datalake(
+            ufs=[uf],
+            data_inicial=data_inicial,
+            data_final=data_final,
+            keywords=None,
+            limit=2000,
+        )
     except Exception as e:
-        logger.debug("PNCP query failed for cidade=%s uf=%s: %s", cidade, uf, e)
+        logger.debug("Datalake query failed for cidade=%s uf=%s: %s", cidade, uf, e)
 
     # Filter by city name in orgaoEntidade.municipioNome
     city_results = []

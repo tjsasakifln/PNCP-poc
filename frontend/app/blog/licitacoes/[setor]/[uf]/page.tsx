@@ -192,7 +192,7 @@ export default async function LicitacoesSectorUfPage({
     },
     {
       question: `Quantos editais de ${modalidadeInfo.name} de ${sector.name} abrem por mês em ${ufName}?`,
-      answer: `Nos últimos 10 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados em ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período.`,
+      answer: `Nos últimos 30 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados em ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período.`,
     },
     {
       question: `Qual a base legal do ${modalidadeInfo.name}?`,
@@ -269,7 +269,7 @@ export default async function LicitacoesSectorUfPage({
             )}
 
             <p className="text-base sm:text-lg text-ink-secondary max-w-2xl leading-relaxed">
-              {stats?.total_editais ?? 0} editais publicados nos últimos 10 dias.
+              {stats?.total_editais ?? 0} editais publicados nos últimos 30 dias.
               {stats?.value_range_min && stats?.value_range_max
                 ? ` Faixa de valores: ${formatBRL(stats.value_range_min)} a ${formatBRL(stats.value_range_max)}.`
                 : ''}
@@ -439,7 +439,7 @@ export default async function LicitacoesSectorUfPage({
                   },
                   {
                     q: `Quantos editais de ${modalidadeInfo.name} de ${sector.name} abrem por mês em ${ufName}?`,
-                    a: `Nos últimos 10 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados em ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período — consulte os dados ao vivo acima para o número atualizado.`,
+                    a: `Nos últimos 30 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados em ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período — consulte os dados ao vivo acima para o número atualizado.`,
                   },
                   {
                     q: `Qual a base legal do ${modalidadeInfo.name}?`,
@@ -509,7 +509,7 @@ export default async function LicitacoesSectorUfPage({
                   return modPct !== null ? (
                     <p>
                       No setor de {sector.name} em {ufName}, a modalidade {modalidadeInfo.name} representa{' '}
-                      <strong>{modPct}%</strong> dos editais publicados nos últimos 10 dias
+                      <strong>{modPct}%</strong> dos editais publicados nos últimos 30 dias
                       {modStats ? ` (${modStats.count} de ${totalModCount} editais)` : ''}.
                     </p>
                   ) : null;

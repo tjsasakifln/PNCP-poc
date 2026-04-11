@@ -209,42 +209,32 @@ def invalidate_all_stats() -> None:
 # ---------------------------------------------------------------------------
 
 async def _generate_sector_stats(sector_id: str, sector: SectorConfig) -> dict:
-    """Generate sector stats via lightweight PNCP query.
+    """Generate sector stats via datalake query.
 
-    Queries top 5 UFs (SP, RJ, MG, DF, PR) for last 10 days,
-    filters by sector keywords, and aggregates stats.
+    Queries top 10 UFs for last 30 days using PostgreSQL full-text search.
+    Consistent with the calculadora endpoint (same data source).
     """
-    from pncp_client import AsyncPNCPClient
+    from datalake_query import query_datalake
 
     now = datetime.now(timezone.utc)
     data_final = now.strftime("%Y-%m-%d")
-    data_inicial = (now - timedelta(days=10)).strftime("%Y-%m-%d")
+    data_inicial = (now - timedelta(days=30)).strftime("%Y-%m-%d")
 
-    # Top 5 UFs by procurement volume
-    target_ufs = ["SP", "RJ", "MG", "DF", "PR"]
-    all_results: list[dict] = []
+    # Top 10 UFs by procurement volume
+    target_ufs = ["SP", "RJ", "MG", "DF", "PR", "BA", "RS", "GO", "PE", "SC"]
 
     try:
-        async with AsyncPNCPClient(max_concurrent=5) as client:
-            result = await client.buscar_todas_ufs_paralelo(
-                ufs=target_ufs,
-                data_inicial=data_inicial,
-                data_final=data_final,
-                max_pages_per_uf=1,
-            )
-            all_results.extend(result.items)
+        matched = await query_datalake(
+            ufs=target_ufs,
+            data_inicial=data_inicial,
+            data_final=data_final,
+            keywords=list(sector.keywords),
+            limit=2000,
+        )
     except Exception as e:
-        logger.warning("Failed to query PNCP for sector %s: %s", sector_id, e)
+        logger.warning("Datalake query failed for sector stats %s: %s", sector_id, e)
+        matched = []
 
-    # Filter by sector keywords (lightweight — substring match on title/description)
-    keywords_lower = {kw.lower() for kw in sector.keywords}
-    matched = []
-    for item in all_results:
-        text = _extract_text(item).lower()
-        if any(kw in text for kw in keywords_lower):
-            matched.append(item)
-
-    # Compute stats
     return _compute_stats(sector_id, sector, matched, now)
 
 
@@ -300,10 +290,10 @@ def _compute_stats(
         # Truncate long titles
         if len(titulo) > 120:
             titulo = titulo[:117] + "..."
-        orgao = r.get("orgaoEntidade", {}).get("razaoSocial") or r.get("orgao") or r.get("nomeOrgao") or "Não informado"
+        orgao = r.get("nomeOrgao") or r.get("orgaoEntidade", {}).get("razaoSocial") or r.get("orgao") or "Não informado"
         valor = r.get("valorTotalEstimado") or r.get("valorEstimado") or r.get("valor_estimado")
         uf = r.get("uf") or r.get("unidadeFederativa") or r.get("ufSigla") or "N/A"
-        data = r.get("dataPublicacaoPncp") or r.get("dataAbertura") or r.get("data_publicacao") or ""
+        data = r.get("dataPublicacaoFormatted") or r.get("dataPublicacaoPncp") or r.get("dataAbertura") or r.get("data_publicacao") or ""
         if data and len(data) > 10:
             data = data[:10]  # Keep only YYYY-MM-DD
 
