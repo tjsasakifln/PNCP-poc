@@ -46,6 +46,11 @@ Em 2026-04-10, análise consolidada de Sentry (`confenge`, 69 issues ativos em j
 | [STORY-422](STORY-422-frontend-sse-connection-closed-retry-cleanup.md) | P2 | M | @dev | InReview | SSE abort sem retry |
 | [STORY-423](STORY-423-sentry-hygiene-cleanup-stale-issues.md) | P2 | S | @devops | InReview | Sentry backlog poluído |
 | [STORY-424](STORY-424-enable-pix-via-stripe-checkout-session-options.md) | P3 | L | @dev + @devops | Backlog | Follow-up PIX (Q2/2026) |
+| [STORY-425](STORY-425-fix-pncp-raw-bids-data-publicacao-pncp-schema-drift.md) | **P0** | S | @data-engineer + @dev | Ready | Schema drift `data_publicacao_pncp` em `pncp_raw_bids` |
+| [STORY-426](STORY-426-fix-public-endpoints-statement-timeout-missing-guard.md) | P1 | M | @dev + @data-engineer | Ready | Statement timeout sem guard em endpoints públicos |
+| [STORY-427](STORY-427-fix-supabase-cb-deque-mutated-during-iteration.md) | P1 | S | @dev + @architect | Ready | `deque mutated during iteration` no CB STORY-416 |
+| [STORY-428](STORY-428-fix-nextjs-dynamic-route-slug-conflict-setor-cnpj.md) | P2 | S | @dev + @ux-design-expert | Ready | InvariantError rota dinâmica `[setor]`/`[cnpj]` |
+| [STORY-429](STORY-429-fix-search-sessions-error-code-case-mismatch-constraint-violation.md) | P2 | S | @dev + @data-engineer | Ready | Constraint violation `error_code` lowercase vs uppercase |
 
 ---
 
@@ -78,15 +83,22 @@ Em 2026-04-10, análise consolidada de Sentry (`confenge`, 69 issues ativos em j
 
 ### Sprint Seguinte (48h-1w) — P1 em ordem de dependência
 - STORY-416 (prioridade, habilita observability) → depois STORY-417 (reusa CB pattern) → STORY-418 (depende de 416 estabilizar) + STORY-419 (independente)
+- **Novas P0/P1 adicionadas pós-varredura 2026-04-11:**
+  - **STORY-425** (P0): schema drift `data_publicacao_pncp` em `pncp_raw_bids` — deve ser tratada junto com sprint emergencial restante
+  - **STORY-426** (P1): statement timeout em endpoints públicos — pode correr em paralelo com 416/417
+  - **STORY-427** (P1): deque race condition no CB (possível regressão STORY-416) — dev fix + re-revisão
 
 ### Sprint Rotina (1w-2w) — P2 paralelo
 - STORY-420, STORY-421, STORY-422, STORY-423
+- **Novas P2 adicionadas pós-varredura 2026-04-11:**
+  - **STORY-428**: InvariantError rota dinâmica Next.js
+  - **STORY-429**: constraint violation `search_sessions.error_code` (lowercase vs uppercase) — fix simples, pode ser bundled com outra P2
 
 ---
 
 ## Definition of Done (Epic)
 
-- [ ] Todas as 12 stories em status `Done` _(12 stories em InReview após YOLO P2 sprint 2026-04-11: 412-423. Aguardando janela de observação Sentry 48h para transição final → Done.)_
+- [ ] Todas as 17 stories em status `Done` _(412-423 em InReview aguardando janela Sentry 48h. 425-429 em Ready — identificadas em varredura Sentry 2026-04-11.)_
 - [ ] Zero eventos **Escalating** ou **Regressed** no Sentry para os 11 issues referenciados _(aguarda deploy + janela de observação 6h)_
 - [ ] Zero eventos dos error codes cobertos nas últimas 24h após último deploy _(aguarda deploy)_
 - [x] Runbooks novos criados: `docs/runbook/supabase-circuit-breaker.md`, `docs/runbook/trial-email-pipeline.md`, `docs/runbook/sentry-triage.md` _(STORY-416, STORY-418, STORY-423 entregaram)_
@@ -153,4 +165,5 @@ Análise completa em conversação `docs/sessions/` (transcript @pm post-valida�
 | 2026-04-10 | @pm (Morgan) | 8 decisões elucidadas e aplicadas às stories (ver seção "Decisões Tomadas"). Investigações prévias resolveram condicionais em 412 (Opção C) e 415 (Opção B). Merge order P0 definido: 413 → 415 → 412 → 414. STORY-424 criada em backlog P3 como follow-up do PIX. |
 | 2026-04-10 | @dev | Implementation YOLO sprint — 8 stories (412/413/414/415/416/417/418/419) entregues em paralelo. 62 novos tests passando em `backend/tests/test_story41{2..9}_*.py` + `tests/test_trial_endpoints.py`. Zero regressões em suites existentes (10 failures remanescentes em `test_debt110` / `test_supabase_circuit_breaker::test_check_quota_fail_open_when_cb_open_no_cache` são **pre-existing**, confirmados via `git stash`). 3 migrations novas (415 trigger fix, 418 DLQ, 419 widen). 2 runbooks novos. StarletteIntegration removido do Sentry (root cause secundária do STORY-413). Todas em `InReview` aguardando deploy + janela de observação Sentry 6h antes de `Done`. P2 stories 420-423 + STORY-424 backlog seguem Ready/Backlog. |
 | 2026-04-11 | @dev (YOLO P2 sprint) | 4 stories P2 entregues em paralelo (420/421/422/423). **STORY-420:** `payment_method_types=["card","boleto"]` + try/except InvalidRequestError→400 / StripeError→503; novo `test_story420_stripe_pix_removed.py` (5 tests); frontend/app/planos cleanup. **STORY-421:** novo `frontend/app/login/error.tsx` client component com detecção RSC invariant + hard-reload branch; `login-error-boundary.test.tsx` (6 tests) + E2E `login-rsc.spec.ts`. **STORY-422:** instrumentação completa de `close_reason` em `useSearchAPI.ts` (DOMException TIMEOUT + signal.reason inspection + Sentry breadcrumb/setTag + early return USER_CANCELLED); `cancelSearch()` exposto; `sentry.client.config.ts` beforeSend drop de USER_CANCELLED/NAVIGATION/bare AbortError; testes `sentry-close-reason-filter.test.ts` (9 casos) + `useSearchAPI-close-reason.test.ts` (6 guards). **STORY-423:** `docs/runbook/sentry-triage.md` novo runbook semanal 30min + `docs/operations/alerting-runbook.md` seção 1.2b com 3 alert rules novas (Fatal/Escalating, Burst>100/h, New issue prod). Postmortem `docs/incidents/2026-04-10-multi-cause.md` criado. EPIC DoD atualizado: 12/12 stories em InReview, 3 runbooks entregues, postmortem entregue. Aguarda deploy + observação Sentry 48h para transição final Done. |
+| 2026-04-11 | @sm + @po | **Varredura Sentry pós-EPIC:** 67 issues ativos auditados. 5 causas raiz novas não cobertas pelas 12 stories originais. STORY-425 (P0 schema drift `data_publicacao_pncp`) + STORY-426 (P1 statement timeout sem guard) + STORY-427 (P1 deque race condition, possível regressão STORY-416) + STORY-428 (P2 Next.js rota dinâmica) + STORY-429 (P2 constraint violation `error_code` lowercase). Todas criadas e validadas GO. Epic atualizado: 12→17 stories, DoD atualizado. |
 | 2026-04-11 | @dev (closeout session) | **STORY-414 AC3 implementado** (item genuinamente pendente): `backend/schemas/contract.py` ganhou `_main()` CLI + `if __name__ == "__main__": _main()` — exit 0/1/2, parseable por CI. `.github/workflows/migration-check.yml` estendido: cron 3am UTC adicionado + steps Python 3.12 + `pip install supabase` + schema contract validate (exit 1 se violado, exit 2 non-fatal). `.github/workflows/migration-gate.yml` estendido: step `Check schema contract` informacional + `Post PR comment` unificado (migration pending + schema violations no mesmo comment, Unicode escape emojis, string concat para YAML safety). DoD `migration-check.yml` marcado `[x]`. Checkboxes de STORY-412–423 atualizados com ACs confirmados implementados via YOLO sprint. Snapshots de API contract + OpenAPI commitados. |
