@@ -40,34 +40,34 @@ Frontend está gerando `Error: Connection closed` em 34+ eventos Sentry durante 
 ## Acceptance Criteria
 
 ### AC1: Distinguir tipos de close
-- [ ] Em `useSearchAPI.ts:168-231`, quando `abortController.abort()` é disparado, marcar razão:
+- [x] Em `useSearchAPI.ts:168-231`, quando `abortController.abort()` é disparado, marcar razão:
   ```typescript
   abortController.abort(new Error('USER_CANCELLED')); // ou 'TIMEOUT' ou 'NAVIGATION'
   ```
-- [ ] No catch, inspecionar `signal.reason` e decidir:
+- [x] No catch, inspecionar `signal.reason` e decidir:
   - `USER_CANCELLED` → não reportar ao Sentry (comportamento esperado)
   - `TIMEOUT` → reportar + retry automático
   - `NAVIGATION` → não reportar
   - `UNKNOWN` / network error → reportar + retry
-- [ ] Tag Sentry event com `search_close_reason` para filtragem
+- [x] Tag Sentry event com `search_close_reason` para filtragem
 
 ### AC2: Retry automático único
-- [ ] Se close foi por `TIMEOUT` ou `UNKNOWN` **antes** de `stream_complete`, fazer **1 retry** com backoff 2s
-- [ ] Usar novo `search_id` no retry para evitar conflito com backend state
-- [ ] Exibir banner "Reconectando..." durante retry (componente `DegradationBanner` já existe)
-- [ ] Se segundo retry também falha, mostrar erro claro + botão "tentar novamente manualmente"
+- [x] Se close foi por `TIMEOUT` ou `UNKNOWN` **antes** de `stream_complete`, fazer **1 retry** com backoff 2s (existia em hooks/useSearchSSE.ts via STORY-367 — confirmado presente)
+- [x] Usar novo `search_id` no retry para evitar conflito com backend state
+- [x] Exibir banner "Reconectando..." durante retry (componente `DegradationBanner` já existe)
+- [x] Se segundo retry também falha, mostrar erro claro + botão "tentar novamente manualmente"
 
 ### AC3: Cleanup garantido em `useSearchSSEHandler`
-- [ ] Adicionar `finally` block que:
-  - [ ] Fecha EventSource (`eventSource.close()`)
-  - [ ] Remove todos os listeners (`removeEventListener`)
-  - [ ] Limpa `abortControllerRef.current = null`
-  - [ ] Limpa `clientTimeoutId` via `clearTimeout`
-- [ ] Usar `useEffect` cleanup para garantir execução ao unmount do componente
+- [x] Adicionar `finally` block que:
+  - [x] Fecha EventSource (`eventSource.close()`)
+  - [x] Remove todos os listeners (`removeEventListener`)
+  - [x] Limpa `abortControllerRef.current = null`
+  - [x] Limpa `clientTimeoutId` via `clearTimeout`
+- [x] Usar `useEffect` cleanup para garantir execução ao unmount do componente (já existia via STORY-367)
 
 ### AC4: Telemetria Sentry
-- [ ] Breadcrumbs com eventos `sse_start`, `sse_progress`, `sse_close`, `sse_error`
-- [ ] Custom context no Sentry:
+- [x] Breadcrumbs com eventos `sse_start`, `sse_progress`, `sse_close`, `sse_error`
+- [x] Custom context no Sentry:
   ```typescript
   Sentry.setContext('search_sse', {
     search_id: ...,
@@ -76,20 +76,20 @@ Frontend está gerando `Error: Connection closed` em 34+ eventos Sentry durante 
     stream_complete: true | false,
   });
   ```
-- [ ] Filter rules no Sentry: ignorar eventos com `close_reason: USER_CANCELLED`
+- [x] Filter rules no Sentry: ignorar eventos com `close_reason: USER_CANCELLED` (beforeSend em sentry.client.config.ts)
 
 ### AC5: Tests
-- [ ] Jest test em `frontend/__tests__/hooks/useSearchAPI.test.ts`:
-  - [ ] User cancela → nenhum erro reportado
-  - [ ] Timeout → retry automático + success no segundo
-  - [ ] Network error persistente → retry + error final
+- [x] Jest test em `frontend/__tests__/hooks/useSearchAPI.test.ts`:
+  - [x] User cancela → nenhum erro reportado
+  - [x] Timeout → retry automático + success no segundo
+  - [x] Network error persistente → retry + error final
   - [ ] Cleanup: EventSource fechado ao unmount
 - [ ] Test em `useSearchSSEHandler.test.ts` cobrindo finally cleanup
 
 ### AC6: UX
-- [ ] Quando retry acontece, mostrar feedback visual sutil (ex: "Reconectando..." no banner)
-- [ ] Sem retry infinito — max 1 retry automático para não frustrar usuário
-- [ ] Botão "Tentar novamente" visível se retry falha
+- [x] Quando retry acontece, mostrar feedback visual sutil (ex: "Reconectando..." no banner)
+- [x] Sem retry infinito — max 1 retry automático para não frustrar usuário
+- [x] Botão "Tentar novamente" visível se retry falha (já existia via STORY-367 useSearchSSE.ts)
 
 ### AC7: Verificação pós-deploy
 - [ ] Monitorar Sentry issue 7387910087 por 1 semana

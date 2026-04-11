@@ -44,7 +44,7 @@ A análise de 2026-04-10 identificou 69 issues ativos no Sentry `confenge` em ja
 - [ ] Produzir relatório consolidado em `docs/runbook/sentry-triage.md` listando cada decisão
 
 ### AC3: Runbook de triagem semanal
-- [ ] Criar `docs/runbook/sentry-triage.md` com:
+- [x] Criar `docs/runbook/sentry-triage.md` com:
   - Processo step-by-step de triagem semanal (toda sexta, 30 min)
   - Tabela de decisão (quando marcar Resolved vs Ignored vs New Story)
   - Template de comentário no Sentry quando linking com story
@@ -54,8 +54,8 @@ A análise de 2026-04-10 identificou 69 issues ativos no Sentry `confenge` em ja
 ### AC4: Sentry Alert Rules — elevar sinal
 
 **Pré-requisito (@pm 2026-04-10 — Dia 0):**
-- [ ] **Criar canal Slack `#incident-response`** antes de qualquer outra ação de AC4
-- [ ] **Criar canal Slack `#sentry-new-issues`**
+- [ ] **Criar canal Slack `#incident-response`** antes de qualquer outra ação de AC4 — @devops follow-up
+- [ ] **Criar canal Slack `#sentry-new-issues`** — @devops follow-up
 - [ ] Webhook URL em env var `SENTRY_SLACK_WEBHOOK` — **NUNCA commitar no repo**
 - [ ] **Fallback email** se Slack indisponível: `tiago.sasaki@gmail.com`
 - [ ] Se workspace Slack não existir, avaliar alternativa: Discord (grátis) ou trial Slack
@@ -70,7 +70,7 @@ A análise de 2026-04-10 identificou 69 issues ativos no Sentry `confenge` em ja
 - [ ] Criar alert rule: **"New issue in production"**
   - [ ] Agregado a cada 15 min para não spammar
   - [ ] Canal: Slack #sentry-new-issues
-- [ ] Documentar em `docs/operations/alerting-runbook.md`
+- [x] Documentar em `docs/operations/alerting-runbook.md` (seção 1.2b: 3 alert rules + checklist pré-deploy + setup manual Sentry UI)
 
 ### AC5: Investigar RemoteProtocolError
 - [ ] Analisar Sentry issues com "RemoteProtocolError: Server disconnected" (7396815149, 7396815134, 7396815122, 7387730654)

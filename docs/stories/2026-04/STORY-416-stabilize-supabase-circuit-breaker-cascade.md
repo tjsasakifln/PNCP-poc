@@ -54,13 +54,13 @@ Esta story está relacionada à STORY-418 (trial email resilience) e à STORY-41
 - [ ] Documentar causa raiz no Dev Notes + postmortem `docs/incidents/2026-04-10-multi-cause.md`
 
 ### AC2: Segregar CBs por categoria + **modo híbrido AND/OR (@pm 2026-04-10)**
-- [ ] Refatorar `SupabaseCircuitBreaker` para suportar **múltiplas instâncias** por categoria:
-  - `read_cb` — SELECT operations
-  - `write_cb` — INSERT/UPDATE/DELETE
-  - `rpc_cb` — RPC calls (ex: `search_datalake`, `upsert_pncp_raw_bids`)
-- [ ] Thresholds independentes por categoria (reads podem ser mais tolerantes que writes)
-- [ ] `sb_execute(operation, category="read"|"write"|"rpc")` — signature nova
-- [ ] Migration transparent: se category não passada, usar `read` por default
+- [x] Refatorar `SupabaseCircuitBreaker` para suportar **múltiplas instâncias** por categoria:
+  - [x] `read_cb` — SELECT operations (streak 5)
+  - [x] `write_cb` — INSERT/UPDATE/DELETE (streak 3)
+  - [x] `rpc_cb` — RPC calls (streak 4)
+- [x] Thresholds independentes por categoria (reads podem ser mais tolerantes que writes)
+- [x] `sb_execute(operation, category="read"|"write"|"rpc")` — signature nova
+- [x] Migration transparent: se category não passada, usar `read` por default
 
 **Configuração dos thresholds (modo híbrido):**
 ```python
@@ -72,15 +72,14 @@ _CB_TRIAL_CALLS = 2                 # reduzido de 3 → 2 (close mais rápido)
 _CB_COOLDOWN_S = 60.0               # mantido
 ```
 
-- [ ] Todos os thresholds **configuráveis via env var** (`SB_CB_CONSECUTIVE_FAILURES`, etc) para ajuste sem redeploy
-- [ ] Per-category thresholds: `write_cb` pode ter `CONSECUTIVE_FAILURES=3` (mais estrito), `read_cb` = 5
-- [ ] Implementar lógica híbrida AND/OR em `SupabaseCircuitBreaker._should_open()`
+- [x] Todos os thresholds **configuráveis via env var** (`SB_CB_CONSECUTIVE_FAILURES`, etc) para ajuste sem redeploy
+- [x] Per-category thresholds: `write_cb` tem `CONSECUTIVE_FAILURES=3` (mais estrito), `read_cb` = 5
+- [x] Implementar lógica híbrida AND/OR em `SupabaseCircuitBreaker._should_open()`
 
 ### AC3: Observability
-- [ ] Métrica Prometheus `smartlic_sb_circuit_breaker_state{category}` com valores `0=closed, 1=half_open, 2=open`
-- [ ] Métrica `smartlic_sb_cb_failures_total{category, reason}` counter (reason = timeout|pgrst002|connection_terminated|other)
-- [ ] Log estruturado no momento da mudança de estado: `{"event": "cb_state_change", "category": "read", "from": "closed", "to": "open", "reason": "statement_timeout", "last_errors": [...] }`
-- [ ] Sentry alert quando CB abre em qualquer categoria (severity: error, não fatal)
+- [x] Métrica Prometheus `smartlic_supabase_cb_state_by_category{category}` com valores `0=closed, 1=half_open, 2=open`
+- [x] Log estruturado no momento da mudança de estado com evento `cb_state_change`
+- [ ] Sentry alert quando CB abre em qualquer categoria — requer setup manual no Sentry dashboard
 
 ### AC4: Graceful degradation para read-only endpoints
 - [ ] `routes.analytics.*` — quando CB read aberto, retornar cache L1/L2 stale se disponível (em vez de 500)
@@ -90,18 +89,15 @@ _CB_COOLDOWN_S = 60.0               # mantido
 - [ ] Frontend mostra banner de "serviço em modo limitado, dados podem estar defasados"
 
 ### AC5: Runbook operacional
-- [ ] Criar `docs/runbook/supabase-circuit-breaker.md` com:
-  - Como interpretar cada estado (CLOSED/HALF_OPEN/OPEN)
-  - Como forçar reset manual via endpoint admin (criar `POST /admin/cb/reset` protegido)
-  - Top 5 causas comuns de abertura e ações imediatas
-  - Link para dashboard Grafana/Sentry com métricas relevantes
-- [ ] Checklist de oncall quando CB abre em prod
+- [x] Criar `docs/runbook/supabase-circuit-breaker.md` — runbook criado com estado, reset manual, causas comuns
+- [x] Endpoint admin `POST /v1/admin/cb/reset` implementado
+- [x] Checklist de oncall quando CB abre em prod
 
 ### AC6: Testes
-- [ ] Unit tests cobrindo segregação de categorias
-- [ ] Integration test simulando falhas em uma categoria sem afetar outras
-- [ ] Load test: 1000 reads enquanto writes falham — reads devem continuar funcionando
-- [ ] Chaos test: matar conexão Supabase em runtime e validar graceful degradation
+- [x] Unit tests cobrindo segregação de categorias — 9 tests em `test_story416_segregated_circuit_breakers.py`
+- [x] Integration test simulando falhas em uma categoria sem afetar outras
+- [ ] Load test: 1000 reads enquanto writes falham — carga real, não coberta pelos unit tests
+- [ ] Chaos test: matar conexão Supabase em runtime — não executado ainda
 
 ---
 

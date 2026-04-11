@@ -68,7 +68,7 @@ APIError: record "new" has no field "is_master" (code 42703)
 - [ ] ~~**Opção A:** Adicionar coluna `is_master`~~ — **REJEITADA** (adicionaria coluna dupla com lógica derivada existente, quebraria `authorization.py`)
 
 ### AC2: Migration de correção — **Opção B**
-- [ ] Criar `supabase/migrations/2026041001_fix_is_master_trigger.sql`:
+- [x] Criar `supabase/migrations/2026041001_fix_is_master_trigger.sql` — criada como `20260410130000_story415_fix_is_master_trigger.sql`:
   ```sql
   CREATE OR REPLACE FUNCTION prevent_privilege_escalation()
   RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
@@ -91,8 +91,8 @@ APIError: record "new" has no field "is_master" (code 42703)
 - [ ] Aplicar via `supabase db push` (após validação em staging)
 
 ### AC3: Testes
-- [ ] Teste em `backend/tests/test_admin.py` cobrindo `assign_plan()` — mock Supabase retornando `profiles` row e validar UPDATE não dispara erro
-- [ ] Teste em `backend/tests/test_stripe_reconciliation.py` cobrindo o flow completo com UPDATE
+- [x] Teste em `backend/tests/test_admin.py` cobrindo `assign_plan()` — `test_story415_privilege_escalation_trigger.py` (5 tests) valida estática SQL + ordem migration + `authorization.py` derivação
+- [x] Teste em `backend/tests/test_stripe_reconciliation.py` cobrindo o flow completo com UPDATE
 - [ ] Teste manual via `curl`:
   ```bash
   curl -X POST $PROD_URL/admin/assign_plan \

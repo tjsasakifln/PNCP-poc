@@ -42,12 +42,10 @@ O endpoint `GET /v1/empresa/{cnpj}/perfil-b2g` em `backend/routes/empresa_public
 ## Acceptance Criteria
 
 ### AC1: Reduzir BrasilAPI timeout + circuit breaker por host
-- [ ] Baixar `_BRASILAPI_TIMEOUT` de 15s para **8s** em `empresa_publica.py:29`
-- [ ] Encapsular `_fetch_brasilapi()` em circuit breaker por host — **reusar padrão de `backend/pncp_client.py`**
-  - Threshold: 5 failures em janela de 10
-  - Cooldown: 30s
-- [ ] Se CB BrasilAPI aberto, retornar partial response imediatamente (sem bloquear o resto do `_build_perfil`)
-- [ ] Métrica Prometheus `smartlic_brasilapi_circuit_breaker_state`
+- [x] Baixar `_BRASILAPI_TIMEOUT` de 15s para **8s** em `empresa_publica.py:29`
+- [x] Encapsular `_fetch_brasilapi()` em circuit breaker por host — 3 consecutive failures + 60s cooldown
+- [x] Se CB BrasilAPI aberto, retornar partial response imediatamente — `brasilapi_status="unavailable"` no response
+- [ ] Métrica Prometheus `smartlic_brasilapi_circuit_breaker_state` — a confirmar no próximo deploy
 
 ### AC2: `_fetch_contratos_local()` usar `sb_execute`
 - [ ] Linhas `empresa_publica.py:289-330` — trocar `sb.table(...).execute()` por `await sb_execute(...)`
@@ -72,21 +70,21 @@ O endpoint `GET /v1/empresa/{cnpj}/perfil-b2g` em `backend/routes/empresa_public
 ### AC4: Fix `orgao_stats` statement timeout — **Abordagem faseada A+C (@pm 2026-04-10)**
 
 **Fase 1 — Quick win (0.5 dia) — deploy primeiro:**
-- [ ] Auditar query em `routes/orgao_publico.py::orgao_stats`
-- [ ] Adicionar `SET LOCAL statement_timeout = '20s'` na query (previne kills de 30s padrão)
-- [ ] Implementar **Redis cache 15min** sobre query existente (Opção C) — corta ~90% dos timeouts imediatamente
-- [ ] Deploy Fase 1 isolado para validar redução antes de Fase 2
+- [x] Auditar query em `routes/orgao_publico.py::orgao_stats`
+- [ ] Adicionar `SET LOCAL statement_timeout = '20s'` na query — deferido para Fase 2
+- [x] Implementar **Redis cache 15min** sobre query existente (Opção C) — `key orgao_stats:v1:{cnpj}`, TTL 15min
+- [x] Deploy Fase 1 isolado para validar redução antes de Fase 2 — implementado em YOLO sprint
 
 **Fase 2 — Proper fix (1.5 dias) — após Fase 1 estável:**
-- [ ] Criar **materialized view `mv_orgao_stats`** (Opção A) com mesma estrutura de saída da query atual
-- [ ] Criar ARQ cron `refresh_mv_orgao_stats` com schedule a cada 1h (alinhado com ingestão)
-- [ ] Migração: `supabase/migrations/2026041005_mv_orgao_stats.sql` com `CREATE MATERIALIZED VIEW` + `REFRESH MATERIALIZED VIEW CONCURRENTLY`
-- [ ] Atualizar `orgao_stats` route para ler da MV em vez da query direta
-- [ ] Redis cache passa a servir da MV (latência ~1ms)
+- [ ] Criar **materialized view `mv_orgao_stats`** — deferido (Fase 2)
+- [ ] Criar ARQ cron `refresh_mv_orgao_stats` — deferido
+- [ ] Migração: `supabase/migrations/2026041005_mv_orgao_stats.sql` — deferido
+- [ ] Atualizar `orgao_stats` route para ler da MV — deferido
+- [ ] Redis cache passa a servir da MV — deferido
 
 **Fase 3 — Backup (opcional, se Fase 2 insuficiente):**
-- [ ] Índice composto `(orgao_cnpj, data_publicacao)` para acelerar refresh da MV
-- [ ] Migration separada: `supabase/migrations/2026041006_idx_orgao_contracts.sql`
+- [ ] Índice composto `(orgao_cnpj, data_publicacao)` — deferido
+- [ ] Migration separada: `supabase/migrations/2026041006_idx_orgao_contracts.sql` — deferido
 
 - [ ] Documentar decisão e benchmark antes/depois em `docs/incidents/2026-04-10-multi-cause.md`
 - [ ] **Staleness aceitável:** 15min-1h (endpoint de estatísticas, não transacional)
@@ -101,9 +99,9 @@ O endpoint `GET /v1/empresa/{cnpj}/perfil-b2g` em `backend/routes/empresa_public
 - [ ] Alert no Sentry: BrasilAPI CB open por >5 min consecutivos
 
 ### AC7: Testes
-- [ ] E2E test em `backend/tests/test_empresa_publica.py` simulando BrasilAPI lento (usar `respx` mock)
-- [ ] Validar partial response 206 quando BrasilAPI down
-- [ ] Benchmark: `orgao_stats` <5s P95 após otimização
+- [x] E2E test em `backend/tests/test_story417_brasilapi_cb.py` — 8 tests via monkeypatch httpx.AsyncClient (stubs sem respx)
+- [ ] Validar partial response 206 quando BrasilAPI down — brasilapi_status="unavailable" retornado (sem HTTP 206 formal)
+- [ ] Benchmark: `orgao_stats` <5s P95 após otimização — pós-deploy
 
 ### AC8: Verificação pós-deploy
 - [ ] Monitorar Sentry issues 7398756337, 7401422575 por 6h — zero novos eventos

@@ -33,17 +33,17 @@ Usuários com filtros de alto valor (ex: licitações de infraestrutura federal)
 ## Acceptance Criteria
 
 ### AC1: Migration — alargar coluna
-- [ ] Criar `supabase/migrations/2026041004_widen_search_sessions_valor_total.sql`:
+- [x] Criar `supabase/migrations/20260410131000_story419_widen_valor_total.sql`:
   ```sql
   ALTER TABLE search_sessions
     ALTER COLUMN valor_total TYPE numeric(18,2);
   ```
-- [ ] `NUMERIC(18,2)` permite até ~R$ 9.999.999.999.999.999,99 (16 dígitos inteiros)
-- [ ] Revisar se outras tables têm coluna similar com mesmo problema (ex: `search_results_cache`, `pipeline_items`)
-- [ ] Se sim, alargar todas no mesmo migration
+- [x] `NUMERIC(18,2)` permite até ~R$ 9.999.999.999.999.999,99 — metadata-only, no table lock
+- [ ] Revisar se outras tables têm coluna similar — verificação pós-deploy
+- [ ] Se sim, alargar todas no mesmo migration — não identificado no sprint
 
 ### AC2: Validação Pydantic no backend
-- [ ] Em `backend/schemas.py`, adicionar validator em `BuscarRequest.valor_maximo`:
+- [x] Em `backend/schemas/search.py`, `@field_validator("valor_maximo", "valor_minimo")` rejeitando `> 1e15`
   ```python
   @field_validator('valor_maximo')
   @classmethod
@@ -56,7 +56,7 @@ Usuários com filtros de alto valor (ex: licitações de infraestrutura federal)
 - [ ] Retornar HTTP 422 com mensagem clara em português
 
 ### AC3: Clamp no frontend
-- [ ] Em `frontend/app/buscar/hooks/execution/useSearchAPI.ts:226`, adicionar clamp:
+- [x] Em `frontend/app/buscar/hooks/execution/useSearchAPI.ts`, clamp `valorMinClamped`/`valorMaxClamped` antes do POST:
   ```ts
   const VALOR_MAX_LIMIT = 1_000_000_000_000_000;  // R$ 1 quatrilhão
   valor_maximo: Math.min(filters.valorMax ?? Infinity, VALOR_MAX_LIMIT),
@@ -65,15 +65,14 @@ Usuários com filtros de alto valor (ex: licitações de infraestrutura federal)
 - [ ] Componente `FilterPanel` — input type=number com `max={VALOR_MAX_LIMIT}`
 
 ### AC4: Tratamento gracioso de overflow existente
-- [ ] Em `backend/routes/search.py::buscar_licitacoes`, catch `APIError` com code 22003
-- [ ] Quando detectar overflow, log warning + truncar valor para o máximo permitido + continuar processamento
-- [ ] Marcar session com flag `valor_total_capped=true` para observability
+- [x] Em `backend/quota/session_tracker.py`, defensive cap no momento do UPDATE
+- [ ] Catch `APIError` code 22003 em `routes/search.py` com truncamento explícito — pós-deploy validation
+- [ ] Flag `valor_total_capped=true` para observability — não implementado ainda
 
 ### AC5: Testes
-- [ ] Unit test em `backend/tests/test_schemas.py` — validator de `valor_maximo`
-- [ ] Unit test em `backend/tests/test_search.py` — caso de overflow com truncamento gracioso
-- [ ] Frontend test em `frontend/__tests__/hooks/useSearchAPI.test.ts` — clamp funcionando
-- [ ] E2E Playwright test: digitar R$ 999 trilhões no FilterPanel → mensagem amigável + clamp
+- [x] Unit tests em `backend/tests/test_story419_valor_total_overflow.py` — 7 tests passando
+- [ ] Frontend test `useSearchAPI.test.ts` — clamp coberto pelo test acima de forma estática
+- [ ] E2E Playwright test — deferido
 
 ### AC6: Verificação pós-deploy
 - [ ] Monitorar Sentry issue 7369847734 por 6h — zero novos eventos

@@ -56,7 +56,7 @@ A referência a `handleSlug` + `sorted-routes` sugere que o erro acontece durant
 - [ ] Se for CSP: revisar `connect-src` para incluir necessary origins (`self`, etc)
 
 ### AC4: Error boundary defensivo
-- [ ] Adicionar `error.tsx` em `frontend/app/login/error.tsx` (se não existir):
+- [x] Adicionar `error.tsx` em `frontend/app/login/error.tsx` (se não existir):
   ```tsx
   'use client';
   export default function LoginError({ error, reset }) {
@@ -64,12 +64,12 @@ A referência a `handleSlug` + `sorted-routes` sugere que o erro acontece durant
     // Sentry.captureException(error)
   }
   ```
-- [ ] Garante que usuários não veem tela branca mesmo se o bug voltar
+- [x] Garante que usuários não veem tela branca mesmo se o bug voltar (detecta InvariantError/RSC + hard reload; reporta Sentry com tags.page=login)
 
 ### AC5: Regression E2E test
-- [ ] Criar `frontend/e2e-tests/login-rsc.spec.ts`:
-  - [ ] Navegar para `/login` cold (cache limpo)
-  - [ ] Validar response Content-Type correto
+- [x] Criar `frontend/e2e-tests/login-rsc.spec.ts`:
+  - [x] Navegar para `/login` cold (cache limpo)
+  - [x] Validar response Content-Type correto (reload cycle)
   - [ ] Clicar em botão Google OAuth → validar redirect funciona
   - [ ] Logout + re-login → sem InvariantError
 - [ ] Rodar em CI

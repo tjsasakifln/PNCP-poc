@@ -49,24 +49,24 @@ Este bug é **intrinsecamente ligado à STORY-414** (Schema Contract Gate) — o
   - `grep -rn "objeto_resumo" backend/` → usado apenas em `analytics.py:314, 344`
   - Fallback já existe: `top_session.get("objeto_resumo") or "Oportunidade identificada"` (linha 344)
   - Git log: campo adicionado em commit `c20da562 feat(trial): implement trial-to-paid conversion flow (GTM-010)` — coluna nunca foi criada via migration, drift puro desde o dia 1
-- [ ] Aplicar fix em `backend/routes/analytics.py`:
+- [x] Aplicar fix em `backend/routes/analytics.py`:
   - Linha 313-315: remover `objeto_resumo` do SELECT → `"total_filtered, valor_total, created_at"`
   - Linha 344: trocar `top_session.get("objeto_resumo") or "Oportunidade identificada"` por `"Oportunidade identificada"` direto
 - [ ] ~~**Opção A:** Criar migration `ALTER TABLE ... ADD COLUMN`~~ — **REJEITADA** (campo não usado no frontend)
 - [ ] ~~**Opção B:** Alterar query para `search_params->>'objeto'`~~ — **REJEITADA** (complexidade desnecessária para campo descartável)
 
 ### AC3: Aplicar fix
-- [ ] Código ou migration aplicada via `supabase db push` (se for migration)
+- [x] Código ou migration aplicada via `supabase db push` (se for migration)
 - [ ] Validação em staging primeiro: `railway logs --service smartlic-backend-staging --filter "42703"` deve retornar 0 após 10 min de tráfego
 - [ ] Deploy para produção via hotfix (pode ser direto em `main` dado o P0)
 
 ### AC4: Testes de regressão
-- [ ] `backend/tests/test_trial_endpoints.py` — verificar se há teste cobrindo `get_trial_value` com campo `objeto_resumo`. Se não houver, adicionar.
-- [ ] Se houver teste falhando: **bloquear merge** até passar
-- [ ] Novo teste: mockar Supabase retornando dados sem `objeto_resumo` e validar fallback gracioso
+- [x] `backend/tests/test_trial_endpoints.py` — verificar se há teste cobrindo `get_trial_value` com campo `objeto_resumo`. Se não houver, adicionar.
+- [x] Se houver teste falhando: **bloquear merge** até passar — 9 testes passando
+- [x] Novo teste: mockar Supabase retornando dados sem `objeto_resumo` e validar fallback gracioso
 
 ### AC5: Atualizar Schema Contract
-- [ ] **Opção C selecionada:** garantir que `CRITICAL_SCHEMA["search_sessions"]` em `backend/schemas/contract.py:35-75` **NÃO** lista `objeto_resumo` (remover se estiver listada)
+- [x] **Opção C selecionada:** garantir que `CRITICAL_SCHEMA["search_sessions"]` em `backend/schemas/contract.py:35-75` **NÃO** lista `objeto_resumo` (remover se estiver listada)
 
 ### AC6: Verificação pós-deploy
 - [ ] Monitorar Sentry issue 7396988861 por 6h — deve ficar em 0 eventos novos

@@ -52,31 +52,29 @@ is enabled for any preview features that you are trying to use.
 - [x] **Trigger de re-priorização:** Se support receber >5 pedidos/mês "posso pagar via PIX?", elevar STORY-424 para P2
 
 ### AC2: Fix de código (Opção B — remover PIX)
-- [ ] Em `backend/routes/billing.py:122`, alterar:
-  ```python
-  "payment_method_types": ["card", "boleto"],
-  ```
-- [ ] Revisar se `boleto` está realmente habilitado no dashboard Stripe antes de deploy (smoke test)
-- [ ] Atualizar documentação em `docs/guides/billing.md` (se existir) removendo menções a PIX
+- [x] Em `backend/routes/billing.py:122`, alterado para `["card", "boleto"]`
+- [ ] Revisar se `boleto` está habilitado no dashboard Stripe — verificação pós-deploy @devops
+- [ ] Atualizar documentação em `docs/guides/billing.md` (se existir) — não encontrado no sprint
 
 ### AC3: ~~Fix de código (Opção A — habilitar PIX corretamente)~~ — **REJEITADA**
 - [ ] ~~Opção A rejeitada em favor de Opção B (ver AC1). Escopo movido para STORY-424 P3.~~
 
 ### AC4: Frontend
-- [ ] Verificar `frontend/app/planos/` e `frontend/app/pricing/` — remover qualquer menção visual a PIX (badges, icons, copy de marketing)
-- [ ] Atualizar alt-text + screen reader labels se existirem
-- [ ] Teste visual: página `/planos` não deve mencionar "PIX" em lugar algum
+- [x] `frontend/app/planos/page.tsx` atualizado — FAQ + badge de métodos sem PIX
+- [ ] Atualizar alt-text + screen reader labels — não encontrado
+- [ ] Teste visual — a confirmar no próximo deploy/smoke test
 
 ### AC5: Testes
-- [ ] Unit test em `backend/tests/test_billing.py`:
-  - [ ] Checkout com card → success
-  - [ ] Checkout com boleto → success
-  - [ ] Mock Stripe retornando InvalidRequestError → tratamento gracioso (HTTP 400, não 500)
-- [ ] E2E Playwright test: clicar "Assinar Pro" → redirect Stripe Checkout funciona (no test mode)
+- [x] 5 tests em `backend/tests/test_story420_stripe_pix_removed.py`:
+  - [x] Checkout com card → success
+  - [x] Checkout com boleto → success
+  - [x] Mock Stripe retornando InvalidRequestError → HTTP 400 (não 500)
+- [x] `test_story280_boleto_pix.py` assert invertido — confirma ausência de PIX
+- [ ] E2E Playwright test — não executado
 
 ### AC6: Error handling
-- [ ] Em `routes/billing.py::create_checkout`, catch `stripe.error.InvalidRequestError` e retornar HTTP 400 com mensagem amigável em pt-BR em vez de 500
-- [ ] Log estruturado com `request_id` do Stripe para facilitar debug
+- [x] `routes/billing.py::create_checkout` — `InvalidRequestError → HTTP 400`, `StripeError → HTTP 503`
+- [x] Log estruturado com Stripe request_id
 
 ### AC7: Verificação pós-deploy
 - [ ] Monitorar Sentry issues 7397513115, 7397513088, 7397513083 por 48h — zero novos eventos

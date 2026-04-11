@@ -37,33 +37,33 @@
 ## Acceptance Criteria
 
 ### AC1: Reproduzir localmente
-- [ ] Configurar ambiente apontando para staging Supabase + Redis
-- [ ] Rodar `uvicorn backend.main:app --reload` e capturar stacktrace completo do `TypeError`
-- [ ] Documentar no Dev Notes qual task/middleware dispara o erro
+- [x] Configurar ambiente apontando para staging Supabase + Redis
+- [x] Rodar `uvicorn backend.main:app --reload` e capturar stacktrace completo do `TypeError`
+- [x] Documentar no Dev Notes qual task/middleware dispara o erro
 
 ### AC2: Identificar a task/middleware com assinatura errada
-- [ ] Inspecionar todas as `start_fn` registradas no `TaskRegistry` (em `backend/task_registry.py` + chamadas `.register(...)`)
-- [ ] Verificar `backend/startup/lifespan.py` para ordem de startup de tasks
-- [ ] Verificar `backend/startup/sentry.py:126-131` para integrations Sentry ativos
-- [ ] Rodar `git log -p --since="3 days ago" backend/task_registry.py backend/startup/ backend/main.py` e identificar qualquer mudança suspeita em decoradores/wrappers
+- [x] Inspecionar todas as `start_fn` registradas no `TaskRegistry` (em `backend/task_registry.py` + chamadas `.register(...)`)
+- [x] Verificar `backend/startup/lifespan.py` para ordem de startup de tasks
+- [x] Verificar `backend/startup/sentry.py:126-131` para integrations Sentry ativos — `StarletteIntegration` identificado como root cause
+- [x] Rodar `git log -p --since="3 days ago" backend/task_registry.py backend/startup/ backend/main.py` e identificar qualquer mudança suspeita em decoradores/wrappers
 
 ### AC3: Corrigir root cause
-- [ ] Se for wrapper Sentry incorreto: corrigir registration ou downgrade temporário do `sentry-sdk` até fix upstream
-- [ ] Se for task com assinatura errada: ajustar a função para `async def foo() -> None` conforme contract
-- [ ] Se for regressão de código: reverter o commit ofensor ou re-implementar sem quebrar
-- [ ] Revisar contract do `TaskRegistry` e adicionar validação de assinatura no `.register()` (fail-fast no import time, não no startup)
+- [x] Se for wrapper Sentry incorreto: corrigir registration ou downgrade temporário do `sentry-sdk` até fix upstream — `StarletteIntegration` removido de `backend/startup/sentry.py`, `auto_enabling_integrations=False`
+- [ ] Se for task com assinatura errada: ajustar a função para `async def foo() -> None` conforme contract — N/A (causa foi StarletteIntegration)
+- [ ] Se for regressão de código: reverter o commit ofensor ou re-implementar sem quebrar — N/A
+- [x] Revisar contract do `TaskRegistry` e adicionar validação de assinatura no `.register()` (fail-fast no import time, não no startup) — `TaskRegistrationError` adicionado
 
 ### AC4: Regression test
-- [ ] Novo arquivo `backend/tests/test_task_registry.py` com testes cobrindo:
-  - [ ] Registro de coroutine válida → ok
-  - [ ] Registro de função síncrona válida → ok
-  - [ ] Registro de função com assinatura errada → raise na hora do `.register()`, não no startup
-  - [ ] `start_all()` com mix de coroutines e sync → executa corretamente
+- [x] Novo arquivo `backend/tests/test_task_registry.py` com testes cobrindo:
+  - [x] Registro de coroutine válida → ok
+  - [x] Registro de função síncrona válida → ok
+  - [x] Registro de função com assinatura errada → raise na hora do `.register()`, não no startup
+  - [x] `start_all()` com mix de coroutines e sync → executa corretamente
 
 ### AC5: Observability
-- [ ] Adicionar log estruturado em `TaskRegistry.start_all()` listando cada task antes de iniciar (facilita debug futuro)
-- [ ] Capturar exception + nome da task offending antes de propagar para uvicorn
-- [ ] Alert dedicado no Sentry para `Application startup failed` com severity Fatal
+- [x] Adicionar log estruturado em `TaskRegistry.start_all()` listando cada task antes de iniciar (facilita debug futuro)
+- [x] Capturar exception + nome da task offending antes de propagar para uvicorn
+- [ ] Alert dedicado no Sentry para `Application startup failed` com severity Fatal — requer setup manual no Sentry dashboard
 
 ### AC6: Verificação pós-deploy
 - [ ] Monitorar Sentry issues 7400217484, 7282829485, 7282829484 por 24h — zero novos eventos
