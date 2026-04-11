@@ -1064,9 +1064,9 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
   // GUIA-T1
   {
     slug: 'como-participar-primeira-licitacao-2026',
-    title: 'Como Participar da Primeira Licitação em 2026 — Guia Completo',
+    title: 'Como Participar da 1ª Licitação em 2026 — Passo a Passo',
     description:
-      'Passo a passo completo para participar da sua primeira licitação pública em 2026: cadastro, documentação, portais, pregão eletrônico e erros a evitar.',
+      '12 passos para entrar no mercado de licitações: cadastro no SICAF, documentação exigida, pregão eletrônico e os erros que eliminam propostas na abertura.',
     category: 'Guias',
     tags: ['primeira licitação', 'guia iniciante', 'passo a passo', 'cadastro'],
     publishDate: '2026-04-04',
@@ -1125,9 +1125,9 @@ export const BLOG_ARTICLES: BlogArticleMeta[] = [
   // GUIA-T3
   {
     slug: 'pncp-guia-completo-empresas',
-    title: 'Como Usar o PNCP em 2026: Guia Prático para Encontrar Editais por Setor e UF',
+    title: 'Como Usar o PNCP para Encontrar Licitações em 2026',
     description:
-      'Aprenda a buscar editais no PNCP, filtrar por setor e UF, e entenda por que empresas B2G complementam o PNCP com monitoramento automatizado. Guia atualizado abril/2026.',
+      'Guia passo a passo para buscar editais no PNCP por setor e estado. Filtre oportunidades reais, entenda as modalidades e descubra como automatizar o monitoramento.',
     category: 'Guias',
     tags: ['PNCP', 'portal de contratações', 'busca de editais', 'monitoramento'],
     publishDate: '2026-04-04',

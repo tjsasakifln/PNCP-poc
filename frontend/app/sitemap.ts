@@ -281,12 +281,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
-    {
-      url: `${baseUrl}/pricing`,
-      lastModified: STATIC_LAST_EDIT,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
+    // /pricing removed: 301 redirect to /planos (ISSUE-SEO-005). Only /planos in sitemap.
     {
       url: `${baseUrl}/signup`,
       lastModified: STATIC_LAST_EDIT,

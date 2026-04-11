@@ -30,6 +30,7 @@ const nextConfig = {
   // don't need CSP/X-Frame-Options. HSTS is enforced at Railway edge proxy level.
 
   // SEO: Redirect acentuado → slug canônico (ISSUE-SEO-004)
+  // SEO: Consolidar pricing pages — /pricing → /planos (ISSUE-SEO-005)
   async redirects() {
     return [
       {
@@ -40,6 +41,11 @@ const nextConfig = {
       {
         source: '/gloss%C3%A1rio/:path*',
         destination: '/glossario/:path*',
+        permanent: true,
+      },
+      {
+        source: '/pricing',
+        destination: '/planos',
         permanent: true,
       },
     ];
