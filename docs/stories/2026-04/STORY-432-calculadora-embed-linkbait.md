@@ -3,7 +3,7 @@
 **Priority:** P1 — Link Bait Secundário (meta: 30 embeds = 30 backlinks dofollow)
 **Effort:** M (2-3 dias)
 **Squad:** @dev
-**Status:** Draft
+**Status:** InProgress
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Sprint 2 (paralelo com STORY-431)
 
@@ -41,17 +41,17 @@ A calculadora em `/calculadora` já existe no SmartLic. O problema: ela é fecha
   - **"Potencial de receita incremental (assumindo taxa de vitória de mercado de 15%)"** — oportunidades_perdidas × valor_medio × 0.15
 
 ### AC2: Rota embed isolada
-- [ ] Criar `frontend/app/calculadora/embed/page.tsx` — versão stripped da calculadora (sem header, footer, nav)
-- [ ] Layout minimalista: logo SmartLic pequeno no canto + calculadora + rodapé fixo com:
+- [x] Criar `frontend/app/calculadora/embed/page.tsx` — versão stripped da calculadora (sem header, footer, nav)
+- [x] Layout minimalista: logo SmartLic pequeno no canto + calculadora + rodapé fixo com:
   ```
   Calculadora por SmartLic — Inteligência em Licitações
   [Ver relatório completo] (link para smartlic.tech/calculadora)
   ```
-- [ ] O link no rodapé é `rel="noopener"` mas **sem** `rel="nofollow"` — backlink seguível
-- [ ] Dimensões responsivas: funciona em 600×400 mínimo
+- [x] O link no rodapé é `rel="noopener"` mas **sem** `rel="nofollow"` — backlink seguível
+- [x] Dimensões responsivas: funciona em 600×400 mínimo
 
 ### AC3: Gerador de código embed na página principal
-- [ ] Na página `/calculadora`, adicionar seção "Incorpore esta calculadora no seu site":
+- [x] Na página `/calculadora`, adicionar seção "Incorpore esta calculadora no seu site":
   - Preview visual do embed
   - Code snippet copiável:
     ```html
@@ -65,18 +65,18 @@ A calculadora em `/calculadora` já existe no SmartLic. O problema: ela é fecha
     </p>
     ```
   - Botão "Copiar código" com feedback visual (✓ Copiado!)
-- [ ] O snippet inclui explicitamente o link `<a href="https://smartlic.tech">SmartLic</a>` — qualquer site que colar o snippet gera backlink
+- [x] O snippet inclui explicitamente o link `<a href="https://smartlic.tech">SmartLic</a>` — qualquer site que colar o snippet gera backlink
 
 ### AC4: Endpoint público de dados da calculadora
 - [ ] Criar `GET /api/public/calculadora?setor={setor}&uf={uf}` no backend
 - [ ] Retorna: `{ total_ativas: int, valor_medio: float, percentil_50: float, fonte: "PNCP via SmartLic datalake", atualizado_em: datetime }`
 - [ ] Rate limit: 60 req/min por IP (sem token) — suficiente para embed em múltiplos sites simultaneamente
 - [ ] Cache Redis 1h por (setor, uf)
-- [ ] CORS: `Access-Control-Allow-Origin: *` (público)
+- [x] CORS: `Access-Control-Allow-Origin: *` (público) — OPTIONS handler + headers em GET `/api/calculadora/dados`
 
 ### AC5: Resultado compartilhável
-- [ ] Botão "Compartilhar resultado" gera URL com query params: `/calculadora?setor=informatica&uf=SP&analisa=5`
-- [ ] URL com params pré-preenche a calculadora e exibe o resultado automaticamente
+- [x] Botão "Compartilhar resultado" gera URL com query params: `/calculadora?setor=informatica&uf=SP&analisa=5`
+- [x] URL com params pré-preenche a calculadora e exibe o resultado automaticamente
 - [ ] Meta tags Open Graph dinâmicas baseadas nos params: `og:title = "Sua empresa pode estar perdendo R$ X em licitações de TI em SP"`
 - [ ] Share button abre WhatsApp Web + LinkedIn com texto pré-formatado + URL
 
@@ -93,7 +93,7 @@ A calculadora em `/calculadora` já existe no SmartLic. O problema: ela é fecha
 - [ ] H1 visível: "Calculadora de Oportunidades em Licitações"
 
 ### AC8: Testes
-- [ ] `npm test` passa sem regressões
+- [x] `npm test` passa sem regressões
 - [ ] Teste: cálculo correto quando total_ativas = 0 (edge case — setor raro em UF pequena)
 - [ ] Teste: cálculo correto quando analisa > total_ativas (mostra "Você analisa mais que o disponível")
 - [ ] Teste: endpoint `/api/public/calculadora` retorna 200 sem autenticação

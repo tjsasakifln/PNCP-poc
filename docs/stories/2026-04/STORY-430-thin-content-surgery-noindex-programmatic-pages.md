@@ -3,7 +3,7 @@
 **Priority:** P0 (blocker implícito do epic SEO — site poluído prejudica todos os ranqueamentos)
 **Effort:** M (1-2 dias)
 **Squad:** @dev + @devops
-**Status:** Draft
+**Status:** InProgress
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Sprint 1 — urgente
 
@@ -43,11 +43,11 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 - [ ] Resultado esperado: ~30% das combinações terão < 5 resultados (estimativa conservadora)
 
 ### AC2: Implementar lógica de noindex dinâmico nas páginas programáticas
-- [ ] Em `frontend/app/blog/licitacoes/[setor]/[uf]/page.tsx`: adicionar lógica em `generateMetadata()` — se total de licitações ativas < 5 → retornar `robots: { index: false, follow: false }`
+- [x] Em `frontend/app/blog/licitacoes/[setor]/[uf]/page.tsx`: adicionar lógica em `generateMetadata()` — se total de licitações ativas < 5 → retornar `robots: { index: false, follow: false }`
 - [ ] Em `frontend/app/blog/programmatic/[setor]/[uf]/page.tsx`: mesma lógica
 - [ ] Em `frontend/app/alertas-publicos/[setor]/[uf]/page.tsx`: mesma lógica
 - [ ] Em `frontend/app/contratos/[setor]/[uf]/page.tsx`: mesma lógica
-- [ ] O threshold (5) deve ser configurável via env var `MIN_ACTIVE_BIDS_FOR_INDEX` (default: 5)
+- [x] O threshold (5) deve ser configurável via env var `MIN_ACTIVE_BIDS_FOR_INDEX` (default: 5)
 - [ ] TypeScript compila sem erros (`npx tsc --noEmit`)
 
 ### AC3: Canonical tag para páginas com conteúdo duplicado da versão pai
@@ -71,9 +71,9 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 - [ ] Solicitar re-crawl do sitemap no GSC: `Sitemaps → Reenviar`
 
 ### AC7: Testes
-- [ ] `npm test` passa sem regressões
-- [ ] Teste unitário cobrindo a lógica de threshold: `generateMetadata` retorna `robots.index = false` quando count < MIN_ACTIVE_BIDS_FOR_INDEX
-- [ ] Teste cobrindo o caso positivo: `robots.index = true` quando count ≥ threshold
+- [x] `npm test` passa sem regressões
+- [x] Teste unitário cobrindo a lógica de threshold: `generateMetadata` retorna `robots.index = false` quando count < MIN_ACTIVE_BIDS_FOR_INDEX
+- [x] Teste cobrindo o caso positivo: `robots.index = true` quando count ≥ threshold
 
 ---
 

@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import CalculadoraClient from './CalculadoraClient';
 import ContentPageLayout from '../components/ContentPageLayout';
 import { LeadCapture } from '@/components/LeadCapture';
+import { CopyEmbedButton } from './CopyEmbedButton';
 
 export const metadata: Metadata = {
   title: 'Calculadora de Oportunidades B2G — Quanto você está perdendo em licitações?',
@@ -150,6 +151,21 @@ export default function CalculadoraPage() {
           description="Análise automática de editais novos, filtrada pelo seu perfil. Direto no email."
         />
       </div>
+
+      {/* STORY-432 AC3: Embed code generator */}
+      <section className="mt-12 p-6 bg-gray-50 rounded-xl border border-gray-200">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Incorpore esta calculadora no seu site</h2>
+        <p className="text-gray-600 text-sm mb-4">
+          Ofereça gratuitamente aos seus leitores a calculadora de oportunidades em licitações.
+          Dados reais do PNCP, sem nenhum custo.
+        </p>
+        <div className="bg-white rounded-lg border border-gray-300 p-4 mb-3">
+          <code className="text-xs text-gray-700 break-all block font-mono leading-relaxed select-all" id="embed-code">
+            {`<iframe src="https://smartlic.tech/calculadora/embed" width="100%" height="620" frameborder="0" title="Calculadora de Oportunidades em Licitações Públicas" loading="lazy"></iframe>`}
+          </code>
+        </div>
+        <CopyEmbedButton code={`<iframe src="https://smartlic.tech/calculadora/embed" width="100%" height="620" frameborder="0" title="Calculadora de Oportunidades em Licitações Públicas" loading="lazy"></iframe>`} />
+      </section>
 
       <section className="mt-12">
         <h2>Perguntas Frequentes</h2>

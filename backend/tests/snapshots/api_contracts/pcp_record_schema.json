@@ -32,7 +32,7 @@
     "codigoSituacaoEdital": "int",
     "codigoTratamentoDiferenciado": "int",
     "comprador": "NoneType",
-    "dataHoraFinalLances": "NoneType",
+    "dataHoraFinalLances": "str",
     "dataHoraFinalPropostas": "str",
     "dataHoraInicioLances": "str",
     "dataHoraInicioPropostas": "str",
@@ -78,16 +78,16 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 470567,
+    "codigoLicitacao": 471863,
     "numeroLicitacao": null,
-    "identificacao": "2026-3HG00",
-    "numero": "97086/2026",
-    "resumo": "CONTRATAÇÃO EMERGENCIAL DE SERVIÇO DE CONFECÇÃO E INSTALAÇÃO DE VIDROS,TELAS MOSQUITEIRAS E INSULFILM NAS JANELAS DO HOSPITAL DOUTOR DÓRIO SILVA, CONFORME TERMO DE REFERENCIA.",
-    "razaoSocial": "Fundação Inova Capixaba",
-    "nomeUnidade": "Fundação Inova Capixaba",
+    "identificacao": "CD 277115",
+    "numero": "CD 277115/2026",
+    "resumo": "fornecimento de 30 (trinta) unidades de café de 250g e 200 (duzentas) unidades de café de 13g destinados aos participantes do 1º Encontro do Comitê Permanente de Contabilidade",
+    "razaoSocial": "Serviço Brasileiro de Apoio às Micro e Pequenas Empresas - SEBRAE/NA",
+    "nomeUnidade": "SEBRAE NACIONAL",
     "status": {
-      "codigo": 9,
-      "descricao": "Sessão Pública Iniciada"
+      "codigo": 1,
+      "descricao": "Recebendo Propostas"
     },
     "situacao": {
       "codigo": 0,
@@ -95,39 +95,39 @@
     },
     "tipoLicitacao": {
       "codigoModalidadeLicitacao": 0,
-      "modalidadeLicitacao": "Dispensa",
-      "codigoTipoLicitacao": 10,
-      "siglaTipoLicitacao": "CD",
-      "tipoLicitacao": "Dispensa",
+      "modalidadeLicitacao": "Cotação",
+      "codigoTipoLicitacao": 11,
+      "siglaTipoLicitacao": "CFP",
+      "tipoLicitacao": "Cotação para Formação de Preços",
       "tipoRealizacao": "Eletrônico",
       "tipoJulgamento": "Menor Preço"
     },
     "codigoSituacaoEdital": 5,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-04-10T19:01:00Z",
-    "dataHoraInicioPropostas": "2026-04-07T19:00:00Z",
-    "dataHoraFinalPropostas": "2026-04-10T19:00:00Z",
-    "dataHoraFinalLances": null,
-    "dataHoraPublicacao": "2026-04-07T18:54:00Z",
+    "dataHoraInicioLances": "2026-04-10T22:32:00Z",
+    "dataHoraInicioPropostas": "2026-04-10T22:32:00Z",
+    "dataHoraFinalPropostas": "2026-04-15T03:00:00Z",
+    "dataHoraFinalLances": "2026-04-15T03:00:00Z",
+    "dataHoraPublicacao": "2026-04-10T22:34:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 5201,
-      "nomeUnidadeCompradora": "Fundação Inova Capixaba",
-      "codigoComprador": 2904,
+      "codigoUnidadeCompradora": 6924,
+      "nomeUnidadeCompradora": "SEBRAE NACIONAL",
+      "codigoComprador": 3946,
       "nomeComprador": null,
-      "cidade": "Vila Velha",
+      "cidade": "Brasília",
       "codigoMunicipioIbge": null,
-      "uf": "ES"
+      "uf": "DF"
     },
     "comprador": null,
-    "urlReferencia": "/es/fundacao-inova-capixaba-2904/de-97086-2026-2026-470567",
+    "urlReferencia": "/df/servico-brasileiro-de-apoio-as-micro-e-pequenas-empresas-sebrae-na-3946/cfp-cd-277115-2026-2026-471863",
     "statusProcessoPublico": {
-      "codigo": 9,
-      "descricao": "Sessão Pública Iniciada"
+      "codigo": 1,
+      "descricao": "Recebendo Propostas"
     },
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-04-10T15:03:54.123922+00:00"
+  "captured_at": "2026-04-11T20:00:46.656530+00:00"
 }

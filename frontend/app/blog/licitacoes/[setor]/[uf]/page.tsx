@@ -126,6 +126,17 @@ export async function generateMetadata({
   const stats = await fetchSectorUfBlogStats(setor, ufUpper);
   const total = stats?.total_editais ?? 0;
   const ufName = UF_NAMES[ufUpper] || ufUpper;
+
+  // STORY-430 AC2: noindex pages with thin content (< MIN_ACTIVE_BIDS_FOR_INDEX active bids)
+  const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? "5", 10);
+  if (total < minBids) {
+    return {
+      title: `Licitações de ${sector.name} em ${ufName} | SmartLic`,
+      description: `Licitações de ${sector.name.toLowerCase()} em ${ufName}.`,
+      robots: { index: false, follow: false },
+    };
+  }
+
   // Canonical sempre aponta para URL base sem parâmetros (ISSUE-SEO-002).
   // ?modalidade=X é comportamento de UI — não deve ser indexado como página separada.
   const canonicalUrl = `https://smartlic.tech/blog/licitacoes/${setor}/${uf}`;
@@ -134,6 +145,7 @@ export async function generateMetadata({
   return {
     title: `${total > 0 ? `${total} ` : ''}Licitações de ${sector.name} em ${ufName}${modalidadeSuffix} — ${getMonthYear()}`,
     description: `Encontre ${total > 0 ? total : ''} licitações de ${sector.name.toLowerCase()}${modalidadeInfo ? ` via ${modalidadeInfo.name}` : ''} em ${ufName}. Dados ao vivo de PNCP, PCP e ComprasGov. Filtre por valor, modalidade e prazo. Teste grátis.`,
+    robots: { index: true },
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: `${total > 0 ? `${total} ` : ''}Licitações de ${sector.name} em ${ufName}${modalidadeSuffix} — ${getMonthYear()} | SmartLic`,

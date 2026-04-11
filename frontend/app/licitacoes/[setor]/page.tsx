@@ -36,11 +36,23 @@ export async function generateMetadata({
 
   const stats = await fetchSectorStats(setor);
   const totalOpen = stats?.total_open ?? 0;
+
+  // STORY-430 AC2: noindex pages with thin content (< MIN_ACTIVE_BIDS_FOR_INDEX active bids)
+  const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? "5", 10);
+  if (totalOpen < minBids) {
+    return {
+      title: `Licitações de ${sector.name} | SmartLic`,
+      description: `Licitações de ${sector.name} no Brasil.`,
+      robots: { index: false, follow: false },
+    };
+  }
+
   const topUfs = stats?.top_ufs?.slice(0, 3).map((u) => u.name).join(", ") || "todo o Brasil";
   const canonicalUrl = `https://smartlic.tech/licitacoes/${setor}`;
 
   // AC9: Meta tags
   return {
+    robots: { index: true },
     title: `Licitações de ${sector.name} — ${totalOpen > 0 ? `${totalOpen} Oportunidades Abertas` : "Oportunidades Abertas"}`,
     description: `Encontre ${totalOpen > 0 ? totalOpen : ""} licitações abertas de ${sector.name} em ${topUfs}. Analise com IA e score de viabilidade. 14 dias grátis.`,
     alternates: {

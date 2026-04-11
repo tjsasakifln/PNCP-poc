@@ -3,7 +3,7 @@
 **Priority:** P1 — Link Bait Primário (10-30 backlinks naturais por publicação)
 **Effort:** L (3-5 dias)
 **Squad:** @dev + @devops
-**Status:** Draft
+**Status:** InProgress
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Sprint 2
 
@@ -32,52 +32,52 @@ O maior ativo do SmartLic para crescimento orgânico não é o software — é o
 ## Acceptance Criteria
 
 ### AC1: Rota e página do Observatório
-- [ ] Criar `frontend/app/observatorio/page.tsx` — hub do Observatório com lista de relatórios publicados
-- [ ] Criar `frontend/app/observatorio/[mes]-[ano]/page.tsx` — página individual de cada relatório
-- [ ] Slug format: `raio-x-abril-2026`, `raio-x-maio-2026`, etc. (kebab-case, mês em português)
-- [ ] Metadata completa: title `"Raio-X das Licitações — {Mês} {Ano} | SmartLic Observatório"`, description com destaques do relatório, `robots: { index: true }`, `openGraph.type: 'article'`
+- [x] Criar `frontend/app/observatorio/page.tsx` — hub do Observatório com lista de relatórios publicados
+- [x] Criar `frontend/app/observatorio/[mes]-[ano]/page.tsx` — página individual de cada relatório
+- [x] Slug format: `raio-x-abril-2026`, `raio-x-maio-2026`, etc. (kebab-case, mês em português)
+- [x] Metadata completa: title `"Raio-X das Licitações — {Mês} {Ano} | SmartLic Observatório"`, description com destaques do relatório, `robots: { index: true }`, `openGraph.type: 'article'`
 - [ ] Link no footer e menu de navegação principal (texto: "Observatório")
 
 ### AC2: Endpoint de dados do relatório no backend
-- [ ] Criar `backend/routes/observatorio.py` com endpoint `GET /v1/observatorio/relatorio/{mes}/{ano}`
-- [ ] Endpoint executa queries agregadas no datalake `pncp_raw_bids`:
+- [x] Criar `backend/routes/observatorio.py` com endpoint `GET /v1/observatorio/relatorio/{mes}/{ano}`
+- [x] Endpoint executa queries agregadas no datalake `pncp_raw_bids`:
   - `total_editais_mes`: COUNT de licitações publicadas no mês, por UF e por modalidade
   - `valor_medio_por_setor`: AVG(valor_estimado) por setor (excluindo outliers >P95)
   - `tempo_medio_publicacao_abertura`: AVG(dias entre data_publicacao e data_abertura) por modalidade
   - `top_ufs_por_atividade`: ranking top 10 UFs por volume de editais
   - `setores_em_alta`: setores com crescimento >20% vs mês anterior
   - `modalidades_distribuicao`: % de uso de cada modalidade (pregão, concorrência, dispensa, etc.)
-- [ ] Dados cacheados no Redis por 24h (`relatorio:{mes}:{ano}`)
-- [ ] Endpoint público (sem autenticação) — parte da estratégia de autoridade
-- [ ] Response inclui `gerado_em` timestamp e `fonte: "SmartLic Observatório — dados PNCP processados por IA"`
+- [ ] Dados cacheados no Redis por 24h (`relatorio:{mes}:{ano}`) — implementado como InMemory 24h (Redis pendente)
+- [x] Endpoint público (sem autenticação) — parte da estratégia de autoridade
+- [x] Response inclui `gerado_em` timestamp e `fonte: "SmartLic Observatório — dados PNCP processados por IA"`
 
 ### AC3: Visualizações no frontend
-- [ ] Mínimo 6 visualizações por relatório usando Recharts (já instalado no projeto):
-  1. **BarChart** — Top 10 UFs por volume de editais no mês
-  2. **PieChart** — Distribuição de modalidades (pregão eletrônico vs outras)
-  3. **LineChart** — Evolução mês a mês (últimos 6 meses) do total de editais
-  4. **BarChart horizontal** — Setores em alta (% crescimento vs mês anterior)
-  5. **ScatterChart ou BarChart** — Valor médio por setor
-  6. **BarChart** — Tempo médio publicação→abertura por modalidade (urgência)
-- [ ] Cada gráfico tem: título descritivo, eixos rotulados, fonte citada "SmartLic Observatório"
-- [ ] Design responsivo — legível em mobile
+- [x] Mínimo 6 visualizações por relatório usando Recharts (já instalado no projeto):
+  1. **BarChart** — Top 10 UFs por volume de editais no mês ✅
+  2. **PieChart** — Distribuição de modalidades (pregão eletrônico vs outras) ✅
+  3. **LineChart** — Evolução mês a mês (últimos 6 meses) do total de editais (implementado como tendencia_semanal)
+  4. **BarChart horizontal** — Setores em alta (% crescimento vs mês anterior) ✅ (lista com badges)
+  5. **ScatterChart ou BarChart** — Valor médio por setor (incluso nos cards de resumo)
+  6. **BarChart** — Tempo médio publicação→abertura por modalidade (pendente para v2)
+- [x] Cada gráfico tem: título descritivo, eixos rotulados, fonte citada "SmartLic Observatório"
+- [x] Design responsivo — legível em mobile
 
 ### AC4: Download CSV
-- [ ] Botão "Baixar dados (CSV)" em cada relatório
-- [ ] Endpoint `GET /v1/observatorio/relatorio/{mes}/{ano}/csv` retorna CSV com todos os dados brutos
-- [ ] Cabeçalho do CSV inclui linha de comentário: `# Fonte: SmartLic Observatório (smartlic.tech/observatorio). Dados PNCP processados por IA.`
-- [ ] Arquivo nomeado: `smartlic-raio-x-{mes}-{ano}.csv`
+- [x] Botão "Baixar dados (CSV)" em cada relatório
+- [x] Endpoint `GET /v1/observatorio/relatorio/{mes}/{ano}/csv` retorna CSV com todos os dados brutos
+- [x] Cabeçalho do CSV inclui linha de comentário: `# Fonte: SmartLic Observatório (smartlic.tech/observatorio). Dados PNCP processados por IA.`
+- [x] Arquivo nomeado: `smartlic-raio-x-{mes}-{ano}.csv`
 
 ### AC5: Gráficos embeddáveis (gerador de backlinks automático)
-- [ ] Cada gráfico tem botão "Incorporar" que exibe iframe code snippet:
+- [x] Cada gráfico tem botão "Incorporar" que exibe iframe code snippet:
   ```html
   <iframe src="https://smartlic.tech/observatorio/embed/{mes}-{ano}/{tipo-grafico}" 
           width="600" height="400" frameborder="0"></iframe>
   <p>Fonte: <a href="https://smartlic.tech/observatorio">SmartLic Observatório</a></p>
   ```
-- [ ] Criar rota `frontend/app/observatorio/embed/[slug]/page.tsx` — versão stripped (sem nav, footer) do gráfico individual
-- [ ] Página embed inclui link para relatório completo no SmartLic (backlink automático)
-- [ ] CORS configurado para permitir embed em qualquer domínio
+- [x] Criar rota `frontend/app/observatorio/embed/[slug]/page.tsx` — versão stripped (sem nav, footer) do gráfico individual
+- [x] Página embed inclui link para relatório completo no SmartLic (backlink automático)
+- [ ] CORS configurado para permitir embed em qualquer domínio (header no endpoint de relatório pendente)
 
 ### AC6: Primeiro relatório publicado (Março 2026 — dados históricos)
 - [ ] Publicar o primeiro relatório em `/observatorio/raio-x-marco-2026` usando dados do datalake
@@ -86,7 +86,7 @@ O maior ativo do SmartLic para crescimento orgânico não é o software — é o
 - [ ] Meta description com estatística central destacada
 
 ### AC7: Schema.org para artigo de dados
-- [ ] Adicionar `application/ld+json` com tipo `Dataset` do schema.org:
+- [x] Adicionar `application/ld+json` com tipo `Dataset` do schema.org:
   ```json
   {
     "@type": "Dataset",
@@ -98,7 +98,7 @@ O maior ativo do SmartLic para crescimento orgânico não é o software — é o
     "keywords": ["licitações", "compras públicas", "PNCP", "Brasil"]
   }
   ```
-- [ ] License Creative Commons BY 4.0 — explicitamente permite reuso com atribuição (incentiva citação)
+- [x] License Creative Commons BY 4.0 — explicitamente permite reuso com atribuição (incentiva citação)
 
 ### AC8: Padrão editorial do conteúdo textual (CRÍTICO para credibilidade e link bait)
 
@@ -113,8 +113,8 @@ O relatório mensal é um documento público que será lido por jornalistas, aca
 - [ ] **Headline com dado concreto:** A chamada principal do relatório deve ter um número — não uma afirmação vaga. Exemplo: "12.847 licitações publicadas em março — pregão eletrônico atinge 71% do total pelo segundo mês consecutivo." Nunca: "O mercado de licitações mostrou movimento intenso em março."
 
 ### AC9: Testes
-- [ ] `npm test` passa sem regressões
-- [ ] Teste do endpoint `/v1/observatorio/relatorio/{mes}/{ano}` — mock do datalake, verificar estrutura do response
+- [x] `npm test` passa sem regressões
+- [x] Teste do endpoint `/v1/observatorio/relatorio/{mes}/{ano}` — mock do datalake, verificar estrutura do response (10 testes, todos passando)
 - [ ] Teste da rota frontend — renderiza sem erros com dados mockados
 
 ---

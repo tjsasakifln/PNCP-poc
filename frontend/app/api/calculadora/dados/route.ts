@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+} as const;
+
+// Preflight handler para embed em domínios externos (STORY-432 AC4)
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const setor = searchParams.get("setor");
@@ -32,8 +43,12 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await resp.json();
+    // STORY-432 AC4: CORS para suporte a embed em domínios externos
     return NextResponse.json(data, {
-      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+        ...CORS_HEADERS,
+      },
     });
   } catch (error) {
     return NextResponse.json(

@@ -3,7 +3,7 @@
 **Priority:** P1 — Sair do Google Sandbox (1 backlink DA 80+ = saída garantida)
 **Effort:** S (0,5–1 dia de trabalho + ações assíncronas contínuas)
 **Squad:** @devops (coordenação) + founder (execução de outreach)
-**Status:** Draft
+**Status:** InProgress
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Sprint 2 (pode começar imediatamente, paralelo com outras stories)
 
@@ -43,7 +43,7 @@ Domínios novos ficam no **Google Sandbox** por 1-3 meses independentemente da q
 
 - [ ] **BetaList** (`betalist.com`): Submeter como product in beta. Aprovação: 2-7 dias. Preencher: nome, tagline, website, categoria.
 
-- [ ] Documentar em `docs/seo/backlinks-log.md` cada submission com: plataforma, data, URL do perfil/post, status (pendente/publicado), DA estimado.
+- [x] Documentar em `docs/seo/backlinks-log.md` cada submission com: plataforma, data, URL do perfil/post, status (pendente/publicado), DA estimado.
 
 ### AC2: Dataset público no Kaggle (meta: backlinks acadêmicos de longa duração)
 
@@ -72,7 +72,7 @@ Domínios novos ficam no **Google Sandbox** por 1-3 meses independentemente da q
   
 - [ ] Configurar alertas diários para keywords: "licitações", "compras públicas", "governo", "fornecedores governo", "transparência", "PNCP", "pregão eletrônico", "Lei 14.133"
   
-- [ ] **Protocolo de resposta** (documentar em `docs/seo/haro-protocolo.md`):
+- [x] **Protocolo de resposta** (documentar em `docs/seo/haro-protocolo.md`):
   - Tempo máximo de resposta: 4h após receber query (jornalistas têm deadline apertado)
   - Formato: 2-3 parágrafos com dado específico + estatística + citação de fonte
   - Sempre incluir: "Tiago Sasaki, fundador do SmartLic (smartlic.tech) — plataforma de inteligência em licitações públicas"
@@ -84,7 +84,7 @@ Domínios novos ficam no **Google Sandbox** por 1-3 meses independentemente da q
 
 ### AC4: SEBRAE — pitch de conteúdo co-branded (meta: 1 backlink DA 80+)
 
-- [ ] Preparar documento de proposta para o SEBRAE (`docs/seo/sebrae-pitch.md`):
+- [x] Preparar documento de proposta para o SEBRAE (`docs/seo/sebrae-pitch.md`):
   - **Produto da proposta:** Artigo exclusivo para `sebrae.com.br/sites/PortalSebrae/artigos/`
   - **Título sugerido:** "Como MEIs e MEs Podem Vender para o Governo em 2026 — Dados Exclusivos"
   - **Diferencial:** estatísticas proprietárias do SmartLic (total de editais para MPEs por UF, setores mais acessíveis, valor médio de contratos ganhos por empresas de pequeno porte)
@@ -120,7 +120,7 @@ Domínios novos ficam no **Google Sandbox** por 1-3 meses independentemente da q
 
 ### AC6: Log centralizado de backlinks
 
-- [ ] Criar `docs/seo/backlinks-log.md` com estrutura:
+- [x] Criar `docs/seo/backlinks-log.md` com estrutura:
   ```markdown
   # SmartLic — Backlinks Log
   
@@ -129,8 +129,8 @@ Domínios novos ficam no **Google Sandbox** por 1-3 meses independentemente da q
   | 2026-04-11 | producthunt.com | 91 | ... | Listing | Pendente | |
   ```
   
-- [ ] Criar `docs/seo/haro-protocolo.md` com template de resposta e registro de queries respondidas
-- [ ] Criar `docs/seo/sebrae-pitch.md` com o documento de proposta completo
+- [x] Criar `docs/seo/haro-protocolo.md` com template de resposta e registro de queries respondidas
+- [x] Criar `docs/seo/sebrae-pitch.md` com o documento de proposta completo
 
 ---
 

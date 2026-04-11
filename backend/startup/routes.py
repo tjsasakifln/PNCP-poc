@@ -62,6 +62,7 @@ from routes.daily_digest import router as daily_digest_router
 from routes.municipios_publicos import router as municipios_publicos_router
 from routes.compliance_publicos import router as compliance_publicos_router
 from routes.itens_publicos import router as itens_publicos_router
+from routes.observatorio import router as observatorio_router
 
 _v1_routers = [
     admin_router, subscriptions_router, features_router, messages_router,
@@ -94,6 +95,7 @@ _v1_routers = [
     municipios_publicos_router,
     compliance_publicos_router,
     itens_publicos_router,
+    observatorio_router,
 ]
 
 

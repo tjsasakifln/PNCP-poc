@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 
 const SETORES = [
@@ -92,6 +92,40 @@ export default function CalculadoraClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resultado, setResultado] = useState<ResultadoCalculo | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // STORY-432 AC5: Pre-populate from URL params for shareable links
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get('setor');
+    const u = params.get('uf');
+    const a = params.get('analisa');
+    if (s && SETORES.find((x) => x.id === s)) setSetor(s);
+    if (u && UFS.includes(u.toUpperCase())) setUf(u.toUpperCase());
+    if (a) {
+      const n = parseInt(a, 10);
+      if (!isNaN(n)) setEditaisMes(Math.min(200, Math.max(1, n)));
+    }
+  }, []);
+
+  function getShareUrl(): string {
+    if (typeof window === 'undefined') return '';
+    const base = `${window.location.origin}/calculadora`;
+    const p = new URLSearchParams({ setor, uf, analisa: String(editaisMes) });
+    return `${base}?${p.toString()}`;
+  }
+
+  async function handleShare() {
+    const url = getShareUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.open(url, '_blank');
+    }
+  }
 
   const canAdvanceStep1 = setor && uf;
   const canAdvanceStep2 = editaisMes > 0 && taxaVitoria > 0;
@@ -383,6 +417,13 @@ export default function CalculadoraClient() {
               className="text-sm text-blue-600 hover:underline"
             >
               Recalcular com outros parâmetros
+            </button>
+            {/* STORY-432 AC5: Shareable URL */}
+            <button
+              onClick={handleShare}
+              className="text-sm text-gray-500 hover:text-gray-700 hover:underline block mx-auto"
+            >
+              {copied ? '✓ Link copiado!' : '🔗 Compartilhar este resultado'}
             </button>
             {SETOR_TO_BLOG_SLUG[setor] && (
               <Link

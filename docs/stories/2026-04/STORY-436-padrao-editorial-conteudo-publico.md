@@ -3,7 +3,7 @@
 **Priority:** P1 (pré-requisito para credibilidade do Observatório e do Índice Municipal)
 **Effort:** S (0,5–1 dia)
 **Squad:** @dev
-**Status:** Draft
+**Status:** InProgress
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Sprint 2 (deve ser concluída antes de STORY-431 ir ao ar)
 
@@ -33,7 +33,7 @@ O problema não é usar dados gerados automaticamente — é usar **texto** gera
 
 ### AC1: Glossário de termos proibidos e permitidos
 
-- [ ] Criar `docs/editorial/estilo-guia.md` com as regras abaixo, para consulta de qualquer agente ou desenvolvedor:
+- [x] Criar `docs/editorial/estilo-guia.md` com as regras abaixo, para consulta de qualquer agente ou desenvolvedor:
 
 **PROIBIDO no texto público do SmartLic:**
 
@@ -66,25 +66,25 @@ O problema não é usar dados gerados automaticamente — é usar **texto** gera
 
 ### AC2: Lint de texto automático no CI
 
-- [ ] Criar script `scripts/lint-text.js` (Node.js) que:
+- [x] Criar script `scripts/lint-text.js` (Node.js) que:
   - Lê arquivos de conteúdo em `frontend/content/` e `docs/editorial/`
   - Verifica presença dos termos proibidos (lista do AC1)
   - Reporta: arquivo, linha, termo encontrado, sugestão de substituição
   - Exit code 1 se qualquer termo proibido encontrado
   
-- [ ] Adicionar ao workflow de CI (`.github/workflows/frontend-tests.yml` ou novo `editorial-lint.yml`):
+- [x] Adicionar ao workflow de CI (`.github/workflows/frontend-tests.yml` ou novo `editorial-lint.yml`):
   ```yaml
   - name: Lint editorial content
     run: node scripts/lint-text.js
   ```
   
-- [ ] **Escopo do lint:** apenas arquivos em `frontend/content/` (textos editoriais estáticos) — não varrer código TypeScript genérico (geraria falsos positivos)
+- [x] **Escopo do lint:** apenas arquivos em `frontend/content/` (textos editoriais estáticos) — não varrer código TypeScript genérico (geraria falsos positivos)
 
-- [ ] O script ignora: strings em variáveis de dados, comentários de código, arquivos de teste
+- [x] O script ignora: strings em variáveis de dados, comentários de código, arquivos de teste
 
 ### AC3: Checklist de revisão humana obrigatória
 
-- [ ] Criar `docs/editorial/checklist-publicacao.md` — checklist a ser seguido antes de qualquer publicação pública:
+- [x] Criar `docs/editorial/checklist-publicacao.md` — checklist a ser seguido antes de qualquer publicação pública:
 
 ```markdown
 # Checklist de Publicação — SmartLic
@@ -148,7 +148,7 @@ export function gerarDescricaoMunicipio(
 
 ### AC5: Guia para o Observatório (relatório mensal)
 
-- [ ] Criar `docs/editorial/guia-observatorio.md` com instruções para o founder escrever os insights mensais:
+- [x] Criar `docs/editorial/guia-observatorio.md` com instruções para o founder escrever os insights mensais:
 
 ```markdown
 # Guia do Observatório SmartLic — Insights Mensais
@@ -176,9 +176,9 @@ significativo no volume de licitações, o que evidencia o dinamismo do mercado.
 
 ### AC6: Testes
 
-- [ ] `node scripts/lint-text.js` detecta todos os termos proibidos em arquivo de teste contendo-os
-- [ ] `node scripts/lint-text.js` passa sem erros em arquivos de conteúdo limpos
-- [ ] `npm test` passa sem regressões
+- [x] `node scripts/lint-text.js` detecta todos os termos proibidos em arquivo de teste contendo-os
+- [x] `node scripts/lint-text.js` passa sem erros em arquivos de conteúdo limpos
+- [x] `npm test` passa sem regressões
 
 ---
 

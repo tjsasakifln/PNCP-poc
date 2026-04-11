@@ -989,7 +989,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Valor m\u00e1ximo estimado da licita\u00e7\u00e3o em BRL. None = sem limite superior.",
+              "description": "Valor m\u00e1ximo estimado da licita\u00e7\u00e3o em BRL. None = sem limite superior. Ceiling: 1e15 (R$ 1 quatrilh\u00e3o) \u2014 STORY-419 incident guard to match NUMERIC(18,2) on search_sessions.valor_total.",
               "examples": [
                 5000000.0
               ],
@@ -2201,6 +2201,142 @@
           "title": "ContratoReferencia",
           "type": "object"
         },
+        "ContratosCidadeSetorStats": {
+          "description": "City \u00d7 Sector filtered contract stats for zero-editais cidade\u00d7setor pages.",
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "cidade": {
+              "title": "Cidade",
+              "type": "string"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "monthly_trend": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTrend"
+              },
+              "title": "Monthly Trend",
+              "type": "array"
+            },
+            "sector_id": {
+              "title": "Sector Id",
+              "type": "string"
+            },
+            "sector_name": {
+              "title": "Sector Name",
+              "type": "string"
+            },
+            "top_fornecedores": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTopEntry"
+              },
+              "title": "Top Fornecedores",
+              "type": "array"
+            },
+            "top_orgaos": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTopEntry"
+              },
+              "title": "Top Orgaos",
+              "type": "array"
+            },
+            "total_contracts": {
+              "title": "Total Contracts",
+              "type": "integer"
+            },
+            "total_value": {
+              "title": "Total Value",
+              "type": "number"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            }
+          },
+          "required": [
+            "cidade",
+            "uf",
+            "sector_id",
+            "sector_name",
+            "total_contracts",
+            "total_value",
+            "avg_value",
+            "top_orgaos",
+            "top_fornecedores",
+            "monthly_trend",
+            "last_updated"
+          ],
+          "title": "ContratosCidadeSetorStats",
+          "type": "object"
+        },
+        "ContratosCidadeStats": {
+          "description": "City-level contract stats (all sectors) for zero-editais cidade blog pages.",
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "cidade": {
+              "title": "Cidade",
+              "type": "string"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "monthly_trend": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTrend"
+              },
+              "title": "Monthly Trend",
+              "type": "array"
+            },
+            "top_fornecedores": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTopEntry"
+              },
+              "title": "Top Fornecedores",
+              "type": "array"
+            },
+            "top_orgaos": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTopEntry"
+              },
+              "title": "Top Orgaos",
+              "type": "array"
+            },
+            "total_contracts": {
+              "title": "Total Contracts",
+              "type": "integer"
+            },
+            "total_value": {
+              "title": "Total Value",
+              "type": "number"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            }
+          },
+          "required": [
+            "cidade",
+            "uf",
+            "total_contracts",
+            "total_value",
+            "avg_value",
+            "top_orgaos",
+            "top_fornecedores",
+            "monthly_trend",
+            "last_updated"
+          ],
+          "title": "ContratosCidadeStats",
+          "type": "object"
+        },
         "ContratosSetorStats": {
           "properties": {
             "avg_value": {
@@ -2345,6 +2481,74 @@
           "title": "ContratosSetorUfEntry",
           "type": "object"
         },
+        "ContratosSetorUfStats": {
+          "description": "Sector \u00d7 UF filtered contract stats (fallback for zero-editais blog pages).",
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "monthly_trend": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTrend"
+              },
+              "title": "Monthly Trend",
+              "type": "array"
+            },
+            "sector_id": {
+              "title": "Sector Id",
+              "type": "string"
+            },
+            "sector_name": {
+              "title": "Sector Name",
+              "type": "string"
+            },
+            "top_fornecedores": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTopEntry"
+              },
+              "title": "Top Fornecedores",
+              "type": "array"
+            },
+            "top_orgaos": {
+              "items": {
+                "$ref": "#/components/schemas/ContratosSetorTopEntry"
+              },
+              "title": "Top Orgaos",
+              "type": "array"
+            },
+            "total_contracts": {
+              "title": "Total Contracts",
+              "type": "integer"
+            },
+            "total_value": {
+              "title": "Total Value",
+              "type": "number"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            }
+          },
+          "required": [
+            "sector_id",
+            "sector_name",
+            "uf",
+            "total_contracts",
+            "total_value",
+            "avg_value",
+            "top_orgaos",
+            "top_fornecedores",
+            "monthly_trend",
+            "last_updated"
+          ],
+          "title": "ContratosSetorUfStats",
+          "type": "object"
+        },
         "ContratosStatsResponse": {
           "properties": {
             "avg_value": {
@@ -2361,7 +2565,7 @@
             },
             "monthly_trend": {
               "items": {
-                "$ref": "#/components/schemas/MonthlyTrend"
+                "$ref": "#/components/schemas/routes__contratos_publicos__MonthlyTrend"
               },
               "title": "Monthly Trend",
               "type": "array"
@@ -5395,47 +5599,6 @@
           "title": "ModalidadeAggregate",
           "type": "object"
         },
-        "ModalidadeCount": {
-          "properties": {
-            "count": {
-              "title": "Count",
-              "type": "integer"
-            },
-            "nome": {
-              "title": "Nome",
-              "type": "string"
-            }
-          },
-          "required": [
-            "nome",
-            "count"
-          ],
-          "title": "ModalidadeCount",
-          "type": "object"
-        },
-        "MonthlyTrend": {
-          "properties": {
-            "count": {
-              "title": "Count",
-              "type": "integer"
-            },
-            "month": {
-              "title": "Month",
-              "type": "string"
-            },
-            "value": {
-              "title": "Value",
-              "type": "number"
-            }
-          },
-          "required": [
-            "month",
-            "count",
-            "value"
-          ],
-          "title": "MonthlyTrend",
-          "type": "object"
-        },
         "MunicipioProfileResponse": {
           "properties": {
             "aviso_legal": {
@@ -5573,7 +5736,7 @@
             },
             "monthly_trend": {
               "items": {
-                "$ref": "#/components/schemas/MonthlyTrend"
+                "$ref": "#/components/schemas/routes__contratos_publicos__MonthlyTrend"
               },
               "title": "Monthly Trend",
               "type": "array"
@@ -5696,7 +5859,7 @@
             },
             "top_modalidades": {
               "items": {
-                "$ref": "#/components/schemas/ModalidadeCount"
+                "$ref": "#/components/schemas/routes__orgao_publico__ModalidadeCount"
               },
               "title": "Top Modalidades",
               "type": "array"
@@ -5835,6 +5998,11 @@
               "title": "Aviso Legal",
               "type": "string"
             },
+            "brasilapi_status": {
+              "default": "ok",
+              "title": "Brasilapi Status",
+              "type": "string"
+            },
             "contratos": {
               "items": {
                 "$ref": "#/components/schemas/ContratoPublico"
@@ -5856,6 +6024,11 @@
             },
             "empresa": {
               "$ref": "#/components/schemas/EmpresaInfo"
+            },
+            "partial": {
+              "default": false,
+              "title": "Partial",
+              "type": "boolean"
             },
             "score": {
               "title": "Score",
@@ -6856,6 +7029,96 @@
             "codes"
           ],
           "title": "RegenerateRecoveryResponse",
+          "type": "object"
+        },
+        "RelatorioMensal": {
+          "properties": {
+            "ano": {
+              "title": "Ano",
+              "type": "integer"
+            },
+            "fonte": {
+              "title": "Fonte",
+              "type": "string"
+            },
+            "gerado_em": {
+              "title": "Gerado Em",
+              "type": "string"
+            },
+            "license": {
+              "title": "License",
+              "type": "string"
+            },
+            "mes": {
+              "title": "Mes",
+              "type": "integer"
+            },
+            "mes_nome": {
+              "title": "Mes Nome",
+              "type": "string"
+            },
+            "modalidades": {
+              "items": {
+                "$ref": "#/components/schemas/routes__observatorio__ModalidadeCount"
+              },
+              "title": "Modalidades",
+              "type": "array"
+            },
+            "periodo": {
+              "title": "Periodo",
+              "type": "string"
+            },
+            "setores_em_alta": {
+              "items": {
+                "$ref": "#/components/schemas/SetorHighlight"
+              },
+              "title": "Setores Em Alta",
+              "type": "array"
+            },
+            "tendencia_semanal": {
+              "items": {
+                "$ref": "#/components/schemas/routes__observatorio__MonthlyTrend"
+              },
+              "title": "Tendencia Semanal",
+              "type": "array"
+            },
+            "top_ufs": {
+              "items": {
+                "$ref": "#/components/schemas/UfCount"
+              },
+              "title": "Top Ufs",
+              "type": "array"
+            },
+            "total_editais": {
+              "title": "Total Editais",
+              "type": "integer"
+            },
+            "valor_medio": {
+              "title": "Valor Medio",
+              "type": "number"
+            },
+            "valor_total": {
+              "title": "Valor Total",
+              "type": "number"
+            }
+          },
+          "required": [
+            "mes",
+            "ano",
+            "mes_nome",
+            "periodo",
+            "total_editais",
+            "valor_total",
+            "valor_medio",
+            "top_ufs",
+            "modalidades",
+            "tendencia_semanal",
+            "setores_em_alta",
+            "gerado_em",
+            "fonte",
+            "license"
+          ],
+          "title": "RelatorioMensal",
           "type": "object"
         },
         "RelatorioRequest": {
@@ -7936,6 +8199,39 @@
           "title": "SessionsListResponse",
           "type": "object"
         },
+        "SetorHighlight": {
+          "properties": {
+            "setor_id": {
+              "title": "Setor Id",
+              "type": "string"
+            },
+            "setor_name": {
+              "title": "Setor Name",
+              "type": "string"
+            },
+            "total_anterior": {
+              "title": "Total Anterior",
+              "type": "integer"
+            },
+            "total_atual": {
+              "title": "Total Atual",
+              "type": "integer"
+            },
+            "variacao_pct": {
+              "title": "Variacao Pct",
+              "type": "number"
+            }
+          },
+          "required": [
+            "setor_id",
+            "setor_name",
+            "total_atual",
+            "total_anterior",
+            "variacao_pct"
+          ],
+          "title": "SetorHighlight",
+          "type": "object"
+        },
         "SetoresResponse": {
           "description": "Response for GET /setores endpoint.",
           "properties": {
@@ -8661,6 +8957,34 @@
           "title": "UfAggregate",
           "type": "object"
         },
+        "UfCount": {
+          "properties": {
+            "pct": {
+              "title": "Pct",
+              "type": "number"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "uf_name": {
+              "title": "Uf Name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "uf",
+            "uf_name",
+            "total",
+            "pct"
+          ],
+          "title": "UfCount",
+          "type": "object"
+        },
         "UfStatusDetail": {
           "description": "Per-UF status detail for coverage indicators (GTM-RESILIENCE-A05 AC2).",
           "properties": {
@@ -9320,6 +9644,29 @@
           "title": "TrendPoint",
           "type": "object"
         },
+        "routes__contratos_publicos__MonthlyTrend": {
+          "properties": {
+            "count": {
+              "title": "Count",
+              "type": "integer"
+            },
+            "month": {
+              "title": "Month",
+              "type": "string"
+            },
+            "value": {
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "month",
+            "count",
+            "value"
+          ],
+          "title": "MonthlyTrend",
+          "type": "object"
+        },
         "routes__dados_publicos__TrendPoint": {
           "properties": {
             "count": {
@@ -9382,6 +9729,52 @@
           "title": "LicitacaoRecente",
           "type": "object"
         },
+        "routes__observatorio__ModalidadeCount": {
+          "properties": {
+            "modalidade_id": {
+              "title": "Modalidade Id",
+              "type": "integer"
+            },
+            "modalidade_name": {
+              "title": "Modalidade Name",
+              "type": "string"
+            },
+            "pct": {
+              "title": "Pct",
+              "type": "number"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "modalidade_id",
+            "modalidade_name",
+            "total",
+            "pct"
+          ],
+          "title": "ModalidadeCount",
+          "type": "object"
+        },
+        "routes__observatorio__MonthlyTrend": {
+          "properties": {
+            "semana": {
+              "title": "Semana",
+              "type": "string"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "semana",
+            "total"
+          ],
+          "title": "MonthlyTrend",
+          "type": "object"
+        },
         "routes__orgao_publico__LicitacaoRecente": {
           "properties": {
             "data_publicacao": {
@@ -9419,6 +9812,24 @@
             "uf"
           ],
           "title": "LicitacaoRecente",
+          "type": "object"
+        },
+        "routes__orgao_publico__ModalidadeCount": {
+          "properties": {
+            "count": {
+              "title": "Count",
+              "type": "integer"
+            },
+            "nome": {
+              "title": "Nome",
+              "type": "string"
+            }
+          },
+          "required": [
+            "nome",
+            "count"
+          ],
+          "title": "ModalidadeCount",
           "type": "object"
         }
       },
@@ -9829,6 +10240,35 @@
             }
           ],
           "summary": "Inspect Cache Entry Endpoint",
+          "tags": [
+            "admin"
+          ]
+        }
+      },
+      "/v1/admin/cb/reset": {
+        "post": {
+          "description": "STORY-416 AC5: Reset all segregated Supabase CBs to CLOSED.\n\nIntended for on-call use after an upstream incident has been mitigated\nand the CBs are still in OPEN/HALF_OPEN due to the cooldown. Returns\nthe previous state per category so the action is auditable in logs.\nAdmin only \u2014 never expose this without authentication.",
+          "operationId": "reset_circuit_breakers_v1_admin_cb_reset_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "title": "Response Reset Circuit Breakers V1 Admin Cb Reset Post",
+                    "type": "object"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Reset Circuit Breakers",
           "tags": [
             "admin"
           ]
@@ -10332,6 +10772,35 @@
             }
           ],
           "summary": "Trigger Reconciliation",
+          "tags": [
+            "admin"
+          ]
+        }
+      },
+      "/v1/admin/schema-contract-status": {
+        "get": {
+          "description": "STORY-414 AC4: Expose the last schema-contract validation result.\n\nReturns the cached result from the startup check plus a ``stale``\nflag that tells callers whether a fresh run is advisable (the cache\nlives for ``schemas.contract.STATUS_CACHE_TTL`` seconds \u2014 5 min by\ndefault). Forcing a re-validation is out of scope here because it\nwould defeat the point of the cache on a polled dashboard.",
+          "operationId": "get_schema_contract_status_v1_admin_schema_contract_status_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "title": "Response Get Schema Contract Status V1 Admin Schema Contract Status Get",
+                    "type": "object"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Schema Contract Status",
           "tags": [
             "admin"
           ]
@@ -12905,6 +13374,101 @@
           ]
         }
       },
+      "/v1/blog/stats/contratos/cidade/{cidade}": {
+        "get": {
+          "description": "City-level contract stats (all sectors) \u2014 fallback for blog cidade pages.\n\nPublic (no auth). Cached 6h.",
+          "operationId": "get_contratos_cidade_stats_v1_blog_stats_contratos_cidade__cidade__get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "cidade",
+              "required": true,
+              "schema": {
+                "title": "Cidade",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ContratosCidadeStats"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Contratos Cidade Stats",
+          "tags": [
+            "blog-stats"
+          ]
+        }
+      },
+      "/v1/blog/stats/contratos/cidade/{cidade}/setor/{setor_id}": {
+        "get": {
+          "description": "City \u00d7 Sector contract stats \u2014 fallback for blog cidade\u00d7setor pages.\n\nPublic (no auth). Cached 6h.",
+          "operationId": "get_contratos_cidade_setor_stats_v1_blog_stats_contratos_cidade__cidade__setor__setor_id__get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "cidade",
+              "required": true,
+              "schema": {
+                "title": "Cidade",
+                "type": "string"
+              }
+            },
+            {
+              "in": "path",
+              "name": "setor_id",
+              "required": true,
+              "schema": {
+                "title": "Setor Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ContratosCidadeSetorStats"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Contratos Cidade Setor Stats",
+          "tags": [
+            "blog-stats"
+          ]
+        }
+      },
       "/v1/blog/stats/contratos/{setor_id}": {
         "get": {
           "description": "National contract stats by sector from pncp_supplier_contracts.\n\nPublic (no auth). Cached 6h.",
@@ -12943,6 +13507,58 @@
             }
           },
           "summary": "Get Contratos Setor Stats",
+          "tags": [
+            "blog-stats"
+          ]
+        }
+      },
+      "/v1/blog/stats/contratos/{setor_id}/uf/{uf}": {
+        "get": {
+          "description": "Sector \u00d7 UF contract stats \u2014 fallback for blog pages with zero open editais.\n\nQueries pncp_supplier_contracts filtered by uf (idx_psc_uf_data) and sector\nkeywords. Public (no auth). Cached 6h.",
+          "operationId": "get_contratos_setor_uf_stats_v1_blog_stats_contratos__setor_id__uf__uf__get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "setor_id",
+              "required": true,
+              "schema": {
+                "title": "Setor Id",
+                "type": "string"
+              }
+            },
+            {
+              "in": "path",
+              "name": "uf",
+              "required": true,
+              "schema": {
+                "title": "Uf",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ContratosSetorUfStats"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Contratos Setor Uf Stats",
           "tags": [
             "blog-stats"
           ]
@@ -14631,6 +15247,118 @@
           "summary": "Perfil de municipio com licitacoes abertas (por slug)",
           "tags": [
             "municipios-publicos"
+          ]
+        }
+      },
+      "/v1/observatorio/relatorio/{mes}/{ano}": {
+        "get": {
+          "operationId": "get_relatorio_mensal_v1_observatorio_relatorio__mes___ano__get",
+          "parameters": [
+            {
+              "description": "M\u00eas (1-12)",
+              "in": "path",
+              "name": "mes",
+              "required": true,
+              "schema": {
+                "description": "M\u00eas (1-12)",
+                "maximum": 12,
+                "minimum": 1,
+                "title": "Mes",
+                "type": "integer"
+              }
+            },
+            {
+              "description": "Ano",
+              "in": "path",
+              "name": "ano",
+              "required": true,
+              "schema": {
+                "description": "Ano",
+                "maximum": 2030,
+                "minimum": 2024,
+                "title": "Ano",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RelatorioMensal"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Relat\u00f3rio mensal do Observat\u00f3rio de Licita\u00e7\u00f5es (p\u00fablico)",
+          "tags": [
+            "observatorio"
+          ]
+        }
+      },
+      "/v1/observatorio/relatorio/{mes}/{ano}/csv": {
+        "get": {
+          "operationId": "get_relatorio_csv_v1_observatorio_relatorio__mes___ano__csv_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "mes",
+              "required": true,
+              "schema": {
+                "maximum": 12,
+                "minimum": 1,
+                "title": "Mes",
+                "type": "integer"
+              }
+            },
+            {
+              "in": "path",
+              "name": "ano",
+              "required": true,
+              "schema": {
+                "maximum": 2030,
+                "minimum": 2024,
+                "title": "Ano",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Download CSV do relat\u00f3rio mensal (p\u00fablico)",
+          "tags": [
+            "observatorio"
           ]
         }
       },

@@ -1,0 +1,43 @@
+name: Editorial Lint
+
+# STORY-436 AC2: Verifica termos proibidos em conteúdo editorial público.
+# Roda em PRs e pushes que tocam docs/editorial/ ou frontend/content/.
+
+on:
+  push:
+    paths:
+      - 'docs/editorial/**'
+      - 'frontend/content/**'
+      - 'scripts/lint-text.js'
+  pull_request:
+    paths:
+      - 'docs/editorial/**'
+      - 'frontend/content/**'
+      - 'scripts/lint-text.js'
+
+jobs:
+  lint-editorial:
+    name: Verificar termos proibidos
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Criar diretório frontend/content se não existir
+        run: mkdir -p frontend/content
+
+      - name: Rodar lint editorial
+        run: node scripts/lint-text.js --verbose
+
+      - name: Sumário
+        if: failure()
+        run: |
+          echo "## Termos Proibidos Encontrados" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "O lint editorial encontrou termos que revelam geração automática de texto." >> $GITHUB_STEP_SUMMARY
+          echo "Consulte \`docs/editorial/estilo-guia.md\` para as substituições corretas." >> $GITHUB_STEP_SUMMARY
