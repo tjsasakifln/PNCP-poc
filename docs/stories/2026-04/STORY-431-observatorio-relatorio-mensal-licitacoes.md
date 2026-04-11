@@ -77,7 +77,7 @@ O maior ativo do SmartLic para crescimento orgânico não é o software — é o
   ```
 - [x] Criar rota `frontend/app/observatorio/embed/[slug]/page.tsx` — versão stripped (sem nav, footer) do gráfico individual
 - [x] Página embed inclui link para relatório completo no SmartLic (backlink automático)
-- [x] CORS configurado para permitir embed em qualquer domínio (header no endpoint de relatório pendente)
+- [x] CORS configurado para permitir embed em qualquer domínio (`Access-Control-Allow-Origin: *` adicionado nos endpoints do observatório)
 
 ### AC6: Primeiro relatório publicado (Março 2026 — dados históricos)
 - [ ] Publicar o primeiro relatório em `/observatorio/raio-x-marco-2026` usando dados do datalake
@@ -115,7 +115,7 @@ O relatório mensal é um documento público que será lido por jornalistas, aca
 ### AC9: Testes
 - [x] `npm test` passa sem regressões
 - [x] Teste do endpoint `/v1/observatorio/relatorio/{mes}/{ano}` — mock do datalake, verificar estrutura do response (10 testes, todos passando)
-- [ ] Teste da rota frontend — renderiza sem erros com dados mockados
+- [x] Teste da rota frontend — renderiza sem erros com dados mockados (`__tests__/app/observatorio-page.test.tsx`)
 
 ---
 

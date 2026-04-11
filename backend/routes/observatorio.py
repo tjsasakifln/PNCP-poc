@@ -14,7 +14,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -110,7 +110,13 @@ class RelatorioMensal(BaseModel):
 async def get_relatorio_mensal(
     mes: int = Path(..., ge=1, le=12, description="Mês (1-12)"),
     ano: int = Path(..., ge=2024, le=2030, description="Ano"),
+    response: Response = None,
 ):
+    # STORY-431 AC5: CORS wildcard para permitir embed em domínios externos
+    if response is not None:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+
     cache_key = f"{mes}:{ano}"
     cached = _get_cached(cache_key)
     if cached:
@@ -128,6 +134,7 @@ async def get_relatorio_mensal(
 async def get_relatorio_csv(
     mes: int = Path(..., ge=1, le=12),
     ano: int = Path(..., ge=2024, le=2030),
+    response: Response = None,
 ):
     cache_key = f"{mes}:{ano}"
     cached = _get_cached(cache_key)
@@ -139,10 +146,16 @@ async def get_relatorio_csv(
     csv_content = _build_csv(relatorio)
     filename = f"smartlic-raio-x-{MONTH_NAMES_PT[mes].replace('ç', 'c').replace('ã', 'a')}-{ano}.csv"
 
+    # STORY-431 AC5: CORS wildcard para embed/download em domínios externos
+    cors_headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+    }
     return StreamingResponse(
         io.BytesIO(csv_content.encode("utf-8-sig")),
         media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers=cors_headers,
     )
 
 

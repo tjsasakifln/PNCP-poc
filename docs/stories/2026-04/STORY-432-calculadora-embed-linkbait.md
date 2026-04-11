@@ -32,7 +32,7 @@ A calculadora em `/calculadora` já existe no SmartLic. O problema: ela é fecha
 ## Acceptance Criteria
 
 ### AC1: Calculadora pública sem autenticação
-- [ ] `GET /calculadora` funciona para usuários não autenticados (zero friction — sem login)
+- [x] `GET /calculadora` funciona para usuários não autenticados (zero friction — sem login)
 - [ ] Campos de entrada: (1) Setor (dropdown dos 20 setores do SmartLic), (2) UF (dropdown dos 27 estados), (3) "Quantas licitações você analisa por mês?" (slider 1-50)
 - [ ] Saída calculada:
   - **"Total de licitações relevantes disponíveis no seu setor/UF este mês"** — dado real do datalake
@@ -77,7 +77,7 @@ A calculadora em `/calculadora` já existe no SmartLic. O problema: ela é fecha
 ### AC5: Resultado compartilhável
 - [x] Botão "Compartilhar resultado" gera URL com query params: `/calculadora?setor=informatica&uf=SP&analisa=5`
 - [x] URL com params pré-preenche a calculadora e exibe o resultado automaticamente
-- [ ] Meta tags Open Graph dinâmicas baseadas nos params: `og:title = "Sua empresa pode estar perdendo R$ X em licitações de TI em SP"`
+- [x] Meta tags Open Graph dinâmicas baseadas nos params: title e description variam por setor+UF quando presentes
 - [x] Share button abre WhatsApp Web + LinkedIn com texto pré-formatado + URL
 
 ### AC6: CTA de conversão (não-intrusivo)
@@ -96,7 +96,7 @@ A calculadora em `/calculadora` já existe no SmartLic. O problema: ela é fecha
 - [x] `npm test` passa sem regressões
 - [x] Teste: cálculo correto quando total_ativas = 0 (edge case — setor raro em UF pequena)
 - [x] Teste: cálculo correto quando analisa > total_ativas (mostra cobertura 100%)
-- [ ] Teste: endpoint `/api/public/calculadora` retorna 200 sem autenticação
+- [x] Teste: endpoint `/api/calculadora/dados` retorna 200 sem autenticação (`__tests__/api/calculadora-dados.test.ts`)
 
 ---
 

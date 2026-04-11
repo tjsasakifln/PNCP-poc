@@ -23,6 +23,33 @@ import { getAllMasterclassTemas } from '@/lib/masterclasses';
  * Google ignores lastmod when all URLs share the same timestamp.
  */
 
+// STORY-430 AC4: Cache for indexable licitacoes setor×UF combos
+let _licitacoesIndexableCache: { setor: string; uf: string }[] | null = null;
+let _licitacoesIndexableFetched = false;
+
+async function fetchLicitacoesIndexable(): Promise<{ setor: string; uf: string }[]> {
+  if (_licitacoesIndexableFetched && _licitacoesIndexableCache !== null) {
+    return _licitacoesIndexableCache;
+  }
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const resp = await fetch(`${backendUrl}/v1/sitemap/licitacoes-indexable`, {
+      cache: 'no-store',
+    });
+    if (!resp.ok) {
+      // Fallback: usar todas as 405 combinações se endpoint falhar
+      return generateLicitacoesParams();
+    }
+    const data = await resp.json();
+    _licitacoesIndexableCache = data.combos || generateLicitacoesParams();
+    _licitacoesIndexableFetched = true;
+    return _licitacoesIndexableCache as { setor: string; uf: string }[];
+  } catch {
+    // Fallback silencioso — sitemap não deve quebrar o build
+    return generateLicitacoesParams();
+  }
+}
+
 // Cache for CNPJ list fetched from backend (build-time)
 let _cnpjCache: string[] = [];
 let _cnpjFetched = false;
@@ -164,8 +191,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // SEO-PLAYBOOK P0: Sector×UF pages (/blog/licitacoes/[setor]/[uf])
-  const licitacoesUfRoutes: MetadataRoute.Sitemap = generateLicitacoesParams().map(({ setor, uf }) => ({
+  // STORY-430 AC4: Sector×UF pages filtradas — somente combos com >= MIN_ACTIVE_BIDS_FOR_INDEX editais
+  // Fallback automático para todas as 405 combinações se o endpoint falhar
+  const indexableCombos = await fetchLicitacoesIndexable();
+  const licitacoesUfRoutes: MetadataRoute.Sitemap = indexableCombos.map(({ setor, uf }) => ({
     url: `${baseUrl}/blog/licitacoes/${setor}/${uf}`,
     lastModified: today,
     changeFrequency: 'daily' as const,
@@ -362,6 +391,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_LAST_EDIT,
       changeFrequency: 'weekly',
       priority: 0.9,
+    },
+    // STORY-431 AC6: Observatório de Licitações — relatórios mensais (link bait)
+    {
+      url: `${baseUrl}/observatorio`,
+      lastModified: today,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/observatorio/raio-x-marco-2026`,
+      lastModified: new Date('2026-04-01'),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
     },
     // SEO-PLAYBOOK P3: CNPJ B2G lookup
     {

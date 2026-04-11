@@ -46,7 +46,7 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 - [x] Em `frontend/app/blog/licitacoes/[setor]/[uf]/page.tsx`: adicionar lógica em `generateMetadata()` — se total de licitações ativas < 5 → retornar `robots: { index: false, follow: false }`
 - [x] Em `frontend/app/blog/programmatic/[setor]/[uf]/page.tsx`: mesma lógica
 - [x] Em `frontend/app/alertas-publicos/[setor]/[uf]/page.tsx`: mesma lógica
-- [ ] Em `frontend/app/contratos/[setor]/[uf]/page.tsx`: mesma lógica
+- [x] Em `frontend/app/contratos/[setor]/[uf]/page.tsx`: mesma lógica
 - [x] O threshold (5) deve ser configurável via env var `MIN_ACTIVE_BIDS_FOR_INDEX` (default: 5)
 - [x] TypeScript compila sem erros (`npx tsc --noEmit`)
 
@@ -55,7 +55,7 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 - [ ] Isso consolida link equity para a versão nacional em vez de diluir entre 27 UFs com dados insuficientes
 
 ### AC4: Remover páginas inexistentes do sitemap
-- [ ] Modificar `frontend/app/sitemap.ts` para filtrar dinamicamente páginas programáticas — não incluir no sitemap combinações que teriam noindex
+- [x] Modificar `frontend/app/sitemap.ts` para filtrar dinamicamente páginas programáticas — não incluir no sitemap combinações que teriam noindex
 - [ ] Sitemap final deve conter apenas URLs que serão indexadas
 - [ ] Verificar que `sitemap.ts` não excede o limite de 50.000 URLs (limite Google)
 - [ ] Testar: `curl https://smartlic.tech/sitemap.xml | grep "licitacoes" | wc -l` deve reduzir vs. baseline

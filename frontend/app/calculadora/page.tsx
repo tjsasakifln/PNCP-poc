@@ -3,37 +3,71 @@ import CalculadoraClient from './CalculadoraClient';
 import ContentPageLayout from '../components/ContentPageLayout';
 import { LeadCapture } from '@/components/LeadCapture';
 import { CopyEmbedButton } from './CopyEmbedButton';
+import { SECTORS } from '@/lib/sectors';
+import { UF_NAMES } from '@/lib/programmatic';
 
-export const metadata: Metadata = {
-  title: 'Calculadora de Oportunidades B2G — Quanto você está perdendo em licitações?',
-  description:
-    'Descubra quantas licitações do seu setor sua equipe está perdendo por falta de automação. Dados reais do PNCP, por setor e UF.',
-  alternates: {
-    canonical: 'https://smartlic.tech/calculadora',
-  },
-  openGraph: {
-    title: 'Calculadora de Oportunidades B2G — Quanto você está perdendo?',
-    description:
-      'Descubra quantas licitações do seu setor sua equipe está perdendo por falta de automação. Dados reais do PNCP.',
-    url: 'https://smartlic.tech/calculadora',
-    type: 'website',
-    images: [
-      {
-        url: '/api/og?title=Calculadora+de+Oportunidades+B2G',
-        width: 1200,
-        height: 630,
-        alt: 'Calculadora de Oportunidades B2G',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Calculadora de Oportunidades B2G — Quanto você está perdendo?',
-    description:
-      'Descubra quantas licitações do seu setor sua equipe está perdendo por falta de automação.',
-    images: ['/api/og?title=Calculadora+de+Oportunidades+B2G'],
-  },
-};
+// STORY-432 AC5: OG meta tags dinâmicas baseadas em params de URL (setor, uf)
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ setor?: string; uf?: string }>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const setorSlug = params?.setor;
+  const ufCode = params?.uf?.toUpperCase();
+
+  const sector = setorSlug ? SECTORS.find((s) => s.slug === setorSlug) : undefined;
+  const ufName = ufCode ? (UF_NAMES[ufCode] ?? ufCode) : undefined;
+
+  const title =
+    sector && ufName
+      ? `Calculadora B2G: ${sector.name} em ${ufName} — SmartLic`
+      : sector
+        ? `Calculadora B2G: ${sector.name} — SmartLic`
+        : 'Calculadora de Oportunidades B2G — Quanto você está perdendo em licitações?';
+
+  const description =
+    sector && ufName
+      ? `Descubra quantas licitações de ${sector.name} em ${ufName} sua equipe está perdendo. Dados reais do PNCP por estado.`
+      : sector
+        ? `Descubra quantas licitações de ${sector.name} sua equipe está perdendo. Dados reais do PNCP por setor.`
+        : 'Descubra quantas licitações do seu setor sua equipe está perdendo por falta de automação. Dados reais do PNCP, por setor e UF.';
+
+  const ogTitle =
+    sector && ufName
+      ? `Calculadora B2G: ${sector.name} em ${ufName} — Quanto você está perdendo?`
+      : 'Calculadora de Oportunidades B2G — Quanto você está perdendo?';
+
+  const canonicalUrl = 'https://smartlic.tech/calculadora';
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: ogTitle,
+      description,
+      url: canonicalUrl,
+      type: 'website',
+      images: [
+        {
+          url: '/api/og?title=Calculadora+de+Oportunidades+B2G',
+          width: 1200,
+          height: 630,
+          alt: 'Calculadora de Oportunidades B2G',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: ogTitle,
+      description,
+      images: ['/api/og?title=Calculadora+de+Oportunidades+B2G'],
+    },
+  };
+}
 
 const howToSchema = {
   '@context': 'https://schema.org',
@@ -140,7 +174,9 @@ const softwareAppSchema = {
   ],
 };
 
-export default function CalculadoraPage() {
+export default function CalculadoraPage({}: {
+  searchParams?: Promise<{ setor?: string; uf?: string }>;
+}) {
   return (
     <ContentPageLayout
       breadcrumbLabel="Calculadora de Oportunidades B2G"

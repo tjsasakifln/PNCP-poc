@@ -51,7 +51,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ufName = UF_NAMES[ufUpper] || ufUpper;
   const year = new Date().getFullYear();
   const data = await fetchContratosStats(setor, ufUpper.toLowerCase());
-  const hasData = !!(data && data.total_contracts > 0);
+  // STORY-430 AC2: noindex quando abaixo do limiar configurável (igual às demais páginas programáticas)
+  const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? '5', 10);
+  const hasData = !!(data && data.total_contracts >= minBids);
 
   return {
     title: `Contratos Publicos de ${sector.name} em ${ufName} ${year} — SmartLic`,
