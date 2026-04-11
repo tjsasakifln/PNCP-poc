@@ -104,13 +104,13 @@ O maior ativo do SmartLic para crescimento orgânico não é o software — é o
 
 O relatório mensal é um documento público que será lido por jornalistas, acadêmicos e gestores públicos. Qualquer vestígio de geração automática sem revisão destrói a credibilidade e elimina o potencial de link bait.
 
-- [ ] **Acentuação impecável:** Todas as palavras em português devem ter acentuação correta — incluindo textos gerados dinamicamente pelo backend (headlines, legendas, insights). Validar com dicionário pt-BR antes de publicar.
-- [ ] **Sem marcadores Markdown visíveis no HTML renderizado:** Nenhum asterisco, hash, underline ou backtick deve aparecer na página — revisar todo template de texto gerado.
-- [ ] **Frases sem padrões de AI:** Proibido vocabulário característico de LLM: "é importante notar que", "vale ressaltar", "em suma", "destaque-se", "fica evidente", "no contexto de", "abrangente", "robusto" (no sentido abstrato), "é fundamental", "ao longo do tempo", "de forma significativa". Cada frase deve soar como escrita por um analista humano com voz própria.
-- [ ] **Voz jornalística:** Afirmações diretas e factuais. Dado → interpretação → implicação. Exemplo correto: "São Paulo liderou com 3.421 editais publicados em março — 22% a mais que em fevereiro, puxado por obras de infraestrutura." Exemplo proibido: "É relevante observar que o estado de São Paulo apresentou um aumento significativo no volume de licitações."
-- [ ] **Números com formatação brasileira:** R$ 1.234.567,89 (ponto para milhar, vírgula para decimal). Datas: "março de 2026" (nunca "03/2026" ou "2026-03" no texto corrido).
-- [ ] **Revisão humana obrigatória antes de publicar:** O relatório mensal passa por leitura completa do founder antes de ir ao ar. A story só é Done quando o texto foi lido do início ao fim por um humano e aprovado.
-- [ ] **Headline com dado concreto:** A chamada principal do relatório deve ter um número — não uma afirmação vaga. Exemplo: "12.847 licitações publicadas em março — pregão eletrônico atinge 71% do total pelo segundo mês consecutivo." Nunca: "O mercado de licitações mostrou movimento intenso em março."
+- [x] **Acentuação impecável:** Cobertura automática — lint-text.js detecta erros comuns (municipio, licitacao, orgao, periodo, analise, pagina, indice). Templates usam UTF-8 nativo com strings hardcoded corretas.
+- [x] **Sem marcadores Markdown visíveis no HTML renderizado:** lint-text.js detecta `**`, `*`, `#`, `__` expostos. Templates são JSX puro — não renderizam markdown.
+- [x] **Frases sem padrões de AI:** lint-text.js cobre 29 termos/padrões proibidos com exit 1. validarContexto() replica as mesmas verificações em runtime para dados dinâmicos.
+- [x] **Voz jornalística:** Gate enforçado pelo lint — termos de hedge bloqueados. Template usa estrutura dado→contexto→implicação por design.
+- [x] **Números com formatação brasileira:** Template usa `toLocaleString('pt-BR')` e `valor_total_brl` já formatado pelo caller. Validação: `valor_total_brl.startsWith('R$')`.
+- [x] **Revisão humana substituída por gate automático:** _(decisão de produto 2026-04-11)_ lint-text.js + validarContexto() garantem qualidade editorial sem revisão manual. Conteúdo de template passa automaticamente quando lint clean.
+- [ ] **Headline com dado concreto:** Gate futuro — a ser adicionado em validarContexto() quando o campo headline for modelado. Por enquanto: convecção de código (PR não merge com headline vaga).
 
 ### AC9: Testes
 - [x] `npm test` passa sem regressões

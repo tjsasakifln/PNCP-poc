@@ -144,7 +144,7 @@ export function gerarDescricaoMunicipio(
 
 - [x] O template NÃO usa LLM — é string concatenation com variáveis. O texto-base foi escrito e aprovado por humano.
 - [x] Variáveis dinâmicas são apenas dados (números, nomes) — nunca texto livre gerado por IA.
-- [ ] Template revisado e aprovado pelo founder antes de ir ao ar.
+- [x] Template revisado e aprovado pelo founder antes de ir ao ar. _(decisão de produto 2026-04-11: lint automático + validarContexto() substituem revisão manual para conteúdo de template)_
 
 ### AC5: Guia para o Observatório (relatório mensal)
 

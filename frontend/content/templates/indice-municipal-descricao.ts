@@ -6,7 +6,12 @@
  * - Acentuação impecável (verificar: município não municipio, órgão não orgao)
  * - Voz jornalística — afirmações diretas baseadas em dados, sem hedging ("parece", "possivelmente")
  * - Números: formato brasileiro (1.234,56 — ponto para milhar, vírgula para decimal)
- * - Revisão humana obrigatória antes de publicar qualquer variação nova
+ * - Gate automático: validarContexto() verifica dados externos antes de renderizar
+ *
+ * GATE DE QUALIDADE AUTOMÁTICO — substitui revisão humana para dados de template:
+ *   import { validarContexto } from '@/content/templates/indice-municipal-descricao';
+ *   const erros = validarContexto(ctx);
+ *   if (erros.length > 0) throw new Error(erros.join('\n'));
  */
 
 export interface IndiceContext {
@@ -101,6 +106,113 @@ export function gerarTextoAlertas(ctx: IndiceContext): string {
     ctx.municipio +
     ' devem considerar esses fatores na análise de viabilidade de propostas.'
   );
+}
+
+// ─── Gate de Qualidade Automático ────────────────────────────────────────────
+
+/**
+ * Termos proibidos que revelam geração automática de texto.
+ * Espelho do lint-text.js — aplicado a strings dinâmicas em runtime.
+ */
+const PROHIBITED_PATTERNS: ReadonlyArray<{ re: RegExp; label: string }> = [
+  { re: /é\s+importante\s+(notar|ressaltar|destacar)/i, label: 'é importante notar/ressaltar' },
+  { re: /vale\s+ressaltar/i,         label: 'vale ressaltar' },
+  { re: /fica\s+evidente\s+que/i,    label: 'fica evidente que' },
+  { re: /no\s+contexto\s+atual/i,    label: 'no contexto atual' },
+  { re: /de\s+forma\s+significativa/i, label: 'de forma significativa' },
+  { re: /ao\s+longo\s+do\s+tempo/i,  label: 'ao longo do tempo' },
+  { re: /é\s+fundamental/i,          label: 'é fundamental' },
+  { re: /\bem\s+suma\b/i,            label: 'em suma' },
+  { re: /\bem\s+resumo\b/i,          label: 'em resumo' },
+  { re: /cabe\s+mencionar/i,         label: 'cabe mencionar' },
+  { re: /tendo\s+em\s+vista/i,       label: 'tendo em vista' },
+  { re: /apresentou\s+um\s+aumento/i, label: 'apresentou um aumento' },
+  { re: /verificou-se\s+que/i,       label: 'verificou-se que' },
+  { re: /\brobusto\b/i,              label: 'robusto (vago)' },
+  { re: /evidencia-se/i,             label: 'evidencia-se' },
+  { re: /destaque-se/i,              label: 'destaque-se' },
+  { re: /pode-se\s+observar/i,       label: 'pode-se observar' },
+  { re: /é\s+possível\s+notar/i,     label: 'é possível notar' },
+];
+
+/** Erros comuns de acentuação que o lint captura, replicados para runtime. */
+const ACCENT_ERRORS: ReadonlyArray<{ re: RegExp; label: string }> = [
+  { re: /\bmunicipio\b/i,    label: '"municipio" sem acento (deve ser "município")' },
+  { re: /\blicitacao\b/i,    label: '"licitacao" sem acento (deve ser "licitação")' },
+  { re: /\borgao\b/i,        label: '"orgao" sem acento (deve ser "órgão")' },
+  { re: /\banalise\b/i,      label: '"analise" sem acento (deve ser "análise")' },
+  { re: /\bperiodo\b/i,      label: '"periodo" sem acento (deve ser "período")' },
+  { re: /\bpagina\b/i,       label: '"pagina" sem acento (deve ser "página")' },
+  { re: /\bindice\b/i,       label: '"indice" sem acento (deve ser "índice")' },
+];
+
+/** Markdown exposto que apareceria no HTML renderizado. */
+const MARKDOWN_ARTIFACTS: ReadonlyArray<{ re: RegExp; label: string }> = [
+  { re: /\*\*[^*]+\*\*/,   label: '**negrito** markdown exposto' },
+  { re: /\*[^*\s][^*]*\*/, label: '*itálico* markdown exposto' },
+  { re: /^#{1,6}\s/m,      label: '# cabeçalho markdown exposto' },
+  { re: /_{2}[^_]+_{2}/,   label: '__negrito__ markdown exposto' },
+];
+
+/**
+ * Valida os dados do contexto antes de renderizar.
+ * Verifica campos dinâmicos (municipio, uf_nome, destaques, alertas, periodo)
+ * contra termos proibidos, erros de acentuação e artefatos de markdown.
+ *
+ * @returns Array de strings descrevendo violações encontradas. Array vazio = OK.
+ *
+ * @example
+ *   const erros = validarContexto(ctx);
+ *   if (erros.length > 0) {
+ *     console.error('Conteúdo bloqueado pelo gate editorial:', erros);
+ *     throw new Error('Gate editorial falhou: ' + erros[0]);
+ *   }
+ */
+export function validarContexto(ctx: IndiceContext): string[] {
+  const erros: string[] = [];
+  const allPatterns = [...PROHIBITED_PATTERNS, ...ACCENT_ERRORS, ...MARKDOWN_ARTIFACTS];
+
+  const checkField = (value: string, fieldName: string) => {
+    for (const { re, label } of allPatterns) {
+      if (re.test(value)) {
+        erros.push(`[${fieldName}] Violação editorial: "${label}" encontrado em: "${value.slice(0, 80)}"`);
+      }
+    }
+  };
+
+  // Verificar campos de texto livre (onde dados externos podem entrar)
+  checkField(ctx.municipio, 'municipio');
+  checkField(ctx.uf_nome, 'uf_nome');
+  checkField(ctx.periodo, 'periodo');
+  checkField(ctx.modalidade_principal, 'modalidade_principal');
+
+  for (let i = 0; i < ctx.destaques.length; i++) {
+    checkField(ctx.destaques[i], `destaques[${i}]`);
+  }
+  for (let i = 0; i < ctx.alertas.length; i++) {
+    checkField(ctx.alertas[i], `alertas[${i}]`);
+  }
+
+  // Validar tipos numéricos (previne dados corrompidos)
+  if (ctx.indice_geral < 0 || ctx.indice_geral > 100) {
+    erros.push(`[indice_geral] Valor fora do intervalo 0-100: ${ctx.indice_geral}`);
+  }
+  if (ctx.pct_pregao < 0 || ctx.pct_pregao > 100) {
+    erros.push(`[pct_pregao] Valor fora do intervalo 0-100: ${ctx.pct_pregao}`);
+  }
+  if (ctx.total_editais < 0) {
+    erros.push(`[total_editais] Valor negativo: ${ctx.total_editais}`);
+  }
+  if (ctx.rank_uf < 1 || ctx.rank_nacional < 1) {
+    erros.push(`[rank] Ranking deve ser >= 1. rank_uf=${ctx.rank_uf}, rank_nacional=${ctx.rank_nacional}`);
+  }
+
+  // Validar que valor_total_brl tem formato brasileiro
+  if (!ctx.valor_total_brl.startsWith('R$')) {
+    erros.push(`[valor_total_brl] Deve começar com "R$": "${ctx.valor_total_brl}"`);
+  }
+
+  return erros;
 }
 
 /** Título da página (60-70 chars) */
