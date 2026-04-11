@@ -131,6 +131,9 @@ class PerfilB2GResponse(BaseModel):
     # uses this to render a partial/degraded company card instead of a
     # hard 502.
     brasilapi_status: str = "ok"
+    # STORY-417 AC3: True when one or more data sources were unavailable
+    # and the response contains only partial information.
+    partial: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -387,26 +390,31 @@ async def _fetch_contratos_local(cnpj: str) -> tuple[list[dict], str]:
         return await _fetch_contratos_pt_normalized(cnpj), "PT"
 
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute, CircuitBreakerOpenError as _CBOpenError
         sb = get_supabase()
 
         cutoff = (datetime.now(timezone.utc) - timedelta(days=730)).date().isoformat()
 
-        resp = (
+        # STORY-417 AC2: use sb_execute (circuit-breaker-protected) instead of
+        # bare .execute() so a Supabase outage here trips the CB and fast-fails
+        # subsequent calls instead of accumulating slow timeouts.
+        resp = await sb_execute(
             sb.table("pncp_supplier_contracts")
             .select("orgao_cnpj,orgao_nome,uf,esfera,valor_global,data_assinatura,objeto_contrato")
             .eq("ni_fornecedor", cnpj)
             .eq("is_active", True)
             .gte("data_assinatura", cutoff)
             .order("data_assinatura", desc=True)
-            .limit(20)
-            .execute()
+            .limit(20),
+            category="read",
         )
 
         if resp.data:
             logger.debug("[Perfil] Local DB: %d contracts for %s", len(resp.data), cnpj)
             return resp.data, "PNCP_LOCAL"
 
+    except _CBOpenError:
+        logger.warning("[Perfil] Supabase CB open — skipping local DB for %s, falling back to PT", cnpj)
     except Exception as exc:
         logger.warning("[Perfil] Local DB query failed for %s: %s", cnpj, exc)
 
@@ -594,4 +602,7 @@ async def _build_perfil(cnpj: str) -> dict:
         # render a "company info temporariamente indisponível" banner
         # instead of the usual full-detail card.
         "brasilapi_status": brasilapi_status,
+        # STORY-417 AC3: partial=True signals one or more upstream sources
+        # were unavailable; frontend should render a degraded card.
+        "partial": brasilapi_status != "ok",
     }

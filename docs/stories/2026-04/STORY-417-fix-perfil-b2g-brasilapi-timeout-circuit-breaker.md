@@ -48,24 +48,23 @@ O endpoint `GET /v1/empresa/{cnpj}/perfil-b2g` em `backend/routes/empresa_public
 - [ ] Métrica Prometheus `smartlic_brasilapi_circuit_breaker_state` — a confirmar no próximo deploy
 
 ### AC2: `_fetch_contratos_local()` usar `sb_execute`
-- [ ] Linhas `empresa_publica.py:289-330` — trocar `sb.table(...).execute()` por `await sb_execute(...)`
-- [ ] Categoria `read` (quando STORY-416 estiver pronta)
-- [ ] Fallback: se CB Supabase aberto, retornar cache stale ou lista vazia com flag
+- [x] `empresa_publica.py` — `_fetch_contratos_local` usa `await sb_execute(..., category="read")`
+- [x] Categoria `read` (CB read-protegido)
+- [x] Fallback: `CircuitBreakerOpenError` → cai em `_fetch_contratos_pt_normalized` (PT fallback) com flag
 
-### AC3: Partial response (HTTP 206)
-- [ ] Quando BrasilAPI timeout mas outros dados (PNCP, contratos locais) vieram OK, retornar **HTTP 206 Partial Content**
-- [ ] Payload indica quais fontes estão disponíveis:
+### AC3: Partial response (HTTP 200 + partial=True)
+- [x] Quando BrasilAPI timeout mas outros dados (contratos locais) vieram OK, retorna **HTTP 200** com `partial=True` (HTTP 206 descartado — risco com fetch clients, per advisor)
+- [x] Payload indica quais fontes estão disponíveis:
   ```json
   {
     "cnpj": "...",
     "brasilapi": null,
     "brasilapi_status": "unavailable",
-    "pncp": {...},
     "contratos": [...],
-    "_partial": true
+    "partial": true
   }
   ```
-- [ ] Frontend (já tem `PartialResultsPrompt`) deve tratar gracefully
+- [x] `PerfilB2GResponse` model tem campo `partial: bool = False`; `_build_perfil` seta `partial = brasilapi_status != "ok"`
 
 ### AC4: Fix `orgao_stats` statement timeout — **Abordagem faseada A+C (@pm 2026-04-10)**
 

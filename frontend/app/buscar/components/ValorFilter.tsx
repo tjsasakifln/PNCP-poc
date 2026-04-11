@@ -39,6 +39,10 @@ const SLIDER_MIN = 0;
 const SLIDER_MAX = 10000000; // R$ 10 million
 const SLIDER_STEP = 10000; // R$ 10k steps
 
+// STORY-419 AC3: System-wide cap matching NUMERIC(18,2) backend limit.
+// Values above this cause PostgreSQL overflow errors (22003).
+const VALOR_MAX_SYSTEM_LIMIT = 999_999_999_999_999; // R$ ~999 trilhões
+
 export interface ValorFilterProps {
   valorMin: number | null;
   valorMax: number | null;
@@ -61,6 +65,8 @@ export function ValorFilter({
   const [inputMax, setInputMax] = useState(
     valorMax !== null ? formatBRL(valorMax) : ""
   );
+  // STORY-419 AC3: Show a friendly message when the value is clamped to system limit
+  const [maxClamped, setMaxClamped] = useState(false);
 
   // Track which thumb is being dragged
   const [dragging, setDragging] = useState<"min" | "max" | null>(null);
@@ -128,12 +134,24 @@ export function ValorFilter({
   const handleInputMaxBlur = () => {
     const parsed = parseBRL(inputMax);
     if (parsed === null) {
+      setMaxClamped(false);
       onChange(valorMin, null);
-    } else if (valorMin === null || parsed >= valorMin) {
-      onChange(valorMin, parsed);
     } else {
-      // If max < min, set both to the same value
-      onChange(parsed, parsed);
+      // STORY-419 AC3: Clamp to system limit before propagating to parent.
+      // Values above VALOR_MAX_SYSTEM_LIMIT cause NUMERIC overflow (22003) in backend.
+      const clamped = Math.min(parsed, VALOR_MAX_SYSTEM_LIMIT);
+      if (clamped !== parsed) {
+        setMaxClamped(true);
+        setInputMax(formatBRL(clamped));
+      } else {
+        setMaxClamped(false);
+      }
+      if (valorMin === null || clamped >= valorMin) {
+        onChange(valorMin, clamped);
+      } else {
+        // If max < min, set both to the same value
+        onChange(clamped, clamped);
+      }
     }
   };
 
@@ -464,6 +482,13 @@ export function ValorFilter({
       {isMinMaxInvalid && (
         <p id="error-min-max" role="alert" aria-live="polite" className="text-sm text-[var(--error)] font-medium">
           Valor mínimo não pode ser maior que máximo
+        </p>
+      )}
+
+      {/* STORY-419 AC3: Clamp notification */}
+      {maxClamped && !isMinMaxInvalid && (
+        <p role="status" aria-live="polite" className="text-xs text-ink-muted">
+          Valor máximo ajustado para o limite do sistema (R$ 999 trilhões)
         </p>
       )}
 

@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from auth import require_auth
 from database import get_db
 from log_sanitizer import mask_user_id
-from supabase_client import sb_execute
+from supabase_client import sb_execute, CircuitBreakerOpenError
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +133,23 @@ async def get_analytics_summary(user: dict = Depends(require_auth), db=Depends(g
             member_since=member_since,
         )
 
+    except CircuitBreakerOpenError:
+        # STORY-416 AC4: CB open — return degraded empty response instead of 503
+        logger.warning("Analytics summary CB open — returning degraded response for %s", mask_user_id(user_id))
+        return JSONResponse(
+            status_code=200,
+            content=SummaryResponse(
+                total_searches=0,
+                total_downloads=0,
+                total_opportunities=0,
+                total_value_discovered=0.0,
+                estimated_hours_saved=0.0,
+                avg_results_per_search=0.0,
+                success_rate=0.0,
+                member_since=datetime.now(timezone.utc).isoformat(),
+            ).model_dump(mode="json"),
+            headers={"X-Cache-Status": "stale-due-to-cb-open"},
+        )
     except Exception as e:
         logger.error(f"Error calling get_analytics_summary RPC for {mask_user_id(user_id)}: {e}")
         from fastapi import HTTPException
@@ -195,6 +212,14 @@ async def get_searches_over_time(
 
         return SearchesOverTimeResponse(period=period, data=data)
 
+    except CircuitBreakerOpenError:
+        # STORY-416 AC4: CB open — return degraded empty time series
+        logger.warning("Analytics time-series CB open — returning degraded response for %s", mask_user_id(user_id))
+        return JSONResponse(
+            status_code=200,
+            content={"period": period, "data": [], "degraded": True},
+            headers={"X-Cache-Status": "stale-due-to-cb-open"},
+        )
     except Exception as e:
         logger.error(f"Error fetching time series for {mask_user_id(user_id)}: {e}")
         from fastapi import HTTPException
@@ -271,6 +296,14 @@ async def get_top_dimensions(
 
         return TopDimensionsResponse(top_ufs=top_ufs, top_sectors=top_sectors)
 
+    except CircuitBreakerOpenError:
+        # STORY-416 AC4: CB open — return degraded empty dimensions
+        logger.warning("Analytics top-dimensions CB open — returning degraded response for %s", mask_user_id(user_id))
+        return JSONResponse(
+            status_code=200,
+            content={"top_ufs": [], "top_sectors": [], "degraded": True},
+            headers={"X-Cache-Status": "stale-due-to-cb-open"},
+        )
     except Exception as e:
         logger.error(f"Error fetching top dimensions for {mask_user_id(user_id)}: {e}")
         from fastapi import HTTPException

@@ -61,8 +61,8 @@ Usuários com filtros de alto valor (ex: licitações de infraestrutura federal)
   const VALOR_MAX_LIMIT = 1_000_000_000_000_000;  // R$ 1 quatrilhão
   valor_maximo: Math.min(filters.valorMax ?? Infinity, VALOR_MAX_LIMIT),
   ```
-- [ ] Mostrar mensagem amigável se usuário digitar acima do teto: "Valor máximo ajustado para R$ 1 quatrilhão (limite do sistema)"
-- [ ] Componente `FilterPanel` — input type=number com `max={VALOR_MAX_LIMIT}`
+- [x] Mensagem amigável em `ValorFilter.tsx`: "Valor máximo ajustado para o limite do sistema (R$ 999 trilhões)" com `VALOR_MAX_SYSTEM_LIMIT = 999_999_999_999_999`
+- [x] Clamp em `handleInputMaxBlur` — seta `maxClamped=true` e chama `onChange(null, VALOR_MAX_SYSTEM_LIMIT)` se acima do limite
 
 ### AC4: Tratamento gracioso de overflow existente
 - [x] Em `backend/quota/session_tracker.py`, defensive cap no momento do UPDATE

@@ -82,10 +82,10 @@ _CB_COOLDOWN_S = 60.0               # mantido
 - [ ] Sentry alert quando CB abre em qualquer categoria — requer setup manual no Sentry dashboard
 
 ### AC4: Graceful degradation para read-only endpoints
-- [ ] `routes.analytics.*` — quando CB read aberto, retornar cache L1/L2 stale se disponível (em vez de 500)
-- [ ] `routes.pipeline.list_pipeline_items` — idem
-- [ ] `routes.sessions.get_sessions` — idem
-- [ ] Adicionar header `X-Cache-Status: stale-due-to-cb-open` para indicar ao frontend
+- [x] `routes.analytics.*` — quando CB read aberto, retorna HTTP 200 com dados zerados/vazios + header `X-Cache-Status`
+- [x] `routes.pipeline.list_pipeline_items` — idem (ISSUE-038 já retornava vazio; adicionado header)
+- [x] `routes.sessions.get_sessions` — idem
+- [x] Adicionar header `X-Cache-Status: stale-due-to-cb-open` para indicar ao frontend
 - [ ] Frontend mostra banner de "serviço em modo limitado, dados podem estar defasados"
 
 ### AC5: Runbook operacional

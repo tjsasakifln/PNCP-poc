@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from auth import require_auth
 from database import get_db
 from schemas import SessionsListResponse
-from supabase_client import sb_execute
+from supabase_client import sb_execute, CircuitBreakerOpenError
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +79,15 @@ async def get_sessions(
         }
     except HTTPException:
         raise
+    except CircuitBreakerOpenError:
+        # STORY-416 AC4: CB open — return empty sessions with degraded header
+        from fastapi.responses import JSONResponse
+        logger.warning("Sessions CB open — returning degraded empty history for %s", user["id"])
+        return JSONResponse(
+            status_code=200,
+            content={"sessions": [], "total": 0, "limit": limit, "offset": offset, "degraded": True},
+            headers={"X-Cache-Status": "stale-due-to-cb-open"},
+        )
     except Exception as e:
         logger.error(f"Error fetching sessions for user {user['id']}: {e}")
         raise HTTPException(status_code=503, detail="Histórico temporariamente indisponível")

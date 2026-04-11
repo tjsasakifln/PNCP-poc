@@ -306,7 +306,12 @@ async def list_pipeline_items(
             logger.warning(
                 f"Pipeline list returning empty (CB open) for user {mask_user_id(user_id)}: {e}"
             )
-            return PipelineListResponse(items=[], total=0, limit=limit, offset=offset)
+            from fastapi.responses import JSONResponse as _JSONResponse
+            return _JSONResponse(
+                status_code=200,
+                content={"items": [], "total": 0, "limit": limit, "offset": offset},
+                headers={"X-Cache-Status": "stale-due-to-cb-open"},
+            )
         logger.error(f"Error listing pipeline for user {mask_user_id(user_id)}: {e}")
         raise HTTPException(status_code=500, detail="Erro ao listar pipeline.")
 

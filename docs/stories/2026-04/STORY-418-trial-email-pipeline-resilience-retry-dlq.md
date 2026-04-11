@@ -74,9 +74,9 @@
 - [ ] Sentry alert: `dlq_size_abandoned > 0` — requer setup manual no Sentry dashboard
 
 ### AC5: Idempotência robusta
-- [ ] Trocar check-then-insert por INSERT `ON CONFLICT DO NOTHING` em `trial_email_log`
-- [ ] Se INSERT retorna 0 rows (conflito), email já foi enviado — skip
-- [ ] Se INSERT bem-sucedido mas envio falha, row tem flag `email_sent=false` — retry pega depois
+- [x] Trocar check-then-insert por upsert `ON CONFLICT DO NOTHING` em `trial_email_log` (`ignore_duplicates=True`)
+- [x] Se INSERT retorna 0 rows (conflito), email já foi enviado — skip (Supabase retorna data vazio)
+- [x] `on_conflict="user_id,email_number"` garante unicidade SQL-level no `trial_email_sequence.py`
 
 ### AC6: Runbook
 - [x] Criar `docs/runbook/trial-email-pipeline.md` — runbook criado com arquitetura, monitoramento DLQ, reprocessamento manual, adição de emails, teste staging

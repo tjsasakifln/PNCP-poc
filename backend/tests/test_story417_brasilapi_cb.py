@@ -209,3 +209,99 @@ async def test_build_perfil_falls_back_when_brasilapi_unavailable(
     # Company fields fall back to placeholders rather than failing hard.
     assert result["empresa"]["razao_social"] == "Empresa"
     assert result["score"] == "SEM_HISTORICO"
+    # STORY-417 AC3: partial flag must be set when BrasilAPI is down.
+    assert result.get("partial") is True, (
+        "STORY-417 AC3: response must include partial=True when BrasilAPI unavailable"
+    )
+
+
+# ---------------------------------------------------------------------------
+# STORY-417 AC2: _fetch_contratos_local must use sb_execute (CB-protected)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_fetch_contratos_local_cb_open_falls_back_to_pt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When the Supabase read CB is open, _fetch_contratos_local must swallow
+    the CircuitBreakerOpenError and fall back to Portal da Transparência
+    instead of propagating a 500 to the caller.
+    """
+    from supabase_client import CircuitBreakerOpenError as _CBOpen
+
+    async def _raise_cb_open(*args, **kwargs):
+        raise _CBOpen("read CB OPEN (test)")
+
+    async def _pt_fallback(_cnpj):
+        return [{"orgao": "Mocked-PT", "valor": 1000.0, "data_inicio": "2024-01-01",
+                 "descricao": "PT fallback", "esfera": "Federal", "uf": "SP"}]
+
+    # sb_execute is imported locally inside _fetch_contratos_local so patch
+    # it at the supabase_client module level where the name is actually looked up.
+    monkeypatch.setattr("supabase_client.sb_execute", _raise_cb_open)
+    monkeypatch.setattr(empresa_publica, "_fetch_contratos_pt_normalized", _pt_fallback)
+
+    contracts, fonte = await empresa_publica._fetch_contratos_local("11222333000181")
+
+    assert fonte == "PT", "Must fall back to PT when Supabase CB is open"
+    assert len(contracts) == 1
+    assert contracts[0]["orgao"] == "Mocked-PT"
+
+
+# ---------------------------------------------------------------------------
+# STORY-417 AC3: partial=True in response when BrasilAPI down
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_build_perfil_sets_partial_true_when_brasilapi_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """partial=True must be set even when contracts + bids succeed."""
+    async def _raise_unavailable(_cnpj):
+        raise BrasilAPIUnavailable("CB open")
+
+    async def _with_contracts(_cnpj):
+        return ([{"orgao": "Test", "valor": 5000.0, "data_inicio": "2024-01-01",
+                  "descricao": "ok", "esfera": "Estadual", "uf": "MG",
+                  "orgao_cnpj": None}] * 3, "PNCP_LOCAL")
+
+    async def _no_editais(_setor, _uf):
+        return 0, []
+
+    monkeypatch.setattr(empresa_publica, "_fetch_brasilapi", _raise_unavailable)
+    monkeypatch.setattr(empresa_publica, "_fetch_contratos_local", _with_contracts)
+    monkeypatch.setattr(empresa_publica, "_fetch_editais_abertos", _no_editais)
+
+    result = await empresa_publica._build_perfil("11222333000181")
+
+    assert result["partial"] is True
+    assert result["brasilapi_status"] == "unavailable"
+    # Contracts from local DB are still included in the partial response
+    assert result["total_contratos_24m"] == 3
+
+
+@pytest.mark.asyncio
+async def test_build_perfil_partial_false_when_all_sources_ok(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """partial must be False (default) when BrasilAPI succeeds."""
+    async def _ok_brasilapi(_cnpj):
+        return {"razao_social": "ACME", "cnae_fiscal": "7112000", "porte": "ME",
+                "uf": "SP", "descricao_situacao_cadastral": "ATIVA"}
+
+    async def _empty_local(_cnpj):
+        return [], "PT"
+
+    async def _no_editais(_setor, _uf):
+        return 0, []
+
+    monkeypatch.setattr(empresa_publica, "_fetch_brasilapi", _ok_brasilapi)
+    monkeypatch.setattr(empresa_publica, "_fetch_contratos_local", _empty_local)
+    monkeypatch.setattr(empresa_publica, "_fetch_editais_abertos", _no_editais)
+
+    result = await empresa_publica._build_perfil("11222333000181")
+
+    assert result["partial"] is False
+    assert result["brasilapi_status"] == "ok"

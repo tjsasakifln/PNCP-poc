@@ -409,18 +409,25 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                             ],
                         )
 
-                        # Record in log for idempotency (AC6)
+                        # Record in log for idempotency.
+                        # STORY-418 AC5: use upsert ON CONFLICT DO NOTHING instead of
+                        # plain insert so duplicate-key violations are handled cleanly
+                        # at the SQL level without raising Python exceptions.
                         try:
                             await sb_execute(
-                                sb.table("trial_email_log").insert({
-                                    "user_id": user_id,
-                                    "email_type": email_type,
-                                    "email_number": email_number,
-                                })
+                                sb.table("trial_email_log").upsert(
+                                    {
+                                        "user_id": user_id,
+                                        "email_type": email_type,
+                                        "email_number": email_number,
+                                    },
+                                    on_conflict="user_id,email_number",
+                                    ignore_duplicates=True,
+                                ),
+                                category="write",
                             )
                         except Exception as log_err:
-                            # UNIQUE constraint violation = already sent (race safe)
-                            logger.debug(f"trial_email_log insert failed (likely dup): {log_err}")
+                            logger.debug(f"trial_email_log upsert failed: {log_err}")
 
                         # Prometheus metric
                         try:
