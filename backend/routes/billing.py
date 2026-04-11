@@ -116,10 +116,14 @@ async def create_checkout(
     is_subscription = plan_id in ("smartlic_pro", "consultoria", "consultor_agil", "maquina", "sala_guerra")
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
-    # STORY-280 AC1: Boleto + PIX enabled for subscriptions
-    # Zero-churn P2 §3.2: PIX added — Brazil's #1 payment method
+    # STORY-280 AC1: Boleto enabled for subscriptions
+    # STORY-420 (EPIC-INCIDENT-2026-04-10): PIX removed — Stripe Brasil does not
+    # accept "pix" in payment_method_types for subscription mode. Previous value
+    # caused InvalidRequestError + HTTP 500 (Sentry 7397513115/7397513088/7397513083),
+    # bloqueando trial → pro conversion. Follow-up em STORY-424 (Q2/2026) via
+    # payment_method_options.pix path quando Stripe suportar subscriptions + PIX.
     session_params = {
-        "payment_method_types": ["card", "boleto", "pix"],
+        "payment_method_types": ["card", "boleto"],
         "line_items": [{"price": stripe_price_id, "quantity": 1}],
         "mode": "subscription" if is_subscription else "payment",
         "success_url": f"{frontend_url}/planos/obrigado?plan={plan_id}",
@@ -159,7 +163,27 @@ async def create_checkout(
         # STORY-323 AC5: Allow promotion codes at checkout (partner coupons)
         session_params["allow_promotion_codes"] = True
 
-    checkout_session = stripe_lib.checkout.Session.create(**session_params, api_key=stripe_key)
+    # STORY-420 (EPIC-INCIDENT-2026-04-10): Surface Stripe config errors as HTTP 400
+    # so client can render actionable message instead of generic 500.
+    try:
+        checkout_session = stripe_lib.checkout.Session.create(**session_params, api_key=stripe_key)
+    except stripe_lib.error.InvalidRequestError as e:
+        stripe_request_id = getattr(e, "request_id", None)
+        logger.error(
+            "Stripe InvalidRequestError on checkout session create: "
+            f"user_id={user['id']} plan_id={plan_id} billing_period={billing_period} "
+            f"stripe_request_id={stripe_request_id} error={e}"
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="Não foi possível iniciar o checkout. Verifique os dados e tente novamente em instantes.",
+        )
+    except stripe_lib.error.StripeError as e:
+        logger.error(f"Stripe error on checkout session create: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Serviço de pagamento temporariamente indisponível. Tente novamente em instantes.",
+        )
     return {"checkout_url": checkout_session.url}
 
 

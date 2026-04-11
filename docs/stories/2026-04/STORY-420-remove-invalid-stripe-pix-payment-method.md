@@ -3,7 +3,7 @@
 **Priority:** P2 — Medium (checkout quebrado para alguns usuários)
 **Effort:** S (0.5 day)
 **Squad:** @dev
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7397513115/ (InvalidRequestError)
@@ -143,3 +143,4 @@ Pré-deploy check:
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO condicional (8.5/10). Status Draft → Ready. Bloqueio antes de AC2: decisão de @pm sobre manter/remover PIX (AC1). |
 | 2026-04-10 | @pm (Morgan) | Decisão AC1: **Opção B** (remover PIX). Análise: B2B SaaS recorrente → cartão + boleto cobrem >95%. Follow-up: STORY-424 P3 criada. Bloqueio de @po resolvido — story destravada para @dev executar. |
+| 2026-04-11 | @dev (YOLO P2 sprint) | Implementado. `backend/routes/billing.py:122` agora `["card", "boleto"]`; envolto em try/except para `InvalidRequestError → HTTP 400` + `StripeError → HTTP 503`. Frontend `app/planos/page.tsx` atualizado (FAQ + badge de métodos). Testes: `backend/tests/test_story420_stripe_pix_removed.py` (novo, 5 tests) + `backend/tests/test_story280_boleto_pix.py` invertido assert para validar ausência de PIX. Status Ready → InReview; aguarda observação Sentry 48h.<br>**File List:** `backend/routes/billing.py`, `backend/tests/test_story280_boleto_pix.py`, `backend/tests/test_story420_stripe_pix_removed.py`, `frontend/app/planos/page.tsx` |

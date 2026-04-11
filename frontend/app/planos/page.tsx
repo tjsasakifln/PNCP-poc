@@ -62,7 +62,7 @@ const CONSULTORIA_FEATURES = [
 ];
 
 const FAQ_ITEMS = [
-  { question: "Quais formas de pagamento são aceitas?", answer: "Aceitamos cartão de crédito, Boleto Bancário e PIX. O cartão e o PIX são processados instantaneamente. O boleto pode levar até 1 dia útil para confirmação após o pagamento." },
+  { question: "Quais formas de pagamento são aceitas?", answer: "Aceitamos cartão de crédito e Boleto Bancário. O cartão é processado instantaneamente. O boleto pode levar até 1 dia útil para confirmação após o pagamento." },
   { question: "Posso cancelar a qualquer momento?", answer: "Sim. Sem contrato de fidelidade, mesmo no acesso anual. Cancele quando quiser e mantenha o acesso até o fim do período já pago." },
   { question: "Existe contrato de fidelidade?", answer: "Não. O SmartLic Pro funciona como acesso recorrente. Você escolhe o período de acesso e pode alterar ou cancelar livremente." },
   { question: "O que acontece se eu cancelar?", answer: "Você mantém acesso completo até o fim do período já pago. Após essa data, o acesso ao sistema é encerrado. O período de avaliação gratuita é exclusivo para os primeiros 14 dias após o cadastro inicial e não é reativado." },
@@ -352,7 +352,7 @@ export default function PlanosPage() {
         <div className="mt-8 mb-8 flex flex-wrap items-center justify-center gap-6 text-sm text-[var(--ink-secondary)]">
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-brand-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-            <span>Cartao, Boleto e PIX</span>
+            <span>Cartão e Boleto</span>
           </div>
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>

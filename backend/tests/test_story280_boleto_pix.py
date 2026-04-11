@@ -117,7 +117,13 @@ class TestAC1BoletoCheckout:
     @patch("routes.billing.require_auth")
     @patch("routes.billing.get_db")
     async def test_checkout_includes_boleto_payment_method(self, mock_db, mock_auth):
-        """AC1: payment_method_types includes 'boleto' alongside 'card'."""
+        """AC1: payment_method_types includes 'boleto' alongside 'card'.
+
+        STORY-420 (EPIC-INCIDENT-2026-04-10): PIX removed from payment_method_types
+        because Stripe Brasil does not accept it for subscription mode — previous
+        value raised InvalidRequestError + HTTP 500. PIX follow-up deferred to
+        STORY-424 (Q2/2026) via payment_method_options.pix path.
+        """
         import importlib
         import routes.billing as billing_module
         importlib.reload(billing_module)
@@ -127,8 +133,17 @@ class TestAC1BoletoCheckout:
         source = inspect.getsource(billing_module.create_checkout)
         assert '"boleto"' in source or "'boleto'" in source, \
             "checkout must include 'boleto' in payment_method_types"
-        assert '"pix"' in source or "'pix'" in source, \
-            "checkout must include 'pix' in payment_method_types (P2 zero-churn)"
+        # STORY-420: PIX MUST NOT be in payment_method_types — Stripe Brasil
+        # rejeita para subscription mode (causa-raiz do incidente 2026-04-10).
+        pmt_line = [
+            line for line in source.splitlines()
+            if '"payment_method_types"' in line
+        ]
+        assert pmt_line, "could not locate payment_method_types line"
+        assert '"pix"' not in pmt_line[0] and "'pix'" not in pmt_line[0], (
+            "STORY-420: payment_method_types must NOT include 'pix' — "
+            "Stripe Brasil rejects it in subscription checkout"
+        )
 
     @pytest.mark.asyncio
     @patch("routes.billing.require_auth")
