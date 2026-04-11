@@ -45,6 +45,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - É conversa casual sem tarefa acionável (agradecimento, pergunta factual simples)
 - O usuário disse "responda diretamente" ou equivalente
 
+**NUNCA pule o roteamento por:**
+- Continuação implícita de sessão anterior (ex: "sim", "pode fazer", "continue") — **a tarefa ainda precisa ser roteada**
+- O agente "já saber" o que fazer pelo contexto — o Skill tool deve ser invocado mesmo assim
+
 ### Tabela de Roteamento
 
 | Sinais na mensagem do usuário | Skill a invocar |
@@ -82,6 +86,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | beta / usuários reais / feedback / testar com usuário / sessão beta | `beta-team` |
 | squad / equipe / time / coordenar agentes / orquestrar | `squad-creator` |
 | aios-master / orquestrar tudo / tarefa complexa multi-agente | `aios-master` |
+| **Story Lifecycle** | |
+| criar story / nova story / story faltante / issue → story / story de bug/incidente | `sm` |
+| validar story / story draft review / po review / aprovar story / GO ou NO-GO | `po` |
+| **DevOps** | |
+| push / subir código / publicar / deploy / enviar para remote / git push | `devops` |
 
 ### Exemplos de roteamento automático
 
@@ -120,6 +129,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Commit before moving to next task
 - Create handoff in `docs/sessions/YYYY-MM/` at end of session
 - **Use CLI tools (Supabase, Railway, gh) instead of web dashboards when possible**
+- **Before writing any `.story.md` file: invoke `Skill(skill: "sm")` first** — mesmo em continuação de sessão
+- **Before running any story GO/NO-GO verdict: invoke `Skill(skill: "po")` first**
+- **Before any `git push` or `gh pr`: invoke `Skill(skill: "devops")` first**
 
 ## Web Search & Industry Validation
 
