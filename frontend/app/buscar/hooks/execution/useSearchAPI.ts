@@ -85,6 +85,8 @@ export interface UseSearchAPIReturn {
   finalizingTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   buscar: (options?: { forceFresh?: boolean }) => Promise<void>;
   handleRefreshResults: () => Promise<void>;
+  /** STORY-422: User-initiated cancellation — marks abort reason USER_CANCELLED. */
+  cancelSearch: () => void;
 }
 
 export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
@@ -168,7 +170,19 @@ export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    const clientTimeoutId = setTimeout(() => abortController.abort(), 65_000);
+    // STORY-422 (EPIC-INCIDENT-2026-04-10): Mark the abort reason so the Sentry
+    // beforeSend filter can distinguish TIMEOUT from USER_CANCELLED and drop
+    // the latter. AbortSignal.reason is widely supported (Chrome 100+, FF 97+,
+    // Safari 15.4+); older browsers fall back to the legacy AbortError + the
+    // breadcrumb below so we still route the event correctly.
+    const clientTimeoutId = setTimeout(() => {
+      const timeoutReason = new DOMException("TIMEOUT", "AbortError");
+      try {
+        abortController.abort(timeoutReason);
+      } catch {
+        abortController.abort();
+      }
+    }, 65_000);
 
     searchStartTimeRef.current = Date.now();
     if (finalizingTimerRef.current) clearTimeout(finalizingTimerRef.current);
@@ -348,6 +362,48 @@ export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
 
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {
+        // STORY-422 AC1/AC4: Derive a structured close reason so we can
+        // distinguish user cancellations (drop) from timeouts (retry + report).
+        // AbortSignal.reason is preferred; the fallback inspects message.
+        type AbortableSignal = { reason?: unknown };
+        const signalReason = (abortController.signal as AbortableSignal).reason;
+        const reasonString =
+          signalReason instanceof DOMException
+            ? signalReason.message
+            : typeof signalReason === "string"
+              ? signalReason
+              : signalReason instanceof Error
+                ? signalReason.message
+                : "";
+        const closeReason =
+          reasonString === "TIMEOUT" || reasonString === "USER_CANCELLED" || reasonString === "NAVIGATION"
+            ? reasonString
+            : reasonString
+              ? "UNKNOWN"
+              : "TIMEOUT"; // legacy path: setTimeout fired without .reason support
+
+        // Fire-and-forget breadcrumb so Sentry beforeSend can filter by tag.
+        try {
+          import("@sentry/nextjs").then((Sentry) => {
+            Sentry.addBreadcrumb({
+              category: "search",
+              message: `search abort reason=${closeReason} search_id=${newSearchId}`,
+              level: closeReason === "TIMEOUT" || closeReason === "UNKNOWN" ? "warning" : "info",
+              data: {
+                search_id: newSearchId,
+                close_reason: closeReason,
+                elapsed_ms: Date.now() - searchStartTimeRef.current,
+              },
+            });
+            Sentry.setTag("close_reason", closeReason);
+          }).catch(() => { /* Sentry optional */ });
+        } catch { /* Sentry not available */ }
+
+        // USER_CANCELLED / NAVIGATION: exit silently — no error, no retry.
+        if (closeReason === "USER_CANCELLED" || closeReason === "NAVIGATION") {
+          return;
+        }
+
         const partialResult = recoverPartialOnTimeout(newSearchId);
         if (partialResult) {
           setResult(partialResult); setShowingPartialResults(true); setLoading(false);
@@ -453,5 +509,19 @@ export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
     }
   }, [session, setResult, setRawCount, trackEvent, refreshAvailableRef, setSearchId]);
 
-  return { quotaError, liveFetchInProgress, liveFetchSearchIdRef, finalizingTimerRef, buscar, handleRefreshResults };
+  // STORY-422 (EPIC-INCIDENT-2026-04-10): Explicit user-initiated cancellation
+  // of an in-flight search. Marks the abort with reason=USER_CANCELLED so the
+  // Sentry beforeSend filter drops the resulting AbortError instead of
+  // logging it as a crash.
+  const cancelSearch = useCallback(() => {
+    const ac = abortControllerRef.current;
+    if (!ac) return;
+    try {
+      ac.abort(new DOMException("USER_CANCELLED", "AbortError"));
+    } catch {
+      ac.abort();
+    }
+  }, [abortControllerRef]);
+
+  return { quotaError, liveFetchInProgress, liveFetchSearchIdRef, finalizingTimerRef, buscar, handleRefreshResults, cancelSearch };
 }

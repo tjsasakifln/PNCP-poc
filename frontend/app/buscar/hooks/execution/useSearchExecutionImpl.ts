@@ -157,8 +157,15 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
   });
 
   // ── cancelSearch ──────────────────────────────────────────────────────
+  // STORY-422 (EPIC-INCIDENT-2026-04-10): mark abort with USER_CANCELLED so
+  // the Sentry beforeSend filter drops the resulting AbortError silently
+  // instead of recording it as a crash.
   const cancelSearch = useCallback(() => {
-    abortControllerRef.current?.abort();
+    try {
+      abortControllerRef.current?.abort(new DOMException("USER_CANCELLED", "AbortError"));
+    } catch {
+      abortControllerRef.current?.abort();
+    }
     if (llmTimeoutRef.current) { clearTimeout(llmTimeoutRef.current); llmTimeoutRef.current = null; }
     if (api.finalizingTimerRef.current) { clearTimeout(api.finalizingTimerRef.current); api.finalizingTimerRef.current = null; }
     setIsFinalizing(false);

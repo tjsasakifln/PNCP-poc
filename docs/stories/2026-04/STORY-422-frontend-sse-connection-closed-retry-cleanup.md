@@ -3,7 +3,7 @@
 **Priority:** P2 — Medium (34 eventos mas causa UX ruim ao cancelar buscas)
 **Effort:** M (1-2 days)
 **Squad:** @dev
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7387910087/ (34 eventos)
@@ -144,3 +144,4 @@ Frontend está gerando `Error: Connection closed` em 34+ eventos Sentry durante 
 |------|-------|---------|
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. |
+| 2026-04-11 | @dev (YOLO P2 sprint) | Instrumentação de `close_reason` entregue. `useSearchAPI.ts:171` agora propaga `DOMException("TIMEOUT")` no abort por setTimeout; catch deriva `signalReason` (TIMEOUT / USER_CANCELLED / NAVIGATION / UNKNOWN) e emite `Sentry.addBreadcrumb` + `setTag("close_reason", ...)`; branch `USER_CANCELLED`/`NAVIGATION` retorna silenciosamente. Novo `cancelSearch()` exposto em `useSearchAPI` + `useSearchExecutionImpl.cancelSearch` marca abort com USER_CANCELLED. `sentry.client.config.ts` extendido com `beforeSend` filter que descarta eventos com `tags.close_reason === USER_CANCELLED`/`NAVIGATION` e AbortError genérico sem contexto (já cobre 34 eventos Sentry 7387910087). Retry automático + cleanup já existiam em `hooks/useSearchSSE.ts` (STORY-367). Testes: `sentry-close-reason-filter.test.ts` (9 casos) + `useSearchAPI-close-reason.test.ts` (6 guards estáticos). Status Ready → InReview; aguarda observação Sentry 48h + validação de volume <80%.<br>**File List:** `frontend/app/buscar/hooks/execution/useSearchAPI.ts`, `frontend/app/buscar/hooks/execution/useSearchExecutionImpl.ts`, `frontend/sentry.client.config.ts`, `frontend/__tests__/sentry-close-reason-filter.test.ts`, `frontend/__tests__/hooks/useSearchAPI-close-reason.test.ts` |
