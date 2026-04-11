@@ -189,7 +189,7 @@ export default function LicitacoesSaude2026() {
         anualmente. Isso cria previsibilidade de receita para fornecedores que
         conseguem se estabelecer. Para uma visão geral de como participar de licitações
         pela primeira vez, consulte{' '}
-        <Link href="/blog/como-participar-primeira-licitação-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/como-participar-primeira-licitacao-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           o guia completo para a primeira licitação em 2026
         </Link>.
       </p>
@@ -371,7 +371,7 @@ export default function LicitacoesSaude2026() {
         editais. Fornecedores que definem claramente sua faixa de atuação economizam
         tempo e aumentam a taxa de adjudicação. Para entender como essa lógica se
         aplica a outros setores, veja{' '}
-        <Link href="/blog/licitações-engenharia-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/licitacoes-engenharia-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           o guia de licitações de engenharia e construção 2026
         </Link>.
       </p>
@@ -639,7 +639,7 @@ export default function LicitacoesSaude2026() {
         o valor não fazem sentido — liberando a equipe para focar nos editais
         com real potencial de vitória. Para aprofundar a análise de viabilidade
         em qualquer setor, veja{' '}
-        <Link href="/blog/licitações-limpeza-facilities-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/licitacoes-limpeza-facilities-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           o guia de licitações de limpeza e facilities 2026
         </Link>.
       </p>

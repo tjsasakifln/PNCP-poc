@@ -177,7 +177,7 @@ export default function AtaRegistroPrecoComoEscolher() {
         framework de avaliação que pode ser aplicado a qualquer ARP, independente
         do setor ou do porte da empresa. Esse tipo de análise estruturada é o
         que diferencia empresas que participam de{' '}
-        <Link href="/blog/escolher-editais-maior-probabilidade-vitória">
+        <Link href="/blog/escolher-editais-maior-probabilidade-vitoria">
           editais com maior probabilidade de vitória
         </Link>.
       </p>
@@ -287,12 +287,12 @@ export default function AtaRegistroPrecoComoEscolher() {
         20% ou mais em 12 meses, a vigência longa é um fator de risco crítico.
         Em setores como papelaria e mobiliário, onde a variação de custos é
         mais moderada, o risco da vigência longa é menor. As{' '}
-        <Link href="/blog/cláusulas-escondidas-editais-licitação">
+        <Link href="/blog/clausulas-escondidas-editais-licitacao">
           cláusulas do edital que impactam essa avaliação
         </Link>{' '}
         precisam ser analisadas com atenção. Quem acompanha o mercado sabe
         que{' '}
-        <Link href="/blog/nova-geração-ferramentas-mercado-licitações">
+        <Link href="/blog/nova-geracao-ferramentas-mercado-licitacoes">
           novas ferramentas que estão mudando o mercado de licitações
         </Link>{' '}
         já automatizam parte dessa análise de cláusulas e vigência.
@@ -359,7 +359,7 @@ export default function AtaRegistroPrecoComoEscolher() {
 
       <p>
         O artigo sobre{' '}
-        <Link href="/blog/disputar-todas-licitações-matemática-real">
+        <Link href="/blog/disputar-todas-licitacoes-matematica-real">
           a matemática real de disputar todas as licitações
         </Link>{' '}
         aprofunda o raciocínio quantitativo por trás dessa seletividade.

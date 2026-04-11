@@ -122,7 +122,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
         de habilitação (atestados técnicos, certidões, qualificação econômica); e pela
         alimentação do pipeline de oportunidades com editais pré-qualificados. Para entender
         como organizar esse pipeline de forma eficiente,{' '}
-        <Link href="/blog/pipeline-licitações-funil-comercial">
+        <Link href="/blog/pipeline-licitacoes-funil-comercial">
           veja nosso guia sobre funil comercial em licitações
         </Link>.
       </p>
@@ -323,7 +323,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
         O acompanhamento desses indicadores permite identificar rapidamente se o setor está
         investindo tempo nos editais certos. Uma taxa de adjudicação abaixo de 15%
         consistentemente indica problemas na triagem ou na precificação.{' '}
-        <Link href="/blog/como-aumentar-taxa-vitória-licitações">
+        <Link href="/blog/como-aumentar-taxa-vitoria-licitacoes">
           Veja estratégias específicas para aumentar a taxa de vitória
         </Link>.
       </p>
@@ -430,10 +430,10 @@ export default function EstruturarSetorLicitacao5Milhões() {
         de cada vitória e derrota — apresentam evolução consistente na taxa de adjudicação
         ao longo de 6 a 12 meses. Para entender quais fatores diferenciam empresas com
         alta taxa de vitória,{' '}
-        <Link href="/blog/empresas-vencem-30-porcento-pregões">
+        <Link href="/blog/empresas-vencem-30-porcento-pregoes">
           leia nossa análise sobre empresas que vencem 30% dos pregões
         </Link>. Vale também conhecer{' '}
-        <Link href="/blog/escalar-consultoria-sem-depender-horas-técnicas">
+        <Link href="/blog/escalar-consultoria-sem-depender-horas-tecnicas">
           como consultorias escalam sem depender de horas técnicas
         </Link>{' '}
         — o modelo enxuto descrito aqui tem paralelos diretos com a estrutura

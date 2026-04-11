@@ -206,7 +206,7 @@ export default function LicitacoesTISoftware2026() {
           PNCP
         </Link>{' '}
         e no ComprasGov é essencial. A classificação setorial por{' '}
-        <Link href="/blog/inteligência-artificial-licitações-como-funciona" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/inteligencia-artificial-licitacoes-como-funciona" className="text-brand-navy dark:text-brand-blue hover:underline">
           inteligência artificial
         </Link>{' '}
         permite filtrar o volume massivo de publicações e identificar apenas
@@ -600,7 +600,7 @@ export default function LicitacoesTISoftware2026() {
 
       <p>
         A{' '}
-        <Link href="/blog/análise-viabilidade-editais-guia" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/analise-viabilidade-editais-guia" className="text-brand-navy dark:text-brand-blue hover:underline">
           análise de viabilidade
         </Link>{' '}
         aplicada ao setor de TI usa os mesmos 4 fatores (modalidade, timeline,
@@ -690,11 +690,11 @@ export default function LicitacoesTISoftware2026() {
       <p>
         Para outros setores que frequentemente se conectam com TI em editais
         multisserviço, consulte os guias de{' '}
-        <Link href="/blog/licitações-engenharia-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/licitacoes-engenharia-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           licitações de engenharia
         </Link>{' '}
         (obras com componente de automação/TI) e{' '}
-        <Link href="/blog/licitações-saúde-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/licitacoes-saude-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           licitações de saúde
         </Link>{' '}
         (sistemas hospitalares, prontuário eletrônico).

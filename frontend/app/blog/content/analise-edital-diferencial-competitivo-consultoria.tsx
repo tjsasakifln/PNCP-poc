@@ -193,7 +193,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         A análise de viabilidade, em particular, é o elemento que mais
         diferencia o serviço premium do básico. Como discutido no artigo
         sobre{' '}
-        <Link href="/blog/consultorias-modernas-inteligência-priorizar-oportunidades" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/consultorias-modernas-inteligencia-priorizar-oportunidades" className="text-brand-navy dark:text-brand-blue hover:underline">
           como consultorias modernas usam inteligência para priorizar oportunidades
         </Link>,
         a viabilidade transforma a triagem de subjetiva em objetiva, de
@@ -306,7 +306,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         de tempo estimada. Esse relatório é o principal instrumento de
         retenção, porque torna visível o valor que a consultoria entrega.
         A{' '}
-        <Link href="/blog/triagem-editais-vantagem-estratégica-clientes" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/triagem-editais-vantagem-estrategica-clientes" className="text-brand-navy dark:text-brand-blue hover:underline">
           triagem de editais como vantagem estratégica
         </Link>{' '}
         é o conceito central dessa fase.
@@ -416,7 +416,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
         estratégica&rdquo; e &ldquo;gestão de pipeline de licitações&rdquo;.
         Esses termos descrevem um serviço consultivo — e o cliente
         interpreta como investimento, não custo. O artigo sobre{' '}
-        <Link href="/blog/diagnóstico-eficiência-licitação-serviço-premium" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/diagnostico-eficiencia-licitacao-servico-premium" className="text-brand-navy dark:text-brand-blue hover:underline">
           diagnóstico de eficiência como serviço premium
         </Link>{' '}
         aprofunda como estruturar esse posicionamento em entregáveis concretos.

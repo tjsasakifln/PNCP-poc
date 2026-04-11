@@ -175,7 +175,7 @@ export default function Equipe40HorasMesEditaisDescartados() {
         fora do perfil histórico de sucesso tem probabilidade próxima de zero.
         Gastar tempo neles não é diligência; é desperdício disfarçado de
         cautela. O artigo sobre{' '}
-        <Link href="/blog/custo-invisível-disputar-pregões-errados">
+        <Link href="/blog/custo-invisivel-disputar-pregoes-errados">
           o custo invisível de disputar pregões errados
         </Link>{' '}
         quantifica o impacto financeiro desse comportamento.
@@ -326,13 +326,13 @@ export default function Equipe40HorasMesEditaisDescartados() {
         recuperado para qualidade de proposta reportam aumento na taxa de
         adjudicação de 5 a 10 pontos percentuais nos primeiros 6 meses. O
         artigo sobre{' '}
-        <Link href="/blog/como-aumentar-taxa-vitória-licitações">
+        <Link href="/blog/como-aumentar-taxa-vitoria-licitacoes">
           como aumentar a taxa de vitória em licitações
         </Link>{' '}
         detalha as práticas que maximizam esse retorno. Para quem quer ir
         além da triagem e entender a dimensão estratégica do problema, vale
         ver{' '}
-        <Link href="/blog/reduzir-ruido-aumentar-performance-pregões">
+        <Link href="/blog/reduzir-ruido-aumentar-performance-pregoes">
           como reduzir ruído e aumentar performance nos pregões
         </Link>.
       </p>

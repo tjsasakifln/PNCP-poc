@@ -155,7 +155,7 @@ export default function PipelineLicitacoesFunilComercial() {
         inadequadas. Uma triagem eficiente descarta entre 60% e 80% dos editais
         capturados na prospecção. Isso não é desperdício de prospecção; é
         exatamente o funcionamento esperado de um funil. O artigo sobre{' '}
-        <Link href="/blog/como-aumentar-taxa-vitória-licitações">
+        <Link href="/blog/como-aumentar-taxa-vitoria-licitacoes">
           como aumentar a taxa de vitória
         </Link>{' '}
         detalha os critérios de triagem que impactam diretamente a conversão.
@@ -399,18 +399,18 @@ export default function PipelineLicitacoesFunilComercial() {
 
       <p>
         O artigo sobre{' '}
-        <Link href="/blog/estruturar-setor-licitação-5-milhões">
+        <Link href="/blog/estruturar-setor-licitacao-5-milhoes">
           como estruturar um setor de licitação
         </Link>{' '}
         complementa essa implementação com o modelo operacional e a definição de
         papéis da equipe. E para entender o que diferencia as empresas com
         melhores resultados, veja a análise de{' '}
-        <Link href="/blog/empresas-vencem-30-porcento-pregões">
+        <Link href="/blog/empresas-vencem-30-porcento-pregoes">
           empresas que vencem 30% dos pregões
         </Link>.
         {' '}Consultorias que oferecem gestão de pipeline como serviço para
         clientes B2G podem se inspirar em como funciona o{' '}
-        <Link href="/blog/diagnóstico-eficiência-licitação-serviço-premium">
+        <Link href="/blog/diagnostico-eficiencia-licitacao-servico-premium">
           diagnóstico de eficiência em licitação como serviço premium
         </Link>.
       </p>

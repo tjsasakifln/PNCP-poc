@@ -520,7 +520,7 @@ export default function LicitacoesLimpezaFacilities2026() {
         deve aplicar a CCT de Brasília — cujo piso é significativamente superior.
         Usar o piso de Recife na proposta gera inexequibilidade e desclassificação.
         Para um panorama de como outros setores lidam com formação de preço, veja{' '}
-        <Link href="/blog/licitações-alimentação-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/licitacoes-alimentacao-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           o guia de licitações de alimentação 2026
         </Link>.
       </p>
@@ -573,7 +573,7 @@ export default function LicitacoesLimpezaFacilities2026() {
         recrutamento, permitindo preços mais competitivos. Para uma abordagem
         estruturada sobre como analisar a viabilidade de cada edital antes de
         investir na proposta, consulte{' '}
-        <Link href="/blog/análise-viabilidade-editais-guia" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/analise-viabilidade-editais-guia" className="text-brand-navy dark:text-brand-blue hover:underline">
           o guia de análise de viabilidade de editais
         </Link>.
       </p>

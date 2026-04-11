@@ -371,7 +371,7 @@ export default function LicitacoesEngenharia2026() {
         logística. O custo de mobilização para obras em estados distantes pode
         consumir toda a margem, especialmente em contratos abaixo de
         R$ 1 milhão. A{' '}
-        <Link href="/blog/análise-viabilidade-editais-guia" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/analise-viabilidade-editais-guia" className="text-brand-navy dark:text-brand-blue hover:underline">
           análise de viabilidade por geografia
         </Link>{' '}
         é um dos quatro fatores que determinam se vale a pena investir na
@@ -529,7 +529,7 @@ export default function LicitacoesEngenharia2026() {
         Antes de investir as 40 a 80 horas necessárias para elaborar uma
         proposta completa de obra, é fundamental avaliar se o edital tem
         viabilidade para o perfil da empresa. A{' '}
-        <Link href="/blog/análise-viabilidade-editais-guia" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/analise-viabilidade-editais-guia" className="text-brand-navy dark:text-brand-blue hover:underline">
           análise de viabilidade
         </Link>{' '}
         usa quatro fatores com pesos calibrados para o setor de engenharia.
@@ -617,7 +617,7 @@ export default function LicitacoesEngenharia2026() {
         simultaneamente e alocar os recursos de elaboração de proposta nas
         oportunidades com maior probabilidade de retorno. Para entender o
         modelo em profundidade e aplicar a outros setores, consulte{' '}
-        <Link href="/blog/como-participar-primeira-licitação-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/como-participar-primeira-licitacao-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           como participar da sua primeira licitação em 2026
         </Link>.
       </p>
@@ -696,10 +696,10 @@ export default function LicitacoesEngenharia2026() {
       <p>
         O setor de engenharia frequentemente se conecta com outros segmentos
         em editais multisserviço. Obras de hospitais incluem componentes de{' '}
-        <Link href="/blog/licitações-saúde-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/licitacoes-saude-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           equipamentos e serviços de saúde
         </Link>. Projetos de cidades inteligentes combinam infraestrutura civil com{' '}
-        <Link href="/blog/licitações-ti-software-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/licitacoes-ti-software-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           soluções de TI e software
         </Link>{' '}
         — sistemas de monitoramento, automação predial, redes de dados. Empresas

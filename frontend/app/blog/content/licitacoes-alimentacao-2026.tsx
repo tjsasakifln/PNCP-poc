@@ -591,7 +591,7 @@ export default function LicitacoesAlimentacao2026() {
         com excesso de sódio) têm a entrega rejeitada. Verifique as fichas
         técnicas dos seus produtos antes de participar. Para entender como
         outros setores lidam com especificações técnicas, veja{' '}
-        <Link href="/blog/licitações-saúde-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/licitacoes-saude-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           o guia de licitações de saúde 2026
         </Link>.
       </p>
@@ -662,7 +662,7 @@ export default function LicitacoesAlimentacao2026() {
         pública não está no preço, mas na capacidade de entrega (pontualidade,
         qualidade, variedade) e na priorização geográfica (local primeiro).
         Entender como a licitação funciona como{' '}
-        <Link href="/blog/como-participar-primeira-licitação-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/blog/como-participar-primeira-licitacao-2026" className="text-brand-navy dark:text-brand-blue hover:underline">
           processo completo para iniciantes
         </Link>{' '}
         pode ajudar a estruturar sua participação.

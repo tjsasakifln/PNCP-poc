@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
   getAllSlugs,
@@ -7,6 +7,22 @@ import {
   getRelatedArticles,
 } from '@/lib/blog';
 import BlogArticleLayout from '../../components/BlogArticleLayout';
+
+/**
+ * Normalizes a slug by stripping diacritics and decoding percent-encoded chars.
+ * Enables 301 redirects from accented URLs (e.g. /blog/análise-...) to the
+ * canonical ASCII slug (e.g. /blog/analise-...).
+ */
+function normalizeSlug(slug: string): string {
+  try {
+    return decodeURIComponent(slug)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  } catch {
+    return slug;
+  }
+}
 
 /**
  * STORY-261 AC7/AC12: Dynamic article route with SSG, metadata, and JSON-LD.
@@ -22,7 +38,14 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  let article = getArticleBySlug(slug);
+
+  if (!article) {
+    const normalized = normalizeSlug(slug);
+    if (normalized !== slug) {
+      article = getArticleBySlug(normalized);
+    }
+  }
 
   if (!article) {
     return { title: 'Artigo não encontrado' };
@@ -72,9 +95,16 @@ export default async function BlogArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  let article = getArticleBySlug(slug);
 
   if (!article) {
+    const normalized = normalizeSlug(slug);
+    if (normalized !== slug) {
+      const normalizedArticle = getArticleBySlug(normalized);
+      if (normalizedArticle) {
+        redirect(`/blog/${normalized}`);
+      }
+    }
     notFound();
   }
 
