@@ -568,7 +568,7 @@ async def buscar_licitacoes(
             _aio.create_task(
                 _update_session_on_error(
                     ctx.session_id, ctx.start_time,
-                    status="failed", error_code="sources_unavailable",
+                    status="failed", error_code=SearchErrorCode.SOURCE_UNAVAILABLE.value,
                     error_message=f"PNCP rate limit: retry after {retry_after}s",
                     pipeline_stage=None, response_state=None,
                 )
@@ -596,7 +596,7 @@ async def buscar_licitacoes(
         sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
         # CRIT-003: Transition state machine on API error
         if state_machine:
-            await state_machine.fail(str(e)[:300], error_code="sources_unavailable")
+            await state_machine.fail(str(e)[:300], error_code=SearchErrorCode.SOURCE_UNAVAILABLE.value)
             remove_state_machine(request.search_id)
         # CRIT-002 AC12: Update session status on error
         if ctx.session_id:
@@ -604,7 +604,7 @@ async def buscar_licitacoes(
             _aio.create_task(
                 _update_session_on_error(
                     ctx.session_id, ctx.start_time,
-                    status="failed", error_code="sources_unavailable",
+                    status="failed", error_code=SearchErrorCode.SOURCE_UNAVAILABLE.value,
                     error_message=str(e)[:500],
                     pipeline_stage=None, response_state=None,
                 )
@@ -643,7 +643,7 @@ async def buscar_licitacoes(
                 _update_session_on_error(
                     ctx.session_id, ctx.start_time,
                     status="failed" if exc.status_code != 504 else "timed_out",
-                    error_code="timeout" if exc.status_code == 504 else "unknown",
+                    error_code=SearchErrorCode.TIMEOUT.value if exc.status_code == 504 else SearchErrorCode.INTERNAL_ERROR.value,
                     error_message=f"HTTP {exc.status_code}: {exc.detail}"[:500],
                     pipeline_stage=None, response_state=None,
                 )
@@ -677,7 +677,7 @@ async def buscar_licitacoes(
         sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
         # CRIT-003: Transition state machine on unexpected error
         if state_machine:
-            await state_machine.fail(f"{type(e).__name__}: {str(e)[:200]}", error_code="unknown")
+            await state_machine.fail(f"{type(e).__name__}: {str(e)[:200]}", error_code=SearchErrorCode.INTERNAL_ERROR.value)
             remove_state_machine(request.search_id)
         # CRIT-002 AC12: Update session status on error
         if ctx.session_id:
@@ -685,7 +685,7 @@ async def buscar_licitacoes(
             _aio.create_task(
                 _update_session_on_error(
                     ctx.session_id, ctx.start_time,
-                    status="failed", error_code="unknown",
+                    status="failed", error_code=SearchErrorCode.INTERNAL_ERROR.value,
                     error_message=f"{type(e).__name__}: {str(e)[:300]}",
                     pipeline_stage=None, response_state=None,
                 )

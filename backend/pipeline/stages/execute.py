@@ -10,6 +10,7 @@ import logging
 import time as sync_time_module
 from datetime import datetime, timezone as _tz
 
+from error_response import ErrorCode
 from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralized error emission
 from search_context import SearchContext
 from schemas import DataSourceStatus
@@ -857,7 +858,7 @@ async def _execute_multi_source(
                 quota.update_search_session_status(
                     ctx.session_id, status="timed_out",
                     pipeline_stage="execute", response_state="degraded",
-                    error_code="timeout",
+                    error_code=ErrorCode.TIMEOUT.value,
                     error_message=f"Pipeline timeout after {elapsed_ms}ms (limit: {fetch_timeout * 1000}ms)",
                     completed_at=datetime.now(_tz.utc).isoformat(),
                     duration_ms=elapsed_ms,
@@ -1164,7 +1165,7 @@ async def _execute_pncp_only(
                 quota.update_search_session_status(
                     ctx.session_id, status="timed_out",
                     pipeline_stage="execute", response_state="degraded",
-                    error_code="timeout",
+                    error_code=ErrorCode.TIMEOUT.value,
                     error_message=f"PNCP timeout after {elapsed_ms}ms (limit: {fetch_timeout * 1000}ms)",
                     completed_at=datetime.now(_tz.utc).isoformat(),
                     duration_ms=elapsed_ms,

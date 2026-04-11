@@ -326,6 +326,9 @@ class SupabaseCircuitBreaker:
         with self._lock:
             self._window.append(False)
             self._consecutive_failures += 1  # STORY-416: track streak for hybrid trip
+            # STORY-427: snapshot the deque while the lock is held to avoid
+            # RuntimeError from concurrent mutation (deque mutated during iteration).
+            snapshot = list(self._window)
             if self._state == "HALF_OPEN":
                 self._transition_locked("OPEN")
             elif self._state == "CLOSED":
@@ -333,11 +336,11 @@ class SupabaseCircuitBreaker:
                 # sliding-window rate OR the consecutive-failures streak
                 # exceeds its threshold. Reduces flakiness on slow drift
                 # without losing burst detection.
-                window_full = len(self._window) >= self._window_size
+                window_full = len(snapshot) >= self._window_size
                 rate_trip = False
                 if window_full:
-                    failures = sum(1 for ok in self._window if not ok)
-                    rate = failures / len(self._window)
+                    failures = sum(1 for ok in snapshot if not ok)
+                    rate = failures / len(snapshot)
                     rate_trip = rate >= self._failure_rate_threshold
 
                 streak_trip = (
@@ -702,6 +705,24 @@ async def sb_execute(query, *, category: str = "read"):
             _record_failure_all(retry_exc)
             SUPABASE_RETRY_TOTAL.labels(outcome="failure").inc()
             raise
+    except RuntimeError as e:
+        # STORY-427 AC3: CB internal error (e.g. deque mutated during iteration).
+        # Must NOT propagate as 500 to caller — log, emit metric, and treat as
+        # a transient failure so the endpoint can apply its own fallback logic.
+        SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
+        logger.error(
+            "STORY-427: RuntimeError in sb_execute (CB internal — not a Supabase outage): %s",
+            e,
+            exc_info=True,
+        )
+        try:
+            from metrics import SUPABASE_CB_INTERNAL_ERRORS
+            SUPABASE_CB_INTERNAL_ERRORS.labels(cb_name=category).inc()
+        except Exception:
+            pass
+        raise CircuitBreakerOpenError(
+            f"Circuit breaker internal error ({category}): {e}"
+        ) from e
     except Exception as e:
         SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
         _record_failure_all(e)

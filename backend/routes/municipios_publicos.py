@@ -9,7 +9,9 @@ Endpoints:
   GET /v1/sitemap/municipios          — lista de slugs para sitemap.xml
 """
 
+import asyncio
 import logging
+import os
 import re
 import time
 from datetime import datetime, timezone
@@ -382,21 +384,27 @@ async def municipio_profile(slug: str):
         )
 
     # Licitacoes abertas no datalake (pncp_raw_bids)
+    # STORY-425: use correct column name `data_publicacao` (not `data_publicacao_pncp` — never existed)
+    # STORY-426: wrap in asyncio.wait_for to guard against statement_timeout (57014)
+    _BIDS_QUERY_TIMEOUT_S = float(os.getenv("MUNICIPIOS_BIDS_QUERY_TIMEOUT_S", "6.0"))
     total_licitacoes = 0
     valor_total = 0.0
     licitacoes_recentes: list[dict] = []
     try:
-        bids_resp = (
+        _query = (
             sb.table("pncp_raw_bids")
             .select(
                 "objeto_compra,orgao_razao_social,valor_total_estimado,"
-                "data_publicacao_pncp,modalidade_nome"
+                "data_publicacao,modalidade_nome"
             )
             .eq("uf", uf)
             .eq("is_active", True)
-            .order("data_publicacao_pncp", desc=True)
+            .order("data_publicacao", desc=True)
             .limit(500)
-            .execute()
+        )
+        bids_resp = await asyncio.wait_for(
+            asyncio.to_thread(_query.execute),
+            timeout=_BIDS_QUERY_TIMEOUT_S,
         )
         rows = bids_resp.data or []
         total_licitacoes = len(rows)
@@ -412,9 +420,21 @@ async def municipio_profile(slug: str):
                 "objeto": obj or "Nao informado",
                 "orgao": (row.get("orgao_razao_social") or "").strip() or "Nao informado",
                 "valor": _safe_float(row.get("valor_total_estimado")) or None,
-                "data_publicacao": (row.get("data_publicacao_pncp") or "")[:10],
+                "data_publicacao": (row.get("data_publicacao") or "")[:10],
                 "modalidade": (row.get("modalidade_nome") or "").strip() or "Nao informado",
             })
+    except asyncio.TimeoutError:
+        # STORY-426 AC2: degraded response on timeout — return empty bid lists, no 500
+        try:
+            from metrics import SUPABASE_QUERY_TIMEOUT_TOTAL
+            SUPABASE_QUERY_TIMEOUT_TOTAL.labels(endpoint="municipios_stats").inc()
+        except Exception:
+            pass
+        logger.warning(
+            "[Municipios] pncp_raw_bids query timeout (>%.1fs) para uf=%s — retornando degradado",
+            _BIDS_QUERY_TIMEOUT_S, uf,
+        )
+        # total_licitacoes / valor_total / licitacoes_recentes keep their zero defaults
     except Exception as e:
         logger.error("[Municipios] pncp_raw_bids query falhou para uf=%s: %s", uf, e)
 

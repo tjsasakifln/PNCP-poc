@@ -10,6 +10,7 @@ from datetime import datetime, timezone as _tz
 
 import quota
 from authorization import get_admin_ids, get_master_quota_info
+from error_response import ErrorCode
 from cache.manager import get_from_cache as _supabase_get_cache
 from search_context import SearchContext
 from log_sanitizer import mask_user_id
@@ -181,7 +182,7 @@ async def stage_validate(pipeline, ctx: SearchContext) -> None:
                     quota.update_search_session_status(
                         ctx.session_id,
                         status="failed",
-                        error_code="quota_exceeded",
+                        error_code=ErrorCode.QUOTA_EXCEEDED.value,
                         error_message=str(http_exc.detail)[:500],
                         pipeline_stage="validate",
                         completed_at=datetime.now(_tz.utc).isoformat(),

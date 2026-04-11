@@ -539,6 +539,20 @@ SUPABASE_CB_STATE_BY_CATEGORY = _create_gauge(
     labelnames=["category"],  # read, write, rpc, legacy
 )
 
+# STORY-426: Public query timeout observability
+SUPABASE_QUERY_TIMEOUT_TOTAL = _create_counter(
+    "smartlic_public_query_timeout_total",
+    "Public endpoint queries that exceeded the statement timeout guard",
+    labelnames=["endpoint"],
+)
+
+# STORY-427: CB internal error observability (RuntimeError in deque iteration)
+SUPABASE_CB_INTERNAL_ERRORS = _create_counter(
+    "smartlic_cb_internal_error_total",
+    "RuntimeError inside SupabaseCircuitBreaker (deque mutation or similar)",
+    labelnames=["cb_name"],
+)
+
 # STORY-418: Trial email DLQ observability
 TRIAL_EMAIL_DLQ_ENQUEUED = _create_counter(
     "smartlic_trial_email_dlq_enqueued_total",
