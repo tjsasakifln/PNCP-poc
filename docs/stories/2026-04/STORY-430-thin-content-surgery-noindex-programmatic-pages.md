@@ -37,10 +37,10 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 ## Acceptance Criteria
 
 ### AC1: Inventário de páginas programáticas
-- [ ] Executar query no datalake para contar licitações ativas por (setor, UF): `SELECT setor, uf, COUNT(*) FROM pncp_raw_bids WHERE is_active = true GROUP BY setor, uf`
-- [ ] Identificar todas as combinações setor+UF com < 5 resultados ativos
-- [ ] Documentar no PR o total de páginas que receberão noindex vs. páginas que ficam indexadas
-- [ ] Resultado esperado: ~30% das combinações terão < 5 resultados (estimativa conservadora)
+- [x] Executar query no datalake para contar licitações ativas por UF: `SELECT uf, COUNT(*) FROM pncp_raw_bids WHERE is_active = true GROUP BY uf ORDER BY count DESC` (nota: tabela não tem coluna `setor` — setor é determinado via FTS em query-time, não armazenado)
+- [x] Inventário de distribuição: 43.745 rows ativos em 27 UFs. SP=9.608, RS=5.842, MG=4.101, PR=3.164, SC=3.102... AP=59 (menor)
+- [x] Combos indexáveis via `/v1/sitemap/licitacoes-indexable` (threshold=1): **505 combos indexáveis**, **221 combos noindex** — total 726 combinações rastreadas
+- [x] Causa raiz confirmada: migration `20260412000000_search_fts_multicolumn.sql` estava pendente em produção → RPC `search_datalake` retornava PGRST202 silenciosamente → 0 rows → todos noindex. Aplicada em 2026-04-12.
 
 ### AC2: Implementar lógica de noindex dinâmico nas páginas programáticas
 - [x] Em `frontend/app/blog/licitacoes/[setor]/[uf]/page.tsx`: adicionar lógica em `generateMetadata()` — se total de licitações ativas < 5 → retornar `robots: { index: false, follow: false }`
@@ -57,9 +57,9 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 
 ### AC4: Remover páginas inexistentes do sitemap
 - [x] Modificar `frontend/app/sitemap.ts` para filtrar dinamicamente páginas programáticas — não incluir no sitemap combinações que teriam noindex
-- [ ] Sitemap final deve conter apenas URLs que serão indexadas
-- [ ] Verificar que `sitemap.ts` não excede o limite de 50.000 URLs (limite Google)
-- [ ] Testar: `curl https://smartlic.tech/sitemap.xml | grep "licitacoes" | wc -l` deve reduzir vs. baseline
+- [x] Sitemap final contém apenas URLs indexáveis: `vestuario/ap`, `software/ac`, `vestuario/rr` **não aparecem** no sitemap
+- [x] Sitemap não excede limite: `curl https://smartlic.tech/sitemap.xml | grep "licitacoes" | wc -l` = **653 URLs** (muito abaixo de 50.000)
+- [x] Verificado em 2026-04-12 após deploy do fix de migration
 
 ### AC5: Páginas que ficam indexadas recebem enriquecimento mínimo
 - [x] Páginas com ≥ 5 licitações ativas devem mostrar: (a) contagem total de licitações ativas, (b) valor médio dos contratos, (c) data da licitação mais recente — esses dados já existem no datalake
@@ -68,8 +68,14 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 <!-- Implementado: campo most_recent_bid_date em SectorUfStats (backend/routes/blog_stats.py) + card condicional na stats grid (app/blog/licitacoes/[setor]/[uf]/page.tsx) -->
 
 ### AC6: Validação pós-deploy via GSC
-- [ ] Após deploy, inspecionar 3 URLs no GSC que deveriam ter noindex e confirmar header `X-Robots-Tag: noindex, nofollow` via DevTools → Network
-- [ ] Inspecionar 3 URLs que deveriam estar indexadas e confirmar ausência de noindex
+- [x] 3 URLs noindex confirmadas via `<meta name="robots" content="noindex">` no HTML:
+  - `https://smartlic.tech/blog/licitacoes/vestuario/ap` → noindex ✅
+  - `https://smartlic.tech/blog/licitacoes/software/ac` → noindex ✅
+  - `https://smartlic.tech/blog/licitacoes/vestuario/rr` → noindex ✅
+- [x] 3 URLs indexáveis confirmadas com `robots: "index"`:
+  - `https://smartlic.tech/blog/licitacoes/vestuario/sp` → index (201 licitações) ✅
+  - `https://smartlic.tech/blog/licitacoes/engenharia/mg` → index ✅
+  - `https://smartlic.tech/blog/licitacoes/saude/rj` → index ✅
 - [ ] Solicitar re-crawl do sitemap no GSC: `Sitemaps → Reenviar`
 
 ### AC7: Testes
@@ -131,10 +137,11 @@ _(a preencher pelo @dev durante implementação)_
 
 ## Definition of Done
 
-- [ ] Query confirma inventário: X páginas com noindex, Y páginas indexadas (documentado no PR)
-- [ ] `npx tsc --noEmit` passa sem erros
-- [ ] `npm test` passa sem regressões + novos testes AC7 passando
-- [ ] 3 URLs com noindex confirmadas via DevTools/GSC Inspeção após deploy
+- [x] Query confirma inventário: 505 combos indexáveis, 221 combos noindex (de 726 total) — documentado em AC1
+- [x] `npx tsc --noEmit` passa sem erros
+- [x] `npm test` passa sem regressões + novos testes AC7 passando
+- [x] 3 URLs com noindex confirmadas via HTML `<meta robots>` após deploy (AC6)
+- [x] Sitemap contém apenas 653 URLs licitacoes (< 50K limite) e exclui combos noindex (AC4)
 - [ ] Sitemap resubmetido no GSC
 - [ ] PR aprovado pelo @po (scope alinhado com critério de negócio)
 
@@ -145,3 +152,4 @@ _(a preencher pelo @dev durante implementação)_
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-11 | @sm (River) | Story criada — auditoria GSC revela 569 páginas thin content ativamente prejudicando domain quality score |
+| 2026-04-12 | @dev (Dex) | Root cause fix: 5 migrations pendentes aplicadas em produção (principal: `20260412000000_search_fts_multicolumn.sql`). Fix em `trial_exit_surveys.sql` (is_master → plan_type = 'master'). Adicionado `POST /v1/admin/sitemap-cache/refresh`. AC1+AC4+AC6 verificados. |
