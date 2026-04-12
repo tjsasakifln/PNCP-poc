@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { formatBRL } from '@/lib/programmatic';
+import { formatBRL, getUfPrep } from '@/lib/programmatic';
 import type {
   ContratosSetorUfStats,
   ContratosCidadeStats,
@@ -27,6 +27,8 @@ interface Props {
   scope: 'sector-uf' | 'cidade' | 'cidade-setor';
   sectorName?: string;
   ufName?: string;
+  /** 2-letter UF code for correct Portuguese preposition */
+  uf?: string;
   cityName?: string;
   data: ContractsData;
   /** Slug used by the inner CTA (utm_content). */
@@ -40,10 +42,10 @@ function maskCnpj(cnpj: string): string {
 }
 
 function buildHeading(props: Props): string {
-  const { scope, sectorName, ufName, cityName } = props;
+  const { scope, sectorName, ufName, uf, cityName } = props;
   switch (scope) {
     case 'sector-uf':
-      return `Histórico de contratos públicos — ${sectorName} em ${ufName}`;
+      return `Histórico de contratos públicos — ${sectorName} ${getUfPrep(uf)} ${ufName}`;
     case 'cidade':
       return `Histórico de contratos públicos em ${cityName}`;
     case 'cidade-setor':
@@ -52,11 +54,11 @@ function buildHeading(props: Props): string {
 }
 
 function buildIntro(props: Props): string {
-  const { scope, sectorName, ufName, cityName } = props;
+  const { scope, sectorName, ufName, uf, cityName } = props;
   const filter = (() => {
     switch (scope) {
       case 'sector-uf':
-        return `${sectorName} em ${ufName}`;
+        return `${sectorName} ${getUfPrep(uf)} ${ufName}`;
       case 'cidade':
         return cityName || '';
       case 'cidade-setor':
@@ -67,10 +69,10 @@ function buildIntro(props: Props): string {
 }
 
 function buildCtaTitle(props: Props): string {
-  const { scope, sectorName, ufName, cityName } = props;
+  const { scope, sectorName, ufName, uf, cityName } = props;
   switch (scope) {
     case 'sector-uf':
-      return `Receba alerta quando o próximo edital de ${sectorName} abrir em ${ufName}`;
+      return `Receba alerta quando o próximo edital de ${sectorName} abrir ${getUfPrep(uf)} ${ufName}`;
     case 'cidade':
       return `Receba alerta quando novas licitações abrirem em ${cityName}`;
     case 'cidade-setor':

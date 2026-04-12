@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getUfPrep } from '@/lib/programmatic';
 
 /**
  * MKT-002 AC6: Contextual CTA component for programmatic SEO pages.
@@ -15,6 +16,8 @@ interface BlogCTAProps {
   variant: 'inline' | 'final';
   setor?: string;
   uf?: string;
+  /** 2-letter UF code (e.g. "BA") — used to determine the correct preposition */
+  ufCode?: string;
   count?: number;
   slug: string;
 }
@@ -23,7 +26,7 @@ function buildHref(slug: string): string {
   return `/signup?source=blog&utm_source=blog&utm_medium=programmatic&utm_content=${encodeURIComponent(slug)}`;
 }
 
-function buildCTAText(setor?: string, uf?: string, count?: number): string {
+function buildCTAText(setor?: string, uf?: string, ufCode?: string, count?: number): string {
   const parts: string[] = [];
 
   if (count && count > 0) {
@@ -37,15 +40,15 @@ function buildCTAText(setor?: string, uf?: string, count?: number): string {
   }
 
   if (uf) {
-    parts[0] += ` em ${uf}`;
+    parts[0] += ` ${getUfPrep(ufCode)} ${uf}`;
   }
 
   parts.push('teste grátis 14 dias');
   return parts.join(' — ');
 }
 
-function InlineCTA({ setor, uf, count, slug }: Omit<BlogCTAProps, 'variant'>) {
-  const text = buildCTAText(setor, uf, count);
+function InlineCTA({ setor, uf, ufCode, count, slug }: Omit<BlogCTAProps, 'variant'>) {
+  const text = buildCTAText(setor, uf, ufCode, count);
   const href = buildHref(slug);
 
   return (
@@ -63,15 +66,16 @@ function InlineCTA({ setor, uf, count, slug }: Omit<BlogCTAProps, 'variant'>) {
   );
 }
 
-function FinalCTA({ setor, uf, count, slug }: Omit<BlogCTAProps, 'variant'>) {
+function FinalCTA({ setor, uf, ufCode, count, slug }: Omit<BlogCTAProps, 'variant'>) {
   const href = buildHref(slug);
+  const prep = uf ? ` ${getUfPrep(ufCode)} ${uf}` : '';
 
   return (
     <div className="not-prose mt-12 mb-8 bg-gradient-to-br from-brand-navy to-brand-blue rounded-xl p-6 sm:p-8 text-white text-center">
       <h3 className="text-xl sm:text-2xl font-bold mb-3">
         {count && count > 0
-          ? `${count} licitações${setor ? ` de ${setor}` : ''}${uf ? ` em ${uf}` : ''} esperando sua análise`
-          : `Licitações${setor ? ` de ${setor}` : ''}${uf ? ` em ${uf}` : ''} esperando sua análise`}
+          ? `${count} licitações${setor ? ` de ${setor}` : ''}${prep} esperando sua análise`
+          : `Licitações${setor ? ` de ${setor}` : ''}${prep} esperando sua análise`}
       </h3>
       <p className="text-white/80 mb-6 max-w-xl mx-auto">
         Filtre por viabilidade real, receba alertas automáticos e exporte relatórios.

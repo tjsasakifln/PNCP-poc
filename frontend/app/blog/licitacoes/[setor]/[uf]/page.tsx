@@ -13,6 +13,7 @@ import {
   getSectorFromSlug,
   formatBRL,
   getRegionalEditorial,
+  getUfPrep,
   ALL_UFS,
   UF_NAMES,
 } from '@/lib/programmatic';
@@ -131,8 +132,8 @@ export async function generateMetadata({
   const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? "5", 10);
   if (total < minBids) {
     return {
-      title: `Licitações de ${sector.name} em ${ufName} | SmartLic`,
-      description: `Licitações de ${sector.name.toLowerCase()} em ${ufName}.`,
+      title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
+      description: `Licitações de ${sector.name.toLowerCase()} ${getUfPrep(ufUpper)} ${ufName}.`,
       robots: { index: false, follow: false },
     };
   }
@@ -143,20 +144,20 @@ export async function generateMetadata({
   const modalidadeSuffix = modalidadeInfo ? ` — ${modalidadeInfo.name}` : '';
 
   return {
-    title: `${total > 0 ? `${total} ` : ''}Licitações de ${sector.name} em ${ufName}${modalidadeSuffix} — ${getMonthYear()}`,
-    description: `Encontre ${total > 0 ? total : ''} licitações de ${sector.name.toLowerCase()}${modalidadeInfo ? ` via ${modalidadeInfo.name}` : ''} em ${ufName}. Dados ao vivo de PNCP, PCP e ComprasGov. Filtre por valor, modalidade e prazo. Teste grátis.`,
+    title: `${total > 0 ? `${total} ` : ''}Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}${modalidadeSuffix} — ${getMonthYear()}`,
+    description: `Encontre ${total > 0 ? total : ''} licitações de ${sector.name.toLowerCase()}${modalidadeInfo ? ` via ${modalidadeInfo.name}` : ''} ${getUfPrep(ufUpper)} ${ufName}. Dados ao vivo de PNCP, PCP e ComprasGov. Filtre por valor, modalidade e prazo. Teste grátis.`,
     robots: { index: true },
     alternates: { canonical: canonicalUrl },
     openGraph: {
-      title: `${total > 0 ? `${total} ` : ''}Licitações de ${sector.name} em ${ufName}${modalidadeSuffix} — ${getMonthYear()} | SmartLic`,
-      description: `${total > 0 ? `${total} editais` : 'Editais'} de ${sector.name.toLowerCase()} em ${ufName}${modalidadeInfo ? ` (${modalidadeInfo.name})` : ''}. Dados ao vivo consolidados de 3 fontes oficiais.`,
+      title: `${total > 0 ? `${total} ` : ''}Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}${modalidadeSuffix} — ${getMonthYear()} | SmartLic`,
+      description: `${total > 0 ? `${total} editais` : 'Editais'} de ${sector.name.toLowerCase()} ${getUfPrep(ufUpper)} ${ufName}${modalidadeInfo ? ` (${modalidadeInfo.name})` : ''}. Dados ao vivo consolidados de 3 fontes oficiais.`,
       url: canonicalUrl,
       type: 'article',
       locale: 'pt_BR',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `Licitações de ${sector.name} em ${ufName}${modalidadeSuffix} | SmartLic`,
+      title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}${modalidadeSuffix} | SmartLic`,
     },
   };
 }
@@ -196,15 +197,16 @@ export default async function LicitacoesSectorUfPage({
     stats?.total_editais,
     stats?.avg_value,
     contractsContext,
+    ufUpper,
   );
   const modalidadeFaqs = modalidadeInfo ? [
     {
-      question: `Como funciona o ${modalidadeInfo.name} para ${sector.name} em ${ufName}?`,
-      answer: `${modalidadeInfo.typicalProcess}. Para o setor de ${sector.name} em ${ufName}, o SmartLic monitora automaticamente todos os editais publicados nesta modalidade.`,
+      question: `Como funciona o ${modalidadeInfo.name} para ${sector.name} ${getUfPrep(ufUpper)} ${ufName}?`,
+      answer: `${modalidadeInfo.typicalProcess}. Para o setor de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}, o SmartLic monitora automaticamente todos os editais publicados nesta modalidade.`,
     },
     {
-      question: `Quantos editais de ${modalidadeInfo.name} de ${sector.name} abrem por mês em ${ufName}?`,
-      answer: `Nos últimos 30 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados em ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período.`,
+      question: `Quantos editais de ${modalidadeInfo.name} de ${sector.name} abrem por mês ${getUfPrep(ufUpper)} ${ufName}?`,
+      answer: `Nos últimos 30 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados ${getUfPrep(ufUpper)} ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período.`,
     },
     {
       question: `Qual a base legal do ${modalidadeInfo.name}?`,
@@ -234,8 +236,8 @@ export default async function LicitacoesSectorUfPage({
 
       <SchemaMarkup
         pageType="sector-uf"
-        title={`Licitações de ${sector.name} em ${ufName}${modalidadeInfo ? ` — ${modalidadeInfo.name}` : ''} — ${monthYear}`}
-        description={`${stats?.total_editais ?? 0} licitações de ${sector.name} em ${ufName}`}
+        title={`Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}${modalidadeInfo ? ` — ${modalidadeInfo.name}` : ''} — ${monthYear}`}
+        description={`${stats?.total_editais ?? 0} licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`}
         url={url}
         sectorName={sector.name}
         uf={ufUpper}
@@ -270,7 +272,7 @@ export default async function LicitacoesSectorUfPage({
             <h1
               className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4"
             >
-              Licitações de {sector.name} em {ufName}
+              Licitações de {sector.name} {getUfPrep(ufUpper)} {ufName}
               {modalidadeInfo ? ` — ${modalidadeInfo.name}` : ''} — {monthYear}
             </h1>
 
@@ -395,6 +397,7 @@ export default async function LicitacoesSectorUfPage({
             variant="inline"
             setor={sector.name}
             uf={ufName}
+            ufCode={ufUpper}
             count={stats?.total_editais}
             slug={`${setor}-${uf}`}
           />
@@ -402,7 +405,7 @@ export default async function LicitacoesSectorUfPage({
           {/* AC2: Regional editorial block (300+ words) */}
           <section className="mb-10">
             <h2 className="text-xl font-semibold text-ink mb-4">
-              {sector.name} em {ufName}: panorama de licitações
+              {sector.name} {getUfPrep(ufUpper)} {ufName}: panorama de licitações
             </h2>
             <div className="prose prose-slate max-w-none text-ink-secondary leading-relaxed">
               {editorial.map((paragraph, i) => (
@@ -420,13 +423,14 @@ export default async function LicitacoesSectorUfPage({
                 scope="sector-uf"
                 sectorName={sector.name}
                 ufName={ufName}
+                uf={ufUpper}
                 data={contractsFallback}
                 ctaSlug={`${setor}-${uf}`}
               />
             ) : (
               <div className="mb-10 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800 font-medium mb-2">
-                  Nenhuma licitação ativa neste período para {sector.name} em {ufName}.
+                  Nenhuma licitação ativa neste período para {sector.name} {getUfPrep(ufUpper)} {ufName}.
                 </p>
                 <p className="text-sm text-yellow-700">
                   Também não identificamos contratos recentes deste setor neste estado. Confira UFs
@@ -446,12 +450,12 @@ export default async function LicitacoesSectorUfPage({
               <div className="space-y-4">
                 {[
                   {
-                    q: `Como funciona o ${modalidadeInfo.name} para ${sector.name} em ${ufName}?`,
-                    a: `${modalidadeInfo.typicalProcess}. Para o setor de ${sector.name} em ${ufName}, o SmartLic monitora automaticamente todos os editais publicados nesta modalidade no PNCP, PCP e ComprasGov.`,
+                    q: `Como funciona o ${modalidadeInfo.name} para ${sector.name} ${getUfPrep(ufUpper)} ${ufName}?`,
+                    a: `${modalidadeInfo.typicalProcess}. Para o setor de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}, o SmartLic monitora automaticamente todos os editais publicados nesta modalidade no PNCP, PCP e ComprasGov.`,
                   },
                   {
-                    q: `Quantos editais de ${modalidadeInfo.name} de ${sector.name} abrem por mês em ${ufName}?`,
-                    a: `Nos últimos 30 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados em ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período — consulte os dados ao vivo acima para o número atualizado.`,
+                    q: `Quantos editais de ${modalidadeInfo.name} de ${sector.name} abrem por mês ${getUfPrep(ufUpper)} ${ufName}?`,
+                    a: `Nos últimos 30 dias, ${stats?.total_editais ?? 0} editais de ${sector.name} foram publicados ${getUfPrep(ufUpper)} ${ufName}. A proporção de ${modalidadeInfo.name} varia conforme o período — consulte os dados ao vivo acima para o número atualizado.`,
                   },
                   {
                     q: `Qual a base legal do ${modalidadeInfo.name}?`,
@@ -499,7 +503,7 @@ export default async function LicitacoesSectorUfPage({
           {modalidadeInfo && (
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-ink mb-4">
-                {modalidadeInfo.name} para {sector.name} em {ufName}
+                {modalidadeInfo.name} para {sector.name} {getUfPrep(ufUpper)} {ufName}
               </h2>
               <div className="prose prose-slate max-w-none text-ink-secondary leading-relaxed space-y-4">
                 <p>{modalidadeInfo.description}</p>
@@ -520,7 +524,7 @@ export default async function LicitacoesSectorUfPage({
                     : null;
                   return modPct !== null ? (
                     <p>
-                      No setor de {sector.name} em {ufName}, a modalidade {modalidadeInfo.name} representa{' '}
+                      No setor de {sector.name} {getUfPrep(ufUpper)} {ufName}, a modalidade {modalidadeInfo.name} representa{' '}
                       <strong>{modPct}%</strong> dos editais publicados nos últimos 30 dias
                       {modStats ? ` (${modStats.count} de ${totalModCount} editais)` : ''}.
                     </p>
@@ -535,6 +539,7 @@ export default async function LicitacoesSectorUfPage({
             variant="final"
             setor={sector.name}
             uf={ufName}
+            ufCode={ufUpper}
             count={stats?.total_editais}
             slug={`${setor}-${uf}`}
           />
@@ -553,7 +558,7 @@ export default async function LicitacoesSectorUfPage({
             return (
               <section className="mt-10">
                 <h2 className="text-xl font-semibold text-ink mb-4">
-                  Cidades relevantes em {ufName}
+                  Cidades relevantes {getUfPrep(ufUpper)} {ufName}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {cidadesUf.map((c) => (

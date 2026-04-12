@@ -267,7 +267,7 @@ MOCK_PNCP_UF_SP = [
         "objetoCompra": "Aquisição de uniformes para equipe de segurança",
         "uf": "SP",
         "valorTotalEstimado": 150000.0,
-        "codigoModalidadeContratacao": 1,  # Pregão Eletrônico
+        "codigoModalidadeContratacao": 1,  # Leilão - Eletrônico (Lei 14.133)
         "dataPublicacaoFormatted": "2026-02-28",
         "nomeOrgao": "Secretaria de Segurança Pública",
         "municipio": "São Paulo",
@@ -276,7 +276,7 @@ MOCK_PNCP_UF_SP = [
         "objetoCompra": "Fardamentos militares para batalhão de uniformes",
         "uf": "SP",
         "valorTotalEstimado": 250000.0,
-        "codigoModalidadeContratacao": 7,  # Dispensa de Licitação
+        "codigoModalidadeContratacao": 7,  # Pregão - Presencial (Lei 14.133)
         "dataPublicacaoFormatted": "2026-02-27",
         "nomeOrgao": "Polícia Militar do Estado de SP",
         "municipio": "São Paulo",
@@ -350,10 +350,11 @@ class TestSectorUfStatsEnhanced:
                 assert entry["count"] >= 1
 
             # Both mock items have distinct modalities (1 and 7), so 2 entries expected
+            # Code 1 = "Leilão - Eletrônico", Code 7 = "Pregão - Presencial" (Lei 14.133/2021)
             assert len(top_mods) == 2
             names = {e["name"] for e in top_mods}
-            assert "Pregão Eletrônico" in names
-            assert "Dispensa de Licitação" in names
+            assert "Leilão - Eletrônico" in names
+            assert "Pregão - Presencial" in names
 
     def test_sector_uf_stats_trend(self, client):
         """trend_90d has exactly 3 entries, each with period, count, avg_value."""

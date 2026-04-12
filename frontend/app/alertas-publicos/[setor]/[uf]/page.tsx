@@ -6,6 +6,7 @@ import {
   getSectorFromSlug,
   fetchAlertasPublicos,
   formatBRL,
+  getUfPrep,
   ALL_UFS,
   UF_NAMES,
 } from '@/lib/programmatic';
@@ -39,15 +40,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (total < minBids) {
     return {
-      title: `Alertas de ${sector.name} em ${ufName} | SmartLic`,
-      description: `Alertas de licitações de ${sector.name} em ${ufName}. Dados do PNCP atualizados a cada hora.`,
+      title: `Alertas de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
+      description: `Alertas de licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}. Dados do PNCP atualizados a cada hora.`,
       robots: { index: false, follow: false },
     };
   }
 
   return {
-    title: `Alertas de Licitações de ${sector.name} em ${ufName} — ${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`,
-    description: `Acompanhe as licitações mais recentes de ${sector.name} em ${ufName}. Dados atualizados do PNCP. Feed RSS disponível.`,
+    title: `Alertas de Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} — ${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`,
+    description: `Acompanhe as licitações mais recentes de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}. Dados atualizados do PNCP. Feed RSS disponível.`,
     alternates: {
       canonical: buildCanonical(`/alertas-publicos/${setor}/${uf}`),
       types: {
@@ -55,8 +56,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: `Alertas: ${sector.name} em ${ufName}`,
-      description: `Licitações recentes de ${sector.name} em ${ufName} — dados ao vivo do PNCP`,
+      title: `Alertas: ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`,
+      description: `Licitações recentes de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} — dados ao vivo do PNCP`,
       type: 'website',
       locale: 'pt_BR',
     },
@@ -87,8 +88,8 @@ export default async function AlertasPage({ params }: Props) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'DataFeed',
-    name: `Alertas de Licitações de ${sector.name} em ${ufName}`,
-    description: `Licitações recentes de ${sector.name} em ${ufName} — dados ao vivo do PNCP`,
+    name: `Alertas de Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`,
+    description: `Licitações recentes de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} — dados ao vivo do PNCP`,
     url: `https://smartlic.tech/alertas-publicos/${setor}/${uf}`,
     dateModified: data?.last_updated || new Date().toISOString(),
     provider: { '@type': 'Organization', name: 'SmartLic', url: 'https://smartlic.tech' },
@@ -131,8 +132,8 @@ export default async function AlertasPage({ params }: Props) {
             </nav>
             <h1 className="text-3xl sm:text-4xl font-bold mb-3">
               {bids.length > 0
-                ? `${data?.total || bids.length} licitações de ${sector.name} em ${ufName}`
-                : `Alertas de ${sector.name} em ${ufName}`
+                ? `${data?.total || bids.length} licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`
+                : `Alertas de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`
               }
             </h1>
             <p className="text-white/80 text-lg mb-4">
@@ -157,7 +158,7 @@ export default async function AlertasPage({ params }: Props) {
           {bids.length === 0 ? (
             <div className="text-center py-16 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-200 dark:border-yellow-800">
               <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">
-                Nenhuma licitação de {sector.name} publicada em {ufName} nos últimos 10 dias.
+                Nenhuma licitação de {sector.name} publicada {getUfPrep(ufUpper)} {ufName} nos últimos 10 dias.
               </p>
               <p className="text-sm text-yellow-600 dark:text-yellow-400">
                 Volte em breve — novos editais são publicados diariamente no PNCP.
@@ -232,7 +233,7 @@ export default async function AlertasPage({ params }: Props) {
         {/* Cross-links */}
         <section className="max-w-5xl mx-auto py-8 px-4">
           <h3 className="text-lg font-bold text-ink mb-4">
-            Mais sobre {sector.name} em {ufName}
+            Mais sobre {sector.name} {getUfPrep(ufUpper)} {ufName}
           </h3>
           <div className="flex flex-wrap gap-3">
             <Link

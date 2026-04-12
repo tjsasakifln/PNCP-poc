@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BLOG_ARTICLES, type BlogArticleMeta } from '@/lib/blog';
 import { SECTORS, type SectorMeta } from '@/lib/sectors';
+import { getUfPrep, UF_NAMES } from '@/lib/programmatic';
 
 /**
  * MKT-002 AC5: Automatic internal linking component.
@@ -110,7 +111,7 @@ function getNeighboringUfLinks(
 ): RelatedLink[] {
   const neighbors = UF_NEIGHBORS[currentUf] || [];
   return neighbors.slice(0, 3).map((uf) => ({
-    title: `Licitações de ${sector.name} em ${uf}`,
+    title: `Licitações de ${sector.name} ${getUfPrep(uf)} ${UF_NAMES[uf] ?? uf}`,
     href: getLicitacoesHref(sector.slug, uf),
     type: 'programmatic',
   }));

@@ -10,7 +10,7 @@
  * avoid accidental regressions in the heavily-watched main file.
  */
 
-import { formatBRL } from './programmatic';
+import { formatBRL, getUfPrep } from './programmatic';
 
 // ---------------------------------------------------------------------------
 // Shared entry types (mirror the backend ContratosSetor* models)
@@ -169,6 +169,7 @@ export function generateLicitacoesFAQsWithFallback(
   totalEditais: number | undefined,
   avgValue: number | undefined,
   contractsContext: ContractsFallbackContext | undefined,
+  uf?: string,
 ): Faq[] {
   const count = totalEditais ?? 0;
   const hasContracts = !!contractsContext && contractsContext.totalContracts > 0;
@@ -176,23 +177,23 @@ export function generateLicitacoesFAQsWithFallback(
   // FAQ 1
   let faq1: string;
   if (count > 0) {
-    faq1 = `Nos últimos 10 dias, foram publicadas ${count} licitações de ${sectorName} em ${ufName}, consolidando dados do PNCP, Portal de Compras Públicas e ComprasGov. O SmartLic atualiza esses números automaticamente a cada 24 horas.`;
+    faq1 = `Nos últimos 10 dias, foram publicadas ${count} licitações de ${sectorName} ${getUfPrep(uf)} ${ufName}, consolidando dados do PNCP, Portal de Compras Públicas e ComprasGov. O SmartLic atualiza esses números automaticamente a cada 24 horas.`;
   } else if (hasContracts) {
     const ctx = contractsContext!;
-    faq1 = `Nos últimos 10 dias não há editais abertos de ${sectorName} em ${ufName}. Porém, nos últimos 12 meses foram assinados ${ctx.totalContracts.toLocaleString('pt-BR')} contratos deste setor no estado (valor médio de ${formatBRL(ctx.avgContractValue)}), indicando demanda recorrente. Cadastre-se no SmartLic para receber alerta quando novos editais forem publicados.`;
+    faq1 = `Nos últimos 10 dias não há editais abertos de ${sectorName} ${getUfPrep(uf)} ${ufName}. Porém, nos últimos 12 meses foram assinados ${ctx.totalContracts.toLocaleString('pt-BR')} contratos deste setor no estado (valor médio de ${formatBRL(ctx.avgContractValue)}), indicando demanda recorrente. Cadastre-se no SmartLic para receber alerta quando novos editais forem publicados.`;
   } else {
-    faq1 = `Nos últimos 10 dias não há editais abertos de ${sectorName} em ${ufName} e também não identificamos contratos recentes neste filtro. Você pode explorar UFs vizinhas ou outros setores — o SmartLic monitora 15 setores em 27 estados em tempo real.`;
+    faq1 = `Nos últimos 10 dias não há editais abertos de ${sectorName} ${getUfPrep(uf)} ${ufName} e também não identificamos contratos recentes neste filtro. Você pode explorar UFs vizinhas ou outros setores — o SmartLic monitora 15 setores em 27 estados em tempo real.`;
   }
 
   // FAQ 2
   let faq2: string;
   if (avgValue && avgValue > 0) {
-    faq2 = `O valor médio estimado é de ${formatBRL(avgValue)}. Os editais de ${sectorName} em ${ufName} vão desde compras pequenas até contratos de grande porte. No SmartLic você filtra por faixa de valor.`;
+    faq2 = `O valor médio estimado é de ${formatBRL(avgValue)}. Os editais de ${sectorName} ${getUfPrep(uf)} ${ufName} vão desde compras pequenas até contratos de grande porte. No SmartLic você filtra por faixa de valor.`;
   } else if (hasContracts) {
     const ctx = contractsContext!;
-    faq2 = `Não há editais abertos com valor estimado no momento, mas contratos deste setor assinados em ${ufName} nos últimos 12 meses tiveram valor médio de ${formatBRL(ctx.avgContractValue)} — uma referência útil para dimensionar propostas. No SmartLic você filtra por faixa de valor quando novos editais abrirem.`;
+    faq2 = `Não há editais abertos com valor estimado no momento, mas contratos deste setor assinados ${getUfPrep(uf)} ${ufName} nos últimos 12 meses tiveram valor médio de ${formatBRL(ctx.avgContractValue)} — uma referência útil para dimensionar propostas. No SmartLic você filtra por faixa de valor quando novos editais abrirem.`;
   } else {
-    faq2 = `O valor varia conforme a modalidade é o escopo. Os editais de ${sectorName} em ${ufName} vão desde compras pequenas até contratos de grande porte. No SmartLic você filtra por faixa de valor.`;
+    faq2 = `O valor varia conforme a modalidade é o escopo. Os editais de ${sectorName} ${getUfPrep(uf)} ${ufName} vão desde compras pequenas até contratos de grande porte. No SmartLic você filtra por faixa de valor.`;
   }
 
   const faq3 = `O primeiro passo é monitorar as publicações no PNCP e portais estaduais. Depois, análise a viabilidade de cada edital verificando modalidade, prazo, valor e exigências técnicas. O SmartLic automatiza essa triagem usando IA, economizando horas de análise manual.`;
@@ -202,10 +203,10 @@ export function generateLicitacoesFAQsWithFallback(
     : `O pregão eletrônico é a modalidade predominante para compras de ${sectorName}, seguido pela dispensa de licitação para valores menores. A Lei 14.133/2021 consolidou o pregão como via preferencial para bens e serviços comuns, beneficiando empresas cadastradas nas plataformas eletrônicas.`;
 
   return [
-    { question: `Quantas licitações de ${sectorName} estão abertas em ${ufName}?`, answer: faq1 },
-    { question: `Qual o valor médio das licitações de ${sectorName} em ${ufName}?`, answer: faq2 },
-    { question: `Como participar de licitações de ${sectorName} em ${ufName}?`, answer: faq3 },
-    { question: `Quais modalidades são mais comuns para ${sectorName} em ${ufName}?`, answer: faq4 },
+    { question: `Quantas licitações de ${sectorName} estão abertas ${getUfPrep(uf)} ${ufName}?`, answer: faq1 },
+    { question: `Qual o valor médio das licitações de ${sectorName} ${getUfPrep(uf)} ${ufName}?`, answer: faq2 },
+    { question: `Como participar de licitações de ${sectorName} ${getUfPrep(uf)} ${ufName}?`, answer: faq3 },
+    { question: `Quais modalidades são mais comuns para ${sectorName} ${getUfPrep(uf)} ${ufName}?`, answer: faq4 },
     {
       question: `Posso testar o SmartLic para buscar licitações de ${sectorName}?`,
       answer: `Sim, o SmartLic oferece teste grátis de 14 dias sem necessidade de cartão de crédito. Durante o teste você tem acesso completo à busca com IA, análise de viabilidade por 4 fatores, pipeline de oportunidades e exportação de relatórios em Excel.`,

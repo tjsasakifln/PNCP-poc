@@ -42,20 +42,8 @@ ALL_UFS = [
 # Top UFs by procurement volume (queried for panorama/sector stats)
 TOP_UFS = ["SP", "RJ", "MG", "DF", "PR", "BA", "RS", "GO", "PE", "SC"]
 
-# Modality code → name mapping
-MODALITY_NAMES = {
-    1: "Pregão Eletrônico",
-    2: "Concorrência",
-    3: "Tomada de Preços",
-    4: "Convite",
-    5: "Concurso",
-    6: "Leilão",
-    7: "Dispensa de Licitação",
-    8: "Inexigibilidade",
-    9: "Diálogo Competitivo",
-    10: "Pregão Presencial",
-    12: "Credenciamento",
-}
+# Modality code → name mapping (Lei 14.133/2021 — PNCP codes)
+from config.pncp import MODALIDADES_PNCP as MODALITY_NAMES
 
 # UF → major cities mapping for city endpoint
 UF_CITIES: dict[str, list[str]] = {
@@ -335,8 +323,14 @@ def _extract_uf(item: dict) -> str:
 
 def _extract_modality(item: dict) -> str:
     code = item.get("codigoModalidadeContratacao")
-    if code and isinstance(code, int):
-        return MODALITY_NAMES.get(code, f"Modalidade {code}")
+    if code is not None:
+        try:
+            name = MODALITY_NAMES.get(int(code))
+            if name:
+                return name
+        except (ValueError, TypeError):
+            pass
+    # Fallback: use the name field already present in datalake data
     return item.get("modalidadeNome") or item.get("modalidade") or "Não informada"
 
 

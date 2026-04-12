@@ -25,6 +25,44 @@ export const UF_NAMES: Record<string, string> = {
   SE: 'Sergipe', SP: 'São Paulo', TO: 'Tocantins',
 };
 
+// Correct Portuguese prepositions per state (PT-BR grammar)
+// "no" → masculine article states, "na" → feminine article states, "em" → no article
+export const UF_PREPOSITIONS: Record<string, string> = {
+  AC: 'no',  // no Acre
+  AL: 'em',  // em Alagoas
+  AM: 'no',  // no Amazonas
+  AP: 'no',  // no Amapá
+  BA: 'na',  // na Bahia
+  CE: 'no',  // no Ceará
+  DF: 'no',  // no Distrito Federal
+  ES: 'no',  // no Espírito Santo
+  GO: 'em',  // em Goiás
+  MA: 'no',  // no Maranhão
+  MG: 'em',  // em Minas Gerais
+  MS: 'no',  // no Mato Grosso do Sul
+  MT: 'no',  // no Mato Grosso
+  PA: 'no',  // no Pará
+  PB: 'na',  // na Paraíba
+  PE: 'em',  // em Pernambuco
+  PI: 'no',  // no Piauí
+  PR: 'no',  // no Paraná
+  RJ: 'no',  // no Rio de Janeiro
+  RN: 'no',  // no Rio Grande do Norte
+  RO: 'em',  // em Rondônia
+  RR: 'em',  // em Roraima
+  RS: 'no',  // no Rio Grande do Sul
+  SC: 'em',  // em Santa Catarina
+  SE: 'em',  // em Sergipe
+  SP: 'em',  // em São Paulo
+  TO: 'no',  // no Tocantins
+};
+
+/** Returns the correct Portuguese preposition for a Brazilian state (ex: "na", "no", "em") */
+export function getUfPrep(uf: string | undefined): string {
+  if (!uf) return 'em';
+  return UF_PREPOSITIONS[uf.toUpperCase()] ?? 'em';
+}
+
 export interface SectorBlogStats {
   sector_id: string;
   sector_name: string;
@@ -528,20 +566,20 @@ export function getRegionalEditorial(
     sudeste: [
       `O ${regionName} brasileiro concentra o maior volume de licitações públicas do país, e ${ufName} não é exceção. Com uma densa rede de órgãos públicos federais, estaduais e municipais, o estado oferece um fluxo constante de oportunidades para empresas de ${sectorName.toLowerCase()}. A concentração econômica e administrativa da região garante editais de alto valor e frequência regular, tornando o monitoramento sistemático especialmente vantajoso.`,
       `A infraestrutura logística do ${regionName} — com portos, aeroportos e rodovias de primeira linha — favorece empresas que precisam atender contratos com entrega em múltiplos pontos. Em ${ufName}, a competição é intensa, mas o volume de oportunidades compensa: empresas que dominam a documentação técnica e mantêm suas certidões em dia encontram um mercado de escala incomparável. A proximidade de centros de decisão política (Brasília, capitais estaduais) também facilita o acompanhamento presencial de pregões e audiências.`,
-      `Para empresas de ${sectorName.toLowerCase()} que atuam em ${ufName}, a chave do sucesso está na análise seletiva. Nem todo edital publicado representa uma oportunidade real — fatores como modalidade de contratação, prazo de entrega, valor estimado e exigências de qualificação técnica determinam a viabilidade de participação. O SmartLic automatiza essa triagem usando inteligência artificial, classificando cada edital em até 4 fatores de viabilidade: modalidade (30%), prazo (25%), valor (25%) e geografia (20%). Isso permite que equipes comerciais foquem apenas nas oportunidades com maior probabilidade de sucesso.`,
-      `O mercado de compras públicas em ${ufName} segue padrões sazonais bem definidos: o primeiro trimestre é marcado pela finalização de contratos do exercício anterior e planejamento orçamentário; o segundo trimestre inicia a execução efetiva; o terceiro concentra o pico de publicações; e o quarto trimestre traz uma corrida para empenhar recursos antes do encerramento do exercício fiscal. Empresas que entendem esse ciclo e se preparam com antecedência têm taxa de adjudicação significativamente superior à média do setor.`,
+      `Para empresas de ${sectorName.toLowerCase()} que atuam ${getUfPrep(uf)} ${ufName}, a chave do sucesso está na análise seletiva. Nem todo edital publicado representa uma oportunidade real — fatores como modalidade de contratação, prazo de entrega, valor estimado e exigências de qualificação técnica determinam a viabilidade de participação. O SmartLic automatiza essa triagem usando inteligência artificial, classificando cada edital em até 4 fatores de viabilidade: modalidade (30%), prazo (25%), valor (25%) e geografia (20%). Isso permite que equipes comerciais foquem apenas nas oportunidades com maior probabilidade de sucesso.`,
+      `O mercado de compras públicas ${getUfPrep(uf)} ${ufName} segue padrões sazonais bem definidos: o primeiro trimestre é marcado pela finalização de contratos do exercício anterior e planejamento orçamentário; o segundo trimestre inicia a execução efetiva; o terceiro concentra o pico de publicações; e o quarto trimestre traz uma corrida para empenhar recursos antes do encerramento do exercício fiscal. Empresas que entendem esse ciclo e se preparam com antecedência têm taxa de adjudicação significativamente superior à média do setor.`,
     ],
     sul: [
       `A região ${regionName} destaca-se pelo alto índice de eficiência administrativa nos órgãos públicos, refletindo-se em editais bem estruturados e processos licitatórios transparentes. Em ${ufName}, empresas de ${sectorName.toLowerCase()} encontram um mercado maduro, onde a qualidade da proposta técnica frequentemente supera o fator preço na decisão de adjudicação. Cooperativas e associações empresariais da região têm forte tradição de participação conjunta em licitações de maior porte.`,
-      `O perfil de compras públicas em ${ufName} reflete a diversificação econômica da região ${regionName}: há demanda consistente em setores industriais, agropecuários e de serviços. As prefeituras do interior, frequentemente subestimadas, representam um nicho valioso — menor concorrência e relações comerciais de longo prazo. O SmartLic monitora automaticamente todas as publicações do PNCP e portais estaduais, garantindo que nenhuma oportunidade passe despercebida.`,
-      `Para se destacar nas licitações de ${sectorName.toLowerCase()} em ${ufName}, empresas devem investir na qualificação técnica da equipe e na padronização dos processos internos de elaboração de propostas. A região ${regionName} tem elevada exigência documental — atestados de capacidade técnica, certificações ISO e comprovações de experiência anterior são diferenciais decisivos. Manter um banco de dados atualizado de editais similares adjudicados, com histórico de preços praticados, permite precificar propostas com assertividade.`,
-      `A sazonalidade das licitações em ${ufName} acompanha o calendário fiscal nacional, com picos no segundo e terceiro trimestres. Porém, uma particularidade da região ${regionName} é o impacto do inverno nas obras de infraestrutura — o frio e as chuvas concentradas podem atrasar cronogramas, abrindo oportunidades em períodos tipicamente de baixa movimentação. A análise de viabilidade geográfica do SmartLic leva em conta a distância entre a sede da empresa e o local de execução, otimizando a seleção de editais com logística favorável.`,
+      `O perfil de compras públicas ${getUfPrep(uf)} ${ufName} reflete a diversificação econômica da região ${regionName}: há demanda consistente em setores industriais, agropecuários e de serviços. As prefeituras do interior, frequentemente subestimadas, representam um nicho valioso — menor concorrência e relações comerciais de longo prazo. O SmartLic monitora automaticamente todas as publicações do PNCP e portais estaduais, garantindo que nenhuma oportunidade passe despercebida.`,
+      `Para se destacar nas licitações de ${sectorName.toLowerCase()} ${getUfPrep(uf)} ${ufName}, empresas devem investir na qualificação técnica da equipe e na padronização dos processos internos de elaboração de propostas. A região ${regionName} tem elevada exigência documental — atestados de capacidade técnica, certificações ISO e comprovações de experiência anterior são diferenciais decisivos. Manter um banco de dados atualizado de editais similares adjudicados, com histórico de preços praticados, permite precificar propostas com assertividade.`,
+      `A sazonalidade das licitações ${getUfPrep(uf)} ${ufName} acompanha o calendário fiscal nacional, com picos no segundo e terceiro trimestres. Porém, uma particularidade da região ${regionName} é o impacto do inverno nas obras de infraestrutura — o frio e as chuvas concentradas podem atrasar cronogramas, abrindo oportunidades em períodos tipicamente de baixa movimentação. A análise de viabilidade geográfica do SmartLic leva em conta a distância entre a sede da empresa e o local de execução, otimizando a seleção de editais com logística favorável.`,
     ],
     nordeste: [
       `O ${regionName} brasileiro vive um momento de transformação nas compras públicas, com crescente adoção de pregão eletrônico e maior transparência nos processos licitatórios. Em ${ufName}, o volume de editais de ${sectorName.toLowerCase()} tem crescido consistentemente, impulsionado por investimentos federais em infraestrutura, saúde e educação. A região oferece oportunidades únicas para empresas que compreendem suas especificidades regulatórias e logísticas.`,
-      `A logística de entrega é o principal desafio para empresas que atuam no ${regionName} a partir de outras regiões. No entanto, empresas locais de ${sectorName.toLowerCase()} em ${ufName} têm vantagem competitiva natural — menor custo de frete, conhecimento do mercado local e relacionamento com órgãos compradores. Para empresas de fora, a estratégia mais eficaz é estabelecer parcerias com distribuidores regionais ou manter estoques descentralizados. O SmartLic ajuda a identificar quais editais justificam o investimento logístico com base na análise de viabilidade de 4 fatores.`,
+      `A logística de entrega é o principal desafio para empresas que atuam no ${regionName} a partir de outras regiões. No entanto, empresas locais de ${sectorName.toLowerCase()} ${getUfPrep(uf)} ${ufName} têm vantagem competitiva natural — menor custo de frete, conhecimento do mercado local e relacionamento com órgãos compradores. Para empresas de fora, a estratégia mais eficaz é estabelecer parcerias com distribuidores regionais ou manter estoques descentralizados. O SmartLic ajuda a identificar quais editais justificam o investimento logístico com base na análise de viabilidade de 4 fatores.`,
       `Os programas federais direcionados ao ${regionName} — como investimentos em saneamento, energia e infraestrutura urbana — geram um pipeline previsível de licitações. Em ${ufName}, os municípios menores frequentemente publicam editais com menor concorrência e valores que, somados, representam receita significativa. A chave é o monitoramento abrangente: enquanto grandes empresas focam nos editais de maior valor, PMEs encontram espaço em compras fracionadas e contratos de fornecimento contínuo.`,
-      `O calendário de compras em ${ufName} é influenciado pelo ciclo político municipal e estadual — anos eleitorais tendem a concentrar investimentos nos primeiros semestres. Para ${sectorName.toLowerCase()}, entender essas dinâmicas permite antecipar demandas e preparar propostas com antecedência. O SmartLic consolida dados de três fontes oficiais (PNCP, Portal de Compras Públicas e ComprasGov), eliminando o risco de perder oportunidades publicadas em portais diferentes.`,
+      `O calendário de compras ${getUfPrep(uf)} ${ufName} é influenciado pelo ciclo político municipal e estadual — anos eleitorais tendem a concentrar investimentos nos primeiros semestres. Para ${sectorName.toLowerCase()}, entender essas dinâmicas permite antecipar demandas e preparar propostas com antecedência. O SmartLic consolida dados de três fontes oficiais (PNCP, Portal de Compras Públicas e ComprasGov), eliminando o risco de perder oportunidades publicadas em portais diferentes.`,
     ],
     norte: [
       `A região ${regionName} do Brasil apresenta um mercado de licitações públicas em expansão acelerada, impulsionado por investimentos federais em infraestrutura, saúde e conectividade. Em ${ufName}, as distâncias geográficas e a logística fluvial criam barreiras naturais de entrada que reduzem a concorrência efetiva, beneficiando empresas com presença local ou capacidade logística diferenciada. Para ${sectorName.toLowerCase()}, essa combinação de demanda crescente e menor competição representa uma oportunidade estratégica.`,
@@ -551,9 +589,9 @@ export function getRegionalEditorial(
     ],
     centro_oeste: [
       `O ${regionName} brasileiro, sede do governo federal em Brasília, é um dos polos mais relevantes para licitações públicas no país. Em ${ufName}, a concentração de órgãos federais e a pujança do agronegócio geram um volume expressivo de compras governamentais em ${sectorName.toLowerCase()}. A proximidade com centros de decisão política e a infraestrutura rodoviária interligando as capitais conferem vantagens logísticas a empresas da região.`,
-      `O mercado de licitações em ${ufName} é caracterizado pela coexistência de grandes contratos federais (especialmente em ${ufName === 'Distrito Federal' ? 'órgãos da esplanada dos ministérios' : 'representações regionais de ministérios'}) e demandas municipais pulverizadas. Para ${sectorName.toLowerCase()}, essa diversidade permite compor um portfólio equilibrado entre contratos de alto valor e fornecimentos recorrentes. O SmartLic classifica automaticamente cada edital por relevância setorial, eliminando o ruído de editais irrelevantes.`,
+      `O mercado de licitações ${getUfPrep(uf)} ${ufName} é caracterizado pela coexistência de grandes contratos federais (especialmente em ${ufName === 'Distrito Federal' ? 'órgãos da esplanada dos ministérios' : 'representações regionais de ministérios'}) e demandas municipais pulverizadas. Para ${sectorName.toLowerCase()}, essa diversidade permite compor um portfólio equilibrado entre contratos de alto valor e fornecimentos recorrentes. O SmartLic classifica automaticamente cada edital por relevância setorial, eliminando o ruído de editais irrelevantes.`,
       `A economia do ${regionName} — ancorada no agronegócio, mineração e serviços — gera demandas específicas de infraestrutura que se refletem nas licitações. Em ${ufName}, os investimentos em logística (armazéns, silos, rodovias) e em equipamentos públicos (hospitais, escolas, delegacias) mantêm um fluxo constante de oportunidades. Empresas de ${sectorName.toLowerCase()} que monitoram sistematicamente essas publicações conseguem antecipar tendências e preparar propostas mais competitivas.`,
-      `O calendário fiscal em ${ufName} segue o padrão nacional, com picos de publicação no segundo e terceiro trimestres. Uma particularidade do ${regionName} é a influência dos períodos de safra na disponibilidade de recursos municipais — municípios dependentes de receitas agropecuárias concentram investimentos após os períodos de colheita. A análise de viabilidade do SmartLic considera quatro fatores (modalidade, prazo, valor e geografia) para identificar as oportunidades mais alinhadas ao perfil de cada empresa.`,
+      `O calendário fiscal ${getUfPrep(uf)} ${ufName} segue o padrão nacional, com picos de publicação no segundo e terceiro trimestres. Uma particularidade do ${regionName} é a influência dos períodos de safra na disponibilidade de recursos municipais — municípios dependentes de receitas agropecuárias concentram investimentos após os períodos de colheita. A análise de viabilidade do SmartLic considera quatro fatores (modalidade, prazo, valor e geografia) para identificar as oportunidades mais alinhadas ao perfil de cada empresa.`,
     ],
   };
 
@@ -581,7 +619,7 @@ export function getCidadeSectorEditorial(
 
   const paragraphs: Record<Region, string[]> = {
     sudeste: [
-      `${cityName} é um dos principais polos de compras públicas de ${sectorLower} em ${ufName}. Com uma rede densa de prefeituras, autarquias e secretarias, o município pública editais de forma regular ao longo do ano. A concentração econômica do ${regionName} garante que as oportunidades de ${sectorLower} em ${cityName} tenham valores expressivos e frequência consistente, tornando o monitoramento sistemático particularmente vantajoso para fornecedores do setor.`,
+      `${cityName} é um dos principais polos de compras públicas de ${sectorLower} ${getUfPrep(uf)} ${ufName}. Com uma rede densa de prefeituras, autarquias e secretarias, o município pública editais de forma regular ao longo do ano. A concentração econômica do ${regionName} garante que as oportunidades de ${sectorLower} em ${cityName} tenham valores expressivos e frequência consistente, tornando o monitoramento sistemático particularmente vantajoso para fornecedores do setor.`,
       `A Lei 14.133/2021 (Nova Lei de Licitações) e a LC 123/2006 estabelecem preferência para micro e pequenas empresas locais em contratações de até R$ 80 mil, o que beneficia fornecedores de ${sectorLower} sediados em ${cityName} ou região metropolitana. Além disso, o pregão eletrônico — modalidade predominante para ${sectorLower} — permite participação remota, ampliando o mercado para empresas de outros estados que atendam às exigências técnicas e documentais.`,
       `O SmartLic monitora automaticamente todas as publicações do PNCP, Portal de Compras Públicas e ComprasGov relacionadas a ${sectorLower} em ${cityName}/${uf}. A inteligência artificial classifica cada edital por relevância setorial e calcula um score de viabilidade baseado em quatro fatores: modalidade de contratação (30%), prazo de execução (25%), valor estimado (25%) e proximidade geográfica (20%). Isso permite que sua equipe comercial foque apenas nas oportunidades com maior probabilidade de adjudicação.`,
     ],
@@ -591,7 +629,7 @@ export function getCidadeSectorEditorial(
       `O SmartLic automatiza a descoberta e análise de editais de ${sectorLower} em ${cityName}/${uf}, consolidando dados de três fontes oficiais (PNCP, PCP e ComprasGov). O score de viabilidade de quatro fatores — modalidade (30%), prazo (25%), valor (25%) e geografia (20%) — elimina a análise manual e permite decisões rápidas de participação em cada oportunidade.`,
     ],
     nordeste: [
-      `O mercado de licitações de ${sectorLower} em ${cityName} está em crescimento acelerado, impulsionado por investimentos federais e estaduais em ${ufName}. A região ${regionName} vive uma transformação nas compras públicas, com crescente adoção de pregão eletrônico e maior transparência nos processos licitatórios, o que amplia as oportunidades para fornecedores qualificados de ${sectorLower}.`,
+      `O mercado de licitações de ${sectorLower} em ${cityName} está em crescimento acelerado, impulsionado por investimentos federais e estaduais ${getUfPrep(uf)} ${ufName}. A região ${regionName} vive uma transformação nas compras públicas, com crescente adoção de pregão eletrônico e maior transparência nos processos licitatórios, o que amplia as oportunidades para fornecedores qualificados de ${sectorLower}.`,
       `A LC 123/2006 confere preferência a empresas locais em contratações de até R$ 80 mil, beneficiando diretamente fornecedores de ${sectorLower} em ${cityName}. A Lei 14.133/2021 também exige que órgãos públicos priorizem a participação de micro e pequenas empresas em todas as modalidades. Para empresas de fora da região, estabelecer parcerias com distribuidores locais pode ser a estratégia mais eficaz para competir neste mercado.`,
       `O SmartLic consolida automaticamente editais de ${sectorLower} publicados em ${cityName}/${uf} nas três fontes oficiais (PNCP, PCP e ComprasGov), aplicando inteligência artificial para classificar relevância setorial e calcular viabilidade com base em quatro fatores: modalidade (30%), prazo (25%), valor (25%) e geografia (20%). Essa triagem automatizada economiza horas de análise manual e garante que nenhuma oportunidade passe despercebida.`,
     ],
@@ -601,7 +639,7 @@ export function getCidadeSectorEditorial(
       `O SmartLic monitora editais de ${sectorLower} em ${cityName}/${uf} em tempo real, consolidando publicações do PNCP, Portal de Compras Públicas e ComprasGov. O score de viabilidade — modalidade (30%), prazo (25%), valor (25%) e geografia (20%) — ajuda a identificar quais editais justificam o investimento logístico, otimizando a decisão de participação para cada oportunidade.`,
     ],
     centro_oeste: [
-      `${cityName} é um polo estratégico para licitações de ${sectorLower} em ${ufName}, beneficiado pela concentração de órgãos federais e pela pujança econômica da região ${regionName}. A infraestrutura rodoviária interligando as capitais do Centro-Oeste confere vantagens logísticas a fornecedores de ${sectorLower} que atendem contratos com entrega em múltiplos pontos.`,
+      `${cityName} é um polo estratégico para licitações de ${sectorLower} ${getUfPrep(uf)} ${ufName}, beneficiado pela concentração de órgãos federais e pela pujança econômica da região ${regionName}. A infraestrutura rodoviária interligando as capitais do Centro-Oeste confere vantagens logísticas a fornecedores de ${sectorLower} que atendem contratos com entrega em múltiplos pontos.`,
       `A legislação de licitações — Lei 14.133/2021 e LC 123/2006 — reserva preferência para micro e pequenas empresas em contratações de até R$ 80 mil. Em ${cityName}, a coexistência de grandes contratos federais e demandas municipais pulverizadas permite que fornecedores de ${sectorLower} componham um portfólio equilibrado entre contratos de alto valor e fornecimentos recorrentes de menor porte.`,
       `O SmartLic automatiza a descoberta de editais de ${sectorLower} em ${cityName}/${uf}, consolidando três fontes oficiais e aplicando classificação por IA. O score de viabilidade de quatro fatores — modalidade (30%), prazo (25%), valor (25%) e geografia (20%) — permite que equipes comerciais identifiquem rapidamente as oportunidades mais alinhadas ao perfil da empresa.`,
     ],
@@ -654,25 +692,26 @@ export function generateLicitacoesFAQs(
   ufName: string,
   totalEditais?: number,
   avgValue?: number,
+  uf?: string,
 ): { question: string; answer: string }[] {
   const count = totalEditais ?? 0;
 
   return [
     {
-      question: `Quantas licitações de ${sectorName} estão abertas em ${ufName}?`,
-      answer: `Nos últimos 10 dias, foram publicadas ${count > 0 ? count : 'diversas'} licitações de ${sectorName} em ${ufName}, consolidando dados do PNCP, Portal de Compras Públicas e ComprasGov. O SmartLic atualiza esses números automaticamente a cada 24 horas.`,
+      question: `Quantas licitações de ${sectorName} estão abertas ${getUfPrep(uf)} ${ufName}?`,
+      answer: `Nos últimos 10 dias, foram publicadas ${count > 0 ? count : 'diversas'} licitações de ${sectorName} ${getUfPrep(uf)} ${ufName}, consolidando dados do PNCP, Portal de Compras Públicas e ComprasGov. O SmartLic atualiza esses números automaticamente a cada 24 horas.`,
     },
     {
-      question: `Qual o valor médio das licitações de ${sectorName} em ${ufName}?`,
-      answer: `${avgValue && avgValue > 0 ? `O valor médio estimado é de ${formatBRL(avgValue)}.` : 'O valor varia conforme a modalidade e o escopo.'} Os editais de ${sectorName} em ${ufName} vão desde compras pequenas até contratos de grande porte. No SmartLic você filtra por faixa de valor.`,
+      question: `Qual o valor médio das licitações de ${sectorName} ${getUfPrep(uf)} ${ufName}?`,
+      answer: `${avgValue && avgValue > 0 ? `O valor médio estimado é de ${formatBRL(avgValue)}.` : 'O valor varia conforme a modalidade e o escopo.'} Os editais de ${sectorName} ${getUfPrep(uf)} ${ufName} vão desde compras pequenas até contratos de grande porte. No SmartLic você filtra por faixa de valor.`,
     },
     {
-      question: `Como participar de licitações de ${sectorName} em ${ufName}?`,
+      question: `Como participar de licitações de ${sectorName} ${getUfPrep(uf)} ${ufName}?`,
       answer: `O primeiro passo é monitorar as publicações no PNCP e portais estaduais. Depois, análise a viabilidade de cada edital verificando modalidade, prazo, valor e exigências técnicas. O SmartLic automatiza essa triagem usando IA, economizando horas de análise manual.`,
     },
     {
-      question: `Quais modalidades são mais comuns para ${sectorName} em ${ufName}?`,
-      answer: `O pregão eletrônico é a modalidade predominante para compras de ${sectorName}, seguido pela dispensa de licitação para valores menores. A Lei 14.133/2021 consolidou o pregão como via preferencial para bens e serviços comuns, beneficiando empresas cadastradas nas plataformas eletrônicas.`,
+      question: `Quais modalidades são mais comuns para ${sectorName} ${getUfPrep(uf)} ${ufName}?`,
+      answer: `As modalidades mais frequentes variam conforme o objeto e valor estimado. Para ${sectorName}, predominam o pregão eletrônico (concorrência ampla), a concorrência eletrônica (obras e serviços de maior porte) e a dispensa para valores menores. A Lei 14.133/2021 incentiva o uso de modalidades eletrônicas, tornando a participação mais acessível a empresas de qualquer estado.`,
     },
     {
       question: `Posso testar o SmartLic para buscar licitações de ${sectorName}?`,

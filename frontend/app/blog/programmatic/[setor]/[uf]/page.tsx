@@ -12,6 +12,7 @@ import {
   getSectorFromSlug,
   formatBRL,
   generateSectorFAQs,
+  getUfPrep,
   ALL_UFS,
   UF_NAMES,
 } from '@/lib/programmatic';
@@ -47,26 +48,26 @@ export async function generateMetadata({
   const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? '5', 10);
   if (total < minBids) {
     return {
-      title: `Licitações de ${sector.name} em ${ufName} | SmartLic`,
-      description: `Licitações de ${sector.name} em ${ufName}. Dados do PNCP atualizados diariamente.`,
+      title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
+      description: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}. Dados do PNCP atualizados diariamente.`,
       robots: { index: false, follow: false },
     };
   }
 
   return {
-    title: `Licitações de ${sector.name} em ${ufName} — ${total} Editais`,
-    description: `${total} licitações de ${sector.name} em ${ufName} (${ufUpper}). Top oportunidades da semana, valor médio e análise de viabilidade com IA.`,
+    title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} — ${total} Editais`,
+    description: `${total} licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} (${ufUpper}). Top oportunidades da semana, valor médio e análise de viabilidade com IA.`,
     alternates: { canonical: canonicalUrl },
     openGraph: {
-      title: `Licitações de ${sector.name} em ${ufName} | SmartLic`,
-      description: `${total} editais de ${sector.name} em ${ufName}. Dados ao vivo do PNCP.`,
+      title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
+      description: `${total} editais de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}. Dados ao vivo do PNCP.`,
       url: canonicalUrl,
       type: 'article',
       locale: 'pt_BR',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `Licitações de ${sector.name} em ${ufName} | SmartLic`,
+      title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
     },
   };
 }
@@ -100,8 +101,8 @@ export default async function SectorUfProgrammaticPage({
 
       <SchemaMarkup
         pageType="sector-uf"
-        title={`Licitações de ${sector.name} em ${ufName}`}
-        description={`${stats?.total_editais ?? 0} licitações de ${sector.name} em ${ufName}`}
+        title={`Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`}
+        description={`${stats?.total_editais ?? 0} licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`}
         url={url}
         sectorName={sector.name}
         uf={ufUpper}
@@ -131,7 +132,7 @@ export default async function SectorUfProgrammaticPage({
               className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4"
               style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
             >
-              Licitações de {sector.name} em {ufName}
+              Licitações de {sector.name} {getUfPrep(ufUpper)} {ufName}
             </h1>
             <p className="text-base sm:text-lg text-ink-secondary max-w-2xl leading-relaxed">
               {stats?.total_editais ?? 0} editais publicados nos últimos 10 dias.
@@ -189,6 +190,7 @@ export default async function SectorUfProgrammaticPage({
             variant="inline"
             setor={sector.name}
             uf={ufName}
+            ufCode={ufUpper}
             count={stats?.total_editais}
             slug={slug}
           />
@@ -196,7 +198,7 @@ export default async function SectorUfProgrammaticPage({
           {/* Context paragraph (300+ words about sector in this UF) */}
           <section className="mb-10">
             <h2 className="text-xl font-semibold text-ink mb-4">
-              {sector.name} em {ufName}: panorama de licitações
+              {sector.name} {getUfPrep(ufUpper)} {ufName}: panorama de licitações
             </h2>
             <div className="prose prose-slate max-w-none text-ink-secondary leading-relaxed">
               <p>
@@ -208,7 +210,7 @@ export default async function SectorUfProgrammaticPage({
                 para {sector.name.toLowerCase()}.
               </p>
               <p>
-                Para empresas que buscam expandir ou consolidar sua presença em {ufName}, a chave
+                Para empresas que buscam expandir ou consolidar sua presença {getUfPrep(ufUpper)} {ufName}, a chave
                 está na análise de viabilidade prévia. Dos editais publicados, nem todos são
                 oportunidades reais — fatores como modalidade de contratação, prazo de entrega,
                 valor estimado e distância geográfica determinam se vale a pena investir tempo
@@ -216,7 +218,7 @@ export default async function SectorUfProgrammaticPage({
                 usando 4 fatores de viabilidade, economizando horas de análise manual.
               </p>
               <p>
-                As modalidades mais comuns para {sector.name.toLowerCase()} em {ufName} incluem
+                As modalidades mais comuns para {sector.name.toLowerCase()} {getUfPrep(ufUpper)} {ufName} incluem
                 o pregão eletrônico (para compras de menor complexidade técnica) e a concorrência
                 (para contratos de maior vulto). A Lei 14.133/2021 consolidou o pregão eletrônico
                 como modalidade preferencial para aquisições de bens e serviços comuns, o que
@@ -224,7 +226,7 @@ export default async function SectorUfProgrammaticPage({
                 ComprasNet e Bolsa Eletrônica.
               </p>
               <p>
-                O histórico de preços praticados em {ufName} serve como referência para a
+                O histórico de preços praticados {getUfPrep(ufUpper)} {ufName} serve como referência para a
                 formulação de propostas competitivas. Empresas que monitoram sistematicamente
                 os valores de adjudicação em editais similares conseguem precificar com mais
                 precisão, equilibrando competitividade com margem de lucro sustentável.
@@ -262,6 +264,7 @@ export default async function SectorUfProgrammaticPage({
             variant="final"
             setor={sector.name}
             uf={ufName}
+            ufCode={ufUpper}
             count={stats?.total_editais}
             slug={slug}
           />

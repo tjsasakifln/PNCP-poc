@@ -4,7 +4,7 @@ import ContentPageLayout from '../components/ContentPageLayout';
 import { LeadCapture } from '@/components/LeadCapture';
 import { CopyEmbedButton } from './CopyEmbedButton';
 import { SECTORS } from '@/lib/sectors';
-import { UF_NAMES } from '@/lib/programmatic';
+import { UF_NAMES, getUfPrep } from '@/lib/programmatic';
 
 // STORY-432 AC5: OG meta tags dinâmicas baseadas em params de URL (setor, uf)
 export async function generateMetadata({
@@ -21,21 +21,21 @@ export async function generateMetadata({
 
   const title =
     sector && ufName
-      ? `Calculadora B2G: ${sector.name} em ${ufName} — SmartLic`
+      ? `Calculadora B2G: ${sector.name} ${getUfPrep(ufCode)} ${ufName} — SmartLic`
       : sector
         ? `Calculadora B2G: ${sector.name} — SmartLic`
         : 'Calculadora de Oportunidades B2G — Quanto você está perdendo em licitações?';
 
   const description =
     sector && ufName
-      ? `Descubra quantas licitações de ${sector.name} em ${ufName} sua equipe está perdendo. Dados reais do PNCP por estado.`
+      ? `Descubra quantas licitações de ${sector.name} ${getUfPrep(ufCode)} ${ufName} sua equipe está perdendo. Dados reais do PNCP por estado.`
       : sector
         ? `Descubra quantas licitações de ${sector.name} sua equipe está perdendo. Dados reais do PNCP por setor.`
         : 'Descubra quantas licitações do seu setor sua equipe está perdendo por falta de automação. Dados reais do PNCP, por setor e UF.';
 
   const ogTitle =
     sector && ufName
-      ? `Calculadora B2G: ${sector.name} em ${ufName} — Quanto você está perdendo?`
+      ? `Calculadora B2G: ${sector.name} ${getUfPrep(ufCode)} ${ufName} — Quanto você está perdendo?`
       : 'Calculadora de Oportunidades B2G — Quanto você está perdendo?';
 
   const canonicalUrl = 'https://smartlic.tech/calculadora';

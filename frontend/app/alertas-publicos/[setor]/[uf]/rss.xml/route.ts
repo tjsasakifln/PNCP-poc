@@ -1,4 +1,4 @@
-import { getSectorFromSlug, fetchAlertasPublicos, ALL_UFS, UF_NAMES } from '@/lib/programmatic';
+import { getSectorFromSlug, fetchAlertasPublicos, getUfPrep, ALL_UFS, UF_NAMES } from '@/lib/programmatic';
 
 export async function GET(
   _req: Request,
@@ -29,9 +29,9 @@ export async function GET(
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Alertas de ${sector.name} em ${ufName} | SmartLic</title>
+    <title>Alertas de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic</title>
     <link>${pageUrl}</link>
-    <description>Licitações recentes de ${sector.name} em ${ufName} — dados do PNCP atualizados a cada hora.</description>
+    <description>Licitações recentes de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} — dados do PNCP atualizados a cada hora.</description>
     <language>pt-BR</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${feedUrl}" rel="self" type="application/rss+xml" />

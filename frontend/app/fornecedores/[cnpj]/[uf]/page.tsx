@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { generateSectorUfParams, getSectorFromSlug, ALL_UFS, UF_NAMES } from '@/lib/programmatic';
+import { generateSectorUfParams, getSectorFromSlug, getUfPrep, ALL_UFS, UF_NAMES } from '@/lib/programmatic';
 import { formatBRL } from '@/lib/sectors';
 import { buildCanonical, getFreshnessLabel } from '@/lib/seo';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
@@ -62,11 +62,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hasData = !!(data && data.total_suppliers > 0);
 
   return {
-    title: `Fornecedores de ${sector.name} em ${ufName} ${year} — SmartLic`,
+    title: `Fornecedores de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} ${year} — SmartLic`,
     description: `Quais empresas vendem ${sector.name} para o governo de ${ufName}? Ranking de fornecedores com valor de contratos. Dados PNCP.`,
     alternates: { canonical: buildCanonical(`/fornecedores/${setor}/${uf}`) },
     openGraph: {
-      title: `Fornecedores: ${sector.name} em ${ufName}`,
+      title: `Fornecedores: ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`,
       description: `Empresas que vendem ${sector.name} para o governo de ${ufName}`,
       type: 'website',
       locale: 'pt_BR',
@@ -99,16 +99,16 @@ export default async function FornecedoresSetorUfPage({ params }: Props) {
       question: `Quais empresas fornecem ${sector.name} para o governo de ${ufName}?`,
       answer: data && data.supplier_ranking.length > 0
         ? `Os maiores fornecedores sao: ${data.supplier_ranking.slice(0, 3).map((s) => s.nome).join(', ')}. Veja o ranking completo nesta pagina.`
-        : `Consulte os dados atualizados nesta pagina para ver os fornecedores de ${sector.name} em ${ufName}.`,
+        : `Consulte os dados atualizados nesta pagina para ver os fornecedores de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}.`,
     },
     {
       question: `Como se tornar fornecedor de ${sector.name} para o governo?`,
       answer: `Para vender ${sector.name} para o governo, cadastre-se no PNCP e participe de licitacoes. O SmartLic ajuda a encontrar oportunidades relevantes.`,
     },
     {
-      question: `Quantos fornecedores de ${sector.name} existem em ${ufName}?`,
+      question: `Quantos fornecedores de ${sector.name} existem ${getUfPrep(ufUpper)} ${ufName}?`,
       answer: data
-        ? `Existem ${data.total_suppliers} fornecedores de ${sector.name} registrados em ${ufName} no PNCP.`
+        ? `Existem ${data.total_suppliers} fornecedores de ${sector.name} registrados ${getUfPrep(ufUpper)} ${ufName} no PNCP.`
         : `Veja o total atualizado de fornecedores nesta pagina.`,
     },
   ];
@@ -117,8 +117,8 @@ export default async function FornecedoresSetorUfPage({ params }: Props) {
     {
       '@context': 'https://schema.org',
       '@type': 'Dataset',
-      name: `Fornecedores de ${sector.name} em ${ufName}`,
-      description: `Ranking de fornecedores do setor ${sector.name} em ${ufName}, Brasil.`,
+      name: `Fornecedores de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`,
+      description: `Ranking de fornecedores do setor ${sector.name} ${getUfPrep(ufUpper)} ${ufName}, Brasil.`,
       url: `https://smartlic.tech/fornecedores/${setor}/${uf}`,
       temporalCoverage: `${year - 2}/${year}`,
       spatialCoverage: { '@type': 'Place', name: ufName },
@@ -128,7 +128,7 @@ export default async function FornecedoresSetorUfPage({ params }: Props) {
     {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
-      name: `Top Fornecedores de ${sector.name} em ${ufName}`,
+      name: `Top Fornecedores de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`,
       numberOfItems: data?.supplier_ranking.length || 0,
       itemListElement: (data?.supplier_ranking || []).slice(0, 10).map((s, i) => ({
         '@type': 'ListItem',
@@ -186,7 +186,7 @@ export default async function FornecedoresSetorUfPage({ params }: Props) {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Fornecedores de {sector.name} em {ufName}
+            Fornecedores de {sector.name} {getUfPrep(ufUpper)} {ufName}
           </h1>
           <p className="text-gray-500 text-sm mb-6">
             {data?.last_updated ? getFreshnessLabel(data.last_updated) : 'Dados do PNCP'}
@@ -196,7 +196,7 @@ export default async function FornecedoresSetorUfPage({ params }: Props) {
           {!data || data.total_suppliers === 0 ? (
             <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
               <p className="text-gray-500">
-                Nenhum fornecedor de {sector.name} encontrado em {ufName} no periodo consultado.
+                Nenhum fornecedor de {sector.name} encontrado {getUfPrep(ufUpper)} {ufName} no periodo consultado.
               </p>
               <p className="text-sm text-gray-400 mt-2">
                 Os dados sao indexados diariamente do PNCP. Volte em breve.
@@ -294,13 +294,13 @@ export default async function FornecedoresSetorUfPage({ params }: Props) {
             <h2 className="text-lg font-semibold text-gray-900 mb-3">Paginas Relacionadas</h2>
             <div className="flex flex-wrap gap-3 text-sm">
               <Link href={`/contratos/${setor}/${uf}`} className="text-blue-600 hover:underline">
-                Contratos de {sector.name} em {ufName}
+                Contratos de {sector.name} {getUfPrep(ufUpper)} {ufName}
               </Link>
               <Link href={`/alertas-publicos/${setor}/${uf}`} className="text-blue-600 hover:underline">
-                Alertas de {sector.name} em {ufName}
+                Alertas de {sector.name} {getUfPrep(ufUpper)} {ufName}
               </Link>
               <Link href={`/blog/licitacoes/${setor}/${uf}`} className="text-blue-600 hover:underline">
-                Licitacoes de {sector.name} em {ufName}
+                Licitacoes de {sector.name} {getUfPrep(ufUpper)} {ufName}
               </Link>
               <Link href="/fornecedores" className="text-blue-600 hover:underline">
                 Todos os Setores
@@ -311,7 +311,7 @@ export default async function FornecedoresSetorUfPage({ params }: Props) {
           {/* Lead Capture */}
           <section className="mt-12 bg-blue-50 rounded-lg p-6 text-center">
             <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Encontre licitacoes de {sector.name} em {ufName}
+              Encontre licitacoes de {sector.name} {getUfPrep(ufUpper)} {ufName}
             </h2>
             <p className="text-gray-600 mb-4">
               O SmartLic monitora editais e contratos do PNCP automaticamente.
