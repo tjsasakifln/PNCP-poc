@@ -46,6 +46,45 @@ export const SEARCH_TOUR_STEPS: TourStep[] = [
   },
 ];
 
+// STORY-442: Guided tour for /buscar — 5-step post-onboarding tour (AC2)
+// localStorage key: smartlic_buscar_tour_completed
+export const GUIDED_TOUR_STEPS: TourStep[] = [
+  {
+    id: 'guided-busca',
+    title: 'Busca inteligente',
+    text: '<span class="tour-step-counter">Passo 1 de 5</span><p>Escolha seu setor e os estados onde sua empresa atua para encontrar as melhores oportunidades.</p>',
+    attachTo: { element: '[data-tour="setor-filter"]', on: 'bottom' },
+  },
+  {
+    id: 'guided-viability',
+    title: 'Score de viabilidade',
+    text: '<span class="tour-step-counter">Passo 2 de 5</span><p>Cada oportunidade recebe um score de viabilidade com base em modalidade, prazo, valor e geografia.</p>',
+    attachTo: { element: '[data-tour="viability-badge"]', on: 'bottom' },
+    showOn: () => !!document.querySelector('[data-tour="viability-badge"]'),
+  },
+  {
+    id: 'guided-ia-summary',
+    title: 'Resumo com IA',
+    text: '<span class="tour-step-counter">Passo 3 de 5</span><p>A IA resume o objeto da licitação e destaca os pontos mais relevantes para sua empresa.</p>',
+    attachTo: { element: '[data-tour="result-card"]', on: 'bottom' },
+    showOn: () => !!document.querySelector('[data-tour="result-card"]'),
+  },
+  {
+    id: 'guided-pipeline',
+    title: 'Pipeline de oportunidades',
+    text: '<span class="tour-step-counter">Passo 4 de 5</span><p>Salve oportunidades promissoras no pipeline para acompanhá-las no kanban e não perder prazos.</p>',
+    attachTo: { element: '[data-tour="pipeline-button"]', on: 'bottom' },
+    showOn: () => !!document.querySelector('[data-tour="pipeline-button"]'),
+  },
+  {
+    id: 'guided-export',
+    title: 'Exportar para Excel',
+    text: '<span class="tour-step-counter">Passo 5 de 5</span><p>Exporte todas as oportunidades encontradas para Excel e compartilhe com sua equipe.</p>',
+    attachTo: { element: '[data-tour="excel-button"]', on: 'top' },
+    showOn: () => !!document.querySelector('[data-tour="excel-button"]'),
+  },
+];
+
 export const RESULTS_TOUR_STEPS: TourStep[] = [
   {
     id: 'results-card',

@@ -22,63 +22,63 @@ Benchmarks B2B SaaS mostram que sequências de nurturing de 4-6 emails durante o
 ## Acceptance Criteria
 
 ### AC1: Email Day 1 — Boas-vindas + Tour (1h após signup)
-- [ ] Assunto: "Seu SmartLic está pronto — veja como configurar sua primeira busca"
-- [ ] Conteúdo: saudação com nome do usuário + link para o produto + destacar 3 features principais + link para guided tour (se STORY-442 implementada, caso contrário link direto para /buscar)
-- [ ] Template: `trial_welcome_tour.html`
-- [ ] Enviado 1 hora após criação do usuário (não imediatamente)
+- [x] Assunto: "Seu SmartLic está pronto — veja como configurar sua primeira busca"
+- [x] Conteúdo: saudação com nome do usuário + link para o produto + destacar 3 features principais + link para guided tour (se STORY-442 implementada, caso contrário link direto para /buscar)
+- [x] Template: `trial_welcome_tour.html`
+- [x] Enviado 1 hora após criação do usuário (não imediatamente)
 
 ### AC2: Email Day 3 — Insight do setor/UF do usuário
-- [ ] Assunto: "Editais de [setor] em [UF] esta semana — veja o que encontramos"
-- [ ] Conteúdo: dados reais do datalake — quantidade de editais abertos no setor+UF do usuário nos últimos 3 dias + valor total + CTA "Ver todos os editais →"
-- [ ] Template: `trial_day3_sector_insight.html`
-- [ ] Dados personalizados: buscar de `pncp_raw_bids` WHERE setor LIKE keywords AND uf IN profile_ufs (últimas 72h)
-- [ ] Se usuário não tiver setor configurado no perfil: usar setor genérico "do seu mercado"
+- [x] Assunto: "Editais de [setor] em [UF] esta semana — veja o que encontramos"
+- [x] Conteúdo: dados reais do datalake — quantidade de editais abertos no setor+UF do usuário nos últimos 3 dias + valor total + CTA "Ver todos os editais →"
+- [x] Template: `trial_day3_sector_insight.html`
+- [x] Dados personalizados: buscar de `pncp_raw_bids` WHERE setor LIKE keywords AND uf IN profile_ufs (últimas 72h)
+- [x] Se usuário não tiver setor configurado no perfil: usar setor genérico "do seu mercado"
 
 ### AC3: Email Day 5 — Case de uso do setor
-- [ ] Assunto: "Como empresas de [setor] encontram oportunidades que perderiam sem o SmartLic"
-- [ ] Conteúdo: narrativa de caso de uso fictício mas realista para o setor do usuário + dados de mercado (ex: "SC tem X editais de TI por mês") + CTA para busca
-- [ ] Template: `trial_day5_case.html`
-- [ ] 1 template genérico parametrizado com tokens `{setor}` e `{uf}` — NÃO criar 15 variações por setor (escopo V2). Se setor não disponível no perfil, usar "do seu mercado".
+- [x] Assunto: "Como empresas de [setor] encontram oportunidades que perderiam sem o SmartLic"
+- [x] Conteúdo: narrativa de caso de uso fictício mas realista para o setor do usuário + dados de mercado (ex: "SC tem X editais de TI por mês") + CTA para busca
+- [x] Template: `trial_day5_case.html`
+- [x] 1 template genérico parametrizado com tokens `{setor}` e `{uf}` — NÃO criar 15 variações por setor (escopo V2). Se setor não disponível no perfil, usar "do seu mercado".
 
 ### AC4: Email Day 10 — Resumo do valor do trial
-- [ ] Assunto: "Você analisou X oportunidades no SmartLic — veja seu resumo"
-- [ ] Conteúdo: dados reais do usuário (total de buscas, total de editais encontrados, valor estimado) + CTA "Continue com SmartLic Pro →"
-- [ ] Template: `trial_day10_value_summary.html`
-- [ ] Dados: buscar do analytics endpoint (`/v1/analytics/trial-value` por usuário)
-- [ ] Se usuário não fez nenhuma busca: email de reativação "Ainda não testou? Aqui está como começar"
+- [x] Assunto: "Você analisou X oportunidades no SmartLic — veja seu resumo"
+- [x] Conteúdo: dados reais do usuário (total de buscas, total de editais encontrados, valor estimado) + CTA "Continue com SmartLic Pro →"
+- [x] Template: `trial_day10_value_summary.html`
+- [x] Dados: buscar do analytics endpoint (`/v1/analytics/trial-value` por usuário)
+- [x] Se usuário não fez nenhuma busca: email de reativação "Ainda não testou? Aqui está como começar"
 
 ### AC5: Email Day 12 — Urgência (48h antes do fim)
-- [ ] Assunto: "⏰ Seu trial encerra em 48h — garanta acesso ao SmartLic Pro"
-- [ ] Conteúdo: lista dos benefícios que serão perdidos + preço Pro (R$397/mês) + CTA "Assinar agora →" com link direto para checkout
-- [ ] Template: `trial_day12_urgency.html`
-- [ ] Link de checkout: `/planos` (não link direto Stripe — pode mudar)
+- [x] Assunto: "⏰ Seu trial encerra em 48h — garanta acesso ao SmartLic Pro"
+- [x] Conteúdo: lista dos benefícios que serão perdidos + preço Pro (R$397/mês) + CTA "Assinar agora →" com link direto para checkout
+- [x] Template: `trial_day12_urgency.html`
+- [x] Link de checkout: `/planos` (não link direto Stripe — pode mudar)
 
 ### AC6: Emails existentes preservados
-- [ ] Emails Day 7 ("Faltam 7 dias") e Day 13 ("Seu trial encerra amanhã") existentes são mantidos sem alteração
-- [ ] Nenhum email existente é removido ou alterado
+- [x] Emails Day 7 ("Faltam 7 dias") e Day 13 ("Seu trial encerra amanhã") existentes são mantidos sem alteração
+- [x] Nenhum email existente é removido ou alterado
 
 ### AC7: Configuração como cron jobs
-- [ ] 5 novos cron jobs em `backend/jobs/cron/notifications.py` (ou arquivo dedicado)
-- [ ] Jobs executam diariamente e enviam para usuários que estão no dia correto do trial
-- [ ] Lógica de "dia N": `(today - user.created_at).days == N`
-- [ ] Emails enviados via Resend (provider atual) usando `email_service.py`
+- [x] 5 novos cron jobs em `backend/jobs/cron/notifications.py` (ou arquivo dedicado)
+- [x] Jobs executam diariamente e enviam para usuários que estão no dia correto do trial
+- [x] Lógica de "dia N": `(today - user.created_at).days == N`
+- [x] Emails enviados via Resend (provider atual) usando `email_service.py`
 
 ### AC8: Cancelamento automático após upgrade
-- [ ] Antes de enviar qualquer email nurturing, verificar se `profile.plan_type != "free_trial"`
-- [ ] Se usuário já fez upgrade: não enviar o email e continuar para o próximo usuário
-- [ ] Logs: registrar emails enviados e pulados com motivo
+- [x] Antes de enviar qualquer email nurturing, verificar se `profile.plan_type != "free_trial"`
+- [x] Se usuário já fez upgrade: não enviar o email e continuar para o próximo usuário
+- [x] Logs: registrar emails enviados e pulados com motivo
 
 ### AC9: Templates HTML
-- [ ] Todos os templates em `backend/templates/emails/`
-- [ ] Herdam header/footer do template base existente
-- [ ] Responsivos (verificar template base existente para padrão)
-- [ ] Texto simples (plain text) como fallback
+- [x] Todos os templates em `backend/templates/emails/`
+- [x] Herdam header/footer do template base existente
+- [x] Responsivos (verificar template base existente para padrão)
+- [x] Texto simples (plain text) como fallback
 
 ### AC10: Testes
-- [ ] Teste unitário para cada template: render com dados mock → HTML válido sem erros
-- [ ] Teste para lógica de cancelamento: usuário paid → email não enviado
-- [ ] Teste para cálculo de dias: usuário criado há 3 dias → recebe Day 3
-- [ ] Teste para Day 3 com dados de setor: template renderizado com dados corretos
+- [x] Teste unitário para cada template: render com dados mock → HTML válido sem erros
+- [x] Teste para lógica de cancelamento: usuário paid → email não enviado
+- [x] Teste para cálculo de dias: usuário criado há 3 dias → recebe Day 3
+- [x] Teste para Day 3 com dados de setor: template renderizado com dados corretos
 
 ---
 
@@ -122,13 +122,13 @@ Benchmarks B2B SaaS mostram que sequências de nurturing de 4-6 emails durante o
 
 ## File List
 
-- [ ] `backend/jobs/cron/notifications.py` — AC7, AC8: 5 novos cron jobs + lógica de cancelamento
-- [ ] `backend/templates/emails/trial_welcome_tour.html` — AC1: template Day 1
-- [ ] `backend/templates/emails/trial_day3_sector_insight.html` — AC2: template Day 3
-- [ ] `backend/templates/emails/trial_day5_case.html` — AC3: template Day 5
-- [ ] `backend/templates/emails/trial_day10_value_summary.html` — AC4: template Day 10
-- [ ] `backend/templates/emails/trial_day12_urgency.html` — AC5: template Day 12
-- [ ] `backend/tests/test_nurturing_sequence.py` — AC10: testes unitários
+- [x] `backend/jobs/cron/notifications.py` — AC7, AC8: 5 novos cron jobs + lógica de cancelamento
+- [x] `backend/templates/emails/trial_welcome_tour.html` — AC1: template Day 1
+- [x] `backend/templates/emails/trial_day3_sector_insight.html` — AC2: template Day 3
+- [x] `backend/templates/emails/trial_day5_case.html` — AC3: template Day 5
+- [x] `backend/templates/emails/trial_day10_value_summary.html` — AC4: template Day 10
+- [x] `backend/templates/emails/trial_day12_urgency.html` — AC5: template Day 12
+- [x] `backend/tests/test_nurturing_sequence.py` — AC10: testes unitários
 
 ---
 

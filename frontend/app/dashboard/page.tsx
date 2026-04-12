@@ -22,6 +22,7 @@ import { DashboardTimeSeriesChart } from "./components/DashboardTimeSeriesChart"
 import { DashboardDimensionsWidget } from "./components/DashboardDimensionsWidget";
 import { DashboardQuickLinks } from "./components/DashboardQuickLinks";
 import { InsightCards } from "./components/InsightCards";
+import { TrialValueCard } from "./components/TrialValueCard";
 import {
   DashboardProfileHeaderControls,
   DashboardProfileSection,
@@ -202,6 +203,16 @@ export default function DashboardPage() {
     dimensions
   );
 
+  // P0 zero-churn: Auto-start dashboard tour on first visit (must be before any early returns)
+  const dashboardTourStarted = useRef(false);
+  useEffect(() => {
+    if (!loading && data && !dashboardTourStarted.current && !isDashboardTourCompleted()) {
+      dashboardTourStarted.current = true;
+      const timer = setTimeout(() => startDashboardTour(), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, data, isDashboardTourCompleted, startDashboardTour]);
+
   // ── Auth guard ──────────────────────────────────────────────────────────────
 
   if (authLoading) return <AuthLoadingScreen />;
@@ -220,16 +231,6 @@ export default function DashboardPage() {
   if (error && !hasExhaustedRetries && !data) {
     return <DashboardRetryingState retryCount={retryCount} />;
   }
-
-  // P0 zero-churn: Auto-start dashboard tour on first visit
-  const dashboardTourStarted = useRef(false);
-  useEffect(() => {
-    if (!loading && data && !dashboardTourStarted.current && !isDashboardTourCompleted()) {
-      dashboardTourStarted.current = true;
-      const timer = setTimeout(() => startDashboardTour(), 800);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, data, isDashboardTourCompleted, startDashboardTour]);
 
   // ── Loading skeleton ────────────────────────────────────────────────────────
 
@@ -275,6 +276,9 @@ export default function DashboardPage() {
       />
 
       <div className="max-w-6xl mx-auto py-8 px-4">
+        {/* STORY-443: Trial value card — top of dashboard for active trial users */}
+        <TrialValueCard />
+
         {/* P0 zero-churn: Trial value tracker */}
         <div className="mb-6">
           <TrialValueTracker />

@@ -22,35 +22,35 @@ O momento em que o usuário lê o início do resumo e quer ver mais é o pico de
 ## Acceptance Criteria
 
 ### AC1: CTA inline após texto truncado
-- [ ] Imediatamente após o texto truncado (após o "..."), exibir CTA inline na mesma linha/bloco
-- [ ] Texto do CTA: "Desbloqueie o resumo completo + recomendação de participação →"
-- [ ] CTA é um link (não botão) com `href="/planos"`
+- [x] Imediatamente após o texto truncado (após o "..."), exibir CTA inline na mesma linha/bloco
+- [x] Texto do CTA: "Desbloqueie o resumo completo + recomendação de participação →"
+- [x] CTA é um link (não botão) com `href="/planos"`
 
 ### AC2: Condicional por plano
-- [ ] CTA aparece APENAS para `trialPhase === "limited_access"` OU `isTrialExpired`
-- [ ] CTA NÃO aparece para usuários pagantes (plano ativo)
-- [ ] CTA NÃO aparece se `trialPhase === "full_access"` (trial com acesso completo, se existir)
+- [x] CTA aparece APENAS para `trialPhase === "limited_access"` OU `isTrialExpired`
+- [x] CTA NÃO aparece para usuários pagantes (plano ativo)
+- [x] CTA NÃO aparece se `trialPhase === "full_access"` (trial com acesso completo, se existir)
 
 ### AC3: Navegação interna
-- [ ] Link usa `router.push('/planos')` ou `<Link href="/planos">` (não `target="_blank"`)
-- [ ] Não abre nova aba
+- [x] Link usa `router.push('/planos')` ou `<Link href="/planos">` (não `target="_blank"`)
+- [x] Não abre nova aba
 
 ### AC4: Tracking Mixpanel
-- [ ] Ao clicar no CTA, disparar evento Mixpanel: `trial_cta_clicked` com propriedades:
+- [x] Ao clicar no CTA, disparar evento Mixpanel: `trial_cta_clicked` com propriedades:
   - `source: "result_card_summary"`
   - `edital_id: string`
   - `setor: string`
 
 ### AC5: Estilo visual
-- [ ] CTA visualmente distinto: cor de destaque (usar `text-accent` ou `text-primary` do design system existente)
-- [ ] NÃO usar modal, popup, ou overlay — apenas texto inline com link
-- [ ] Fonte levemente menor que o resumo (texto secundário)
+- [x] CTA visualmente distinto: cor de destaque (usar `text-accent` ou `text-primary` do design system existente)
+- [x] NÃO usar modal, popup, ou overlay — apenas texto inline com link
+- [x] Fonte levemente menor que o resumo (texto secundário)
 
 ### AC6: Testes
-- [ ] Teste: trial user com `limited_access` → CTA visível
-- [ ] Teste: paid user → CTA não visível
-- [ ] Teste: trial expirado → CTA visível
-- [ ] Teste: click no CTA dispara evento Mixpanel correto
+- [x] Teste: trial user com `limited_access` → CTA visível
+- [x] Teste: paid user → CTA não visível
+- [x] Teste: trial expirado → CTA visível
+- [x] Teste: click no CTA dispara evento Mixpanel correto
 
 ---
 
@@ -87,8 +87,8 @@ O momento em que o usuário lê o início do resumo e quer ver mais é o pico de
 
 ## File List
 
-- [ ] `frontend/app/buscar/components/search-results/ResultCard.tsx` — AC1, AC2, AC5: adicionar CTA condicional
-- [ ] `frontend/__tests__/buscar/ResultCard.test.tsx` — AC6: adicionar casos de teste para CTA
+- [x] `frontend/app/buscar/components/search-results/ResultCard.tsx` — AC1, AC2, AC5: adicionar CTA condicional
+- [x] `frontend/__tests__/buscar/ResultCard.test.tsx` — AC6: adicionar casos de teste para CTA
 
 ---
 

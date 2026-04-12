@@ -22,8 +22,8 @@ O endpoint `GET /v1/analytics/trial-value` já existe (implementado em GTM-010) 
 ## Acceptance Criteria
 
 ### AC1: Card de Trial Value no topo do dashboard
-- [ ] Para usuários `plan_type === "free_trial"` com trial ativo, renderizar `TrialValueCard` no topo da página `/dashboard` (acima dos outros widgets)
-- [ ] Card contém (usando campos reais do endpoint `TrialValueResponse`):
+- [x] Para usuários `plan_type === "free_trial"` com trial ativo, renderizar `TrialValueCard` no topo da página `/dashboard` (acima dos outros widgets)
+- [x] Card contém (usando campos reais do endpoint `TrialValueResponse`):
   - Título: "Seu progresso no SmartLic"
   - Oportunidades encontradas: "{`total_opportunities`} editais relevantes identificados"
   - Valor total analisado: "R$ {`total_value`} em contratos potenciais" (formatado em BRL)
@@ -32,33 +32,33 @@ O endpoint `GET /v1/analytics/trial-value` já existe (implementado em GTM-010) 
   - Progresso do trial: "Dia X de 14" + barra de progresso visual (linear)
 
 ### AC2: Dados do endpoint existente
-- [ ] Dados buscados de `GET /api/analytics?endpoint=trial-value` (proxy existente)
-- [ ] NÃO criar novo endpoint backend — reutilizar o que existe
-- [ ] Se endpoint retornar erro: exibir card com apenas "Dia X de 14" + CTA (sem métricas)
+- [x] Dados buscados de `GET /api/analytics?endpoint=trial-value` (proxy existente)
+- [x] NÃO criar novo endpoint backend — reutilizar o que existe
+- [x] Se endpoint retornar erro: exibir card com apenas "Dia X de 14" + CTA (sem métricas)
 
 ### AC3: CTA de conversão no card
-- [ ] Botão no card: "Continue analisando com SmartLic Pro →" com href="/planos"
-- [ ] Botão com estilo primário (não secundário/outline)
-- [ ] Subtext: "A partir de R$397/mês — cancele quando quiser"
+- [x] Botão no card: "Continue analisando com SmartLic Pro →" com href="/planos"
+- [x] Botão com estilo primário (não secundário/outline)
+- [x] Subtext: "A partir de R$397/mês — cancele quando quiser"
 
 ### AC4: Progresso visual do trial
-- [ ] Barra de progresso linear (0-100%) representando dias usados / 14 dias totais
-- [ ] Cor da barra: verde (dias 1-7), amarelo (8-11), vermelho (12-14)
-- [ ] Texto de urgência na barra: "X dias restantes" (vermelho nos últimos 3 dias)
+- [x] Barra de progresso linear (0-100%) representando dias usados / 14 dias totais
+- [x] Cor da barra: verde (dias 1-7), amarelo (8-11), vermelho (12-14)
+- [x] Texto de urgência na barra: "X dias restantes" (vermelho nos últimos 3 dias)
 
 ### AC5: Não aparece para pagantes
-- [ ] `TrialValueCard` NÃO renderizado para usuários com plano pago
-- [ ] `TrialValueCard` NÃO renderizado para trial expirado (eles já estão no hard block)
+- [x] `TrialValueCard` NÃO renderizado para usuários com plano pago
+- [x] `TrialValueCard` NÃO renderizado para trial expirado (eles já estão no hard block)
 
 ### AC6: Loading e fallback
-- [ ] Durante fetch dos dados: skeleton loader no card (não spinner de página inteira)
-- [ ] Se analytics endpoint lento (>3s): mostrar card com dados parciais (dia do trial) sem bloquear
+- [x] Durante fetch dos dados: skeleton loader no card (não spinner de página inteira)
+- [x] Se analytics endpoint lento (>3s): mostrar card com dados parciais (dia do trial) sem bloquear
 
 ### AC7: Testes
-- [ ] Teste: trial user dia 5 → card visível com dados corretos
-- [ ] Teste: trial user com erro de analytics → card com fallback (apenas dia)
-- [ ] Teste: paid user → card não renderizado
-- [ ] Teste: barra de progresso com cor correta por fase
+- [x] Teste: trial user dia 5 → card visível com dados corretos
+- [x] Teste: trial user com erro de analytics → card com fallback (apenas dia)
+- [x] Teste: paid user → card não renderizado
+- [x] Teste: barra de progresso com cor correta por fase
 
 ---
 
@@ -98,9 +98,9 @@ O endpoint `GET /v1/analytics/trial-value` já existe (implementado em GTM-010) 
 
 ## File List
 
-- [ ] `frontend/app/dashboard/components/TrialValueCard.tsx` — AC1-AC6: novo componente
-- [ ] `frontend/app/dashboard/page.tsx` — AC1, AC5: integrar card condicionalmente no topo
-- [ ] `frontend/__tests__/dashboard/TrialValueCard.test.tsx` — AC7: testes unitários
+- [x] `frontend/app/dashboard/components/TrialValueCard.tsx` — AC1-AC6: novo componente
+- [x] `frontend/app/dashboard/page.tsx` — AC1, AC5: integrar card condicionalmente no topo
+- [x] `frontend/__tests__/dashboard/TrialValueCard.test.tsx` — AC7: testes unitários
 
 ---
 

@@ -75,7 +75,7 @@ TRIAL_EMAILS_ENABLED: bool = str_to_bool(os.getenv("TRIAL_EMAILS_ENABLED", "true
 TRIAL_PAYWALL_ENABLED: bool = str_to_bool(os.getenv("TRIAL_PAYWALL_ENABLED", "true"))
 TRIAL_PAYWALL_DAY: int = int(os.getenv("TRIAL_PAYWALL_DAY", "7"))
 TRIAL_PAYWALL_MAX_RESULTS: int = int(os.getenv("TRIAL_PAYWALL_MAX_RESULTS", "10"))
-TRIAL_PAYWALL_MAX_PIPELINE: int = int(os.getenv("TRIAL_PAYWALL_MAX_PIPELINE", "15"))
+TRIAL_PAYWALL_MAX_PIPELINE: int = int(os.getenv("TRIAL_PAYWALL_MAX_PIPELINE", "5"))
 
 # SEO-PLAYBOOK §7.4 — Day-8 referral invitation email (opt-in, additive to
 # the existing trial sequence). Default False to avoid disturbing production

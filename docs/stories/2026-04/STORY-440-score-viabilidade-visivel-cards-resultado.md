@@ -22,40 +22,40 @@ Isso faz com que todos os editais pareçam igualmente relevantes, removendo a pe
 ## Acceptance Criteria
 
 ### AC1: Badge visual de viabilidade no ResultCard
-- [ ] Badge exibido no card de resultado com 3 estados mapeados do campo `viability_level` do backend: Verde ("alta"), Amarelo ("media"), Vermelho ("baixa")
-- [ ] Badge contém ícone colorido + texto curto: "Alta viabilidade", "Média viabilidade", "Baixa viabilidade"
-- [ ] Badge posicionado abaixo do título do edital, antes do resumo executivo
-- [ ] NÃO calcular thresholds no frontend — usar `viability_level` diretamente (já calculado pelo backend)
+- [x] Badge exibido no card de resultado com 3 estados mapeados do campo `viability_level` do backend: Verde ("alta"), Amarelo ("media"), Vermelho ("baixa")
+- [x] Badge contém ícone colorido + texto curto: "Alta viabilidade", "Média viabilidade", "Baixa viabilidade"
+- [x] Badge posicionado abaixo do título do edital, antes do resumo executivo
+- [x] NÃO calcular thresholds no frontend — usar `viability_level` diretamente (já calculado pelo backend)
 
 ### AC2: Tooltip com breakdown dos 4 fatores
-- [ ] Ao hover/click no badge, tooltip mostra breakdown detalhado:
+- [x] Ao hover/click no badge, tooltip mostra breakdown detalhado:
   - Modalidade: X/30 pts
   - Timeline: X/25 pts
   - Valor: X/25 pts
   - Geografia: X/20 pts
   - Total: X/100 pts
-- [ ] Tooltip funciona em mobile (click) e desktop (hover)
+- [x] Tooltip funciona em mobile (click) e desktop (hover)
 
 ### AC3: Visibilidade universal (não gated por plano)
-- [ ] Badge visível para usuários trial E pagantes
-- [ ] Badge visível para usuários com trial expirado (até fazerem upgrade e buscarem novamente)
+- [x] Badge visível para usuários trial E pagantes
+- [x] Badge visível para usuários com trial expirado (até fazerem upgrade e buscarem novamente)
 
 ### AC4: Graceful fallback
-- [ ] Se `viability_score` ausente, null, ou 0 na resposta de busca, badge NÃO é renderizado
-- [ ] Ausência do badge não quebra layout do card
+- [x] Se `viability_score` ausente, null, ou 0 na resposta de busca, badge NÃO é renderizado
+- [x] Ausência do badge não quebra layout do card
 
 ### AC5: Componente ViabilityBadge isolado
-- [ ] Componente `ViabilityBadge.tsx` criado em `frontend/app/buscar/components/`
-- [ ] Props: `level: "alta" | "media" | "baixa" | null | undefined`, `score?: number`, `factors?: Record<string, number>`
-- [ ] Campos mapeados do backend: `viability_level`, `viability_score`, `viability_factors`
-- [ ] Componente exportado e usado pelo `ResultCard.tsx`
+- [x] Componente `ViabilityBadge.tsx` criado em `frontend/app/buscar/components/`
+- [x] Props: `level: "alta" | "media" | "baixa" | null | undefined`, `score?: number`, `factors?: Record<string, number>`
+- [x] Campos mapeados do backend: `viability_level`, `viability_score`, `viability_factors`
+- [x] Componente exportado e usado pelo `ResultCard.tsx`
 
 ### AC6: Testes unitários
-- [ ] Teste: `level="alta"` → badge verde com texto "Alta viabilidade"
-- [ ] Teste: `level="media"` → badge amarelo com texto "Média viabilidade"
-- [ ] Teste: `level="baixa"` → badge vermelho com texto "Baixa viabilidade"
-- [ ] Teste: `level=null` → badge não renderizado
-- [ ] Teste: tooltip mostra valores corretos dos 4 fatores de `viability_factors`
+- [x] Teste: `level="alta"` → badge verde com texto "Alta viabilidade"
+- [x] Teste: `level="media"` → badge amarelo com texto "Média viabilidade"
+- [x] Teste: `level="baixa"` → badge vermelho com texto "Baixa viabilidade"
+- [x] Teste: `level=null` → badge não renderizado
+- [x] Teste: tooltip mostra valores corretos dos 4 fatores de `viability_factors`
 
 ---
 
@@ -93,9 +93,9 @@ Isso faz com que todos os editais pareçam igualmente relevantes, removendo a pe
 
 ## File List
 
-- [ ] `frontend/app/buscar/components/ViabilityBadge.tsx` — AC5: novo componente
-- [ ] `frontend/app/buscar/components/search-results/ResultCard.tsx` — AC1: integrar badge
-- [ ] `frontend/__tests__/buscar/ViabilityBadge.test.tsx` — AC6: testes unitários
+- [x] `frontend/app/buscar/components/ViabilityBadge.tsx` — AC5: novo componente
+- [x] `frontend/app/buscar/components/search-results/ResultCard.tsx` — AC1: integrar badge
+- [x] `frontend/__tests__/buscar/ViabilityBadge.test.tsx` — AC6: testes unitários
 
 ---
 

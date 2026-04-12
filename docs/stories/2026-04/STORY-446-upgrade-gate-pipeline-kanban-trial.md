@@ -22,48 +22,48 @@ O objetivo é demonstrar o valor do pipeline (deixar o usuário usar e gostar) m
 ## Acceptance Criteria
 
 ### AC1: Limite de 5 cards para trial
-- [ ] Usuários trial podem adicionar até 5 oportunidades ao pipeline
-- [ ] Cards já existentes no pipeline de trial users são preservados (sem remoção retroativa)
-- [ ] Limite aplica-se apenas a `plan_type === "free_trial"` com trial ativo
+- [x] Usuários trial podem adicionar até 5 oportunidades ao pipeline
+- [x] Cards já existentes no pipeline de trial users são preservados (sem remoção retroativa)
+- [x] Limite aplica-se apenas a `plan_type === "free_trial"` com trial ativo
 
 ### AC2: Modal de bloqueio ao tentar adicionar o 6º card
-- [ ] Ao tentar adicionar card além do limite, exibir modal `TrialPipelineLimitModal`
-- [ ] Conteúdo do modal:
+- [x] Ao tentar adicionar card além do limite, exibir modal `TrialPipelineLimitModal`
+- [x] Conteúdo do modal:
   - Título: "Limite do trial atingido"
   - Texto: "Você já tem 5 oportunidades no seu pipeline. Com SmartLic Pro, gerencie oportunidades ilimitadas."
   - Botão primário: "Assinar SmartLic Pro" (href="/planos")
   - Botão secundário: "Fechar"
-- [ ] Modal fecha ao clicar fora ou no botão "Fechar"
+- [x] Modal fecha ao clicar fora ou no botão "Fechar"
 
 ### AC3: Contador de uso no header do pipeline
-- [ ] Para trial users, exibir no header do pipeline: "X/5 oportunidades usadas"
-- [ ] Formato: `{count}/5 oportunidades usadas`
-- [ ] Cor do contador: verde (0-3), amarelo (4), vermelho (5)
-- [ ] Para pagantes: contador NÃO é exibido
+- [x] Para trial users, exibir no header do pipeline: "X/5 oportunidades usadas"
+- [x] Formato: `{count}/5 oportunidades usadas`
+- [x] Cor do contador: verde (0-3), amarelo (4), vermelho (5)
+- [x] Para pagantes: contador NÃO é exibido
 
 ### AC4: Cards existentes preservados
-- [ ] Se um trial user já tem >5 cards (criados antes desta implementação): todos são mantidos
-- [ ] Gate aplica-se apenas para NOVOS cards após a implementação
-- [ ] Não há remoção retroativa de cards
+- [x] Se um trial user já tem >5 cards (criados antes desta implementação): todos são mantidos
+- [x] Gate aplica-se apenas para NOVOS cards após a implementação
+- [x] Não há remoção retroativa de cards
 
 ### AC5: Pagantes sem limite
-- [ ] Usuários pagantes (`smartlic_pro`, `consultoria`, etc.) NÃO veem limite nem contador
-- [ ] Comportamento atual do pipeline preservado para pagantes
+- [x] Usuários pagantes (`smartlic_pro`, `consultoria`, etc.) NÃO veem limite nem contador
+- [x] Comportamento atual do pipeline preservado para pagantes
 
 ### AC6: Backend — 403 com erro estruturado
-- [ ] `POST /pipeline` verifica quota de pipeline para trial users
-- [ ] Se trial user já tem ≥ 5 cards: retornar `HTTP 403` com body:
+- [x] `POST /pipeline` verifica quota de pipeline para trial users
+- [x] Se trial user já tem ≥ 5 cards: retornar `HTTP 403` com body:
   ```json
   { "error": "trial_pipeline_limit", "limit": 5, "current": 5 }
   ```
-- [ ] Helper `get_pipeline_count(user_id)` em `authorization.py` ou `pipeline.py`
+- [x] Helper `get_pipeline_count(user_id)` em `authorization.py` ou `pipeline.py`
 
 ### AC7: Testes
-- [ ] Teste backend: trial user com 4 cards → POST pipeline retorna 201 (pode adicionar)
-- [ ] Teste backend: trial user com 5 cards → POST pipeline retorna 403 com `trial_pipeline_limit`
-- [ ] Teste backend: paid user com 10 cards → POST pipeline retorna 201 (sem limite)
-- [ ] Teste frontend: modal aparece ao tentar adicionar 6º card
-- [ ] Teste frontend: contador mostra "5/5 oportunidades usadas" quando no limite
+- [x] Teste backend: trial user com 4 cards → POST pipeline retorna 201 (pode adicionar)
+- [x] Teste backend: trial user com 5 cards → POST pipeline retorna 403 com `trial_pipeline_limit`
+- [x] Teste backend: paid user com 10 cards → POST pipeline retorna 201 (sem limite)
+- [x] Teste frontend: modal aparece ao tentar adicionar 6º card
+- [x] Teste frontend: contador mostra "5/5 oportunidades usadas" quando no limite
 
 ---
 
@@ -102,12 +102,12 @@ O objetivo é demonstrar o valor do pipeline (deixar o usuário usar e gostar) m
 
 ## File List
 
-- [ ] `backend/routes/pipeline.py` — AC6: adicionar check de limite no POST
-- [ ] `backend/authorization.py` — AC6: helper `get_pipeline_count(user_id)` ou similar
-- [ ] `frontend/app/pipeline/PipelineKanban.tsx` — AC3: contador no header
-- [ ] `frontend/app/pipeline/components/TrialPipelineLimitModal.tsx` — AC2: novo modal
-- [ ] `backend/tests/test_pipeline_trial_limit.py` — AC7: testes de backend
-- [ ] `frontend/__tests__/pipeline/TrialPipelineLimitModal.test.tsx` — AC7: testes de frontend
+- [x] `backend/routes/pipeline.py` — AC6: adicionar check de limite no POST
+- [x] `backend/authorization.py` — AC6: helper `get_pipeline_count(user_id)` ou similar
+- [x] `frontend/app/pipeline/PipelineKanban.tsx` — AC3: contador no header
+- [x] `frontend/app/pipeline/components/TrialPipelineLimitModal.tsx` — AC2: novo modal
+- [x] `backend/tests/test_pipeline_trial_limit.py` — AC7: testes de backend
+- [x] `frontend/__tests__/pipeline/TrialPipelineLimitModal.test.tsx` — AC7: testes de frontend
 
 ---
 

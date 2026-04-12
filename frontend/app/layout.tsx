@@ -10,6 +10,7 @@ import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { SessionExpiredBanner } from "./components/SessionExpiredBanner";
 import { PaymentFailedBanner } from "../components/billing/PaymentFailedBanner";
 import { NavigationShell } from "../components/NavigationShell";
+import { TrialProgressBar } from "../components/TrialProgressBar";
 import { BackendStatusProvider } from "./components/BackendStatusIndicator";
 import { SWRProvider } from "../components/SWRProvider";
 import { UserProvider } from "../contexts/UserContext";
@@ -190,6 +191,7 @@ export default function RootLayout({
                 <BackendStatusProvider>
                   <SessionExpiredBanner />
                   <PaymentFailedBanner />
+                  <TrialProgressBar />
                   <NavigationShell>
                     {children}
                   </NavigationShell>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { BuscaResult } from "../../../types";
 import { LlmSourceBadge } from "../LlmSourceBadge";
 import { formatCurrencyBR } from "../../../../lib/format-currency";
+import ViabilityBadge from "@/components/ViabilityBadge";
 
 interface ResultCardProps {
   result: BuscaResult;
@@ -38,6 +39,19 @@ export function ResultCard({
           ? result.resumo.resumo_executivo.split('. ').slice(0, 2).join('. ') + '...'
           : result.resumo.resumo_executivo}
       </p>
+
+      {/* STORY-441: Inline CTA after truncated summary */}
+      {trialPhase === "limited_access" && (
+        <p className="mt-1 text-sm text-blue-700 dark:text-blue-400">
+          <Link
+            href="/planos"
+            className="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-300 font-medium"
+            data-testid="summary-unlock-cta"
+          >
+            Desbloqueie o resumo completo + recomendação de participação →
+          </Link>
+        </p>
+      )}
 
       {/* STORY-320 AC9: Paywall overlay on summary */}
       {trialPhase === "limited_access" && (
@@ -149,6 +163,17 @@ export function ResultCard({
                   style={{ animationDelay: `${i * 80}ms` }}
                 >
                   <div className="flex flex-wrap items-center gap-2 mb-2">
+                    {/* STORY-440: ViabilityBadge per recommendation */}
+                    {matchedBid?.viability_level && (
+                      <span data-tour={i === 0 ? "viability-badge" : undefined}>
+                        <ViabilityBadge
+                          level={matchedBid.viability_level}
+                          score={matchedBid.viability_score ?? undefined}
+                          factors={matchedBid.viability_factors as any ?? undefined}
+                          valueSource={matchedBid._value_source ?? undefined}
+                        />
+                      </span>
+                    )}
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                       rec.urgencia === "alta"
                         ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"

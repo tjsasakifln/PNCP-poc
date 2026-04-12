@@ -65,7 +65,7 @@ const PIPELINE_TOUR_STEPS: TourStep[] = [
   {
     id: 'pipeline-trial-limit',
     title: 'Limite do trial',
-    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Durante o trial, você pode acompanhar até 15 oportunidades. Assine o SmartLic Pro para pipeline ilimitado.</p>',
+    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Durante o trial, você pode acompanhar até 5 oportunidades. Assine o SmartLic Pro para pipeline ilimitado.</p>',
     attachTo: { element: '[data-tour="kanban-columns"]', on: 'bottom' },
   },
 ];
@@ -81,9 +81,8 @@ export default function PipelinePage() {
   // STORY-265 AC15: Detect trial expired for read-only mode
   const isTrialExpired = planInfo?.plan_id === "free_trial" && planInfo?.subscription_status === "expired";
 
-  // STORY-320 AC10: Pipeline limit for limited_access trial phase
-  // Zero-churn P1 §2.1: Increased from 5 to 15 (B2B funnel needs 10-20 items)
-  const PIPELINE_LIMIT = 15;
+  // STORY-446: Pipeline limit reduced back to 5 for trial users
+  const PIPELINE_LIMIT = 5;
   const isPipelineLimited = trialPhase === "limited_access";
   const [showPipelineLimitModal, setShowPipelineLimitModal] = useState(false);
 
@@ -216,7 +215,7 @@ export default function PipelinePage() {
         {isPipelineLimited && items.length >= PIPELINE_LIMIT && (
           <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700/40 rounded-card flex items-center justify-between" data-testid="pipeline-limit-banner">
             <span className="text-sm text-blue-800 dark:text-blue-200">
-              Limite de {PIPELINE_LIMIT} itens no modo preview. Assine para pipeline ilimitado.
+              Limite de {PIPELINE_LIMIT} itens — {items.length}/{PIPELINE_LIMIT} usadas no trial. Assine para pipeline ilimitado.
             </span>
             <div className="flex items-center gap-3 whitespace-nowrap ml-3">
               <a href="/planos" className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
@@ -287,23 +286,20 @@ export default function PipelinePage() {
         ) : isTrialReadOnly ? (
           /* STORY-265 AC15: Trial expired read-only mode */
           <>
-            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-card" role="alert">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-card flex items-center justify-between" role="alert">
+              <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                  Seu trial expirou
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Seu trial expirou. O pipeline está em modo leitura. Assine para continuar gerenciando suas oportunidades.
                 </p>
               </div>
-              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                Você tem {items.length} {items.length === 1 ? "oportunidade" : "oportunidades"} no pipeline. Assine para continuar gerenciando e acompanhando seus processos.
-              </p>
               <a
                 href="/planos"
-                className="inline-flex items-center px-4 py-2 rounded-lg bg-[var(--brand-blue)] text-white text-sm font-medium hover:bg-[var(--brand-blue-hover)] transition-colors"
+                className="text-sm font-medium text-[var(--brand-blue)] hover:underline whitespace-nowrap ml-3"
               >
-                Assinar SmartLic Pro
+                Ver planos
               </a>
             </div>
             <ReadOnlyKanban items={items} />

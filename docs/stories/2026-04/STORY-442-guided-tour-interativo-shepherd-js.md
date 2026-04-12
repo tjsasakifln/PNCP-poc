@@ -22,46 +22,46 @@ O onboarding de 3 passos (CNAE → UFs → Confirmação) leva até a primeira b
 ## Acceptance Criteria
 
 ### AC1: Tour ativado automaticamente no primeiro login pós-onboarding
-- [ ] Tour inicia automaticamente quando usuário acessa `/buscar` pela primeira vez após completar o onboarding
-- [ ] "Primeira vez" verificado via localStorage: se `smartlic_tour_completed` não existe → iniciar tour
-- [ ] Tour aguarda resultados de busca carregarem antes de iniciar (não iniciar com tela em loading)
+- [x] Tour inicia automaticamente quando usuário acessa `/buscar` pela primeira vez após completar o onboarding
+- [x] "Primeira vez" verificado via localStorage: se `smartlic_tour_completed` não existe → iniciar tour
+- [x] Tour aguarda resultados de busca carregarem antes de iniciar (não iniciar com tela em loading)
 
 ### AC2: 5 passos do tour com targets específicos
-- [ ] **Passo 1 — Busca:** Aponta para o `FilterPanel` (campo de setor/UF) — "Configure sua busca: selecione seu setor e as UFs onde atua"
-- [ ] **Passo 2 — Score de viabilidade:** Aponta para o `ViabilityBadge` do primeiro resultado (STORY-440) — "Este badge mostra a viabilidade de cada oportunidade: verde = alta, vermelho = baixa"
-- [ ] **Passo 3 — Resumo IA:** Aponta para o resumo executivo do primeiro card — "O SmartLic gerou um resumo executivo automático de cada edital com IA"
-- [ ] **Passo 4 — Pipeline:** Aponta para o botão "Adicionar ao Pipeline" do primeiro card — "Salve as melhores oportunidades no seu pipeline para acompanhar"
-- [ ] **Passo 5 — Export:** Aponta para o botão de export Excel — "Exporte todos os resultados para Excel com 1 clique"
-- [ ] Cada passo tem: título, descrição, botão "Próximo" / "Concluir" no último passo
+- [x] **Passo 1 — Busca:** Aponta para o `FilterPanel` (campo de setor/UF) — "Configure sua busca: selecione seu setor e as UFs onde atua"
+- [x] **Passo 2 — Score de viabilidade:** Aponta para o `ViabilityBadge` do primeiro resultado (STORY-440) — "Este badge mostra a viabilidade de cada oportunidade: verde = alta, vermelho = baixa"
+- [x] **Passo 3 — Resumo IA:** Aponta para o resumo executivo do primeiro card — "O SmartLic gerou um resumo executivo automático de cada edital com IA"
+- [x] **Passo 4 — Pipeline:** Aponta para o botão "Adicionar ao Pipeline" do primeiro card — "Salve as melhores oportunidades no seu pipeline para acompanhar"
+- [x] **Passo 5 — Export:** Aponta para o botão de export Excel — "Exporte todos os resultados para Excel com 1 clique"
+- [x] Cada passo tem: título, descrição, botão "Próximo" / "Concluir" no último passo
 
 ### AC3: Opção de pular o tour
-- [ ] Todo passo tem botão "Pular tour" no canto superior direito do popup
-- [ ] Ao pular: salvar `smartlic_tour_completed: true` em localStorage
-- [ ] Tour não reinicia na próxima visita
+- [x] Todo passo tem botão "Pular tour" no canto superior direito do popup
+- [x] Ao pular: salvar `smartlic_tour_completed: true` em localStorage
+- [x] Tour não reinicia na próxima visita
 
 ### AC4: Estado salvo em localStorage
-- [ ] Após completar todos os 5 passos: salvar `smartlic_tour_completed: true` em localStorage
-- [ ] Tour NÃO é re-ativado se `smartlic_tour_completed: true` já existe
+- [x] Após completar todos os 5 passos: salvar `smartlic_tour_completed: true` em localStorage
+- [x] Tour NÃO é re-ativado se `smartlic_tour_completed: true` já existe
 
 ### AC5: Botão "Ver tour novamente" em /conta
-- [ ] Em `/conta` (preferências), adicionar botão "Ver tour do produto novamente"
-- [ ] Ao clicar: remover `smartlic_tour_completed` do localStorage + redirecionar para `/buscar`
+- [x] Em `/conta` (preferências), adicionar botão "Ver tour do produto novamente"
+- [x] Ao clicar: remover `smartlic_tour_completed` do localStorage + redirecionar para `/buscar`
 
 ### AC6: Tracking Mixpanel
-- [ ] `tour_started` — ao iniciar automaticamente
-- [ ] `tour_step_completed` com propriedade `step: number` — a cada passo completado
-- [ ] `tour_completed` — ao concluir o passo 5
-- [ ] `tour_skipped` com propriedade `at_step: number` — ao clicar "Pular"
+- [x] `tour_started` — ao iniciar automaticamente
+- [x] `tour_step_completed` com propriedade `step: number` — a cada passo completado
+- [x] `tour_completed` — ao concluir o passo 5
+- [x] `tour_skipped` com propriedade `at_step: number` — ao clicar "Pular"
 
 ### AC7: Responsividade
-- [ ] Tour funciona em mobile (375px+): popups posicionados para não sair da tela
-- [ ] Tour funciona em tablet (768px+) e desktop
-- [ ] Shepherd.js suporta responsividade nativa — usar configuração adequada
+- [x] Tour funciona em mobile (375px+): popups posicionados para não sair da tela
+- [x] Tour funciona em tablet (768px+) e desktop
+- [x] Shepherd.js suporta responsividade nativa — usar configuração adequada
 
 ### AC8: Compatibilidade com Shepherd.js existente
-- [ ] Verificar versão do Shepherd.js em `package.json` e usar API dessa versão
-- [ ] NÃO instalar nova versão — usar o que já está instalado
-- [ ] Importar Shepherd CSS se necessário (verificar se já está importado)
+- [x] Verificar versão do Shepherd.js em `package.json` e usar API dessa versão
+- [x] NÃO instalar nova versão — usar o que já está instalado
+- [x] Importar Shepherd CSS se necessário (verificar se já está importado)
 
 ---
 
@@ -101,10 +101,10 @@ O onboarding de 3 passos (CNAE → UFs → Confirmação) leva até a primeira b
 
 ## File List
 
-- [ ] `frontend/app/buscar/components/GuidedTour.tsx` — AC1-AC7: componente principal do tour
-- [ ] `frontend/app/buscar/page.tsx` — AC1: integrar GuidedTour após resultados carregarem
-- [ ] `frontend/app/conta/page.tsx` — AC5: botão "Ver tour novamente"
-- [ ] `frontend/__tests__/buscar/GuidedTour.test.tsx` — AC3, AC4, AC6: testes
+- [x] `frontend/app/buscar/components/GuidedTour.tsx` — AC1-AC7: componente principal do tour
+- [x] `frontend/app/buscar/page.tsx` — AC1: integrar GuidedTour após resultados carregarem
+- [x] `frontend/app/conta/page.tsx` — AC5: botão "Ver tour novamente"
+- [x] `frontend/__tests__/buscar/GuidedTour.test.tsx` — AC3, AC4, AC6: testes
 
 ---
 

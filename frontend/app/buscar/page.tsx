@@ -27,6 +27,7 @@ import { TrialValueTracker } from "../../components/billing/TrialValueTracker";
 import { Button } from "../../components/ui/button";
 import { APP_NAME } from "../../lib/config";
 import { TrialExitSurveyModal } from "../../components/TrialExitSurveyModal";
+import { GuidedTour } from "./components/GuidedTour";
 
 function HomePageContent() {
   const orch = useSearchOrchestration();
@@ -265,6 +266,9 @@ function HomePageContent() {
           </div>
         </div>
       </footer>
+
+      {/* STORY-442: Guided tour interativo — retorna null, gerenciado pelo Shepherd.js */}
+      <GuidedTour />
 
       {showExitSurvey && (
         <TrialExitSurveyModal onClose={() => setShowExitSurvey(false)} />
