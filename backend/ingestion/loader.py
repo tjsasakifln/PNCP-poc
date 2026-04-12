@@ -3,6 +3,10 @@
 Uses two Supabase stored procedures:
   - upsert_pncp_raw_bids(p_records jsonb)  — bulk upsert returning counts
   - purge_old_bids(p_retention_days int)   — delete rows older than N days
+
+STORY-438: When EMBEDDING_ENABLED=true, generates text-embedding-3-small
+embeddings for objeto_compra in batches before upserting. Failures are
+logged but never block the upsert (graceful degradation).
 """
 
 import json
@@ -13,6 +17,9 @@ from supabase_client import get_supabase
 from ingestion.config import INGESTION_UPSERT_BATCH_SIZE
 
 logger = logging.getLogger(__name__)
+
+# Batch size for OpenAI embeddings API calls (max 2048 inputs, 100 is practical)
+_EMBEDDING_BATCH_SIZE = 100
 
 
 # ---------------------------------------------------------------------------
@@ -25,6 +32,10 @@ async def bulk_upsert(
     batch_size: int = INGESTION_UPSERT_BATCH_SIZE,
 ) -> dict[str, int]:
     """Upsert records into pncp_raw_bids via Supabase RPC.
+
+    STORY-438: When EMBEDDING_ENABLED=true, generates embeddings for
+    objeto_compra in batches of 100 before upsert. Embedding failures
+    are logged but do NOT block the upsert.
 
     The RPC function ``upsert_pncp_raw_bids`` must accept a single jsonb
     parameter ``p_records`` and return a row with columns:
@@ -40,6 +51,11 @@ async def bulk_upsert(
     if not records:
         logger.debug("bulk_upsert: no records to upsert")
         return {"inserted": 0, "updated": 0, "unchanged": 0, "total": 0, "batches": 0}
+
+    # STORY-438: Enrich records with embeddings when enabled
+    from config.features import EMBEDDING_ENABLED
+    if EMBEDDING_ENABLED:
+        records = await _enrich_with_embeddings(records)
 
     totals: dict[str, int] = {"inserted": 0, "updated": 0, "unchanged": 0, "total": 0, "batches": 0}
     batches = _chunk(records, batch_size)
@@ -127,6 +143,80 @@ async def purge_old_bids(retention_days: int = 12) -> int:
     except Exception as exc:
         logger.error("purge_old_bids: failed — %s: %s", type(exc).__name__, exc)
         return 0
+
+
+# ---------------------------------------------------------------------------
+# STORY-438: Embedding helpers
+# ---------------------------------------------------------------------------
+
+async def _enrich_with_embeddings(records: list[dict]) -> list[dict]:
+    """Generate embeddings for objeto_compra and add to records.
+
+    Processes in batches of _EMBEDDING_BATCH_SIZE. Failures are logged but
+    records without embeddings are still included (embedding=None).
+
+    Returns the same records list with 'embedding' field added where possible.
+    """
+    texts = [r.get("objeto_compra") or "" for r in records]
+    embeddings = await _generate_embeddings_batch(texts)
+
+    enriched = []
+    for record, embedding in zip(records, embeddings):
+        r = dict(record)
+        if embedding is not None:
+            r["embedding"] = embedding
+        enriched.append(r)
+
+    embedded_count = sum(1 for e in embeddings if e is not None)
+    logger.info(
+        "bulk_upsert: generated %d/%d embeddings",
+        embedded_count,
+        len(records),
+    )
+    return enriched
+
+
+async def _generate_embeddings_batch(
+    texts: list[str],
+) -> list[list[float] | None]:
+    """Generate embeddings for a list of texts using text-embedding-3-small.
+
+    Processes in sub-batches of _EMBEDDING_BATCH_SIZE. Returns a list of
+    the same length as texts; None entries indicate failures.
+    """
+    results: list[list[float] | None] = [None] * len(texts)
+
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI()
+    except Exception as exc:
+        logger.warning("_generate_embeddings_batch: OpenAI client unavailable — %s", exc)
+        return results
+
+    for start in range(0, len(texts), _EMBEDDING_BATCH_SIZE):
+        batch_texts = texts[start : start + _EMBEDDING_BATCH_SIZE]
+        # Use empty string placeholder for blank texts (OpenAI rejects empty strings)
+        sanitized = [t if t.strip() else "sem descrição" for t in batch_texts]
+
+        try:
+            response = await client.embeddings.create(
+                model="text-embedding-3-small",
+                input=sanitized,
+                dimensions=256,
+            )
+            for i, item in enumerate(response.data):
+                results[start + i] = item.embedding
+        except Exception as exc:
+            logger.warning(
+                "_generate_embeddings_batch: batch %d-%d failed — %s: %s",
+                start,
+                start + len(batch_texts),
+                type(exc).__name__,
+                exc,
+            )
+            # Leave results[start:start+batch_size] as None — upsert still proceeds
+
+    return results
 
 
 # ---------------------------------------------------------------------------

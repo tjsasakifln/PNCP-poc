@@ -1,7 +1,10 @@
-"""Unit tests for ingestion/loader.py — bulk_upsert, purge_old_bids, _chunk."""
+"""Unit tests for ingestion/loader.py — bulk_upsert, purge_old_bids, _chunk.
+
+STORY-438: Tests for embedding generation added in TestBulkUpsertEmbeddings.
+"""
 
 import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -266,3 +269,98 @@ class TestChunk:
         assert len(chunks) == 2
         assert len(chunks[0]) == 500
         assert len(chunks[1]) == 50
+
+
+# ---------------------------------------------------------------------------
+# STORY-438: Embedding generation in bulk_upsert
+# ---------------------------------------------------------------------------
+
+
+def _make_openai_mock(embedding: list[float] | None = None) -> tuple[MagicMock, MagicMock]:
+    """Build a mocked AsyncOpenAI class and its instance for embedding tests.
+
+    Returns (MockClass, mock_instance). MockClass.return_value == mock_instance.
+    When embedding is None, embeddings.create raises RuntimeError("OpenAI down").
+    """
+    mock_instance = MagicMock()
+    if embedding is None:
+        mock_instance.embeddings.create = AsyncMock(side_effect=RuntimeError("OpenAI down"))
+    else:
+        mock_item = MagicMock()
+        mock_item.embedding = embedding
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+        mock_instance.embeddings.create = AsyncMock(return_value=mock_response)
+
+    MockClass = MagicMock(return_value=mock_instance)
+    return MockClass, mock_instance
+
+
+class TestBulkUpsertEmbeddings:
+    """STORY-438: Tests for embedding enrichment in bulk_upsert."""
+
+    @pytest.mark.asyncio
+    @patch("config.features.EMBEDDING_ENABLED", True)
+    @patch("ingestion.loader.get_supabase")
+    async def test_embedding_generated_when_enabled(self, mock_get_sb):
+        """When EMBEDDING_ENABLED=True, embedding must appear in the RPC payload."""
+        fake_embedding = [0.1] * 256
+        MockAsyncOpenAI, _ = _make_openai_mock(embedding=fake_embedding)
+
+        mock_get_sb.return_value = _make_mock_supabase()
+        records = [_make_record("pncp_1")]
+
+        with patch("openai.AsyncOpenAI", MockAsyncOpenAI):
+            result = await bulk_upsert(records)
+
+        assert result["batches"] == 1
+
+        args_tuple, _ = mock_get_sb.return_value.rpc.call_args
+        payload = args_tuple[1]["p_records"]
+        assert len(payload) == 1
+        assert "embedding" in payload[0], "Embedding must be present in RPC payload when enabled"
+        assert payload[0]["embedding"] == fake_embedding
+
+    @pytest.mark.asyncio
+    @patch("config.features.EMBEDDING_ENABLED", True)
+    @patch("ingestion.loader.get_supabase")
+    async def test_embedding_failure_does_not_block_upsert(self, mock_get_sb, caplog):
+        """When OpenAI raises, upsert must still complete — embedding omitted from payload."""
+        MockAsyncOpenAI, _ = _make_openai_mock(embedding=None)  # raises RuntimeError
+
+        mock_get_sb.return_value = _make_mock_supabase()
+        records = [_make_record("pncp_1")]
+
+        with patch("openai.AsyncOpenAI", MockAsyncOpenAI):
+            with caplog.at_level(logging.WARNING, logger="ingestion.loader"):
+                result = await bulk_upsert(records)
+
+        # Upsert still called despite OpenAI failure
+        mock_get_sb.return_value.rpc.assert_called_once()
+        assert result["batches"] == 1
+
+        # No embedding field in the payload (None entries are excluded by _enrich_with_embeddings)
+        args_tuple, _ = mock_get_sb.return_value.rpc.call_args
+        payload = args_tuple[1]["p_records"]
+        assert "embedding" not in payload[0], "Embedding must be absent when OpenAI fails"
+
+    @pytest.mark.asyncio
+    @patch("config.features.EMBEDDING_ENABLED", False)
+    @patch("ingestion.loader.get_supabase")
+    async def test_embedding_skipped_when_disabled(self, mock_get_sb):
+        """When EMBEDDING_ENABLED=False, OpenAI must not be called at all."""
+        MockAsyncOpenAI = MagicMock()
+        mock_get_sb.return_value = _make_mock_supabase()
+        records = [_make_record("pncp_1")]
+
+        with patch("openai.AsyncOpenAI", MockAsyncOpenAI):
+            result = await bulk_upsert(records)
+
+        MockAsyncOpenAI.assert_not_called()
+        mock_get_sb.return_value.rpc.assert_called_once()
+        assert result["batches"] == 1
+
+        # No embedding in payload
+        args_tuple, _ = mock_get_sb.return_value.rpc.call_args
+        payload = args_tuple[1]["p_records"]
+        assert "embedding" not in payload[0], "Embedding must be absent when disabled"

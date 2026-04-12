@@ -6,6 +6,9 @@ produced by PNCPClient._normalize_item(), so filter.py / llm.py / excel.py
 work without any changes.
 
 Full-text search uses PostgreSQL tsquery via the search_datalake RPC function.
+STORY-437: multi-column FTS (A/B/C weights), websearch_to_tsquery for custom
+  terms, trigram fallback when FTS returns 0 results.
+STORY-438: hybrid semantic search via pgvector embeddings (opt-in, EMBEDDING_ENABLED).
 Falls back to an empty list (fail-open) if Supabase is unreachable.
 """
 
@@ -29,12 +32,18 @@ _CACHE_MAX_ENTRIES = 50
 # dict[str, tuple[float, list[dict]]]  — key -> (expiry_timestamp, results)
 _query_cache: dict[str, tuple[float, list[dict]]] = {}
 
+# STORY-438: In-memory cache for query embeddings (avoids repeated OpenAI calls)
+_EMBEDDING_CACHE_TTL = 3600  # 1 hour
+_EMBEDDING_CACHE_MAX_ENTRIES = 100
+_embedding_cache: dict[str, tuple[float, list[float]]] = {}
+
 
 def _cache_key(
     ufs: list[str],
     data_inicial: str,
     data_final: str,
     tsquery: str | None,
+    websearch_text: str | None,
     modo_busca: str,
 ) -> str:
     """Deterministic cache key from query parameters.
@@ -43,9 +52,10 @@ def _cache_key(
     ignores date params and only filters by data_encerramento > now().
     """
     ufs_sorted = ",".join(sorted(ufs))
+    q = f"{tsquery or ''}|{websearch_text or ''}"
     if modo_busca == "abertas":
-        return f"{ufs_sorted}|abertas|{tsquery or ''}"
-    return f"{ufs_sorted}|{data_inicial}|{data_final}|{tsquery or ''}|{modo_busca}"
+        return f"{ufs_sorted}|abertas|{q}"
+    return f"{ufs_sorted}|{data_inicial}|{data_final}|{q}|{modo_busca}"
 
 
 def _cache_get(key: str) -> list[dict] | None:
@@ -92,13 +102,16 @@ async def query_datalake(
     Returns records in the SAME flat dict format as PNCPClient._normalize_item()
     so downstream filter.py / llm.py / excel.py work unchanged.
 
+    STORY-437: Uses websearch_to_tsquery for custom terms, trigram fallback on 0 results.
+    STORY-438: Hybrid semantic search when EMBEDDING_ENABLED=true.
+
     Args:
         ufs: List of UF codes, e.g. ["SC", "PR"]. Required.
         data_inicial: Start date, "YYYY-MM-DD".
         data_final: End date, "YYYY-MM-DD".
         modalidades: Modality codes to include (None = all).
-        keywords: Sector keywords (OR-joined in tsquery).
-        custom_terms: User-supplied terms (AND-joined on top of keywords).
+        keywords: Sector keywords (OR-joined tsquery).
+        custom_terms: User-supplied terms (websearch_to_tsquery in SQL).
         valor_min: Minimum estimated value (None = no lower bound).
         valor_max: Maximum estimated value (None = no upper bound).
         esferas: Esfera codes to include (None = all).
@@ -109,10 +122,12 @@ async def query_datalake(
         List of flat bid dicts compatible with _normalize_item() output.
         Returns [] on any error (fail-open).
     """
-    tsquery = _build_tsquery(keywords, custom_terms)
+    from config.features import TRIGRAM_FALLBACK_ENABLED, EMBEDDING_ENABLED
+
+    tsquery, websearch_text = _build_tsquery(keywords, custom_terms)
 
     # S3-FIX: Check in-memory cache before hitting Supabase
-    _ck = _cache_key(ufs, data_inicial, data_final, tsquery, modo_busca)
+    _ck = _cache_key(ufs, data_inicial, data_final, tsquery, websearch_text, modo_busca)
     _cached = _cache_get(_ck)
     if _cached is not None:
         logger.info(
@@ -128,11 +143,19 @@ async def query_datalake(
         logger.warning(f"[DatalakeQuery] Supabase unavailable: {e}")
         return []
 
+    # STORY-438: Generate query embedding when enabled
+    query_embedding: list[float] | None = None
+    if EMBEDDING_ENABLED:
+        query_text = _build_embedding_query_text(keywords, custom_terms)
+        if query_text:
+            query_embedding = await _get_query_embedding(query_text)
+
     rpc_params: dict[str, Any] = {
         "p_ufs": ufs,
         "p_date_start": data_inicial,
         "p_date_end": data_final,
         "p_tsquery": tsquery,
+        "p_websearch_text": websearch_text,
         "p_modalidades": modalidades,
         "p_valor_min": valor_min,
         "p_valor_max": valor_max,
@@ -141,9 +164,14 @@ async def query_datalake(
         "p_limit": limit,
     }
 
+    # STORY-438: Include embedding when available
+    if query_embedding is not None:
+        rpc_params["p_embedding"] = query_embedding
+
     logger.info(
         f"[DatalakeQuery] ufs={ufs}, dates={data_inicial}/{data_final}, "
-        f"tsquery={tsquery!r}, limit={limit}"
+        f"tsquery={tsquery!r}, websearch={websearch_text!r}, "
+        f"embedding={'yes' if query_embedding else 'no'}, limit={limit}"
     )
 
     # PostgREST caps results at 1000 rows per call.
@@ -172,6 +200,22 @@ async def query_datalake(
             logger.warning(f"[DatalakeQuery] RPC failed for UF={uf}: {type(e).__name__}: {e}")
 
     if not rows:
+        # STORY-437 AC3: Trigram fallback when FTS returns 0
+        if TRIGRAM_FALLBACK_ENABLED and (tsquery or websearch_text):
+            trigram_term = _build_trigram_term(keywords, custom_terms)
+            if trigram_term:
+                rows = _query_trigram_fallback(sb, trigram_term, ufs, limit)
+                if rows:
+                    normalized = [_row_to_normalized(row) for row in rows]
+                    for r in normalized:
+                        r["_source"] = "trigram_fallback"
+                    logger.info(
+                        '{"event": "trigram_fallback_activated", "query": %r, "results_found": %d}',
+                        trigram_term, len(normalized),
+                    )
+                    _cache_put(_ck, normalized)
+                    return normalized
+
         logger.warning("[DatalakeQuery] All UF queries returned 0 rows")
         return []
 
@@ -185,59 +229,169 @@ async def query_datalake(
     return normalized
 
 
+def _query_trigram_fallback(
+    sb: Any,
+    query_term: str,
+    ufs: list[str],
+    limit: int,
+) -> list[dict]:
+    """Call the search_datalake_trigram_fallback RPC. Returns raw rows."""
+    try:
+        result = sb.rpc(
+            "search_datalake_trigram_fallback",
+            {"p_query_term": query_term, "p_ufs": ufs, "p_limit": limit},
+        ).execute()
+        return result.data or []
+    except Exception as e:
+        logger.warning(f"[DatalakeQuery] Trigram fallback RPC failed: {type(e).__name__}: {e}")
+        return []
+
+
 # ---------------------------------------------------------------------------
-# tsquery construction
+# STORY-438: Embedding helpers
+# ---------------------------------------------------------------------------
+
+
+def _build_embedding_query_text(
+    keywords: list[str] | None,
+    custom_terms: list[str] | None,
+) -> str | None:
+    """Build plain text for embedding query from keywords + custom terms."""
+    parts: list[str] = []
+    if keywords:
+        parts.extend([k.strip() for k in keywords if k and k.strip()])
+    if custom_terms:
+        parts.extend([t.strip() for t in custom_terms if t and t.strip()])
+    if not parts:
+        return None
+    return " ".join(parts)
+
+
+async def _get_query_embedding(query_text: str) -> list[float] | None:
+    """Get embedding for query text, using in-memory cache (TTL 1h).
+
+    Returns None on failure (fallback to FTS-only search).
+    """
+    # Check cache first
+    entry = _embedding_cache.get(query_text)
+    if entry is not None:
+        expiry, vector = entry
+        if time.monotonic() < expiry:
+            return vector
+        else:
+            del _embedding_cache[query_text]
+
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI()
+        response = await client.embeddings.create(
+            model="text-embedding-3-small",
+            input=[query_text],
+            dimensions=256,
+        )
+        vector = response.data[0].embedding
+
+        # Cache the result
+        if len(_embedding_cache) >= _EMBEDDING_CACHE_MAX_ENTRIES:
+            oldest_key = min(_embedding_cache, key=lambda k: _embedding_cache[k][0])
+            del _embedding_cache[oldest_key]
+        _embedding_cache[query_text] = (time.monotonic() + _EMBEDDING_CACHE_TTL, vector)
+
+        return vector
+    except Exception as e:
+        logger.warning(
+            f"[DatalakeQuery] Query embedding failed — falling back to FTS only: "
+            f"{type(e).__name__}: {e}"
+        )
+        return None
+
+
+# ---------------------------------------------------------------------------
+# tsquery construction (STORY-437 AC2)
 # ---------------------------------------------------------------------------
 
 
 def _build_tsquery(
     keywords: list[str] | None,
     custom_terms: list[str] | None,
-) -> str | None:
-    """Build a PostgreSQL tsquery string from sector keywords and custom terms.
+) -> tuple[str | None, str | None]:
+    """Build PostgreSQL query components from sector keywords and custom terms.
+
+    Returns a tuple (tsquery_text, websearch_text):
+    - tsquery_text: sector keywords OR-joined using raw tsquery syntax
+      (passed as p_tsquery to the RPC, handled by to_tsquery in SQL)
+    - websearch_text: user custom terms as raw text for websearch_to_tsquery
+      in SQL (supports "exact phrase", -exclusion, implicit AND)
 
     Strategy:
-    - Keywords are OR-joined (any keyword can match).
-    - Custom terms are AND-joined on top of the keyword block.
-    - Multi-word keywords are wrapped in a phrase query (<->).
-    - Returns None when both inputs are empty/None (search_datalake RPC
-      should treat None as "no full-text filter — return all rows").
+    - Sector keywords -> tsquery_text (OR-joined with |, phrases with <->)
+    - Custom terms -> websearch_text (raw text, sent to PostgreSQL's
+      websearch_to_tsquery which handles natural language queries)
+    - When only keywords:      (tsquery_text, None)
+    - When only custom terms:  (None, websearch_text)
+    - When both:               (tsquery_text, websearch_text) — SQL ANDs them
 
     Examples:
         keywords=["construção", "obras"], custom_terms=None
-          -> "construção | obras"
+          -> ("construção | obras", None)
+
+        keywords=None, custom_terms=["asfalto"]
+          -> (None, "asfalto")
 
         keywords=["pavimentação"], custom_terms=["asfalto"]
-          -> "(pavimentação) & asfalto"
+          -> ("pavimentação", "asfalto")
+          SQL does: to_tsquery(pavimentação) && websearch_to_tsquery(asfalto)
 
-        keywords=None, custom_terms=["creche", "escola"]
-          -> "creche & escola"
+        keywords=None, custom_terms=['"limpeza hospitalar"']
+          -> (None, '"limpeza hospitalar"')
+          SQL does: websearch_to_tsquery('"limpeza hospitalar"') — exact phrase
+
+        keywords=None, custom_terms=["-escolar"]
+          -> (None, "-escolar")
+          SQL does: websearch_to_tsquery('-escolar') — excludes "escolar"
     """
-    parts: list[str] = []
+    tsquery_text: str | None = None
+    websearch_text: str | None = None
 
     if keywords:
         cleaned = [_clean_token(k) for k in keywords if k and k.strip()]
         if cleaned:
             keyword_tokens = [_keyword_to_tstoken(k) for k in cleaned]
-            parts.append(" | ".join(keyword_tokens))
+            if len(keyword_tokens) == 1:
+                tsquery_text = keyword_tokens[0]
+            else:
+                tsquery_text = " | ".join(keyword_tokens)
 
     if custom_terms:
-        cleaned = [_clean_token(t) for t in custom_terms if t and t.strip()]
-        if cleaned:
-            custom_tokens = [_keyword_to_tstoken(t) for t in cleaned]
-            parts.extend(custom_tokens)
+        # Preserve raw custom terms for websearch_to_tsquery (don't strip special chars)
+        cleaned_custom = [t.strip() for t in custom_terms if t and t.strip()]
+        if cleaned_custom:
+            websearch_text = " ".join(cleaned_custom)
 
+    return (tsquery_text, websearch_text)
+
+
+def _build_trigram_term(
+    keywords: list[str] | None,
+    custom_terms: list[str] | None,
+) -> str | None:
+    """Build a plain-text term for trigram similarity search.
+
+    Strips tsquery syntax artifacts and returns a clean plain-text string
+    suitable for word_similarity().
+    """
+    parts: list[str] = []
+    if keywords:
+        parts.extend([_clean_token(k) for k in keywords if k and k.strip()])
+    if custom_terms:
+        parts.extend([t.strip() for t in custom_terms if t and t.strip()])
     if not parts:
         return None
-
-    if len(parts) == 1:
-        return parts[0]
-
-    # keyword block AND each custom term
-    keyword_block = parts[0]
-    extra_terms = parts[1:]
-    combined = f"({keyword_block})" + "".join(f" & {t}" for t in extra_terms)
-    return combined
+    # Remove quotes and dashes (tsquery / websearch artifacts not useful for trigram)
+    text = " ".join(parts)
+    text = re.sub(r'["\-]', ' ', text).strip()
+    text = re.sub(r'\s+', ' ', text)
+    return text or None
 
 
 def _clean_token(token: str) -> str:

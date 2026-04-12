@@ -164,6 +164,13 @@ TERM_SEARCH_FILTER_CONTEXT: bool = str_to_bool(os.getenv("TERM_SEARCH_FILTER_CON
 TERM_SEARCH_VALUE_RANGE_MIN: float = float(os.getenv("TERM_SEARCH_VALUE_RANGE_MIN", "10000"))
 TERM_SEARCH_VALUE_RANGE_MAX: float = float(os.getenv("TERM_SEARCH_VALUE_RANGE_MAX", "50000000"))
 
+# STORY-437: Trigram fuzzy fallback when FTS returns 0 results
+TRIGRAM_FALLBACK_ENABLED: bool = str_to_bool(os.getenv("TRIGRAM_FALLBACK_ENABLED", "true"))
+
+# STORY-438: Semantic search via pgvector embeddings
+EMBEDDING_ENABLED: bool = str_to_bool(os.getenv("EMBEDDING_ENABLED", "false"))
+EMBEDDING_THRESHOLD: float = float(os.getenv("EMBEDDING_THRESHOLD", "0.6"))
+
 
 # ============================================
 # Runtime-Reloadable Feature Flags (STORY-226 AC16)
@@ -229,6 +236,10 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "COMPRASGOV_CB_ENABLED": ("COMPRASGOV_CB_ENABLED", "true"),
     # --- STORY-414: Schema contract gate (faseado 14d, default off in prod) ---
     "SCHEMA_CONTRACT_STRICT": ("SCHEMA_CONTRACT_STRICT", "false"),
+    # --- STORY-437: Datalake search improvements ---
+    "TRIGRAM_FALLBACK_ENABLED": ("TRIGRAM_FALLBACK_ENABLED", "true"),
+    # --- STORY-438: Semantic embeddings ---
+    "EMBEDDING_ENABLED": ("EMBEDDING_ENABLED", "false"),
 }
 
 
