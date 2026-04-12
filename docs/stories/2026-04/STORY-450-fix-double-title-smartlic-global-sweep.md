@@ -3,7 +3,7 @@
 **Priority:** P1 (bug SEO — ~30 páginas indexáveis com título duplicado no SERP)
 **Effort:** S (< 1 dia — patch mecânico, sem lógica nova)
 **Squad:** @dev
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Hotfix paralelo
 
@@ -42,21 +42,21 @@ Para cada arquivo listado na seção **Arquivos Afetados**, remover o sufixo
 `| SmartLic` (e variantes `| SmartLic.tech`) das strings de título na função
 `generateMetadata()` ou no objeto `export const metadata`.
 
-- [x] Apenas o sufixo é removido — o restante do título permanece intacto
-- [x] Títulos dinâmicos com template string também corrigidos
-- [x] `openGraph.title` e `twitter.title` NÃO devem ser alterados (já são
+- [ ] Apenas o sufixo é removido — o restante do título permanece intacto
+- [ ] Títulos dinâmicos com template string também corrigidos
+- [ ] `openGraph.title` e `twitter.title` NÃO devem ser alterados (já são
   absolute — não sofrem do bug e precisam do nome da marca para compartilhamento)
-- [x] `rss.xml/route.ts` NÃO deve ser alterado (não é page metadata)
+- [ ] `rss.xml/route.ts` NÃO deve ser alterado (não é page metadata)
 
 ### AC2: Não introduzir regressão nos títulos já corretos
 
-- [x] Páginas que NÃO têm `| SmartLic` hardcoded permanecem intactas
-- [x] Páginas que usam `title: { absolute: '...' }` permanecem intactas
+- [ ] Páginas que NÃO têm `| SmartLic` hardcoded permanecem intactas
+- [ ] Páginas que usam `title: { absolute: '...' }` permanecem intactas
 
 ### AC3: TypeScript e testes passando
 
-- [x] `npx tsc --noEmit` sem erros em `frontend/`
-- [x] `npm test` sem novas falhas
+- [ ] `npx tsc --noEmit` sem erros em `frontend/`
+- [ ] `npm test` sem novas falhas
 
 ### AC4: Verificação spot-check pós-deploy
 
@@ -186,3 +186,4 @@ tem 3 title branches — todas precisam ser corrigidas).
 | Data | Agente | Ação |
 |------|--------|------|
 | 2026-04-12 | @sm | Story criada — bug detectado via validação Playwright em produção |
+| 2026-04-12 | @po | GO (10/10) — Draft → Ready. Ajuste: checkboxes de AC revertidos para `[ ]` (eram `[x]` prematuramente) |
