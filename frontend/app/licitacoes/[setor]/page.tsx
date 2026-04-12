@@ -44,6 +44,8 @@ export async function generateMetadata({
       title: `Licitações de ${sector.name} | SmartLic`,
       description: `Licitações de ${sector.name} no Brasil.`,
       robots: { index: false, follow: false },
+      // SEO-440: canonical self-referencial evita herdar o canonical da homepage (layout.tsx)
+      alternates: { canonical: `https://smartlic.tech/licitacoes/${setor}` },
     };
   }
 

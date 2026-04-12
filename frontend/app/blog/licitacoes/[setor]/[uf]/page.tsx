@@ -135,6 +135,8 @@ export async function generateMetadata({
       title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
       description: `Licitações de ${sector.name.toLowerCase()} ${getUfPrep(ufUpper)} ${ufName}.`,
       robots: { index: false, follow: false },
+      // SEO-440: canonical self-referencial evita herdar o canonical da homepage (layout.tsx)
+      alternates: { canonical: `https://smartlic.tech/blog/licitacoes/${setor}/${uf}` },
     };
   }
 

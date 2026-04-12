@@ -51,6 +51,8 @@ export async function generateMetadata({
       title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
       description: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}. Dados do PNCP atualizados diariamente.`,
       robots: { index: false, follow: false },
+      // SEO-440: canonical self-referencial evita herdar o canonical da homepage (layout.tsx)
+      alternates: { canonical: canonicalUrl },
     };
   }
 

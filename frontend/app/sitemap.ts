@@ -37,11 +37,14 @@ async function fetchLicitacoesIndexable(): Promise<{ setor: string; uf: string }
       cache: 'no-store',
     });
     if (!resp.ok) {
-      // Fallback: usar todas as 405 combinações se endpoint falhar
-      return generateLicitacoesParams();
+      // SEO-440: fallback vazio — não incluir combos sem dados confirmados no sitemap.
+      // Antes retornava generateLicitacoesParams() (todas 405 combos), o que colocava
+      // páginas noindex no sitemap → GSC reportava "Excluded by noindex" em massa.
+      return [];
     }
     const data = await resp.json();
-    _licitacoesIndexableCache = data.combos || generateLicitacoesParams();
+    // SEO-440: fallback vazio também aqui — sem dados do backend, não sabemos quais indexar
+    _licitacoesIndexableCache = data.combos || [];
     _licitacoesIndexableFetched = true;
     return _licitacoesIndexableCache as { setor: string; uf: string }[];
   } catch {
@@ -191,8 +194,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // STORY-430 AC4: Sector×UF pages filtradas — somente combos com >= MIN_ACTIVE_BIDS_FOR_INDEX editais
-  // Fallback automático para todas as 405 combinações se o endpoint falhar
+  // STORY-430 AC4 / SEO-440: Sector×UF pages filtradas — somente combos com >= MIN_ACTIVE_BIDS_FOR_INDEX editais
+  // SEO-440: fallback vazio quando endpoint falha (não mais todas as 405 combos)
   const indexableCombos = await fetchLicitacoesIndexable();
   const licitacoesUfRoutes: MetadataRoute.Sitemap = indexableCombos.map(({ setor, uf }) => ({
     url: `${baseUrl}/blog/licitacoes/${setor}/${uf}`,
@@ -279,8 +282,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  // S3: Alertas Publicos pages (15 sectors × 27 UFs = 405 pages)
-  const alertasRoutes: MetadataRoute.Sitemap = generateSectorUfParams().map(({ setor, uf }) => ({
+  // S3: Alertas Publicos pages — SEO-440: filtrar pelos mesmos combos indexáveis de licitações.
+  // Antes usava generateSectorUfParams() (todas 405 combos), colocando páginas noindex no sitemap.
+  // indexableCombos (linha ~199) já foi buscado/cacheado — reutilizar sem nova chamada.
+  const alertasRoutes: MetadataRoute.Sitemap = indexableCombos.map(({ setor, uf }) => ({
     url: `${baseUrl}/alertas-publicos/${setor}/${uf}`,
     lastModified: today,
     changeFrequency: 'hourly' as const,
