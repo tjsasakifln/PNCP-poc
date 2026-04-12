@@ -76,7 +76,7 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
   - `https://smartlic.tech/blog/licitacoes/vestuario/sp` → index (201 licitações) ✅
   - `https://smartlic.tech/blog/licitacoes/engenharia/mg` → index ✅
   - `https://smartlic.tech/blog/licitacoes/saude/rj` → index ✅
-- [ ] Solicitar re-crawl do sitemap no GSC: `Sitemaps → Reenviar`
+- [x] Sitemap reenviado no GSC: `Sitemaps → sitemap.xml → Enviar` — confirmado "Sitemap enviado" em 2026-04-12
 
 ### AC7: Testes
 - [x] `npm test` passa sem regressões
