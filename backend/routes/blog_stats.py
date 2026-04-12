@@ -881,9 +881,6 @@ def _compute_contratos_stats(
             monthly[data_str] += 1
             monthly_values[data_str] = monthly_values.get(data_str, 0.0) + valor
 
-    total_contracts = len(matched)
-    avg_value = round(total_value / total_contracts, 2) if total_contracts else 0.0
-
     top_orgaos = sorted(orgao_agg.values(), key=lambda x: x["valor"], reverse=True)[:10]
     top_fornecedores = sorted(forn_agg.values(), key=lambda x: x["valor"], reverse=True)[:10]
     by_uf = sorted(uf_agg.values(), key=lambda x: x["valor"], reverse=True)
@@ -901,9 +898,15 @@ def _compute_contratos_stats(
         })
     trend.reverse()
 
+    # Recalculate summary totals from the trend window (last 12 months, contracts
+    # with data_assinatura only) so the summary card matches the chart exactly.
+    total_contracts = sum(t["count"] for t in trend)
+    total_value_12m = sum(t["value"] for t in trend)
+    avg_value = round(total_value_12m / total_contracts, 2) if total_contracts else 0.0
+
     return {
         "total_contracts": total_contracts,
-        "total_value": round(total_value, 2),
+        "total_value": round(total_value_12m, 2),
         "avg_value": avg_value,
         "top_orgaos": [
             {"nome": o["nome"], "cnpj": o["cnpj"], "total_contratos": o["contratos"], "valor_total": round(o["valor"], 2)}
