@@ -67,7 +67,7 @@ describe("GTM-FIX-034: Portuguese accents smoke test", () => {
   describe("UX-355: Error message and label accents", () => {
     it("useSearch fallback error should contain accented 'licitações'", () => {
       const src = fs.readFileSync(
-        require.resolve("../app/buscar/hooks/useSearchExecution.ts"),
+        require.resolve("../app/buscar/hooks/execution/useSearchAPI.ts"),
         "utf-8"
       );
       expect(src).toContain("Erro ao buscar licitações");

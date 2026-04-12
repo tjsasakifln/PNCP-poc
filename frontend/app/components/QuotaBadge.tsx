@@ -99,11 +99,10 @@ export function QuotaBadge() {
     );
   }
 
-  // Credit-based users - show usage progress (Zero-churn P1 §10)
-  const totalLimit = quota.isFreeUser ? 1000 : (quota.creditsRemaining ?? 0) + quota.totalSearches;
-  const used = quota.totalSearches;
+  // Credit-based users - show remaining credits
   const remaining = quota.creditsRemaining || 0;
   const isEmpty = remaining === 0;
+  const totalLimit = quota.isFreeUser ? 1000 : (quota.creditsRemaining ?? 0) + (quota.totalSearches ?? 0);
   const isLow = remaining <= Math.max(1, totalLimit * 0.1); // <10% remaining
 
   if (isEmpty) {
@@ -120,7 +119,7 @@ export function QuotaBadge() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        {used}/{totalLimit} análises
+        {remaining} análises
       </Link>
     );
   }
@@ -133,14 +132,14 @@ export function QuotaBadge() {
                     ? "bg-warning-subtle text-warning border-warning/20"
                     : "bg-surface-1 text-ink-secondary border-border"
                   }`}
-      title={`${used} de ${totalLimit} análises usadas este mês (${remaining} restantes)`}
+      title={`${remaining} análise${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}`}
     >
       <svg
               aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
-      {used}/{totalLimit} análises
+      {remaining} análises
     </span>
   );
 }

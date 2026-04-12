@@ -16,12 +16,12 @@ const ERROR_MAP: Record<string, string> = {
   "ERR_CERT": "Problema de segurança no servidor. Tente novamente em instantes.",
 
   // HTTP status errors (TD-006 AC2: all 10 codes mapped)
-  "400": "Requisição inválida. Verifique os dados é tente novamente.",
+  "400": "Requisição inválida. Verifique os dados e tente novamente.",
   "503": "Serviço temporariamente indisponível. Tente em alguns minutos.",
   "502": "O servidor está temporariamente indisponível. Tente novamente em instantes.",
   "504": "A busca está demorando. Tente novamente em alguns minutos.",
   "500": "Erro interno do servidor. Tente novamente.",
-  "429": "Muitas requisições. Aguarde um momento é tente novamente.",
+  "429": "Muitas requisições. Aguarde um momento e tente novamente.",
   "401": "Sessão expirada. Faça login novamente.",
   "403": "Acesso negado. Verifique suas permissões.",
   "404": "Recurso não encontrado.",
@@ -327,9 +327,9 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
   ALL_SOURCES_FAILED: "Nenhuma fonte respondeu a tempo. Tente novamente em 2-3 minutos.",
   TIMEOUT: "A busca está demorando. Estamos tentando novamente automaticamente.",
   CLIENT_TIMEOUT: "A busca está demorando. Estamos tentando novamente automaticamente.",
-  RATE_LIMIT: "Muitas análises em sequência. Aguarde 1 minuto é tente novamente.",
+  RATE_LIMIT: "Muitas análises em sequência. Aguarde 1 minuto e tente novamente.",
   QUOTA_EXCEEDED: "Suas análises deste mês foram utilizadas. Faça upgrade para continuar.",
-  VALIDATION_ERROR: "Verifique os filtros selecionados é tente novamente.",
+  VALIDATION_ERROR: "Verifique os filtros selecionados e tente novamente.",
   INTERNAL_ERROR: "Algo deu errado do nosso lado. Nossa equipe já foi avisada.",
 };
 
@@ -411,7 +411,7 @@ export function getHumanizedError(
     msg.includes("network error")
   ) {
     return {
-      message: "Erro de conexão. Verifique sua internet é tente novamente.",
+      message: "Erro de conexão. Verifique sua internet e tente novamente.",
       actionLabel: "Tentar novamente",
       tone: "yellow",
       suggestReduceScope: false,

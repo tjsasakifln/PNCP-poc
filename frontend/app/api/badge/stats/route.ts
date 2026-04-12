@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 export const revalidate = 3600; // 1h ISR
 
 export async function GET() {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+  const backendUrl = process.env.BACKEND_URL;
 
   try {
     const resp = await fetch(`${backendUrl}/v1/stats/public?format=badge`, {

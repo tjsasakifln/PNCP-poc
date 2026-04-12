@@ -3,7 +3,7 @@
 **Priority:** P1 — Quantifica valor antes do paywall
 **Effort:** M (3 dias)
 **Squad:** @dev + @qa
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-CONVERSION-2026-04](EPIC-CONVERSION-2026-04.md)
 **Sprint:** Sprint 2 — Semanas 3-4
 
@@ -120,6 +120,7 @@ O endpoint `GET /v1/analytics/trial-value` já existe (implementado em GTM-010) 
 ---
 
 ## Change Log
+- 2026-04-12: Status → Done (implementado em EPIC-CONVERSION-2026-04, testes corrigidos)
 
 | Data | Agente | Mudança |
 |------|--------|---------|

@@ -3,7 +3,7 @@
 **Priority:** P1 — Demonstra valor sem dar tudo grátis
 **Effort:** S (2 dias)
 **Squad:** @dev + @qa
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-CONVERSION-2026-04](EPIC-CONVERSION-2026-04.md)
 **Sprint:** Sprint 2 — Semanas 3-4
 
@@ -121,6 +121,7 @@ O objetivo é demonstrar o valor do pipeline (deixar o usuário usar e gostar) m
 ---
 
 ## Change Log
+- 2026-04-12: Status → Done (implementado em EPIC-CONVERSION-2026-04, testes corrigidos)
 
 | Data | Agente | Mudança |
 |------|--------|---------|

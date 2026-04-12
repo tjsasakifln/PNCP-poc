@@ -139,6 +139,7 @@ export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
 
     if (llmTimeoutRef.current) { clearTimeout(llmTimeoutRef.current); llmTimeoutRef.current = null; }
 
+    // CRIT-027 AC1: save previous result before clearing (for CRIT-005 AC23 error recovery)
     const previousResultFallback = result;
     setResult(null);
     setRawCount(0);
@@ -438,6 +439,7 @@ export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
           toast.info("Mostrando resultados parciais salvos");
           return;
         }
+        // CRIT-005 AC23: Error recovery uses previousResultFallback
         if (previousResultFallback && previousResultFallback.licitacoes?.length > 0) {
           setResult(previousResultFallback); setError(null); toast.error(searchError.message);
         } else {

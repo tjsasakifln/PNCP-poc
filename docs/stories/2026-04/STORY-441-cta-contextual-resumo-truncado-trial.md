@@ -3,7 +3,7 @@
 **Priority:** P0 — Captura no momento de maior engajamento
 **Effort:** S (1 dia)
 **Squad:** @dev + @qa
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-CONVERSION-2026-04](EPIC-CONVERSION-2026-04.md)
 **Sprint:** Sprint 1 — Semanas 1-2
 
@@ -107,6 +107,7 @@ O momento em que o usuário lê o início do resumo e quer ver mais é o pico de
 ---
 
 ## Change Log
+- 2026-04-12: Status → Done (implementado em EPIC-CONVERSION-2026-04, testes corrigidos)
 
 | Data | Agente | Mudança |
 |------|--------|---------|

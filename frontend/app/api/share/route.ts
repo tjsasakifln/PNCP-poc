@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRefreshedToken } from "../../../lib/serverAuth";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.BACKEND_URL;
 
 /**
  * SEO-PLAYBOOK P6: Share analysis proxy.

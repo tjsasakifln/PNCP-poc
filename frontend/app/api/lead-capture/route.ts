@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store in Supabase via backend proxy
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
     const res = await fetch(`${backendUrl}/v1/lead-capture`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

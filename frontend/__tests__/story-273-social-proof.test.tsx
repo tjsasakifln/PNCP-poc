@@ -107,6 +107,20 @@ jest.mock('../app/components/Footer', () => {
   };
 });
 
+// Mock TestimonialSection (DEBT-122 AC1 re-added to landing page)
+jest.mock('../components/TestimonialSection', () => {
+  return function MockTestimonialSection() {
+    return <section data-testid="testimonial-section">TestimonialSection</section>;
+  };
+});
+
+// Mock TrendingEditais (async Server Component — not renderable in jsdom)
+jest.mock('../app/components/landing/TrendingEditais', () => ({
+  TrendingEditais: function MockTrendingEditais() {
+    return null;
+  },
+}));
+
 // ---- Imports ----
 import LandingPage from '../app/page';
 

@@ -3,7 +3,7 @@
 **Priority:** P1 — Reativa trials abandonados + cria urgência progressiva
 **Effort:** M (3-4 dias)
 **Squad:** @dev + @qa
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-CONVERSION-2026-04](EPIC-CONVERSION-2026-04.md)
 **Sprint:** Sprint 2 — Semanas 3-4
 
@@ -142,6 +142,7 @@ Benchmarks B2B SaaS mostram que sequências de nurturing de 4-6 emails durante o
 ---
 
 ## Change Log
+- 2026-04-12: Status → Done (implementado em EPIC-CONVERSION-2026-04, testes corrigidos)
 
 | Data | Agente | Mudança |
 |------|--------|---------|

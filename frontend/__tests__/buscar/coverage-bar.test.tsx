@@ -65,13 +65,13 @@ describe("CoverageBar", () => {
     render(<CoverageBar coverageMetadata={meta} />);
 
     // Panel should not be visible initially
-    expect(screen.queryByText("Processadas (2)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Com resultados (2)")).not.toBeInTheDocument();
 
     // Click to expand
     fireEvent.click(screen.getByTestId("coverage-bar").querySelector("button")!);
 
     // Panel should now be visible
-    expect(screen.getByText("Processadas (2)")).toBeInTheDocument();
+    expect(screen.getByText("Com resultados (2)")).toBeInTheDocument();
     expect(screen.getByText("Falharam (1)")).toBeInTheDocument();
   });
 

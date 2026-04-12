@@ -234,7 +234,7 @@ describe("T12: Error code to friendly message mapping", () => {
       "As fontes de dados estão temporariamente em manutenção. Tente novamente em breve."
     );
     expect(getMessageFromErrorCode("TIMEOUT")).toBe(
-      "A busca esta demorando. Estamos tentando novamente automaticamente."
+      "A busca está demorando. Estamos tentando novamente automaticamente."
     );
     expect(getMessageFromErrorCode("QUOTA_EXCEEDED")).toBe(
       "Suas análises deste mês foram utilizadas. Faça upgrade para continuar."

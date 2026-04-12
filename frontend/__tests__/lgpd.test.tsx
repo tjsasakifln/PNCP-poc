@@ -46,6 +46,17 @@ jest.mock('next/navigation', () => ({
   usePathname: jest.fn(() => '/buscar'),
 }));
 
+// Mock hooks added to AnalyticsProvider (EPIC-CONVERSION-2026-04)
+jest.mock('../app/components/AuthProvider', () => ({
+  useAuth: () => ({ user: null, session: null }),
+}));
+jest.mock('../hooks/useClarity', () => ({
+  useClarity: () => ({ clarityIdentify: jest.fn(), claritySet: jest.fn() }),
+}));
+jest.mock('../hooks/useUserProfile', () => ({
+  useUserProfile: () => ({ data: null }),
+}));
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};

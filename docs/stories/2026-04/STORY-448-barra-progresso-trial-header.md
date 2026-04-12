@@ -3,7 +3,7 @@
 **Priority:** P1 — Urgência visual + engagement recognition
 **Effort:** S (1-2 dias)
 **Squad:** @dev + @qa
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-CONVERSION-2026-04](EPIC-CONVERSION-2026-04.md)
 **Sprint:** Sprint 1 — Semanas 1-2
 
@@ -114,6 +114,7 @@ Benchmarks SaaS B2B mostram que trial progress indicators aumentam conversão em
 ---
 
 ## Change Log
+- 2026-04-12: Status → Done (implementado em EPIC-CONVERSION-2026-04, testes corrigidos)
 
 | Data | Agente | Mudança |
 |------|--------|---------|

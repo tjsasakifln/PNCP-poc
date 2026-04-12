@@ -3,7 +3,7 @@
 **Priority:** P1 — Reduz abandono nos primeiros 10 minutos
 **Effort:** M (3-4 dias)
 **Squad:** @dev + @ux-design-expert + @qa
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-CONVERSION-2026-04](EPIC-CONVERSION-2026-04.md)
 **Sprint:** Sprint 2 — Semanas 3-4
 
@@ -119,6 +119,7 @@ O onboarding de 3 passos (CNAE → UFs → Confirmação) leva até a primeira b
 ---
 
 ## Change Log
+- 2026-04-12: Status → Done (implementado em EPIC-CONVERSION-2026-04, testes corrigidos)
 
 | Data | Agente | Mudança |
 |------|--------|---------|

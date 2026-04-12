@@ -2,7 +2,7 @@
 
 **Priority:** P0
 **Owner:** @sm + @po
-**Status:** Draft
+**Status:** Done
 **Sprint:** Conversion Sprint Q2 2026
 
 ---
@@ -84,6 +84,7 @@ O CEO Board (53 CEOs, 8 clusters) identificou em deliberação de Abril/2026 que
 ---
 
 ## Change Log
+- 2026-04-12: Status → Done (implementado em EPIC-CONVERSION-2026-04, testes corrigidos)
 
 | Data | Agente | Mudança |
 |------|--------|---------|

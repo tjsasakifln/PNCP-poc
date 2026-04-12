@@ -173,7 +173,7 @@ describe("GTM-UX-003: Unified Retry UX", () => {
 
     test("getRetryMessage returns network message for fetch failed", () => {
       const msg = getRetryMessage(null, "Failed to fetch");
-      expect(msg).toContain("conexao");
+      expect(msg).toMatch(/conex/); // matches "conexão" with accent
       expect(msg).not.toContain("reiniciando");
     });
 
