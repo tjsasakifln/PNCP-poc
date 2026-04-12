@@ -70,6 +70,14 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       url: `https://smartlic.tech/indice-municipal/${slug}`,
       type: 'article',
       locale: 'pt_BR',
+      images: score != null ? [
+        {
+          url: `https://smartlic.tech/api/og/indice-municipal?cidade=${encodeURIComponent(municipioTitulo)}&uf=${uf}&score=${Math.round(score)}`,
+          width: 1200,
+          height: 630,
+          alt: `Índice de Transparência Municipal — ${municipioTitulo}/${uf}: ${score.toFixed(1)} de 100`,
+        },
+      ] : [],
     },
     robots: { index: true },
   };

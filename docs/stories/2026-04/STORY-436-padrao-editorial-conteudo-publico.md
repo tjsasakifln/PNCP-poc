@@ -3,7 +3,7 @@
 **Priority:** P1 (pré-requisito para credibilidade do Observatório e do Índice Municipal)
 **Effort:** S (0,5–1 dia)
 **Squad:** @dev
-**Status:** InProgress
+**Status:** Done
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Sprint 2 (deve ser concluída antes de STORY-431 ir ao ar)
 

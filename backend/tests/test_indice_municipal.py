@@ -351,3 +351,139 @@ class TestScoreCalculation:
         assert r1 == r2
         # Supabase deve ter sido chamado apenas 1 vez (segundo request usa cache)
         assert mock_get_sb.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# STORY-435 AC7: Write path tests (persist + recalcular)
+
+
+@pytest.mark.asyncio
+async def test_persist_indice_municipio_success():
+    """persist_indice_municipio chama upsert com on_conflict correto."""
+    from services.indice_municipal import persist_indice_municipio
+
+    mock_sb = MagicMock()
+    mock_sb.table.return_value.upsert.return_value.execute.return_value = MagicMock(data=[{}])
+    with patch("supabase_client.get_supabase", return_value=mock_sb):
+        result = await persist_indice_municipio(
+            {"municipio_nome": "São Paulo", "uf": "SP", "periodo": "2026-Q1"}
+        )
+    assert result is True
+    mock_sb.table.assert_called_once_with("indice_municipal")
+    mock_sb.table.return_value.upsert.assert_called_once()
+    call_kwargs = mock_sb.table.return_value.upsert.call_args
+    assert call_kwargs.kwargs.get("on_conflict") == "municipio_nome,uf,periodo"
+
+
+@pytest.mark.asyncio
+async def test_persist_indice_municipio_returns_false_on_error():
+    """persist_indice_municipio retorna False quando Supabase lança exceção."""
+    from services.indice_municipal import persist_indice_municipio
+
+    mock_sb = MagicMock()
+    mock_sb.table.return_value.upsert.return_value.execute.side_effect = Exception("Connection failed")
+    with patch("supabase_client.get_supabase", return_value=mock_sb):
+        result = await persist_indice_municipio(
+            {"municipio_nome": "Campinas", "uf": "SP", "periodo": "2026-Q1"}
+        )
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_persist_indice_municipio_never_raises():
+    """persist_indice_municipio nunca lança exceção."""
+    from services.indice_municipal import persist_indice_municipio
+
+    with patch("supabase_client.get_supabase", side_effect=RuntimeError("fatal")):
+        result = await persist_indice_municipio(
+            {"municipio_nome": "Curitiba", "uf": "PR", "periodo": "2026-Q1"}
+        )
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_recalcular_municipios_existentes_returns_summary():
+    """recalcular_municipios_existentes retorna dict com contadores."""
+    from services.indice_municipal import recalcular_municipios_existentes
+
+    mock_municipios = [
+        {"municipio_nome": "São Paulo", "uf": "SP"},
+        {"municipio_nome": "Campinas", "uf": "SP"},
+    ]
+    mock_sb = MagicMock()
+    (
+        mock_sb.table.return_value
+        .select.return_value
+        .eq.return_value
+        .execute.return_value
+    ) = MagicMock(data=mock_municipios)
+
+    with (
+        patch("supabase_client.get_supabase", return_value=mock_sb),
+        patch(
+            "services.indice_municipal.calcular_indice_municipio",
+            new_callable=AsyncMock,
+            return_value={"score_total": 75},
+        ),
+        patch(
+            "services.indice_municipal.persist_indice_municipio",
+            new_callable=AsyncMock,
+            return_value=True,
+        ),
+    ):
+        result = await recalcular_municipios_existentes("2026-Q1")
+
+    assert result["periodo"] == "2026-Q1"
+    assert result["calculated"] == 2
+    assert result["persisted"] == 2
+    assert result["errors"] == 0
+    assert "duration_s" in result
+    assert isinstance(result["duration_s"], float)
+
+
+@pytest.mark.asyncio
+async def test_recalcular_municipios_existentes_handles_supabase_error():
+    """recalcular_municipios_existentes retorna errors=1 se supabase falha."""
+    from services.indice_municipal import recalcular_municipios_existentes
+
+    with patch("supabase_client.get_supabase", side_effect=Exception("DB down")):
+        result = await recalcular_municipios_existentes("2026-Q2")
+
+    assert result["errors"] == 1
+    assert result["calculated"] == 0
+    assert result["persisted"] == 0
+
+
+@pytest.mark.asyncio
+async def test_recalcular_municipios_existentes_partial_errors():
+    """Erros em municípios individuais são contabilizados mas não abortam o loop."""
+    from services.indice_municipal import recalcular_municipios_existentes
+
+    mock_municipios = [
+        {"municipio_nome": "São Paulo", "uf": "SP"},
+        {"municipio_nome": "Curitiba", "uf": "PR"},
+    ]
+    mock_sb = MagicMock()
+    (
+        mock_sb.table.return_value
+        .select.return_value
+        .eq.return_value
+        .execute.return_value
+    ) = MagicMock(data=mock_municipios)
+
+    # First call succeeds, second raises
+    calc_mock = AsyncMock(side_effect=[{"score_total": 80}, RuntimeError("calc error")])
+
+    with (
+        patch("supabase_client.get_supabase", return_value=mock_sb),
+        patch("services.indice_municipal.calcular_indice_municipio", calc_mock),
+        patch(
+            "services.indice_municipal.persist_indice_municipio",
+            new_callable=AsyncMock,
+            return_value=True,
+        ),
+    ):
+        result = await recalcular_municipios_existentes("2026-Q1")
+
+    assert result["calculated"] == 1
+    assert result["errors"] == 1

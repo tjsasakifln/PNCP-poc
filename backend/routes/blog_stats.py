@@ -134,6 +134,7 @@ class SectorUfStats(BaseModel):
     trend_90d: list[TrendPoint] = []
     top_oportunidades: list[SampleItem]
     last_updated: str
+    most_recent_bid_date: Optional[str] = None
 
 
 class CidadeStats(BaseModel):
@@ -509,6 +510,10 @@ async def get_sector_uf_stats(setor_id: str, uf: str):
     # Top 5 opportunities
     top_items = [_make_sample_item(item) for item in uf_results[:5]]
 
+    # STORY-430 AC5: data do edital mais recente
+    dates = [_extract_date(item) for item in uf_results if _extract_date(item)]
+    most_recent_bid_date = max(dates) if dates else None
+
     data = {
         "sector_id": sector.id,
         "sector_name": sector.name,
@@ -521,6 +526,7 @@ async def get_sector_uf_stats(setor_id: str, uf: str):
         "trend_90d": trend_90d,
         "top_oportunidades": top_items,
         "last_updated": now.isoformat(),
+        "most_recent_bid_date": most_recent_bid_date,
     }
     _cache_set(cache_key, data)
     return SectorUfStats(**data)

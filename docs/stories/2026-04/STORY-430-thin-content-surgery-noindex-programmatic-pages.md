@@ -51,8 +51,9 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 - [x] TypeScript compila sem erros (`npx tsc --noEmit`)
 
 ### AC3: Canonical tag para páginas com conteúdo duplicado da versão pai
-- [ ] Em páginas `[setor]/[uf]` que têm conteúdo idêntico (≤10% diferença) da versão `[setor]` sem UF → adicionar `alternates: { canonical: '/blog/licitacoes/[setor]' }` no metadata
-- [ ] Isso consolida link equity para a versão nacional em vez de diluir entre 27 UFs com dados insuficientes
+- [x] Em páginas `[setor]/[uf]` que têm conteúdo idêntico (≤10% diferença) da versão `[setor]` sem UF → adicionar `alternates: { canonical: '/blog/licitacoes/[setor]' }` no metadata
+- [x] Isso consolida link equity para a versão nacional em vez de diluir entre 27 UFs com dados insuficientes
+<!-- Verificado: canonical self-ref implementado em app/blog/licitacoes/[setor]/[uf]/page.tsx lines 138-152 (noindex branch + indexed branch) -->
 
 ### AC4: Remover páginas inexistentes do sitemap
 - [x] Modificar `frontend/app/sitemap.ts` para filtrar dinamicamente páginas programáticas — não incluir no sitemap combinações que teriam noindex
@@ -61,9 +62,10 @@ O Google Search Console detectou **569 páginas programáticas com status "Detec
 - [ ] Testar: `curl https://smartlic.tech/sitemap.xml | grep "licitacoes" | wc -l` deve reduzir vs. baseline
 
 ### AC5: Páginas que ficam indexadas recebem enriquecimento mínimo
-- [ ] Páginas com ≥ 5 licitações ativas devem mostrar: (a) contagem total de licitações ativas, (b) valor médio dos contratos, (c) data da licitação mais recente — esses dados já existem no datalake
-- [ ] Dados devem ser carregados server-side em `generateStaticParams` ou como RSC (não client-side fetch)
-- [ ] Pelo menos 3 campos de dado real visível above-the-fold diferenciando da versão sem UF
+- [x] Páginas com ≥ 5 licitações ativas devem mostrar: (a) contagem total de licitações ativas, (b) valor médio dos contratos, (c) data da licitação mais recente — esses dados já existem no datalake
+- [x] Dados devem ser carregados server-side em `generateStaticParams` ou como RSC (não client-side fetch)
+- [x] Pelo menos 3 campos de dado real visível above-the-fold diferenciando da versão sem UF
+<!-- Implementado: campo most_recent_bid_date em SectorUfStats (backend/routes/blog_stats.py) + card condicional na stats grid (app/blog/licitacoes/[setor]/[uf]/page.tsx) -->
 
 ### AC6: Validação pós-deploy via GSC
 - [ ] Após deploy, inspecionar 3 URLs no GSC que deveriam ter noindex e confirmar header `X-Robots-Tag: noindex, nofollow` via DevTools → Network

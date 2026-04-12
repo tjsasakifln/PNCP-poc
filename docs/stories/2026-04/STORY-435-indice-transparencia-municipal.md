@@ -95,10 +95,11 @@ O **Índice SmartLic de Transparência Municipal** é o ativo de link bait mais 
 
 ### AC5: Geração de imagem OG customizada por município
 
-- [ ] Criar rota `frontend/app/api/og/indice-municipal/route.tsx` usando `@vercel/og` (ou alternativa compatível com Next.js standalone)
-- [ ] Imagem 1200×630 com: nome do município, score (número grande), posição no ranking, gráfico simplificado das 5 dimensões, logo SmartLic
-- [ ] Usada como `og:image` nas páginas municipais dinamicamente
-- [ ] Quando prefeitura ou imprensa compartilha a página = preview automático com o score → incentiva compartilhamento
+- [x] Criar rota `frontend/app/api/og/indice-municipal/route.tsx` usando `@vercel/og` (ou alternativa compatível com Next.js standalone)
+- [x] Imagem 1200×630 com: nome do município, score (número grande), posição no ranking, gráfico simplificado das 5 dimensões, logo SmartLic
+- [x] Usada como `og:image` nas páginas municipais dinamicamente
+- [x] Quando prefeitura ou imprensa compartilha a página = preview automático com o score → incentiva compartilhamento
+<!-- Implementado: frontend/app/api/og/indice-municipal/route.tsx (runtime edge, 1200×630, score colorido verde/amarelo/vermelho) + wired em [municipio-uf]/page.tsx generateMetadata openGraph.images -->
 
 ### AC6: Kit de imprensa para divulgação
 
@@ -118,9 +119,10 @@ O **Índice SmartLic de Transparência Municipal** é o ativo de link bait mais 
 
 ### AC7: Atualização trimestral automatizada
 
-- [ ] Job ARQ: `calcular_indice_municipal_trimestral()` no cron de 1º dia do trimestre (março, junho, setembro, dezembro às 6h UTC)
-- [ ] Após calcular: enviar summary por email para tiago.sasaki@confenge.com.br via Resend com: total de municípios calculados, top 5 mudanças de ranking, municípios que subiram/desceram mais
-- [ ] Publicar automaticamente novo relatório em `/indice-municipal` com dados do novo período
+- [x] Job ARQ: `calcular_indice_municipal_trimestral()` no cron de 1º dia do trimestre (março, junho, setembro, dezembro às 6h UTC)
+- [x] Após calcular: enviar summary por email para tiago.sasaki@confenge.com.br via Resend com: total de municípios calculados, top 5 mudanças de ranking, municípios que subiram/desceram mais
+- [ ] Publicar automaticamente novo relatório em `/indice-municipal` com dados do novo período (v2 backlog — requer lógica de período no frontend)
+<!-- Implementado: backend/jobs/cron/indice_municipal.py (90d interval, _prev_quarter_label, email summary), serviço write path em services/indice_municipal.py (persist_indice_municipio + recalcular_municipios_existentes), wired em lifespan.py task_registry -->
 
 ### AC8: Padrão editorial do conteúdo textual (CRÍTICO — este índice será citado por imprensa e governo)
 

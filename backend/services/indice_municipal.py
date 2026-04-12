@@ -16,6 +16,7 @@ Cache InMemory 1h por (municipio_nome, uf, periodo).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from datetime import datetime, timezone
@@ -270,3 +271,86 @@ async def listar_periodos_disponiveis() -> list[str]:
     except Exception as e:
         logger.warning("indice_municipal: periodos query failed: %s", e)
         return []
+
+
+async def persist_indice_municipio(result: dict) -> bool:
+    """STORY-435 AC7: Upsert resultado calculado na tabela indice_municipal.
+
+    Retorna True em sucesso, False em erro (nunca lança exceção).
+    """
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+        sb.table("indice_municipal").upsert(
+            result, on_conflict="municipio_nome,uf,periodo"
+        ).execute()
+        return True
+    except Exception as e:
+        logger.warning(
+            "indice_municipal persist: upsert falhou para %s/%s: %s",
+            result.get("municipio_nome"), result.get("uf"), e,
+        )
+        return False
+
+
+async def recalcular_municipios_existentes(periodo: str) -> dict:
+    """STORY-435 AC7: Re-calcula todos os municípios existentes no período dado.
+
+    Estratégia: busca entradas existentes na tabela indice_municipal para
+    obter a lista de municípios sem precisar de GROUP BY (PostgREST não suporta).
+    Idempotente — seguro rodar múltiplas vezes.
+
+    Returns:
+        dict com chaves: periodo, calculated, persisted, errors, duration_s
+    """
+    import time as _time
+    start = _time.monotonic()
+    calculated = persisted = errors = 0
+
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+        rows = (
+            sb.table("indice_municipal")
+            .select("municipio_nome,uf")
+            .eq("periodo", periodo)
+            .execute()
+        )
+        municipios = rows.data or []
+    except Exception as e:
+        logger.error("indice_municipal recalcular: falha ao buscar municípios: %s", e)
+        return {
+            "periodo": periodo, "calculated": 0,
+            "persisted": 0, "errors": 1, "duration_s": 0.0,
+        }
+
+    logger.info("indice_municipal recalcular: %d municípios para período %s", len(municipios), periodo)
+
+    for entry in municipios:
+        try:
+            result = await calcular_indice_municipio(
+                entry["municipio_nome"], entry["uf"], periodo
+            )
+            calculated += 1
+            if result and await persist_indice_municipio(result):
+                persisted += 1
+        except Exception as e:
+            logger.warning(
+                "indice_municipal recalcular: erro em %s/%s: %s",
+                entry.get("municipio_nome"), entry.get("uf"), e,
+            )
+            errors += 1
+        await asyncio.sleep(0)  # yield event loop entre municípios
+
+    duration = round(_time.monotonic() - start, 2)
+    logger.info(
+        "indice_municipal recalcular: concluído — calculated=%d persisted=%d errors=%d duration=%.2fs",
+        calculated, persisted, errors, duration,
+    )
+    return {
+        "periodo": periodo,
+        "calculated": calculated,
+        "persisted": persisted,
+        "errors": errors,
+        "duration_s": duration,
+    }

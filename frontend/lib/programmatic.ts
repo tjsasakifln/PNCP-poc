@@ -94,6 +94,7 @@ export interface SectorUfStats {
     data: string;
   }[];
   last_updated: string;
+  most_recent_bid_date?: string;
 }
 
 export interface PanoramaStats {

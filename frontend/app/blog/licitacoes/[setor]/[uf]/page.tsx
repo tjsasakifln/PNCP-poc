@@ -342,6 +342,14 @@ export default async function LicitacoesSectorUfPage({
                 </p>
               )}
             </div>
+            {stats?.most_recent_bid_date && (
+              <div className="p-4 rounded-lg border border-[var(--border)] text-center">
+                <p className="text-sm text-ink-secondary mb-1">Edital mais recente</p>
+                <p className="text-2xl font-bold text-ink">
+                  {new Date(stats.most_recent_bid_date).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* AC2: Modality percentages */}

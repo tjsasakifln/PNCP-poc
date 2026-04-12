@@ -118,3 +118,9 @@ from jobs.cron.trial_risk_detection import (  # noqa: F401
     detect_at_risk_trials,
     start_trial_risk_task,
 )
+
+# Índice Municipal — quarterly recalc
+from jobs.cron.indice_municipal import (  # noqa: F401
+    run_indice_municipal_recalc,
+    start_indice_municipal_task,
+)

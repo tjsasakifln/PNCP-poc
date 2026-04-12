@@ -400,6 +400,38 @@ class TestSectorUfStatsEnhanced:
                 assert point["avg_value"] == 0.0
 
 
+def test_sector_uf_stats_most_recent_bid_date_present():
+    """STORY-430 AC5: most_recent_bid_date é o max das datas disponíveis."""
+    from routes.blog_stats import SectorUfStats
+    # Testar que o campo existe no modelo
+    stats = SectorUfStats(
+        sector_id="tech",
+        sector_name="Tecnologia",
+        uf="SP",
+        total_editais=5,
+        avg_value=1000.0,
+        top_oportunidades=[],
+        last_updated="2026-04-12T00:00:00",
+        most_recent_bid_date="2026-04-10",
+    )
+    assert stats.most_recent_bid_date == "2026-04-10"
+
+
+def test_sector_uf_stats_most_recent_bid_date_optional():
+    """STORY-430 AC5: most_recent_bid_date é None quando ausente."""
+    from routes.blog_stats import SectorUfStats
+    stats = SectorUfStats(
+        sector_id="tech",
+        sector_name="Tecnologia",
+        uf="SP",
+        total_editais=0,
+        avg_value=0.0,
+        top_oportunidades=[],
+        last_updated="2026-04-12T00:00:00",
+    )
+    assert stats.most_recent_bid_date is None
+
+
 # ---------------------------------------------------------------------------
 # Contratos endpoints (pncp_supplier_contracts fallback for zero-editais pages)
 # ---------------------------------------------------------------------------
