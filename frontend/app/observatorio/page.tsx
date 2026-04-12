@@ -9,7 +9,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Observatório de Licitações | SmartLic',
+  title: 'Observatório de Licitações',
   description:
     'Análise mensal do mercado de compras públicas do Brasil. Dados reais do PNCP processados por IA: total de editais, setores em alta, valores e distribuição por modalidade.',
   alternates: { canonical: 'https://smartlic.tech/observatorio' },

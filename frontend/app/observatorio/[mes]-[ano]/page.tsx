@@ -52,7 +52,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { 'mes-ano': slug } = await params;
   const parsed = parseSlug(slug);
-  if (!parsed) return { title: 'Relatório não encontrado | SmartLic' };
+  if (!parsed) return { title: 'Relatório não encontrado' };
 
   const { mes, ano } = parsed;
   const mesDisplay = MONTH_NAMES_DISPLAY[mes] ?? String(mes);
@@ -63,8 +63,8 @@ export async function generateMetadata({
     : null;
 
   const title = totalDisplay
-    ? `${totalDisplay} editais em ${mesDisplay} de ${ano} — Raio-X das Licitações | SmartLic`
-    : `Raio-X das Licitações — ${mesDisplay} ${ano} | SmartLic`;
+    ? `${totalDisplay} editais em ${mesDisplay} de ${ano} — Raio-X das Licitações`
+    : `Raio-X das Licitações — ${mesDisplay} ${ano}`;
 
   const description = totalDisplay
     ? `O Brasil publicou ${totalDisplay} editais no PNCP em ${mesDisplay.toLowerCase()} de ${ano}. Análise completa por UF, modalidade e setor com dados reais. Licença Creative Commons BY 4.0.`

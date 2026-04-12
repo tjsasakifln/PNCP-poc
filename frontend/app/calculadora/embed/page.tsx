@@ -12,7 +12,7 @@ import { Metadata } from 'next';
 import CalculadoraClient from '../CalculadoraClient';
 
 export const metadata: Metadata = {
-  title: 'Calculadora de Oportunidades em Licitações | SmartLic',
+  title: 'Calculadora de Oportunidades em Licitações',
   description: 'Descubra quantas licitações do seu setor sua empresa está perdendo. Dados reais do PNCP.',
   robots: { index: false, follow: true }, // noindex — página embed não deve aparecer em busca
 };
@@ -42,6 +42,21 @@ export default function CalculadoraEmbedPage() {
           Dados reais do PNCP. Atualizado diariamente.
         </p>
         <CalculadoraClient />
+
+        {/* CTA embed — STORY-432 AC6 */}
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+          <p className="text-sm text-gray-700 mb-2">
+            Quer ver quais são essas licitações agora?
+          </p>
+          <a
+            href="https://smartlic.tech"
+            target="_blank"
+            rel="noopener"
+            className="inline-block px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Ver licitações completas → smartlic.tech
+          </a>
+        </div>
       </div>
 
       {/* Footer com backlink followable — STORY-432 AC2 */}
