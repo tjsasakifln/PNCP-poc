@@ -1,6 +1,6 @@
 # STORY-369 — Exit Survey no Trial Expiry
 
-**Status:** Ready
+**Status:** InReview
 **Priority:** P1 — Conversão (zero dados qualitativos de churn hoje)
 **Origem:** Conselho de CEOs Advisory Board — melhorias on-page funil conversão (2026-04-11)
 **Componentes:** backend/routes/user.py, backend/migrations/, frontend/components/TrialExitSurveyModal.tsx, frontend/app/buscar/page.tsx
@@ -22,7 +22,7 @@ Com founder solo e 7h/dia, ligar para cada trial não é escalável. Um exit sur
 
 ### AC1: Migração Supabase — tabela `trial_exit_surveys`
 
-- [ ] Nova migration em `supabase/migrations/` cria tabela:
+- [x] Nova migration em `supabase/migrations/` cria tabela:
   ```sql
   CREATE TABLE trial_exit_surveys (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,24 +32,24 @@ Com founder solo e 7h/dia, ligar para cada trial não é escalável. Um exit sur
     created_at TIMESTAMPTZ DEFAULT NOW()
   );
   ```
-- [ ] RLS habilitado: usuário só pode inserir seu próprio registro; admin pode ler todos
-- [ ] Index em `created_at` para queries de analytics
-- [ ] Constraint: 1 survey por usuário (UNIQUE em `user_id`)
+- [x] RLS habilitado: usuário só pode inserir seu próprio registro; admin pode ler todos
+- [x] Index em `created_at` para queries de analytics
+- [x] Constraint: 1 survey por usuário (UNIQUE em `user_id`)
 
 ### AC2: Backend — endpoint `POST /v1/trial/exit-survey`
 
-- [ ] Novo endpoint em `backend/routes/user.py` (ou novo arquivo `backend/routes/trial.py`)
-- [ ] Requer autenticação (`require_auth`)
-- [ ] Aceita body: `{ reason: string, reason_text?: string }`
-- [ ] Valida que `reason` está no enum permitido
-- [ ] Retorna 409 se survey já foi submetido para este usuário
-- [ ] Retorna 201 com `{ id, created_at }` em caso de sucesso
-- [ ] Testes unitários: submit válido, submit duplicado, reason inválido, sem auth
+- [x] Novo endpoint em `backend/routes/user.py` (ou novo arquivo `backend/routes/trial.py`)
+- [x] Requer autenticação (`require_auth`)
+- [x] Aceita body: `{ reason: string, reason_text?: string }`
+- [x] Valida que `reason` está no enum permitido
+- [x] Retorna 409 se survey já foi submetido para este usuário
+- [x] Retorna 201 com `{ id, created_at }` em caso de sucesso
+- [x] Testes unitários: submit válido, submit duplicado, reason inválido, sem auth
 
 ### AC3: Frontend — componente `TrialExitSurveyModal`
 
-- [ ] Novo arquivo `frontend/components/TrialExitSurveyModal.tsx`
-- [ ] Modal (não página inteira) com:
+- [x] Novo arquivo `frontend/components/TrialExitSurveyModal.tsx`
+- [x] Modal (não página inteira) com:
   - Título: "Antes de sair, nos ajude a melhorar"
   - Pergunta: "O que faltou para você assinar?"
   - 4 opções como radio buttons:
@@ -60,29 +60,29 @@ Com founder solo e 7h/dia, ligar para cada trial não é escalável. Um exit sur
   - Campo de texto livre (exibido apenas quando "Outro motivo" selecionado)
   - Botão "Enviar resposta" (habilitado apenas quando opção selecionada)
   - Link "Pular" abaixo do botão (fecha modal sem enviar)
-- [ ] Ao enviar: chama `POST /v1/trial/exit-survey`, mostra feedback de sucesso, fecha modal
-- [ ] Ao fechar (pular): fecha modal, não chama endpoint
-- [ ] Loading state no botão durante submit
-- [ ] Testes: render, seleção de opção, campo "outro", submit, skip
+- [x] Ao enviar: chama `POST /v1/trial/exit-survey`, mostra feedback de sucesso, fecha modal
+- [x] Ao fechar (pular): fecha modal, não chama endpoint
+- [x] Loading state no botão durante submit
+- [x] Testes: render, seleção de opção, campo "outro", submit, skip
 
 ### AC4: Integração — exibir modal no acesso pós-expiração
 
-- [ ] Em `frontend/app/buscar/page.tsx` (ou layout raiz), detectar combinação: `isTrialExpired === true` + survey ainda não submetido
-- [ ] Exibir `TrialExitSurveyModal` antes de exibir `TrialConversionScreen` (survey primeiro, upgrade depois)
-- [ ] Controle de "já respondido" via localStorage (chave: `trial_exit_survey_submitted`) para evitar re-exibição se API falhar
-- [ ] Verificar se survey já foi respondido via endpoint ou localStorage antes de exibir
+- [x] Em `frontend/app/buscar/page.tsx` (ou layout raiz), detectar combinação: `isTrialExpired === true` + survey ainda não submetido
+- [x] Exibir `TrialExitSurveyModal` antes de exibir `TrialConversionScreen` (survey primeiro, upgrade depois)
+- [x] Controle de "já respondido" via localStorage (chave: `trial_exit_survey_submitted`) para evitar re-exibição se API falhar
+- [x] Verificar se survey já foi respondido via endpoint ou localStorage antes de exibir
 
 ### AC5: Evento Mixpanel
 
-- [ ] Ao submeter survey com sucesso: `mixpanel.track('trial_exit_survey_submitted', { reason, has_text: boolean })`
-- [ ] Ao pular: `mixpanel.track('trial_exit_survey_skipped')`
-- [ ] Usar o wrapper Mixpanel já existente no projeto (não criar novo)
+- [x] Ao submeter survey com sucesso: `mixpanel.track('trial_exit_survey_submitted', { reason, has_text: boolean })`
+- [x] Ao pular: `mixpanel.track('trial_exit_survey_skipped')`
+- [x] Usar o wrapper Mixpanel já existente no projeto (não criar novo)
 
 ### AC6: Admin — visibilidade básica
 
-- [ ] Endpoint admin `GET /v1/admin/trial-exit-surveys` retorna lista com `reason`, `created_at` (sem PII)
-- [ ] Requer role `is_admin` ou `is_master`
-- [ ] Agrupamento por `reason` com contagem (para dashboard futuro)
+- [x] Endpoint admin `GET /v1/admin/trial-exit-surveys` retorna lista com `reason`, `created_at` (sem PII)
+- [x] Requer role `is_admin` ou `is_master`
+- [x] Agrupamento por `reason` com contagem (para dashboard futuro)
 
 ## Escopo
 
@@ -104,12 +104,13 @@ Com founder solo e 7h/dia, ligar para cada trial não é escalável. Um exit sur
 
 ## Arquivos a Criar/Modificar
 
-- [ ] `supabase/migrations/YYYYMMDDHHMMSS_trial_exit_surveys.sql` (novo)
-- [ ] `backend/routes/user.py` ou `backend/routes/trial.py` (modificar/novo)
-- [ ] `frontend/components/TrialExitSurveyModal.tsx` (novo)
-- [ ] `frontend/app/buscar/page.tsx` (modificar — integração)
-- [ ] `backend/tests/test_trial_exit_survey.py` (novo)
-- [ ] `frontend/__tests__/trial-exit-survey.test.tsx` (novo)
+- [x] `supabase/migrations/20260411000000_trial_exit_surveys.sql` (novo)
+- [x] `backend/routes/user.py` (modificar — novos endpoints)
+- [x] `frontend/components/TrialExitSurveyModal.tsx` (novo)
+- [x] `frontend/app/buscar/page.tsx` (modificar — integração)
+- [x] `frontend/app/api/trial/exit-survey/route.ts` (novo — proxy)
+- [x] `backend/tests/test_trial_exit_survey.py` (novo)
+- [x] `frontend/__tests__/trial-exit-survey.test.tsx` (novo)
 
 ## Change Log
 

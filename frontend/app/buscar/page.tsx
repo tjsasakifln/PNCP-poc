@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import PullToRefresh from "react-simple-pull-to-refresh";
 
@@ -25,9 +26,37 @@ import { TrialExpiringBanner } from "../components/TrialExpiringBanner";
 import { TrialValueTracker } from "../../components/billing/TrialValueTracker";
 import { Button } from "../../components/ui/button";
 import { APP_NAME } from "../../lib/config";
+import { TrialExitSurveyModal } from "../../components/TrialExitSurveyModal";
 
 function HomePageContent() {
   const orch = useSearchOrchestration();
+  const searchParams = useSearchParams();
+
+  // STORY-369 AC4: Exit survey state — shown once when trial expires
+  const [showExitSurvey, setShowExitSurvey] = useState(false);
+
+  // STORY-371 AC3: Scroll to highlighted result from email deep-link (?highlight=PNCP-xxx)
+  useEffect(() => {
+    const highlight = searchParams.get("highlight");
+    if (!highlight) return;
+    // Defer to give results time to render
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-numero="${CSS.escape(highlight)}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-[var(--brand-blue)]", "ring-offset-2");
+      }
+      // If not found (expired from datalake), fail silently
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!orch.isTrialExpired) return;
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("trial_exit_survey_submitted")) return;
+    setShowExitSurvey(true);
+  }, [orch.isTrialExpired]);
 
   if (orch.authLoading) {
     return (
@@ -236,6 +265,10 @@ function HomePageContent() {
           </div>
         </div>
       </footer>
+
+      {showExitSurvey && (
+        <TrialExitSurveyModal onClose={() => setShowExitSurvey(false)} />
+      )}
 
       <BuscarModals
         showSaveDialog={orch.search.showSaveDialog}

@@ -1,5 +1,18 @@
 import { useCallback } from 'react';
 import mixpanel from 'mixpanel-browser';
+
+/**
+ * STORY-370 AC1: Typed analytics events for the activation funnel.
+ * Use these constants to avoid typos in event names.
+ */
+export type AnalyticsEvent =
+  | 'onboarding_step_completed'
+  | 'first_search_executed'
+  | 'first_relevant_result_found'
+  | 'pipeline_item_added'
+  | 'trial_exit_survey_submitted'
+  | 'trial_exit_survey_skipped'
+  | string; // backward compat for existing events
 import { getCookieConsent } from '../app/components/CookieConsentBanner';
 
 const UTM_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
@@ -77,7 +90,7 @@ export const useAnalytics = () => {
    * Track an event with optional properties.
    * Only fires if analytics consent is granted.
    */
-  const trackEvent = useCallback((eventName: string, properties?: Record<string, any>) => {
+  const trackEvent = useCallback((eventName: AnalyticsEvent, properties?: Record<string, unknown>) => {
     if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN && hasAnalyticsConsent()) {
       try {
         mixpanel.track(eventName, {
@@ -96,7 +109,7 @@ export const useAnalytics = () => {
    * Only fires if analytics consent is granted (LGPD AC8).
    * STORY-219 AC10: Sets user properties for segmentation.
    */
-  const identifyUser = useCallback((userId: string, properties?: Record<string, any>) => {
+  const identifyUser = useCallback((userId: string, properties?: Record<string, unknown>) => {
     if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN && hasAnalyticsConsent()) {
       try {
         mixpanel.identify(userId);

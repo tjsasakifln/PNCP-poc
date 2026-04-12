@@ -6,6 +6,7 @@ import { useAuth } from "../app/components/AuthProvider";
 import type { PipelineItem, PipelineStage } from "../app/pipeline/types";
 import { getUserFriendlyError } from "../lib/error-messages";
 import { FetchError } from "../lib/fetcher";
+import { useAnalytics } from "./useAnalytics";
 
 interface PipelineApiResponse {
   items: PipelineItem[];
@@ -39,6 +40,7 @@ const fetchPipelineWithAuth = async (url: string, token: string) => {
 export function usePipeline() {
   const { session } = useAuth();
   const accessToken = session?.access_token;
+  const { trackEvent } = useAnalytics();
 
   // AC6: SWR for GET /api/pipeline
   const {
@@ -145,9 +147,13 @@ export function usePipeline() {
         }),
         { revalidate: true, rollbackOnError: true }
       );
+      trackEvent('pipeline_item_added', {
+        stage: newItem.stage,
+        item_id: newItem.id,
+      });
       return newItem as PipelineItem;
     },
-    [authHeaders, mutate]
+    [authHeaders, mutate, trackEvent]
   );
 
   // AC9: Mutation — update item (stage/notes)

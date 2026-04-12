@@ -310,6 +310,52 @@ def render_trial_paywall_alert_email(user_name: str, stats: dict, unsubscribe_ur
 # Email #4 — Day 10: Valor Acumulado (AC7 — NEW)
 # ============================================================================
 
+def _top_opportunity_block(stats: dict) -> str:
+    """STORY-371 AC2: Render personalized top opportunity block for day 10 email."""
+    top_opp = stats.get("top_opportunity")
+    if not top_opp or not top_opp.get("objeto"):
+        return ""
+    objeto = top_opp.get("objeto", "")
+    orgao = top_opp.get("orgao_nome", "")
+    valor = top_opp.get("valor_formatado", "")
+    dias = top_opp.get("dias_ate_encerramento")
+    numero = top_opp.get("numero_controle", "")
+
+    prazo_text = ""
+    if dias is not None:
+        if dias == 0:
+            prazo_text = " · vence hoje"
+        elif dias == 1:
+            prazo_text = " · vence amanhã"
+        else:
+            prazo_text = f" · vence em {dias} dias"
+
+    cta_url = f"{FRONTEND_URL}/buscar?highlight={numero}" if numero else f"{FRONTEND_URL}/buscar"
+
+    return f"""
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="margin: 16px 0 24px;">
+      <tr>
+        <td style="border: 2px solid #1a6cf6; border-radius: 8px; padding: 16px;">
+          <p style="color: #888; font-size: 12px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 1px;">
+            📋 Sua maior oportunidade identificada
+          </p>
+          <p style="color: #1a1a2e; font-size: 16px; font-weight: 600; margin: 0 0 6px; line-height: 1.4;">
+            {objeto}
+          </p>
+          {"<p style='color: #555; font-size: 14px; margin: 0 0 6px;'>" + orgao + "</p>" if orgao else ""}
+          <p style="color: #1a6cf6; font-size: 15px; font-weight: 700; margin: 0 0 12px;">
+            {valor}{prazo_text}
+          </p>
+          <a href="{cta_url}"
+             style="display: inline-block; padding: 10px 20px; background-color: #1a6cf6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+            Ver este edital agora →
+          </a>
+        </td>
+      </tr>
+    </table>"""
+
+
 def render_trial_value_email(user_name: str, stats: dict, unsubscribe_url: str = "") -> str:
     """STORY-321 AC7: Day 10 — Accumulated value. Social proof with big R$ number.
 
@@ -365,6 +411,7 @@ def render_trial_value_email(user_name: str, stats: dict, unsubscribe_url: str =
       construiu até agora:
     </p>
     {value_highlight}
+    {_top_opportunity_block(stats)}
     {_stats_block(stats, show_pipeline=True) if value == 0 and opps > 0 else ''}
     <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
       Não perca esse progresso. Com o SmartLic Pro, você mantém acesso a tudo:

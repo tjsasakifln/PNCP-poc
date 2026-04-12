@@ -14,6 +14,7 @@ import { usePlan } from "../../hooks/usePlan";
 import { toast } from "sonner";
 import { MessageCircle, Mail } from "lucide-react";
 import TestimonialSection, { TESTIMONIALS } from "../../components/TestimonialSection";
+import { CaseStudyCard } from "../../components/CaseStudyCard";
 import { safeSetItem, safeGetItem } from "../../lib/storage";
 
 import { PlanStatusBanners } from "./components/PlanStatusBanners";
@@ -380,6 +381,44 @@ export default function PlanosPage() {
         {/* Testimonials */}
         <div className="mt-16" data-testid="pricing-testimonials">
           <TestimonialSection testimonials={TESTIMONIALS.slice(0, 3)} heading="Empresas que já usam SmartLic" className="!py-0 !bg-transparent" />
+        </div>
+
+        {/* STORY-372 AC2: Case studies section */}
+        <div className="mt-16 mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-display font-bold text-[var(--ink)]">
+              Resultados reais de usuários SmartLic
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <CaseStudyCard
+              sector="Limpeza e Conservação"
+              location="Curitiba-PR"
+              companySize="12 funcionários"
+              problem="Monitorava editais manualmente no PNCP 2h por dia"
+              result="Encontrou Pregão Eletrônico de R$87.000 (prefeitura vizinha) que não apareceu na busca manual"
+              highlight={{
+                value: "R$ 87.000",
+                label: "em oportunidades encontradas",
+                time: "em 6 minutos",
+              }}
+            />
+            <CaseStudyCard
+              sector="Insumos de Informática"
+              location="Porto Alegre-RS"
+              companySize="Distribuidora regional"
+              problem="Perdia editais por descobrir tarde demais"
+              result="Identificou 3 pregões em municípios do interior com prazo > 10 dias"
+              highlight={{
+                value: "R$ 245.000",
+                label: "valor total dos 3 editais",
+                time: "identificados no primeiro acesso",
+              }}
+            />
+          </div>
+          <p className="text-xs text-[var(--ink-secondary)] text-center mt-4 opacity-70">
+            * Cases baseados em dados reais de uso durante período de avaliação. Valores e detalhes aproximados para preservar privacidade.
+          </p>
         </div>
 
         <PlanFAQ items={FAQ_ITEMS} openIndex={openFaq} onToggle={(i) => setOpenFaq(openFaq === i ? null : i)} />

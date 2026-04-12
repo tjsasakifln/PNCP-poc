@@ -159,6 +159,44 @@ def get_coupon_checkout_url() -> str:
 # AC12: get_trial_user_stats(user_id) — stats with days_remaining
 # ============================================================================
 
+def _get_top_trial_opportunity(user_id: str) -> dict | None:
+    """STORY-371 AC1: Get the highest-value trial opportunity for email personalization."""
+    from supabase_client import get_supabase
+    from utils.formatters import truncate_text, dias_ate_data, format_brl
+    try:
+        sb = get_supabase()
+        result = (
+            sb.table("search_sessions")
+            .select("valor_total, top_result_objeto, top_result_orgao, top_result_numero_controle, top_result_data_encerramento")
+            .eq("user_id", user_id)
+            .gt("valor_total", 0)
+            .order("valor_total", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return None
+        row = result.data[0]
+        valor = float(row.get("valor_total") or 0)
+        if valor <= 0:
+            return None
+        data_enc = row.get("top_result_data_encerramento")
+        dias = dias_ate_data(data_enc)
+        objeto = truncate_text(row.get("top_result_objeto") or "", 120)
+        return {
+            "objeto": objeto,
+            "orgao_nome": row.get("top_result_orgao") or "",
+            "valor_formatado": format_brl(valor),
+            "valor": valor,
+            "data_encerramento": data_enc,
+            "dias_ate_encerramento": dias,
+            "numero_controle": row.get("top_result_numero_controle") or "",
+        }
+    except Exception as e:
+        logger.debug(f"Could not fetch top opportunity for email: {e}")
+        return None
+
+
 def get_trial_user_stats(user_id: str) -> dict:
     """AC12: Get trial user stats including days_remaining.
 
@@ -207,6 +245,7 @@ def get_trial_user_stats(user_id: str) -> dict:
         "total_value_estimated": stats_dict.get("total_value_estimated", 0.0),
         "pipeline_items_count": stats_dict.get("pipeline_items_count", 0),
         "sectors_searched": stats_dict.get("sectors_searched", []),
+        "top_opportunity": None,  # STORY-371: populated by _get_top_trial_opportunity
     }
 
 
@@ -340,6 +379,8 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                     # Collect stats for personalization (AC2)
                     try:
                         stats = get_trial_user_stats(user_id)
+                        top_opp = _get_top_trial_opportunity(user_id)
+                        stats["top_opportunity"] = top_opp
                     except Exception:
                         stats = {}
 

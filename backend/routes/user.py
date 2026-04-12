@@ -48,6 +48,16 @@ class TrialStatusResponse(BaseModel):
     trial_phase: str = "full_access"  # "full_access" | "limited_access" | "not_trial"
     trial_day: int = 0
 
+
+# STORY-369 AC2: Exit survey schemas
+class ExitSurveyRequest(BaseModel):
+    reason: str
+    reason_text: str | None = None
+
+class ExitSurveyResponse(BaseModel):
+    id: str
+    created_at: str
+
 # STORY-210 AC12: Per-user rate limiting for /change-password
 # 5 attempts per 15 minutes (900 seconds)
 _CHANGE_PASSWORD_MAX_ATTEMPTS = 5
@@ -713,3 +723,96 @@ async def export_user_data(user: dict = Depends(require_auth), db=Depends(get_db
             "Content-Disposition": f'attachment; filename="{filename}"',
         },
     )
+
+
+# ============================================================================
+# STORY-369: Trial Exit Survey
+# ============================================================================
+
+VALID_EXIT_REASONS = {"no_editais", "preco_alto", "ainda_avaliando", "outro"}
+
+@router.post("/trial/exit-survey", response_model=ExitSurveyResponse, status_code=201)
+async def submit_exit_survey(
+    body: ExitSurveyRequest,
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """STORY-369 AC2: Submit exit survey when trial expires.
+    Returns 409 if user already submitted a survey.
+    """
+    user_id = user["id"]
+
+    if body.reason not in VALID_EXIT_REASONS:
+        raise HTTPException(status_code=422, detail=f"Reason must be one of: {sorted(VALID_EXIT_REASONS)}")
+
+    # Check for duplicate
+    try:
+        existing = await sb_execute(
+            db.table("trial_exit_surveys").select("id").eq("user_id", user_id).limit(1)
+        )
+        if existing.data:
+            raise HTTPException(status_code=409, detail="Survey already submitted for this user")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking existing survey for {mask_user_id(user_id)}: {e}")
+        raise HTTPException(status_code=503, detail="Erro temporário. Tente novamente.")
+
+    try:
+        await sb_execute(
+            db.table("trial_exit_surveys").insert({
+                "user_id": user_id,
+                "reason": body.reason,
+                "reason_text": body.reason_text,
+            })
+        )
+        # Fetch the newly inserted row to get id and created_at
+        row_result = await sb_execute(
+            db.table("trial_exit_surveys").select("id, created_at").eq("user_id", user_id).limit(1)
+        )
+        if not row_result.data:
+            raise HTTPException(status_code=500, detail="Erro ao salvar survey")
+        row = row_result.data[0]
+        log_user_action(logger, "trial_exit_survey_submitted", user_id, {"reason": body.reason})
+        return ExitSurveyResponse(id=row["id"], created_at=row["created_at"])
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error inserting exit survey for {mask_user_id(user_id)}: {e}")
+        raise HTTPException(status_code=503, detail="Erro ao salvar survey. Tente novamente.")
+
+
+@router.get("/admin/trial-exit-surveys")
+async def get_exit_surveys_admin(
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """STORY-369 AC6: Admin endpoint — exit survey counts grouped by reason."""
+    user_id = user["id"]
+    roles = await check_user_roles(user_id, db)
+    if not roles.get("is_admin") and not roles.get("is_master"):
+        raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
+
+    try:
+        result = await sb_execute(
+            db.table("trial_exit_surveys")
+            .select("reason, created_at")
+            .order("created_at", desc=True)
+        )
+        rows = result.data or []
+
+        counts: dict[str, int] = {}
+        for row in rows:
+            r = row.get("reason", "outro")
+            counts[r] = counts.get(r, 0) + 1
+
+        return {
+            "total": len(rows),
+            "by_reason": [
+                {"reason": k, "count": v}
+                for k, v in sorted(counts.items(), key=lambda x: -x[1])
+            ],
+        }
+    except Exception as e:
+        logger.error(f"Error fetching exit surveys: {e}")
+        raise HTTPException(status_code=503, detail="Erro ao buscar surveys")

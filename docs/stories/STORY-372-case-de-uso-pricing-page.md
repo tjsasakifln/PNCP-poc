@@ -1,6 +1,6 @@
 # STORY-372 — Case de Uso Concreto na Pricing Page
 
-**Status:** Ready
+**Status:** InReview
 **Priority:** P2 — Conversão (pricing page tem testimonials mas sem prova de resultado)
 **Origem:** Conselho de CEOs Advisory Board — melhorias on-page funil conversão (2026-04-11)
 **Componentes:** frontend/app/planos/page.tsx
@@ -24,8 +24,8 @@ O case pode ser **composto** (baseado em dados reais de trials, sem identificar 
 
 ### AC1: Componente `CaseStudyCard`
 
-- [ ] Novo componente `frontend/components/CaseStudyCard.tsx`
-- [ ] Props:
+- [x] Novo componente `frontend/components/CaseStudyCard.tsx`
+- [x] Props:
   ```typescript
   interface CaseStudyCardProps {
     sector: string        // ex: "Materiais Hospitalares"
@@ -41,33 +41,33 @@ O case pode ser **composto** (baseado em dados reais de trials, sem identificar 
     quote?: string        // citação opcional (pode ser omitida)
   }
   ```
-- [ ] Layout: card com borda sutil, ícone de setor (emoji ou SVG simples), localização, problema em itálico, resultado em destaque, bloco de números (valor + tempo) com tipografia grande
-- [ ] Responsivo (mobile-first)
-- [ ] Sem imagens/logos externos (evitar dependência de assets externos)
+- [x] Layout: card com borda sutil, ícone de setor (emoji ou SVG simples), localização, problema em itálico, resultado em destaque, bloco de números (valor + tempo) com tipografia grande
+- [x] Responsivo (mobile-first)
+- [x] Sem imagens/logos externos (evitar dependência de assets externos)
 
 ### AC2: 2 cases na pricing page
 
-- [ ] Substituir ou complementar 1 testimonial existente por 2 `CaseStudyCard`
-- [ ] Case 1 — Setor de serviços (ex: Limpeza/Conservação):
+- [x] Substituir ou complementar 1 testimonial existente por 2 `CaseStudyCard`
+- [x] Case 1 — Setor de serviços (ex: Limpeza/Conservação):
   - Setor com alto volume de editais públicos
   - Valor entre R$50K-R$200K (realístico para PME)
   - Destaque: velocidade de encontrar o edital
-- [ ] Case 2 — Setor de materiais/equipamentos (ex: Informática ou Materiais Hospitalares):
+- [x] Case 2 — Setor de materiais/equipamentos (ex: Informática ou Materiais Hospitalares):
   - Valor entre R$200K-R$500K (destaca ROI do produto)
   - Destaque: edital que não apareceria em busca manual
-- [ ] Cases ficam abaixo da seção de planos e acima do FAQ
-- [ ] Título da seção: "Resultados reais de usuários SmartLic"
-- [ ] Nota de rodapé da seção: "* Cases baseados em dados reais de uso durante período de avaliação. Valores e detalhes aproximados para preservar privacidade."
+- [x] Cases ficam abaixo da seção de planos e acima do FAQ
+- [x] Título da seção: "Resultados reais de usuários SmartLic"
+- [x] Nota de rodapé da seção: "* Cases baseados em dados reais de uso durante período de avaliação. Valores e detalhes aproximados para preservar privacidade."
 
 ### AC3: Copy dos cases (conteúdo específico)
 
-- [ ] Case 1 — Limpeza/Conservação:
+- [x] Case 1 — Limpeza/Conservação:
   - Empresa: "Empresa de limpeza predial, 12 funcionários, Curitiba-PR"
   - Problema: "Monitorava editais manualmente no PNCP 2h por dia"
   - Resultado: "Encontrou Pregão Eletrônico de R$87.000 (prefeitura vizinha) que não apareceu na busca manual"
   - Highlight: R$ 87.000 | em oportunidades encontradas | em 6 minutos
   
-- [ ] Case 2 — Materiais de Escritório/Informática:
+- [x] Case 2 — Materiais de Escritório/Informática:
   - Empresa: "Distribuidora de insumos de informática, Porto Alegre-RS"
   - Problema: "Perdia editais por descobrir tarde demais"
   - Resultado: "Identificou 3 pregões em municípios do interior com prazo > 10 dias"
@@ -75,10 +75,11 @@ O case pode ser **composto** (baseado em dados reais de trials, sem identificar 
 
 ### AC4: Testes
 
-- [ ] Teste de renderização do `CaseStudyCard` com props completas
-- [ ] Teste de renderização sem prop `quote` (opcional)
-- [ ] Snapshot test da seção de cases na pricing page
-- [ ] Testes acessibilidade básica: heading hierarchy, alt texts se imagens
+- [x] Teste de renderização do `CaseStudyCard` com props completas
+- [x] Teste de renderização sem prop `quote` (opcional)
+- [x] Teste de renderização com prop `quote` (opcional)
+- [ ] Snapshot test da seção de cases na pricing page (pendente — planos/page.tsx tem setup complexo)
+- [x] Testes acessibilidade básica: heading hierarchy, alt texts se imagens
 
 ## Escopo
 
@@ -100,9 +101,9 @@ O case pode ser **composto** (baseado em dados reais de trials, sem identificar 
 
 ## Arquivos a Criar/Modificar
 
-- [ ] `frontend/components/CaseStudyCard.tsx` (novo)
-- [ ] `frontend/app/planos/page.tsx` (modificar — adicionar seção de cases)
-- [ ] `frontend/__tests__/case-study-card.test.tsx` (novo)
+- [x] `frontend/components/CaseStudyCard.tsx` (novo)
+- [x] `frontend/app/planos/page.tsx` (modificar — adicionar seção de cases)
+- [x] `frontend/__tests__/case-study-card.test.tsx` (novo)
 
 ## Change Log
 

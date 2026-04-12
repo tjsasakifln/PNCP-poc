@@ -19,6 +19,7 @@ import { useBroadcastChannel } from "../../../hooks/useBroadcastChannel";
 import { toast } from "sonner";
 import { getLastSearch, saveLastSearch, checkHasLastSearch } from "../../../lib/lastSearchCache";
 import { safeSetItem, safeGetItem } from "../../../lib/storage";
+import { getDaysInTrial } from "../../../lib/analytics-helpers";
 import type { BuscaResult } from "../../types";
 
 import { SEARCH_TOUR_STEPS, RESULTS_TOUR_STEPS } from "../constants/tour-steps";
@@ -197,6 +198,39 @@ export function useSearchOrchestration() {
       });
     }
   }, [search.result, filters.ufsSelecionadas, filters.dataInicial, filters.dataFinal, filters.searchMode, filters.setorId, filters.termosArray]);
+
+  // ── STORY-370: Funnel analytics — first search + first relevant result ──
+  useEffect(() => {
+    if (!search.result) return;
+
+    const setor = filters.searchMode === "setor" ? filters.setorId : undefined;
+    const ufs = Array.from(filters.ufsSelecionadas);
+    const resultCount = search.result.licitacoes?.length ?? 0;
+    const daysInTrial = getDaysInTrial(session?.user?.created_at);
+
+    // first_search_executed: fire once per browser
+    if (!localStorage.getItem('first_search_tracked')) {
+      localStorage.setItem('first_search_tracked', 'true');
+      trackEventRef.current('first_search_executed', {
+        setor,
+        ufs,
+        resultado_count: resultCount,
+        days_in_trial: daysInTrial,
+      });
+    }
+
+    // first_relevant_result_found: fire once when there is at least 1 result
+    if (resultCount > 0 && !localStorage.getItem('first_relevant_result_tracked')) {
+      localStorage.setItem('first_relevant_result_tracked', 'true');
+      trackEventRef.current('first_relevant_result_found', {
+        setor,
+        ufs,
+        resultado_count: resultCount,
+        days_in_trial: daysInTrial,
+      });
+    }
+  }, [search.result]);
+  // ────────────────────────────────────────────────────────────────────
 
   // ── Search Actions ──────────────────────────────────────────────────
   const handleLoadLastSearch = useCallback(() => {

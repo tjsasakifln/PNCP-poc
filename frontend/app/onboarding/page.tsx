@@ -7,6 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../components/AuthProvider";
 import { toast } from "sonner";
 import { safeSetItem } from "../../lib/storage";
+import { useAnalytics } from "../../hooks/useAnalytics";
+import { getDaysInTrial } from "../../lib/analytics-helpers";
 import {
   onboardingStep1Schema,
   onboardingStep2Schema,
@@ -27,6 +29,7 @@ import type { OnboardingData } from "./components/types";
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, session, loading: authLoading } = useAuth();
+  const { trackEvent } = useAnalytics();
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -209,6 +212,13 @@ export default function OnboardingPage() {
       step1Form.setValue("objetivo_principal", data.objetivo_principal);
       const valid = await step1Form.trigger();
       if (!valid) return;
+      trackEvent('onboarding_step_completed', {
+        step: 1,
+        total_steps: 3,
+        cnae: data.cnae,
+        objetivo_principal: data.objetivo_principal,
+        days_in_trial: getDaysInTrial(user?.created_at),
+      });
       setCurrentStep(1);
     } else if (currentStep === 1) {
       // Trigger zod validation for step 2
@@ -217,8 +227,21 @@ export default function OnboardingPage() {
       step2Form.setValue("faixa_valor_max", data.faixa_valor_max);
       const valid = await step2Form.trigger();
       if (!valid) return;
+      trackEvent('onboarding_step_completed', {
+        step: 2,
+        total_steps: 3,
+        ufs_count: data.ufs_atuacao.length,
+        faixa_valor_min: data.faixa_valor_min,
+        faixa_valor_max: data.faixa_valor_max,
+        days_in_trial: getDaysInTrial(user?.created_at),
+      });
       setCurrentStep(2);
     } else {
+      trackEvent('onboarding_step_completed', {
+        step: 3,
+        total_steps: 3,
+        days_in_trial: getDaysInTrial(user?.created_at),
+      });
       submitAndAnalyze();
     }
   };
