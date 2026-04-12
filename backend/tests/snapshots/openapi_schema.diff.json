@@ -3735,6 +3735,48 @@
           "title": "EsferaGovernamental",
           "type": "string"
         },
+        "ExitSurveyRequest": {
+          "properties": {
+            "reason": {
+              "title": "Reason",
+              "type": "string"
+            },
+            "reason_text": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reason Text"
+            }
+          },
+          "required": [
+            "reason"
+          ],
+          "title": "ExitSurveyRequest",
+          "type": "object"
+        },
+        "ExitSurveyResponse": {
+          "properties": {
+            "created_at": {
+              "title": "Created At",
+              "type": "string"
+            },
+            "id": {
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "created_at"
+          ],
+          "title": "ExitSurveyResponse",
+          "type": "object"
+        },
         "ExperienciaLicitacoes": {
           "description": "Procurement experience level (STORY-260: added INTERMEDIARIO).",
           "enum": [
@@ -4954,6 +4996,112 @@
           "title": "HTTPValidationError",
           "type": "object"
         },
+        "IndiceResult": {
+          "properties": {
+            "calculado_em": {
+              "title": "Calculado Em",
+              "type": "string"
+            },
+            "municipio_nome": {
+              "title": "Municipio Nome",
+              "type": "string"
+            },
+            "municipio_slug": {
+              "title": "Municipio Slug",
+              "type": "string"
+            },
+            "percentil": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Percentil"
+            },
+            "periodo": {
+              "title": "Periodo",
+              "type": "string"
+            },
+            "ranking_nacional": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ranking Nacional"
+            },
+            "ranking_uf": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ranking Uf"
+            },
+            "score_consistencia": {
+              "title": "Score Consistencia",
+              "type": "number"
+            },
+            "score_diversidade_mercado": {
+              "title": "Score Diversidade Mercado",
+              "type": "number"
+            },
+            "score_eficiencia_temporal": {
+              "title": "Score Eficiencia Temporal",
+              "type": "number"
+            },
+            "score_total": {
+              "title": "Score Total",
+              "type": "number"
+            },
+            "score_transparencia_digital": {
+              "title": "Score Transparencia Digital",
+              "type": "number"
+            },
+            "score_volume_publicacao": {
+              "title": "Score Volume Publicacao",
+              "type": "number"
+            },
+            "total_editais": {
+              "title": "Total Editais",
+              "type": "integer"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "uf_nome": {
+              "title": "Uf Nome",
+              "type": "string"
+            }
+          },
+          "required": [
+            "municipio_nome",
+            "municipio_slug",
+            "uf",
+            "uf_nome",
+            "periodo",
+            "score_total",
+            "score_volume_publicacao",
+            "score_eficiencia_temporal",
+            "score_diversidade_mercado",
+            "score_transparencia_digital",
+            "score_consistencia",
+            "total_editais",
+            "calculado_em"
+          ],
+          "title": "IndiceResult",
+          "type": "object"
+        },
         "InviteMemberRequest": {
           "properties": {
             "email": {
@@ -5483,6 +5631,38 @@
             "uf"
           ],
           "title": "LicitacaoItem",
+          "type": "object"
+        },
+        "LicitacoesIndexableResponse": {
+          "properties": {
+            "combos": {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "title": "Combos",
+              "type": "array"
+            },
+            "threshold": {
+              "title": "Threshold",
+              "type": "integer"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            },
+            "updated_at": {
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "combos",
+            "total",
+            "threshold",
+            "updated_at"
+          ],
+          "title": "LicitacoesIndexableResponse",
           "type": "object"
         },
         "MessageResponse": {
@@ -6265,6 +6445,22 @@
           "title": "PerfilContextoResponse",
           "type": "object"
         },
+        "PeriodosResponse": {
+          "properties": {
+            "periodos": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Periodos",
+              "type": "array"
+            }
+          },
+          "required": [
+            "periodos"
+          ],
+          "title": "PeriodosResponse",
+          "type": "object"
+        },
         "PipelineAlertsResponse": {
           "description": "Pipeline items with approaching deadlines.",
           "properties": {
@@ -6801,6 +6997,42 @@
             "total"
           ],
           "title": "PublicFeatureFlagListResponse",
+          "type": "object"
+        },
+        "RankingResponse": {
+          "properties": {
+            "fonte": {
+              "title": "Fonte",
+              "type": "string"
+            },
+            "license": {
+              "title": "License",
+              "type": "string"
+            },
+            "periodo": {
+              "title": "Periodo",
+              "type": "string"
+            },
+            "resultados": {
+              "items": {
+                "$ref": "#/components/schemas/IndiceResult"
+              },
+              "title": "Resultados",
+              "type": "array"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "periodo",
+            "total",
+            "resultados",
+            "fonte",
+            "license"
+          ],
+          "title": "RankingResponse",
           "type": "object"
         },
         "RecentContract": {
@@ -8104,6 +8336,17 @@
               "title": "Last Updated",
               "type": "string"
             },
+            "most_recent_bid_date": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Most Recent Bid Date"
+            },
             "sector_id": {
               "title": "Sector Id",
               "type": "string"
@@ -8766,6 +9009,83 @@
         },
         "TopOpportunity": {
           "properties": {
+            "data_encerramento": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Data Encerramento"
+            },
+            "dias_ate_encerramento": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dias Ate Encerramento"
+            },
+            "modalidade": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Modalidade"
+            },
+            "numero_controle": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Numero Controle"
+            },
+            "objeto": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Objeto"
+            },
+            "orgao_nome": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Orgao Nome"
+            },
+            "setor": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Setor"
+            },
             "title": {
               "title": "Title",
               "type": "string"
@@ -11027,6 +11347,31 @@
           "summary": "Test Send Trial Email",
           "tags": [
             "trial-emails"
+          ]
+        }
+      },
+      "/v1/admin/trial-exit-surveys": {
+        "get": {
+          "description": "STORY-369 AC6: Admin endpoint \u2014 exit survey counts grouped by reason.",
+          "operationId": "get_exit_surveys_admin_v1_admin_trial_exit_surveys_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Exit Surveys Admin",
+          "tags": [
+            "user"
           ]
         }
       },
@@ -14812,6 +15157,174 @@
           ]
         }
       },
+      "/v1/indice-municipal": {
+        "get": {
+          "description": "Ranking nacional ou por UF de transpar\u00eancia municipal. Dados do PNCP.",
+          "operationId": "get_ranking_v1_indice_municipal_get",
+          "parameters": [
+            {
+              "description": "Per\u00edodo trimestral (ex: 2026-Q1)",
+              "in": "query",
+              "name": "periodo",
+              "required": false,
+              "schema": {
+                "default": "2026-Q1",
+                "description": "Per\u00edodo trimestral (ex: 2026-Q1)",
+                "pattern": "^\\d{4}-Q[1-4]$",
+                "title": "Periodo",
+                "type": "string"
+              }
+            },
+            {
+              "description": "Filtrar por UF",
+              "in": "query",
+              "name": "uf",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "maxLength": 2,
+                    "minLength": 2,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Filtrar por UF",
+                "title": "Uf"
+              }
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "required": false,
+              "schema": {
+                "default": 50,
+                "maximum": 200,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            {
+              "in": "query",
+              "name": "offset",
+              "required": false,
+              "schema": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RankingResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Ranking de transpar\u00eancia municipal em compras p\u00fablicas (p\u00fablico)",
+          "tags": [
+            "indice-municipal"
+          ]
+        }
+      },
+      "/v1/indice-municipal/periodos": {
+        "get": {
+          "description": "Lista trimestres com dados calculados no \u00edndice.",
+          "operationId": "get_periodos_v1_indice_municipal_periodos_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PeriodosResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Per\u00edodos dispon\u00edveis no \u00cdndice Municipal (p\u00fablico)",
+          "tags": [
+            "indice-municipal"
+          ]
+        }
+      },
+      "/v1/indice-municipal/{municipio_slug}": {
+        "get": {
+          "description": "Retorna \u00edndice de transpar\u00eancia de um munic\u00edpio (slug: sao-paulo-sp).",
+          "operationId": "get_municipio_v1_indice_municipal__municipio_slug__get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "municipio_slug",
+              "required": true,
+              "schema": {
+                "title": "Municipio Slug",
+                "type": "string"
+              }
+            },
+            {
+              "description": "Per\u00edodo trimestral (ex: 2026-Q1)",
+              "in": "query",
+              "name": "periodo",
+              "required": false,
+              "schema": {
+                "default": "2026-Q1",
+                "description": "Per\u00edodo trimestral (ex: 2026-Q1)",
+                "pattern": "^\\d{4}-Q[1-4]$",
+                "title": "Periodo",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/IndiceResult"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "\u00cdndice de transpar\u00eancia de um munic\u00edpio (p\u00fablico)",
+          "tags": [
+            "indice-municipal"
+          ]
+        }
+      },
       "/v1/itens/{catmat}/profile": {
         "get": {
           "description": "Calcula P10/P50/P90 de contratos do PNCP datalake para um item CATMAT.\n\nPublico, sem auth. Cache: 24h. Substitui o Painel de Precos do ComprasGov\n(descontinuado jul/2025).",
@@ -17204,6 +17717,28 @@
           ]
         }
       },
+      "/v1/sitemap/licitacoes-indexable": {
+        "get": {
+          "description": "Retorna combos setor\u00d7UF com >= threshold editais ativos (\u00faltimos 30 dias).",
+          "operationId": "get_licitacoes_indexable_v1_sitemap_licitacoes_indexable_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/LicitacoesIndexableResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Combos setor\u00d7UF index\u00e1veis (p\u00fablico \u2014 sitemap)",
+          "tags": [
+            "sitemap"
+          ]
+        }
+      },
       "/v1/sitemap/municipios": {
         "get": {
           "description": "Retorna slugs dos municipios pre-cadastrados para o sitemap.xml.\nCache: 24h em memoria.",
@@ -17471,6 +18006,53 @@
             }
           ],
           "summary": "Get Trial Status",
+          "tags": [
+            "user"
+          ]
+        }
+      },
+      "/v1/trial/exit-survey": {
+        "post": {
+          "description": "STORY-369 AC2: Submit exit survey when trial expires.\nReturns 409 if user already submitted a survey.",
+          "operationId": "submit_exit_survey_v1_trial_exit_survey_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExitSurveyRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "201": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ExitSurveyResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Submit Exit Survey",
           "tags": [
             "user"
           ]

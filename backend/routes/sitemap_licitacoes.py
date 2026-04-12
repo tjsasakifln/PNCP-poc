@@ -12,8 +12,10 @@ import os
 import time
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
+from admin import require_admin
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
@@ -57,6 +59,28 @@ async def get_licitacoes_indexable():
     }
     _cache = (result, time.time())
     return LicitacoesIndexableResponse(**result)
+
+
+@router.post(
+    "/admin/sitemap-cache/refresh",
+    summary="Force-refresh sitemap combos cache (admin only)",
+)
+async def refresh_sitemap_cache(_admin=Depends(require_admin)):
+    """Clears the 24h in-memory sitemap cache and recomputes indexable combos immediately."""
+    global _cache
+    _cache = None
+    threshold = int(os.getenv("MIN_ACTIVE_BIDS_FOR_INDEX", str(_DEFAULT_THRESHOLD)))
+    combos = await _compute_indexable_combos(threshold)
+    from datetime import datetime, timezone
+    result = {
+        "combos": combos,
+        "total": len(combos),
+        "threshold": threshold,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _cache = (result, time.time())
+    logger.info("sitemap_licitacoes: cache refreshed manually — %d combos", len(combos))
+    return {"status": "refreshed", "total_combos": len(combos), "threshold": threshold}
 
 
 async def _compute_indexable_combos(threshold: int) -> list[dict]:

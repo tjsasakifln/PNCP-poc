@@ -23,6 +23,6 @@ CREATE POLICY "admin_read_surveys" ON trial_exit_surveys
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND (is_admin = true OR is_master = true)
+      WHERE id = auth.uid() AND (is_admin = true OR plan_type = 'master')
     )
   );
