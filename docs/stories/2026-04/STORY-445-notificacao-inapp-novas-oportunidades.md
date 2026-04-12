@@ -3,7 +3,7 @@
 **Priority:** P1 — Cria hábito de retorno diário
 **Effort:** M (4 dias)
 **Squad:** @dev + @qa
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-CONVERSION-2026-04](EPIC-CONVERSION-2026-04.md)
 **Sprint:** Sprint 3 — Semanas 5-8
 
@@ -22,49 +22,49 @@ O objetivo é criar uma razão diária para o usuário retornar ao produto — o
 ## Acceptance Criteria
 
 ### AC1: Badge no header com contagem de novos editais
-- [ ] Badge no header/navbar mostrando "X novos" quando há editais novos relevantes para o perfil do usuário
-- [ ] Badge só aparece se count > 0
-- [ ] Badge some após usuário fazer uma busca (limpa o estado)
-- [ ] Badge aparece para trial E pagantes
+- [x] Badge no header/navbar mostrando "X novos" quando há editais novos relevantes para o perfil do usuário
+- [x] Badge só aparece se count > 0
+- [x] Badge some após usuário fazer uma busca (limpa o estado)
+- [x] Badge aparece para trial E pagantes
 
 ### AC2: Backend — cron job de detecção diária
-- [ ] Novo arquivo `backend/jobs/cron/new_bids_notifier.py` (ou job em `notifications.py`)
-- [ ] Executa 1x/dia após a ingestão matinal (sugestão: 9h BRT = 12h UTC)
-- [ ] Para cada usuário com `profile_context` configurado (setor + UFs):
+- [x] Novo arquivo `backend/jobs/cron/new_bids_notifier.py` (ou job em `notifications.py`)
+- [x] Executa 1x/dia após a ingestão matinal (sugestão: 9h BRT = 12h UTC)
+- [x] Para cada usuário com `profile_context` configurado (setor + UFs):
   - Query: `SELECT COUNT(*) FROM pncp_raw_bids WHERE created_at > NOW() - INTERVAL '24 hours' AND [filtros do perfil]`
   - Se count > 0: salvar em Redis `new_bids_count:{user_id}` = count (TTL: 26h)
-- [ ] Não processar usuários com trial expirado ou sem setor configurado
+- [x] Não processar usuários com trial expirado ou sem setor configurado
 
 ### AC3: Backend — endpoint de contagem
-- [ ] Novo endpoint `GET /v1/notifications/new-bids-count`
-- [ ] Retorna: `{ "count": N }` (lê de Redis)
-- [ ] Autenticado (Bearer token)
-- [ ] Se Redis key não existe: retorna `{ "count": 0 }`
+- [x] Novo endpoint `GET /v1/notifications/new-bids-count`
+- [x] Retorna: `{ "count": N }` (lê de Redis)
+- [x] Autenticado (Bearer token)
+- [x] Se Redis key não existe: retorna `{ "count": 0 }`
 
 ### AC4: Frontend — proxy e fetch
-- [ ] Novo proxy `frontend/app/api/new-bids-count/route.ts` → backend `/v1/notifications/new-bids-count`
-- [ ] Fetch feito no header/navbar com polling a cada 30 minutos (não em tempo real)
-- [ ] Cache via SWR com `revalidateOnFocus: true`
+- [x] Novo proxy `frontend/app/api/new-bids-count/route.ts` → backend `/v1/notifications/new-bids-count`
+- [x] Fetch feito no header/navbar com polling a cada 30 minutos (não em tempo real)
+- [x] Cache via SWR com `revalidateOnFocus: true`
 
 ### AC5: Limpar badge após busca
-- [ ] Quando usuário executa uma busca (`POST /buscar`): backend deleta Redis key `new_bids_count:{user_id}`
-- [ ] Frontend: invalidar cache do SWR do badge após busca bem-sucedida
+- [x] Quando usuário executa uma busca (`POST /buscar`): backend deleta Redis key `new_bids_count:{user_id}`
+- [x] Frontend: invalidar cache do SWR do badge após busca bem-sucedida
 
 ### AC6: Condicional por perfil
-- [ ] Se usuário não tem setor configurado em `profile_context`: badge NÃO é exibido (sem perfil = sem relevância)
-- [ ] Se Redis key não existe (usuário novo ou já viu): badge não aparece
+- [x] Se usuário não tem setor configurado em `profile_context`: badge NÃO é exibido (sem perfil = sem relevância)
+- [x] Se Redis key não existe (usuário novo ou já viu): badge não aparece
 
 ### AC7: Funcional para trial e pagantes
-- [ ] Badge funciona independente de `plan_type`
-- [ ] Apenas trial expirado e não autenticado ficam fora
+- [x] Badge funciona independente de `plan_type`
+- [x] Apenas trial expirado e não autenticado ficam fora
 
 ### AC8: Testes
-- [ ] Teste backend: query retorna 5 editais novos → Redis salvo com `new_bids_count:{id}` = 5
-- [ ] Teste backend: GET /new-bids-count → `{ count: 5 }`
-- [ ] Teste backend: após POST /buscar → Redis key deletada
-- [ ] Teste frontend: badge visível com count > 0
-- [ ] Teste frontend: badge não visível com count = 0
-- [ ] Teste frontend: badge não visível sem perfil configurado
+- [x] Teste backend: query retorna 5 editais novos → Redis salvo com `new_bids_count:{id}` = 5
+- [x] Teste backend: GET /new-bids-count → `{ count: 5 }`
+- [x] Teste backend: após POST /buscar → Redis key deletada
+- [x] Teste frontend: badge visível com count > 0
+- [x] Teste frontend: badge não visível com count = 0
+- [x] Teste frontend: badge não visível sem perfil configurado
 
 ---
 
@@ -108,13 +108,13 @@ O objetivo é criar uma razão diária para o usuário retornar ao produto — o
 
 ## File List
 
-- [ ] `backend/jobs/cron/new_bids_notifier.py` — AC2: novo cron job
-- [ ] `backend/routes/notifications.py` — AC3: novo endpoint (ou estender existente)
-- [ ] `frontend/components/NewBidsNotificationBadge.tsx` — AC1: badge no header
-- [ ] `frontend/app/api/new-bids-count/route.ts` — AC4: proxy
-- [ ] `frontend/components/Navbar.tsx` (ou Header.tsx) — AC1: integrar badge
-- [ ] `backend/tests/test_new_bids_notifier.py` — AC8: testes de backend
-- [ ] `frontend/__tests__/NewBidsNotificationBadge.test.tsx` — AC8: testes frontend
+- [x] `backend/jobs/cron/new_bids_notifier.py` — AC2: novo cron job
+- [x] `backend/routes/notifications.py` — AC3: novo endpoint (ou estender existente)
+- [x] `frontend/components/NewBidsNotificationBadge.tsx` — AC1: badge no header
+- [x] `frontend/app/api/new-bids-count/route.ts` — AC4: proxy
+- [x] `frontend/components/Navbar.tsx` (ou Header.tsx) — AC1: integrar badge
+- [x] `backend/tests/test_new_bids_notifier.py` — AC8: testes de backend
+- [x] `frontend/__tests__/NewBidsNotificationBadge.test.tsx` — AC8: testes frontend
 
 ---
 
@@ -138,3 +138,4 @@ O objetivo é criar uma razão diária para o usuário retornar ao produto — o
 | Data | Agente | Mudança |
 |------|--------|---------|
 | 2026-04-12 | @sm | Story criada — CEO Board Sprint, impacto +1pp |
+| 2026-04-12 | @dev | Implementação completa: cron new_bids_notifier, endpoint GET/DELETE /v1/notifications/new-bids-count, NewBidsNotificationBadge, proxy, integração PageHeader + buscar/page. 14 testes passando. |

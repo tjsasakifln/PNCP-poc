@@ -124,3 +124,9 @@ from jobs.cron.indice_municipal import (  # noqa: F401
     run_indice_municipal_recalc,
     start_indice_municipal_task,
 )
+
+# New bids notifier — daily in-app badge
+from jobs.cron.new_bids_notifier import (  # noqa: F401
+    run_new_bids_notifier,
+    start_new_bids_notifier_task,
+)

@@ -5859,6 +5859,19 @@
           "title": "MunicipioProfileResponse",
           "type": "object"
         },
+        "NewBidsCountResponse": {
+          "properties": {
+            "count": {
+              "title": "Count",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "count"
+          ],
+          "title": "NewBidsCountResponse",
+          "type": "object"
+        },
         "NewOpportunitiesResponse": {
           "description": "DEBT-127 AC6-AC9: New opportunities since last search.",
           "properties": {
@@ -6170,6 +6183,173 @@
             "last_updated"
           ],
           "title": "PanoramaStats",
+          "type": "object"
+        },
+        "PdfEditalRequest": {
+          "properties": {
+            "data_encerramento": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Data Encerramento"
+            },
+            "data_publicacao": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Data Publicacao"
+            },
+            "link": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Link"
+            },
+            "modalidade": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Modalidade"
+            },
+            "municipio": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Municipio"
+            },
+            "numero_compra": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Numero Compra"
+            },
+            "objeto": {
+              "title": "Objeto",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "pncp_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pncp Id"
+            },
+            "recomendacao": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Recomendacao"
+            },
+            "resumo_executivo": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resumo Executivo"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "valor": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor"
+            },
+            "viability_factors": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Viability Factors"
+            },
+            "viability_level": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Viability Level"
+            },
+            "viability_score": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Viability Score"
+            }
+          },
+          "required": [
+            "objeto",
+            "orgao",
+            "uf"
+          ],
+          "title": "PdfEditalRequest",
           "type": "object"
         },
         "PerfilB2GResponse": {
@@ -11227,6 +11407,31 @@
           ]
         }
       },
+      "/v1/admin/sitemap-cache/refresh": {
+        "post": {
+          "description": "Clears the 24h in-memory sitemap cache and recomputes indexable combos immediately.",
+          "operationId": "refresh_sitemap_cache_v1_admin_sitemap_cache_refresh_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Force-refresh sitemap combos cache (admin only)",
+          "tags": [
+            "sitemap"
+          ]
+        }
+      },
       "/v1/admin/slo": {
         "get": {
           "description": "AC7-AC9: SLO compliance data for admin dashboard.\n\nReturns all SLO statuses, alert evaluations, and metadata.",
@@ -14809,6 +15014,51 @@
           ]
         }
       },
+      "/v1/export/pdf": {
+        "post": {
+          "description": "Generate and return a 1-page A4 PDF for a single bid.\n\nTrial users get a watermark footer.\nSynchronous generation wrapped in asyncio.to_thread with 10s timeout.",
+          "operationId": "export_edital_pdf_v1_export_pdf_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfEditalRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Export Edital Pdf",
+          "tags": [
+            "export"
+          ]
+        }
+      },
       "/v1/feature-flags": {
         "get": {
           "description": "List all feature flags with current values (authenticated users).\n\nDEBT-205 / DEBT-SYS-009: Public endpoint consumed by frontend via SWR.\nReturns flag name, value, description, and category \u2014 no admin metadata.",
@@ -15760,6 +16010,60 @@
           "summary": "Perfil de municipio com licitacoes abertas (por slug)",
           "tags": [
             "municipios-publicos"
+          ]
+        }
+      },
+      "/v1/notifications/new-bids-count": {
+        "delete": {
+          "description": "Clear the new-bids badge for the user (called after they run a search).\n\nIdempotent \u2014 safe to call even if the key does not exist.",
+          "operationId": "clear_new_bids_count_v1_notifications_new_bids_count_delete",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "title": "Response Clear New Bids Count V1 Notifications New Bids Count Delete",
+                    "type": "object"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Clear New Bids Count",
+          "tags": [
+            "notifications"
+          ]
+        },
+        "get": {
+          "description": "Return count of new bids available for the user since last check.\n\nReturns 0 when no Redis key exists (cron not yet run, or badge was cleared).",
+          "operationId": "get_new_bids_count_v1_notifications_new_bids_count_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NewBidsCountResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get New Bids Count",
+          "tags": [
+            "notifications"
           ]
         }
       },

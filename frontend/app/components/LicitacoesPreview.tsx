@@ -429,9 +429,60 @@ function BidCard({
 }: BidCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [deepModalOpen, setDeepModalOpen] = useState(false);
+  // STORY-447: Per-bid PDF export state
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   /** STORY-259: true while analysis batch is still running and no data for this bid yet */
   const isAnalysisLoading = bidAnalysisStatus === "processing" && !bidAnalysis;
+
+  /** STORY-447: Download a 1-page executive PDF for this bid */
+  async function handlePdfExport() {
+    if (!accessToken) return;
+    setIsPdfLoading(true);
+    setPdfError(null);
+    try {
+      const res = await fetch("/api/export/pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          objeto: item.objeto,
+          orgao: item.orgao,
+          uf: item.uf,
+          municipio: item.municipio ?? null,
+          valor: item.valor ?? null,
+          data_encerramento: item.data_encerramento ?? null,
+          modalidade: item.modalidade ?? null,
+          link: item.link ?? null,
+          numero_compra: item.numero_compra ?? null,
+          pncp_id: item.pncp_id ?? null,
+          viability_level: item.viability_level ?? null,
+          viability_score: item.viability_score ?? null,
+          viability_factors: item.viability_factors ?? null,
+        }),
+      });
+      if (!res.ok) {
+        setPdfError("Erro ao gerar PDF. Tente novamente.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const safeTitle = (item.objeto ?? "edital").slice(0, 40).replace(/[^\w\s-]/g, "").trim();
+      const today = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `SmartLic_${safeTitle}_${today}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setPdfError("Erro ao gerar PDF. Tente novamente.");
+    } finally {
+      setIsPdfLoading(false);
+    }
+  }
 
   return (
     <>
@@ -505,6 +556,33 @@ function BidCard({
                         d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
+            )}
+            {/* STORY-447: Per-bid PDF export button */}
+            {accessToken && (
+              <button
+                type="button"
+                onClick={handlePdfExport}
+                disabled={isPdfLoading}
+                aria-label="Exportar edital como PDF"
+                title="Exportar PDF executivo"
+                data-testid="pdf-export-btn"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-border text-ink-secondary text-xs font-medium rounded-button hover:bg-surface-1 hover:text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPdfLoading ? (
+                  <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                )}
+                PDF
+              </button>
+            )}
+            {pdfError && (
+              <p className="text-xs text-red-600 dark:text-red-400" data-testid="pdf-error">{pdfError}</p>
             )}
             {/* SEO-PLAYBOOK P6: Share analysis button */}
             {item.viability_score != null && (

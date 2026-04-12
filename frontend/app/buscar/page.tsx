@@ -28,6 +28,8 @@ import { Button } from "../../components/ui/button";
 import { APP_NAME } from "../../lib/config";
 import { TrialExitSurveyModal } from "../../components/TrialExitSurveyModal";
 import { GuidedTour } from "./components/GuidedTour";
+import { ReferralToast, shouldShowReferralToast } from "./components/ReferralToast";
+import { clearNewBidsBadge } from "../../components/NewBidsNotificationBadge";
 
 function HomePageContent() {
   const orch = useSearchOrchestration();
@@ -35,6 +37,9 @@ function HomePageContent() {
 
   // STORY-369 AC4: Exit survey state — shown once when trial expires
   const [showExitSurvey, setShowExitSurvey] = useState(false);
+
+  // STORY-449: Referral toast — shown after ≥3 results (throttled)
+  const [showReferralToast, setShowReferralToast] = useState(false);
 
   // STORY-371 AC3: Scroll to highlighted result from email deep-link (?highlight=PNCP-xxx)
   useEffect(() => {
@@ -58,6 +63,22 @@ function HomePageContent() {
     if (localStorage.getItem("trial_exit_survey_submitted")) return;
     setShowExitSurvey(true);
   }, [orch.isTrialExpired]);
+
+  // STORY-449: Show referral toast after ≥3 successful results (throttled)
+  useEffect(() => {
+    const total = orch.search.result?.resumo?.total_oportunidades ?? 0;
+    if (orch.search.loading || !orch.search.result || total < 3) return;
+    if (!shouldShowReferralToast()) return;
+    setShowReferralToast(true);
+  }, [orch.search.result, orch.search.loading]);
+
+  // STORY-445: Clear new-bids badge after user performs a search
+  useEffect(() => {
+    if (!orch.search.result || orch.search.loading) return;
+    const token = (orch as any).session?.access_token as string | undefined;
+    if (!token) return;
+    clearNewBidsBadge(token).catch(() => {/* best-effort */});
+  }, [orch.search.result]);
 
   if (orch.authLoading) {
     return (
@@ -269,6 +290,14 @@ function HomePageContent() {
 
       {/* STORY-442: Guided tour interativo — retorna null, gerenciado pelo Shepherd.js */}
       <GuidedTour />
+
+      {/* STORY-449: Referral toast — shown once after ≥3 results */}
+      {showReferralToast && (
+        <ReferralToast
+          onClose={() => setShowReferralToast(false)}
+          onTrack={(event) => orch.trackEvent(event, {})}
+        />
+      )}
 
       {showExitSurvey && (
         <TrialExitSurveyModal onClose={() => setShowExitSurvey(false)} />

@@ -65,6 +65,8 @@ from routes.itens_publicos import router as itens_publicos_router
 from routes.observatorio import router as observatorio_router
 from routes.sitemap_licitacoes import router as sitemap_licitacoes_router
 from routes.indice_municipal import router as indice_municipal_router
+from routes.notifications import router as notifications_router
+from routes.export import router as edital_export_router
 
 _v1_routers = [
     admin_router, subscriptions_router, features_router, messages_router,
@@ -100,6 +102,8 @@ _v1_routers = [
     observatorio_router,
     sitemap_licitacoes_router,
     indice_municipal_router,
+    notifications_router,
+    edital_export_router,
 ]
 
 

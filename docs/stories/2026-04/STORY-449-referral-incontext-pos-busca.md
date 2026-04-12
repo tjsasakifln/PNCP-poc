@@ -3,7 +3,7 @@
 **Priority:** P2 — Aquisição viral de baixo custo
 **Effort:** S (1-2 dias)
 **Squad:** @dev + @qa
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-CONVERSION-2026-04](EPIC-CONVERSION-2026-04.md)
 **Sprint:** Sprint 3 — Semanas 5-8
 
@@ -22,44 +22,44 @@ Um toast não-intrusivo pós-busca converte usuários satisfeitos em embaixadore
 ## Acceptance Criteria
 
 ### AC1: Toast pós-busca bem-sucedida
-- [ ] Após busca retornar ≥ 3 resultados filtrados, exibir toast/snackbar no canto inferior direito
-- [ ] Conteúdo: "Encontrou boas oportunidades? Indique um amigo e ganhe 1 mês grátis →"
-- [ ] Toast tem botão X para fechar (dismiss)
-- [ ] Toast auto-fecha após 8 segundos se não clicado
+- [x] Após busca retornar ≥ 3 resultados filtrados, exibir toast/snackbar no canto inferior direito
+- [x] Conteúdo: "Encontrou boas oportunidades? Indique um amigo e ganhe 1 mês grátis →"
+- [x] Toast tem botão X para fechar (dismiss)
+- [x] Toast auto-fecha após 8 segundos se não clicado
 
 ### AC2: Throttle de exibição (não intrusivo)
-- [ ] Toast aparece apenas 1 vez por sessão de browser (estado em `sessionStorage`)
-- [ ] Toast aparece no máximo 1 vez a cada 7 dias por usuário (estado em localStorage: `smartlic_referral_shown_at` com timestamp)
-- [ ] Lógica: se `Date.now() - localStorage.getItem('smartlic_referral_shown_at') < 7 * 24 * 60 * 60 * 1000` → não mostrar
+- [x] Toast aparece apenas 1 vez por sessão de browser (estado em `sessionStorage`)
+- [x] Toast aparece no máximo 1 vez a cada 7 dias por usuário (estado em localStorage: `smartlic_referral_shown_at` com timestamp)
+- [x] Lógica: se `Date.now() - localStorage.getItem('smartlic_referral_shown_at') < 7 * 24 * 60 * 60 * 1000` → não mostrar
 
 ### AC3: Link para /indicar
-- [ ] Click no texto/link do toast abre `/indicar` (página existente) na mesma aba
-- [ ] Ao clicar, também salvar timestamp em localStorage (AC2)
+- [x] Click no texto/link do toast abre `/indicar` (página existente) na mesma aba
+- [x] Ao clicar, também salvar timestamp em localStorage (AC2)
 
 ### AC4: Dismiss e estado
-- [ ] Botão X fecha o toast e salva timestamp em localStorage (não mostrar por 7 dias)
-- [ ] Auto-close (8s) também salva o timestamp
+- [x] Botão X fecha o toast e salva timestamp em localStorage (não mostrar por 7 dias)
+- [x] Auto-close (8s) também salva o timestamp
 
 ### AC5: Condição mínima de resultados
-- [ ] Toast SÓ aparece se a busca retornou ≥ 3 resultados com `is_relevant: true` ou equivalente
-- [ ] Toast NÃO aparece se busca retornou 0-2 resultados (usuário frustrado não refere)
+- [x] Toast SÓ aparece se a busca retornou ≥ 3 resultados com `is_relevant: true` ou equivalente
+- [x] Toast NÃO aparece se busca retornou 0-2 resultados (usuário frustrado não refere)
 
 ### AC6: Tracking Mixpanel
-- [ ] `referral_prompt_shown` — quando toast aparece
-- [ ] `referral_prompt_clicked` — quando usuário clica no link
-- [ ] `referral_prompt_dismissed` — quando usuário clica no X ou toast auto-fecha
+- [x] `referral_prompt_shown` — quando toast aparece
+- [x] `referral_prompt_clicked` — quando usuário clica no link
+- [x] `referral_prompt_dismissed` — quando usuário clica no X ou toast auto-fecha
 
 ### AC7: Funcional para trial e pagantes
-- [ ] Toast aparece para trial users E usuários pagantes
-- [ ] Pagante satisfeito refere mais — não restringir por plano
+- [x] Toast aparece para trial users E usuários pagantes
+- [x] Pagante satisfeito refere mais — não restringir por plano
 
 ### AC8: Testes
-- [ ] Teste: busca com ≥ 3 resultados → toast visível
-- [ ] Teste: busca com < 3 resultados → toast não aparece
-- [ ] Teste: toast já mostrado na sessão → não aparece novamente
-- [ ] Teste: localStorage com timestamp < 7 dias → toast não aparece
-- [ ] Teste: click X → timestamp salvo em localStorage
-- [ ] Teste: eventos Mixpanel disparados corretamente
+- [x] Teste: busca com ≥ 3 resultados → toast visível
+- [x] Teste: busca com < 3 resultados → toast não aparece
+- [x] Teste: toast já mostrado na sessão → não aparece novamente
+- [x] Teste: localStorage com timestamp < 7 dias → toast não aparece
+- [x] Teste: click X → timestamp salvo em localStorage
+- [x] Teste: eventos Mixpanel disparados corretamente
 
 ---
 
@@ -98,9 +98,9 @@ Um toast não-intrusivo pós-busca converte usuários satisfeitos em embaixadore
 
 ## File List
 
-- [ ] `frontend/app/buscar/components/ReferralToast.tsx` — AC1-AC6: novo componente
-- [ ] `frontend/app/buscar/page.tsx` — AC1, AC5: integrar lógica de trigger pós-busca
-- [ ] `frontend/__tests__/buscar/ReferralToast.test.tsx` — AC8: testes unitários
+- [x] `frontend/app/buscar/components/ReferralToast.tsx` — AC1-AC6: novo componente
+- [x] `frontend/app/buscar/page.tsx` — AC1, AC5: integrar lógica de trigger pós-busca
+- [x] `frontend/__tests__/buscar/ReferralToast.test.tsx` — AC8: testes unitários
 
 ---
 
@@ -119,3 +119,4 @@ Um toast não-intrusivo pós-busca converte usuários satisfeitos em embaixadore
 | Data | Agente | Mudança |
 |------|--------|---------|
 | 2026-04-12 | @sm | Story criada — CEO Board Sprint, impacto +0.5pp + viral |
+| 2026-04-12 | @dev | Implementação completa: ReferralToast.tsx, shouldShowReferralToast(), throttle sessão+7dias, integração buscar/page.tsx trigger ≥3 resultados, Mixpanel tracking. 14 testes passando. |
