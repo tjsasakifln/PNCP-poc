@@ -65,14 +65,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { hash } = await params;
   const data = await fetchAnalysis(hash);
-  if (!data) return { title: 'Análise não encontrada | SmartLic' };
+  if (!data) return { title: 'Análise não encontrada' };
 
   const levelLabel = data.viability_level === 'alta' ? 'ALTA' : data.viability_level === 'media' ? 'MÉDIA' : 'BAIXA';
   const setor = data.bid_modalidade || data.bid_uf || 'licitações';
   const cnpjLike = data.bid_orgao || '';
   const dataFmt = formatAnalysisDate(data.created_at);
 
-  const title = `Análise de Viabilidade - ${setor} | SmartLic`;
+  const title = `Análise de Viabilidade - ${setor}`;
   const description = cnpjLike
     ? `Score ${data.viability_score}/100 para ${cnpjLike} no setor ${setor}. Veja análise completa.`
     : `Score ${data.viability_score}/100 (${levelLabel}) no setor ${setor}. Veja análise completa.`;

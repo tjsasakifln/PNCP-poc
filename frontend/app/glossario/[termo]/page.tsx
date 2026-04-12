@@ -22,7 +22,7 @@ export async function generateMetadata({
   const term = GLOSSARY_TERMS.find((t) => t.slug === termo);
   if (!term) return {};
 
-  const title = `${term.term}: O que é e como funciona em licitações | SmartLic`;
+  const title = `${term.term}: O que é e como funciona em licitações`;
   const description =
     term.definition.length > 155
       ? term.definition.slice(0, 152) + '...'

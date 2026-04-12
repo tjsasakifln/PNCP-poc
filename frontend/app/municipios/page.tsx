@@ -6,7 +6,7 @@ import Footer from '@/app/components/Footer';
 
 // Sprint 4 Parte 13: hub de municípios para SEO programático
 export const metadata: Metadata = {
-  title: 'Licitações por Município — Editais Abertos nas Principais Cidades | SmartLic',
+  title: 'Licitações por Município — Editais Abertos nas Principais Cidades',
   description:
     'Consulte licitações abertas nos principais municípios brasileiros. ' +
     'Dados diários do PNCP com população IBGE e histórico de compras públicas.',

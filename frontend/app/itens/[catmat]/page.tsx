@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const p50Fmt = profile.valor_p50 != null ? formatBRL(profile.valor_p50) : '';
 
   return {
-    title: `Preço de Mercado: ${profile.nome_item} (CATMAT ${catmat}) | Benchmark Governo | SmartLic`,
+    title: `Preço de Mercado: ${profile.nome_item} (CATMAT ${catmat}) | Benchmark Governo`,
     description:
       `Quanto o governo paga por ${profile.nome_item}? ` +
       (p50Fmt ? `Preço mediano (P50): ${p50Fmt}. ` : '') +

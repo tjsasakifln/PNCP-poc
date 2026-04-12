@@ -3,7 +3,7 @@
 **Priority:** P1 (bug SEO — ~30 páginas indexáveis com título duplicado no SERP)
 **Effort:** S (< 1 dia — patch mecânico, sem lógica nova)
 **Squad:** @dev
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Hotfix paralelo
 
@@ -42,20 +42,20 @@ Para cada arquivo listado na seção **Arquivos Afetados**, remover o sufixo
 `| SmartLic` (e variantes `| SmartLic.tech`) das strings de título na função
 `generateMetadata()` ou no objeto `export const metadata`.
 
-- [ ] Apenas o sufixo é removido — o restante do título permanece intacto
-- [ ] Títulos dinâmicos com template string também corrigidos
-- [ ] `openGraph.title` e `twitter.title` NÃO devem ser alterados (já são
+- [x] Apenas o sufixo é removido — o restante do título permanece intacto
+- [x] Títulos dinâmicos com template string também corrigidos
+- [x] `openGraph.title` e `twitter.title` NÃO devem ser alterados (já são
   absolute — não sofrem do bug e precisam do nome da marca para compartilhamento)
-- [ ] `rss.xml/route.ts` NÃO deve ser alterado (não é page metadata)
+- [x] `rss.xml/route.ts` NÃO deve ser alterado (não é page metadata)
 
 ### AC2: Não introduzir regressão nos títulos já corretos
 
-- [ ] Páginas que NÃO têm `| SmartLic` hardcoded permanecem intactas
-- [ ] Páginas que usam `title: { absolute: '...' }` permanecem intactas
+- [x] Páginas que NÃO têm `| SmartLic` hardcoded permanecem intactas
+- [x] Páginas que usam `title: { absolute: '...' }` permanecem intactas
 
 ### AC3: TypeScript e testes passando
 
-- [ ] `npx tsc --noEmit` sem erros em `frontend/`
+- [x] `npx tsc --noEmit` sem erros em `frontend/`
 - [ ] `npm test` sem novas falhas
 
 ### AC4: Verificação spot-check pós-deploy
@@ -157,27 +157,27 @@ tem 3 title branches — todas precisam ser corrigidas).
 
 ## File List
 
-- [ ] `frontend/app/alertas-publicos/[setor]/[uf]/page.tsx`
-- [ ] `frontend/app/alertas-publicos/page.tsx`
-- [ ] `frontend/app/analise/[hash]/page.tsx`
-- [ ] `frontend/app/casos/[slug]/page.tsx`
-- [ ] `frontend/app/casos/page.tsx`
-- [ ] `frontend/app/compliance/[cnpj]/page.tsx`
-- [ ] `frontend/app/compliance/page.tsx`
-- [ ] `frontend/app/dados/page.tsx`
-- [ ] `frontend/app/estatisticas/embed/page.tsx`
-- [ ] `frontend/app/estatisticas/page.tsx`
-- [ ] `frontend/app/fornecedores/[cnpj]/page.tsx`
-- [ ] `frontend/app/glossario/[termo]/page.tsx`
-- [ ] `frontend/app/glossario/page.tsx`
-- [ ] `frontend/app/itens/[catmat]/page.tsx`
-- [ ] `frontend/app/itens/page.tsx`
-- [ ] `frontend/app/licitacoes/[setor]/page.tsx`
-- [ ] `frontend/app/licitacoes/page.tsx`
-- [ ] `frontend/app/municipios/[slug]/page.tsx`
-- [ ] `frontend/app/municipios/page.tsx`
-- [ ] `frontend/app/perguntas/[slug]/page.tsx`
-- [ ] `frontend/app/perguntas/page.tsx`
+- [x] `frontend/app/alertas-publicos/[setor]/[uf]/page.tsx`
+- [x] `frontend/app/alertas-publicos/page.tsx` — sem ocorrência em title (clean)
+- [x] `frontend/app/analise/[hash]/page.tsx`
+- [x] `frontend/app/casos/[slug]/page.tsx`
+- [x] `frontend/app/casos/page.tsx` — sem ocorrência em title (clean)
+- [x] `frontend/app/compliance/[cnpj]/page.tsx`
+- [x] `frontend/app/compliance/page.tsx`
+- [x] `frontend/app/dados/page.tsx` — sem ocorrência em title (clean)
+- [x] `frontend/app/estatisticas/embed/page.tsx` — sem ocorrência em title (clean)
+- [x] `frontend/app/estatisticas/page.tsx` — sem ocorrência em title (clean)
+- [x] `frontend/app/fornecedores/[cnpj]/page.tsx`
+- [x] `frontend/app/glossario/[termo]/page.tsx`
+- [x] `frontend/app/glossario/page.tsx` — sem ocorrência em title (clean)
+- [x] `frontend/app/itens/[catmat]/page.tsx`
+- [x] `frontend/app/itens/page.tsx`
+- [x] `frontend/app/licitacoes/[setor]/page.tsx`
+- [x] `frontend/app/licitacoes/page.tsx` — sem ocorrência em title (clean)
+- [x] `frontend/app/municipios/[slug]/page.tsx`
+- [x] `frontend/app/municipios/page.tsx`
+- [x] `frontend/app/perguntas/[slug]/page.tsx` — sem ocorrência em title (clean)
+- [x] `frontend/app/perguntas/page.tsx` — sem ocorrência em title (clean)
 
 ---
 
@@ -187,3 +187,4 @@ tem 3 title branches — todas precisam ser corrigidas).
 |------|--------|------|
 | 2026-04-12 | @sm | Story criada — bug detectado via validação Playwright em produção |
 | 2026-04-12 | @po | GO (10/10) — Draft → Ready. Ajuste: checkboxes de AC revertidos para `[ ]` (eram `[x]` prematuramente) |
+| 2026-04-12 | @dev | Implementação completa — 12 arquivos corrigidos (9 não tinham ocorrência). `tsc --noEmit` limpo. Ready → InReview |

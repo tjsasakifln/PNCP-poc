@@ -41,7 +41,7 @@ export async function generateMetadata({
   const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? "5", 10);
   if (totalOpen < minBids) {
     return {
-      title: `Licitações de ${sector.name} | SmartLic`,
+      title: `Licitações de ${sector.name}`,
       description: `Licitações de ${sector.name} no Brasil.`,
       robots: { index: false, follow: false },
       // SEO-440: canonical self-referencial evita herdar o canonical da homepage (layout.tsx)

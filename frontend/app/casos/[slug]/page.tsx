@@ -19,7 +19,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const c = getCaseBySlug(slug);
-  if (!c) return { title: 'Caso não encontrado | SmartLic' };
+  if (!c) return { title: 'Caso não encontrado' };
 
   return {
     title: `${c.title}`,

@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (total < minBids) {
     return {
-      title: `Alertas de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
+      title: `Alertas de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`,
       description: `Alertas de licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}. Dados do PNCP atualizados a cada hora.`,
       robots: { index: false, follow: false },
       // SEO-440: canonical self-referencial evita herdar o canonical da homepage (layout.tsx)

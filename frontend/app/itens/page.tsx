@@ -6,7 +6,7 @@ import Footer from '@/app/components/Footer';
 
 // Sprint 6 Parte 13: hub de benchmark de preços por CATMAT
 export const metadata: Metadata = {
-  title: 'Benchmark de Preços Governamentais por CATMAT — Substitui Painel de Preços | SmartLic',
+  title: 'Benchmark de Preços Governamentais por CATMAT — Substitui Painel de Preços',
   description:
     'Consulte o preço médio (P10, P50, P90) que o governo federal paga por materiais e serviços. ' +
     'Dados reais do PNCP — substitui o Painel de Preços do ComprasGov (descontinuado jul/2025).',

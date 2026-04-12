@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!profile) {
     return {
-      title: `Due Diligence B2G: CNPJ ${cnpj} | SmartLic`,
+      title: `Due Diligence B2G: CNPJ ${cnpj}`,
       robots: { index: false, follow: false },
     };
   }
@@ -74,7 +74,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : `com sanções encerradas (CEIS: ${profile.total_sancoes_ceis}, CNEP: ${profile.total_sancoes_cnep})`;
 
   return {
-    title: `Due Diligence B2G: ${profile.razao_social} | CEIS, CNEP, TCU | SmartLic`,
+    title: `Due Diligence B2G: ${profile.razao_social} | CEIS, CNEP, TCU`,
     description:
       `Consulta de sanções e impedimentos de ${profile.razao_social} (CNPJ ${cnpjFmt}): ` +
       `${situacaoDesc}. Dados do Portal da Transparência (CEIS e CNEP).`,

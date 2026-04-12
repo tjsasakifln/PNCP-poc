@@ -98,7 +98,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : `R$ ${(profile.valor_total / 1_000).toFixed(0)} mil`;
 
   return {
-    title: `${profile.razao_social} — Historico B2G | ${profile.total_contratos} contratos | SmartLic`,
+    title: `${profile.razao_social} — Historico B2G | ${profile.total_contratos} contratos`,
     description: `Perfil completo de ${profile.razao_social} (CNPJ ${cnpj}): ${profile.total_contratos} contratos publicos, ${valorFmt} em contratos, atuando em ${profile.ufs_atuantes.length} estado(s). Dados PNCP.`,
     alternates: { canonical: buildCanonical(`/fornecedores/${cnpj}`) },
     openGraph: {

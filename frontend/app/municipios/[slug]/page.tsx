@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : '';
 
   return {
-    title: `Licitações em ${profile.nome}-${profile.uf} — ${profile.total_licitacoes_abertas} editais abertos | SmartLic`,
+    title: `Licitações em ${profile.nome}-${profile.uf} — ${profile.total_licitacoes_abertas} editais abertos`,
     description:
       `Consulte os ${profile.total_licitacoes_abertas} editais abertos em ${profile.nome}-${profile.uf}. ` +
       (popFmt ? `${popFmt}. ` : '') +

@@ -6,7 +6,7 @@ import Footer from '@/app/components/Footer';
 
 // Sprint 5 Parte 13: hub de due diligence B2G
 export const metadata: Metadata = {
-  title: 'Due Diligence B2G — Consulta CEIS e CNEP por CNPJ | SmartLic',
+  title: 'Due Diligence B2G — Consulta CEIS e CNEP por CNPJ',
   description:
     'Verifique se um fornecedor possui sanções no CEIS (Cadastro de Empresas Inidôneas) ' +
     'ou penalidades no CNEP antes de contratar ou participar de licitação. Dados do Portal da Transparência.',
