@@ -71,6 +71,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | cold email / cold outreach / LinkedIn / SDR / abordagem inicial | `outreach` |
 | revenue / monetização / pricing / modelo de negócio / unit economics | `turbocash` |
 | decisão técnica / arquitetura / trade-off / estratégia produto/tech | `conselho` |
+| estratégia empresa / escala / moat / outlier / solo founder / pivot / categoria / obsolescência | `manage` |
 | **Desenvolvimento** | |
 | bug / erro / quebrou / problema / fix / não funciona | `squad-creator` (args: "bidiq-hotfix") |
 | nova feature / implementar / desenvolver / adicionar funcionalidade | `squad-creator` (args: "bidiq-feature-e2e") |
