@@ -222,15 +222,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // Onda 3: City × Sector pSEO pages (81 cities × 15 sectors = 1,215 URLs)
-  const cidadeSectorRoutes: MetadataRoute.Sitemap = CITIES.flatMap((c) =>
-    SECTORS.map((s) => ({
-      url: `${baseUrl}/blog/licitacoes/cidade/${c.slug}/${s.slug}`,
-      lastModified: today,
-      changeFrequency: 'daily' as const,
-      priority: 0.6,
-    })),
-  );
+  // STORY-439 AC2: City × Sector pSEO pages (1.215 URLs) removidas do sitemap.
+  // Essas páginas já têm noindex em page-level via MIN_ACTIVE_BIDS_FOR_INDEX.
+  // Incluí-las no sitemap desperdiçava crawl budget sem benefício de indexação.
+  // Reativar quando endpoint /v1/sitemap/cidade-setor-indexable existir (Fase B).
+  // const cidadeSectorRoutes = CITIES.flatMap((c) =>
+  //   SECTORS.map((s) => ({
+  //     url: `${baseUrl}/blog/licitacoes/cidade/${c.slug}/${s.slug}`,
+  //     changeFrequency: 'daily' as const,
+  //     priority: 0.6,
+  //   })),
+  // );
 
   // SEO-PLAYBOOK Onda 1: CNPJ pages from datalake
   const cnpjList = await fetchSitemapCnpjs();
@@ -436,8 +438,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...panoramaSectorRoutes,
     // SEO Frente 4: City pSEO pages
     ...cidadeRoutes,
-    // Onda 3: City × Sector pSEO pages
-    ...cidadeSectorRoutes,
+    // Onda 3: City × Sector pSEO pages — removidas do sitemap (STORY-439 AC2)
     // SEO-PLAYBOOK S1: Individual glossary term pages
     ...GLOSSARY_TERMS.map((t) => ({
       url: `${baseUrl}/glossario/${t.slug}`,

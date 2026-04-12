@@ -69,6 +69,16 @@ export async function generateMetadata({
     return {
       title: 'Órgão não encontrado',
       description: 'O órgão informado não foi encontrado na base de dados.',
+      robots: { index: false, follow: false },
+    };
+  }
+
+  // STORY-439 AC1: noindex órgãos com volume insuficiente de licitações (thin content gate)
+  const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? '5', 10);
+  if (stats.total_licitacoes < minBids) {
+    return {
+      title: `${stats.nome} — Licitações Públicas`,
+      robots: { index: false, follow: true },
     };
   }
 

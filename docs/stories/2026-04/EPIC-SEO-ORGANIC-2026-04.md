@@ -32,6 +32,7 @@ Tornar o SmartLic o **Observatório Público das Licitações do Brasil** — tr
 | [STORY-434](STORY-434-api-publica-readonly-datalake.md) | P2 | L | @dev + @devops | Draft | API pública read-only do datalake |
 | [STORY-435](STORY-435-indice-transparencia-municipal.md) | P2 | XL | @dev + @devops | Draft | Índice de Transparência Municipal |
 | [STORY-436](STORY-436-padrao-editorial-conteudo-publico.md) | **P1** | S | @dev | Draft | Padrão editorial — sem vestígios de AI no conteúdo público |
+| [STORY-439](STORY-439-thin-content-gates-entity-pages-trust-signals.md) | **P0** | M | @dev + @devops | Draft | Thin content gates entity pages + Trust signals (E-E-A-T) |
 
 ---
 
@@ -39,6 +40,7 @@ Tornar o SmartLic o **Observatório Público das Licitações do Brasil** — tr
 
 ### Sprint 1 (urgente — limpar sinal negativo)
 - **STORY-430** (thin content surgery) — blocker implícito: site poluído prejudica todos os outros ranqueamentos
+- **STORY-439** (entity pages gates + Trust) — paralelo à STORY-430, cobre gaps não contemplados nela
 
 ### Sprint 2 (construir ativos linkáveis)
 - **STORY-436** (Padrão editorial) — deve ser concluída ANTES de publicar qualquer conteúdo

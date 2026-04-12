@@ -9,19 +9,39 @@
  * structured data availability for crawlers.
  */
 export function StructuredData() {
-  // Organization Schema — AC6
+  // Organization Schema — AC6 + STORY-439 AC4: Trust completeness (taxID, founder, addressLocality)
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'SmartLic',
     legalName: 'CONFENGE Avaliações e Inteligência Artificial LTDA',
+    taxID: '52.407.089/0001-09',
     url: 'https://smartlic.tech',
-    logo: 'https://smartlic.tech/logo.svg',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://smartlic.tech/logo.svg',
+      contentUrl: 'https://smartlic.tech/logo.svg',
+    },
     foundingDate: '2024',
     description: 'Inteligência de decisão em licitações públicas com avaliação objetiva de viabilidade por setor, região e modalidade',
     address: {
       '@type': 'PostalAddress',
+      addressLocality: 'Florianópolis',
+      addressRegion: 'SC',
       addressCountry: 'BR',
+    },
+    founder: {
+      '@type': 'Person',
+      name: 'Tiago Sasaki',
+      jobTitle: 'CEO & CTO',
+      worksFor: {
+        '@type': 'Organization',
+        name: 'CONFENGE Avaliações e Inteligência Artificial LTDA',
+      },
+      sameAs: [
+        'https://www.linkedin.com/in/tiago-sasaki/',
+        'https://github.com/tjsasakifln',
+      ],
     },
     contactPoint: {
       '@type': 'ContactPoint',
