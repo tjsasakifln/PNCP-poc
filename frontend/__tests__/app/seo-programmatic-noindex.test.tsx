@@ -11,6 +11,7 @@ jest.mock('@/lib/programmatic', () => ({
   getSectorFromSlug: jest.fn(),
   formatBRL: jest.fn((v: number) => `R$ ${v}`),
   generateSectorFAQs: jest.fn(() => []),
+  getUfPrep: jest.fn((uf?: string) => 'em'),
   ALL_UFS: ['SP', 'SC', 'RJ'],
   UF_NAMES: { SP: 'São Paulo', SC: 'Santa Catarina', RJ: 'Rio de Janeiro' },
 }));
