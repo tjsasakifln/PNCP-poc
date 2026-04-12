@@ -10,7 +10,7 @@ import Link from 'next/link';
 import IndiceClient from './IndiceClient';
 
 export const metadata: Metadata = {
-  title: 'Índice de Transparência Municipal em Compras Públicas | SmartLic',
+  title: 'Índice de Transparência Municipal em Compras Públicas',
   description:
     'Ranking dos municípios brasileiros por transparência em compras públicas. Score calculado a partir de dados reais do PNCP: volume, eficiência, diversidade e consistência.',
   alternates: { canonical: 'https://smartlic.tech/indice-municipal' },

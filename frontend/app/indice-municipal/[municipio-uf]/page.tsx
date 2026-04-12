@@ -57,7 +57,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const score = data?.score_total != null ? Number(data.score_total) : null;
   const scoreText = score != null ? ` Score ${score.toFixed(1)} de 100.` : '';
 
-  const title = `${municipioTitulo} (${uf}) — Índice de Transparência Municipal | SmartLic`;
+  const title = `${municipioTitulo} (${uf}) — Índice de Transparência Municipal`;
   const description = `Transparência em compras públicas de ${municipioTitulo}/${uf}.${scoreText} Dados do PNCP: volume, eficiência e diversidade de mercado.`;
 
   return {
