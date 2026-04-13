@@ -9,7 +9,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { groupSessions, GroupedSession } from '../app/historico/page';
+import { groupSessions, GroupedSession } from '../app/historico/session-utils';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Mock dependencies for component tests
