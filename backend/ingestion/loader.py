@@ -118,7 +118,7 @@ async def bulk_upsert(
 # Purge
 # ---------------------------------------------------------------------------
 
-async def purge_old_bids(retention_days: int = 12) -> int:
+async def purge_old_bids(retention_days: int = 30) -> int:
     """Delete rows from pncp_raw_bids older than retention_days.
 
     Calls the ``purge_old_bids`` Supabase RPC which returns the number
