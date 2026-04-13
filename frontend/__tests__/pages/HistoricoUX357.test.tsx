@@ -107,8 +107,6 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -131,8 +129,6 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -155,8 +151,6 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -182,8 +176,6 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -206,8 +198,6 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -230,8 +220,6 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -273,8 +261,6 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');

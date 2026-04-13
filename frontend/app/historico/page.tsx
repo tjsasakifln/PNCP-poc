@@ -153,14 +153,65 @@ function StatusBadge({ status }: { status: SearchSessionStatus }) {
 
 const TERMINAL_STATUSES: Set<SearchSessionStatus> = new Set(["completed", "failed", "timed_out", "cancelled"]);
 
+// UX-433 AC1: Group sessions by setor+UFs within a 5-minute window.
+// Consecutive attempts of the same search appear as a single entry with "N tentativas".
+export interface GroupedSession {
+  representative: SearchSession; // completed session if exists, otherwise most recent
+  attempts: number;              // total sessions in this group
+}
+
+export function groupSessions(sessions: SearchSession[]): GroupedSession[] {
+  if (sessions.length === 0) return [];
+
+  const groups: GroupedSession[] = [];
+
+  for (const session of sessions) {
+    const sessionKey = [...session.sectors].sort().join("|") + "##" + [...session.ufs].sort().join("|");
+    const sessionTime = new Date(session.created_at).getTime();
+
+    // Find a matching group within 5 minutes
+    const matchingGroup = groups.find((g) => {
+      const repKey =
+        [...g.representative.sectors].sort().join("|") +
+        "##" +
+        [...g.representative.ufs].sort().join("|");
+      if (repKey !== sessionKey) return false;
+      // Check within 5-minute window using the group's earliest/latest entry
+      const repTime = new Date(g.representative.created_at).getTime();
+      const diffMs = Math.abs(sessionTime - repTime);
+      return diffMs < 5 * 60 * 1000;
+    });
+
+    if (matchingGroup) {
+      matchingGroup.attempts += 1;
+      // Prefer the completed session as representative; otherwise keep most recent
+      if (session.status === "completed") {
+        matchingGroup.representative = session;
+      } else if (
+        matchingGroup.representative.status !== "completed" &&
+        sessionTime > new Date(matchingGroup.representative.created_at).getTime()
+      ) {
+        matchingGroup.representative = session;
+      }
+    } else {
+      groups.push({ representative: session, attempts: 1 });
+    }
+  }
+
+  return groups;
+}
+
+type StatusFilter = 'auto' | 'completed' | 'all';
+
 export default function HistoricoPage() {
   const { session, loading: authLoading } = useAuth();
   const router = useRouter();
   const { trackEvent } = useAnalytics();
   const { planInfo } = usePlan();
   const [page, setPage] = useState(0);
-  // UX-433: Filter to hide failures — default to showing only completed
-  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'failed'>('completed');
+  // UX-433 AC2: "Apenas concluídas" filter is disabled by default — default shows
+  // all statuses but AC3 hides failures older than 7 days automatically.
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('auto');
 
   // Zero-Churn P2 §2.2: Determine if user's plan/trial has expired
   const isExpired = useMemo(() => {
@@ -180,7 +231,7 @@ export default function HistoricoPage() {
   }, [planInfo]);
 
   // ISSUE-040: Reset page to 0 when filter changes to ensure consistent counts
-  const handleStatusFilterChange = useCallback((newFilter: 'all' | 'completed' | 'failed') => {
+  const handleStatusFilterChange = useCallback((newFilter: StatusFilter) => {
     setPage(0);
     setStatusFilter(newFilter);
   }, []);
@@ -189,11 +240,17 @@ export default function HistoricoPage() {
 
   // TD-008 AC7/AC13: SWR-based sessions with auto-polling for active sessions
   const [pollInterval, setPollInterval] = useState(0);
+
+  // Map UI filter to backend params (UX-433 AC2/AC3)
+  const backendStatus = statusFilter === 'completed' ? 'completed' : 'all';
+  const hideOldFailures = statusFilter !== 'all'; // 'auto' and 'completed' hide old failures
+
   const { sessions, total, loading, error: fetchError, errorTimestamp, refresh } = useSessions({
     page,
     limit,
     refreshInterval: pollInterval,
-    status: statusFilter,
+    status: backendStatus,
+    hideOldFailures,
   });
 
   // UX-351 AC3-AC5: Poll when sessions are in non-terminal state
@@ -202,9 +259,10 @@ export default function HistoricoPage() {
     setPollInterval(hasActive ? 5000 : 0);
   }, [sessions]);
 
-  // UX-433 + ISSUE-040: Status filter is now server-side via useSessions({ status })
-  // Sessions are already filtered by the backend — no client-side filtering needed
+  // UX-433 + ISSUE-040: Status filter is server-side via useSessions({ status })
+  // AC1: Group sessions by setor+UFs within 5-minute window
   const filteredSessions = sessions;
+  const groupedSessions = useMemo(() => groupSessions(filteredSessions), [filteredSessions]);
 
   // Handle re-run search navigation (AC17: "Tentar novamente" for failed/timed_out)
   const handleRerunSearch = useCallback((searchSession: SearchSession) => {
@@ -335,19 +393,21 @@ export default function HistoricoPage() {
         )}
 
         <p className="text-[var(--ink-secondary)] mb-2">
-          {`${total} ${total !== 1 ? 'análises' : 'análise'} ${statusFilter === 'completed' ? (total !== 1 ? 'concluídas' : 'concluída') : statusFilter === 'failed' ? 'com falha' : (total !== 1 ? 'realizadas' : 'realizada')}`}
+          {`${total} ${total !== 1 ? 'análises' : 'análise'} ${statusFilter === 'completed' ? (total !== 1 ? 'concluídas' : 'concluída') : (total !== 1 ? 'realizadas' : 'realizada')}`}
         </p>
 
-        {/* UX-433: Status filter */}
+        {/* UX-433 AC2/AC3: Status filter — "Apenas concluídas" disabled by default */}
         <div className="flex items-center gap-2 mb-4" role="radiogroup" aria-label="Filtrar por status">
           {([
-            { value: 'completed' as const, label: 'Concluídas', icon: '\u2713' },
-            { value: 'all' as const, label: 'Todas', icon: '\u2630' },
-            { value: 'failed' as const, label: 'Com falha', icon: '\u2717' },
-          ]).map(opt => (
+            { value: 'auto' as const, label: 'Recentes', icon: '\u2630', title: 'Concluídas e falhas dos últimos 7 dias' },
+            { value: 'completed' as const, label: 'Apenas concluídas', icon: '\u2713', title: 'Apenas análises concluídas com sucesso' },
+            { value: 'all' as const, label: 'Mostrar todas', icon: '\u29c9', title: 'Inclui falhas antigas' },
+          ] satisfies { value: StatusFilter; label: string; icon: string; title: string }[]).map(opt => (
             <button
               key={opt.value}
               onClick={() => handleStatusFilterChange(opt.value)}
+              title={opt.title}
+              data-testid={`filter-${opt.value}`}
               className={`px-3 py-1.5 text-xs font-medium rounded-button border transition-colors ${
                 statusFilter === opt.value
                   ? 'bg-[var(--brand-navy)] text-white border-[var(--brand-navy)]'
@@ -387,16 +447,16 @@ export default function HistoricoPage() {
           />
         ) : (
           <>
-            {filteredSessions.length === 0 && statusFilter !== 'all' && (
+            {groupedSessions.length === 0 && statusFilter !== 'auto' && (
               <div className="text-center py-8 text-[var(--ink-secondary)]">
-                <p className="text-sm">Nenhuma análise {statusFilter === 'completed' ? 'concluída' : 'com falha'} neste período.</p>
-                <button onClick={() => handleStatusFilterChange('all')} className="text-sm text-[var(--brand-blue)] hover:underline mt-2">
-                  Ver todas as análises
+                <p className="text-sm">Nenhuma análise {statusFilter === 'completed' ? 'concluída' : ''} neste período.</p>
+                <button onClick={() => handleStatusFilterChange('auto')} className="text-sm text-[var(--brand-blue)] hover:underline mt-2">
+                  Ver análises recentes
                 </button>
               </div>
             )}
             <div className="space-y-4">
-              {filteredSessions.map((s: SearchSession) => (
+              {groupedSessions.map(({ representative: s, attempts }: GroupedSession) => (
                 <div
                   key={s.id}
                   className="p-5 bg-[var(--surface-0)] border border-[var(--border)] rounded-card
@@ -410,6 +470,15 @@ export default function HistoricoPage() {
                         </span>
                         {/* CRIT-002 AC20: Status badge */}
                         <StatusBadge status={s.status} />
+                        {/* UX-433 AC1: "N tentativas" badge for grouped sessions */}
+                        {attempts > 1 && (
+                          <span
+                            className="text-xs font-medium px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded"
+                            data-testid="attempts-badge"
+                          >
+                            {attempts} tentativas
+                          </span>
+                        )}
                         <span className="text-xs text-[var(--ink-muted)]">
                           {formatDate(s.created_at)}
                         </span>

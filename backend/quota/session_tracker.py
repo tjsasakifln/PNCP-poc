@@ -145,6 +145,25 @@ async def register_search_session(
             return None
 
 
+async def _delete_session_if_exists(session_id: str) -> None:
+    """UX-433 AC4: Delete instant-failure sessions to keep history clean.
+
+    Called when a search fails in < 3 seconds — these are infrastructure
+    errors (auth, rate limit, circuit breaker) that don't represent a real
+    search attempt and should not pollute the user's history.
+    """
+    try:
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+        await sb_execute(sb.table("search_sessions").delete().eq("id", session_id))
+        logger.info("UX-433 AC4: deleted instant-failure session %s***", session_id[:8])
+    except Exception as e:
+        logger.warning(
+            "UX-433 AC4: could not delete instant-failure session %s***: %s",
+            session_id[:8], e,
+        )
+
+
 async def update_search_session_status(
     session_id: str,
     status: Optional[str] = None,
@@ -168,6 +187,13 @@ async def update_search_session_status(
     """
     import json as _json
     from supabase_client import get_supabase, sb_execute
+
+    # UX-433 AC4: Instant failures (< 3s) are infrastructure errors, not real
+    # search attempts. Delete the session record to keep history clean.
+    # Note: timed_out is excluded — timeouts indicate the search ran but took too long.
+    if status == "failed" and duration_ms is not None and duration_ms < 3000:
+        await _delete_session_if_exists(session_id)
+        return
 
     update_data = {}
     if status is not None:

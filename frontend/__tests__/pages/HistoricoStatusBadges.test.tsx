@@ -144,8 +144,6 @@ describe('HistoricoPage - Status Badges and Retry', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     const badge = await screen.findByTestId('status-badge-failed');
     expect(badge).toBeInTheDocument();
@@ -166,8 +164,6 @@ describe('HistoricoPage - Status Badges and Retry', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     const badge = await screen.findByTestId('status-badge-timed_out');
     expect(badge).toBeInTheDocument();
@@ -189,8 +185,6 @@ describe('HistoricoPage - Status Badges and Retry', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     const badge = await screen.findByTestId('status-badge-failed');
     expect(badge).toBeInTheDocument();

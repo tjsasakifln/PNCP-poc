@@ -1,6 +1,6 @@
 # UX-433: Historico mostra excesso de falhas e timeouts
 
-**Status:** Draft
+**Status:** InReview
 **Prioridade:** P1 — Importante
 **Origem:** UX Audit 2026-03-25 (I2)
 **Sprint:** Próximo
@@ -13,10 +13,10 @@ Nota: após CRIT-082 (eliminar retry amplification), o volume de entradas de fal
 
 ## Acceptance Criteria
 
-- [ ] AC1: Buscas com mesmo `setor + UFs` executadas com menos de 5 minutos de intervalo são agrupadas em uma única entrada no histórico com label "N tentativas"
-- [ ] AC2: Filtro "Apenas concluídas" no topo do histórico — oculta entradas com `status != 'Concluída'` quando ativado; desativado por padrão
-- [ ] AC3: Entradas com `status = 'Falhou'` ou `status = 'Tempo esgotado'` com `created_at < now() - 7 days` são automaticamente ocultadas da listagem padrão (mas ainda acessíveis via filtro "Mostrar todas")
-- [ ] AC4: Buscas que falharam em menos de 3 segundos (erro instantâneo, não timeout) não são salvas no histórico — verificar se o backend já tem essa lógica e adicionar se não tiver
+- [x] AC1: Buscas com mesmo `setor + UFs` executadas com menos de 5 minutos de intervalo são agrupadas em uma única entrada no histórico com label "N tentativas"
+- [x] AC2: Filtro "Apenas concluídas" no topo do histórico — oculta entradas com `status != 'Concluída'` quando ativado; desativado por padrão
+- [x] AC3: Entradas com `status = 'Falhou'` ou `status = 'Tempo esgotado'` com `created_at < now() - 7 days` são automaticamente ocultadas da listagem padrão (mas ainda acessíveis via filtro "Mostrar todas")
+- [x] AC4: Buscas que falharam em menos de 3 segundos (erro instantâneo, não timeout) não são salvas no histórico — verificar se o backend já tem essa lógica e adicionar se não tiver
 
 ## Escopo
 
@@ -44,11 +44,15 @@ Nota: após CRIT-082 (eliminar retry amplification), o volume de entradas de fal
 - Entradas de falha com mais de 7 dias não aparecem por padrão
 - `npm test` passa sem regressões
 
-## Arquivos Prováveis
+## Arquivos Modificados
 
-- `frontend/app/historico/page.tsx` — listagem, agrupamento, filtros
-- `backend/routes/sessions.py` — endpoint `GET /sessions` e save de sessão
-- `backend/search_cache.py` — verificar se `duration_ms` é persistido
+- `frontend/app/historico/page.tsx` — groupSessions(), filtros AC1/AC2/AC3, badge "N tentativas"
+- `frontend/hooks/useSessions.ts` — param hideOldFailures para AC3
+- `backend/routes/sessions.py` — param hide_old_failures + filtro de 7 dias (AC3)
+- `backend/quota/session_tracker.py` — _delete_session_if_exists + AC4 (instant failure)
+- `frontend/__tests__/ux-433-historico-melhorias.test.tsx` — 17 testes AC1/AC2/AC3
+- `backend/tests/test_ux433_historico_melhorias.py` — 11 testes AC3/AC4
+- `backend/tests/test_routes_sessions.py` — or_() adicionado ao mock helper
 
 ## Screenshot
 

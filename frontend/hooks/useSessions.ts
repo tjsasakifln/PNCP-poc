@@ -26,16 +26,23 @@ interface UseSessionsOptions {
   refreshInterval?: number;
   /** Server-side status filter (completed, failed, all) */
   status?: string;
+  /**
+   * UX-433 AC3: When true (default), the backend hides failed/timed_out entries
+   * older than 7 days. Pass false to see the full unfiltered history ("Mostrar todas").
+   */
+  hideOldFailures?: boolean;
 }
 
-export function useSessions({ page, limit = 20, refreshInterval = 0, status }: UseSessionsOptions) {
+export function useSessions({ page, limit = 20, refreshInterval = 0, status, hideOldFailures = true }: UseSessionsOptions) {
   const { session } = useAuth();
   const accessToken = session?.access_token;
 
   const statusParam = status && status !== 'all' ? `&status=${status}` : '';
+  // Only send hide_old_failures=false when explicitly disabled — backend defaults to true.
+  const hideOldFailuresParam = hideOldFailures === false ? '&hide_old_failures=false' : '';
   const { data, error, isLoading, mutate } = useSWR(
     accessToken
-      ? [`/api/sessions?limit=${limit}&offset=${page * limit}${statusParam}`, accessToken]
+      ? [`/api/sessions?limit=${limit}&offset=${page * limit}${statusParam}${hideOldFailuresParam}`, accessToken]
       : null,
     ([url, token]: [string, string]) => fetchSessionsWithAuth(url, token),
     {

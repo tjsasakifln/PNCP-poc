@@ -216,8 +216,6 @@ describe('UX-351: Historico Funcional', () => {
 
       render(<HistoricoPage />);
 
-      // Click "Todas" to show all statuses (default filter is 'completed')
-      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       await waitFor(() => {
         const badge = screen.getByTestId('status-badge-processing');
@@ -261,8 +259,6 @@ describe('UX-351: Historico Funcional', () => {
 
       const { rerender } = render(<HistoricoPage />);
 
-      // Click "Todas" to show all statuses (default filter is 'completed')
-      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       // Initially shows processing
       await waitFor(() => {
@@ -313,8 +309,6 @@ describe('UX-351: Historico Funcional', () => {
 
       render(<HistoricoPage />);
 
-      // Click "Todas" to show all statuses (default filter is 'completed')
-      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       await waitFor(() => {
         const badge = screen.getByTestId('status-badge-failed');
@@ -334,8 +328,6 @@ describe('UX-351: Historico Funcional', () => {
 
       render(<HistoricoPage />);
 
-      // Click "Todas" to show all statuses (default filter is 'completed')
-      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       await waitFor(() => {
         const badge = screen.getByTestId('status-badge-timed_out');
@@ -481,8 +473,6 @@ describe('UX-351: Historico Funcional', () => {
 
       render(<HistoricoPage />);
 
-      // Click "Todas" to show all statuses (default filter is 'completed')
-      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       await waitFor(() => {
         const errorEl = screen.getByTestId('error-message');
@@ -505,8 +495,6 @@ describe('UX-351: Historico Funcional', () => {
 
       render(<HistoricoPage />);
 
-      // Click "Todas" to show all statuses (default filter is 'completed')
-      fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
       // UX-357: timed_out always shows the canonical timeout message regardless of error_message
       await waitFor(() => {

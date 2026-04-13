@@ -30,6 +30,8 @@ def _mock_sb(data=None, count=0):
     sb.table.return_value = sb
     sb.select.return_value = sb
     sb.eq.return_value = sb
+    sb.in_.return_value = sb
+    sb.or_.return_value = sb  # UX-433 AC3: hide_old_failures uses .or_()
     sb.order.return_value = sb
     sb.range.return_value = sb
     result = Mock(data=data or [], count=count)

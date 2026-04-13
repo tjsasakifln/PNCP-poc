@@ -27,6 +27,7 @@ async def get_sessions(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     status: Optional[str] = Query(default=None, description="Filter by session status (completed, failed, timed_out)"),
+    hide_old_failures: bool = Query(default=True, description="UX-433 AC3: hide failed/timed_out entries older than 7 days from default listing"),
     db=Depends(get_db),
 ):
     """Get user's search session history."""
@@ -49,6 +50,15 @@ async def get_sessions(
                 query = query.or_("status.eq.completed,status.is.null,total_filtered.gt.0")
             else:
                 query = query.eq("status", status)
+
+        # UX-433 AC3: By default, hide failed/timed_out entries older than 7 days.
+        # User can pass hide_old_failures=false to see the full unfiltered history
+        # ("Mostrar todas" option in the frontend).
+        if hide_old_failures and (not status or status == "all"):
+            seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            query = query.or_(
+                f"status.not.in.(failed,timed_out),created_at.gte.{seven_days_ago}"
+            )
 
         result = await sb_execute(
             query.order("created_at", desc=True)

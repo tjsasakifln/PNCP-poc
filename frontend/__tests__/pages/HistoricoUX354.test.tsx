@@ -265,8 +265,6 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -290,8 +288,6 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -314,8 +310,6 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -338,8 +332,6 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
@@ -363,8 +355,6 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     render(<HistoricoPage />);
 
-    // Click "Todas" to show all statuses (default filter is 'completed')
-    fireEvent.click(screen.getByRole('radio', { name: /Todas/ }));
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
