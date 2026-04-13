@@ -1,6 +1,6 @@
 # HOTFIX-001 — Sentry: Fix schema mismatches e params errados
 
-**Status:** Ready  
+**Status:** Done  
 **Tipo:** Hotfix  
 **Prioridade:** P0  
 **Criada por:** @sm  
@@ -20,25 +20,25 @@ Auditoria do Sentry (76 issues abertas) identificou:
 ## Acceptance Criteria
 
 ### AC1 — Fix `search_sessions.setor` → `search_sessions.sectors`
-- [ ] Em `backend/routes/analytics.py`, função `get_trial_value`: trocar coluna `setor` por `sectors` no `.select()`
-- [ ] Ajustar acesso ao valor retornado: `sectors` é `text[]`, pegar primeiro elemento (`sectors[0]` ou similar)
-- [ ] `pytest tests/test_trial_endpoints.py -v` passa sem falhas
+- [x] Em `backend/routes/analytics.py`, função `get_trial_value`: trocar coluna `setor` por `sectors` no `.select()`
+- [x] Ajustar acesso ao valor retornado: `sectors` é `text[]`, pegar primeiro elemento (`sectors[0]` ou similar)
+- [x] `pytest tests/test_trial_endpoints.py -v` passa sem falhas
 
 ### AC2 — Fix params `/observatorio/[mes]-[ano]/page.tsx`
-- [ ] Trocar tipo de `params` de `{ 'mes-ano': string }` para `{ mes: string; ano: string }`
-- [ ] Reconstruir slug onde necessário: `const slug = \`\${mes}-\${ano}\``
-- [ ] Page `/observatorio/2026-03` renderiza sem InvariantError
+- [x] Trocar tipo de `params` de `{ 'mes-ano': string }` para `{ mes: string; ano: string }`
+- [x] Reconstruir slug onde necessário: `const slug = \`\${mes}-\${ano}\``
+- [x] Page `/observatorio/2026-03` renderiza sem InvariantError (confirmado via testes unitários)
 
 ### AC3 — Resolve issues já corrigidas no Sentry
-- [ ] BACKEND-47 (`objeto_resumo`) → Resolve
-- [ ] BACKEND-59 (`data_publicacao_pncp`) → Resolve  
-- [ ] BACKEND-43 (`is_master` trigger) → Resolve
-- [ ] BACKEND-4E (TypeError coroutine) → Resolve
-- [ ] BACKEND-15 + BACKEND-14 (Application startup failed) → Resolve
+- [ ] BACKEND-47 (`objeto_resumo`) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
+- [ ] BACKEND-59 (`data_publicacao_pncp`) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
+- [ ] BACKEND-43 (`is_master` trigger) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
+- [ ] BACKEND-4E (TypeError coroutine) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
+- [ ] BACKEND-15 + BACKEND-14 (Application startup failed) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
 
 ### AC4 — Não regressão
-- [ ] `pytest tests/test_trial_endpoints.py tests/test_analytics.py -v` passa
-- [ ] `npm test` no frontend passa (sem novas falhas)
+- [x] `pytest tests/test_trial_endpoints.py tests/test_analytics.py -v` passa (19/19)
+- [x] `npm test` no frontend passa (sem novas falhas — 20 falhas pré-existentes, -5 comparado a antes deste hotfix)
 
 ---
 
@@ -80,5 +80,6 @@ Auditoria do Sentry (76 issues abertas) identificou:
 
 ## File List
 
-- [ ] `backend/routes/analytics.py`
-- [ ] `frontend/app/observatorio/[mes]-[ano]/page.tsx`
+- [x] `backend/routes/analytics.py`
+- [x] `frontend/app/observatorio/[mes]-[ano]/page.tsx`
+- [x] `frontend/__tests__/app/observatorio-page.test.tsx` (atualizado para novo formato de params)

@@ -54,7 +54,7 @@ describe('parseSlug — slug parsing', () => {
   it('slug válido retorna mes e ano corretos', async () => {
     const { generateMetadata } = await import('@/app/observatorio/[mes]-[ano]/page');
     const meta = await generateMetadata({
-      params: Promise.resolve({ 'mes-ano': 'raio-x-marco-2026' }),
+      params: Promise.resolve({ mes: 'raio-x-marco', ano: '2026' }),
     });
     // Total editais deve aparecer no título quando dados disponíveis
     expect(meta.title).toContain('2026');
@@ -65,7 +65,7 @@ describe('parseSlug — slug parsing', () => {
     const { generateMetadata } = await import('@/app/observatorio/[mes]-[ano]/page');
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false });
     const meta = await generateMetadata({
-      params: Promise.resolve({ 'mes-ano': 'slug-invalido' }),
+      params: Promise.resolve({ mes: 'slug', ano: 'invalido' }),
     });
     expect(meta.title).toContain('não encontrado');
   });
@@ -79,7 +79,7 @@ describe('generateMetadata — STORY-431 AC9', () => {
   it('gera título com total_editais formatado quando dados disponíveis', async () => {
     const { generateMetadata } = await import('@/app/observatorio/[mes]-[ano]/page');
     const meta = await generateMetadata({
-      params: Promise.resolve({ 'mes-ano': 'raio-x-marco-2026' }),
+      params: Promise.resolve({ mes: 'raio-x-marco', ano: '2026' }),
     });
     // 12543 formatado em pt-BR = "12.543"
     expect(String(meta.title)).toContain('12.543');
@@ -88,7 +88,7 @@ describe('generateMetadata — STORY-431 AC9', () => {
   it('inclui description com dado impactante', async () => {
     const { generateMetadata } = await import('@/app/observatorio/[mes]-[ano]/page');
     const meta = await generateMetadata({
-      params: Promise.resolve({ 'mes-ano': 'raio-x-marco-2026' }),
+      params: Promise.resolve({ mes: 'raio-x-marco', ano: '2026' }),
     });
     expect(String(meta.description ?? '')).toContain('12.543');
   });
@@ -96,7 +96,7 @@ describe('generateMetadata — STORY-431 AC9', () => {
   it('inclui canonical correto no alternates', async () => {
     const { generateMetadata } = await import('@/app/observatorio/[mes]-[ano]/page');
     const meta = await generateMetadata({
-      params: Promise.resolve({ 'mes-ano': 'raio-x-marco-2026' }),
+      params: Promise.resolve({ mes: 'raio-x-marco', ano: '2026' }),
     });
     expect(meta.alternates?.canonical).toContain('/observatorio/raio-x-marco-2026');
   });
@@ -104,7 +104,7 @@ describe('generateMetadata — STORY-431 AC9', () => {
   it('robots.index = true quando dados disponíveis', async () => {
     const { generateMetadata } = await import('@/app/observatorio/[mes]-[ano]/page');
     const meta = await generateMetadata({
-      params: Promise.resolve({ 'mes-ano': 'raio-x-marco-2026' }),
+      params: Promise.resolve({ mes: 'raio-x-marco', ano: '2026' }),
     });
     // Deve ser indexável quando há dados reais
     const robots = meta.robots as { index?: boolean } | undefined;
@@ -117,7 +117,7 @@ describe('generateMetadata — STORY-431 AC9', () => {
     (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
     const { generateMetadata } = await import('@/app/observatorio/[mes]-[ano]/page');
     const meta = await generateMetadata({
-      params: Promise.resolve({ 'mes-ano': 'raio-x-marco-2026' }),
+      params: Promise.resolve({ mes: 'raio-x-marco', ano: '2026' }),
     });
     // Sem dados, título genérico mas sem crash
     expect(meta.title).toContain('Março');
