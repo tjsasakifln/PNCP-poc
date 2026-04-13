@@ -634,13 +634,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 0.6,
     })),
-    // SEO Wave 2.3 (12.2.3): /contratos/orgao/{cnpj} pages (reuse orgao list, ~2000)
-    ...orgaoList.map((cnpj) => ({
-      url: `${baseUrl}/contratos/orgao/${cnpj}`,
-      lastModified: today,
-      changeFrequency: 'weekly' as const,
-      priority: 0.5,
-    })),
+    // SEO-460: /contratos/orgao/{cnpj} removido do sitemap — bug de 404 em massa.
+    // O endpoint /v1/contratos/orgao/{cnpj}/stats retorna 404 para orgãos sem
+    // contratos assinados (licitações ≠ contratos). O sitemap incluía ~2000 CNPJs
+    // de orgãos com licitações, mas a maioria não tem contratos → Google via 794 404s.
+    // Páginas ainda acessíveis via links internos (/orgaos/{slug}). Reintroduzir
+    // quando /v1/sitemap/contratos-orgao-indexable (filtrado por contratos reais) existir.
     // SEO Wave 3.1: /blog/contratos/{setor} pillar pages (15)
     ...generateSectorParams().map(({ setor }) => ({
       url: `${baseUrl}/blog/contratos/${setor}`,

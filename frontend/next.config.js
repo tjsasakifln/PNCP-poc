@@ -39,7 +39,17 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/gloss\u00E1rio',
+        destination: '/glossario',
+        permanent: true,
+      },
+      {
         source: '/gloss%C3%A1rio/:path*',
+        destination: '/glossario/:path*',
+        permanent: true,
+      },
+      {
+        source: '/gloss\u00E1rio/:path*',
         destination: '/glossario/:path*',
         permanent: true,
       },
