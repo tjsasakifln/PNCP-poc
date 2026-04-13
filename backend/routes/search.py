@@ -767,7 +767,7 @@ async def buscar_licitacoes(
         # Determine error_code based on exception type
         if isinstance(e, asyncio.TimeoutError):
             err_code = SearchErrorCode.TIMEOUT
-            err_msg = "A análise excedeu o tempo limite. Tente com menos estados ou um período menor."
+            err_msg = "A análise excedeu o tempo limite. Tente novamente em alguns minutos."
             status_code = 504
         else:
             err_code = SearchErrorCode.INTERNAL_ERROR

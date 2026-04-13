@@ -248,7 +248,7 @@ export function SearchStateManager({
         {canSuggestReduction && (
           <div className="mt-3 mb-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800" data-testid="uf-reduction-suggestion">
             <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
-              Sugestao: tente buscar com menos estados para resultados mais rapidos.
+              Quer tentar novamente com menos estados? Pode ser mais rápido.
             </p>
             <Button
               onClick={() => onRetryWithUfs!(suggestedUfs)}

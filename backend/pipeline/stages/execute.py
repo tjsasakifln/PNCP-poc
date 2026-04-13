@@ -829,7 +829,7 @@ async def _execute_multi_source(
             ctx.response_state = "empty_failure"  # GTM-RESILIENCE-A01 AC5
             ctx.degradation_guidance = (
                 "Fontes de dados governamentais estão temporariamente indisponíveis. "
-                "Tente novamente em alguns minutos ou reduza o número de estados."
+                "Tente novamente em alguns minutos."
             )
             ctx.degradation_reason = str(e)
             ctx.data_sources = [
@@ -925,8 +925,7 @@ async def _execute_multi_source(
             ctx.response_state = "empty_failure"
             ctx.degradation_guidance = (
                 f"A análise excedeu o tempo limite de {fetch_timeout // 60} minutos "
-                f"e não há resultados em cache disponíveis. "
-                f"Tente com menos estados ou um período menor."
+                f"e não há resultados em cache disponíveis. Tente novamente em alguns minutos."
             )
             ctx.degradation_reason = f"Pipeline timeout after {fetch_timeout}s, no cache"
             ctx.data_sources = []
@@ -989,7 +988,7 @@ async def _execute_multi_source(
             ctx.response_state = "empty_failure"  # GTM-RESILIENCE-A01 AC5
             ctx.degradation_guidance = (
                 "Fontes de dados governamentais estão temporariamente indisponíveis. "
-                "Tente novamente em alguns minutos ou reduza o número de estados."
+                "Tente novamente em alguns minutos."
             )
             ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
             ctx.data_sources = []
@@ -1148,7 +1147,7 @@ async def _execute_pncp_only(
             ctx.response_state = "empty_failure"  # GTM-RESILIENCE-A01 AC5
             ctx.degradation_guidance = (
                 "Fontes de dados governamentais estão temporariamente indisponíveis. "
-                "Tente novamente em alguns minutos ou reduza o número de estados."
+                "Tente novamente em alguns minutos."
             )
             ctx.degradation_reason = (
                 "PNCP ficou indisponível durante a análise (circuit breaker ativado). "
@@ -1223,7 +1222,6 @@ async def _execute_pncp_only(
                 status_code=504,
                 detail=(
                     f"A análise excedeu o tempo limite de {fetch_timeout // 60} minutos "
-                    f"e não há resultados em cache disponíveis. "
-                    f"Tente com menos estados ou um período menor."
+                    f"e não há resultados em cache disponíveis. Tente novamente em alguns minutos."
                 ),
             )

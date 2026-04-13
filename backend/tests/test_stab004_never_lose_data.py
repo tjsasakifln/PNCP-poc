@@ -133,8 +133,7 @@ class TestTimeoutNoCacheReturns200:
             is_partial=True,
             degradation_guidance=(
                 "A análise excedeu o tempo limite de 1 minuto "
-                "e não há resultados em cache disponíveis. "
-                "Tente com menos estados ou um período menor."
+                "e não há resultados em cache disponíveis. Tente novamente em alguns minutos."
             ),
             degradation_reason="Pipeline timeout after 60s, no cache",
             licitacoes=[],
@@ -171,8 +170,7 @@ class TestTimeoutNoCacheReturns200:
             is_partial=True,
             degradation_guidance=(
                 "A análise excedeu o tempo limite de 6 minutos "
-                "e não há resultados em cache disponíveis. "
-                "Tente com menos estados ou um período menor."
+                "e não há resultados em cache disponíveis. Tente novamente em alguns minutos."
             ),
             degradation_reason="Pipeline timeout after 360s, no cache",
             licitacoes=[],
@@ -192,10 +190,10 @@ class TestTimeoutNoCacheReturns200:
         assert response.status_code == 200
         body = response.json()
         guidance = body.get("degradation_guidance", "")
-        # Must contain actionable hint — "menos estados" or "período menor"
+        # Must contain actionable hint — "Tente novamente" or period/scope advice
         assert any(
             phrase in guidance
-            for phrase in ["menos estados", "período menor", "tente novamente"]
+            for phrase in ["Tente novamente", "menos estados", "período menor"]
         ), f"Guidance lacks actionable advice: {guidance!r}"
 
 
@@ -577,7 +575,7 @@ class TestAllSourcesFailedNoCacheReturns200:
             is_partial=True,
             degradation_guidance=(
                 "Fontes de dados governamentais estão temporariamente indisponíveis. "
-                "Tente novamente em alguns minutos ou reduza o número de estados."
+                "Tente novamente em alguns minutos."
             ),
             degradation_reason="AllSourcesFailedError: PNCP=timeout, PCP=connection, CG=http500",
             licitacoes=[],

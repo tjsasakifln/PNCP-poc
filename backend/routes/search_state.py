@@ -593,7 +593,7 @@ async def _run_async_search(
         if tracker:
             await tracker.emit_error(
                 f"Busca excedeu o tempo limite de {_ASYNC_SEARCH_TIMEOUT} segundos. "
-                "Tente com menos estados ou um período menor."
+                "Tente novamente em alguns minutos."
             )
         if state_machine:
             try:

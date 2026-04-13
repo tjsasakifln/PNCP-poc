@@ -123,7 +123,8 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
     }
   }, [loading, result]);
 
-  // ── CRIT-CORE-001: Async safety timeout 120s ──────────────────────────
+  // ── UX-430: Async safety timeout 180s (increased from 120s — AC1) ────
+  // 4+ UFs × 6 modalities can take 80-120s; 180s gives pipeline room to complete.
   const asyncSafetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (asyncSearchActive && loading && !result) {
@@ -132,8 +133,11 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
         asyncSearchActiveRef.current = false;
         asyncSearchIdRef.current = null;
         setLoading(false);
-        setError({ message: "A busca esta demorando. Tente novamente em alguns minutos.", rawMessage: "Async safety timeout after 120s", errorCode: "ASYNC_TIMEOUT", searchId: searchId || "", correlationId: null, requestId: null, httpStatus: 504, timestamp: new Date().toISOString() });
-      }, 120_000);
+        // AC2: Se parciais chegaram via SSE partial_data antes do timer disparar,
+        // result já seria não-null e o timer teria sido cancelado pelo cleanup.
+        // Esta branch é defensiva para race conditions.
+        setError({ message: "A busca está demorando. Tente novamente em alguns minutos.", rawMessage: "Async safety timeout after 180s", errorCode: "ASYNC_TIMEOUT", searchId: searchId || "", correlationId: null, requestId: null, httpStatus: 504, timestamp: new Date().toISOString() });
+      }, 180_000);
       return () => { if (asyncSafetyTimerRef.current) { clearTimeout(asyncSafetyTimerRef.current); asyncSafetyTimerRef.current = null; } };
     }
     if (asyncSafetyTimerRef.current && (!asyncSearchActive || result)) {

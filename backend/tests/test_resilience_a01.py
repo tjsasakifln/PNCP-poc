@@ -320,7 +320,7 @@ class TestEmptyFailureState:
                 ctx.response_state = "empty_failure"  # AC5
                 ctx.degradation_guidance = (
                     "Fontes de dados governamentais estão temporariamente indisponíveis. "
-                    "Tente novamente em alguns minutos ou reduza o número de estados."
+                    "Tente novamente em alguns minutos."
                 )
                 ctx.degradation_reason = "AllSourcesFailedError"
 
@@ -350,7 +350,7 @@ class TestEmptyFailureState:
                 ctx.response_state = "empty_failure"
                 ctx.degradation_guidance = (
                     "Fontes de dados governamentais estão temporariamente indisponíveis. "
-                    "Tente novamente em alguns minutos ou reduza o número de estados."
+                    "Tente novamente em alguns minutos."
                 )
                 ctx.degradation_reason = (
                     "PNCP ficou indisponível durante a análise (circuit breaker ativado). "
@@ -381,7 +381,7 @@ class TestEmptyFailureState:
                 ctx.response_state = "empty_failure"
                 ctx.degradation_guidance = (
                     "Fontes de dados governamentais estão temporariamente indisponíveis. "
-                    "Tente novamente em alguns minutos ou reduza o número de estados."
+                    "Tente novamente em alguns minutos."
                 )
                 ctx.degradation_reason = f"Erro inesperado: {type(error).__name__}: {str(error)[:200]}"
 

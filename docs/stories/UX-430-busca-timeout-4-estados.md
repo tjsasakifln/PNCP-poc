@@ -1,6 +1,6 @@
 # UX-430: Busca com 4+ estados causa timeout frequente
 
-**Status:** Ready
+**Status:** Done
 **Prioridade:** P0 — Critico
 **Origem:** UX Audit 2026-03-25 (C1)
 **Sprint:** Proximo
@@ -13,12 +13,12 @@ O fluxo async (CRIT-072) deveria evitar isso — POST retorna 202 e resultados v
 
 ## Acceptance Criteria
 
-- [ ] AC1: Busca com 4 UFs deve completar sem timeout (ou retornar resultados parciais)
-- [ ] AC2: Se timeout, mostrar resultados parciais das UFs que completaram
-- [ ] AC3: Mensagem de erro nao deve culpar usuario — "Algumas fontes demoraram. Mostrando resultados parciais."
-- [ ] AC4: Botao "Tentar novamente" deve sugerir ou auto-reduzir UFs
-- [ ] AC5: Investigar timeout chain: frontend timeout vs SSE timeout vs pipeline timeout
-- [ ] AC6: Verificar se cache SWR pode servir resultados stale durante retry
+- [x] AC1: Busca com 4 UFs deve completar sem timeout (ou retornar resultados parciais)
+- [x] AC2: Se timeout, mostrar resultados parciais das UFs que completaram
+- [x] AC3: Mensagem de erro nao deve culpar usuario — "Algumas fontes demoraram. Mostrando resultados parciais."
+- [x] AC4: Botao "Tentar novamente" deve sugerir ou auto-reduzir UFs
+- [x] AC5: Investigar timeout chain: frontend timeout vs SSE timeout vs pipeline timeout
+- [x] AC6: Verificar se cache SWR pode servir resultados stale durante retry
 
 ## Arquivos Provaveis
 
