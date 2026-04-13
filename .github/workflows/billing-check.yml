@@ -1,0 +1,49 @@
+name: "GitHub Actions Billing Check (CRIT-080)"
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily 9am UTC (6am BRT)
+  workflow_dispatch:
+
+jobs:
+  check-billing:
+    name: Check Actions Billing Health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check recent workflow run status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== GitHub Actions Billing Health Check ==="
+
+          # Get recent workflow runs and check for stalled/queued jobs
+          RUNS=$(gh api /repos/${{ github.repository }}/actions/runs \
+            --jq '.workflow_runs[:20]')
+
+          QUEUED_COUNT=$(echo "$RUNS" | \
+            python3 -c "
+import sys, json
+runs = json.load(sys.stdin)
+stalled = [r for r in runs if r.get('status') in ('queued', 'waiting') and r.get('conclusion') is None]
+print(len(stalled))
+")
+
+          LAST_CONCLUSION=$(echo "$RUNS" | \
+            python3 -c "
+import sys, json
+runs = json.load(sys.stdin)
+completed = [r for r in runs if r.get('conclusion') is not None]
+print(completed[0]['conclusion'] if completed else 'unknown')
+")
+
+          echo "Queued/stalled workflows: $QUEUED_COUNT"
+          echo "Last completed workflow conclusion: $LAST_CONCLUSION"
+
+          if [ "$QUEUED_COUNT" -gt 3 ]; then
+            echo "::warning::$QUEUED_COUNT workflows queued/stalled — possível billing issue no GitHub Actions!"
+            echo "::warning::Verificar: GitHub Settings > Billing & plans > Actions"
+            echo "::warning::Lição CRIT-080: billing falho bloqueou 5 commits críticos em produção por semanas"
+            exit 1
+          fi
+
+          echo "Billing health OK — sem workflows travados"

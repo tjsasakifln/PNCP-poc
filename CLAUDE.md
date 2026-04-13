@@ -197,6 +197,21 @@ railway variables set KEY=value               # Set env variable
 - **`railway up` from root may fail with 413 Payload Too Large** if repo exceeds ~300MB. Use `.railwayignore` to exclude `docs/`, `data/`, `scripts/`, `frontend/` (for backend deploy) or just rely on GitHub auto-deploy.
 - **Monorepo config:** `RAILWAY_SERVICE_ROOT_DIRECTORY=backend` (backend), `=frontend` (frontend). Each service has its own `railway.toml` + `Dockerfile`.
 
+### Troubleshooting: Deploy Falha Silenciosamente (CRIT-080)
+
+**PRIMEIRO PASSO:** Verificar GitHub Actions billing **antes de qualquer outra investigação**.
+
+```bash
+gh api /repos/{owner}/{repo}/actions/runs --jq '.workflow_runs[:5] | .[] | {status, conclusion, name}'
+# Se status="queued" e conclusion=null em múltiplos runs → billing issue
+```
+
+- **Sintoma:** Commits em `main` não triggeram deploy; Railway roda versão antiga.
+- **Causa:** GitHub Actions com pagamento pendente ou spending limit excedido.
+- **Fix:** GitHub Settings > Billing & plans > Actions > resolver pagamento.
+- **Deploy de emergência:** `railway redeploy --service bidiq-backend -y` (bypassa Actions).
+- **Lição CRIT-080:** `jemalloc LD_PRELOAD` + `Sentry StarletteIntegration` + `cryptography>=46` causam SIGSEGV em POST requests (auth → TLS handshake). GET requests funcionam; POST crasham.
+
 ### GitHub CLI
 
 ```bash

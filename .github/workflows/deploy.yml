@@ -7,6 +7,10 @@ on:
       - 'backend/**'
       - 'frontend/**'
       - '.github/workflows/deploy.yml'
+      - 'railway.toml'
+      - 'backend/railway.toml'
+      - 'frontend/railway.toml'
+      - 'supabase/migrations/**'
   workflow_dispatch:
     inputs:
       service:
@@ -339,6 +343,24 @@ jobs:
           curl -sfL -o /dev/null -w "%{http_code}" "${BACKEND_URL}/docs" | grep -q 200
 
           echo "All backend smoke tests passed"
+
+      - name: POST endpoint smoke test (CRIT-080)
+        if: needs.deploy-backend.result == 'success'
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          echo "=== POST Smoke Test (CRIT-080 — anti-SIGSEGV) ==="
+          echo "Validating POST requests not returning 502 (jemalloc/Sentry SIGSEGV guard)..."
+
+          HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" -X POST "${BACKEND_URL}/debug/post-test" 2>&1 || echo "000")
+          echo "POST /debug/post-test → HTTP $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 500 ] || [ "$HTTP_CODE" = "000" ]; then
+            echo "::error::POST endpoint retornou $HTTP_CODE — possível SIGSEGV/502! Verificar jemalloc/Sentry config."
+            exit 1
+          fi
+
+          echo "POST smoke test passed (HTTP $HTTP_CODE)"
 
       - name: Frontend smoke test
         if: needs.deploy-frontend.result == 'success'
