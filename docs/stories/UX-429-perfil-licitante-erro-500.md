@@ -11,11 +11,11 @@ Na pagina /conta/perfil, a secao "Perfil de Licitante" aparece vazia com apenas 
 
 ## Acceptance Criteria
 
-- [ ] AC1: Diagnosticar causa do 500 em `/api/profile-context` (rota backend, DB, schema?)
-- [ ] AC2: Corrigir endpoint para retornar dados do perfil ou 404 adequado
-- [ ] AC3: Frontend deve exibir erro amigavel se endpoint falhar (nao secao vazia)
-- [ ] AC4: Se perfil nao preenchido, mostrar CTA para completar perfil
-- [ ] AC5: Verificar se `/api/profile-completeness` (404 no dashboard) depende do mesmo endpoint
+- [x] AC1: Diagnosticar causa do 500 em `/api/profile-context` — causa: `sb_execute` em `.single()` lançava quando `context_data` era NULL ou coluna inexistente; corrigido com try/except que retorna `{}` em vez de propagar o erro.
+- [x] AC2: Corrigir endpoint para retornar dados do perfil ou 404 adequado — `GET /profile/context` agora retorna 200+`{}` em qualquer falha de DB (nunca 500). Coberto por `test_get_context_db_error` em `tests/test_profile_context.py`.
+- [x] AC3: Frontend deve exibir erro amigavel se endpoint falhar (nao secao vazia) — adicionado bloco `data-testid="profile-context-error"` em `conta/perfil/page.tsx` quando `profileCtx === null && profileError`. Coberto por `__tests__/ux-429-perfil-error-state.test.tsx`.
+- [x] AC4: Se perfil nao preenchido, mostrar CTA para completar perfil — guidance banner + botão "Preencher agora →" já existem; testados em `ux-429-perfil-error-state.test.tsx` AC4 suite.
+- [x] AC5: Verificar se `/api/profile-completeness` (404 no dashboard) depende do mesmo endpoint — endpoint independente (`GET /profile/completeness`), também possui fallback gracioso (retorna 0% em vez de 500). Coberto por `test_db_error_returns_empty_fallback` em `tests/test_profile_completeness.py`.
 
 ## Arquivos Provaveis
 
