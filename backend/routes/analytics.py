@@ -69,6 +69,7 @@ class NewOpportunitiesResponse(BaseModel):
     has_previous_search: bool
     last_search_at: str | None = None
     days_since_last_search: int | None = None
+    label: str | None = None  # UX-431 AC2: set when most recent session failed/pending
 
 
 # ============================================================================
@@ -448,17 +449,19 @@ async def get_new_opportunities(user: dict = Depends(require_auth), db=Depends(g
     no_cache_headers = {"Cache-Control": "no-store, no-cache, must-revalidate"}
 
     try:
-        result = await sb_execute(
+        # UX-431 AC1: Query the most recent COMPLETED session only
+        completed_result = await sb_execute(
             db.table("search_sessions")
             .select("created_at, total_filtered")
             .eq("user_id", user_id)
+            .eq("status", "completed")
             .order("created_at", desc=True)
             .limit(1)
         )
 
-        sessions = result.data or []
+        completed_sessions = completed_result.data or []
 
-        if not sessions:
+        if not completed_sessions:
             return JSONResponse(
                 content=NewOpportunitiesResponse(
                     count=0,
@@ -467,7 +470,21 @@ async def get_new_opportunities(user: dict = Depends(require_auth), db=Depends(g
                 headers=no_cache_headers,
             )
 
-        last_session = sessions[0]
+        # UX-431 AC2: Check if the overall most recent session is NOT the completed one
+        # (i.e., a more recent failed/pending session exists)
+        any_result = await sb_execute(
+            db.table("search_sessions")
+            .select("status, created_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(1)
+        )
+        any_sessions = any_result.data or []
+        most_recent_is_not_completed = (
+            bool(any_sessions) and any_sessions[0].get("status") != "completed"
+        )
+
+        last_session = completed_sessions[0]
         created_at = last_session["created_at"]
         if isinstance(created_at, str):
             last_dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
@@ -482,6 +499,7 @@ async def get_new_opportunities(user: dict = Depends(require_auth), db=Depends(g
                 has_previous_search=True,
                 last_search_at=created_at,
                 days_since_last_search=max(days_since, 0),
+                label="Última busca concluída" if most_recent_is_not_completed else None,
             ).model_dump(mode="json"),
             headers=no_cache_headers,
         )

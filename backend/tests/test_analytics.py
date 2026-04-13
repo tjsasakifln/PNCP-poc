@@ -182,6 +182,90 @@ class TestTopDimensions:
         assert data["top_sectors"] == []
 
 
+class TestGetNewOpportunities:
+    """UX-431: new-opportunities endpoint filters by status=completed."""
+
+    def _make_table_side_effect(self, completed_data, any_data):
+        """Return a side_effect callable that returns different chains per .eq('status') call.
+
+        The endpoint makes 2 table("search_sessions") calls:
+          1. .eq("status", "completed") → completed_data
+          2. no status filter (any status) → any_data
+        """
+        call_count = {"n": 0}
+
+        def side_effect(table_name):
+            chain = MagicMock()
+            chain.select.return_value = chain
+            chain.eq.return_value = chain
+            chain.order.return_value = chain
+            chain.limit.return_value = chain
+            result = MagicMock()
+            result.data = completed_data if call_count["n"] == 0 else any_data
+            call_count["n"] += 1
+            chain.execute.return_value = result
+            return chain
+
+        return side_effect
+
+    def test_no_sessions_returns_no_previous_search(self, client, mock_supabase):
+        """No completed sessions → has_previous_search=False."""
+        mock_supabase.table.side_effect = self._make_table_side_effect([], [])
+
+        res = client.get("/v1/analytics/new-opportunities", headers={"Authorization": "Bearer fake"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["has_previous_search"] is False
+        assert data["count"] == 0
+
+    def test_completed_session_returns_correct_count(self, client, mock_supabase):
+        """Most recent completed session → returns total_filtered as count."""
+        completed = [{"created_at": "2026-03-11T10:00:00Z", "total_filtered": 394}]
+        any_sess = [{"status": "completed", "created_at": "2026-03-11T10:00:00Z"}]
+        mock_supabase.table.side_effect = self._make_table_side_effect(completed, any_sess)
+
+        res = client.get("/v1/analytics/new-opportunities", headers={"Authorization": "Bearer fake"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["has_previous_search"] is True
+        assert data["count"] == 394
+        assert data["label"] is None  # most recent IS completed → no special label
+
+    def test_skips_failed_session_uses_completed_with_label(self, client, mock_supabase):
+        """Most recent session is failed; last completed has 394 results → label set."""
+        completed = [{"created_at": "2026-03-11T09:57:00Z", "total_filtered": 394}]
+        any_sess = [{"status": "failed", "created_at": "2026-03-11T10:00:00Z"}]
+        mock_supabase.table.side_effect = self._make_table_side_effect(completed, any_sess)
+
+        res = client.get("/v1/analytics/new-opportunities", headers={"Authorization": "Bearer fake"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["has_previous_search"] is True
+        assert data["count"] == 394
+        assert data["label"] == "Última busca concluída"
+
+    def test_label_absent_when_most_recent_is_completed(self, client, mock_supabase):
+        """When the most recent session IS completed, label should be None."""
+        completed = [{"created_at": "2026-03-11T10:00:00Z", "total_filtered": 42}]
+        any_sess = [{"status": "completed", "created_at": "2026-03-11T10:00:00Z"}]
+        mock_supabase.table.side_effect = self._make_table_side_effect(completed, any_sess)
+
+        res = client.get("/v1/analytics/new-opportunities", headers={"Authorization": "Bearer fake"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["label"] is None
+
+    def test_db_error_returns_graceful_fallback(self, client, mock_supabase):
+        """DB exception → graceful 200 with has_previous_search=False (no 500)."""
+        mock_supabase.table.side_effect = Exception("Supabase unavailable")
+
+        res = client.get("/v1/analytics/new-opportunities", headers={"Authorization": "Bearer fake"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["has_previous_search"] is False
+        assert data["count"] == 0
+
+
 class TestSessionsErrorHandling:
     """GTM-UX-002 AC3: Sessions returns 503 when Supabase unavailable."""
 

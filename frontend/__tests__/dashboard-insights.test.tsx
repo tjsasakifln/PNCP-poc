@@ -241,6 +241,34 @@ describe("DEBT-127: InsightCards", () => {
       expect(link).toHaveAttribute("href", "/buscar");
       expect(link).toHaveTextContent("Buscar oportunidades");
     });
+
+    it("AC2 (UX-431): shows custom label when label field is present", () => {
+      const dataWithLabel: NewOpportunitiesData = {
+        count: 394,
+        has_previous_search: true,
+        last_search_at: "2026-03-11T09:57:00Z",
+        days_since_last_search: 0,
+        label: "Última busca concluída",
+      };
+      render(
+        <InsightCards pipelineAlerts={null} newOpportunities={dataWithLabel} />
+      );
+      expect(
+        screen.getByText(/394 oportunidades na sua Última busca concluída/)
+      ).toBeInTheDocument();
+    });
+
+    it("AC2 (UX-431): shows default 'última busca' text when label is absent", () => {
+      render(
+        <InsightCards
+          pipelineAlerts={null}
+          newOpportunities={mockOpportunitiesWithSearch}
+        />
+      );
+      expect(
+        screen.getByText(/42 oportunidades na sua última busca/)
+      ).toBeInTheDocument();
+    });
   });
 
   describe("AC12: Mobile responsive layout", () => {

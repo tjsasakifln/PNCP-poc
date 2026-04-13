@@ -52,6 +52,7 @@ export interface NewOpportunitiesData {
   has_previous_search: boolean;
   last_search_at?: string;
   days_since_last_search?: number;
+  label?: string; // UX-431 AC2: "Última busca concluída" when most recent session failed/pending
 }
 
 // CRIT-018 AC4/AC5: Per-section error flags for independent failure handling

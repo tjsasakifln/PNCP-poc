@@ -147,7 +147,7 @@ function NewOpportunitiesCard({ data }: { data: NewOpportunitiesData | null }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-display font-semibold text-[var(--ink)]">
-            {`${data.count} oportunidades na sua \u00FAltima busca`}
+            {`${data.count} oportunidades na sua ${data.label ?? "última busca"}`}
           </p>
           <p className="text-sm text-[var(--ink-secondary)] mt-1">
             {data.days_since_last_search === 0

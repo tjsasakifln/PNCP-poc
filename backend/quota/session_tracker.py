@@ -289,6 +289,7 @@ async def save_search_session(
                     "valor_total": float(valor_total),
                     "resumo_executivo": resumo_executivo,
                     "destaques": destaques,
+                    "status": "completed",  # UX-431 AC3: fallback insert is always post-completion
                 })
             )
 
