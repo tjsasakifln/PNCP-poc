@@ -1,6 +1,6 @@
 # UX-428: LICITAJA retornando 401 — API key invalida/expirada
 
-**Status:** Draft
+**Status:** Ready
 **Prioridade:** P0 — Critico
 **Origem:** UX Audit 2026-03-25 (C3)
 **Sprint:** Atual
@@ -26,6 +26,27 @@ A mensagem exposta ao usuario ("check LICITAJA_API_KEY") tambem e inadequada —
 - `backend/config.py` — LICITAJA_API_KEY
 - Railway env vars — verificar valor atual
 - `frontend/app/buscar/page.tsx` — sanitizacao da mensagem de erro
+
+## Escopo
+
+**IN:** `backend/clients/licitaja_client.py`, `backend/config.py`, Railway env vars, `frontend/app/buscar/page.tsx` (sanitização de mensagens de erro), `backend/routes/health.py` (health check LICITAJA)  
+**OUT:** Mudanças na lógica de busca multi-fonte, alteração de prioridade de fontes, modificações no circuito breaker de outras fontes
+
+## Complexidade
+
+**S** (< 1 dia) — diagnóstico de credencial + sanitização de mensagem de erro + health check opcional
+
+## Riscos
+
+- **API key expirada vs rotacionada:** Se a chave expirou por inatividade, renovação pode exigir contato com LICITAJA — fora do controle da equipe. Ter fallback (removendo a fonte temporariamente) como contingência.
+- **Dados sensíveis em logs:** A sanitização deve se estender aos logs de backend, não apenas à resposta ao frontend
+
+## Critério de Done
+
+- Busca retorna resultados LICITAJA sem badge de erro vermelho
+- Console do browser não exibe "check LICITAJA_API_KEY" ou qualquer nome de env var
+- Badge de erro (se LICITAJA cair novamente) exibe "LICITAJA indisponível" em linguagem amigável
+- `/health/cache` ou endpoint equivalente reporta status da fonte LICITAJA
 
 ## Screenshot
 

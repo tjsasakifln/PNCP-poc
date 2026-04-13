@@ -1,6 +1,6 @@
 # CRIT-083: Production Server Hardening — Processo Resiliente e Escalável
 
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — MEDIUM (estabilidade a longo prazo)
 **Epic:** Infraestrutura de Produção
 **Agent:** @devops + @architect
@@ -77,3 +77,22 @@ startCommand = "sh -c 'gunicorn main:app -k uvicorn.workers.UvicornWorker --work
 1. Confirmar que `gunicorn + uvicorn.workers.UvicornWorker` NÃO causa SIGSEGV com `cryptography>=46` (diferente de `uvicorn --workers` que usa `multiprocessing.fork()`)
 2. Se Gunicorn worker class usa `spawn` vs `fork` — `spawn` é safe, `fork` não
 3. Alternativa: Railway permite rodar 2 instâncias do mesmo serviço com load balancing automático
+
+**GATE:** @architect deve validar os pontos 1–3 antes do @dev iniciar implementação. Resultados em `docs/stories/CRIT-083-research-findings.md`.
+
+## Complexidade
+
+**M** (3–5 dias) — migração de servidor com potencial fallback + Redis Pub/Sub para tracker cross-worker + testes de load e graceful shutdown
+
+## Riscos
+
+- **SIGSEGV com Gunicorn+UvicornWorker:** Não confirmado como safe — se `UvicornWorker` usar `fork()` internamente, o crash voltará. Pesquisa (ponto 1) é gate obrigatório.
+- **Redis Pub/Sub (AC7):** Adiciona dependência de latência ao SSE. Se Redis indisponível, fallback in-memory deve ser ativado automaticamente sem interrupção de busca ativa.
+- **Load test (AC11):** Railway cobra por CPU — load test deve ser feito em ambiente de staging ou limitado em duração
+
+## Critério de Done
+
+- `POST /v1/buscar` funciona com `WEB_CONCURRENCY=2` sem SIGSEGV (validado com `wrk` por 30s)
+- Kill de um worker durante busca ativa: busca completa no worker sobrevivente
+- SSE progresso funciona mesmo quando POST e SSE chegam em workers distintos (AC8)
+- Nenhuma regressão nos testes existentes com `WEB_CONCURRENCY=2`

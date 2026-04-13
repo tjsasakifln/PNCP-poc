@@ -1,6 +1,6 @@
 # CRIT-082: Eliminar Retry Amplification — Prevenir Auto-DDoS
 
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — HIGH (amplificação de falhas, degrada experiência e sobrecarrega backend)
 **Epic:** Resiliência Frontend
 **Agent:** @dev
@@ -67,6 +67,10 @@ O frontend possui **3 camadas de retry empilhadas** que se multiplicam:
 | Camadas de retry | 3 | 2 (proxy + visual) |
 | Timeout por request | 180s | 60s |
 | Mensagem final | Ambígua ("pode ter sido concluída") | Direta ("servidor indisponível") |
+
+## Complexidade
+
+**S** (1–2 dias) — mudanças cirúrgicas em 3 hooks/arquivos + redução de timeouts + 3 novos testes
 
 ## Arquivos a Modificar
 

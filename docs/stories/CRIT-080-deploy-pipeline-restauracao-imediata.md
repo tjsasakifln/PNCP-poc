@@ -1,6 +1,6 @@
 # CRIT-080: Restauração Imediata do Deploy Pipeline + Deploy Manual
 
-**Status:** Draft
+**Status:** Ready
 **Priority:** P0 — BLOCKER (sistema inoperante em produção)
 **Epic:** Infraestrutura Crítica
 **Agent:** @devops
@@ -61,6 +61,10 @@ GET requests funcionam (sem auth/TLS). POST requests crasham com SIGSEGV (auth �
   gh api /repos/{owner}/{repo}/actions/runs --jq '.workflow_runs[:1] | .[].conclusion'
   ```
 - [ ] **AC11**: Documentar em CLAUDE.md: "Se deploy falha silenciosamente, verificar GitHub Actions billing PRIMEIRO"
+
+## Complexidade
+
+**XS** (< 2h para Fase 1) + **S** (< 4h para Fases 2–3) — deploy manual via Railway CLI é imediato; restaurar CI/CD e adicionar smoke test POST requer investigação de billing e ajuste de YAML
 
 ## Verificação de Sucesso
 

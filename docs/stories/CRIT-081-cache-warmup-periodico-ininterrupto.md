@@ -1,6 +1,6 @@
 # CRIT-081: Cache Warmup Periódico Ininterrupto — Dados Sempre Disponíveis
 
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — HIGH (resiliência contra indisponibilidade de fontes)
 **Epic:** Infraestrutura de Cache
 **Agent:** @dev + @architect
@@ -87,6 +87,27 @@ Hora 3   → ensure_minimum_coverage
 Hora 4   → Periodic warmup + Cache refresh (50 stale entries)
 ...ciclo contínuo...
 ```
+
+## Escopo
+
+**IN:** `backend/cache.py` (lógica de warmup e SWR refresh), `backend/config.py` / `backend/config/features.py` (flags de feature), `backend/cron_jobs.py` (periodic warmup scheduler), `backend/routes/health.py` (endpoint `/health/cache` com cobertura)  
+**OUT:** Mudanças nas fontes externas (PNCP, PCP, ComprasGov), alterações no TTL do cache L2 (Supabase), modificações no circuito breaker de fontes individuais
+
+## Complexidade
+
+**M** (2–3 dias) — múltiplos mecanismos de warmup + nova função `ensure_minimum_cache_coverage()` + flag de outage total + 3 testes de integração
+
+## Riscos
+
+- **`ensure_minimum_cache_coverage()` + periodic warmup simultâneos:** Dois mecanismos rodando ao mesmo tempo podem disparar revalidações duplicadas — usar lock ou dedup por chave de cache
+- **SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE:** Servir dados muito antigos (>24h) pode confundir usuários com oportunidades já encerradas — garantir que o banner de "dados de {timestamp}" seja visualmente proeminente
+
+## Critério de Done
+
+- `GET /health/cache` retorna `warmup_coverage` com `missing` ≤ 10% dos combos ativos
+- Periodic warmup cobre top 30 parâmetros (confirmado em logs INFO)
+- Com todas as 3 fontes simuladas como down: busca retorna resultados stale com banner de data
+- Testes AC11, AC12, AC13 passam sem regressões
 
 ## Impacto
 

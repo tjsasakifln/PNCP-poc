@@ -1,6 +1,6 @@
 # HOTFIX-001 — Sentry: Fix schema mismatches e params errados
 
-**Status:** Draft  
+**Status:** Ready  
 **Tipo:** Hotfix  
 **Prioridade:** P0  
 **Criada por:** @sm  
@@ -52,6 +52,29 @@ Auditoria do Sentry (76 issues abertas) identificou:
 - FRONTEND-A: slug conflict `setor` vs `cnpj`
 - BACKEND-5F/4Z: statement timeouts em queries públicas
 - BACKEND-5J: sitemap slow
+
+---
+
+## Escopo
+
+**IN:** `backend/routes/analytics.py` (AC1 — coluna `setor` → `sectors`), `frontend/app/observatorio/[mes]-[ano]/page.tsx` (AC2 — tipo de params), Sentry (AC3 — resolve 5 issues)  
+**OUT:** Refatoração do módulo de analytics, mudanças no schema de `search_sessions`, resolução de issues do Grupo 3 (FRONTEND-A, BACKEND-5F/4Z/5J)
+
+## Complexidade
+
+**XS** (< 4h) — duas correções pontuais de 1–2 linhas cada + resolve manual de 5 issues no Sentry
+
+## Riscos
+
+- **`sectors` é `text[]`:** Acessar `sectors[0]` pode retornar `None` se array vazio — garantir que o código é defensivo e não quebra `get_trial_value` para usuários sem setor
+- **Sentry resolve (AC3):** Se alguma issue resolver incorretamente (bug ainda ativo mas resolve marcada), o Sentry silencia alertas futuros — verificar cada issue antes de resolver
+
+## Critério de Done
+
+- `GET /v1/analytics/trial-value` retorna sem erro para todos os usuários
+- `/observatorio/2026-03` renderiza sem InvariantError no console
+- 5 issues do Sentry com status Resolved
+- `pytest tests/test_trial_endpoints.py tests/test_analytics.py -v` passa
 
 ---
 

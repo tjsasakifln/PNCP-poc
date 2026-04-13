@@ -1,6 +1,6 @@
 # UX-427: Resumo IA mostra setor errado nos resultados de busca
 
-**Status:** Draft
+**Status:** Ready
 **Prioridade:** P0 — Critico
 **Origem:** UX Audit 2026-03-25 (C2)
 **Sprint:** Atual
@@ -33,6 +33,26 @@ Isso destroi a confianca do usuario na classificacao por IA, que e o principal d
 - `backend/job_queue.py` — ARQ job de resumo
 - `backend/search_cache.py` — cache de resultados
 - `backend/routes/search.py` — montagem da resposta
+
+## Escopo
+
+**IN:** `backend/llm.py`, `backend/job_queue.py`, `backend/search_cache.py`, `backend/routes/search.py`  
+**OUT:** Mudanças no modelo LLM, alteração de prompts de classificação setorial, frontend (exceto se mensagem de erro precisar ajuste)
+
+## Complexidade
+
+**S** (1–2 dias) — diagnóstico + fix pontual em passagem de parâmetro
+
+## Riscos
+
+- **Cache compartilhado:** Se o resumo vem de cache com chave incorreta, a correção pode invalidar cache de buscas existentes — verificar impacto antes de deploy
+- **ARQ job assíncrono:** Job pode estar lendo parâmetros do contexto errado se search_id foi reutilizado — garantir que cada job tem snapshot dos params no momento do enfileiramento
+
+## Critério de Done
+
+- Buscar "Engenharia, Projetos e Obras" com SP/PR/RS/SC → resumo menciona "engenharia" ou "obras", nunca "uniformes"
+- Testar 3 setores distintos (saúde, TI, limpeza) → resumo sempre coerente com setor buscado
+- Nenhum teste existente quebrado
 
 ## Screenshot
 
