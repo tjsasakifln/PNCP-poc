@@ -1,6 +1,6 @@
 # SEO-470 — Panorama de contratos históricos universal em /blog/licitacoes/[setor]/[uf]
 
-**Status:** Ready  
+**Status:** Done  
 **Type:** Feature  
 **Prioridade:** Alta — causa raiz do thin content nas 405 páginas setor×UF  
 **Depende de:** SEO-474 (ContractsPanoramaBlock), SEO-475 (backend endpoint enriquecido)  
@@ -36,17 +36,17 @@ Transformar o bloco de contratos de fallback em **seção permanente de todas as
 
 ## Acceptance Criteria
 
-- [ ] AC1: `fetchContratosSetorUfStats` é chamado em **todas** as páginas setor×UF, não só quando `total_editais === 0`
-- [ ] AC2: Chamadas a `fetchSectorUfBlogStats` (bids) e `fetchContratosSetorUfStats` (contratos) são paralelas via `Promise.all` — sem aumento de latência
-- [ ] AC3: `ContractsPanoramaBlock` (SEO-474) renderiza abaixo da seção de editais quando `total_contracts > 0`
-- [ ] AC4: Quando `total_contracts === 0`: bloco não renderiza (sem seção vazia ou placeholder)
-- [ ] AC5: `robots.index=false` apenas quando `bids === 0 AND contracts === 0`; `robots.index=true` se qualquer um dos dois for > 0
-- [ ] AC6: Metadata description menciona contratos quando disponíveis: "X editais abertos — R$ Y movimentados em {N} contratos históricos"
-- [ ] AC7: `alternates.canonical` presente em **todos** os branches (incluindo noindex) — autocanonical self-referencial
-- [ ] AC8: FAQ (`generateLicitacoesFAQsWithFallback`) usa dados de contratos mesmo quando há bids disponíveis
-- [ ] AC9: ISR `revalidate = 86400` (24h) mantido — nenhuma mudança de frequência de rebuild
-- [ ] AC10: `npx tsc --noEmit` sem erros
-- [ ] AC11: Testes existentes de `blog/licitacoes/[setor]/[uf]` passam sem regressão
+- [x] AC1: `fetchContratosSetorUfStats` é chamado em **todas** as páginas setor×UF, não só quando `total_editais === 0`
+- [x] AC2: Chamadas a `fetchSectorUfBlogStats` (bids) e `fetchContratosSetorUfStats` (contratos) são paralelas via `Promise.all` — sem aumento de latência
+- [x] AC3: `ContractsPanoramaBlock` (SEO-474) renderiza abaixo da seção de editais quando `total_contracts > 0`
+- [x] AC4: Quando `total_contracts === 0`: bloco não renderiza (sem seção vazia ou placeholder)
+- [x] AC5: `robots.index=false` apenas quando `bids === 0 AND contracts === 0`; `robots.index=true` se qualquer um dos dois for > 0
+- [x] AC6: Metadata description menciona contratos quando disponíveis: "X editais abertos — R$ Y movimentados em {N} contratos históricos"
+- [x] AC7: `alternates.canonical` presente em **todos** os branches (incluindo noindex) — autocanonical self-referencial
+- [x] AC8: FAQ (`generateLicitacoesFAQsWithFallback`) usa dados de contratos mesmo quando há bids disponíveis
+- [x] AC9: ISR `revalidate = 86400` (24h) mantido — nenhuma mudança de frequência de rebuild
+- [x] AC10: `npx tsc --noEmit` sem erros
+- [x] AC11: Testes existentes de `blog/licitacoes/[setor]/[uf]` passam sem regressão
 
 ## Escopo
 
@@ -87,6 +87,8 @@ Transformar o bloco de contratos de fallback em **seção permanente de todas as
 
 ## File List
 
-- [ ] `docs/stories/SEO-470-panorama-contratos-universal-licitacoes-setor-uf.md` (esta story)
-- [ ] `frontend/app/blog/licitacoes/[setor]/[uf]/page.tsx`
-- [ ] `frontend/lib/contracts-fallback.ts` (somente leitura — verificar interface)
+- [x] `docs/stories/SEO-470-panorama-contratos-universal-licitacoes-setor-uf.md` (esta story)
+- [x] `frontend/app/blog/licitacoes/[setor]/[uf]/page.tsx`
+- [x] `frontend/lib/contracts-fallback.ts` (somente leitura — interface verificada, nenhuma mudança necessária)
+- [x] `frontend/__tests__/mkt-003-licitacoes.test.tsx` (novos testes SEO-470 adicionados)
+- [x] `frontend/__tests__/app/licitacoes-noindex.test.tsx` (corrigido assert STORY-450 pré-existente)

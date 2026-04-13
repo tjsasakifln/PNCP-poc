@@ -64,7 +64,7 @@ describe('licitacoes/[setor] generateMetadata — STORY-430 AC2', () => {
   it('retorna title de fallback no caso noindex', async () => {
     fetchSectorStats.mockResolvedValue({ total_open: 1, top_ufs: [], avg_value: 0 });
     const meta = await generateMetadata({ params: Promise.resolve({ setor: 'saude' }) });
-    expect(meta.title).toContain('SmartLic');
+    // STORY-450: "| SmartLic" removido do título noindex (já controlado pelo layout global)
     expect(meta.title).toContain('Saúde');
   });
 

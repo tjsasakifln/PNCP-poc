@@ -6,7 +6,7 @@ import Footer from '@/app/components/Footer';
 import SchemaMarkup from '@/components/blog/SchemaMarkup';
 import BlogCTA from '@/components/blog/BlogCTA';
 import RelatedPages from '@/components/blog/RelatedPages';
-import HistoricalContractsFallback from '@/components/blog/HistoricalContractsFallback';
+import ContractsPanoramaBlock from '@/components/blog/ContractsPanoramaBlock';
 import {
   generateLicitacoesParams,
   fetchSectorUfBlogStats,
@@ -124,30 +124,36 @@ export async function generateMetadata({
   const sector = getSectorFromSlug(setor);
   if (!sector || !ALL_UFS.includes(ufUpper)) return { title: 'Página não encontrada' };
 
-  const stats = await fetchSectorUfBlogStats(setor, ufUpper);
+  // AC1+AC2: busca paralela de editais e contratos
+  const [stats, contractsFallback] = await Promise.all([
+    fetchSectorUfBlogStats(setor, ufUpper),
+    fetchContratosSetorUfStats(setor, ufUpper),
+  ]);
   const total = stats?.total_editais ?? 0;
+  const totalContracts = contractsFallback?.total_contracts ?? 0;
   const ufName = UF_NAMES[ufUpper] || ufUpper;
 
-  // STORY-430 AC2: noindex pages with thin content (< MIN_ACTIVE_BIDS_FOR_INDEX active bids)
-  const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? "5", 10);
-  if (total < minBids) {
+  // AC5: noindex apenas quando bids === 0 E contracts === 0
+  // AC7: canonical auto-referencial em TODOS os branches
+  const canonicalUrl = `https://smartlic.tech/blog/licitacoes/${setor}/${uf}`;
+  if (total === 0 && totalContracts === 0) {
     return {
       title: `Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} | SmartLic`,
       description: `Licitações de ${sector.name.toLowerCase()} ${getUfPrep(ufUpper)} ${ufName}.`,
       robots: { index: false, follow: false },
-      // SEO-440: canonical self-referencial evita herdar o canonical da homepage (layout.tsx)
-      alternates: { canonical: `https://smartlic.tech/blog/licitacoes/${setor}/${uf}` },
+      alternates: { canonical: canonicalUrl },
     };
   }
 
-  // Canonical sempre aponta para URL base sem parâmetros (ISSUE-SEO-002).
-  // ?modalidade=X é comportamento de UI — não deve ser indexado como página separada.
-  const canonicalUrl = `https://smartlic.tech/blog/licitacoes/${setor}/${uf}`;
+  // AC6: description menciona contratos quando disponíveis
+  const contractsClause = totalContracts > 0 && contractsFallback
+    ? ` — ${formatBRL(contractsFallback.total_value)} movimentados em ${totalContracts} contratos históricos`
+    : '';
   const modalidadeSuffix = modalidadeInfo ? ` — ${modalidadeInfo.name}` : '';
 
   return {
     title: `${total > 0 ? `${total} ` : ''}Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}${modalidadeSuffix} — ${getMonthYear()}`,
-    description: `Encontre ${total > 0 ? total : ''} licitações de ${sector.name.toLowerCase()}${modalidadeInfo ? ` via ${modalidadeInfo.name}` : ''} ${getUfPrep(ufUpper)} ${ufName}. Dados ao vivo de PNCP, PCP e ComprasGov. Filtre por valor, modalidade e prazo. Teste grátis.`,
+    description: `Encontre ${total > 0 ? total : ''} licitações de ${sector.name.toLowerCase()}${modalidadeInfo ? ` via ${modalidadeInfo.name}` : ''} ${getUfPrep(ufUpper)} ${ufName}. Dados ao vivo de PNCP, PCP e ComprasGov${contractsClause}. Filtre por valor, modalidade e prazo. Teste grátis.`,
     robots: { index: true },
     alternates: { canonical: canonicalUrl },
     openGraph: {
@@ -180,17 +186,15 @@ export default async function LicitacoesSectorUfPage({
   const sector = getSectorFromSlug(setor);
   if (!sector || !ALL_UFS.includes(ufUpper)) notFound();
 
-  const stats = await fetchSectorUfBlogStats(setor, ufUpper);
+  // AC1+AC2: busca paralela — sem aumento de latência de ISR
+  const [stats, contractsFallback] = await Promise.all([
+    fetchSectorUfBlogStats(setor, ufUpper),
+    fetchContratosSetorUfStats(setor, ufUpper),
+  ]);
   const ufName = UF_NAMES[ufUpper] || ufUpper;
   const monthYear = getMonthYear();
 
-  // Zero-state fallback: if no open editais, try to surface historical contracts
-  // from pncp_supplier_contracts so the page still delivers real value (and the
-  // FAQ stops contradicting the "0 editais" counter).
-  const hasZeroEditais = !stats || stats.total_editais === 0;
-  const contractsFallback = hasZeroEditais
-    ? await fetchContratosSetorUfStats(setor, ufUpper)
-    : null;
+  // AC8: contractsContext sempre construído (não apenas no zero-editais)
   const contractsContext = buildContractsContext(contractsFallback);
 
   const faqs = generateLicitacoesFAQsWithFallback(
@@ -424,31 +428,29 @@ export default async function LicitacoesSectorUfPage({
             </div>
           </section>
 
-          {/* Zero-editais fallback: prefer historical contracts from pncp_supplier_contracts
-              (genuine value for SEO visitors) and fall back to honest warning only if
-              there is no contract history either. */}
-          {hasZeroEditais && (
-            contractsFallback && contractsFallback.total_contracts > 0 ? (
-              <HistoricalContractsFallback
-                scope="sector-uf"
-                sectorName={sector.name}
-                ufName={ufName}
-                uf={ufUpper}
-                data={contractsFallback}
-                ctaSlug={`${setor}-${uf}`}
-              />
-            ) : (
-              <div className="mb-10 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800 font-medium mb-2">
-                  Nenhuma licitação ativa neste período para {sector.name} {getUfPrep(ufUpper)} {ufName}.
-                </p>
-                <p className="text-sm text-yellow-700">
-                  Também não identificamos contratos recentes deste setor neste estado. Confira UFs
-                  vizinhas ou teste o SmartLic para receber alertas automáticos quando novas
-                  oportunidades surgirem.
-                </p>
-              </div>
-            )
+          {/* AC3: Panorama histórico de contratos — permanente quando total_contracts > 0.
+              AC4: ContractsPanoramaBlock retorna null automaticamente quando data === null
+              ou total_contracts === 0, portanto nenhuma seção vazia é renderizada. */}
+          <ContractsPanoramaBlock
+            variant="setor-uf"
+            data={contractsFallback}
+            sectorName={sector.name}
+            ufName={ufName}
+            uf={ufUpper}
+          />
+
+          {/* Aviso honesto — apenas quando sem editais E sem contratos históricos */}
+          {(!stats || stats.total_editais === 0) && (!contractsFallback || contractsFallback.total_contracts === 0) && (
+            <div className="mb-10 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800 font-medium mb-2">
+                Nenhuma licitação ativa neste período para {sector.name} {getUfPrep(ufUpper)} {ufName}.
+              </p>
+              <p className="text-sm text-yellow-700">
+                Também não identificamos contratos recentes deste setor neste estado. Confira UFs
+                vizinhas ou teste o SmartLic para receber alertas automáticos quando novas
+                oportunidades surgirem.
+              </p>
+            </div>
           )}
 
           {/* A1: Modalidade-specific FAQ for unique content */}

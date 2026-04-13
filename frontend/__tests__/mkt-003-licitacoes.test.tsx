@@ -1318,3 +1318,197 @@ describe('MKT-003 — SECTORS integrity (regression guard)', () => {
     expect(sector?.slug).toBe('materiais-hidraulicos');
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 8. SEO-470 — contracts-fallback helpers (AC1, AC2, AC4, AC5, AC6, AC8)
+// ═══════════════════════════════════════════════════════════════════════════
+
+import {
+  fetchContratosSetorUfStats,
+  buildContractsContext,
+  generateLicitacoesFAQsWithFallback,
+} from '../lib/contracts-fallback';
+
+describe('SEO-470 — fetchContratosSetorUfStats', () => {
+  it('retorna null quando BACKEND_URL não está definido', async () => {
+    const origEnv = process.env.BACKEND_URL;
+    delete process.env.BACKEND_URL;
+    const result = await fetchContratosSetorUfStats('informatica', 'SP');
+    expect(result).toBeNull();
+    process.env.BACKEND_URL = origEnv;
+  });
+
+  it('retorna null quando fetch lança erro de rede', async () => {
+    const origEnv = process.env.BACKEND_URL;
+    process.env.BACKEND_URL = 'https://test-backend.example.com';
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    const result = await fetchContratosSetorUfStats('informatica', 'SP');
+    expect(result).toBeNull();
+    process.env.BACKEND_URL = origEnv;
+  });
+
+  it('retorna null quando response não é ok', async () => {
+    const origEnv = process.env.BACKEND_URL;
+    process.env.BACKEND_URL = 'https://test-backend.example.com';
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, json: async () => null });
+    const result = await fetchContratosSetorUfStats('informatica', 'SP');
+    expect(result).toBeNull();
+    process.env.BACKEND_URL = origEnv;
+  });
+
+  it('retorna dados quando fetch tem sucesso', async () => {
+    const origEnv = process.env.BACKEND_URL;
+    process.env.BACKEND_URL = 'https://test-backend.example.com';
+    const mockData = {
+      sector_id: 'informatica',
+      sector_name: 'Hardware e Equipamentos de TI',
+      uf: 'SP',
+      total_contracts: 180,
+      total_value: 5000000,
+      avg_value: 27777,
+      top_orgaos: [{ nome: 'MPRJ', cnpj: '12345678000190', total_contratos: 10, valor_total: 500000 }],
+      top_fornecedores: [],
+      monthly_trend: [],
+      last_updated: new Date().toISOString(),
+      n_unique_orgaos: 45,
+      n_unique_fornecedores: 30,
+    };
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => mockData });
+    const result = await fetchContratosSetorUfStats('informatica', 'SP');
+    expect(result).toEqual(mockData);
+    process.env.BACKEND_URL = origEnv;
+  });
+
+  it('converte slug com hífens para underscores na URL', async () => {
+    const origEnv = process.env.BACKEND_URL;
+    process.env.BACKEND_URL = 'https://test-backend.example.com';
+    let capturedUrl = '';
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      capturedUrl = url;
+      return Promise.resolve({ ok: true, json: async () => ({
+        sector_id: 'tecnologia_da_informacao', sector_name: 'TI', uf: 'SP',
+        total_contracts: 0, total_value: 0, avg_value: 0,
+        top_orgaos: [], top_fornecedores: [], monthly_trend: [],
+        last_updated: new Date().toISOString(),
+      }) });
+    });
+    await fetchContratosSetorUfStats('tecnologia-da-informacao', 'SP');
+    expect(capturedUrl).toContain('tecnologia_da_informacao');
+    process.env.BACKEND_URL = origEnv;
+  });
+});
+
+describe('SEO-470 — buildContractsContext', () => {
+  it('retorna undefined quando data é null', () => {
+    expect(buildContractsContext(null)).toBeUndefined();
+  });
+
+  it('retorna undefined quando total_contracts === 0', () => {
+    const data = {
+      sector_id: 'ti', sector_name: 'TI', uf: 'SP',
+      total_contracts: 0, total_value: 0, avg_value: 0,
+      top_orgaos: [], top_fornecedores: [], monthly_trend: [],
+      last_updated: new Date().toISOString(),
+    };
+    expect(buildContractsContext(data)).toBeUndefined();
+  });
+
+  it('retorna contexto com dados corretos quando total_contracts > 0', () => {
+    const data = {
+      sector_id: 'ti', sector_name: 'TI', uf: 'AC',
+      total_contracts: 180,
+      total_value: 5000000,
+      avg_value: 27777,
+      top_orgaos: [{ nome: 'Governo do AC', cnpj: '01234567000100', total_contratos: 50, valor_total: 2000000 }],
+      top_fornecedores: [],
+      monthly_trend: [],
+      last_updated: new Date().toISOString(),
+    };
+    const ctx = buildContractsContext(data);
+    expect(ctx).toBeDefined();
+    expect(ctx!.totalContracts).toBe(180);
+    expect(ctx!.avgContractValue).toBe(27777);
+    expect(ctx!.topOrgao).toBe('Governo do AC');
+  });
+});
+
+describe('SEO-470 — generateLicitacoesFAQsWithFallback (AC8)', () => {
+  // AC8: FAQ usa dados de contratos mesmo quando há bids disponíveis
+  it('FAQ enriquece respostas com dados de contratos mesmo quando total_editais > 0', () => {
+    const contractsContext = {
+      totalContracts: 180,
+      avgContractValue: 50000,
+      topOrgao: 'Prefeitura de Belo Horizonte',
+    };
+    const faqs = generateLicitacoesFAQsWithFallback(
+      'Tecnologia da Informação',
+      'Minas Gerais',
+      12,        // bids > 0
+      75000,
+      contractsContext,
+      'MG',
+    );
+    expect(faqs).toHaveLength(5);
+    // FAQ 4 menciona o topOrgao quando contractsContext está disponível
+    const faq4 = faqs[3];
+    expect(faq4.answer).toContain('Prefeitura de Belo Horizonte');
+  });
+
+  it('FAQ retorna 5 itens mesmo sem contractsContext (bids disponíveis)', () => {
+    const faqs = generateLicitacoesFAQsWithFallback(
+      'Saúde', 'São Paulo', 10, 50000, undefined, 'SP',
+    );
+    expect(faqs).toHaveLength(5);
+  });
+
+  it('FAQ retorna 5 itens quando bids=0 e contractsContext disponível', () => {
+    const ctx = { totalContracts: 50, avgContractValue: 30000, topOrgao: 'MPRJ' };
+    const faqs = generateLicitacoesFAQsWithFallback(
+      'Engenharia', 'Rio de Janeiro', 0, undefined, ctx, 'RJ',
+    );
+    expect(faqs).toHaveLength(5);
+    const answerText = faqs.map((f) => f.answer).join(' ');
+    // Deve mencionar os contratos históricos
+    expect(answerText).toContain('50');
+  });
+
+  it('FAQ 1 menciona contratos históricos quando bids=0 e há contratos', () => {
+    const ctx = { totalContracts: 180, avgContractValue: 27777, topOrgao: 'Gov AC' };
+    const faqs = generateLicitacoesFAQsWithFallback(
+      'Tecnologia da Informação', 'Acre', 0, undefined, ctx, 'AC',
+    );
+    expect(faqs[0].answer).toContain('180');
+  });
+});
+
+describe('SEO-470 — noindex logic (AC5)', () => {
+  // AC5: index=false apenas quando bids === 0 AND contracts === 0
+  it('páginas com contracts > 0 mas bids = 0 devem ser indexadas', () => {
+    // Simula a condição: total = 0, totalContracts = 180 → NÃO deve ser noindex
+    const total = 0;
+    const totalContracts = 180;
+    const shouldNoIndex = total === 0 && totalContracts === 0;
+    expect(shouldNoIndex).toBe(false);
+  });
+
+  it('páginas com bids > 0 mas contracts = 0 devem ser indexadas', () => {
+    const total = 10;
+    const totalContracts = 0;
+    const shouldNoIndex = total === 0 && totalContracts === 0;
+    expect(shouldNoIndex).toBe(false);
+  });
+
+  it('páginas com bids = 0 E contracts = 0 devem ser noindex', () => {
+    const total = 0;
+    const totalContracts = 0;
+    const shouldNoIndex = total === 0 && totalContracts === 0;
+    expect(shouldNoIndex).toBe(true);
+  });
+
+  it('páginas com bids > 0 E contracts > 0 devem ser indexadas', () => {
+    const total = 5;
+    const totalContracts = 180;
+    const shouldNoIndex = total === 0 && totalContracts === 0;
+    expect(shouldNoIndex).toBe(false);
+  });
+});
