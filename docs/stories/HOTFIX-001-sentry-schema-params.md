@@ -30,11 +30,11 @@ Auditoria do Sentry (76 issues abertas) identificou:
 - [x] Page `/observatorio/2026-03` renderiza sem InvariantError (confirmado via testes unitários)
 
 ### AC3 — Resolve issues já corrigidas no Sentry
-- [ ] BACKEND-47 (`objeto_resumo`) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
-- [ ] BACKEND-59 (`data_publicacao_pncp`) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
-- [ ] BACKEND-43 (`is_master` trigger) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
-- [ ] BACKEND-4E (TypeError coroutine) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
-- [ ] BACKEND-15 + BACKEND-14 (Application startup failed) → Resolve  ⚠️ AÇÃO MANUAL no dashboard do Sentry
+- [x] BACKEND-47 (`objeto_resumo`) → Resolved ✅ (verificado via Playwright 2026-04-13)
+- [x] BACKEND-59 (`data_publicacao_pncp`) → Resolved ✅ (verificado via Playwright 2026-04-13)
+- [x] BACKEND-43 (`is_master` trigger) → Resolved ✅ (verificado via Playwright 2026-04-13)
+- [x] BACKEND-4E (TypeError coroutine) → Resolved ✅ (verificado via Playwright 2026-04-13)
+- [x] BACKEND-15 + BACKEND-14 (Application startup failed) → Resolved ✅ (verificado via Playwright 2026-04-13)
 
 ### AC4 — Não regressão
 - [x] `pytest tests/test_trial_endpoints.py tests/test_analytics.py -v` passa (19/19)
