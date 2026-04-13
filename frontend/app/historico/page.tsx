@@ -450,7 +450,7 @@ export default function HistoricoPage() {
                             </p>
                           ) : (
                             <p className="text-xs text-[var(--ink-muted)] mt-1">
-                              Valor não informado
+                              Valor não disponível
                             </p>
                           )}
                         </>

@@ -295,6 +295,10 @@ async def stage_generate(pipeline, ctx: SearchContext) -> None:
         # Override LLM-generated counts with actual values
         actual_total = len(ctx.licitacoes_filtradas)
         from utils.value_sanitizer import sanitize_valor, compute_robust_total
+        # UX-437 AC1: sanitize_valor(None) → 0.0, so bids from PCP v2 (valorTotalEstimado absent)
+        # contribute 0 to the sum by design — PCP v2 API does not provide value data.
+        # When ALL results are from PCP v2, raw_total = 0.0 and the frontend displays
+        # "Valor não disponível". When PNCP results are present, the real sum is calculated.
         raw_values = [
             sanitize_valor(lic.get("valorTotalEstimado", 0))
             for lic in ctx.licitacoes_filtradas

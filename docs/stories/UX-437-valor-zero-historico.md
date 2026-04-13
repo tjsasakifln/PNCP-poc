@@ -1,6 +1,6 @@
 # UX-437: Valor R$ 0 no historico para buscas com resultados
 
-**Status:** Draft
+**Status:** Done
 **Prioridade:** P1 — Importante
 **Origem:** UX Audit 2026-03-25 (I6)
 **Sprint:** Próximo
@@ -16,11 +16,11 @@ Hipóteses em ordem de probabilidade:
 
 ## Acceptance Criteria
 
-- [ ] AC1: Diagnosticar causa: verificar `search_sessions.valor_total` no banco para as sessões com "R$ 0" — se campo é `NULL` ou `0.0`
-- [ ] AC2: Se `valor_total = NULL`: corrigir `save_session()` para agregar `sum(r.valor_estimado for r in results where r.valor_estimado > 0)`
-- [ ] AC3: Se `valor_total = 0` porque todos os resultados vieram de PCP v2 (`valor_estimado=0.0`): exibir "Valor não disponível" no histórico (não "R$ 0")
-- [ ] AC4: Histórico e dashboard usam a mesma fonte de dados para `valor_total` — sem discrepância entre as duas telas
-- [ ] AC5: Após fix, novas sessões de busca com resultados PNCP exibem valor correto no histórico
+- [x] AC1: Diagnosticar causa: verificar `search_sessions.valor_total` no banco para as sessões com "R$ 0" — se campo é `NULL` ou `0.0`
+- [x] AC2: Se `valor_total = NULL`: corrigir `save_session()` para agregar `sum(r.valor_estimado for r in results where r.valor_estimado > 0)` — **N/A:** campo é `0.0` (não NULL), AC3 se aplica
+- [x] AC3: Se `valor_total = 0` porque todos os resultados vieram de PCP v2 (`valor_estimado=0.0`): exibir "Valor não disponível" no histórico (não "R$ 0")
+- [x] AC4: Histórico e dashboard usam a mesma fonte de dados para `valor_total` — sem discrepância entre as duas telas
+- [x] AC5: Após fix, novas sessões de busca com resultados PNCP exibem valor correto no histórico
 
 ## Escopo
 
@@ -53,3 +53,16 @@ Nenhuma dependência de outras stories.
 - `backend/search_cache.py` — verificar se `valor_total` é calculado ao persistir
 - `backend/portal_compras_client.py` — confirmar `valor_estimado=0.0` no PCP v2
 - `frontend/app/historico/page.tsx` — exibição condicional de valor
+
+## File List
+
+- `frontend/app/historico/page.tsx` — linha 453: "Valor não informado" → "Valor não disponível"
+- `backend/pipeline/stages/generate.py` — comentário AC1 documentando o comportamento PCP v2
+- `backend/tests/test_ux437_valor_zero_historico.py` — **novo** — testes de AC1/AC3/AC5
+- `frontend/__tests__/ux-437-valor-zero-historico.test.tsx` — **novo** — testes de AC3/AC5
+
+## Dev Notes
+
+**Causa raiz (AC1):** `portal_compras_client.py` retorna `valor_estimado=None` para todos os bids PCP v2 (API v2 não fornece dados de valor). Em `generate.py`, `sanitize_valor(None) → 0.0` e `sum([0.0, ...]) = 0.0` é salvo. DB armazena `0.0` (não NULL — coluna tem `DEFAULT 0`). AC2 não se aplica; AC3 é a correção adequada.
+
+**Não retroativo:** Sessões antigas com `valor_total=0` mantidas como estão. Fix afeta apenas exibição — novas sessões com bids PNCP já persistem valor correto.
