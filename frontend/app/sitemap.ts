@@ -53,6 +53,27 @@ async function fetchLicitacoesIndexable(): Promise<{ setor: string; uf: string }
   }
 }
 
+// SEO-460: Cache para órgãos com contratos reais em pncp_supplier_contracts
+let _contratosOrgaoCache: string[] = [];
+let _contratosOrgaoFetched = false;
+
+async function fetchContratosOrgaoIndexable(): Promise<string[]> {
+  if (_contratosOrgaoFetched) return _contratosOrgaoCache;
+  try {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const resp = await fetch(`${backendUrl}/v1/sitemap/contratos-orgao-indexable`, {
+      cache: 'no-store',
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    _contratosOrgaoCache = data.orgaos || [];
+    _contratosOrgaoFetched = true;
+    return _contratosOrgaoCache;
+  } catch {
+    return [];
+  }
+}
+
 // Cache for CNPJ list fetched from backend (build-time)
 let _cnpjCache: string[] = [];
 let _cnpjFetched = false;
@@ -245,6 +266,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly' as const,
     priority: 0.5,
   }));
+
+  // SEO-460: órgãos com contratos reais (pncp_supplier_contracts) — para /contratos/orgao/
+  const contratosOrgaoList = await fetchContratosOrgaoIndexable();
 
   // SEO-PLAYBOOK Onda 2: Órgãos compradores pages from datalake
   const orgaoList = await fetchSitemapOrgaos();
@@ -634,12 +658,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 0.6,
     })),
-    // SEO-460: /contratos/orgao/{cnpj} removido do sitemap — bug de 404 em massa.
-    // O endpoint /v1/contratos/orgao/{cnpj}/stats retorna 404 para orgãos sem
-    // contratos assinados (licitações ≠ contratos). O sitemap incluía ~2000 CNPJs
-    // de orgãos com licitações, mas a maioria não tem contratos → Google via 794 404s.
-    // Páginas ainda acessíveis via links internos (/orgaos/{slug}). Reintroduzir
-    // quando /v1/sitemap/contratos-orgao-indexable (filtrado por contratos reais) existir.
+    // SEO-460: /contratos/orgao/{cnpj} — usa lista filtrada por contratos reais.
+    // Endpoint /v1/sitemap/contratos-orgao-indexable consulta pncp_supplier_contracts
+    // (não pncp_raw_bids) para garantir que apenas CNPJs com contratos assinados
+    // entram no sitemap, eliminando os 794 404s do GSC.
+    ...contratosOrgaoList.map((cnpj) => ({
+      url: `${baseUrl}/contratos/orgao/${cnpj}`,
+      lastModified: today,
+      changeFrequency: 'weekly' as const,
+      priority: 0.5,
+    })),
     // SEO Wave 3.1: /blog/contratos/{setor} pillar pages (15)
     ...generateSectorParams().map(({ setor }) => ({
       url: `${baseUrl}/blog/contratos/${setor}`,

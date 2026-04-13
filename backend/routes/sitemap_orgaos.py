@@ -145,3 +145,101 @@ async def _fetch_top_orgaos() -> dict:
             "total": 0,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
+
+
+# ---------------------------------------------------------------------------
+# SEO-460: /sitemap/contratos-orgao-indexable — órgãos com contratos reais
+# ---------------------------------------------------------------------------
+
+_contratos_orgao_cache: dict[str, tuple[dict, float]] = {}
+_MAX_CONTRATOS_ORGAOS = 2000
+
+
+class SitemapContratosOrgaoResponse(BaseModel):
+    orgaos: list[str]
+    total: int
+    updated_at: str
+
+
+@router.get(
+    "/sitemap/contratos-orgao-indexable",
+    response_model=SitemapContratosOrgaoResponse,
+    summary="Órgãos compradores com contratos em pncp_supplier_contracts (para sitemap /contratos/orgao/)",
+)
+async def sitemap_contratos_orgao_indexable():
+    """Retorna CNPJs de órgãos com ≥1 contrato ativo em pncp_supplier_contracts.
+
+    Diferente de /sitemap/orgaos (que usa pncp_raw_bids/licitações), este
+    endpoint consulta pncp_supplier_contracts — a tabela que alimenta
+    /contratos/orgao/{cnpj}/stats. Garante que o sitemap só inclui URLs
+    que retornam 200, eliminando os 794 404s reportados no GSC.
+    Cache: 24h em memória.
+    """
+    key = "contratos_orgao_indexable"
+    cached_entry = _contratos_orgao_cache.get(key)
+    if cached_entry:
+        data, ts = cached_entry
+        if time.time() - ts < _CACHE_TTL_SECONDS:
+            return SitemapContratosOrgaoResponse(**data)
+        del _contratos_orgao_cache[key]
+
+    data = await _fetch_contratos_orgao_indexable()
+    _contratos_orgao_cache[key] = (data, time.time())
+    return SitemapContratosOrgaoResponse(**data)
+
+
+async def _fetch_contratos_orgao_indexable() -> dict:
+    """Scan pncp_supplier_contracts para distinct orgao_cnpj com is_active=True."""
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        counts: dict[str, int] = {}
+        page_size = 1000
+        offset = 0
+
+        while len(counts) < _MAX_CONTRATOS_ORGAOS * 5:
+            resp = (
+                sb.table("pncp_supplier_contracts")
+                .select("orgao_cnpj")
+                .eq("is_active", True)
+                .not_.is_("orgao_cnpj", "null")
+                .neq("orgao_cnpj", "")
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+            if not resp.data:
+                break
+            for row in resp.data:
+                cnpj = (row.get("orgao_cnpj") or "").strip()
+                if cnpj and len(cnpj) == 14 and cnpj.isdigit():
+                    counts[cnpj] = counts.get(cnpj, 0) + 1
+            if len(resp.data) < page_size:
+                break
+            offset += page_size
+
+        # Ordenar por volume de contratos (mais contratos = maior valor SEO)
+        orgao_list = [
+            cnpj
+            for cnpj, _ in sorted(counts.items(), key=lambda x: x[1], reverse=True)
+        ][:_MAX_CONTRATOS_ORGAOS]
+
+        logger.info(
+            "sitemap_contratos_orgao_indexable: %d orgãos com contratos de %d distintos",
+            len(orgao_list),
+            len(counts),
+        )
+
+        return {
+            "orgaos": orgao_list,
+            "total": len(orgao_list),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    except Exception as e:
+        logger.error("sitemap_contratos_orgao_indexable failed: %s", e)
+        return {
+            "orgaos": [],
+            "total": 0,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
