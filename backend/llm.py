@@ -313,9 +313,17 @@ REGRAS:
 - Se os objetos tratam de assuntos variados, diga isso explicitamente.
 """
 
+    # UX-427: Explicitly state the searched sector/terms in the user prompt so
+    # the LLM does not drift to a different sector even if some bids are ambiguous.
+    _busca_label = ""
+    if termos_busca:
+        _busca_label = f"\nSETOR/TERMOS BUSCADOS PELO USUÁRIO: {termos_busca}\n"
+    elif sector_name and sector_name != "licitações":
+        _busca_label = f"\nSETOR BUSCADO PELO USUÁRIO: {sector_name}\n"
+
     # User prompt with context — grounded, no assumption of relevance
     user_prompt = f"""Analise estas {len(licitacoes)} licitações e gere um resumo baseado nos OBJETOS REAIS listados abaixo:
-
+{_busca_label}
 {json.dumps(dados_resumidos, ensure_ascii=False, indent=2)}
 
 Data atual: {datetime.now().strftime("%d/%m/%Y")}

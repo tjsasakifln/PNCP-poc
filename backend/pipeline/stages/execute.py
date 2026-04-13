@@ -415,12 +415,18 @@ async def stage_execute(pipeline, ctx: SearchContext) -> None:
                 "failed_ufs": list(ctx.failed_ufs or []),
                 "total_requested": len(request.ufs),
             }
+            # UX-427: Include termos_busca and dates so that searches with
+            # different custom terms or date windows write to distinct cache keys
+            # and do not overwrite unrelated search results.
             _cache_params = {
                 "setor_id": request.setor_id,
                 "ufs": request.ufs,
                 "status": request.status.value if request.status else None,
                 "modalidades": request.modalidades,
                 "modo_busca": request.modo_busca,
+                "termos_busca": getattr(request, "termos_busca", None) or None,
+                "data_inicial": getattr(request, "data_inicial", None),
+                "data_final": getattr(request, "data_final", None),
             }
             try:
                 # CRIT-051 AC1: Save per-UF to Supabase (also saves combined for retrocompat)

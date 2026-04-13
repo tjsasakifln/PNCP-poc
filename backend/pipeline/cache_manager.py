@@ -24,26 +24,35 @@ SEARCH_CACHE_TTL = 4 * 3600  # 4 hours
 
 
 def _compute_cache_key(request) -> str:
-    """Compute deterministic cache key from search params (excluding dates)."""
+    """Compute deterministic cache key from search params (excluding dates).
+
+    UX-427: Include termos_busca so that term-based searches with different
+    terms do not collide on the same InMemory cache entry.
+    """
     params = {
         "setor_id": request.setor_id,
         "ufs": sorted(request.ufs),
         "status": request.status.value if request.status else None,
         "modalidades": sorted(request.modalidades) if request.modalidades else None,
         "modo_busca": request.modo_busca,
+        "termos_busca": getattr(request, "termos_busca", None) or None,
     }
     params_json = json.dumps(params, sort_keys=True)
     return f"search_cache:{hashlib.sha256(params_json.encode()).hexdigest()}"
 
 
 def _compute_cache_key_per_uf(request, uf: str) -> str:
-    """CRIT-051 AC1: Compute cache key for a SINGLE UF."""
+    """CRIT-051 AC1: Compute cache key for a SINGLE UF.
+
+    UX-427: Include termos_busca so that term-based searches do not collide.
+    """
     params = {
         "setor_id": request.setor_id,
         "ufs": [uf],
         "status": request.status.value if request.status else None,
         "modalidades": sorted(request.modalidades) if request.modalidades else None,
         "modo_busca": request.modo_busca,
+        "termos_busca": getattr(request, "termos_busca", None) or None,
     }
     params_json = json.dumps(params, sort_keys=True)
     return f"search_cache:{hashlib.sha256(params_json.encode()).hexdigest()}"
@@ -221,13 +230,20 @@ def _write_cache_per_uf(request, results: list, *,
 
 
 def _build_cache_params(request) -> dict:
-    """Build normalized params dict from BuscaRequest for cache lookup."""
+    """Build normalized params dict from BuscaRequest for cache lookup.
+
+    UX-427: Include termos_busca and dates so searches with different terms
+    or date ranges produce distinct Supabase/cascade cache keys.
+    """
     return {
         "setor_id": request.setor_id,
         "ufs": request.ufs,
         "status": request.status.value if request.status else None,
         "modalidades": request.modalidades,
         "modo_busca": request.modo_busca,
+        "termos_busca": getattr(request, "termos_busca", None) or None,
+        "data_inicial": getattr(request, "data_inicial", None),
+        "data_final": getattr(request, "data_final", None),
     }
 
 

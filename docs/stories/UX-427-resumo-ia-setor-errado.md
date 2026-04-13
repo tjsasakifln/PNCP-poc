@@ -20,12 +20,12 @@ Isso destroi a confianca do usuario na classificacao por IA, que e o principal d
 
 ## Acceptance Criteria
 
-- [ ] AC1: Resumo IA deve mencionar o setor correto da busca realizada
-- [ ] AC2: Investigar se resumo vem do ARQ job ou do fallback
-- [ ] AC3: Se fallback, verificar se `setor_nome` e passado corretamente
-- [ ] AC4: Se ARQ, verificar se job recebe search_id correto e nao reutiliza cache
-- [ ] AC5: Adicionar teste que verifica correspondencia setor buscado vs setor no resumo
-- [ ] AC6: Testar com pelo menos 3 setores diferentes e confirmar resumo correto
+- [x] AC1: Resumo IA deve mencionar o setor correto da busca realizada
+- [x] AC2: Investigar se resumo vem do ARQ job ou do fallback
+- [x] AC3: Se fallback, verificar se `setor_nome` e passado corretamente
+- [x] AC4: Se ARQ, verificar se job recebe search_id correto e nao reutiliza cache
+- [x] AC5: Adicionar teste que verifica correspondencia setor buscado vs setor no resumo
+- [x] AC6: Testar com pelo menos 3 setores diferentes e confirmar resumo correto
 
 ## Arquivos Provaveis
 
