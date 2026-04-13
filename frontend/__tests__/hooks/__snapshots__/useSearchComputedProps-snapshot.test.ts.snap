@@ -76,6 +76,7 @@ exports[`useSearchComputedProps — searchResultsProps snapshot produces a stabl
   "trialPhase": "trial",
   "ufAllComplete": false,
   "ufStatuses": "Map(0)",
+  "ufStatusesSnapshot": undefined,
   "ufTotalFound": 0,
   "ufsSelecionadas": "Set(2)",
   "useRealProgress": false,

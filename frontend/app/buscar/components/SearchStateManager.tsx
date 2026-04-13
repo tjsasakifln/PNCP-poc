@@ -9,10 +9,14 @@
  *
  * AC2: Zero limbo states -- every phase has a visible action.
  * AC7: CSS transitions for smooth state transitions (DEBT-FE-004: replaced framer-motion).
+ *
+ * UX-436: Adaptive retry on timeout — shows which UFs completed/failed and offers
+ * targeted retry buttons instead of repeating the same failing request.
  */
 
 import type { SearchError } from "../hooks/useSearch";
 import type { SearchPhase } from "../types/searchPhase";
+import type { UfStatus } from "../../../hooks/useSearchSSE";
 import { ErrorDetail } from "./ErrorDetail";
 import { Button } from "../../../components/ui/button";
 import { toast } from "sonner";
@@ -42,9 +46,11 @@ export interface SearchStateManagerProps {
   // Result availability (for "view partial" button)
   hasPartialResults: boolean;
 
-  // UX-436: UF context for smart retry with reduction suggestion
+  // UX-436: UF snapshot for smart retry
   ufsSelecionadas?: Set<string>;
   onRetryWithUfs?: (ufs: string[]) => void;
+  /** Snapshot of ufStatuses captured at timeout moment (before SSE clears). */
+  ufStatusesSnapshot?: Map<string, UfStatus>;
 }
 
 /**
@@ -75,6 +81,110 @@ function FadePanel({
 }
 
 /**
+ * UX-436: Adaptive UF retry panel.
+ *
+ * Shows which UFs had results vs. which timed out, then offers:
+ * - Primary button: retry only the UFs that completed (AC2)
+ * - Secondary button: retry all UFs (AC3, current behavior demoted)
+ *
+ * AC4: If retryExhausted and no UF completed, falls back to top 2 by count.
+ * AC5: No "Tente com menos estados" instruction text.
+ */
+function AdaptiveRetryPanel({
+  ufStatusesSnapshot,
+  onRetryWithUfs,
+  onRetry,
+  retryExhausted,
+  loading,
+}: {
+  ufStatusesSnapshot: Map<string, UfStatus>;
+  onRetryWithUfs: (ufs: string[]) => void;
+  onRetry: () => void;
+  retryExhausted: boolean;
+  loading: boolean;
+}) {
+  // UFs that returned at least some results
+  const completedUfs = Array.from(ufStatusesSnapshot.entries())
+    .filter(([, s]) => s.status === "success" || s.status === "partial" || s.status === "recovered")
+    .map(([uf]) => uf);
+
+  // UFs that did not respond
+  const failedUfs = Array.from(ufStatusesSnapshot.entries())
+    .filter(([, s]) => s.status === "failed" || s.status === "pending" || s.status === "fetching" || s.status === "retrying")
+    .map(([uf]) => uf);
+
+  // For AC4: when no UF completed after exhausting retries, order by result count desc → top 2
+  const ufsByCount = Array.from(ufStatusesSnapshot.entries())
+    .sort(([, a], [, b]) => (b.count ?? 0) - (a.count ?? 0))
+    .map(([uf]) => uf);
+
+  const suggestTopTwo = retryExhausted && completedUfs.length === 0 && ufsByCount.length >= 2;
+  const primaryRetryUfs = completedUfs.length > 0 ? completedUfs : (suggestTopTwo ? ufsByCount.slice(0, 2) : []);
+
+  if (primaryRetryUfs.length === 0) return null;
+
+  // AC1: Build contextual message describing what happened
+  const buildUfContext = (): string | null => {
+    if (completedUfs.length > 0 && failedUfs.length > 0) {
+      const completedLabel = completedUfs.join(", ");
+      const failedLabel = failedUfs.join(", ");
+      const completedVerb = completedUfs.length === 1 ? "teve" : "tiveram";
+      const failedVerb = failedUfs.length === 1 ? "respondeu" : "responderam";
+      return `${completedLabel} ${completedVerb} resultados — ${failedLabel} não ${failedVerb}`;
+    }
+    if (completedUfs.length > 0) {
+      const verb = completedUfs.length === 1 ? "teve" : "tiveram";
+      return `${completedUfs.join(", ")} ${verb} resultados`;
+    }
+    if (suggestTopTwo) {
+      return `Buscar com ${primaryRetryUfs.join(" e ")} pode ser mais rápido`;
+    }
+    return null;
+  };
+
+  const ufContext = buildUfContext();
+  const primaryLabel = `Buscar apenas ${primaryRetryUfs.join(" e ")}`;
+
+  return (
+    <div
+      className="mt-3 mb-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"
+      data-testid="uf-reduction-suggestion"
+    >
+      {/* AC1: Contextual message — which UFs responded */}
+      {ufContext && (
+        <p className="text-sm text-blue-800 dark:text-blue-200 mb-3" data-testid="uf-context-message">
+          {ufContext}
+        </p>
+      )}
+      <div className="flex flex-col sm:flex-row gap-2">
+        {/* AC2: Primary — retry only completed UFs */}
+        <Button
+          onClick={() => onRetryWithUfs(primaryRetryUfs)}
+          disabled={loading}
+          variant="primary"
+          size="default"
+          type="button"
+          data-testid="retry-completed-ufs-button"
+        >
+          {primaryLabel}
+        </Button>
+        {/* AC3: Secondary — retry all (demoted from primary) */}
+        <Button
+          onClick={onRetry}
+          disabled={loading}
+          variant="outline"
+          size="default"
+          type="button"
+          data-testid="retry-all-ufs-button"
+        >
+          Tentar com todas as UFs novamente
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Renders the appropriate state UI based on the search phase.
  *
  * Renders ONLY for error/offline/quota/failed phases.
@@ -96,8 +206,8 @@ export function SearchStateManager({
   onCancel,
   loading,
   hasPartialResults,
-  ufsSelecionadas,
   onRetryWithUfs,
+  ufStatusesSnapshot,
 }: SearchStateManagerProps) {
   const prevPhaseRef = useRef<SearchPhase>(phase);
 
@@ -134,7 +244,7 @@ export function SearchStateManager({
   const showFailed = phase === "failed" && !!error;
   const showQuota = phase === "quota_exceeded" && !!quotaError;
 
-  // UX-436: Detect timeout errors and suggest UF reduction
+  // UX-436: Detect timeout errors
   const isTimeoutError = !!(error && (
     error.errorCode === "TIMEOUT" ||
     error.errorCode === "ASYNC_TIMEOUT" ||
@@ -143,9 +253,10 @@ export function SearchStateManager({
     error.rawMessage?.toLowerCase().includes("timeout") ||
     error.rawMessage?.includes("demorou demais")
   ));
-  const ufArray = ufsSelecionadas ? Array.from(ufsSelecionadas) : [];
-  const canSuggestReduction = isTimeoutError && ufArray.length > 2 && !!onRetryWithUfs;
-  const suggestedUfs = ufArray.slice(0, 2);
+
+  // Whether adaptive retry panel should render
+  const hasSnapshot = !!(ufStatusesSnapshot && ufStatusesSnapshot.size > 0);
+  const canShowAdaptive = isTimeoutError && !!onRetryWithUfs && hasSnapshot;
 
   return (
     <>
@@ -197,34 +308,65 @@ export function SearchStateManager({
         <p className="text-sm sm:text-base font-medium text-amber-700 dark:text-amber-300 mb-3 break-words">
           Nao conseguimos completar a busca agora. Tente novamente em alguns minutos.
         </p>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <Button
-            onClick={onRetryNow}
-            disabled={loading}
-            variant="primary"
-            size="default"
-            type="button"
-            data-testid="retry-manual-button"
-          >
-            Tentar novamente
-          </Button>
-          {hasPartialResults && (
+
+        {/* UX-436: Show adaptive retry in exhausted panel too (AC1-AC4) */}
+        {canShowAdaptive && (
+          <AdaptiveRetryPanel
+            ufStatusesSnapshot={ufStatusesSnapshot!}
+            onRetryWithUfs={onRetryWithUfs!}
+            onRetry={onRetryNow}
+            retryExhausted={retryExhausted}
+            loading={loading}
+          />
+        )}
+
+        {!canShowAdaptive && (
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <Button
-              onClick={() => {
-                const resultsEl = document.querySelector(
-                  '[data-testid="results-header"]',
-                );
-                resultsEl?.scrollIntoView({ behavior: "smooth" });
-              }}
-              variant="outline"
+              onClick={onRetryNow}
+              disabled={loading}
+              variant="primary"
               size="default"
               type="button"
-              data-testid="view-partial-results-button"
+              data-testid="retry-manual-button"
             >
-              Ver resultados parciais
+              Tentar novamente
             </Button>
-          )}
-        </div>
+            {hasPartialResults && (
+              <Button
+                onClick={() => {
+                  const resultsEl = document.querySelector(
+                    '[data-testid="results-header"]',
+                  );
+                  resultsEl?.scrollIntoView({ behavior: "smooth" });
+                }}
+                variant="outline"
+                size="default"
+                type="button"
+                data-testid="view-partial-results-button"
+              >
+                Ver resultados parciais
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* When adaptive is shown, still offer partial results access */}
+        {canShowAdaptive && hasPartialResults && (
+          <Button
+            onClick={() => {
+              const resultsEl = document.querySelector('[data-testid="results-header"]');
+              resultsEl?.scrollIntoView({ behavior: "smooth" });
+            }}
+            variant="outline"
+            size="default"
+            type="button"
+            className="mt-2"
+            data-testid="view-partial-results-button"
+          >
+            Ver resultados parciais
+          </Button>
+        )}
       </FadePanel>
 
       {/* Failed -- non-transient error, manual retry needed */}
@@ -244,37 +386,31 @@ export function SearchStateManager({
           </>
         )}
 
-        {/* UX-436: Smart retry with UF reduction suggestion for timeouts */}
-        {canSuggestReduction && (
-          <div className="mt-3 mb-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800" data-testid="uf-reduction-suggestion">
-            <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
-              Quer tentar novamente com menos estados? Pode ser mais rápido.
-            </p>
-            <Button
-              onClick={() => onRetryWithUfs!(suggestedUfs)}
-              disabled={loading}
-              variant="outline"
-              size="default"
-              type="button"
-              data-testid="retry-reduced-ufs-button"
-            >
-              Buscar apenas {suggestedUfs.join(" e ")}
-            </Button>
-          </div>
+        {/* UX-436: Adaptive retry for timeout errors (AC1-AC4) */}
+        {canShowAdaptive && (
+          <AdaptiveRetryPanel
+            ufStatusesSnapshot={ufStatusesSnapshot!}
+            onRetryWithUfs={onRetryWithUfs!}
+            onRetry={onRetry}
+            retryExhausted={retryExhausted}
+            loading={loading}
+          />
         )}
 
         <div className="flex flex-col sm:flex-row gap-2 mt-3">
-          <Button
-            onClick={onRetry}
-            disabled={loading}
-            loading={loading}
-            variant="destructive"
-            size="default"
-            type="button"
-            data-testid="failed-retry-button"
-          >
-            {loading ? "Tentando..." : "Tentar novamente"}
-          </Button>
+          {!canShowAdaptive && (
+            <Button
+              onClick={onRetry}
+              disabled={loading}
+              loading={loading}
+              variant="destructive"
+              size="default"
+              type="button"
+              data-testid="failed-retry-button"
+            >
+              {loading ? "Tentando..." : "Tentar novamente"}
+            </Button>
+          )}
         </div>
       </FadePanel>
 

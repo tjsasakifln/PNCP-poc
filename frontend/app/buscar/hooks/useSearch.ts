@@ -153,6 +153,8 @@ export interface UseSearchReturn {
   isRestoredFromNav: boolean;
   restoredNavMeta: import('../../../lib/navSearchCache').NavSearchMeta | null;
   handleNovaBusca: () => void;
+  // UX-436: Snapshot of ufStatuses at the time of timeout error
+  ufStatusesSnapshot: Map<string, UfStatus>;
 }
 
 // ── Orchestrator ────────────────────────────────────────────────────────
@@ -391,6 +393,25 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     }
   }, [execution.loading, execution.searchId, ufTotalFound]);
 
+  // ── UX-436: Snapshot ufStatuses before SSE hook clears them on timeout ──
+  // When a timeout fires, loading→false → enabled→false → SSE clears ufStatuses.
+  // We capture the last non-empty map so the error panel has UF context.
+  const [ufStatusesSnapshot, setUfStatusesSnapshot] = useState<Map<string, UfStatus>>(new Map());
+
+  // Capture whenever ufStatuses has data
+  useEffect(() => {
+    if (ufStatuses.size > 0) {
+      setUfStatusesSnapshot(new Map(ufStatuses));
+    }
+  }, [ufStatuses]);
+
+  // Clear snapshot when a new search starts
+  useEffect(() => {
+    if (execution.loading) {
+      setUfStatusesSnapshot(new Map());
+    }
+  }, [execution.loading]);
+
   // ── Computed ──
   const humanizedError: HumanizedError | null = error
     ? getHumanizedError(error.httpStatus, error.rawMessage)
@@ -466,5 +487,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     isRestoredFromNav: persistence.isRestoredFromNav,
     restoredNavMeta: persistence.restoredNavMeta,
     handleNovaBusca: persistence.handleNovaBusca,
+    // UX-436
+    ufStatusesSnapshot,
   };
 }

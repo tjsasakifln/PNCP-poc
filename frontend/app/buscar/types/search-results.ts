@@ -60,6 +60,8 @@ export interface SearchLoadingState {
   skeletonTimeoutReached?: boolean;
   // UF progress
   ufStatuses?: Map<string, UfStatus>;
+  /** UX-436: Snapshot of ufStatuses captured at timeout moment (before SSE clears). */
+  ufStatusesSnapshot?: Map<string, UfStatus>;
   ufTotalFound?: number;
   ufAllComplete?: boolean;
   // Progressive results

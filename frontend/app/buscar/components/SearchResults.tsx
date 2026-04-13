@@ -87,7 +87,7 @@ export function TourInviteBanner({ isCompleted, onStartTour }: { isCompleted?: (
 export default function SearchResults(props: SearchResultsProps) {
   const { loading, result, ufsSelecionadas, sectorName, searchMode, ordenacao, rawCount, status,
     error, quotaError, onSearch, onCancel, onOrdenacaoChange,
-    ufStatuses, ufTotalFound = 0, searchElapsedSeconds = 0,
+    ufStatuses, ufStatusesSnapshot, ufTotalFound = 0, searchElapsedSeconds = 0,
     isReconnecting, retryCountdown, retryMessage, retryExhausted, onRetryNow, onCancelRetry,
     hasLastSearch = 0, onLoadLastSearch, liveFetchInProgress, refreshAvailable, onRefreshResults,
     onRetryForceFresh, sourceStatuses, partialProgress, filterSummary,
@@ -174,7 +174,7 @@ export default function SearchResults(props: SearchResultsProps) {
 
       <ResultsLoadingSection {...props} searchElapsedSeconds={searchElapsedSeconds} ufTotalFound={ufTotalFound} succeededUfCount={succeededUfCount} pendingUfCount={pendingUfCount} />
 
-      <SearchStateManager phase={searchPhase} error={error} quotaError={quotaError} retryCountdown={retryCountdown ?? null} retryMessage={retryMessage ?? null} retryExhausted={!!retryExhausted} onRetry={onSearch} onRetryNow={onRetryNow || onSearch} onCancelRetry={onCancelRetry || (() => {})} onCancel={onCancel} loading={loading} hasPartialResults={!!(result && result.resumo && result.resumo.total_oportunidades > 0)} ufsSelecionadas={ufsSelecionadas} onRetryWithUfs={onRetryWithUfs} />
+      <SearchStateManager phase={searchPhase} error={error} quotaError={quotaError} retryCountdown={retryCountdown ?? null} retryMessage={retryMessage ?? null} retryExhausted={!!retryExhausted} onRetry={onSearch} onRetryNow={onRetryNow || onSearch} onCancelRetry={onCancelRetry || (() => {})} onCancel={onCancel} loading={loading} hasPartialResults={!!(result && result.resumo && result.resumo.total_oportunidades > 0)} ufsSelecionadas={ufsSelecionadas} onRetryWithUfs={onRetryWithUfs} ufStatusesSnapshot={ufStatusesSnapshot} />
 
       {/* Restore last search banner — shown when returning to /buscar with no active results */}
       {!loading && !result && !error && !!hasLastSearch && onLoadLastSearch && (
