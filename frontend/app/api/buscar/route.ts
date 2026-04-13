@@ -127,10 +127,10 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // CRIT-082/P2-FIX: Proxy timeout 90s as safety net for sync fallback edge cases.
-        // Chain: Client(95s) > Proxy(90s) > Gunicorn(120s). Primary path is 202 async (<2s).
+        // CRIT-082: Proxy timeout 60s. Chain: Client(65s) > Proxy(60s) > Gunicorn(120s).
+        // Primary path is 202 async (<2s); 60s covers sync fallback edge cases.
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 90 * 1000);
+        const timeout = setTimeout(() => controller.abort(), 60 * 1000);
 
         response = await fetch(`${backendUrl}/v1/buscar`, {
           method: "POST",

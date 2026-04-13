@@ -80,17 +80,17 @@ export function SearchErrorBanner({
             {humanizedError.message}
           </p>
 
-          {/* DEBT-v3-S2 AC13: Silent auto-retry — no countdown or attempt counter visible */}
+          {/* CRIT-082 AC4: Show retry message with countdown for user clarity */}
           {retryCountdown != null && retryMessage && (
             <p className={`text-xs mt-1 ${textClass} opacity-80`}>
-              {retryMessage}
+              {retryMessage} ({retryCountdown}s)
             </p>
           )}
 
-          {/* DEBT-v3-S2 AC15: Retries exhausted — humanized message */}
+          {/* CRIT-082 AC5: Retries exhausted — clear message about server connection */}
           {retryExhausted && (
             <p className={`text-xs mt-1 ${textClass} opacity-80`}>
-              Nao conseguimos completar a busca agora. Tente novamente em alguns minutos.
+              Não foi possível conectar ao servidor. Tente novamente em alguns minutos.
             </p>
           )}
 

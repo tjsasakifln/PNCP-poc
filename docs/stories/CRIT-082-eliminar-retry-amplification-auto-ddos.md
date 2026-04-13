@@ -1,6 +1,6 @@
 # CRIT-082: Eliminar Retry Amplification — Prevenir Auto-DDoS
 
-**Status:** Ready
+**Status:** InReview
 **Priority:** P1 — HIGH (amplificação de falhas, degrada experiência e sobrecarrega backend)
 **Epic:** Resiliência Frontend
 **Agent:** @dev
@@ -26,9 +26,9 @@ O frontend possui **3 camadas de retry empilhadas** que se multiplicam:
 
 ### Simplificar para 1 Camada de Retry Efetiva
 
-- [ ] **AC1**: **Proxy (L1):** Manter 2 tentativas (1 retry) com backoff 1s. Reduzir de 3 para 2 tentativas
-- [ ] **AC2**: **Client (L2):** REMOVER retry loop do `useSearchExecution.ts`. Proxy já faz retry — não empilhar
-- [ ] **AC3**: **Auto-retry (L3):** Manter como mecanismo de retry VISUAL para o usuário, mas:
+- [x] **AC1**: **Proxy (L1):** Manter 2 tentativas (1 retry) com backoff 1s. Reduzir de 3 para 2 tentativas
+- [x] **AC2**: **Client (L2):** REMOVER retry loop do `useSearchExecution.ts`. Proxy já faz retry — não empilhar
+- [x] **AC3**: **Auto-retry (L3):** Manter como mecanismo de retry VISUAL para o usuário, mas:
   - Reduzir de 3 para 2 tentativas
   - Primeiro countdown: 10s, segundo: 20s
   - Cada tentativa faz 1 request (não 9 como hoje)
@@ -37,26 +37,26 @@ O frontend possui **3 camadas de retry empilhadas** que se multiplicam:
 
 ### Melhorar Feedback ao Usuário
 
-- [ ] **AC4**: Quando proxy retorna 502/503, mostrar imediatamente:
+- [x] **AC4**: Quando proxy retorna 502/503, mostrar imediatamente:
   - "O servidor está se atualizando. Tentaremos novamente em {countdown}s"
   - Botão "Tentar agora" + "Cancelar"
   - **NÃO** tentar silenciosamente em background — o usuário deve ver o que acontece
-- [ ] **AC5**: Após última tentativa falhar, mostrar:
+- [x] **AC5**: Após última tentativa falhar, mostrar:
   - "Não foi possível conectar ao servidor. Tente novamente em alguns minutos."
   - Botão "Tentar novamente" (manual, sem auto-retry)
   - **NÃO** incluir texto ambíguo sobre "análise pode ter sido concluída"
 
 ### Timeout Alignment
 
-- [ ] **AC6**: Proxy timeout: 60s por tentativa (era 180s). Railway mata em ~300s, não faz sentido esperar 180s
-- [ ] **AC7**: Client AbortController: 65s (era 185s). Alinhado com proxy + margem
-- [ ] **AC8**: Async safety timeout: 120s (manter — SSE pode demorar legitimamente)
+- [x] **AC6**: Proxy timeout: 60s por tentativa (era 90s). Chain: Client(65s) > Proxy(60s) > Gunicorn(120s)
+- [x] **AC7**: Client AbortController: 65s — alinhado com proxy + margem
+- [x] **AC8**: Async safety timeout: 120s (mantido — SSE pode demorar legitimamente)
 
 ### Testes
 
-- [ ] **AC9**: Teste `retry-simplification.test.tsx` — verifica que no máximo 4 requests são feitos por busca
-- [ ] **AC10**: Teste `proxy-retry.test.ts` — verifica 2 tentativas máximo no proxy
-- [ ] **AC11**: Teste `error-messages-clarity.test.tsx` — verifica que mensagens são claras e acionáveis
+- [x] **AC9**: Teste `retry-simplification.test.tsx` — verifica que no máximo 4 requests são feitos por busca
+- [x] **AC10**: Teste `proxy-retry.test.ts` — verifica 2 tentativas máximo no proxy
+- [x] **AC11**: Teste `error-messages-clarity.test.tsx` — verifica que mensagens são claras e acionáveis
 
 ## Antes vs Depois
 

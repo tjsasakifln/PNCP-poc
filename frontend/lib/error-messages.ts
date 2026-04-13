@@ -229,7 +229,7 @@ export function getRetryMessage(httpStatus: number | null, rawMessage?: string):
 
   // Service unavailable
   if (httpStatus === 502 || httpStatus === 503) {
-    return 'Estamos tentando novamente automaticamente.';
+    return 'O servidor está se atualizando.';
   }
 
   // Network errors

@@ -161,13 +161,15 @@ describe("GTM-UX-003: Unified Retry UX", () => {
 
     test("getRetryMessage returns humanized message for HTTP 502", () => {
       const msg = getRetryMessage(502, "Bad Gateway");
-      expect(msg).toContain("tentando novamente");
+      // CRIT-082 AC4: message clarified to inform server is updating (not generic retry)
+      expect(msg).toContain("servidor");
       expect(msg).not.toContain("reiniciando");
     });
 
     test("getRetryMessage returns humanized message for HTTP 503", () => {
       const msg = getRetryMessage(503, "Service Unavailable");
-      expect(msg).toContain("tentando novamente");
+      // CRIT-082 AC4: message clarified to inform server is updating (not generic retry)
+      expect(msg).toContain("servidor");
       expect(msg).not.toContain("reiniciando");
     });
 
