@@ -101,6 +101,7 @@ async def cache_health():
     Returns status of Supabase, Redis/InMemory, and Local file caches
     with latency measurements and error details.
     B-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.
+    CRIT-081 AC10: Includes warmup_coverage with total_combos, cached, stale, missing.
     """
     result = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -108,6 +109,7 @@ async def cache_health():
         "redis": _check_redis_cache(),
         "local": _check_local_cache(),
         "degradation": await _check_cache_degradation(),
+        "warmup_coverage": await _check_warmup_coverage(),
     }
 
     # Determine overall status
@@ -120,6 +122,51 @@ async def cache_health():
         result["overall"] = "degraded"
 
     return result
+
+
+async def _check_warmup_coverage() -> dict:
+    """CRIT-081 AC10: Warmup coverage stats — sector×UF combos cached/stale/missing."""
+    try:
+        from sectors import SECTORS
+        from config import ALL_BRAZILIAN_UFS
+        from jobs.cron.cache_ops import _get_cache_entry_age, _get_prioritized_ufs
+
+        all_sectors = list(SECTORS.values())
+        prioritized = await _get_prioritized_ufs(ALL_BRAZILIAN_UFS)
+        top_ufs = prioritized[:5]
+        total = len(all_sectors) * len(top_ufs)
+
+        cached = stale = missing = 0
+        for sector in all_sectors:
+            for uf in top_ufs:
+                age = await _get_cache_entry_age(sector.id, uf)
+                if age is None:
+                    missing += 1
+                elif age > 12:
+                    stale += 1
+                else:
+                    cached += 1
+
+        return {
+            "total_combos": total,
+            "cached": cached,
+            "stale": stale,
+            "missing": missing,
+            # TODO: rastrear last_warmup/next_warmup via estado persistido
+            "last_warmup": None,
+            "next_warmup": None,
+        }
+    except Exception as e:
+        logger.warning(f"CRIT-081: warmup_coverage check failed: {e}")
+        return {
+            "total_combos": 0,
+            "cached": 0,
+            "stale": 0,
+            "missing": 0,
+            "last_warmup": None,
+            "next_warmup": None,
+            "error": str(e)[:200],
+        }
 
 
 async def _check_supabase_cache() -> dict:

@@ -875,6 +875,12 @@ WARMUP_COVERAGE_RATIO = _create_gauge(
     "CRIT-055: Warmup UF coverage ratio (cached UFs / total UFs)",
 )
 
+# CRIT-081 AC8: Coverage deficit gauge (number of sector×UF combos without fresh cache < 12h)
+CACHE_COVERAGE_DEFICIT = _create_gauge(
+    "smartlic_cache_coverage_deficit",
+    "CRIT-081: Number of sector×UF combos without cache data < 12h",
+)
+
 # CRIT-056 AC5: Cache quality score metrics
 CACHE_QUALITY_WRITE_TOTAL = _create_counter(
     "smartlic_cache_quality_write_total",
@@ -959,6 +965,13 @@ PROCESS_MEMORY_RSS_BYTES = _create_gauge(
 PROCESS_MEMORY_PEAK_RSS_BYTES = _create_gauge(
     "smartlic_process_memory_peak_rss_bytes",
     "Peak process RSS in bytes (high-water mark)",
+)
+
+# CRIT-083 AC5: RSS per worker for multi-worker memory monitoring
+WORKER_MEMORY_BYTES = _create_gauge(
+    "smartlic_worker_memory_bytes",
+    "RSS memory per worker process in bytes",
+    labelnames=["worker_pid"],
 )
 
 

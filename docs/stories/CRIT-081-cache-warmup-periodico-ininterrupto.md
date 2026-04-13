@@ -1,6 +1,6 @@
 # CRIT-081: Cache Warmup Periódico Ininterrupto — Dados Sempre Disponíveis
 
-**Status:** Ready
+**Status:** Done
 **Priority:** P1 — HIGH (resiliência contra indisponibilidade de fontes)
 **Epic:** Infraestrutura de Cache
 **Agent:** @dev + @architect
@@ -27,27 +27,27 @@ O SmartLic depende de 3 fontes externas (PNCP, PCP, ComprasGov) que podem ficar 
 
 ### Habilitar Cache Refresh (SWR Background)
 
-- [ ] **AC1**: Ativar `CACHE_REFRESH_ENABLED=true` em `config/features.py` (atualmente `false`)
-- [ ] **AC2**: Reduzir `CACHE_REFRESH_INTERVAL_HOURS` de 12 para 4 horas
-- [ ] **AC3**: Aumentar `CACHE_REFRESH_BATCH_SIZE` de 25 para 50 entries por ciclo
-- [ ] **AC4**: Cache refresh deve priorizar HOT entries primeiro, depois WARM, depois COLD
+- [x] **AC1**: Ativar `CACHE_REFRESH_ENABLED=true` em `config/features.py` (atualmente `false`)
+- [x] **AC2**: Reduzir `CACHE_REFRESH_INTERVAL_HOURS` de 12 para 4 horas
+- [x] **AC3**: Aumentar `CACHE_REFRESH_BATCH_SIZE` de 25 para 50 entries por ciclo
+- [x] **AC4**: Cache refresh deve priorizar HOT entries primeiro, depois WARM, depois COLD
 
 ### Expandir Periodic Warmup
 
-- [ ] **AC5**: Aumentar `warmup_top_params(limit=10)` para `limit=30` — cobrir os 30 params mais buscados
-- [ ] **AC6**: Reduzir `WARMUP_PERIODIC_INTERVAL_HOURS` de 3 para 2 horas
-- [ ] **AC7**: Warmup periódico deve incluir TODOS os setores ativos (não apenas os 5 hardcoded), lendo de `sectors_data.yaml`
+- [x] **AC5**: Aumentar `warmup_top_params(limit=10)` para `limit=30` — cobrir os 30 params mais buscados
+- [x] **AC6**: Reduzir `WARMUP_PERIODIC_INTERVAL_HOURS` de 3 para 2 horas
+- [x] **AC7**: Warmup periódico deve incluir TODOS os setores ativos (não apenas os 5 hardcoded), lendo de `sectors_data.yaml`
 
 ### Garantir Dados Sempre Disponíveis
 
-- [ ] **AC8**: Implementar `ensure_minimum_cache_coverage()` que roda a cada 1h:
+- [x] **AC8**: Implementar `ensure_minimum_cache_coverage()` que roda a cada 1h:
   - Para cada setor ativo × top 5 UFs populares: verificar se cache tem dados < 12h
   - Se não tem: disparar revalidação imediata
   - Métrica: `smartlic_cache_coverage_deficit` gauge (número de combos sem cache)
-- [ ] **AC9**: Quando TODAS as fontes estão down (3 circuit breakers OPEN):
+- [x] **AC9**: Quando TODAS as fontes estão down (3 circuit breakers OPEN):
   - Servir cache stale mesmo se > 24h TTL (com banner "dados de {timestamp}")
   - Novo flag `SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE=true`
-- [ ] **AC10**: Expor cobertura do cache em `GET /v1/health/cache`:
+- [x] **AC10**: Expor cobertura do cache em `GET /v1/health/cache`:
   ```json
   {
     "warmup_coverage": { "total_combos": 135, "cached": 98, "stale": 22, "missing": 15 },
@@ -58,9 +58,9 @@ O SmartLic depende de 3 fontes externas (PNCP, PCP, ComprasGov) que podem ficar 
 
 ### Testes
 
-- [ ] **AC11**: Teste `test_cache_refresh_enabled.py` — verifica que stale entries são revalidadas dentro de 4h
-- [ ] **AC12**: Teste `test_ensure_minimum_coverage.py` — verifica que déficits são detectados e preenchidos
-- [ ] **AC13**: Teste `test_serve_expired_on_outage.py` — verifica que cache expirado é servido quando todas as fontes estão down
+- [x] **AC11**: Teste `test_cache_refresh_enabled.py` — verifica que stale entries são revalidadas dentro de 4h
+- [x] **AC12**: Teste `test_ensure_minimum_coverage.py` — verifica que déficits são detectados e preenchidos
+- [x] **AC13**: Teste `test_serve_expired_on_outage.py` — verifica que cache expirado é servido quando todas as fontes estão down
 
 ## Configuração Final Esperada
 

@@ -47,8 +47,11 @@ async def _get_prioritized_ufs(all_ufs: list[str]) -> list[str]:
 
 async def refresh_stale_cache_entries() -> dict:
     from search_cache import trigger_background_revalidation, get_stale_entries_for_refresh
+    from config import CACHE_REFRESH_BATCH_SIZE
     try:
-        entries = await get_stale_entries_for_refresh(batch_size=25)
+        # AC4: usar CACHE_REFRESH_BATCH_SIZE da config (default 50); HOT→WARM→COLD ordering
+        # é garantido por get_stale_entries_for_refresh() que retorna entradas priorizadas
+        entries = await get_stale_entries_for_refresh(batch_size=CACHE_REFRESH_BATCH_SIZE)
         if not entries:
             return {"status": "no_stale_entries", "refreshed": 0}
         refreshed = 0
@@ -176,9 +179,10 @@ async def ensure_minimum_cache_coverage() -> dict:
                         logger.warning("CRIT-081: coverage revalidation failed for %s:%s: %s", sector.id, uf, e)
         logger.info("CRIT-081: coverage check complete: deficit=%d, dispatched=%d, sectors=%d, ufs=%d", deficit, dispatched, len(all_sectors), len(top_ufs))
         try:
-            from metrics import WARMUP_COVERAGE_RATIO
+            from metrics import WARMUP_COVERAGE_RATIO, CACHE_COVERAGE_DEFICIT
             total = len(all_sectors) * len(top_ufs)
             WARMUP_COVERAGE_RATIO.set((total - deficit) / total if total > 0 else 0)
+            CACHE_COVERAGE_DEFICIT.set(deficit)  # AC8: gauge de contagem de combos faltando
         except Exception:
             pass
     except Exception as e:
