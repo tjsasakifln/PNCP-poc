@@ -18,7 +18,26 @@ const SOURCE_LABELS: Record<string, string> = {
   PNCP: "PNCP",
   PORTAL_COMPRAS: "Portal de Compras",
   COMPRAS_GOV: "ComprasGov",
+  LICITAJA: "LicitaJá",
 };
+
+function sanitizeErrorForDisplay(error: string | undefined): string {
+  if (!error) return "";
+  const lower = error.toLowerCase();
+  if (
+    lower.includes("401") ||
+    lower.includes("authentication") ||
+    lower.includes("auth") ||
+    lower.includes("api_key") ||
+    lower.includes("api key")
+  ) {
+    return "indisponível";
+  }
+  if (lower.includes("403") || lower.includes("forbidden")) return "indisponível";
+  if (lower.includes("429") || lower.includes("rate limit")) return "sobrecarregado";
+  if (lower.includes("timeout")) return "não respondeu a tempo";
+  return "erro temporário";
+}
 
 function getStatusIcon(status: SourceStatusType): string {
   switch (status) {
@@ -95,7 +114,7 @@ export default function SourceStatusGrid({
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium ${getStatusColor(info.status)}`}
           title={
             info.error
-              ? `${getStatusLabel(info.status)}: ${info.error}`
+              ? `${getStatusLabel(info.status)}: ${sanitizeErrorForDisplay(info.error)}`
               : `${getStatusLabel(info.status)} — ${info.recordCount} resultados em ${(info.durationMs / 1000).toFixed(1)}s`
           }
         >

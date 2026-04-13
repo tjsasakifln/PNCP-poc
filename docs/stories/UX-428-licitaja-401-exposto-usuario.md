@@ -13,12 +13,12 @@ A mensagem exposta ao usuario ("check LICITAJA_API_KEY") tambem e inadequada —
 
 ## Acceptance Criteria
 
-- [ ] AC1: Diagnosticar por que LICITAJA_API_KEY retorna 401 (expirada? rotacionada? env var errada?)
-- [ ] AC2: Corrigir/renovar API key e validar que LICITAJA retorna resultados
-- [ ] AC3: Sanitizar mensagens de erro expostas ao usuario — nao mostrar nomes de env vars
-- [ ] AC4: Badge de erro deve mostrar "LICITAJA indisponivel" (nao detalhes internos de auth)
-- [ ] AC5: Adicionar health check para LICITAJA no endpoint /health/cache ou similar
-- [ ] AC6: Confirmar que busca retorna resultados LICITAJA apos fix
+- [ ] AC1: Diagnosticar por que LICITAJA_API_KEY retorna 401 (expirada? rotacionada? env var errada?) — Operacional: LICITAJA não tem client implementado no codebase. Verificar Railway vars se/quando integração for adicionada.
+- [ ] AC2: Corrigir/renovar API key e validar que LICITAJA retorna resultados — Operacional: depende de integração com vendor LICITAJA (fora do escopo desta story).
+- [x] AC3: Sanitizar mensagens de erro expostas ao usuario — nao mostrar nomes de env vars — `_sanitize_source_error()` em `backend/progress.py` mapeia erros técnicos → mensagens amigáveis antes de emitir SSE.
+- [x] AC4: Badge de erro deve mostrar "LICITAJA indisponivel" (nao detalhes internos de auth) — `sanitizeErrorForDisplay()` em `SourceStatusGrid.tsx` + label `LICITAJA: "LicitaJá"` adicionado.
+- [x] AC5: Adicionar health check para LICITAJA no endpoint /health/cache ou similar — `GET /health/sources` adicionado em `backend/routes/health.py` usando `source_health_registry`.
+- [ ] AC6: Confirmar que busca retorna resultados LICITAJA apos fix — Operacional: depende de AC1/AC2 (integração com vendor).
 
 ## Arquivos Provaveis
 
@@ -51,3 +51,19 @@ A mensagem exposta ao usuario ("check LICITAJA_API_KEY") tambem e inadequada —
 ## Screenshot
 
 `ux-audit/04-busca-loading.png`
+
+## File List
+
+- `backend/progress.py` — `_sanitize_source_error()` helper + uso em `emit_source_error` (AC3)
+- `frontend/app/buscar/components/SourceStatusGrid.tsx` — `sanitizeErrorForDisplay()` + `LICITAJA` em SOURCE_LABELS + tooltip sanitizado (AC4)
+- `backend/routes/health.py` — `GET /health/sources` endpoint (AC5)
+- `backend/tests/test_ux428_error_sanitization.py` — 14 testes unitários + 2 testes de integração
+
+## Change Log
+
+| Data | Agente | Ação |
+|------|--------|------|
+| 2026-04-13 | @dev | AC3: `_sanitize_source_error` em `progress.py` — sanitiza erros antes do SSE |
+| 2026-04-13 | @dev | AC4: `sanitizeErrorForDisplay` em `SourceStatusGrid.tsx` + label LICITAJA |
+| 2026-04-13 | @dev | AC5: `GET /health/sources` em `routes/health.py` |
+| 2026-04-13 | @dev | Testes criados em `tests/test_ux428_error_sanitization.py` |

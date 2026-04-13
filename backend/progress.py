@@ -29,6 +29,31 @@ from redis_pool import get_redis_pool, is_redis_available
 
 logger = logging.getLogger(__name__)
 
+
+def _sanitize_source_error(error: str, source: str) -> str:
+    """UX-428 AC3: Map technical error strings to user-friendly messages.
+
+    Prevents internal details (HTTP status codes, env var names, auth tokens)
+    from reaching the user via SSE events and frontend badges.
+    """
+    lower = error.lower()
+    if (
+        "401" in error
+        or "authentication" in lower
+        or "auth" in lower
+        or "_api_key" in lower
+        or "api key" in lower
+        or "api_key" in lower
+    ):
+        return f"{source} indisponível"
+    if "403" in error or "forbidden" in lower:
+        return f"{source} indisponível"
+    if "429" in error or "rate limit" in lower:
+        return f"{source} sobrecarregado"
+    if "timeout" in lower:
+        return f"{source} não respondeu a tempo"
+    return f"{source}: erro temporário"
+
 # STORY-276: Terminal stages that trigger stream EXPIRE
 _TERMINAL_STAGES = frozenset({
     "complete", "error", "degraded", "refresh_available", "search_complete",
@@ -388,13 +413,14 @@ class ProgressTracker:
 
         Non-terminal event — SSE stream stays open.
         """
+        safe_error = _sanitize_source_error(error, source)
         event = ProgressEvent(
             stage="source_error",
             progress=-1,
-            message=f"Fonte {source}: falhou — {error}",
+            message=f"Fonte {source}: {safe_error}",
             detail={
                 "source": source,
-                "error": error,
+                "error": safe_error,
                 "duration_ms": duration_ms,
             },
         )

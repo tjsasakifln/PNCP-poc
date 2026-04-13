@@ -64,6 +64,36 @@ async def background_tasks_health():
     return task_registry.get_health()
 
 
+@router.get("/health/sources")
+async def sources_health():
+    """UX-428 AC5: Health status for all configured procurement sources.
+
+    Returns enabled/disabled state and availability for each source.
+    Read-only — no side effects.
+    """
+    from source_config.sources import source_health_registry, get_source_config
+    cfg = get_source_config()
+    result: dict = {}
+    for src_config in [
+        cfg.pncp,
+        cfg.portal,
+        cfg.licitar,
+        cfg.compras_gov,
+        cfg.portal_transparencia,
+        cfg.bll,
+        cfg.bnc,
+        cfg.querido_diario,
+    ]:
+        code = src_config.code.value
+        status = source_health_registry.get_status(code)
+        result[code] = {
+            "enabled": src_config.enabled,
+            "status": status,
+            "available": src_config.enabled and source_health_registry.is_available(code),
+        }
+    return {"sources": result}
+
+
 @router.get("/health/cache")
 async def cache_health():
     """AC7: Health check for all cache levels.
