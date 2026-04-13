@@ -37,6 +37,16 @@ jest.mock("../../lib/searchStatePersistence", () => ({
   restoreSearchState: () => mockRestoreSearchState(),
 }));
 
+const mockSaveNavSearch = jest.fn(() => true);
+const mockRestoreNavSearch = jest.fn(() => null);
+const mockClearNavSearch = jest.fn();
+jest.mock("../../lib/navSearchCache", () => ({
+  saveNavSearch: (...args: unknown[]) => mockSaveNavSearch(...args),
+  restoreNavSearch: () => mockRestoreNavSearch(),
+  clearNavSearch: () => mockClearNavSearch(),
+  hasNavSearch: jest.fn(() => false),
+}));
+
 jest.mock("sonner", () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
@@ -712,6 +722,185 @@ describe("useSearchPersistence — isolation tests (FE-035)", () => {
       const params = makeParams();
       const { result } = renderHook(() => useSearchPersistence(params as any));
       expect(result.current.isMaxCapacity).toBe(false);
+    });
+  });
+
+  // =========================================================================
+  // UX-432 — Navigation cache
+  // =========================================================================
+
+  describe("UX-432 — Nav cache", () => {
+    beforeEach(() => {
+      mockRestoreNavSearch.mockReturnValue(null);
+      mockClearNavSearch.mockClear();
+      mockSaveNavSearch.mockClear();
+    });
+
+    describe("initial state", () => {
+      test("isRestoredFromNav starts false", () => {
+        const { result } = renderHook(() =>
+          useSearchPersistence(makeParams({ result: null }) as any)
+        );
+        expect(result.current.isRestoredFromNav).toBe(false);
+      });
+
+      test("restoredNavMeta starts null", () => {
+        const { result } = renderHook(() =>
+          useSearchPersistence(makeParams({ result: null }) as any)
+        );
+        expect(result.current.restoredNavMeta).toBeNull();
+      });
+    });
+
+    describe("restoreSearchStateOnMount — nav cache path", () => {
+      test("restores result and sets isRestoredFromNav when nav cache has data", () => {
+        const navResult = makeBuscaResult({ total_raw: 10 });
+        mockRestoreNavSearch.mockReturnValue({
+          result: navResult,
+          formState: { ufs: ["SC"], startDate: "2026-01-01", endDate: "2026-01-07", setor: "uniformes" },
+          meta: { sectorName: "Uniformes", ufsLabel: "SC" },
+          timestamp: Date.now(),
+          expiresAt: Date.now() + 1_800_000,
+        });
+
+        const mockSetResult = jest.fn();
+        const params = makeParams({ result: null, setResult: mockSetResult });
+        const { result } = renderHook(() => useSearchPersistence(params as any));
+
+        act(() => {
+          result.current.restoreSearchStateOnMount();
+        });
+
+        expect(mockSetResult).toHaveBeenCalledWith(navResult);
+        expect(result.current.isRestoredFromNav).toBe(true);
+        expect(result.current.restoredNavMeta).toEqual({
+          sectorName: "Uniformes",
+          ufsLabel: "SC",
+        });
+      });
+
+      test("restores filters (UFs, dates, setor) from nav cache", () => {
+        mockRestoreNavSearch.mockReturnValue({
+          result: makeBuscaResult(),
+          formState: {
+            ufs: ["SC", "RS"],
+            startDate: "2026-02-01",
+            endDate: "2026-02-15",
+            setor: "uniformes",
+          },
+          meta: { sectorName: "Uniformes", ufsLabel: "SC, RS" },
+          timestamp: Date.now(),
+          expiresAt: Date.now() + 1_800_000,
+        });
+
+        const filters = makeFilters();
+        const params = makeParams({ filters, result: null });
+        const { result } = renderHook(() => useSearchPersistence(params as any));
+
+        act(() => {
+          result.current.restoreSearchStateOnMount();
+        });
+
+        expect(filters.setUfsSelecionadas).toHaveBeenCalledWith(new Set(["SC", "RS"]));
+        expect(filters.setDataInicial).toHaveBeenCalledWith("2026-02-01");
+        expect(filters.setDataFinal).toHaveBeenCalledWith("2026-02-15");
+        expect(filters.setSearchMode).toHaveBeenCalledWith("setor");
+        expect(filters.setSetorId).toHaveBeenCalledWith("uniformes");
+      });
+
+      test("auth-flow cache takes priority over nav cache", () => {
+        // Auth-flow cache returns data
+        mockRestoreSearchState.mockReturnValueOnce({
+          result: makeBuscaResult(),
+          downloadId: "dl-123",
+          formState: { ufs: ["SP"], startDate: "2026-01-01", endDate: "2026-01-07" },
+        });
+        mockRestoreNavSearch.mockReturnValue({
+          result: makeBuscaResult({ total_raw: 99 }),
+          formState: { ufs: ["RS"] },
+          meta: { sectorName: "Nav", ufsLabel: "RS" },
+          timestamp: Date.now(),
+          expiresAt: Date.now() + 1_800_000,
+        });
+
+        const { result } = renderHook(() => useSearchPersistence(makeParams({ result: null }) as any));
+
+        act(() => {
+          result.current.restoreSearchStateOnMount();
+        });
+
+        // Nav cache restore should NOT have been called
+        expect(mockRestoreNavSearch).not.toHaveBeenCalled();
+        expect(result.current.isRestoredFromNav).toBe(false);
+      });
+
+      test("does nothing when nav cache returns null", () => {
+        mockRestoreNavSearch.mockReturnValue(null);
+
+        const mockSetResult = jest.fn();
+        const { result } = renderHook(() =>
+          useSearchPersistence(makeParams({ result: null, setResult: mockSetResult }) as any)
+        );
+
+        act(() => {
+          result.current.restoreSearchStateOnMount();
+        });
+
+        expect(mockSetResult).not.toHaveBeenCalled();
+        expect(result.current.isRestoredFromNav).toBe(false);
+      });
+    });
+
+    describe("handleNovaBusca", () => {
+      test("clears nav cache, resets result, and clears isRestoredFromNav", () => {
+        mockRestoreNavSearch.mockReturnValueOnce({
+          result: makeBuscaResult(),
+          formState: { ufs: ["SC"], startDate: "2026-01-01", endDate: "2026-01-07" },
+          meta: { sectorName: "Uniformes", ufsLabel: "SC" },
+          timestamp: Date.now(),
+          expiresAt: Date.now() + 1_800_000,
+        });
+
+        const mockSetResult = jest.fn();
+        const { result } = renderHook(() =>
+          useSearchPersistence(makeParams({ result: null, setResult: mockSetResult }) as any)
+        );
+
+        // First restore to set isRestoredFromNav = true
+        act(() => {
+          result.current.restoreSearchStateOnMount();
+        });
+        expect(result.current.isRestoredFromNav).toBe(true);
+
+        // Now click Nova busca
+        act(() => {
+          result.current.handleNovaBusca();
+        });
+
+        expect(mockClearNavSearch).toHaveBeenCalled();
+        expect(mockSetResult).toHaveBeenLastCalledWith(null);
+        expect(result.current.isRestoredFromNav).toBe(false);
+        expect(result.current.restoredNavMeta).toBeNull();
+      });
+    });
+
+    describe("auto-save on result change", () => {
+      test("calls saveNavSearch when result is set", () => {
+        const resultData = makeBuscaResult();
+        renderHook(() => useSearchPersistence(makeParams({ result: resultData }) as any));
+
+        // useEffect fires on mount with the current result
+        expect(mockSaveNavSearch).toHaveBeenCalledWith(
+          resultData,
+          expect.objectContaining({ ufs: expect.any(Array) }),
+          expect.objectContaining({ sectorName: expect.any(String), ufsLabel: expect.any(String) })
+        );
+      });
+
+      test("does not call saveNavSearch when result is null", () => {
+        renderHook(() => useSearchPersistence(makeParams({ result: null }) as any));
+        expect(mockSaveNavSearch).not.toHaveBeenCalled();
+      });
     });
   });
 });

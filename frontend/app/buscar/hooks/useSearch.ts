@@ -149,6 +149,10 @@ export interface UseSearchReturn {
   asyncSearchActive: boolean;
   sseReconnectAttempts: number;
   skeletonTimeoutReached: boolean;
+  // UX-432: Navigation persistence
+  isRestoredFromNav: boolean;
+  restoredNavMeta: import('../../../lib/navSearchCache').NavSearchMeta | null;
+  handleNovaBusca: () => void;
 }
 
 // ── Orchestrator ────────────────────────────────────────────────────────
@@ -458,5 +462,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     asyncSearchActive: execution.asyncSearchActive,
     sseReconnectAttempts: execution.sseReconnectAttemptsRef.current,
     skeletonTimeoutReached: execution.skeletonTimeoutReached,
+    // UX-432
+    isRestoredFromNav: persistence.isRestoredFromNav,
+    restoredNavMeta: persistence.restoredNavMeta,
+    handleNovaBusca: persistence.handleNovaBusca,
   };
 }

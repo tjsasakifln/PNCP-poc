@@ -29,6 +29,7 @@ import { APP_NAME } from "../../lib/config";
 import { TrialExitSurveyModal } from "../../components/TrialExitSurveyModal";
 import { GuidedTour } from "./components/GuidedTour";
 import { ReferralToast, shouldShowReferralToast } from "./components/ReferralToast";
+import { RestoredResultsBanner } from "./components/RestoredResultsBanner";
 import { clearNewBidsBadge } from "../../components/NewBidsNotificationBadge";
 
 function HomePageContent() {
@@ -264,6 +265,15 @@ function HomePageContent() {
 
             {/* Scroll target for progress area */}
             <div ref={orch.progressAreaRef} />
+
+            {/* UX-432: Restored results banner — shown when returning from another page */}
+            {orch.search.isRestoredFromNav && orch.search.restoredNavMeta && (
+              <RestoredResultsBanner
+                sectorName={orch.search.restoredNavMeta.sectorName}
+                ufsLabel={orch.search.restoredNavMeta.ufsLabel}
+                onNovaBusca={orch.search.handleNovaBusca}
+              />
+            )}
 
             {/* Error boundary wraps results area */}
             <SearchErrorBoundary onReset={orch.handleErrorBoundaryReset}>

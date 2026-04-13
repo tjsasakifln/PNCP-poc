@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { BuscaResult } from "../../types";
 import type { SavedSearch } from "../../../lib/savedSearches";
 import type { SearchFiltersSnapshot } from "./useSearch";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
 import { useAnalytics } from "../../../hooks/useAnalytics";
 import { restoreSearchState } from "../../../lib/searchStatePersistence";
+import {
+  saveNavSearch,
+  restoreNavSearch,
+  clearNavSearch,
+} from "../../../lib/navSearchCache";
+import type { NavSearchMeta } from "../../../lib/navSearchCache";
 import { toast } from "sonner";
 
 interface UseSearchPersistenceFilters {
@@ -63,6 +69,10 @@ export interface UseSearchPersistenceReturn {
   restoreSearchStateOnMount: () => void;
   dismissPartialResults: () => void;
   buscarForceFresh: () => Promise<void>;
+  // UX-432: Navigation persistence
+  isRestoredFromNav: boolean;
+  restoredNavMeta: NavSearchMeta | null;
+  handleNovaBusca: () => void;
 }
 
 export function useSearchPersistence(params: UseSearchPersistenceParams): UseSearchPersistenceReturn {
@@ -78,7 +88,31 @@ export function useSearchPersistence(params: UseSearchPersistenceParams): UseSea
   // STAB-006 AC3: Partial results recovery from localStorage
   const [showingPartialResults, setShowingPartialResults] = useState(false);
 
+  // UX-432: Navigation cache state
+  const [isRestoredFromNav, setIsRestoredFromNav] = useState(false);
+  const [restoredNavMeta, setRestoredNavMeta] = useState<NavSearchMeta | null>(null);
+
   const lastSearchParamsRef = useRef<SearchFiltersSnapshot | null>(null);
+
+  // UX-432 AC1: Auto-save results to nav cache whenever result changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!result) return;
+    const formState = {
+      ufs: Array.from(filters.ufsSelecionadas),
+      startDate: filters.dataInicial,
+      endDate: filters.dataFinal,
+      setor: filters.searchMode === 'setor' ? filters.setorId : undefined,
+      includeKeywords: filters.searchMode === 'termos' ? filters.termosArray : undefined,
+      municipios: filters.municipios.map((m) => m.codigoIBGE ?? m.nome),
+    };
+    const ufsLabel = Array.from(filters.ufsSelecionadas).join(', ');
+    const meta: NavSearchMeta = {
+      sectorName: filters.searchMode === 'setor' ? (filters.sectorName || '') : (filters.termosArray.join(', ') || ''),
+      ufsLabel,
+    };
+    saveNavSearch(result, formState, meta);
+  }, [result]); // intentionally only re-runs when result changes; filters captured via closure
 
   const handleSaveSearch = useCallback(() => {
     if (!result) return;
@@ -151,6 +185,7 @@ export function useSearchPersistence(params: UseSearchPersistenceParams): UseSea
   }, [filters, buscar, trackEvent]);
 
   const restoreSearchStateOnMount = useCallback(() => {
+    // 1. Auth-flow cache (one-time use, for OAuth redirect recovery — existing behaviour)
     const restored = restoreSearchState();
     if (restored) {
       if (restored.result) setResult(restored.result as BuscaResult);
@@ -162,8 +197,32 @@ export function useSearchPersistence(params: UseSearchPersistenceParams): UseSea
       if (formState.includeKeywords?.length) { filters.setSearchMode('termos'); filters.setTermosArray(formState.includeKeywords); }
       toast.success('Resultados da análise restaurados! Voce pode fazer o download agora.');
       trackEvent('search_state_auto_restored', { download_id: restored.downloadId });
+      return; // auth-flow cache takes priority — skip nav cache
+    }
+
+    // 2. UX-432 AC2: Nav cache — restore results when returning from another page
+    const navEntry = restoreNavSearch();
+    if (navEntry) {
+      if (navEntry.result) setResult(navEntry.result as BuscaResult);
+      const { formState, meta } = navEntry;
+      if (formState.ufs?.length) filters.setUfsSelecionadas(new Set(formState.ufs));
+      if (formState.startDate) filters.setDataInicial(formState.startDate);
+      if (formState.endDate) filters.setDataFinal(formState.endDate);
+      if (formState.setor) { filters.setSearchMode('setor'); filters.setSetorId(formState.setor); }
+      if (formState.includeKeywords?.length) { filters.setSearchMode('termos'); filters.setTermosArray(formState.includeKeywords); }
+      setIsRestoredFromNav(true);
+      setRestoredNavMeta(meta);
+      trackEvent('nav_search_state_restored', { sector: meta.sectorName });
     }
   }, [setResult, filters, trackEvent]);
+
+  // UX-432 AC3: Dismiss banner and discard cached results — start fresh
+  const handleNovaBusca = useCallback(() => {
+    clearNavSearch();
+    setIsRestoredFromNav(false);
+    setRestoredNavMeta(null);
+    setResult(null);
+  }, [setResult]);
 
   const buscarForceFresh = useCallback(async () => buscar({ forceFresh: true }), [buscar]);
 
@@ -189,5 +248,9 @@ export function useSearchPersistence(params: UseSearchPersistenceParams): UseSea
     restoreSearchStateOnMount,
     dismissPartialResults,
     buscarForceFresh,
+    // UX-432
+    isRestoredFromNav,
+    restoredNavMeta,
+    handleNovaBusca,
   };
 }

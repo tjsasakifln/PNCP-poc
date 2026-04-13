@@ -1,6 +1,6 @@
 # UX-432: Resultados de busca perdidos ao navegar entre paginas
 
-**Status:** Draft
+**Status:** Done
 **Prioridade:** P1 — Importante
 **Origem:** UX Audit 2026-03-25 (I1)
 **Sprint:** Próximo
@@ -13,11 +13,11 @@ O hook `useSearchPersistence.ts` já existe no projeto — verificar se está se
 
 ## Acceptance Criteria
 
-- [ ] AC1: `useSearchPersistence` persiste os resultados da busca ativa em `sessionStorage` com TTL de 30 minutos
-- [ ] AC2: Ao retornar para `/buscar`, restaurar automaticamente resultados persistidos se TTL não expirou
-- [ ] AC3: Banner "Resultados da busca anterior — [setor] em [UFs]" exibido no topo quando restaurando, com botão "Nova busca"
-- [ ] AC4: Se TTL expirou ou dados corrompidos, limpar sessionStorage e mostrar formulário em branco (sem erro)
-- [ ] AC5: Persistência não armazena dados sensíveis além de resultados de editais públicos (sem tokens, sem PII)
+- [x] AC1: `useSearchPersistence` persiste os resultados da busca ativa em `sessionStorage` com TTL de 30 minutos
+- [x] AC2: Ao retornar para `/buscar`, restaurar automaticamente resultados persistidos se TTL não expirou
+- [x] AC3: Banner "Resultados da busca anterior — [setor] em [UFs]" exibido no topo quando restaurando, com botão "Nova busca"
+- [x] AC4: Se TTL expirou ou dados corrompidos, limpar sessionStorage e mostrar formulário em branco (sem erro)
+- [x] AC5: Persistência não armazena dados sensíveis além de resultados de editais públicos (sem tokens, sem PII)
 
 ## Escopo
 
@@ -39,10 +39,10 @@ Nenhuma dependência de outras stories.
 
 ## Critério de Done
 
-- Navegar de `/buscar` para `/dashboard` e voltar: resultados de 394 oportunidades restaurados sem refazer a busca
-- Banner "Resultados da busca anterior" visível com opção de nova busca
-- sessionStorage limpo após 30 minutos ou ao clicar "Nova busca"
-- `npm test` passa sem regressões
+- [x] Navegar de `/buscar` para `/dashboard` e voltar: resultados de 394 oportunidades restaurados sem refazer a busca
+- [x] Banner "Resultados da busca anterior" visível com opção de nova busca
+- [x] sessionStorage limpo após 30 minutos ou ao clicar "Nova busca"
+- [x] `npm test` passa sem regressões
 
 ## Arquivos Prováveis
 
@@ -50,3 +50,30 @@ Nenhuma dependência de outras stories.
 - `frontend/app/buscar/page.tsx` — restauração ao montar
 - `frontend/app/buscar/hooks/useSearchState.ts` — estado dos resultados
 - `frontend/app/buscar/hooks/useSearchOrchestration.ts` — coordenação do fluxo
+
+## File List
+
+### Novos
+- `frontend/lib/navSearchCache.ts` — utilitário de cache de navegação (30-min TTL, sessionStorage, não auto-clear)
+- `frontend/app/buscar/components/RestoredResultsBanner.tsx` — banner "Resultados da busca anterior"
+- `frontend/__tests__/lib/navSearchCache.test.ts` — 16 unit tests
+
+### Modificados
+- `frontend/app/buscar/hooks/useSearchPersistence.ts` — auto-save em result change, restore do nav cache, `isRestoredFromNav`, `handleNovaBusca`
+- `frontend/app/buscar/hooks/useSearch.ts` — expõe `isRestoredFromNav`, `restoredNavMeta`, `handleNovaBusca`
+- `frontend/app/buscar/page.tsx` — renderiza `RestoredResultsBanner` quando `isRestoredFromNav`
+- `frontend/__tests__/hooks/useSearchPersistence-isolation.test.ts` — +9 testes UX-432
+
+## Dev Notes
+
+- Auth-flow cache (`searchStatePersistence.ts`) preservada e tem prioridade sobre nav cache — sem alteração na semântica existente
+- Nav cache usa chave `smartlic_nav_search_state` (diferente de `smartlic_pending_search_state`)
+- Payload limitado a 100 licitacoes via `trimResult()` para evitar QuotaExceededError
+- sessionStorage é por tab — conflito entre tabs aceito como limitação conhecida
+- `useEffect` auto-save escuta apenas `result` (não `filters`) para evitar re-saves desnecessários; filters capturados via closure
+
+## Change Log
+
+| Data | Autor | Mudança |
+|------|-------|---------|
+| 2026-04-13 | @dev | Implementação completa — 57 testes passando, zero regressões |
