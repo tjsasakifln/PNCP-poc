@@ -75,7 +75,8 @@ RUN chmod +x /app/start.sh
 # MED-SEC-003: Run as non-root user
 USER appuser
 
-# CRIT-SIGSEGV-FIX: Force uvicorn standalone to eliminate SIGSEGV from Gunicorn fork.
-# cryptography C extensions are fork-unsafe and crash workers on POST body parsing.
-# Use start.sh only when RUNNER != uvicorn (via shell form for env var expansion).
-CMD ["sh", "-c", "if [ \"$RUNNER\" = 'uvicorn' ]; then exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --timeout-keep-alive 75; else exec /app/start.sh; fi"]
+# CRIT-083: start.sh is authoritative for all runner modes.
+# Default: uvicorn spawn-based workers (RUNNER=uvicorn, safe with cryptography>=46).
+# Opt-in: RUNNER=gunicorn for Gunicorn prefork mode.
+# Railway overrides this via railway.toml startCommand.
+CMD ["/app/start.sh"]

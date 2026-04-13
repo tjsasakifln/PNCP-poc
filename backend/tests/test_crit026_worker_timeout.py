@@ -77,7 +77,7 @@ class TestSSEGeneratorAbruptLogging:
         mock_tracker.queue = mock_queue
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01), \
              caplog.at_level(logging.ERROR, logger="routes.search_sse"):
 
@@ -106,7 +106,7 @@ class TestSSEGeneratorAbruptLogging:
         )
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01), \
              caplog.at_level(logging.DEBUG, logger="routes.search_sse"):
 
@@ -149,13 +149,13 @@ class TestSSEGeneratorAbruptLogging:
 class TestStartShConfig:
     """Validate start.sh configuration values."""
 
-    def test_start_sh_has_120s_timeout(self):
-        """GTM-STAB-002 AC3: GUNICORN_TIMEOUT default is 120s (was 180s, aligned with Railway proxy)."""
+    def test_start_sh_has_110s_timeout(self):
+        """GTM-INFRA-001 AC7: GUNICORN_TIMEOUT default is 110s (< Railway hard-timeout 120s to prevent silent death)."""
         import os
         start_sh_path = os.path.join(os.path.dirname(__file__), "..", "start.sh")
         with open(start_sh_path) as f:
             content = f.read()
-        assert "GUNICORN_TIMEOUT:-120" in content, "Default timeout should be 120s (GTM-STAB-002)"
+        assert "GUNICORN_TIMEOUT:-110" in content, "Default timeout should be 110s (GTM-INFRA-001 — must be < Railway 120s)"
 
     def test_start_sh_has_2_workers(self):
         """SLA-002: WEB_CONCURRENCY default is 2."""
@@ -174,9 +174,10 @@ class TestStartShConfig:
         assert "--keep-alive" in content, "start.sh should have --keep-alive flag"
 
     def test_start_sh_has_graceful_timeout_30(self):
-        """GTM-STAB-002: GUNICORN_GRACEFUL_TIMEOUT default is 30s (was 120s)."""
+        """GTM-STAB-002: GUNICORN_GRACEFUL_TIMEOUT defaults to 30s via GRACEFUL_SHUTDOWN_TIMEOUT."""
         import os
         start_sh_path = os.path.join(os.path.dirname(__file__), "..", "start.sh")
         with open(start_sh_path) as f:
             content = f.read()
-        assert "GUNICORN_GRACEFUL_TIMEOUT:-30" in content, "Graceful timeout should be 30s (GTM-STAB-002)"
+        # Actual line: GUNICORN_GRACEFUL_TIMEOUT="${GUNICORN_GRACEFUL_TIMEOUT:-${GRACEFUL_SHUTDOWN_TIMEOUT:-30}}"
+        assert "GRACEFUL_SHUTDOWN_TIMEOUT:-30" in content, "Graceful shutdown timeout must default to 30s (GTM-STAB-002)"

@@ -134,6 +134,22 @@ async def _periodic_saturation_metrics() -> None:
             HTTPX_POOL_CONNECTIONS_USED.labels(source="comprasgov").set(COMPRASGOV_BULKHEAD_CONCURRENCY + 2)
             TRACKER_ACTIVE_COUNT.set(get_active_tracker_count())
             BACKGROUND_RESULTS_COUNT.set(get_background_results_count())
+            # CRIT-083 AC5/AC6: Worker memory gauge + 512MB warning
+            try:
+                from health import get_memory_usage
+                from metrics import WORKER_MEMORY_BYTES
+                _mem = get_memory_usage()
+                _rss_mb = _mem["rss_mb"]
+                _pid = os.getpid()
+                WORKER_MEMORY_BYTES.labels(worker_pid=str(_pid)).set(_rss_mb * 1024 * 1024)
+                if _rss_mb > 512:
+                    logger.warning(
+                        "CRIT-083 AC6: Worker pid=%d RSS=%.1fMB exceeds 512MB threshold — "
+                        "consider reducing WEB_CONCURRENCY or investigating memory leak",
+                        _pid, _rss_mb,
+                    )
+            except Exception:
+                pass  # Graceful degradation — never block saturation loop
         except asyncio.CancelledError:
             break
         except Exception as e:
@@ -141,11 +157,12 @@ async def _periodic_saturation_metrics() -> None:
 
 
 def _check_async_multiworker_mismatch() -> None:
-    """CRIT-SYNC-FIX: Warn if async search is enabled with multiple workers.
+    """CRIT-083: Log multi-worker + async search configuration status.
 
-    Async mode uses an in-memory progress tracker that is not shared across
-    Gunicorn workers. When WEB_CONCURRENCY > 1 the POST and SSE requests may
-    hit different workers, causing the tracker-mismatch bug.
+    When WEB_CONCURRENCY > 1, cross-worker SSE progress is handled by
+    Redis Streams (STORY-276/STORY-294). If Redis is unavailable, the
+    in-memory fallback is per-worker and SSE may not show progress for
+    requests hitting a different worker than the POST.
     """
     from config.pipeline import ASYNC_SEARCH_DEFAULT, SEARCH_ASYNC_ENABLED
 
@@ -153,11 +170,12 @@ def _check_async_multiworker_mismatch() -> None:
     async_enabled = ASYNC_SEARCH_DEFAULT or SEARCH_ASYNC_ENABLED
 
     if async_enabled and web_concurrency > 1:
-        logger.critical(
-            "CRIT-SYNC-FIX: ASYNC_SEARCH_DEFAULT=%s and WEB_CONCURRENCY=%d — "
-            "this combination causes in-memory tracker mismatch across workers. "
-            "Set ASYNC_SEARCH_DEFAULT=false or WEB_CONCURRENCY=1 to avoid broken SSE progress.",
-            ASYNC_SEARCH_DEFAULT, web_concurrency,
+        logger.warning(
+            "CRIT-083: WEB_CONCURRENCY=%d with async search — "
+            "cross-worker SSE handled by Redis Streams (STORY-276). "
+            "If Redis is unavailable, in-memory fallback is per-worker; "
+            "SSE progress may not reach clients on a different worker.",
+            web_concurrency,
         )
 
 

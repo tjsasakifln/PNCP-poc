@@ -15,23 +15,28 @@ PROCESS_TYPE="${PROCESS_TYPE:-web}"
 
 case "$PROCESS_TYPE" in
   web)
-    # CRIT-041 AC9: RUNNER=uvicorn uses uvicorn standalone (no fork, no SIGSEGV risk).
-    # RUNNER=gunicorn (default) uses gunicorn prefork model (multi-worker).
-    RUNNER="${RUNNER:-gunicorn}"
+    # CRIT-083: RUNNER=uvicorn (default) uses uvicorn spawn-based workers — SAFE with cryptography>=46.
+    # spawn() creates clean processes; no fork() → no OpenSSL state corruption → no SIGSEGV.
+    # RUNNER=gunicorn (opt-in) uses gunicorn prefork model — kept for comparison only.
+    RUNNER="${RUNNER:-uvicorn}"
 
     if [ "$RUNNER" = "uvicorn" ]; then
-      echo "Starting web process (uvicorn standalone — no fork)..."
-      echo "  CRIT-041: Single-process mode eliminates ALL fork-unsafe C extension issues."
-      echo "  host=0.0.0.0, port=${PORT:-8000}, log-level=${UVICORN_LOG_LEVEL:-info}"
+      WORKERS="${WEB_CONCURRENCY:-2}"
+      echo "Starting web process (uvicorn spawn-based workers=${WORKERS})..."
+      echo "  CRIT-083: spawn() avoids os.fork() — eliminates cryptography/OpenSSL SIGSEGV."
+      echo "  Cross-worker SSE: Redis Streams (STORY-276). Graceful timeout: 120s."
+      echo "  host=0.0.0.0, port=${PORT:-8000}, workers=${WORKERS}, keep-alive=${GUNICORN_KEEP_ALIVE:-75}s"
 
       exec uvicorn main:app \
         --host "0.0.0.0" \
         --port "${PORT:-8000}" \
         --log-level "${UVICORN_LOG_LEVEL:-info}" \
-        --timeout-keep-alive "${GUNICORN_KEEP_ALIVE:-75}"
+        --timeout-keep-alive "${GUNICORN_KEEP_ALIVE:-75}" \
+        --workers "${WORKERS}" \
+        --timeout-graceful-shutdown 120
     fi
 
-    echo "Starting web process (gunicorn + uvicorn workers)..."
+    echo "Starting web process (gunicorn + uvicorn workers — opt-in via RUNNER=gunicorn)..."
 
     # STORY-303: --preload DISABLED by default (was true in CRIT-010).
     # cryptography>=46.0.5 + --preload causes SIGSEGV: OpenSSL initialized in master

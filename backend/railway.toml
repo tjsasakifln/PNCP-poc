@@ -11,16 +11,14 @@ dockerfilePath = "Dockerfile"
 watchPatterns = ["**"]
 
 [deploy]
-# CRIT-SIGSEGV-FIX: uvicorn standalone mode (NO --workers flag) eliminates
-# Segmentation Faults from cryptography/chardet C extensions in forked workers.
-# Even --workers 1 uses the multiprocess spawner which triggers SIGSEGV.
-#
-# WARNING: Do NOT set WEB_CONCURRENCY in Railway env vars. Uvicorn reads it
-# automatically to spawn multiple workers, which re-introduces the SIGSEGV
-# crashes. SmartLic relies on in-memory state (asyncio.Queue for SSE,
-# InMemoryCache L1, search progress tracker) that cannot be shared across
-# forked workers. Single-process mode is intentional, not a limitation.
-startCommand = "sh -c 'uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --timeout-keep-alive 75'"
+# CRIT-083: uvicorn --workers (spawn-based) — SAFE with cryptography>=46.
+# Research finding (CRIT-083-research-findings.md): Gunicorn uses os.fork() which
+# corrupts OpenSSL state → SIGSEGV. uvicorn --workers uses multiprocessing.spawn()
+# which creates clean processes with independent OpenSSL initialization.
+# 2 workers on Railway 1GB: ~500-600MB total (each worker ~200-300MB) — workable.
+# Cross-worker SSE: handled by Redis Streams (STORY-276, STORY-294).
+# Graceful shutdown: --timeout-graceful-shutdown 120 aligned with drainingSeconds.
+startCommand = "sh -c 'uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --timeout-keep-alive 75 --workers ${WEB_CONCURRENCY:-2} --timeout-graceful-shutdown 120'"
 healthcheckPath = "/health"
 # SLA-001 + STORY-303 AC6: 300s grace period for cold starts.
 # Without --preload (STORY-303), each worker loads 65+ modules independently (~5-15s).
@@ -47,7 +45,5 @@ drainingSeconds = 120
 #   - LOG_LEVEL=INFO
 #   - PNCP_TIMEOUT=30
 #   - PNCP_MAX_RETRIES=5
-#
-# DANGER - DO NOT SET:
-#   - WEB_CONCURRENCY (see CRIT-SIGSEGV-FIX comment above)
+#   - WEB_CONCURRENCY=2 (default: 2 spawn-based workers — safe with cryptography)
 # =============================================================================
