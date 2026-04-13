@@ -172,8 +172,8 @@ describe("useSearchFilters (isolated)", () => {
       expect(result.current.setoresLoading).toBe(false);
     });
 
-    // Default includes SP (from useState initializer)
-    expect(result.current.ufsSelecionadas.has("SP")).toBe(true);
+    // Default is empty (no profile context in localStorage)
+    expect(result.current.ufsSelecionadas.size).toBe(0);
 
     // Toggle RJ on
     act(() => {
