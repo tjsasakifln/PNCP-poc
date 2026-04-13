@@ -1,8 +1,10 @@
-"""STORY-430 AC4: Endpoint público para sitemap — combos setor×UF indexáveis.
+"""SEO-471: Endpoint público para sitemap — combos setor×UF indexáveis.
 
-Retorna somente as combinações (setor, uf) que possuem >= MIN_ACTIVE_BIDS_FOR_INDEX
-editais ativos no datalake. Usado por sitemap.ts para excluir thin content do sitemap.
+Retorna a união de dois conjuntos:
+1. Combos com bids >= MIN_ACTIVE_BIDS_FOR_INDEX no datalake (últimos 30 dias)
+2. Combos com contracts >= MIN_CONTRACTS_FOR_INDEX em pncp_supplier_contracts
 
+Usado por sitemap.ts para excluir thin content do sitemap.
 Público (sem auth). Cache InMemory 24h.
 """
 
@@ -23,7 +25,14 @@ router = APIRouter(tags=["sitemap"])
 _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h
 _cache: Optional[tuple[dict, float]] = None
 
-_DEFAULT_THRESHOLD = 5
+_DEFAULT_BIDS_THRESHOLD = 5
+_DEFAULT_CONTRACTS_THRESHOLD = 1
+
+_ALL_UFS = [
+    "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA",
+    "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN",
+    "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+]
 
 
 class LicitacoesIndexableResponse(BaseModel):
@@ -39,7 +48,7 @@ class LicitacoesIndexableResponse(BaseModel):
     summary="Combos setor×UF indexáveis (público — sitemap)",
 )
 async def get_licitacoes_indexable():
-    """Retorna combos setor×UF com >= threshold editais ativos (últimos 30 dias)."""
+    """Retorna combos setor×UF com bids OR contracts suficientes."""
     global _cache
 
     if _cache is not None:
@@ -47,14 +56,14 @@ async def get_licitacoes_indexable():
         if time.time() - ts < _CACHE_TTL_SECONDS:
             return LicitacoesIndexableResponse(**data)
 
-    threshold = int(os.getenv("MIN_ACTIVE_BIDS_FOR_INDEX", str(_DEFAULT_THRESHOLD)))
-    combos = await _compute_indexable_combos(threshold)
+    bids_threshold = int(os.getenv("MIN_ACTIVE_BIDS_FOR_INDEX", str(_DEFAULT_BIDS_THRESHOLD)))
+    combos = await _compute_indexable_combos(bids_threshold)
 
     from datetime import datetime, timezone
     result = {
         "combos": combos,
         "total": len(combos),
-        "threshold": threshold,
+        "threshold": bids_threshold,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     _cache = (result, time.time())
@@ -69,21 +78,60 @@ async def refresh_sitemap_cache(_admin=Depends(require_admin)):
     """Clears the 24h in-memory sitemap cache and recomputes indexable combos immediately."""
     global _cache
     _cache = None
-    threshold = int(os.getenv("MIN_ACTIVE_BIDS_FOR_INDEX", str(_DEFAULT_THRESHOLD)))
-    combos = await _compute_indexable_combos(threshold)
+    bids_threshold = int(os.getenv("MIN_ACTIVE_BIDS_FOR_INDEX", str(_DEFAULT_BIDS_THRESHOLD)))
+    combos = await _compute_indexable_combos(bids_threshold)
     from datetime import datetime, timezone
     result = {
         "combos": combos,
         "total": len(combos),
-        "threshold": threshold,
+        "threshold": bids_threshold,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     _cache = (result, time.time())
     logger.info("sitemap_licitacoes: cache refreshed manually — %d combos", len(combos))
-    return {"status": "refreshed", "total_combos": len(combos), "threshold": threshold}
+    return {"status": "refreshed", "total_combos": len(combos), "threshold": bids_threshold}
 
 
-async def _compute_indexable_combos(threshold: int) -> list[dict]:
+async def _compute_indexable_combos(bids_threshold: int) -> list[dict]:
+    """Retorna a união de combos por bids e por contratos históricos.
+
+    Executa as duas fontes em paralelo e faz dedup por (setor, uf).
+    Loga quantos combos vieram de cada fonte (AC9).
+    """
+    contracts_threshold = int(os.getenv("MIN_CONTRACTS_FOR_INDEX", str(_DEFAULT_CONTRACTS_THRESHOLD)))
+
+    bids_task = _compute_bids_combos(bids_threshold)
+    contracts_task = _compute_contracts_combos(contracts_threshold)
+
+    bids_combos, contracts_combos = await asyncio.gather(bids_task, contracts_task)
+
+    # União dedup: bids têm precedência, contracts adicionam apenas combos novos
+    seen: set[tuple[str, str]] = set()
+    for c in bids_combos:
+        seen.add((c["setor"], c["uf"]))
+
+    contracts_only: list[dict] = []
+    for c in contracts_combos:
+        key = (c["setor"], c["uf"])
+        if key not in seen:
+            contracts_only.append(c)
+            seen.add(key)
+
+    all_combos = bids_combos + contracts_only
+
+    logger.info(
+        "sitemap_licitacoes: %d combos de bids + %d combos exclusivos de contratos = %d total "
+        "(bids_threshold=%d, contracts_threshold=%d)",
+        len(bids_combos),
+        len(contracts_only),
+        len(all_combos),
+        bids_threshold,
+        contracts_threshold,
+    )
+    return all_combos
+
+
+async def _compute_bids_combos(threshold: int) -> list[dict]:
     """Consulta datalake por setor e conta resultados por UF.
 
     15 queries paralelas (uma por setor), cada uma retorna até 3000 resultados.
@@ -93,49 +141,39 @@ async def _compute_indexable_combos(threshold: int) -> list[dict]:
         from datalake_query import query_datalake
         from sectors import SECTORS
     except ImportError:
-        logger.warning("sitemap_licitacoes: importações não disponíveis")
+        logger.warning("sitemap_licitacoes: importações de bids não disponíveis")
         return []
 
     from datetime import datetime, timedelta
     data_final = datetime.now().strftime("%Y-%m-%d")
     data_inicial = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
 
-    all_ufs = [
-        "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA",
-        "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN",
-        "RO", "RR", "RS", "SC", "SE", "SP", "TO",
-    ]
-
     async def query_sector(setor_id: str, sector) -> list[dict]:
-        """Consulta um setor e retorna lista de {setor, uf} com count >= threshold."""
-        keywords = list(sector.keywords)[:30]  # limitar keywords para performance
+        keywords = list(sector.keywords)[:30]
         try:
             results = await query_datalake(
-                ufs=all_ufs,
+                ufs=_ALL_UFS,
                 keywords=keywords,
                 data_inicial=data_inicial,
                 data_final=data_final,
                 limit=3000,
             )
         except Exception as e:
-            logger.warning("sitemap_licitacoes: falha ao consultar setor %s: %s", setor_id, e)
+            logger.warning("sitemap_licitacoes: falha ao consultar bids setor %s: %s", setor_id, e)
             return []
 
-        # Contar por UF
         uf_counts: dict[str, int] = {}
         for r in results:
             uf = (r.get("uf") or r.get("codigoUnidadeFederativa") or "").upper()
             if uf and len(uf) == 2:
                 uf_counts[uf] = uf_counts.get(uf, 0) + 1
 
-        # Retornar combos acima do limiar
         return [
             {"setor": setor_id, "uf": uf.lower()}
             for uf, count in uf_counts.items()
             if count >= threshold
         ]
 
-    # Executar todos os setores em paralelo
     tasks = [query_sector(setor_id, sector) for setor_id, sector in SECTORS.items()]
     results_by_sector = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -144,7 +182,75 @@ async def _compute_indexable_combos(threshold: int) -> list[dict]:
         if isinstance(res, list):
             combos.extend(res)
         elif isinstance(res, Exception):
-            logger.warning("sitemap_licitacoes: exception em task: %s", res)
+            logger.warning("sitemap_licitacoes: exception em bids task: %s", res)
 
-    logger.info("sitemap_licitacoes: %d combos indexáveis (threshold=%d)", len(combos), threshold)
+    return combos
+
+
+async def _compute_contracts_combos(threshold: int) -> list[dict]:
+    """Consulta pncp_supplier_contracts via RPC count_contracts_by_setor_uf.
+
+    15 setores em paralelo (AC4). Dentro de cada setor, 27 UFs em paralelo.
+    Usa asyncio.to_thread para não bloquear o event loop com chamadas supabase-py síncronas.
+    """
+    try:
+        from supabase_client import get_supabase
+        from sectors import SECTORS
+    except ImportError:
+        logger.warning("sitemap_licitacoes: importações de contracts não disponíveis")
+        return []
+
+    try:
+        sb = get_supabase()
+    except Exception as e:
+        logger.warning("sitemap_licitacoes: falha ao obter supabase client: %s", e)
+        return []
+
+    async def count_contracts(setor_id: str, keywords: list[str], uf: str) -> tuple[str, str, int]:
+        """Chama RPC count_contracts_by_setor_uf para um par (setor, uf)."""
+        try:
+            resp = await asyncio.to_thread(
+                lambda: sb.rpc(
+                    "count_contracts_by_setor_uf",
+                    {"p_keywords": keywords, "p_uf": uf},
+                ).execute()
+            )
+            count = resp.data if isinstance(resp.data, int) else 0
+            return setor_id, uf, count
+        except Exception as e:
+            logger.debug(
+                "sitemap_licitacoes: contracts RPC falhou setor=%s uf=%s: %s",
+                setor_id, uf, e,
+            )
+            return setor_id, uf, 0
+
+    async def query_sector_contracts(setor_id: str, sector) -> list[dict]:
+        """Consulta todos as UFs para um setor em paralelo."""
+        keywords = list(sector.keywords)[:20]
+        uf_tasks = [count_contracts(setor_id, keywords, uf) for uf in _ALL_UFS]
+        results = await asyncio.gather(*uf_tasks, return_exceptions=True)
+
+        combos = []
+        for r in results:
+            if isinstance(r, tuple):
+                _, uf, count = r
+                if count >= threshold:
+                    combos.append({"setor": setor_id, "uf": uf.lower()})
+            elif isinstance(r, Exception):
+                logger.debug("sitemap_licitacoes: exception em contracts uf task: %s", r)
+        return combos
+
+    sector_tasks = [
+        query_sector_contracts(setor_id, sector)
+        for setor_id, sector in SECTORS.items()
+    ]
+    results_by_sector = await asyncio.gather(*sector_tasks, return_exceptions=True)
+
+    combos: list[dict] = []
+    for res in results_by_sector:
+        if isinstance(res, list):
+            combos.extend(res)
+        elif isinstance(res, Exception):
+            logger.warning("sitemap_licitacoes: exception em contracts sector task: %s", res)
+
     return combos

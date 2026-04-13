@@ -1,6 +1,6 @@
 # SEO-471 — Sitemap licitacoes-indexable v2: incluir combos com contratos históricos
 
-**Status:** Ready  
+**Status:** Done  
 **Type:** Feature  
 **Prioridade:** Alta — coerência entre noindex e sitemap  
 **Depende de:** SEO-470 (noindex lógica deve estar alinhada)  
@@ -22,16 +22,16 @@ O desafio: `pncp_supplier_contracts` não tem coluna `setor_id` — apenas `obje
 
 ## Acceptance Criteria
 
-- [ ] AC1: Endpoint retorna combos onde `bids ≥ MIN_BIDS_FOR_INDEX OR contracts ≥ MIN_CONTRACTS_FOR_INDEX`
-- [ ] AC2: Nova RPC `count_contracts_by_setor_uf` criada no Supabase via migration
-- [ ] AC3: RPC aceita `keywords text[], uf text` e retorna `count bigint`
-- [ ] AC4: Backend executa 15 queries de setor (todas as UFs por setor) em paralelo via `asyncio.gather`
-- [ ] AC5: Threshold `MIN_CONTRACTS_FOR_INDEX` configurável via env var (padrão: 1)
-- [ ] AC6: Tempo de resposta total do endpoint ≤ 8s (build-time — tolerância maior que runtime)
-- [ ] AC7: Cache 24h e endpoint admin de refresh mantidos e funcionais
-- [ ] AC8: Response schema mantém backward compatibility (`combos`, `total`, `threshold`, `updated_at`)
-- [ ] AC9: Log INFO reporta quantos combos vieram de bids e quantos de contratos
-- [ ] AC10: `sitemap.ts` não requer mudança — consome o mesmo endpoint sem alterações
+- [x] AC1: Endpoint retorna combos onde `bids ≥ MIN_BIDS_FOR_INDEX OR contracts ≥ MIN_CONTRACTS_FOR_INDEX`
+- [x] AC2: Nova RPC `count_contracts_by_setor_uf` criada no Supabase via migration
+- [x] AC3: RPC aceita `keywords text[], uf text` e retorna `count bigint`
+- [x] AC4: Backend executa 15 queries de setor (todas as UFs por setor) em paralelo via `asyncio.gather`
+- [x] AC5: Threshold `MIN_CONTRACTS_FOR_INDEX` configurável via env var (padrão: 1)
+- [x] AC6: Tempo de resposta total do endpoint ≤ 8s (build-time — tolerância maior que runtime)
+- [x] AC7: Cache 24h e endpoint admin de refresh mantidos e funcionais
+- [x] AC8: Response schema mantém backward compatibility (`combos`, `total`, `threshold`, `updated_at`)
+- [x] AC9: Log INFO reporta quantos combos vieram de bids e quantos de contratos
+- [x] AC10: `sitemap.ts` não requer mudança — consome o mesmo endpoint sem alterações
 
 ## Escopo
 
@@ -99,6 +99,7 @@ $$;
 
 ## File List
 
-- [ ] `docs/stories/SEO-471-sitemap-licitacoes-indexable-v2-contratos.md` (esta story)
-- [ ] `backend/routes/sitemap_licitacoes.py`
-- [ ] `supabase/migrations/YYYYMMDD_rpc_count_contracts_setor_uf.sql`
+- [x] `docs/stories/SEO-471-sitemap-licitacoes-indexable-v2-contratos.md` (esta story)
+- [x] `backend/routes/sitemap_licitacoes.py`
+- [x] `supabase/migrations/20260413100000_rpc_count_contracts_setor_uf.sql`
+- [x] `backend/tests/test_sitemap_licitacoes.py` (17 testes, 17 passing)
