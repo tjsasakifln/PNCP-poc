@@ -1,6 +1,6 @@
 # UX-435: Banner "Atualizando dados em tempo real" nunca desaparece
 
-**Status:** Ready
+**Status:** InReview
 **Prioridade:** P1 — Importante
 **Origem:** UX Audit 2026-03-25 (I4)
 **Sprint:** Atual
@@ -11,10 +11,10 @@ Apos os 394 resultados carregarem com sucesso, o banner amarelo "Atualizando dad
 
 ## Acceptance Criteria
 
-- [ ] AC1: Banner deve desaparecer quando busca finalizar (evento SSE `complete` ou `done`)
-- [ ] AC2: Ou trocar texto para "Busca concluida — 394 oportunidades encontradas"
-- [ ] AC3: Se existe revalidacao em background, mostrar "Buscando atualizacoes..." com timeout de 30s
-- [ ] AC4: Testar com busca que completa normalmente e busca que usa cache stale
+- [x] AC1: Banner deve desaparecer quando busca finalizar (evento SSE `complete` ou `done`)
+- [x] AC2: Ou trocar texto para "Busca concluida — 394 oportunidades encontradas"
+- [x] AC3: Se existe revalidacao em background, mostrar "Buscando atualizacoes..." com timeout de 30s
+- [x] AC4: Testar com busca que completa normalmente e busca que usa cache stale
 
 ## Arquivos Provaveis
 
@@ -34,6 +34,15 @@ Apos os 394 resultados carregarem com sucesso, o banner amarelo "Atualizando dad
 ## Riscos
 
 - **Revalidação legítima:** Se o banner indica revalidação SWR em background (não apenas busca inicial), removê-lo prematuramente pode ocultar informação útil — AC3 cobre esse caso com timeout de 30s
+
+## File List
+
+- `frontend/app/buscar/hooks/execution/useSearchAPI.ts` — expõe `setLiveFetchInProgress` no retorno
+- `frontend/app/buscar/hooks/execution/useSearchExecutionImpl.ts` — adiciona `setLiveFetchInProgress` na interface e retorno
+- `frontend/app/buscar/hooks/useSearch.ts` — passa `setLiveFetchInProgress` e `liveFetchSearchIdRef` ao SSE handler
+- `frontend/app/buscar/hooks/useSearchSSEHandler.ts` — limpa `liveFetchInProgress` nos eventos SSE terminais
+- `frontend/app/buscar/components/SearchResultsBanners.tsx` — texto atualizado para "Buscando atualizações em segundo plano..."
+- `frontend/__tests__/components/SearchResultsBanners-ux435.test.tsx` — 5 testes AC4 (todos passando)
 
 ## Critério de Done
 

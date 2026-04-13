@@ -69,6 +69,7 @@ export interface UseSearchExecutionReturn {
   sseTerminalReceivedRef: React.MutableRefObject<boolean>;
   sseReconnectAttemptsRef: React.MutableRefObject<number>;
   liveFetchInProgress: boolean;
+  setLiveFetchInProgress: (v: boolean) => void;
   liveFetchSearchIdRef: React.MutableRefObject<string | null>;
   skeletonTimeoutReached: boolean;
   setSkeletonTimeoutReached: (b: boolean) => void;
@@ -199,6 +200,7 @@ export function useSearchExecution(params: UseSearchExecutionParams): UseSearchE
     asyncSearchActive, setAsyncSearchActive, asyncSearchActiveRef, asyncSearchIdRef,
     abortControllerRef, llmTimeoutRef, sseTerminalReceivedRef, sseReconnectAttemptsRef,
     liveFetchInProgress: api.liveFetchInProgress,
+    setLiveFetchInProgress: api.setLiveFetchInProgress,
     liveFetchSearchIdRef: api.liveFetchSearchIdRef,
     skeletonTimeoutReached, setSkeletonTimeoutReached, skeletonTimeoutTimerRef,
     searchButtonRef: searchButtonRef as React.RefObject<HTMLButtonElement>,

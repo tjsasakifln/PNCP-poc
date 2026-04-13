@@ -81,6 +81,7 @@ export interface UseSearchAPIParams {
 export interface UseSearchAPIReturn {
   quotaError: string | null;
   liveFetchInProgress: boolean;
+  setLiveFetchInProgress: (v: boolean) => void;
   liveFetchSearchIdRef: React.MutableRefObject<string | null>;
   finalizingTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   buscar: (options?: { forceFresh?: boolean }) => Promise<void>;
@@ -525,5 +526,5 @@ export function useSearchAPI(params: UseSearchAPIParams): UseSearchAPIReturn {
     }
   }, [abortControllerRef]);
 
-  return { quotaError, liveFetchInProgress, liveFetchSearchIdRef, finalizingTimerRef, buscar, handleRefreshResults, cancelSearch };
+  return { quotaError, liveFetchInProgress, setLiveFetchInProgress, liveFetchSearchIdRef, finalizingTimerRef, buscar, handleRefreshResults, cancelSearch };
 }

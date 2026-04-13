@@ -33,6 +33,9 @@ interface UseSearchSSEHandlerParams {
   handleExcelFailureRef: React.MutableRefObject<((isRegenerateAttempt: boolean) => void) | null>;
   excelFailCountRef: React.MutableRefObject<number>;
   excelToastFiredRef: React.MutableRefObject<boolean>;
+  // UX-435: clear live-fetch banner on SSE terminal event
+  setLiveFetchInProgress: (v: boolean) => void;
+  liveFetchSearchIdRef: React.MutableRefObject<string | null>;
 }
 
 export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
@@ -43,6 +46,7 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
     sseTerminalReceivedRef, llmTimeoutRef,
     setRetryCountdown, setRetryMessage, setRetryExhausted, retryTimerRef,
     handleExcelFailureRef, excelFailCountRef, excelToastFiredRef,
+    setLiveFetchInProgress, liveFetchSearchIdRef,
   } = params;
 
   const { refresh: refreshQuota } = useQuota();
@@ -54,6 +58,17 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
     // CRIT-SSE-FIX AC2: Track terminal SSE events so finally block knows when SSE is done
     if (['complete', 'error', 'degraded', 'search_complete'].includes(event.stage)) {
       sseTerminalReceivedRef.current = true;
+    }
+
+    // UX-435 AC1: Clear live-fetch banner when SSE terminal event arrives for
+    // the live-fetch flow (i.e. not an async Worker job). safe to call even
+    // when liveFetchInProgress is already false (React bails out on same value).
+    if (
+      ['complete', 'refresh_available', 'error', 'degraded'].includes(event.stage) &&
+      !asyncSearchActiveRef.current
+    ) {
+      setLiveFetchInProgress(false);
+      liveFetchSearchIdRef.current = null;
     }
 
     // GTM-CHECK: Discard SSE events from a previous search to prevent stale data injection
@@ -231,6 +246,7 @@ export function useSearchSSEHandler(params: UseSearchSSEHandlerParams) {
     sseTerminalReceivedRef, llmTimeoutRef, refreshQuota, trackEvent,
     setRetryCountdown, setRetryMessage, setRetryExhausted, retryTimerRef,
     handleExcelFailureRef, excelFailCountRef, excelToastFiredRef,
+    setLiveFetchInProgress, liveFetchSearchIdRef,
   ]);
 
   return { handleSseEvent };

@@ -235,6 +235,8 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     handleExcelFailureRef,
     excelFailCountRef,
     excelToastFiredRef,
+    setLiveFetchInProgress: execution.setLiveFetchInProgress,
+    liveFetchSearchIdRef: execution.liveFetchSearchIdRef,
   });
 
   // ── 5. SSE connection ──
