@@ -1,6 +1,6 @@
 # UX-434: Endpoints 404 em todas as paginas autenticadas
 
-**Status:** Ready
+**Status:** Done
 **Prioridade:** P1 — Importante
 **Origem:** UX Audit 2026-03-25 (I3)
 **Sprint:** Atual
@@ -15,10 +15,10 @@ Endpoints nao implementados no backend gerando requests desnecessarios e erros n
 
 ## Acceptance Criteria
 
-- [ ] AC1: Implementar `/api/alerts` (retornar `[]` se nao ha alertas) OU remover chamada do frontend
-- [ ] AC2: Implementar `/api/profile-completeness` OU remover chamada do frontend
-- [ ] AC3: Zero erros 404 no console durante navegacao normal
-- [ ] AC4: Se endpoints sao planejados para futuro, retornar 200 com body vazio (nao 404)
+- [x] AC1: Implementar `/api/alerts` (retornar `[]` se nao ha alertas) OU remover chamada do frontend
+- [x] AC2: Implementar `/api/profile-completeness` OU remover chamada do frontend
+- [x] AC3: Zero erros 404 no console durante navegacao normal
+- [x] AC4: Se endpoints sao planejados para futuro, retornar 200 com body vazio (nao 404)
 
 ## Arquivos Provaveis
 

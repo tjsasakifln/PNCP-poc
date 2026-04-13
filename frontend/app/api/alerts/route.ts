@@ -1,15 +1,31 @@
 /**
- * STORY-301: API proxy for email alerts CRUD.
- * GET /api/alerts → GET BACKEND_URL/v1/alerts
- * POST /api/alerts → POST BACKEND_URL/v1/alerts
+ * UX-434 STUB: Placeholder until alerts feature is implemented (STORY-301).
+ * Returns 200 with empty data to eliminate 404 console errors during navigation.
+ * Real implementation will proxy to BACKEND_URL/v1/alerts.
  */
-import { createProxyRoute } from "../../../lib/create-proxy-route";
+import { NextRequest, NextResponse } from "next/server";
 
-export const { GET, POST } = createProxyRoute({
-  backendPath: "/v1/alerts",
-  methods: ["GET", "POST"],
-  requireAuth: true,
-  authRequiredMessage: "Autenticacao necessaria.",
-  backendMissingMessage: "Servico temporariamente indisponivel",
-  errorMessage: "Erro ao carregar alertas",
-});
+function requireAuth(request: NextRequest): NextResponse | null {
+  if (!request.headers.get("authorization")) {
+    return NextResponse.json(
+      { message: "Autenticação necessária" },
+      { status: 401 },
+    );
+  }
+  return null;
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+  return NextResponse.json([], { status: 200 });
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const authError = requireAuth(request);
+  if (authError) return authError;
+  return NextResponse.json(
+    { id: null, message: "Funcionalidade em breve" },
+    { status: 200 },
+  );
+}
