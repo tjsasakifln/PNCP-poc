@@ -181,10 +181,44 @@ def _set_cached(key: str, data: dict) -> None:
 # Data generation
 # ---------------------------------------------------------------------------
 
+def _query_historical_sync(data_inicial: str, data_final: str) -> list[dict]:
+    """Direct Supabase query bypassing is_active filter — for historical months.
+
+    Used when the requested month is >30 days ago and data may be soft-deleted
+    (is_active=False) by the purge job. Queries pncp_raw_bids without the RPC
+    search_datalake which filters is_active=true.
+    """
+    from supabase_client import get_supabase
+    sb = get_supabase()
+    resp = (
+        sb.table("pncp_raw_bids")
+        .select("pncp_id, objeto_compra, valor_total_estimado, modalidade_id, uf, data_publicacao")
+        .gte("data_publicacao", data_inicial)
+        .lte("data_publicacao", data_final + "T23:59:59")
+        .limit(5000)
+        .execute()
+    )
+    rows = resp.data or []
+    # Normalize to keys expected by _generate_relatorio processing
+    normalized: list[dict] = []
+    for r in rows:
+        dp = r.get("data_publicacao") or ""
+        normalized.append({
+            "uf": (r.get("uf") or "").upper(),
+            "modalidade_id": r.get("modalidade_id") or 0,
+            "valor_estimado": float(r.get("valor_total_estimado") or 0),
+            "data_publicacao": str(dp)[:10] if dp else "",
+            "titulo": r.get("objeto_compra") or "",
+        })
+    return normalized
+
+
 async def _generate_relatorio(mes: int, ano: int) -> dict:
     from datalake_query import query_datalake
     from unified_schemas.unified import VALID_UFS
+    import asyncio
     import calendar
+    from datetime import date
 
     # Date range for the requested month
     _, last_day = calendar.monthrange(ano, mes)
@@ -198,29 +232,55 @@ async def _generate_relatorio(mes: int, ano: int) -> dict:
     prev_inicial = f"{prev_ano:04d}-{prev_mes:02d}-01"
     prev_final = f"{prev_ano:04d}-{prev_mes:02d}-{prev_last:02d}"
 
+    # Detect if month is historical (>30 days ago — data may be soft-deleted)
+    today = date.today()
+    is_historical = (today - date(ano, mes, 1)).days > 30
+
     # Query current month
     results: list[dict] = []
     prev_results: list[dict] = []
 
-    try:
-        results = await query_datalake(
-            ufs=list(VALID_UFS),
-            data_inicial=data_inicial,
-            data_final=data_final,
-            limit=5000,
-        )
-    except Exception as e:
-        logger.warning("observatorio: query failed for %d/%d: %s", mes, ano, e)
+    if is_historical:
+        try:
+            results = await asyncio.to_thread(
+                _query_historical_sync, data_inicial, data_final
+            )
+            logger.info(
+                "observatorio: historical query for %d/%d returned %d rows",
+                mes, ano, len(results),
+            )
+        except Exception as e:
+            logger.warning("observatorio: historical query failed for %d/%d: %s", mes, ano, e)
+    else:
+        try:
+            results = await query_datalake(
+                ufs=list(VALID_UFS),
+                data_inicial=data_inicial,
+                data_final=data_final,
+                limit=5000,
+            )
+        except Exception as e:
+            logger.warning("observatorio: query failed for %d/%d: %s", mes, ano, e)
 
-    try:
-        prev_results = await query_datalake(
-            ufs=list(VALID_UFS),
-            data_inicial=prev_inicial,
-            data_final=prev_final,
-            limit=5000,
-        )
-    except Exception as e:
-        logger.warning("observatorio: prev month query failed: %s", e)
+    # Previous month always via datalake (or historical if also old)
+    prev_is_historical = (today - date(prev_ano, prev_mes, 1)).days > 30
+    if prev_is_historical:
+        try:
+            prev_results = await asyncio.to_thread(
+                _query_historical_sync, prev_inicial, prev_final
+            )
+        except Exception as e:
+            logger.warning("observatorio: historical prev month query failed: %s", e)
+    else:
+        try:
+            prev_results = await query_datalake(
+                ufs=list(VALID_UFS),
+                data_inicial=prev_inicial,
+                data_final=prev_final,
+                limit=5000,
+            )
+        except Exception as e:
+            logger.warning("observatorio: prev month query failed: %s", e)
 
     total = len(results)
     mes_nome = MONTH_NAMES_PT[mes]

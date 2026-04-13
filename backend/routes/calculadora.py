@@ -12,9 +12,10 @@ import time
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from rate_limiter import require_rate_limit
 from sectors import SECTORS
 from unified_schemas.unified import VALID_UFS
 
@@ -50,6 +51,7 @@ class CalculadoraDadosResponse(BaseModel):
 async def calculadora_dados(
     setor: str = Query(..., description="Sector ID (e.g. 'saude')"),
     uf: str = Query(..., min_length=2, max_length=2, description="UF sigla (e.g. 'SP')"),
+    _rl: None = Depends(require_rate_limit(60, 60)),
 ):
     uf = uf.upper()
 
