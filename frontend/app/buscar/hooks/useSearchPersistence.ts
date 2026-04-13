@@ -104,7 +104,7 @@ export function useSearchPersistence(params: UseSearchPersistenceParams): UseSea
       endDate: filters.dataFinal,
       setor: filters.searchMode === 'setor' ? filters.setorId : undefined,
       includeKeywords: filters.searchMode === 'termos' ? filters.termosArray : undefined,
-      municipios: filters.municipios.map((m) => m.codigoIBGE ?? m.nome),
+      municipios: filters.municipios.map((m) => m.codigo ?? m.nome),
     };
     const ufsLabel = Array.from(filters.ufsSelecionadas).join(', ');
     const meta: NavSearchMeta = {
