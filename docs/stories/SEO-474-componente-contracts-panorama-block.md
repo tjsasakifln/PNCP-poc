@@ -1,6 +1,6 @@
 # SEO-474 — Componente ContractsPanoramaBlock: da semântica de fallback para panorama universal
 
-**Status:** Ready  
+**Status:** InReview  
 **Type:** Refactor + Feature  
 **Prioridade:** Alta — pré-requisito de SEO-470, SEO-472 e SEO-473  
 **Depende de:** SEO-475 (backend enriquecido — garante dados suficientes no response)  
@@ -32,20 +32,20 @@ Este critério é gate de aprovação de QA tanto quanto testes TypeScript.
 
 ## Acceptance Criteria
 
-- [ ] AC1: Arquivo `frontend/components/blog/ContractsPanoramaBlock.tsx` criado
-- [ ] AC2: Props interface tipada com suporte a `ContratosSetorUfStats | ContratosCidadeStats | null`
-- [ ] AC3: Prop `variant: 'setor-uf' | 'cidade' | 'nacional'` determina textos e heading
-- [ ] AC4: Seção de KPIs exibe: `total_value` (BRL), `total_contracts`, `avg_value` (BRL), `n_unique_orgaos`, `n_unique_fornecedores`
-- [ ] AC5: Top órgãos compradores: lista com links para `/orgaos/{cnpj}` (link interno)
-- [ ] AC6: Top fornecedores: lista com links para `/fornecedores/{cnpj}` (link interno)
-- [ ] AC7: Gráfico de tendência mensal usando Recharts `BarChart` ou `LineChart` — últimos 12 meses de `monthly_trend`
-- [ ] AC8: Seção "Amostra de contratos" com 3–5 objetos de contratos reais de `sample_contracts` (texto descritivo, órgão, valor, data)
-- [ ] AC9: Aviso legal sempre presente: "Dados extraídos do Portal Nacional de Contratações Públicas (PNCP)"
-- [ ] AC10: Quando `data === null` ou `data.total_contracts === 0`: componente retorna `null` (sem renderização)
-- [ ] AC11: `HistoricalContractsFallback` mantido como re-export de `ContractsPanoramaBlock` para não quebrar imports existentes
-- [ ] AC12: Todo texto dinâmico gerado pelo componente respeita os critérios editoriais: acentuação perfeita, português natural, zero markdown visível
-- [ ] AC13: Mobile-first, responsivo, compatível com dark mode (usa variáveis CSS existentes do projeto)
-- [ ] AC14: `npx tsc --noEmit` sem erros — tipagem completa, sem `any`
+- [x] AC1: Arquivo `frontend/components/blog/ContractsPanoramaBlock.tsx` criado
+- [x] AC2: Props interface tipada com suporte a `ContratosSetorUfStats | ContratosCidadeStats | null`
+- [x] AC3: Prop `variant: 'setor-uf' | 'cidade' | 'nacional'` determina textos e heading
+- [x] AC4: Seção de KPIs exibe: `total_value` (BRL), `total_contracts`, `avg_value` (BRL), `n_unique_orgaos`, `n_unique_fornecedores`
+- [x] AC5: Top órgãos compradores: lista com links para `/orgaos/{cnpj}` (link interno)
+- [x] AC6: Top fornecedores: lista com links para `/fornecedores/{cnpj}` (link interno)
+- [x] AC7: Gráfico de tendência mensal usando Recharts `BarChart` — últimos 12 meses de `monthly_trend`
+- [x] AC8: Seção "Amostra de contratos" com 3–5 objetos de contratos reais de `sample_contracts` (texto descritivo, órgão, valor, data)
+- [x] AC9: Aviso legal sempre presente: "Dados extraídos do Portal Nacional de Contratações Públicas (PNCP)"
+- [x] AC10: Quando `data === null` ou `data.total_contracts === 0`: componente retorna `null` (sem renderização)
+- [x] AC11: `HistoricalContractsFallback` mantido como re-export de `ContractsPanoramaBlock` para não quebrar imports existentes
+- [x] AC12: Todo texto dinâmico gerado pelo componente respeita os critérios editoriais: acentuação perfeita, português natural, zero markdown visível
+- [x] AC13: Mobile-first, responsivo, compatível com dark mode (usa variáveis CSS existentes do projeto)
+- [x] AC14: `npx tsc --noEmit` sem erros — tipagem completa, sem `any`
 
 ## Escopo
 
@@ -104,6 +104,8 @@ Este critério é gate de aprovação de QA tanto quanto testes TypeScript.
 
 ## File List
 
-- [ ] `docs/stories/SEO-474-componente-contracts-panorama-block.md` (esta story)
-- [ ] `frontend/components/blog/ContractsPanoramaBlock.tsx` (novo)
-- [ ] `frontend/components/blog/HistoricalContractsFallback.tsx` (re-export/alias)
+- [x] `docs/stories/SEO-474-componente-contracts-panorama-block.md` (esta story)
+- [x] `frontend/components/blog/ContractsPanoramaBlock.tsx` (novo)
+- [x] `frontend/components/blog/TrendBarChart.tsx` (novo — client component Recharts, ssr:false)
+- [x] `frontend/components/blog/HistoricalContractsFallback.tsx` (reescrito como adapter wrapper)
+- [x] `frontend/lib/contracts-fallback.ts` (SampleContract + n_unique_orgaos/fornecedores adicionados)

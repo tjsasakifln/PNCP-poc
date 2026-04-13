@@ -29,6 +29,14 @@ export interface ContractMonthlyTrend {
   value: number;
 }
 
+export interface SampleContract {
+  objeto: string;
+  orgao: string;
+  fornecedor: string;
+  valor: number | null;
+  data_assinatura: string;
+}
+
 interface ContractCommonFields {
   total_contracts: number;
   total_value: number;
@@ -37,6 +45,12 @@ interface ContractCommonFields {
   top_fornecedores: ContractTopEntry[];
   monthly_trend: ContractMonthlyTrend[];
   last_updated: string;
+  /** Número de órgãos únicos que contrataram neste filtro (adicionado em SEO-475) */
+  n_unique_orgaos?: number;
+  /** Número de fornecedores únicos contratados neste filtro (adicionado em SEO-475) */
+  n_unique_fornecedores?: number;
+  /** Amostra de até 5 contratos reais para autoridade de conteúdo (adicionado em SEO-475) */
+  sample_contracts?: SampleContract[];
 }
 
 export interface ContratosSetorUfStats extends ContractCommonFields {
