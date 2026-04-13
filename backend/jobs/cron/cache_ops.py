@@ -54,18 +54,33 @@ async def refresh_stale_cache_entries() -> dict:
         entries = await get_stale_entries_for_refresh(batch_size=CACHE_REFRESH_BATCH_SIZE)
         if not entries:
             return {"status": "no_stale_entries", "refreshed": 0}
-        refreshed = 0
-        failed = 0
-        for entry in entries:
-            try:
-                search_params = entry.get("search_params", {})
-                request_data = {"ufs": search_params.get("ufs", []), **_DATE_WINDOW(), "modalidades": search_params.get("modalidades")}
-                if await trigger_background_revalidation(user_id=entry["user_id"], params=search_params, request_data=request_data):
-                    refreshed += 1
-                await asyncio.sleep(2)
-            except Exception as e:
-                failed += 1
-                logger.debug(f"Cache refresh dispatch failed for {entry.get('params_hash', '?')[:12]}: {e}")
+
+        # DISK-IO-003: Parallelizar dispatches com Semaphore(5) em vez de loop
+        # sequencial com sleep(2). Reduz 50 entries × 2s = 100s → ~10-15s.
+        sem = asyncio.Semaphore(5)
+
+        async def _dispatch_one(entry: dict) -> bool:
+            async with sem:
+                try:
+                    search_params = entry.get("search_params", {})
+                    request_data = {
+                        "ufs": search_params.get("ufs", []),
+                        **_DATE_WINDOW(),
+                        "modalidades": search_params.get("modalidades"),
+                    }
+                    return bool(await trigger_background_revalidation(
+                        user_id=entry["user_id"],
+                        params=search_params,
+                        request_data=request_data,
+                    ))
+                except Exception as e:
+                    logger.debug(f"Cache refresh dispatch failed for {entry.get('params_hash', '?')[:12]}: {e}")
+                    return False
+
+        results = await asyncio.gather(*[_dispatch_one(e) for e in entries], return_exceptions=True)
+        refreshed = sum(1 for r in results if r is True)
+        failed = len(results) - refreshed
+
         logger.info("Cache refresh cycle: %d dispatched, %d failed out of %d stale entries", refreshed, failed, len(entries))
         return {"status": "completed", "refreshed": refreshed, "failed": failed, "total": len(entries)}
     except Exception as e:

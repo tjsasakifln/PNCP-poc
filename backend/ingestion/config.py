@@ -35,7 +35,7 @@ INGESTION_INCREMENTAL_HOURS = [
 # ---------------------------------------------------------------------------
 
 # How many days back to crawl on a full crawl
-INGESTION_DATE_RANGE_DAYS = int(os.getenv("INGESTION_DATE_RANGE_DAYS", "10"))
+INGESTION_DATE_RANGE_DAYS = int(os.getenv("INGESTION_DATE_RANGE_DAYS", "7"))  # DISK-IO-002: 10→7 days; incremental crawl covers last 3 days 3x/day
 
 # How many days back to crawl on incremental (+ 1 day overlap applied at runtime)
 INGESTION_INCREMENTAL_DAYS = int(os.getenv("INGESTION_INCREMENTAL_DAYS", "3"))
