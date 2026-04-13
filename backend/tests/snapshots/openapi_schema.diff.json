@@ -5894,6 +5894,17 @@
               "title": "Has Previous Search",
               "type": "boolean"
             },
+            "label": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Label"
+            },
             "last_search_at": {
               "anyOf": [
                 {
@@ -8896,6 +8907,32 @@
             "updated_at"
           ],
           "title": "SitemapCnpjsResponse",
+          "type": "object"
+        },
+        "SitemapContratosOrgaoResponse": {
+          "properties": {
+            "orgaos": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Orgaos",
+              "type": "array"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            },
+            "updated_at": {
+              "title": "Updated At",
+              "type": "string"
+            }
+          },
+          "required": [
+            "orgaos",
+            "total",
+            "updated_at"
+          ],
+          "title": "SitemapContratosOrgaoResponse",
           "type": "object"
         },
         "SitemapFornecedoresCnpjResponse": {
@@ -15369,7 +15406,7 @@
       },
       "/v1/health/cache": {
         "get": {
-          "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.\nB-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.",
+          "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.\nB-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.\nCRIT-081 AC10: Includes warmup_coverage with total_combos, cached, stale, missing.",
           "operationId": "cache_health_v1_health_cache_get",
           "responses": {
             "200": {
@@ -15382,6 +15419,26 @@
             }
           },
           "summary": "Cache Health",
+          "tags": [
+            "health"
+          ]
+        }
+      },
+      "/v1/health/sources": {
+        "get": {
+          "description": "UX-428 AC5: Health status for all configured procurement sources.\n\nReturns enabled/disabled state and availability for each source.\nRead-only \u2014 no side effects.",
+          "operationId": "sources_health_v1_health_sources_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Sources Health",
           "tags": [
             "health"
           ]
@@ -17767,6 +17824,18 @@
                 "description": "Filter by session status (completed, failed, timed_out)",
                 "title": "Status"
               }
+            },
+            {
+              "description": "UX-433 AC3: hide failed/timed_out entries older than 7 days from default listing",
+              "in": "query",
+              "name": "hide_old_failures",
+              "required": false,
+              "schema": {
+                "default": true,
+                "description": "UX-433 AC3: hide failed/timed_out entries older than 7 days from default listing",
+                "title": "Hide Old Failures",
+                "type": "boolean"
+              }
             }
           ],
           "responses": {
@@ -17973,6 +18042,28 @@
             }
           },
           "summary": "CNPJs com \u22651 licita\u00e7\u00e3o no datalake (para sitemap)",
+          "tags": [
+            "sitemap"
+          ]
+        }
+      },
+      "/v1/sitemap/contratos-orgao-indexable": {
+        "get": {
+          "description": "Retorna CNPJs de \u00f3rg\u00e3os com \u22651 contrato ativo em pncp_supplier_contracts.\n\nDiferente de /sitemap/orgaos (que usa pncp_raw_bids/licita\u00e7\u00f5es), este\nendpoint consulta pncp_supplier_contracts \u2014 a tabela que alimenta\n/contratos/orgao/{cnpj}/stats. Garante que o sitemap s\u00f3 inclui URLs\nque retornam 200, eliminando os 794 404s reportados no GSC.\nCache: 24h em mem\u00f3ria.",
+          "operationId": "sitemap_contratos_orgao_indexable_v1_sitemap_contratos_orgao_indexable_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SitemapContratosOrgaoResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "\u00d3rg\u00e3os compradores com contratos em pncp_supplier_contracts (para sitemap /contratos/orgao/)",
           "tags": [
             "sitemap"
           ]

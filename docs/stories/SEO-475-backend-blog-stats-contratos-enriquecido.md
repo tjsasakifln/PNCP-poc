@@ -1,6 +1,6 @@
 # SEO-475 — Backend: enriquecer endpoints de contratos com n_unique_orgaos, n_unique_fornecedores e sample_contracts
 
-**Status:** Ready  
+**Status:** InReview  
 **Type:** Feature  
 **Prioridade:** Alta — pré-requisito de SEO-474 e de toda a cadeia de enriquecimento  
 **Depende de:** —  
@@ -22,19 +22,19 @@ Adicionar os três campos a `_compute_contratos_stats` (função compartilhada) 
 
 ## Acceptance Criteria
 
-- [ ] AC1: `ContratosSetorUfStats` inclui campo `n_unique_orgaos: int`
-- [ ] AC2: `ContratosSetorUfStats` inclui campo `n_unique_fornecedores: int`
-- [ ] AC3: `ContratosSetorUfStats` inclui campo `sample_contracts: list[SampleContract]`
-- [ ] AC4: Mesmo para `ContratosCidadeStats` (AC1–AC3 aplicáveis)
-- [ ] AC5: Mesmo para `ContratosSetorStats` (nacional — AC1–AC3 aplicáveis)
-- [ ] AC6: `SampleContract` tem campos: `objeto: str`, `orgao: str`, `fornecedor: str`, `valor: float | None`, `data_assinatura: str`
-- [ ] AC7: `sample_contracts` retorna até 5 contratos — os mais recentes com `objeto_contrato` não nulo e `valor_global > 0`
-- [ ] AC8: `n_unique_orgaos` = `len(set(orgao_cnpj para todos os rows matched))`
-- [ ] AC9: `n_unique_fornecedores` = `len(set(ni_fornecedor para todos os rows matched))`
-- [ ] AC10: Cache 6h mantido — nenhuma mudança na estratégia de cache
-- [ ] AC11: Backward compatibility: campos adicionados como opcionais com default (`n_unique_orgaos: int = 0`) para não quebrar clientes existentes
-- [ ] AC12: Testes existentes de `blog_stats.py` passam sem regressão
-- [ ] AC13: Mypy/ruff passam sem novos erros
+- [x] AC1: `ContratosSetorUfStats` inclui campo `n_unique_orgaos: int`
+- [x] AC2: `ContratosSetorUfStats` inclui campo `n_unique_fornecedores: int`
+- [x] AC3: `ContratosSetorUfStats` inclui campo `sample_contracts: list[SampleContract]`
+- [x] AC4: Mesmo para `ContratosCidadeStats` (AC1–AC3 aplicáveis)
+- [x] AC5: Mesmo para `ContratosSetorStats` (nacional — AC1–AC3 aplicáveis)
+- [x] AC6: `SampleContract` tem campos: `objeto: str`, `orgao: str`, `fornecedor: str`, `valor: float | None`, `data_assinatura: str`
+- [x] AC7: `sample_contracts` retorna até 5 contratos — os mais recentes com `objeto_contrato` não nulo e `valor_global > 0`
+- [x] AC8: `n_unique_orgaos` = `len(set(orgao_cnpj para todos os rows matched))`
+- [x] AC9: `n_unique_fornecedores` = `len(set(ni_fornecedor para todos os rows matched))`
+- [x] AC10: Cache 6h mantido — nenhuma mudança na estratégia de cache
+- [x] AC11: Backward compatibility: campos adicionados como opcionais com default (`n_unique_orgaos: int = 0`) para não quebrar clientes existentes
+- [x] AC12: Testes existentes de `blog_stats.py` passam sem regressão
+- [x] AC13: Mypy/ruff passam sem novos erros
 
 ## Escopo
 
@@ -93,5 +93,6 @@ n_unique_fornecedores = len(forn_agg)
 
 ## File List
 
-- [ ] `docs/stories/SEO-475-backend-blog-stats-contratos-enriquecido.md` (esta story)
-- [ ] `backend/routes/blog_stats.py`
+- [x] `docs/stories/SEO-475-backend-blog-stats-contratos-enriquecido.md` (esta story)
+- [x] `backend/routes/blog_stats.py`
+- [x] `backend/tests/test_blog_stats.py` (classe TestContratosEnrichment adicionada)

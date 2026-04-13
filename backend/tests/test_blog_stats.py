@@ -718,3 +718,227 @@ class TestContratosCidadeSetorStats:
             # SP: 2 São Paulo rows, Campinas: 1 (uniformes escolares)
             assert res1.json()["total_contracts"] == 2
             assert res2.json()["total_contracts"] == 1
+
+
+# ---------------------------------------------------------------------------
+# SEO-475 — Enrichment fields: n_unique_orgaos, n_unique_fornecedores, sample_contracts
+# ---------------------------------------------------------------------------
+
+class TestContratosEnrichment:
+    """AC1–AC11 for SEO-475: new enrichment fields on all contratos endpoints."""
+
+    # AC1-3 / AC8-9: ContratosSetorUfStats has n_unique_orgaos, n_unique_fornecedores,
+    # sample_contracts with correct semantics
+    def test_setor_uf_has_enrichment_fields(self, client):
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            assert res.status_code == 200
+            data = res.json()
+            assert "n_unique_orgaos" in data
+            assert "n_unique_fornecedores" in data
+            assert "sample_contracts" in data
+
+    def test_setor_uf_n_unique_orgaos_count(self, client):
+        """AC8: n_unique_orgaos = count of distinct orgao_cnpj in matched rows."""
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            data = res.json()
+            # 3 SP rows matching vestuario: orgaos 111, 222, 333 → 3 unique
+            assert data["n_unique_orgaos"] == 3
+
+    def test_setor_uf_n_unique_fornecedores_count(self, client):
+        """AC9: n_unique_fornecedores = count of distinct ni_fornecedor in matched rows."""
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            data = res.json()
+            # 3 SP rows matching vestuario: fornecedores 12345678000101 (x2) + 98765432000199
+            # → 2 unique fornecedores
+            assert data["n_unique_fornecedores"] == 2
+
+    def test_setor_uf_sample_contracts_structure(self, client):
+        """AC6: sample_contracts items have exactly 5 required fields."""
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            data = res.json()
+            assert len(data["sample_contracts"]) >= 1
+            sample = data["sample_contracts"][0]
+            assert set(sample.keys()) == {"objeto", "orgao", "fornecedor", "valor", "data_assinatura"}
+            assert isinstance(sample["objeto"], str)
+            assert isinstance(sample["orgao"], str)
+            assert isinstance(sample["fornecedor"], str)
+            assert sample["valor"] is None or isinstance(sample["valor"], (int, float))
+            assert isinstance(sample["data_assinatura"], str)
+
+    def test_setor_uf_sample_contracts_max_5(self, client):
+        """AC7: sample_contracts is capped at 5 items."""
+        # 7 matching rows to force the 5-cap
+        many_rows = [
+            {
+                "ni_fornecedor": f"111111111{i:05d}",
+                "nome_fornecedor": f"Fornecedor {i}",
+                "orgao_cnpj": f"222222222{i:05d}",
+                "orgao_nome": f"Órgão {i}",
+                "valor_global": 50000.0 + i * 1000,
+                "data_assinatura": f"2026-0{(i % 3) + 1}-{(i % 28) + 1:02d}",
+                "objeto_contrato": f"Aquisição de uniformes lote {i}",
+                "uf": "SP",
+                "municipio": "São Paulo",
+            }
+            for i in range(7)
+        ]
+        mock_sb, _ = _make_contracts_supabase_mock(rows=many_rows)
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            data = res.json()
+            assert len(data["sample_contracts"]) <= 5
+
+    def test_setor_uf_sample_contracts_excludes_no_objeto(self, client):
+        """AC7: rows with empty objeto_contrato are excluded from sample_contracts."""
+        rows_with_empty_objeto = [
+            {
+                "ni_fornecedor": "11111111000111",
+                "nome_fornecedor": "Forn A",
+                "orgao_cnpj": "22222222000111",
+                "orgao_nome": "Órgão A",
+                "valor_global": 100000.0,
+                "data_assinatura": "2026-03-01",
+                "objeto_contrato": "",  # empty — should be excluded
+                "uf": "SP",
+                "municipio": "São Paulo",
+            },
+            MOCK_CONTRACT_ROWS[0],  # valid uniforms row with objeto
+        ]
+        mock_sb, _ = _make_contracts_supabase_mock(rows=rows_with_empty_objeto)
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            data = res.json()
+            for sc in data["sample_contracts"]:
+                assert sc["objeto"].strip() != ""
+
+    def test_setor_uf_sample_contracts_excludes_zero_valor(self, client):
+        """AC7: rows with valor_global == 0 are excluded from sample_contracts."""
+        rows_with_zero_valor = [
+            {
+                "ni_fornecedor": "11111111000111",
+                "nome_fornecedor": "Forn A",
+                "orgao_cnpj": "22222222000111",
+                "orgao_nome": "Órgão A",
+                "valor_global": 0.0,  # zero — should be excluded
+                "data_assinatura": "2026-03-01",
+                "objeto_contrato": "Uniformes para agentes",
+                "uf": "SP",
+                "municipio": "São Paulo",
+            },
+        ]
+        mock_sb, _ = _make_contracts_supabase_mock(rows=rows_with_zero_valor)
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            data = res.json()
+            assert data["sample_contracts"] == []
+
+    # AC4: ContratosCidadeStats has the enrichment fields
+    def test_cidade_has_enrichment_fields(self, client):
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/cidade/sao-paulo")
+            assert res.status_code == 200
+            data = res.json()
+            assert "n_unique_orgaos" in data
+            assert "n_unique_fornecedores" in data
+            assert "sample_contracts" in data
+            # São Paulo has 3 rows (org 111, 222, 555) and 3 distinct orgaos
+            assert data["n_unique_orgaos"] >= 1
+            assert data["n_unique_fornecedores"] >= 1
+
+    # AC5: ContratosSetorStats (nacional) has the enrichment fields
+    def test_setor_nacional_has_enrichment_fields(self, client):
+        mock_sb, _ = _make_contracts_supabase_mock()
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario")
+            assert res.status_code == 200
+            data = res.json()
+            assert "n_unique_orgaos" in data
+            assert "n_unique_fornecedores" in data
+            assert "sample_contracts" in data
+            # 4 matching rows: 4 distinct orgaos (111, 222, 333, 444)
+            assert data["n_unique_orgaos"] == 4
+            # 3 distinct fornecedores (12345678000101 x2, 98765432000199, 55555555000155)
+            assert data["n_unique_fornecedores"] == 3
+
+    # AC11: backward compatibility — existing tests are unaffected (fields have defaults)
+    def test_enrichment_fields_have_defaults(self):
+        """AC11: Pydantic models accept missing enrichment fields via defaults."""
+        from routes.blog_stats import ContratosSetorUfStats, ContratosCidadeStats, ContratosSetorStats
+
+        # ContratosSetorUfStats without enrichment fields
+        stats = ContratosSetorUfStats(
+            sector_id="vestuario",
+            sector_name="Vestuário",
+            uf="SP",
+            total_contracts=0,
+            total_value=0.0,
+            avg_value=0.0,
+            top_orgaos=[],
+            top_fornecedores=[],
+            monthly_trend=[],
+            last_updated="2026-04-13T00:00:00",
+        )
+        assert stats.n_unique_orgaos == 0
+        assert stats.n_unique_fornecedores == 0
+        assert stats.sample_contracts == []
+
+        # ContratosCidadeStats without enrichment fields
+        cidade_stats = ContratosCidadeStats(
+            cidade="São Paulo",
+            uf="SP",
+            total_contracts=0,
+            total_value=0.0,
+            avg_value=0.0,
+            top_orgaos=[],
+            top_fornecedores=[],
+            monthly_trend=[],
+            last_updated="2026-04-13T00:00:00",
+        )
+        assert cidade_stats.n_unique_orgaos == 0
+        assert cidade_stats.sample_contracts == []
+
+        # ContratosSetorStats without enrichment fields
+        setor_stats = ContratosSetorStats(
+            sector_id="vestuario",
+            sector_name="Vestuário",
+            total_contracts=0,
+            total_value=0.0,
+            avg_value=0.0,
+            top_orgaos=[],
+            top_fornecedores=[],
+            monthly_trend=[],
+            by_uf=[],
+            last_updated="2026-04-13T00:00:00",
+        )
+        assert setor_stats.n_unique_orgaos == 0
+        assert setor_stats.sample_contracts == []
+
+    def test_sample_contract_objeto_truncated_to_200(self, client):
+        """AC7: objeto_contrato > 200 chars is truncated."""
+        long_objeto = "A" * 300  # 300 chars
+        rows = [{
+            "ni_fornecedor": "11111111000111",
+            "nome_fornecedor": "Forn A",
+            "orgao_cnpj": "22222222000111",
+            "orgao_nome": "Órgão A",
+            "valor_global": 100000.0,
+            "data_assinatura": "2026-03-01",
+            "objeto_contrato": f"Uniformes {long_objeto}",
+            "uf": "SP",
+            "municipio": "São Paulo",
+        }]
+        mock_sb, _ = _make_contracts_supabase_mock(rows=rows)
+        with patch("supabase_client.get_supabase", return_value=mock_sb):
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
+            data = res.json()
+            assert len(data["sample_contracts"]) == 1
+            assert len(data["sample_contracts"][0]["objeto"]) <= 200

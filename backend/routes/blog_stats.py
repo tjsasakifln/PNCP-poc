@@ -194,6 +194,14 @@ class ContratosSetorTrend(BaseModel):
     value: float
 
 
+class SampleContract(BaseModel):
+    objeto: str
+    orgao: str
+    fornecedor: str
+    valor: float | None
+    data_assinatura: str
+
+
 class ContratosSetorStats(BaseModel):
     sector_id: str
     sector_name: str
@@ -205,6 +213,9 @@ class ContratosSetorStats(BaseModel):
     monthly_trend: list[ContratosSetorTrend]
     by_uf: list[ContratosSetorUfEntry]
     last_updated: str
+    n_unique_orgaos: int = 0
+    n_unique_fornecedores: int = 0
+    sample_contracts: list[SampleContract] = []
 
 
 class ContratosSetorUfStats(BaseModel):
@@ -219,6 +230,9 @@ class ContratosSetorUfStats(BaseModel):
     top_fornecedores: list[ContratosSetorTopEntry]
     monthly_trend: list[ContratosSetorTrend]
     last_updated: str
+    n_unique_orgaos: int = 0
+    n_unique_fornecedores: int = 0
+    sample_contracts: list[SampleContract] = []
 
 
 class ContratosCidadeStats(BaseModel):
@@ -232,6 +246,9 @@ class ContratosCidadeStats(BaseModel):
     top_fornecedores: list[ContratosSetorTopEntry]
     monthly_trend: list[ContratosSetorTrend]
     last_updated: str
+    n_unique_orgaos: int = 0
+    n_unique_fornecedores: int = 0
+    sample_contracts: list[SampleContract] = []
 
 
 class ContratosCidadeSetorStats(BaseModel):
@@ -247,6 +264,9 @@ class ContratosCidadeSetorStats(BaseModel):
     top_fornecedores: list[ContratosSetorTopEntry]
     monthly_trend: list[ContratosSetorTrend]
     last_updated: str
+    n_unique_orgaos: int = 0
+    n_unique_fornecedores: int = 0
+    sample_contracts: list[SampleContract] = []
 
 
 # ---------------------------------------------------------------------------
@@ -850,6 +870,7 @@ def _compute_contratos_stats(
     uf_agg: dict[str, dict] = {}
     monthly: Counter = Counter()
     monthly_values: dict[str, float] = {}
+    sample_contracts_raw: list[dict] = []
 
     for row in matched:
         valor = _safe_float_blog(row.get("valor_global"))
@@ -868,6 +889,18 @@ def _compute_contratos_stats(
                 forn_agg[ni] = {"nome": row.get("nome_fornecedor") or ni, "cnpj": ni, "contratos": 0, "valor": 0.0}
             forn_agg[ni]["contratos"] += 1
             forn_agg[ni]["valor"] += valor
+
+        # Collect sample contracts (rows already ordered desc by data_assinatura)
+        if len(sample_contracts_raw) < 5:
+            obj = (row.get("objeto_contrato") or "").strip()
+            if obj and valor > 0:
+                sample_contracts_raw.append({
+                    "objeto": obj[:200],
+                    "orgao": row.get("orgao_nome") or org_cnpj or "",
+                    "fornecedor": row.get("nome_fornecedor") or ni or "",
+                    "valor": valor,
+                    "data_assinatura": (row.get("data_assinatura") or "")[:10],
+                })
 
         row_uf = (row.get("uf") or "").upper()
         if row_uf:
@@ -922,6 +955,9 @@ def _compute_contratos_stats(
             for u in by_uf
         ],
         "last_updated": now.isoformat(),
+        "n_unique_orgaos": len(orgao_agg),
+        "n_unique_fornecedores": len(forn_agg),
+        "sample_contracts": sample_contracts_raw,
     }
 
 

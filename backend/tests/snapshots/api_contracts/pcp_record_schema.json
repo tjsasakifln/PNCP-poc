@@ -32,7 +32,7 @@
     "codigoSituacaoEdital": "int",
     "codigoTratamentoDiferenciado": "int",
     "comprador": "NoneType",
-    "dataHoraFinalLances": "str",
+    "dataHoraFinalLances": "NoneType",
     "dataHoraFinalPropostas": "str",
     "dataHoraInicioLances": "str",
     "dataHoraInicioPropostas": "str",
@@ -78,13 +78,13 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 471863,
+    "codigoLicitacao": 471087,
     "numeroLicitacao": null,
-    "identificacao": "CD 277115",
-    "numero": "CD 277115/2026",
-    "resumo": "fornecimento de 30 (trinta) unidades de café de 250g e 200 (duzentas) unidades de café de 13g destinados aos participantes do 1º Encontro do Comitê Permanente de Contabilidade",
-    "razaoSocial": "Serviço Brasileiro de Apoio às Micro e Pequenas Empresas - SEBRAE/NA",
-    "nomeUnidade": "SEBRAE NACIONAL",
+    "identificacao": "027/2026",
+    "numero": "007/2026",
+    "resumo": "contratação de empresa especializada para prestação de serviços de publicações oficiais em jornais e órgãos de imprensa oficial, para divulgação dos atos oficiais e administrativos do Município de Josenópolis–MG, compreendendo publicações no Diário...",
+    "razaoSocial": "Prefeitura Municipal de Josenópolis",
+    "nomeUnidade": "Prefeitura Municipal de Josenópolis",
     "status": {
       "codigo": 1,
       "descricao": "Recebendo Propostas"
@@ -95,33 +95,33 @@
     },
     "tipoLicitacao": {
       "codigoModalidadeLicitacao": 0,
-      "modalidadeLicitacao": "Cotação",
-      "codigoTipoLicitacao": 11,
-      "siglaTipoLicitacao": "CFP",
-      "tipoLicitacao": "Cotação para Formação de Preços",
-      "tipoRealizacao": "Eletrônico",
+      "modalidadeLicitacao": "Dispensa",
+      "codigoTipoLicitacao": 34,
+      "siglaTipoLicitacao": null,
+      "tipoLicitacao": "Dispensa Presencial",
+      "tipoRealizacao": "Presencial",
       "tipoJulgamento": "Menor Preço"
     },
     "codigoSituacaoEdital": 5,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-04-10T22:32:00Z",
-    "dataHoraInicioPropostas": "2026-04-10T22:32:00Z",
-    "dataHoraFinalPropostas": "2026-04-15T03:00:00Z",
-    "dataHoraFinalLances": "2026-04-15T03:00:00Z",
-    "dataHoraPublicacao": "2026-04-10T22:34:00Z",
+    "dataHoraInicioLances": "2026-04-14T02:59:00Z",
+    "dataHoraInicioPropostas": "2026-04-09T02:00:00Z",
+    "dataHoraFinalPropostas": "2026-04-14T02:59:00Z",
+    "dataHoraFinalLances": null,
+    "dataHoraPublicacao": "2026-04-09T01:22:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 6924,
-      "nomeUnidadeCompradora": "SEBRAE NACIONAL",
-      "codigoComprador": 3946,
+      "codigoUnidadeCompradora": 4623,
+      "nomeUnidadeCompradora": "Prefeitura Municipal de Josenópolis",
+      "codigoComprador": 2531,
       "nomeComprador": null,
-      "cidade": "Brasília",
+      "cidade": "Josenópolis",
       "codigoMunicipioIbge": null,
-      "uf": "DF"
+      "uf": "MG"
     },
     "comprador": null,
-    "urlReferencia": "/df/servico-brasileiro-de-apoio-as-micro-e-pequenas-empresas-sebrae-na-3946/cfp-cd-277115-2026-2026-471863",
+    "urlReferencia": "/mg/prefeitura-municipal-de-josenopolis-2531/dp-007-2026-2026-471087",
     "statusProcessoPublico": {
       "codigo": 1,
       "descricao": "Recebendo Propostas"
@@ -129,5 +129,5 @@
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-04-12T17:46:36.653288+00:00"
+  "captured_at": "2026-04-13T21:55:49.635516+00:00"
 }
