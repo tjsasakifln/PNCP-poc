@@ -355,7 +355,7 @@ async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)
         # These columns may not exist on older DB versions — if the query fails,
         # the outer try/except will surface a 503 which is the existing behavior.
         query = db.table("search_sessions").select(
-            "total_filtered, valor_total, created_at, setor, top_result_objeto, top_result_orgao, top_result_numero_controle, top_result_data_encerramento, top_result_modalidade"
+            "total_filtered, valor_total, created_at, sectors, top_result_objeto, top_result_orgao, top_result_numero_controle, top_result_data_encerramento, top_result_modalidade"
         ).eq("user_id", user_id)
 
         if trial_start:
@@ -402,7 +402,7 @@ async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)
                 numero_controle=top_session.get("top_result_numero_controle"),
                 data_encerramento=data_enc,
                 dias_ate_encerramento=dias_ate_data(data_enc),
-                setor=top_session.get("setor"),
+                setor=(top_session.get("sectors") or [None])[0],
                 modalidade=top_session.get("top_result_modalidade"),
             )
 
