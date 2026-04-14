@@ -359,6 +359,21 @@ Data atual: {datetime.now().strftime("%d/%m/%Y")}
             LLM_COST_USD.labels(model=_model_name, operation="summary").inc(_cost_usd)
             LLM_TOKENS_DETAILED.labels(model=_model_name, operation="summary", direction="input").inc(_input_tokens)
             LLM_TOKENS_DETAILED.labels(model=_model_name, operation="summary", direction="output").inc(_output_tokens)
+
+            # STORY-2.11 (EPIC-TD-2026Q2 P0): Track cost in monthly budget counter.
+            # Fire-and-forget — nunca bloqueia a request.
+            try:
+                import asyncio as _asyncio
+                from llm_budget import track_llm_cost as _track
+
+                _loop = _asyncio.get_event_loop()
+                if _loop.is_running():
+                    _asyncio.ensure_future(_track(_cost_usd))
+                else:
+                    # Contexto sync (ex: testes) — dispara em event loop novo
+                    _asyncio.run(_track(_cost_usd))
+            except Exception:
+                pass
     except Exception:
         pass  # Never let metrics break summary generation
 

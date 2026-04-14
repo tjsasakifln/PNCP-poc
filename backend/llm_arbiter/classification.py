@@ -202,6 +202,22 @@ def _log_token_usage(
     except Exception:
         pass
 
+    # STORY-2.11 (EPIC-TD-2026Q2 P0): Track monthly cumulative cost for budget cap.
+    # classify_contract_primary_match roda em ``asyncio.to_thread``; disparamos o
+    # async track via ensure_future se houver loop rodando, senão via sync.
+    try:
+        import asyncio as _asyncio
+        from llm_budget import track_llm_cost as _track
+
+        try:
+            _loop = _asyncio.get_running_loop()
+            _asyncio.ensure_future(_track(cost_usd))
+        except RuntimeError:
+            # Sem loop rodando (thread pool worker) — executa inline
+            _asyncio.run(_track(cost_usd))
+    except Exception:
+        pass
+
     try:
         global _cost_alert_fired
         now = _time_module.time()
@@ -448,6 +464,35 @@ Os termos buscados descrevem o OBJETO PRINCIPAL deste contrato (não itens secun
         return redis_cached
 
     ARBITER_CACHE_MISSES.inc()
+
+    # STORY-2.11 (EPIC-TD-2026Q2 P0): Budget cap — se o teto mensal foi atingido,
+    # curto-circuita antes de chamar a OpenAI. Retorna PENDING_REVIEW (gray zone),
+    # evitando hard-reject silencioso em caso de burst de custo.
+    try:
+        from llm_budget import is_budget_exceeded_sync
+
+        if is_budget_exceeded_sync():
+            logger.warning(
+                f"STORY-2.11: LLM monthly budget exceeded — returning PENDING_REVIEW | "
+                f"search={_search_id} mode={mode} prompt_level={prompt_level}"
+            )
+            try:
+                from metrics import LLM_BUDGET_REJECTIONS
+                LLM_BUDGET_REJECTIONS.labels(caller="arbiter").inc()
+            except Exception:
+                pass
+            return {
+                "is_primary": False,
+                "confidence": 0,
+                "evidence": [],
+                "rejection_reason": "llm_budget_exceeded",
+                "needs_more_data": False,
+                "pending_review": True,
+                "_classification_source": "budget_cap",
+            }
+    except Exception:
+        # Nunca bloqueia por erro em budget check
+        pass
 
     try:
         if structured_enabled:
