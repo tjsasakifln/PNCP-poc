@@ -1,513 +1,513 @@
-# SmartLic Frontend Specification & UX Audit
+# SmartLic Frontend Specification & Audit
 
-**Project:** SmartLic -- Inteligencia em Licitacoes (Public Procurement Intelligence)
-**Tech Stack:** Next.js 16 + React 18 + TypeScript + Tailwind CSS + Supabase SSR
-**Last Updated:** 2026-04-08
-**Auditor:** @ux-design-expert (Uma) -- Brownfield Discovery Phase 3
+## Overview
 
----
-
-## Executive Summary
-
-SmartLic is a sophisticated SaaS platform for Brazilian B2G companies to discover, evaluate, and track public procurement opportunities. The frontend employs a modern Next.js 16 App Router architecture with responsive design, accessibility-first components, comprehensive error handling, and performance optimizations.
-
-**Key Metrics:**
-- 75+ publicly routable pages (landing, blog, SEO content, admin panels)
-- 25+ reusable UI components (core system)
-- 40+ page-specific components (features, modals, forms)
-- 25+ custom React hooks (state, fetch, analytics, billing)
-- 95+ Jest unit/integration tests + Playwright E2E suite
-- 1 Context API provider (UserContext) + 3 secondary contexts (Auth, Theme, Analytics)
-- API proxy layer: 60+ route handlers (auth, search, billing, admin, analytics)
+- **Framework**: Next.js 16 (App Router)
+- **UI Runtime**: React 18.3.1
+- **Language**: TypeScript 5.9.3 (⚠️ strict NÃO habilitado — 296 `any` types)
+- **Styling**: Tailwind CSS 3.4.19 (50+ tokens; ~70% adoção)
+- **Deployment target**: Railway (Dockerfile, service root `frontend/`)
+- **Production URL**: https://smartlic.tech
+- **Architectural Pattern**: App Router, RSC mix com ~88% "use client" (TD-FE-007)
+- **Audit Date**: 2026-04-14 (workflow brownfield-discovery Phase 3)
 
 ---
 
-## 1. Pages Inventory
+## Tech Stack (Verified from `frontend/package.json`)
 
-### 1.1 Public Landing & Institutional (11 pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/` | Hero landing -> problem/solution/CTA flow |
-| `/sobre` | Company narrative + transparency |
-| `/features` | Feature matrix + use cases |
-| `/planos` | Pricing page (3 tiers: free, pro, enterprise) |
-| `/pricing` | Duplicate of `/planos` (SEO variant) |
-| `/ajuda` | Help center + FAQ |
-| `/glossario` | 50+ procurement terminology terms |
-| `/glossario/[termo]` | Individual glossary term pages |
-| `/termos` | Terms of Service (noindex) |
-| `/privacidade` | Privacy Policy (noindex) |
-| `/stack` | Tech stack disclosure page |
-
-### 1.2 Authentication (5 pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/login` | Email/password + Magic Link + Google OAuth |
-| `/signup` | Registration with profile onboarding |
-| `/auth/callback` | Supabase OAuth redirect handler |
-| `/recuperar-senha` | Forgot password flow |
-| `/redefinir-senha` | Reset password confirmation |
-
-### 1.3 Core Search & Pipeline (5 pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/buscar` | **Main search interface** -- filters + SSE real-time results |
-| `/historico` | Saved searches + search history timeline |
-| `/pipeline` | Pipeline/bid tracking with drag-and-drop (dnd-kit) |
-| `/comparador` | Side-by-side bid comparison |
-| `/analise/[hash]` | Deep analysis (viability, timeline, value, sanctions) |
-
-### 1.4 Account & Billing (6 pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/conta` | Account overview + section navigation |
-| `/conta/perfil` | User profile editor |
-| `/conta/dados` | Company data & profile completeness |
-| `/conta/equipe` | Team members + role management |
-| `/conta/plano` | Subscription management + billing history |
-| `/conta/seguranca` | Password change + 2FA settings |
-
-### 1.5 Alerts & Notifications (4 pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/alertas` | Manage alert rules |
-| `/alertas-publicos` | Public alerts hub -- browse by sector x UF (405 combinations) |
-| `/alertas-publicos/[setor]/[uf]` | Sector x UF specific alert page + RSS feed |
-| `/mensagens` | User messages/support inbox |
-
-### 1.6 Admin & Analytics (7 pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/admin` | Admin dashboard (metrics, status checks) |
-| `/admin/cache` | Cache invalidation + data refresh |
-| `/admin/metrics` | Real-time performance metrics |
-| `/admin/emails` | Email preview + send test emails |
-| `/admin/partners` | Partner/referral management |
-| `/admin/seo` | SEO audit + metadata inspection |
-| `/admin/slo` | Service Level Objectives dashboard |
-
-### 1.7 Dashboard & Analytics (4 pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/dashboard` | User activity dashboard |
-| `/dados` | Public data hub (exportable datasets) |
-| `/estatisticas` | Public procurement statistics |
-| `/estatisticas/embed` | Embeddable widget for partner sites |
-
-### 1.8 Content & Educational (18+ pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/blog` | Blog article listing + search |
-| `/blog/[slug]` | Individual blog articles |
-| `/blog/weekly/[slug]` | Weekly digest articles |
-| `/blog/programmatic/[setor]` | Programmatic sector reports (pSEO) |
-| `/blog/programmatic/[setor]/[uf]` | Sector x UF programmatic pages |
-| `/blog/licitacoes/[setor]/[uf]` | Sector x UF licitacoes pages (pSEO) |
-| `/blog/licitacoes/cidade/[cidade]` | City-based licitacoes pages |
-| `/blog/panorama/[setor]` | Sector panorama reports |
-| `/casos` | Success stories / case studies |
-| `/licitacoes/[setor]` | Individual sector landing page |
-| `/perguntas/[slug]` | FAQ/Q&A pages |
-| `/masterclass/[tema]` | Masterclass pages |
-
-### 1.9 Secondary Features (13 pages)
-
-| Route | Purpose |
-|-------|---------|
-| `/calculadora` | B2G bid ROI calculator |
-| `/cnpj` | CNPJ lookup / company search |
-| `/cnpj/[cnpj]` | Company profile + procurement history (pSEO) |
-| `/orgaos` | Government agencies hub |
-| `/orgaos/[slug]` | Individual agency profile |
-| `/indicar` | Referral / invite form |
-| `/como-avaliar-licitacao` | Educational guide |
-| `/como-evitar-prejuizo-licitacao` | Educational guide |
-| `/como-filtrar-editais` | Educational guide |
-| `/como-priorizar-oportunidades` | Educational guide |
-| `/onboarding` | Interactive onboarding walkthrough |
-| `/demo` | Interactive demo page |
-| `/status` | Public status page (uptime, incidents) |
-
-**Total Pages: 75+**
+| Layer                | Technology           | Version     |
+|----------------------|----------------------|-------------|
+| Framework            | Next.js              | 16.1.6      |
+| React                | React                | 18.3.1      |
+| TypeScript           | TypeScript           | 5.9.3       |
+| Styling              | Tailwind CSS         | 3.4.19      |
+| UI Component Lib     | CVA-based Button + custom | -      |
+| Animations           | Framer Motion        | 12.33.0     |
+| Charts               | Recharts             | 3.7.0       |
+| Drag-Drop            | @dnd-kit/core        | 6.3.1       |
+| Drag-Drop Sortable   | @dnd-kit/sortable    | 10.0.0      |
+| Onboarding Tours     | Shepherd.js          | 14.5.1      |
+| Forms                | react-hook-form      | 7.71.2      |
+| Validation           | Zod                  | 4.3.6       |
+| Auth                 | @supabase/ssr        | 0.8.0       |
+| Data Fetching        | SWR                  | 2.4.1       |
+| Toasts               | Sonner               | 2.0.7       |
+| Analytics            | mixpanel-browser     | 2.74.0      |
+| Error Tracking       | @sentry/nextjs       | 10.38.0     |
+| Analytics (GA)       | Google Analytics 4   | -           |
+| Icons                | lucide-react         | 0.563.0     |
+| Testing (unit)       | Jest + RTL           | -           |
+| Testing (E2E)        | Playwright           | -           |
 
 ---
 
-## 2. Component Architecture
+## Design System Reality
 
-### 2.1 Core UI Components (`/components/ui/`)
+### Status: PARTIAL ADOPTION (~70%)
 
-Button, Input, Label, CurrencyInput, Pagination, AnimateOnScroll -- Tailwind-based, no external UI library dependency.
+**Strengths:**
+- ✅ 50+ design tokens definidos em `tailwind.config.ts` + CSS custom properties em `globals.css`
+- ✅ Dark mode completo com contraste WCAG AA+
+- ✅ Semantic colors (success/error/warning + subtle variants)
 
-### 2.2 Layout & Navigation
+**Gaps:**
+- ❌ Sem Storybook (sem component gallery/docs)
+- ❌ Estrutura atômica não enforçada (flat `/components/`)
+- ❌ 194 hex colors hardcoded bypassam sistema de tokens
+- ❌ 62% dos botões usam `<button>` nativo em vez de `<Button>` CVA
 
-NavigationShell, Sidebar (desktop), MobileDrawer (mobile hamburger), BottomNav (mobile bottom), AppHeader, Footer, InstitutionalSidebar. Fully responsive (lg: 1024px breakpoint).
+### Color Palette (actual)
 
-### 2.3 Search Feature Components (`/app/buscar/components/`)
+- **Brand**: Navy (#0a1e3f), Blue (#116dff), Blue-hover (#0d5ad4)
+- **Semantic**: Success (#16a34a), Error (#dc2626), Warning (#ca8a04)
+- **Surfaces**: 0-2 hierarchy + elevated (light/dark variants)
+- **Charts**: 10-color palette para Recharts
 
-**Search Form:** SearchForm, SearchFormHeader, SearchCustomizePanel, ModalidadeFilter, EsferaFilter
-**Results:** SearchResults, ResultCard, ResultsList, ResultsToolbar, ResultsPagination
-**Progress:** EnhancedLoadingProgress (SSE), ProgressBar, ProgressSteps, LoadingResultsSkeleton
-**Banners:** BannerStack, DataQualityBanner, ExpiredCacheBanner, PartialResultsPrompt, SearchErrorBanner
-**Empty States:** SearchEmptyState, OnboardingEmptyState, ErrorDetail, SearchErrorBoundary
-**Metadata:** FilterStatsBreakdown, FreshnessIndicator, ReliabilityBadge, LlmSourceBadge, CoverageBar
-**Export:** GoogleSheetsExportButton
+### Typography
 
-### 2.4 Billing Components
+- Font family: system-ui fallback (sem custom font por perf)
+- Font sizes: Tailwind scale (xs → 6xl)
+- Font weights: 400, 500, 600, 700 (unique values: 4+)
 
-PricingCard, SubscriptionDetails, BillingHistory, UpgradeButton, TrialCTA, TrialCountdown, TrialExpiringBanner, TrialValueTracker, PaymentFailedBanner, QuotaBadge, QuotaCounter, PlanBadge, ProfileCompletionPrompt.
+### Spacing
 
-### 2.5 Auth Components
-
-AuthProvider (Supabase SSR), AuthLoadingScreen, OAuthButtons, LoginForm, SignupForm, PasswordRecoveryForm.
-
-### 2.6 Onboarding & Tours
-
-OnboardingTourButton, ContextualTutorialTooltip, KeyboardShortcutsHelp. Shepherd.js integration with Search Tour (3 steps) and Results Tour (2 steps).
-
----
-
-## 3. State Management
-
-### 3.1 Global State (Context API)
-
-- **UserContext** (`/contexts/UserContext.tsx`): Unified user + plan + quota + trial state. Composes useAuth(), usePlan(), useQuota(), useTrialPhase(). Single refresh method.
-- **AuthProvider**: Supabase session + user + admin flag
-- **ThemeProvider**: Light/dark/system theme
-- **AnalyticsProvider**: Mixpanel + GA token + tracking functions
-
-### 3.2 Data Fetching (SWR + Hooks)
-
-All data fetching through custom hooks + SWR, no Redux/Zustand.
-
-| Hook | Cache |
-|------|-------|
-| `useUserProfile()` | SWR 5min + localStorage fallback |
-| `usePlan()` | Wraps useUserProfile, 5min |
-| `useQuota()` | SWR 1min |
-| `useTrialPhase()` | SWR 5min |
-| `useAlerts()` | SWR real-time subscription |
-| `usePipeline()` | SWR 1min + optimistic updates |
-
-**Search-Specific Hooks:**
-- `useSearchOrchestration()` -- Master controller (auth, tour, billing, state, SSE)
-- `useSearch()` -- API call logic
-- `useSearchFilters()` -- Form state
-- `useSearchSSE()` -- Server-Sent Events progress
-
-### 3.3 localStorage Patterns
-
-smartlic-theme, smartlic_utm_params, lastSearch, savedSearches, cookieConsent, onboardingTourCompleted. All wrapped in `safeGetItem()` / `safeSetItem()` with try-catch.
-
----
-
-## 4. API Layer (60+ handlers)
-
-### Categories
-
-- **Auth** (`/api/auth/`): login, signup, google, callback, status, check-email, resend-confirmation
-- **Search** (`/api/buscar/`): POST main search, SSE progress, results
-- **Billing** (`/api/billing-portal/`): Stripe customer portal
-- **Alerts** (`/api/alerts/`): CRUD, preview, preferences
-- **Admin** (`/api/admin/[...path]`): Proxy to backend admin endpoints
-- **Company** (`/api/empresa/`, `/api/cnpj-search`): CNPJ lookup
-- **Export** (`/api/download`, `/api/comparador/`): CSV/Excel
-
-### Patterns
-
-**Proxy:** Forward auth header to Python backend with retry logic.
-**Error Handling (CRIT-002 AC3):** Contextual error messages by HTTP status (429, 502, 524).
-**Retry Logic (GTM-INFRA-002 AC6):** Max 2 attempts, exponential backoff [0ms, 1000ms], retryable: 502/503/504/524.
-**Auth (STORY-253 AC7):** Server-side token refresh via `getRefreshedToken()`.
-
----
-
-## 5. Authentication Flow
-
-### Supabase SSR Integration
-
-- Server-side: `getSupabaseAdmin()` for middleware + protected routes
-- Client-side: `supabase` singleton for browser API calls
-- Middleware: Route protection + security headers at edge
-- OAuth: Google + Magic Link + Email/Password
-- Session: Secure httpOnly cookies, 1h access token, auto-refresh
-- Timeout: 3s for initial auth check, fallback to local session
-
-### Protected Routes
-
-`/buscar`, `/historico`, `/conta/*`, `/admin/*`, `/dashboard`, `/pipeline`, `/alertas`
-
----
-
-## 6. Design System
-
-### 6.1 Color Palette
-
-**Brand:** Navy (#0a1e3f, 14.8:1 AAA), Blue (#116dff, 4.8:1 AA), Blue Hover (#0d5ad4, 6.2:1 AA+)
-**Semantic:** Success (#16a34a), Error (#dc2626), Warning (#ca8a04)
-**Text:** ink (#1e2d3b / #e8eaed dark), ink-secondary (#3d5975), ink-muted (#6b7a8a -> #8494a7 dark for 6.2:1)
-**Surfaces:** surface-0 (#ffffff / #121212), surface-1 (#f7f8fa / #1a1d22), surface-2 (#f0f2f5 / #242830)
-
-Full dark mode support via CSS variables. WCAG AA/AAA compliant.
-
-### 6.2 Typography
-
-- **Display:** Fahkwang (600/700) -- Headings, CTA
-- **Body:** DM Sans (400/500/600/700) -- Body text, UI
-- **Data:** DM Mono (400/500) -- Code, metrics
-- **Fluid Scale:** clamp() from 16px base to 72px hero
-
-Font-display: "swap" prevents FOIT. DM Sans preloaded for critical path.
-
-### 6.3 Spacing & Layout
-
-Base grid: 4px. Section padding: 64px (mobile) / 96px (desktop). Max-width: 1200px. Sidebar: 240px (collapsible). Min touch target: 44x44px (WCAG).
-
-### 6.4 Shadows (Premium - STORY-174)
-
-sm, md, lg, xl, 2xl, glow, glow-lg, glass (glassmorphism).
-
-### 6.5 Animations (Framer Motion + Tailwind)
-
-fade-in-up (0.4s), slide-up (0.6s), scale-in (0.4s), slide-in-right (0.3s), bounce-gentle (2s infinite), float (3s infinite), gradient (8s infinite), shimmer (2s infinite), indeterminate-bar (2s infinite).
-
----
-
-## 7. Responsive Design
+- Base unit: 4px (Tailwind default)
+- Unique padding values detected: ~19
+- Unique margin values: ~15
+- Consistency: MEDIUM (inline styles indicam drift)
 
 ### Breakpoints
 
-| Size | Prefix | Use |
-|------|--------|-----|
-| 375-599px | (default) | Mobile base |
-| 640px | sm: | Small tablets |
-| 768px | md: | Tablets |
-| 1024px | lg: | Desktops (primary shift) |
-| 1280px | xl: | Wide desktops |
-| 1536px | 2xl: | Ultra-wide |
-
-### Mobile-Specific
-
-- BottomNav (60px, 4 main + drawer)
-- MobileDrawer (slide right, FocusTrap, Escape dismiss)
-- Pull-to-refresh on search
-- Responsive sidebar (lg:block, mobile: drawer)
-- Min width: 375px (SAB-012 AC8)
+Tailwind defaults: sm(640), md(768), lg(1024), xl(1280), 2xl(1536). Mobile-first **declarado mas desktop-first na prática** (algumas páginas).
 
 ---
 
-## 8. Accessibility (a11y)
+## Component Inventory
 
-### WCAG 2.1 AA Compliance
+### Totals
 
-| Criterion | Implementation |
-|-----------|---------------|
-| 1.4.3 Contrast (AA) | >=4.5:1 for text, >=3:1 for UI |
-| 1.4.11 Non-text Contrast | Borders, icons >=3:1 |
-| 1.4.13 Focus Appearance (AAA) | 3px outline + 2px offset |
-| 2.1.1 Keyboard | All interactive elements accessible |
-| 2.4.1 Bypass Blocks | "Skip to main content" link |
-| 2.5.5 Target Size (AAA) | All targets min 44x44px |
-| 4.1.2 Name, Role, Value | ARIA labels on interactive elements |
-| 4.1.3 Status Messages | Live regions for alerts/messages |
+- **Pages** (`frontend/app/**/page.tsx`): 22 rotas principais + subrotas (blog, admin sub-pages)
+- **Shared components** (`frontend/components/`): ~68 componentes
+- **Feature components** (`frontend/app/**/components/`): ~170
+- **Total components**: ~243
 
-### ARIA Implementation
+### Shared Components (`frontend/components/`)
 
-Semantic HTML first (native `<button>`, `<form>`, `<nav>`). ARIA labels on icon buttons, aria-describedby for tooltips, aria-hidden for decorative icons, aria-live for dynamic content, aria-modal for dialogs, aria-expanded for accordions.
+Exemplos enumerados:
 
-### Keyboard Navigation
+- `Button.tsx` (CVA-based, canonical)
+- `Card.tsx`, `Modal.tsx`, `Tooltip.tsx`
+- `Input.tsx`, `Select.tsx`, `Textarea.tsx`
+- `Badge.tsx`, `Tabs.tsx`, `Accordion.tsx`
+- `LoadingSpinner.tsx`, `Skeleton.tsx`
+- `Navbar.tsx`, `Footer.tsx`, `SidebarMobile.tsx`
+- `ErrorBoundary.tsx`, `ErrorBanner.tsx`
 
-Skip links, FocusTrap on modals/drawers, Enter submits forms, Arrow keys navigate menus, Escape closes modals.
+### Feature Components (`frontend/app/buscar/components/`)
 
-### Color Accessibility
+**Search:**
+- `SearchForm`, `SearchResults`, `FilterPanel`, `UfProgressGrid`
+- `SearchHeader`, `SectorSelector`, `CustomKeywordsInput`
 
-Non-color dependence: viability badge uses icon + color. Status badges use icon + text + color. Error/success uses icon + text.
+**Resilience:**
+- `CacheBanner`, `DegradationBanner`, `PartialResultsPrompt`
+- `SourcesUnavailable`, `ErrorDetail`, `RetryButton`
 
----
+**AI:**
+- `LlmSourceBadge`, `ViabilityBadge`, `FeedbackButtons`, `ReliabilityBadge`
+- `ClassificationReasoning`, `ViabilityReasonsModal`
 
-## 9. Performance
+**Billing:**
+- `PlanCard`, `PlanToggle`, `PaymentFailedBanner`, `CancelSubscriptionModal`
+- `UpgradeButton`, `QuotaBanner`
 
-### Web Vitals
-
-| Metric | Target | Current |
-|--------|--------|---------|
-| LCP | <2.5s | ~1.8s |
-| FID | <100ms | <50ms |
-| CLS | <0.1 | ~0.05 |
-| FCP | <1.8s | ~1.2s |
-| TTFB | <600ms | ~400ms |
-
-### Optimizations
-
-- **Code splitting:** Automatic via App Router + dynamic imports for heavy modals/charts
-- **Image optimization:** Next.js Image component, WebP, lazy loading, priority for LCP
-- **Font performance:** display: "swap", selective preloading
-- **CSS:** Tailwind (no CSS-in-JS overhead, purged in production)
-- **Caching:** Static assets 30d, fonts 1y, API via SWR
-- **Bundle size:** ~280KB gzipped, size-limit CI check
+**Loading:**
+- `EnhancedLoadingProgress`, `LoadingProgress`, `SkeletonResults`
 
 ---
 
-## 10. Third-Party Integrations
+## Pattern Redundancy Metrics (Quantified)
 
-| Service | Purpose |
-|---------|---------|
-| **Mixpanel** | Product analytics |
-| **Google Analytics 4** | Web traffic |
-| **Google Tag Manager** | Tag management |
-| **Clarity (Microsoft)** | Heatmaps + recordings |
-| **Sentry** | Error tracking + source maps |
-| **Stripe** | Payment processing |
-| **Supabase Auth** | User management + OAuth |
-| **Framer Motion** | Animations |
-| **Recharts** | Data visualization |
-| **@dnd-kit** | Drag-drop (pipeline) |
-| **Shepherd.js** | Product tours |
-| **SWR** | Data fetching + cache |
-| **React Hook Form** | Form management |
-| **Zod** | Schema validation |
+Métricas levantadas via `Grep` sobre `frontend/**/*.tsx`:
+
+| Pattern                                   | Count  | Status                                                      |
+|-------------------------------------------|--------|-------------------------------------------------------------|
+| `<button>` native + `<Button>` component  | 629    | 62% são `<button>` nativo (deveria ser `<Button>`)          |
+| Inline hex colors `#[0-9a-fA-F]{6}`       | 194    | HIGH debt — bypassa Tailwind tokens                         |
+| `rgb()` inline                            | 0      | ✅ GOOD                                                      |
+| `style={{...}}` inline styles             | 139    | MEDIUM debt — deveria ser Tailwind classes                  |
+| `: any` ou `as any`                       | 296    | 🔴 CRITICAL — type safety gap                                |
+| `aria-label` ou `role=`                   | 874    | ✅ STRONG accessibility coverage                             |
+| `data-testid`                             | 930    | ✅ EXCELLENT test instrumentation                            |
+| `"use client"` directives                 | ~88%   | ⚠️ Over-client; underutiliza Server Components             |
 
 ---
 
-## 11. Testing & Quality
+## Route Inventory (22 páginas principais)
 
-### Jest Unit Tests (95+)
+| Path                 | Purpose                              | Auth         | Notable Concerns                                         |
+|----------------------|--------------------------------------|--------------|----------------------------------------------------------|
+| `/`                  | Landing page                         | Public       | LCP crítico; marketing copy                              |
+| `/login`             | Email/password login                 | Public       | Google OAuth social                                      |
+| `/signup`            | Trial signup                         | Public       | Sem email verify obrigatório (debate)                    |
+| `/auth/callback`     | OAuth callback                       | Public       | -                                                         |
+| `/recuperar-senha`   | Password reset request               | Public       | -                                                         |
+| `/redefinir-senha`   | Password reset confirm               | Public       | -                                                         |
+| `/onboarding`        | 3-step wizard (CNAE → UFs → Confirm) | Auth         | Friction point (TD-UX-001)                              |
+| `/buscar`            | Main search page                     | Auth         | SSE + polling, 20+ components, CRITICAL flow             |
+| `/dashboard`         | User analytics                       | Auth         | Recharts heavy                                           |
+| `/historico`         | Search history                       | Auth         | Pagination absent                                        |
+| `/pipeline`          | Opportunity kanban                   | Auth         | ⚠️ @dnd-kit sem keyboard (TD-FE-006)                    |
+| `/mensagens`         | Support tickets                      | Auth         | -                                                         |
+| `/conta`             | Account settings                     | Auth         | Password change + data export                            |
+| `/planos`            | Pricing/upgrade                      | Auth         | Stripe checkout                                          |
+| `/planos/obrigado`   | Thank-you post-checkout              | Auth         | -                                                         |
+| `/pricing`           | Marketing pricing                    | Public       | -                                                         |
+| `/features`          | Marketing features                   | Public       | -                                                         |
+| `/ajuda`             | Help center                          | Public       | -                                                         |
+| `/admin`             | Admin dashboard                      | Admin        | is_admin gated                                           |
+| `/admin/cache`       | Cache admin                          | Admin        | -                                                         |
+| `/termos`            | Terms of service                     | Public       | -                                                         |
+| `/privacidade`       | Privacy policy                       | Public       | LGPD disclosures                                         |
 
-Component tests, API route tests, accessibility tests. jest.setup.js mocks: uuid, EventSource, IntersectionObserver, Next.js router, window.matchMedia, Supabase.
+Adicionalmente: `/blog/*`, `/admin/*` sub-routes (total ~92 segmentos de rota).
 
-### Playwright E2E (50+)
+### Critical Pages (top 5 detailed)
 
-Auth, search, billing, accessibility flows. Chromium, Firefox, WebKit. Desktop + iPhone 12 + iPad. Retries: 2 (CI). Screenshots + video on failure.
-
-### Missing
-
-- Visual regression testing (Percy/Chromatic) -- recommended
-- Component Storybook -- recommended
-
----
-
-## 12. SEO & Structured Data
-
-### Metadata
-
-GTM-COPY-006 Decision-Strategy Positioning: titles emphasize decision-making (max 60 chars), descriptions result-oriented (max 155 chars).
-
-### Structured Data
-
-Schema.org JSON-LD WebApplication on all pages. Dynamic OG image generation via `/api/og`.
-
-### Sitemap & Robots
-
-Dynamic sitemap (2000+ URLs), ISR revalidation 24h. Noindex on /login, /termos, /privacidade. RSS feeds for blog + alertas-publicos.
-
----
-
-## 13. Error Handling & Degradation
-
-### Error Boundaries
-
-- `global-error.tsx`: Root layout crashes (inline styles, no Tailwind)
-- `error.tsx`: Page-level errors (retry button, Sentry tracking)
-- `<SearchErrorBoundary>`: Search-specific errors
-- `<ErrorBoundary>`: Feature section wrapper
-
-### API Error Messages (CRIT-002 AC3)
-
-429: "Muitas consultas simultaneas..."
-502: "Servidores se atualizando..."
-524: "Analise excedeu tempo limite..."
-
-### Fallback UIs
-
-Network error: ErrorStateWithRetry. Empty results: SearchEmptyState/OnboardingEmptyState. Loading: Skeleton screens + shimmer. Backend down: BackendStatusIndicator + retry options.
+1. **`/buscar`** — CRITICAL flow. Orquestra POST /buscar → SSE → polling → render. Estado complexo (filtros, loading, progress per UF, results, cache banner). ~20+ components.
+2. **`/pipeline`** — Kanban drag-drop via @dnd-kit. Acessibilidade gap (sem keyboard nav).
+3. **`/dashboard`** — Analytics charts (Recharts). Heavy bundle; initial render slow.
+4. **`/onboarding`** — 3-step wizard. Drop-off point (TD-UX-001).
+5. **`/conta`** — Subscription + password + data export. Stripe portal integration.
 
 ---
 
-## 14. UX Debt & Issues Matrix
+## State Management
 
-### Identified Debt Items
+### Architecture
 
-| ID | Severity | Issue | Status |
-|----|----------|-------|--------|
-| DEBT-FE-001 | Medium | Search filters hook 600+ lines | Open |
-| DEBT-FE-002 | Medium | Old title attributes vs accessible tooltips | Fixed |
-| DEBT-FE-018 | Low | Some badges color-only differentiation | Mitigation (icons) |
-| DEBT-012 | Low | Some raw hex colors instead of tokens | Partial |
-| DEBT-011 | High | 5+ separate hooks in prop tree | Fixed (UserContext) |
-| DEBT-v3-S2 AC9 | Low | Indeterminate progress bar | Fixed |
-| DEBT-116 | Low | style-src unsafe-inline for Tailwind | Accepted risk |
+Multi-layer provider hierarchy em `frontend/app/layout.tsx`:
 
-### Missing Features / Gaps
+```
+<AuthProvider>                     # Session, user, admin status (Supabase SSR)
+  <ThemeProvider>                  # Dark/light mode
+    <AnalyticsProvider>            # Mixpanel, Sentry, GA4
+      <NProgressProvider>          # Page transition bar
+        <SWRProvider>              # SWR config
+          <UserProvider>           # Profile, features, quota
+            <BackendStatusProvider># Health check polling
+              {children}
+            </BackendStatusProvider>
+          </UserProvider>
+        </SWRProvider>
+      </NProgressProvider>
+    </AnalyticsProvider>
+  </ThemeProvider>
+</AuthProvider>
+```
 
-| Feature | Priority |
-|---------|----------|
-| Visual regression testing (Percy/Chromatic) | Medium |
-| Component Storybook | Low |
-| Multi-language support (i18n) | Low |
-| Offline support (Service Worker) | Low |
-| Saved filter presets | Medium |
+### Patterns
 
-### Mobile-Specific Issues
+- `useState` (637 instances) para local component state
+- `useCallback` para memoization de handlers
+- Custom hooks: `useSearchOrchestration`, `usePipeline`, `usePlan`, `useShepherdTour`, `useQuota`, `useAuth`
+- **SWR** para API calls + cache + auto-revalidation
+- **localStorage** para theme, plan cache (1h TTL — CLAUDE.md), survey flags
+- **URL query params** para search filter state
 
-| Issue | Severity | Status |
-|-------|----------|--------|
-| Small touch targets (<44px) in legacy | Medium | WCAG enforced in new |
-| Scroll jank during SSE updates | Low | Debounce mitigation |
-| Bottom nav covers content | Low | Padding adjustment |
+### Observations
 
-### Accessibility Gaps
-
-| Gap | Severity |
-|-----|----------|
-| Some icons missing aria-hidden | Low |
-| Live region config in Sonner toasts | Low |
-| Dark mode border contrast | Low (SAB-003 fixed) |
-| Modal focus trap edge cases | Medium |
+- Sem Zustand/Redux/Jotai — Context + Hooks + SWR é suficiente para o scale atual
+- Plan cache localStorage (1h TTL) previne UI downgrades em erro transitório (CLAUDE.md)
 
 ---
 
-## 15. Architecture Recommendations
+## API Integration
 
-### Near-Term (Q2 2026)
-1. Add Storybook for 50+ components
-2. Visual regression testing (Percy.io)
-3. Saved filter presets
-4. Gesture-based filter opening (mobile)
+### API Proxy Pattern
 
-### Long-Term
-- Consider TanStack Query for granular cache control
-- Maintain current hooks + SWR pattern (working well)
-- Expand Playwright to 100+ scenarios
-- Quarterly external accessibility audits
+`frontend/app/api/` route handlers proxam para backend FastAPI. Exemplos:
 
----
+- `app/api/buscar/route.ts` → backend `POST /buscar`
+- `app/api/buscar-progress/[id]/route.ts` → backend `GET /buscar-progress/{id}` (SSE)
+- `app/api/analytics/route.ts` → backend `GET /analytics/*`
+- `app/api/admin/route.ts` → backend `GET /admin/*` (admin-gated)
+- `app/api/feedback/route.ts` → backend `POST /feedback`
+- `app/api/trial-status/route.ts` → backend `GET /trial-status`
+- `app/api/plans/route.ts` → backend `GET /plans`
+- `app/api/pipeline/route.ts` → backend `POST/GET/PATCH/DELETE /pipeline`
+- `app/api/sessions/route.ts` → backend `GET /sessions`
+- `app/api/user/route.ts` → backend `GET /me`, `PUT /profile/context`
 
-## Summary
+### Error Handling
 
-| Metric | Value |
-|--------|-------|
-| **Pages** | 75+ |
-| **Components** | 65+ |
-| **Custom Hooks** | 25+ |
-| **API Routes** | 60+ |
-| **Tests** | 95+ (jest + Playwright) |
-| **Bundle Size** | ~280KB gzipped |
-| **Lighthouse** | 92/100 |
-| **WCAG** | AA (some AAA) |
-| **Dark Mode** | Full support |
-| **Mobile** | Mobile-first (375px+) |
-| **SEO** | 2000+ indexed pages |
-
-**Technology:** Next.js 16, React 18, TypeScript, Tailwind CSS 3, SWR 2, Supabase SSR, Mixpanel, GA4, Sentry, Framer Motion, Recharts, Shepherd.js
+- `ErrorBoundary` component (react-error-boundary)
+- Sentry captures para errors não-handled
+- Toast (Sonner) para user feedback
+- Degradation banners para partial failures (SSE fallback, source unavailable)
 
 ---
 
-**Document Version:** 2.0
-**Last Updated:** 2026-04-08
+## Accessibility Audit
+
+**Level alcançado**: WCAG AA+ (muitos tokens meet AAA)
+
+### Positives
+
+- ✅ 874 ARIA labels/roles
+- ✅ Skip to content link
+- ✅ Semantic HTML (nav, main, article, form, section)
+- ✅ Focus management (`focus-trap-react` em modals)
+- ✅ Dark mode com accessible contrast
+
+### Verified Contrast Ratios (from tokens)
+
+- Primary text vs canvas: 12.6:1 AAA ✅
+- Secondary text: 5.5:1 AA ✅
+- Error/success/warning: Todos AA+ ✅
+
+### Known Violations / Gaps
+
+- ⚠️ **Kanban (@dnd-kit)** sem keyboard nav completa (arrow keys drag-drop) — WCAG 2.1 AA gap
+- ⚠️ **Shepherd.js** hardcoded HTML — screen readers não parseiam corretamente
+- ⚠️ Form validation errors sometimes not `aria-live`
+- ⚠️ Charts (Recharts) sem long descriptions para screen readers
+
+---
+
+## Performance
+
+### Bundle Analysis (heuristic, sem bundle-analyzer report atual)
+
+**Heavy dependencies:**
+- Framer Motion 12.33 — não tree-shakeable
+- Recharts 3.7 — ~60KB gzipped
+- Shepherd.js 14.5 — ~30KB
+- @dnd-kit/core+sortable — ~40KB combined
+
+**Code splitting**: Next.js automático per-route (good).
+
+### Rendering
+
+- **SSR vs CSR vs SSG**: mix via App Router
+- **"use client"**: ~88% dos components (⚠️ TD-FE-007 — underutilize RSC)
+- **Suspense boundaries**: inconsistentes (alguns lugares sim, outros não)
+
+### Known Performance Issues
+
+- `/dashboard` initial render slow (Recharts heavy)
+- SSE + polling chain em `/buscar` pode ter race conditions se backend lento
+- Mobile viewport: bottom nav not always sticky durante scroll
+
+---
+
+## Testing Reality
+
+### Unit/Integration
+
+- **Jest + RTL**: 135 test files, 2681+ passing, 0 failures
+- **Coverage threshold**: 60%
+- **jest.setup.js** polyfills: `crypto.randomUUID` + `EventSource` (jsdom lacks both)
+
+### E2E
+
+- **Playwright**: 60 tests em `frontend/e2e-tests/`
+- Cobertura: golden path, error handling, acessibilidade básica
+- CI: `.github/workflows/e2e.yml`
+
+### Known Testing Gaps
+
+- Sem visual regression (Percy/Chromatic/Loki)
+- Sem perf budget tests (Lighthouse CI)
+- Sem a11y automated (axe-core integration parcial)
+
+---
+
+## Internationalization (i18n)
+
+- **NÃO implementado** (TD-FE-010)
+- Strings hardcoded em Português (pt-BR)
+- Default locale: pt-BR (SmartLic é produto brasileiro)
+- **Impacto**: Expansão LATAM requer retrofit
+- **Risk**: Strings scattered em 170+ feature components
+
+---
+
+## Technical Debt Register (23 items)
+
+### CRITICAL 🔴 (3 items, ~7-11 dias)
+
+#### TD-FE-001: 296 `any` types
+
+- **Location**: espalhado em `frontend/` (296 matches `: any` ou `as any`)
+- **Impact**: Type safety gap; refactoring confiante impossível; bugs runtime não pegos em compile time.
+- **Fix**: Enable TypeScript strict mode + progressive typing.
+- **Effort**: 3-5 dias
+
+#### TD-FE-002: Shepherd.js hardcoded HTML
+
+- **Impact**: Accessibility violation; screen readers não parseiam.
+- **Fix**: Substituir por solução custom com ARIA correto ou shepherd-react com renderização React.
+- **Effort**: 2-3 dias
+
+#### TD-FE-003: 139 inline `style={{...}}`
+
+- **Impact**: Design system bypass; CSS scattered; manutenibilidade.
+- **Fix**: ESLint rule + progressive migration para Tailwind classes.
+- **Effort**: 2-3 dias
+
+### HIGH ⚠️ (5 items, ~8-15 dias)
+
+#### TD-FE-004: 194 inline hex colors
+
+- **Impact**: Breaks token system.
+- **Fix**: ESLint `no-arbitrary-values` + token enforcement em code review.
+- **Effort**: 1-2 dias
+
+#### TD-FE-005: 62% `<button>` nativo (deveria ser `<Button>`)
+
+- **Impact**: Design system coherence; ARIA labels nem sempre presentes; styling drift.
+- **Fix**: Codemod + ESLint rule.
+- **Effort**: 1 dia
+
+#### TD-FE-006: Kanban (@dnd-kit) sem keyboard nav
+
+- **Impact**: WCAG 2.1 AA violation; keyboard users excluded.
+- **Fix**: Implementar `useSortable` com `coordinateGetter` para arrow keys.
+- **Effort**: 1-2 dias
+
+#### TD-FE-007: ~88% "use client" directives
+
+- **Impact**: Bundle size, hydration cost, underutiliza RSC.
+- **Fix**: Audit + migrate static components para Server Components.
+- **Effort**: 5-7 dias
+
+#### TD-FE-008: Sem visual regression testing
+
+- **Impact**: CSS changes podem silenciosamente quebrar UI.
+- **Fix**: Percy/Chromatic/Loki integration.
+- **Effort**: 1-2 dias
+
+### MEDIUM 💡 (12 items, ~12-20 dias)
+
+#### TD-FE-010: i18n não implementado
+
+- Strings hardcoded pt-BR; expansão LATAM bloqueada.
+
+#### TD-FE-011: Sem Storybook
+
+- DX gap; component discovery difícil.
+
+#### TD-FE-012: Framer Motion/dnd-kit não tree-shaken
+
+- Bundle weight ~100KB+ combined.
+
+#### TD-FE-013: SSE reconnection não surface para user
+
+- Se conexão cai, UI não sempre sinaliza.
+
+#### TD-FE-014: Image optimization incompleta
+
+- `<Image>` Next nem sempre usado; WebP conversion manual.
+
+#### TD-FE-015: Loading state inconsistency
+
+- Skeleton vs spinner mix.
+
+#### TD-FE-016: Error messages genéricos
+
+- "Erro inesperado" unhelpful.
+
+#### TD-FE-017: Tour Shepherd.js não dismissível persistente
+
+- Repete em cada visita.
+
+#### TD-FE-018: Bottom nav mobile não sticky
+
+- Navegação inacessível durante scroll.
+
+#### TD-FE-019: Cache freshness unclear para user
+
+- Usuários incertos se dados são recentes.
+
+#### TD-FE-020: Form validation errors easy to miss
+
+- Visual weak; ARIA live regions faltam.
+
+#### TD-FE-021: Blog content não responsivo
+
+- Images overflow em mobile.
+
+### LOW (3 items, 2-4 dias)
+
+#### TD-FE-030: Toast positioning em mobile sub-ótimo
+
+#### TD-FE-031: Missing JSDoc em components core
+
+#### TD-FE-032: `Button.examples.tsx` órfão (não em Storybook)
+
+---
+
+## UX Concerns (User-Facing)
+
+### High Impact
+
+1. **Onboarding friction** — 3-step wizard sente longo, causa drop-off
+2. **Empty state confusing** — "No results found" sem sugestões de fix
+3. **Pipeline accessibility** — Keyboard users não conseguem drag-drop
+4. **Trial expiry não surfaced** — Sem countdown; usuários surpresos
+5. **Error messages genéricos** — "Erro inesperado" unhelpful
+6. **Bottom nav não sticky mobile** — Navegação perdida durante scroll
+7. **Tour can't be dismissed permanently** — Irritação
+8. **Cache freshness unclear** — Usuários incertos se dados recentes
+9. **Loading states inconsistent** — Skeleton vs spinner drift
+10. **Form validation não óbvia** — Erros fáceis de perder
+11. **Pipeline card modal focus issues** — Focus management
+12. **Blog content not responsive** — Mobile overflow
+
+---
+
+## Questions for @architect (Phase 4 Handoff)
+
+1. **Server Components strategy** — atualmente 88% client-side. Migration plan?
+2. **TypeScript strict mode** — quando habilitar? Bloqueador para 296 `any` types?
+3. **Design token enforcement** — ESLint (`no-arbitrary-values`) ou code review?
+4. **i18n roadmap** — retrofit agora ou deferir? LATAM roadmap?
+5. **Storybook** — implementar quando?
+6. **`<Button>` migration** — 62% ainda `<button>` nativo. Codemod aprovado?
+7. **Kanban keyboard nav** — prioritize WCAG 2.1 AA compliance?
+8. **Performance budget targets** — LCP/FID/CLS?
+9. **Mobile-first vs desktop-first** — oficial stance?
+10. **Visual regression tool choice** — Percy, Chromatic, Loki?
+
+---
+
+## Recommendations Summary — Top 5 ROI
+
+1. **Eliminate 296 `any` types** (3-5 dias) — TypeScript strict mode; catches bugs compile-time
+2. **`<button>` → `<Button>` migration** (1 dia) — codemod; design system coerência
+3. **ESLint `no-arbitrary-values`** (2 dias) — bloqueia inline hex; força token usage
+4. **Kanban keyboard nav** (1-2 dias) — WCAG 2.1 AA compliance
+5. **Visual regression (Percy)** (1-2 dias) — catch CSS regressions automaticamente
+
+---
+
+## Summary Statistics
+
+| Metric                    | Value                | Status          |
+|---------------------------|----------------------|-----------------|
+| Components Counted        | ~243                 | ✅              |
+| Routes Inventoried        | 22 principais + subs | ✅              |
+| Design Tokens             | 50+                  | ✅ Comprehensive |
+| Unit+Integration Tests    | 135 files, 2681+     | ✅ Good coverage |
+| E2E Tests                 | 60 Playwright        | ✅              |
+| ARIA Coverage             | 874 labels/roles     | ✅ Strong       |
+| `any` Type Instances      | 296                  | 🔴 CRITICAL     |
+| Design Token Adoption     | ~70%                 | ⚠️ MEDIUM       |
+| `<Button>` Consistency    | 38% (62% raw)        | ⚠️ HIGH         |
+| Technical Debt Items      | 23 (3c, 5h, 12m, 3l) | ⚠️ Manageable   |
+| UX Concerns               | 12 high-impact       | ⚠️ Phase 5+     |
+
+---
+
+**Document Status**: 2.0 (2026-04-14) — Phase 3 of brownfield-discovery complete. Handoff ao @architect para Phase 4 (consolidação inicial).

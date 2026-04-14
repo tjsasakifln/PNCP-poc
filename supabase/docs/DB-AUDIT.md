@@ -1,412 +1,468 @@
-# SmartLic Database Audit & Optimization Report
-
-**Project:** PNCP-poc (SmartLic)
-**Database:** Supabase (PostgreSQL 17)
-**Tier:** FREE (500MB limit)
-**Audit Date:** 2026-04-08
-**Auditor:** @data-engineer (Dara) -- Brownfield Discovery Phase 2
-
----
+# SmartLic Database Audit
 
 ## Executive Summary
 
-The SmartLic database is a **mature, multi-tenant SaaS platform** with 40+ tables supporting:
-- User authentication & subscription billing (Stripe integration)
-- PNCP procurement data lake (100K+ bid records, 12-day retention)
-- Real-time alerting & monitoring
-- Multi-user organization support
-- Full-text search with PostgreSQL GIN indexes
-- Comprehensive audit logging & RLS enforcement
+- **Tables audited**: 23
+- **Critical issues**: 4 🔴 (3 addressed via DEBT-001, 1 pending)
+- **High severity**: 6 ⚠️
+- **Medium severity**: 5 💡
+- **Low/Style**: 4
+- **Overall Score**: **62/100**
 
-**Status:** HEALTHY with **12 identified optimizations**. No critical security vulnerabilities, but several performance improvements recommended before 10M+ row datalake scale.
+### Scoring Justification
 
----
-
-## 1. Missing Indexes (Query Pattern Analysis)
-
-### 1.1 HIGH PRIORITY
-
-#### Issue: pncp_raw_bids -- missing composite index for common dashboard queries
-
-**Pattern Found:**
-```python
-# backend/datalake_query.py
-result = sb.rpc("search_datalake", {
-    "p_ufs": ["SP", "RJ"],
-    "p_date_start": "2026-03-29",
-    "p_date_end": "2026-04-08",
-    "p_tsquery": None,
-    "p_modalidades": [1, 2, 3],
-    "p_limit": 2000
-})
-```
-
-**Problem:**
-The `search_datalake` RPC function filters by:
-1. `p_ufs` (IN clause on `uf`)
-2. `p_date_start/date_end` (range on `data_publicacao`)
-3. `p_modalidades` (IN clause on `modalidade_id`)
-4. `is_active = true` (filter)
-5. Full-text search (GIN on `tsv`)
-
-**Existing Indexes:**
-- `idx_pncp_raw_bids_uf_date`: (uf, data_publicacao DESC) WHERE is_active
-- `idx_pncp_raw_bids_modalidade`: (modalidade_id) WHERE is_active
-- `idx_pncp_raw_bids_fts`: GIN (tsv)
-
-**Missing Composite Index:**
-```sql
-CREATE INDEX idx_pncp_raw_bids_dashboard_query
-  ON pncp_raw_bids (uf, modalidade_id, data_publicacao DESC)
-  WHERE is_active = true;
-```
-
-**Impact:** Saves sequential scan on `modalidade_id` range within each UF. Estimated **50-70% faster** on typical dashboards querying 5-10 UFs x 3-5 modalities.
-
-**Cost:** ~10MB per 500K rows.
+- ✅ Solid RLS foundation, but significant gaps in user_id indexing (100x perf impact)
+- ✅ Excellent index design on `pncp_raw_bids` (8 purpose-built indexes, GIN FTS)
+- ✅ DEBT-210 optimization (pre-computed tsvector, batch upsert)
+- ⚠️ 60% das migrations focaram em fixes/debt paydown — sinal de iteração pós-launch
+- ⚠️ Data retention (purge_old_bids, health_checks, search_results_cache) não completamente automatizada
+- ⚠️ Sem `down.sql` migration templates (rollback manual)
 
 ---
 
-#### Issue: search_sessions -- indexes assessed
+## Critical Issues 🔴
 
-**Existing Indexes:**
-- `idx_search_sessions_user`: (user_id)
-- `idx_search_sessions_created`: (user_id, created_at DESC)
+### TD-DB-001 — Service-Role RLS Bypass Missing on `search_sessions` (FIXED)
 
-**Status:** Already well-indexed.
+- **Severity**: CRITICAL (historical)
+- **Status**: ✅ FIXED em `006b_search_sessions_service_role_policy.sql` (2026-02-10)
+- **Finding**: Migration 001 criou tabela com policies `sessions_select_own` e `sessions_insert_own` mas SEM policy para service_role. Backend usa `SUPABASE_SERVICE_ROLE_KEY` onde `auth.uid()=NULL`, bloqueando INSERT.
+- **Impact**: Pós-launch, todos usuários falhavam ao salvar histórico; `/historico` página vazia.
+- **Fix applied**:
+  ```sql
+  CREATE POLICY "Service role can manage search sessions" ON public.search_sessions
+      FOR ALL USING (true);
+  ```
 
----
+### TD-DB-002 — Missing `user_id` Indexes on RLS-Heavy Tables (FIXED)
 
-### 1.2 MEDIUM PRIORITY
+- **Severity**: CRITICAL (historical)
+- **Status**: ✅ FIXED em `020260308100000_debt001_database_integrity_fixes.sql`
+- **Tables**: `search_sessions`, `pipeline_items`, `search_results_store`, `classification_feedback`
+- **Finding**: RLS policies usam `auth.uid() = user_id`; sem índice em `user_id`, Supabase docs cita "100x+ performance degradation". Migration `20260307100000` tentou criar mas usou nomes errados (searches, pipeline, feedback).
+- **Impact**: User login escaneava full table; risco de connection pool exhaustion em alta concorrência.
+- **Fix applied**:
+  ```sql
+  CREATE INDEX IF NOT EXISTS idx_search_sessions_user_id ON public.search_sessions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_pipeline_items_user_id ON public.pipeline_items(user_id);
+  CREATE INDEX IF NOT EXISTS idx_search_results_store_user_id ON public.search_results_store(user_id);
+  CREATE INDEX IF NOT EXISTS idx_classification_feedback_user_id ON public.classification_feedback(user_id);
+  ```
 
-#### Issue: user_subscriptions -- missing index for plan lookup queries
+### TD-DB-003 — FK Constraint Conflict: partner_referrals ON DELETE SET NULL + NOT NULL (FIXED)
 
-**Pattern Found:**
-```python
-SELECT plan_id, billing_period FROM user_subscriptions
-WHERE user_id = ? AND is_active = true
-ORDER BY created_at DESC LIMIT 1;
-```
+- **Severity**: CRITICAL (historical)
+- **Status**: ✅ FIXED em `020260308100000_debt001_database_integrity_fixes.sql`
+- **Finding**: `referred_user_id` era NOT NULL + FK ON DELETE SET NULL — contradição impedia deleção de profile (GDPR right-to-be-forgotten).
+- **Fix applied**:
+  ```sql
+  ALTER TABLE public.partner_referrals ALTER COLUMN referred_user_id DROP NOT NULL;
+  ```
 
-**Existing Indexes:**
-- `idx_user_subscriptions_active`: (user_id, is_active) WHERE is_active = true
+### TD-DB-004 — `purge_old_bids()` cron NOT SCHEDULED in Production (PENDING)
 
-**Missing covering index:**
-```sql
-CREATE INDEX idx_user_subscriptions_active_created
-  ON user_subscriptions (user_id, created_at DESC)
-  WHERE is_active = true;
-```
-
-**Benefit:** Full index-only scan (covering index), zero table lookups.
-
----
-
-#### Issue: audit_events -- no index on target_id_hash
-
-**Missing:**
-```sql
-CREATE INDEX idx_audit_events_target_hash
-  ON audit_events (target_id_hash)
-  WHERE target_id_hash IS NOT NULL;
-```
-
-**Benefit:** Supports admin dashboards investigating impact on specific users.
-
----
-
-## 2. RLS Policy Security Assessment
-
-### 2.1 CRITICAL ISSUES FIXED
-
-**Migration 20260404000000_security_hardening_rpc_rls.sql** addressed:
-- **CRIT-SEC-001** -- Quota manipulation via direct RPC calls
-  - **Fix:** Revoked EXECUTE from `authenticated` role for `check_and_increment_quota()`, `increment_quota_atomic()`
-  - **Status:** IMPLEMENTED -- Service role only
-
-- **CRIT-SEC-002** -- Cross-user data access via direct RPC
-  - **Fix:** Added `auth.uid()` guards to `get_analytics_summary()`
-  - **Status:** IMPLEMENTED -- User context verification enforced
-
-- **CRIT-SEC-004** -- p_is_admin parameter bypass in `get_conversations_with_unread_count()`
-  - **Fix:** Revoked parameter and added role-based INNER JOIN check
-  - **Status:** IMPLEMENTED -- Role derived from database state, not parameter
+- **Severity**: CRITICAL
+- **Status**: 🔴 OPEN — @architect precisa confirmar
+- **Finding**: Migration `020260326000000_pncp_raw_bids.sql` define função `purge_old_bids(12)` mas NÃO cria pg_cron schedule.
+- **Impact**: Se cron não configurado manualmente → table cresce ilimitadamente → 500MB FREE tier exceeded em 3-4 semanas → table locks → downtime.
+- **Fix SQL**:
+  ```sql
+  SELECT cron.schedule(
+      'purge-old-bids',
+      '0 3 * * *',  -- Daily at 3 AM UTC
+      'SELECT public.purge_old_bids(12)'
+  );
+  ```
+- **Effort**: 0.5h (verify + schedule)
 
 ---
 
-### 2.2 RLS POLICY COVERAGE
+## High Severity ⚠️
 
-**Fully Protected Tables:**
-- profiles (SELECT own, UPDATE own)
-- user_subscriptions (SELECT own)
-- search_sessions (SELECT own, INSERT own)
-- pipeline_items (SELECT own, CRUD own)
-- conversations (SELECT own, INSERT own, UPDATE by admin)
-- messages (complex multi-condition)
-- alerts (SELECT own, INSERT own, CRUD own)
-- organizations (owner/admin/member roles)
-- user_oauth_tokens (SELECT own, UPDATE own, DELETE own)
-- google_sheets_exports (SELECT own)
+### TD-DB-010 — Improper RLS on `stripe_webhook_events`
 
-**Public Read Tables (by design):**
-- plans (public catalog)
-- plan_features (public catalog)
-- pncp_raw_bids (public procurement data by law -- Lei 14.133/2021)
-- leads (anonymous email capture)
-- shared_analyses (public with hash-based access)
+- **Table**: `stripe_webhook_events`
+- **Finding**: SELECT policy usa subquery checking `plan_type='master'` — admins (is_admin=true) sem plan_type='master' NÃO podem ver webhooks.
+- **Impact**: Admins não conseguem debug de falhas Stripe; suporte a payment issues bloqueado.
+- **Fix**:
+  ```sql
+  DROP POLICY IF EXISTS "webhook_events_select_admin" ON public.stripe_webhook_events;
+  CREATE POLICY "webhook_events_select_admin" ON public.stripe_webhook_events
+    FOR SELECT USING (
+      EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.is_admin = true)
+    );
+  ```
+- **Effort**: 1h
 
-**Service Role Only:**
-- stripe_webhook_events (webhooks only)
-- audit_events (backend writes)
-- ingestion_runs, ingestion_checkpoints (crawler only)
+### TD-DB-011 — No UNIQUE Constraint on `profiles.email`
 
-**Assessment:** RLS enforcement is **COMPREHENSIVE and CORRECT**.
+- **Finding**: `email` column sem UNIQUE constraint. `auth.users.email` tem UNIQUE via Supabase Auth, mas `profiles` é decoupled. Race condition: 2 signups simultâneos → 2 profiles com mesmo email.
+- **Impact**: Account confusion; billing chaos (2 Stripe customers, mesmo email); search history orphan.
+- **Fix**:
+  ```sql
+  -- Primeiro: identify and merge duplicates
+  -- Depois:
+  ALTER TABLE public.profiles ADD CONSTRAINT unique_profiles_email UNIQUE (email);
+  ```
+- **Effort**: 2-4h (data cleanup first)
 
----
+### TD-DB-012 — RLS Policy Complex Subquery on `messages.INSERT`
 
-### 2.3 RLS POLICY GAPS & RECOMMENDATIONS
+- **Finding**: Policy usa triple-nested EXISTS (messages.conversation_id → conversations.id → profiles.is_admin). Query planner pode não otimizar; N+1 risk.
+- **Impact**: INSERT slow para users com muitas conversations; potential deadlock durante ownership transfer.
+- **Fix**: Materialize via CTE, denormalized column, ou simplify policy.
+- **Effort**: 4-6h (redesign + testing)
 
-#### shared_analyses view_count increment via RPC
+### TD-DB-013 — `search_results_cache` Sem pg_cron Cleanup (TD-SYS-016 DB side)
 
-**Current:** `increment_share_view()` is SECURITY DEFINER but no explicit GRANT -- uses default public access. Anonymous users (anon role) can call this without authentication. This is intentional (track public shares) but not documented.
+- **Finding**: Cleanup trigger mantém max 5 por user, mas sem cron global delete de entries >24h. Trigger só dispara em INSERT novo.
+- **Impact**: Se user não volta, entries antigas ficam; table bloat cumulativo.
+- **Fix**:
+  ```sql
+  SELECT cron.schedule(
+      'cleanup-search-cache',
+      '0 4 * * *',
+      $$DELETE FROM public.search_results_cache WHERE created_at < now() - interval '24 hours'$$
+  );
+  ```
+- **Effort**: 0.5h
 
-**Recommendation:** Add explicit GRANTs and COMMENT for clarity.
+### TD-DB-014 — `search_results_store.expires_at` Sem Cron Cleanup
 
-#### pncp_raw_bids -- "select authenticated" policy doesn't enforce tenancy
+- **Finding**: `expires_at` column existe mas nenhum cron deleta expired rows.
+- **Impact**: Table cresce indefinidamente.
+- **Fix**:
+  ```sql
+  SELECT cron.schedule(
+      'cleanup-search-store',
+      '0 4 * * *',
+      $$DELETE FROM public.search_results_store WHERE expires_at < now()$$
+  );
+  ```
+- **Effort**: 0.5h
 
-**Current:** All authenticated users can see ALL bids. This is correct by design (public procurement data per Brazilian law). Recommendation: add COMMENT documenting the legal basis.
+### TD-DB-015 — Alert Digest Scan Index Missing
 
-#### organizations -- cascade delete on owner_id RESTRICT
-
-Prevents organization owner account deletion (good). But if owner's auth.users row is force-deleted (by Supabase admin), organization becomes orphaned. Recommendation: add monitoring query for orphaned organizations.
-
----
-
-## 3. Schema Anti-Patterns & Issues
-
-### 3.1 HIGH PRIORITY
-
-#### profiles.plan_type -- ENUM should be a foreign key
-
-**Problem:**
-1. Plan types defined in TWO places (plans table + CHECK constraint)
-2. No referential integrity between profiles.plan_type and plans.id
-3. Adding a new plan requires coordinating SQL migration + CHECK constraint update
-
-**Recommendation:**
-```sql
-ALTER TABLE profiles
-  DROP CONSTRAINT profiles_plan_type_check,
-  ADD CONSTRAINT fk_profiles_plan
-    FOREIGN KEY (plan_type) REFERENCES plans(id) ON DELETE RESTRICT;
-CREATE INDEX idx_profiles_plan_type ON profiles(plan_type);
-```
-
-**Timeline:** Schedule for next major migration after planning.
-
----
-
-#### pncp_raw_bids.is_active -- soft-delete pattern hampers VACUUM
-
-**Problem:**
-1. Soft-deleted rows remain in table, bloating table + index sizes
-2. PostgreSQL VACUUM can't reclaim space efficiently
-3. Every query includes `WHERE is_active = true` filters
-4. At 12-day retention: ~1.2M dead rows in table at any time
-
-**Recommendation:** Hybrid approach -- use hard-delete for old bids (>3 days) + soft-delete for recent ones.
-
-```sql
--- Schedule daily cleanup
-DELETE FROM pncp_raw_bids
-  WHERE is_active = false AND updated_at < now() - INTERVAL '3 days';
-```
+- **Finding**: `idx_alert_preferences_digest_due` é partial (enabled, frequency, last_digest_sent_at) WHERE enabled AND frequency!='off'. Cron job de digest pode fazer multi-step scan se planner escolher errado.
+- **Fix**:
+  ```sql
+  CREATE INDEX IF NOT EXISTS idx_alert_preferences_digest_scan
+    ON alert_preferences(frequency, last_digest_sent_at DESC)
+    WHERE enabled = true;
+  ```
+- **Effort**: 1h
 
 ---
 
-#### pncp_raw_bids.content_hash -- MD5 collision risk
+## Medium Severity 💡
 
-**Problem:** MD5 has known collision attacks. Unclear which fields are hashed.
+### TD-DB-020 — `audit_events` Sem `is_active` Flag
 
-**Recommendation:** Upgrade to SHA-256 (PostgreSQL pgcrypto). Add COMMENT documenting the hash algorithm and fields.
+- **Finding**: Sem soft-delete; entries permanentes mesmo se erroneamente criadas.
+- **Impact**: Compliance auditor vê orphaned entries; retention cleanup só hard-delete.
+- **Fix**: `ALTER TABLE audit_events ADD COLUMN is_active BOOLEAN DEFAULT true;`
+- **Effort**: 1h
 
----
+### TD-DB-021 — `classification_feedback` Table Status Unclear
 
-### 3.2 MEDIUM PRIORITY
+- **Finding**: Referenced em migrations + backend/migrations, mas conditional IF EXISTS checks suggestem feature optional.
+- **Impact**: Future devs confusos; queries podem falhar silenciosamente.
+- **Fix**: @architect deve confirmar status; commit ou remove.
+- **Effort**: 2-4h
 
-#### audit_events -- hashed PII could include hash algorithm version
+### TD-DB-022 — `pncp_raw_bids` Date Columns Nullable
 
-No version field to track algorithm changes. Recommendation: add `hash_algorithm VARCHAR(20) DEFAULT 'sha256_16'` column.
+- **Finding**: `data_publicacao`, `data_abertura`, `data_encerramento` todos nullable. 5-10% dos bids podem ter datas missing. Filtros por data silenciosamente excluem NULL.
+- **Impact**: Users recebem menos resultados que deveriam.
+- **Fix**: Audit ingestion data; default para CURRENT_DATE ou NOT NULL constraint.
+- **Effort**: 2-3h
 
-#### conversations/messages -- no soft-delete support
+### TD-DB-023 — `health_checks` Manual Cleanup (30-day)
 
-If user deletes conversation, messages are gone (no audit trail). LOW priority if GDPR/LGPD compliance is not yet required.
+- **Finding**: Sem pg_cron delete. Aceitável (~5K rows em 30d) mas easily forgotten.
+- **Fix**: Schedule cron job.
+- **Effort**: 0.5h
 
----
+### TD-DB-024 — `stripe_webhook_events` PII in payload JSONB
 
-## 4. Performance Concerns & Optimization
-
-### 4.1 DATALAKE SCALE ANALYSIS
-
-**Current State:**
-- **12-day retention:** ~100K rows/day x 12 = ~1.2M rows
-- **Estimated table size:** 1.2M x 2KB/row ~ 2.4GB
-- **Index overhead:** +~500MB (tsvector GIN + 7 other indexes)
-- **Total:** ~3GB allocated to pncp_raw_bids + indexes
-
-**Supabase FREE Tier Limit:** 500MB
-**Supabase PAID Tier:** 1GB (or more)
-
-**Projection (10M rows):**
-- Table: ~20GB
-- Indexes: ~4GB
-- Total: ~24GB
-
-**Action Items:**
-1. Monitor `pg_size_pretty(pg_total_relation_size('pncp_raw_bids'))`
-2. Plan migration to paid tier before 500MB exceeded
-3. Consider partitioning by `uf` or `data_publicacao` at 10M row scale
+- **Finding**: `payload` stores full Stripe webhook (customer IDs, amounts). 90-day retention manual.
+- **Impact**: LGPD/GDPR compliance risk se retention falha.
+- **Fix**: SELECT masking ou archive to S3 after 7 days.
+- **Effort**: 4-8h
 
 ---
 
-### 4.2 INGESTION PERFORMANCE (upsert_pncp_raw_bids)
+## Low / Style
 
-- Batch upsert via `INSERT ... ON CONFLICT ... DO UPDATE`
-- Deduplication within batch (DISTINCT ON pncp_id)
-- Pre-computed `tsv` column (eliminates 2x to_tsvector per search)
-- **Benchmark:** 500 records/batch: ~500-800ms. Throughput: ~700 records/sec.
-- **Status:** Well-optimized. No changes recommended.
+### TD-DB-030 — No `down.sql` Rollback Templates
 
----
+- **Finding**: Sem rollback-safe migrations; cleanup manual se migration falha.
+- **Fix**: Criar template + enforcement em `@devops` task.
+- **Effort**: 4-8h
 
-### 4.3 SEARCH QUERY PERFORMANCE (search_datalake RPC)
+### TD-DB-031 — Duplicate Trigger Functions (FIXED)
 
-**Typical query plan:** ~60-80ms per UF query at 1.2M rows (acceptable).
+- **Status**: ✅ FIXED em DEBT-001 (consolidado para `set_updated_at`)
 
-**Recommendation at 10M rows:** Consider partitioning by `(uf, DATE_TRUNC('month', data_publicacao))`.
+### TD-DB-032 — Soft FK on `pncp_raw_bids.crawl_batch_id`
 
----
+- **Finding**: Sem FK constraint real para `ingestion_runs.crawl_batch_id` — trade-off de performance documentado.
+- **Fix**: Adicionar comment em schema.
+- **Effort**: 0.5h
 
-### 4.4 QUOTA CHECK PERFORMANCE
+### TD-DB-033 — `search_results_store.user_id` NO ACTION vs sister CASCADE
 
-Atomic database transaction using `INSERT ... ON CONFLICT` + row-level lock. Expected ~10-20ms per check. Well-optimized.
-
----
-
-### 4.5 ALERT CRON JOB PERFORMANCE
-
-**Bottleneck:** For 1000 alerts, sequential RPC calls = 60-100s.
-
-**Optimization:** Use `asyncio.gather` for parallel execution (up to 10 concurrent).
+- **Finding**: Inconsistência com `search_results_cache` (CASCADE).
+- **Fix**: ALTER TO CASCADE.
+- **Effort**: 1h
 
 ---
 
-## 5. Migration Health
+## Specific Audits
 
-### 5.1 NAMING CONVENTIONS
+### 1. Primary Keys
 
-**Dual scheme:** Old (001_ through 033_) + New (20260326000000_description). Inconsistent but not blocking.
+- ✅ Todas 23 tabelas têm PKs explícitas (uuid ou bigint GENERATED AS IDENTITY)
+- ✅ Sem composite PKs
+- ✅ Defaults: `gen_random_uuid()` ou `GENERATED AS IDENTITY`
 
-### 5.2 SQUASHED MIGRATIONS
+### 2. Foreign Keys
 
-**121 individual migrations** -- no squash. Small migrations are good for rollback granularity but slow for fresh environments (~2-3 min to apply all).
+- ✅ 14 FK constraints explícitas
+- ⚠️ `pncp_raw_bids.crawl_batch_id` → `ingestion_runs.crawl_batch_id` = **soft FK** (sem constraint). Trade-off documented — FKs add overhead durante ingestion.
+- ⚠️ `search_results_store.user_id` ON NO ACTION vs `search_results_cache` CASCADE — inconsistente.
+- ✅ FK indexes: todos FKs têm índices no referring column (após CRIT-002 fix).
 
-**Recommendation:** After 6 months, consolidate into a squashed baseline.
+### 3. Nullability
+
+- ⚠️ `pncp_raw_bids.data_*` nullable — 5-10% de bids possivelmente excluídos.
+- ⚠️ `conversations.last_message_at` NOT NULL default now() — levemente misleading (mostra creation time se sem messages).
+- ✅ `profiles.company, full_name, avatar_url` nullable (OK para dados opcionais).
+
+### 4. Timestamps
+
+- ✅ Todas 23 tabelas têm `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- ✅ Todas user-data têm `updated_at` via triggers `set_updated_at()`
+- ⚠️ `stripe_webhook_events` sem `updated_at` (acceptable — imutável)
+- ⚠️ `ingestion_checkpoints` sem `updated_at` (tem started_at/completed_at — OK)
+
+### 5. Row-Level Security (RLS)
+
+**Coverage Matrix:**
+
+| Table                    | SELECT   | INSERT    | UPDATE    | DELETE    | Service Role | Status     |
+|--------------------------|----------|-----------|-----------|-----------|--------------|------------|
+| profiles                 | own      | own       | own       | NO        | ALL          | ✅ GOOD    |
+| plans                    | ALL      | NO        | NO        | NO        | -            | ✅ PUBLIC  |
+| user_subscriptions       | own      | NO        | NO        | NO        | ?            | ⚠️ NO INSERT |
+| search_sessions          | own      | own       | NO        | NO        | ALL          | ✅ FIXED   |
+| monthly_quota            | own      | NO        | NO        | NO        | ALL          | ✅ GOOD    |
+| stripe_webhook_events    | master   | service   | NO        | NO        | -            | ⚠️ HIGH-001 |
+| conversations            | own/admin| own       | admin     | admin     | ALL          | ✅ GOOD    |
+| messages                 | conv     | conv      | conv      | -         | ALL          | ⚠️ HIGH-003 complex |
+| alert_preferences        | own      | own       | own       | own       | ALL          | ✅ GOOD    |
+| alerts                   | own      | own       | own       | own       | ALL          | ✅ GOOD    |
+| alert_sent_items         | own/join | NO        | NO        | NO        | ALL          | ✅ GOOD    |
+| health_checks            | ALL      | NO        | NO        | NO        | -            | ✅ PUBLIC  |
+| incidents                | ALL      | NO        | NO        | NO        | -            | ✅ PUBLIC  |
+| organizations            | own/admin| own       | own       | NO        | ALL          | ✅ GOOD    |
+| org_members              | own/adm  | own/admin | -         | own/admin | ALL          | ✅ GOOD    |
+| pipeline_items           | own      | own       | own       | own       | ALL          | ✅ GOOD    |
+| search_results_cache     | own      | NO        | NO        | NO        | ALL          | ✅ GOOD    |
+| search_results_store     | own      | NO        | NO        | NO        | ALL          | ✅ GOOD    |
+| pncp_raw_bids            | auth     | service   | service   | service   | -            | ✅ PUBLIC DATA |
+| ingestion_checkpoints    | auth     | service   | service   | service   | -            | ✅ GOOD    |
+| ingestion_runs           | auth     | service   | service   | service   | -            | ✅ GOOD    |
+| audit_events             | admin    | service   | NO        | NO        | ALL          | ⚠️ NO DELETE |
+| classification_feedback  | own/adm  | own       | own       | NO        | ALL          | ✅ (if exists) |
+
+**Critical Findings:**
+1. ⚠️ `user_subscriptions` sem INSERT policy user-level (admin/service only) — frontend signup não pode escrever?
+2. ⚠️ `stripe_webhook_events` SELECT restrito a master plan (HIGH-001)
+3. ⚠️ `audit_events` sem DELETE policy — LGPD right-to-erasure bloqueado
+4. ⚠️ Service role `FOR ALL USING (true)` em quase todas tabelas — wide bypass necessário mas deve ser auditado
+
+### 6. Indexes
+
+**Coverage Analysis:**
+
+| Category | Status |
+|----------|--------|
+| `pncp_raw_bids` | ✅ EXCELLENT (8 purpose-built + GIN FTS) |
+| `profiles.email` | ⚠️ HIGH-002 (sem UNIQUE, sem index) |
+| user_id em RLS tables | ✅ FIXED (post CRIT-002) |
+| Partial indexes | ✅ Excelente (alert_preferences, messages, pipeline, alerts) |
+| Duplicate indexes | ✅ Não detectados |
+| Unused indexes | ⚠️ Verificação via `pg_stat_user_indexes` pendente |
+
+### 7. Data Integrity
+
+| Table | PK | FK | UNIQUE | CHECK | NOT NULL | Status |
+|-------|----|----|--------|-------|----------|--------|
+| profiles | ✓ | ✓ | - | plan_type enum | ✓ | ⚠️ NO UNIQUE email |
+| pncp_raw_bids | ✓ | - | - | content_hash NOT NULL | ✓ strict | ✅ GOOD |
+| user_subscriptions | ✓ | ✓✓ | - | - | ✓ | ✅ GOOD |
+| conversations | ✓ | ✓ | - | category/status/subject enums | ✓ strict | ✅ GOOD |
+| messages | ✓ | ✓✓ | - | body 1-5000, is_admin_reply bool | ✓ strict | ✅ GOOD |
+| alerts | ✓ | ✓ | - | active bool | ✓ strict | ✅ GOOD |
+| organizations | ✓ | ✓ (RESTRICT!) | - | - | ✓ strict | ✅ GOOD |
+| org_members | ✓ | ✓✓ | org_id+user_id | role enum | ✓ strict | ✅ GOOD |
+| pipeline_items | ✓ | ✓ | user_id+pncp_id | stage enum | ✓ strict | ✅ GOOD |
+
+**Findings:**
+- ✅ Strong enum CHECK constraints (category, status, stage, frequency, role, run_type)
+- ✅ ON DELETE RESTRICT em `organizations.owner_id` previne orphan org
+- ⚠️ HIGH-002: profiles.email sem UNIQUE
+
+### 8. PII & Security
+
+| Table | PII | Stored As | Protection | Notes |
+|-------|-----|-----------|------------|-------|
+| profiles | email, full_name | PLAINTEXT | Auth.users encrypted | ⚠️ Duplicate possible |
+| auth.users | email, password | Supabase-managed | ✅ Encrypted | ✅ |
+| stripe_webhook_events | payload | JSONB plaintext | ⚠️ Customer IDs | ⚠️ TD-DB-024 |
+| audit_events | hashes SHA-256 (16 chars) | Hashed | ✅ LGPD/GDPR | ✅ EXCELLENT |
+| pncp_raw_bids | orgao_cnpj | PLAINTEXT | Public data (Lei 14.133) | ✅ LEGAL |
+| conversations/messages | body | PLAINTEXT | RLS-protected | ✅ ACCEPTABLE |
+
+### 9. Performance
+
+**Problematic Patterns:**
+
+| Issue | Tables | Risk | Status |
+|-------|--------|------|--------|
+| Full table scans on RLS | search_sessions, pipeline_items | HIGH | ✅ FIXED (CRIT-002) |
+| Double tsvector computation | pncp_raw_bids | MEDIUM (2x CPU) | ✅ FIXED (DEBT-210) |
+| Row-by-row upsert | pncp_raw_bids | HIGH (N round-trips) | ✅ FIXED (DEBT-210) |
+| Triple nested EXISTS RLS | messages | MEDIUM | 🟡 HIGH-003 |
+| Unindexed digest scan | alert_preferences | LOW-MEDIUM | 🟡 HIGH-004 |
+
+**Scaling Estimates:**
+- `pncp_raw_bids`: 40K-100K rows, 8 indexes, GIN FTS → scales to 1M easily dentro do 500MB (sem raw_json)
+- `search_sessions`: 10K-50K → scales to 1M (pós CRIT-002 fix)
+
+### 10. Data Retention
+
+| Table | Retention | Enforcement | Status |
+|-------|-----------|-------------|--------|
+| audit_events | 12 months | pg_cron `0 4 1 * *` | ✅ DOCUMENTED, ⚠️ verify ativo |
+| pncp_raw_bids | 12 days | Manual `purge_old_bids(12)` | 🔴 TD-DB-004 (cron não confirmed) |
+| search_results_cache | 24h | Trigger cleanup max 5/user + app-level TTL | ⚠️ TD-DB-013 (sem cron global) |
+| search_results_store | 24h | `expires_at` soft TTL | 🟡 TD-DB-014 (sem cleanup cron) |
+| health_checks | 30 days | Manual cleanup | ⚠️ TD-DB-023 |
+| stripe_webhook_events | 90 days | Manual | ⚠️ TD-DB-024 |
 
 ---
 
-## 6. Data Retention & Compliance
+## Migration Hygiene Audit
 
-| Table | Retention | Policy | Status |
-|-------|-----------|--------|--------|
-| audit_events | 12 months | pg_cron deletes > 12m | Automated |
-| pncp_raw_bids | 12 days | soft-delete + purge_old_bids RPC | Automated |
-| stripe_webhook_events | 90 days | No policy | **Missing** |
-| search_results_cache | Unlimited | Max 5 per user trigger | Implemented |
-| alert_sent_items | Unlimited | No cleanup | **Missing** |
-| trial_email_log | Unlimited | No cleanup | **Missing** |
+### Rollback Coverage
 
-**Recommendation:** Add pg_cron cleanup jobs for stripe_webhook_events (90d), alert_sent_items (90d), trial_email_log (1y).
+- 🔴 **Sem `down.sql` files**: Migrations NÃO rollback-safe; cleanup manual se falha.
+- **Fix**: Criar template + @devops enforcement.
 
----
+### Unsafe Operations
 
-## 7. Connection Pooling & Transaction Patterns
+- ✅ Migrations usam pattern com backfill + concurrent-safe (DEBT-210 adiciona tsv com cuidado)
+- ⚠️ Alguns ALTER TABLE sem CONCURRENTLY — aceitável para 40K-100K rows, risky em 1M+
 
-**Current Setup (supabase_client.py):**
-- 25 connections per Gunicorn worker x 2 workers = 50 total
-- Supabase connection limit: ~100 (ample headroom)
-- High-water warning at 80% (40/50) -- good early detection
-- Default `READ COMMITTED` isolation (appropriate for SaaS)
+### Migration Sequence Issues
 
-**Status:** Well-tuned. No changes needed.
+- ⚠️ Migration `020260301100000` chama `update_updated_at()` definida em `001_*`. Risk se migrations replayed out-of-order (defensive coding em newer migrations).
+
+### Post-Launch Hotfixes
+
+- `006b_search_sessions_service_role_policy.sql` (2026-02-10) — CRIT-001 hotfix 1 day após launch
+- `020260308100000_debt001_database_integrity_fixes.sql` — large DEBT phase (CRIT-002, CRIT-003, CRIT-004)
+- `20260410150000_fix_is_master_trigger_story415.sql` (2026-04-10) — trigger fix
 
 ---
 
-## 8. Backup & Recovery Posture
+## Questions for @architect (Phase 4 Handoff)
 
-**Current State:**
-- Supabase FREE tier: Daily backups (1 day retention)
-- No PITR enabled
-- No external backup to S3
-
-**Recommendation:**
-1. Enable PITR on paid tier
-2. Set up weekly pg_dump to S3
-3. Test restore quarterly
-4. Document RTO = 1h, RPO = 24h
-
----
-
-## 9. Major Issues Summary
-
-| Issue | Severity | Category | Status |
-|-------|----------|----------|--------|
-| Missing idx_pncp_raw_bids_dashboard_query | HIGH | Performance | Open |
-| pncp_raw_bids soft-delete bloat | HIGH | Storage | Open |
-| profiles.plan_type CHECK vs FK | HIGH | Data Integrity | Open |
-| stripe_webhook_events no retention | MEDIUM | Compliance | Open |
-| alert_sent_items no retention | MEDIUM | Storage | Open |
-| RLS policy docs incomplete | MEDIUM | Security | Open |
-| Migration naming inconsistent | LOW | Maintainability | Open |
-| Org ownership RESTRICT risk | LOW | Data Integrity | Open |
+1. **`purge_old_bids()` cron job** está configurado em prod? Sem isso, table exceeds 500MB em 3-4 semanas (TD-DB-004).
+2. **Soft vs hard delete** em `pncp_raw_bids`: por que `is_active=false`? Audit trail requirement?
+3. **`partner_referrals` table**: feature shipped ou WIP? Migration 202603012 cria tabela mas pouco referenciada.
+4. **`classification_feedback` table**: status (shipped/WIP)? Conditional IF EXISTS checks suggest optional.
+5. **Service role bypass**: intencional wide-open admin? Considerar narrow para functions específicas.
+6. **`messages.INSERT` RLS complexity**: refactor ou accept?
+7. **`profiles.email` UNIQUE**: adicionar? Duplicate account risk real.
+8. **`stripe_webhook_events` PII**: mask ou archive após 7 days?
+9. **`organizations.owner_id` RESTRICT**: se owner morre, org orfã. Soft-delete?
+10. **Constraint audit**: após DEBT-001, correr check_constraints.sql completo.
 
 ---
 
-## 10. Optimization Roadmap
+## Recommendations for Phase 7 QA & Phase 8 Final Assessment
 
-### Phase 1 (Next Sprint)
-- [ ] Create `idx_pncp_raw_bids_dashboard_query` index
-- [ ] Add retention cleanup jobs for stripe_webhook_events, alert_sent_items
-- [ ] Add RLS policy comments
+### Quick Wins (P0, <4h total)
 
-### Phase 2 (1-2 Months)
-- [ ] Monitor pncp_raw_bids size -> plan paid tier migration
-- [ ] Implement async alert execution (asyncio.gather)
-- [ ] Add GDPR soft-delete columns (if compliance required)
+1. ✅ Schedule `purge_old_bids` cron (0.5h) — **blocking storage quota**
+2. ✅ Schedule `search_results_cache` cleanup cron (0.5h)
+3. ✅ Schedule `search_results_store` expired cleanup cron (0.5h)
+4. ✅ Fix `stripe_webhook_events` RLS para admins (1h) — HIGH-001
+5. ✅ Add `alert_preferences` digest scan index (1h) — HIGH-004
 
-### Phase 3 (3-6 Months)
-- [ ] Migrate profiles.plan_type to FK
-- [ ] Implement hybrid cleanup for pncp_raw_bids (hard-delete > 3 days)
-- [ ] Archive old search_sessions to separate table
-- [ ] Set up weekly backup testing
+### High Impact (P1, 4-12h)
 
-### Phase 4 (6-12 Months)
-- [ ] Consider pncp_raw_bids partitioning (if > 10M rows)
-- [ ] Consolidate/squash migrations
-- [ ] Implement org-level multi-tenancy (if needed)
+6. Add UNIQUE(email) to profiles + dedup (2-4h) — HIGH-002
+7. `messages.INSERT` RLS optimization (4-6h) — HIGH-003
+8. `audit_events` DELETE policy for GDPR (1h) — TD-DB-020
+9. Investigate `classification_feedback` status (2-4h) — TD-DB-021
+
+### Strategic (P2, ongoing)
+
+10. `down.sql` templates + enforcement (4-8h)
+11. PII archive strategy for `stripe_webhook_events` (4-8h)
+12. Portuguese FTS dictionary tuning (8-16h)
 
 ---
 
-## Conclusion
+## Action Plan
 
-**Overall Assessment: HEALTHY DATABASE**
+| Priority | Action | Effort | Risk | Blocking |
+|----------|--------|--------|------|----------|
+| P0 | Verify/schedule purge_old_bids cron | 0.5h | CRITICAL storage | YES |
+| P0 | Schedule search_results_cache cleanup | 0.5h | MEDIUM storage | YES |
+| P0 | Schedule search_results_store cleanup | 0.5h | MEDIUM storage | YES |
+| P0 | Fix stripe_webhook_events admin RLS | 1h | MEDIUM debug | NO |
+| P1 | UNIQUE(email) on profiles | 2-4h | MEDIUM data quality | data cleanup |
+| P1 | Optimize messages INSERT RLS | 4-6h | LOW perf | NO |
+| P1 | audit_events DELETE policy | 1h | LOW compliance | NO |
+| P2 | alert_preferences digest scan idx | 1h | LOW cron perf | NO |
+| P2 | Investigate classification_feedback | 2-4h | LOW schema clarity | NO |
+| P3 | down.sql migration templates | 4-8h | MAINT | NO |
+| P3 | PII archive webhook payload | 4-8h | LGPD | NO |
 
-The SmartLic database is **well-designed, properly secured, and ready for production scale** with the following caveats:
+---
 
-1. **Performance:** Optimized for 1M row scale; requires indexing/partitioning strategy for 10M+
-2. **Storage:** Currently ~3GB (pncp_raw_bids + indexes); will exceed FREE tier at ~500K bids/day
-3. **Security:** RLS properly enforced; service_role usage is appropriate; crypto guards in place
-4. **Compliance:** Audit logging comprehensive; GDPR support (soft-delete) would need to be added
-5. **Retention:** Most policies automated; a few gaps (webhooks, alerts) need cron cleanup
+## Summary
 
-**No Critical Security Issues Identified.**
+**SmartLic database is FUNCTIONAL but DEBT-HEAVY:**
+
+**Positive:**
+- ✅ Comprehensive RLS em user-data tables
+- ✅ Strong timestamp discipline
+- ✅ Excellent index design em `pncp_raw_bids` (8 purpose-built)
+- ✅ Great use of partial indexes
+- ✅ DEBT-210 optimization (tsvector pre-compute, batch upsert)
+
+**Negative:**
+- ⚠️ Missing `user_id` indexes descobertos post-launch (fixed)
+- ⚠️ `search_sessions` precisou hotfix (CRIT-001)
+- ⚠️ `profiles.email` sem UNIQUE (duplicate account risk)
+- ⚠️ RLS `messages` policy complexity
+- ⚠️ Data retention (pncp_raw_bids, search_results_*) não completamente automatizada
+- ⚠️ Sem `down.sql` rollback templates
+
+**Score: 62/100**
+- 85/100 schema design
+- 65/100 RLS/security
+- 55/100 performance (foundations boas, gaps pós-launch)
+- 45/100 data retention (automação incompleta)
+
+**Recomendação**: Endereçar P0 items antes de scaling para 1M+ `pncp_raw_bids` rows. Todos fixes são 1-4h e low-risk.
+
+---
+
+**Document Status**: 2.0 (2026-04-14) — Phase 2 of brownfield-discovery complete. Handoff ao @architect para Phase 4 (consolidação inicial).

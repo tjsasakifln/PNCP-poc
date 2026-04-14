@@ -1,263 +1,316 @@
-# Technical Debt Assessment - DRAFT
+# Technical Debt Assessment — DRAFT
 
-**Data:** 2026-04-08
-**Status:** DRAFT -- Pendente revisao dos especialistas (Fases 5, 6, 7)
-**Autores:** @architect (Aria) -- consolidacao de Phases 1-3
-**Fontes:**
-- `docs/architecture/system-architecture.md` (Phase 1 - System Architecture)
-- `supabase/docs/SCHEMA.md` (Phase 2 - Database Schema)
-- `supabase/docs/DB-AUDIT.md` (Phase 2 - Database Audit)
-- `docs/frontend/frontend-spec.md` (Phase 3 - Frontend/UX Spec)
+## Para Revisão dos Especialistas (Phases 5-7)
 
----
+**Data:** 2026-04-14
+**Autor:** @architect (Aria)
+**Workflow:** brownfield-discovery v3.1 — Phase 4
 
-## Para Revisao dos Especialistas
-
-Este documento consolida TODOS os debitos tecnicos identificados nas Fases 1-3 do Brownfield Discovery.
-Cada item esta numerado TD-001 a TD-042 e classificado por severidade, impacto e esforco estimado.
+Este DRAFT consolida os débitos técnicos identificados nas Phases 1-3. Está sujeito a revisão dos especialistas (@data-engineer, @ux-design-expert, @qa) antes do FINAL assessment (Phase 8).
 
 ---
 
-### 1. Debitos de Sistema/Backend
+## Fontes Consolidadas
 
-*Fonte: `docs/architecture/system-architecture.md` -- Known Issues & Debt, performance gaps, architecture decisions*
-
-#### Critical (Resolved -- manter monitoramento)
-
-| ID | Debito | Status | Notas |
-|----|--------|--------|-------|
-| TD-001 | CRIT-SIGSEGV-v2: Uvicorn single-worker mode (no forking) | Resolved | Limita throughput; scaling via horizontal scaling (multiplos Railway services). Monitorar se bottleneck em pico. |
-| TD-002 | CRIT-041: Fork-unsafe C extensions removidas (grpcio, httptools, uvloop) | Resolved | Nao usar uvloop/httptools em producao. Testar ao atualizar dependencias. |
-| TD-003 | CRIT-033: ARQ worker health detection + inline fallback | Resolved | Worker deve ser monitorado; inline fallback em caso de worker down. |
-| TD-004 | CRIT-072: Async search deadline + time budget checks | Resolved | Implementado; monitorar metricas de timeout. |
-
-#### High
-
-| ID | Debito | Descricao |
-|----|--------|-----------|
-| TD-005 | SYS-023: Per-user Supabase tokens | Operacoes scoped ao usuario usam service_role em vez de token do usuario. Risco de escalacao de privilegio se RPC nao validar auth.uid(). Mitigado por RLS mas nao ideal. |
-| TD-006 | DEBT-325: Exchange rate USD/BRL hardcoded | Taxa de cambio estatica em vez de API dinamica. Afeta calculo de valores exibidos ao usuario. |
-| TD-007 | Execute.py oversized (58KB) | Modulo de execucao multi-source com alta complexidade ciclomatica. Dificulta manutencao e testes. Candidato a refactoring em submudulos. |
-| TD-008 | Generate.py oversized (27KB) | Modulo de geracao de output (Excel/PDF/API response) concentrado em um unico arquivo. |
-| TD-009 | Filter_stage.py oversized (20KB) | Pipeline de filtragem com logica densa. |
-| TD-010 | Quota.py oversized (65KB+) | Modulo de quotas com alta complexidade. |
-| TD-011 | Single-worker horizontal scaling dependency | Railway horizontal scaling necessario para throughput. Sem auto-scaling configurado -- depende de monitoramento manual. |
-
-#### Medium
-
-| ID | Debito | Descricao |
-|----|--------|-----------|
-| TD-012 | DEBT-018: Cryptography fork-safe testing | Testes de fork-safety para a lib cryptography nao estao automatizados. Risco ao atualizar versao. |
-| TD-013 | PNCP API availability 94% (target 95%) | PNCP API below target availability. Health canary usa tamanhoPagina=10 -- nao detecta limites de page size. |
-| TD-014 | Cache hit rate 65-75% (target >70%) | Marginal; p75 atinge target mas p25 nao. Warming strategy pode melhorar. |
-| TD-015 | Railway hard timeout 120s vs Gunicorn 180s mismatch | Railway mata requests antes do Gunicorn timeout. Potencial para erros silenciosos em requests longos. |
-| TD-016 | 121 migration files sem squash | Fresh environments levam 2-3 min para aplicar. Nenhum squash realizado desde o inicio. |
-
-#### Low
-
-| ID | Debito | Descricao |
-|----|--------|-----------|
-| TD-017 | OpenTelemetry HTTP-only (no gRPC) | Limitacao por fork-safety. Funcional mas gRPC e mais eficiente. |
-| TD-018 | Dual migration naming convention | Migrations antigas (001_) e novas (20260326000000_). Inconsistente mas nao bloqueante. |
+1. `docs/architecture/system-architecture.md` (Phase 1 — @architect)
+2. `supabase/docs/SCHEMA.md` (Phase 2 — @data-engineer)
+3. `supabase/docs/DB-AUDIT.md` (Phase 2 — @data-engineer)
+4. `docs/frontend/frontend-spec.md` (Phase 3 — @ux-design-expert)
 
 ---
 
-### 2. Debitos de Database
+## 1. Débitos de Sistema (Fonte: Phase 1)
 
-*Fonte: `supabase/docs/DB-AUDIT.md` -- 12 otimizacoes identificadas*
-**PENDENTE: Revisao do @data-engineer**
+### CRITICAL
 
-#### High Priority
+| ID         | Débito                                                                       | Área         | Impacto                                                | File/Path                                    |
+|------------|------------------------------------------------------------------------------|--------------|--------------------------------------------------------|----------------------------------------------|
+| TD-SYS-001 | CRIT-080 SIGSEGV em POST (jemalloc+Sentry+cryptography)                      | Backend      | POST requests crasham; search broken                   | Dockerfile, requirements.txt, main.py        |
+| TD-SYS-002 | PNCP API `tamanhoPagina` max 50 (Feb 2026 breaking)                          | Integration  | 10x mais calls; health canary não detecta              | pncp_client.py                               |
+| TD-SYS-003 | Railway hard timeout 120s < Gunicorn 180s                                    | Infra        | Requests >120s killed; incomplete responses            | start.sh, gunicorn_conf.py                   |
+| TD-SYS-004 | Migrations não aplicadas bloqueiam features (CRIT-039/045/050) — DEFENDED    | DevOps/DB    | Histórico de incidents; schema mismatch                | .github/workflows/*                          |
+| TD-SYS-005 | `search.py` monolítico 1000+ LOC + state distribuído                         | Backend      | Debug difícil; mudanças cascateiam                     | routes/search.py                             |
 
-| ID | Debito | Descricao | Impacto |
-|----|--------|-----------|---------|
-| TD-019 | Missing composite index pncp_raw_bids (uf, modalidade_id, data_publicacao) | Dashboard queries fazem sequential scan em modalidade_id range. | **50-70% mais rapido** em queries tipicas (5-10 UFs x 3-5 modalidades). ~10MB custo por 500K rows. |
-| TD-020 | pncp_raw_bids soft-delete bloat | Rows com is_active=false permanecem na tabela. VACUUM nao reclama espaco. ~1.2M dead rows a qualquer momento. | Bloat de tabela + indices. Degradacao progressiva de performance. |
-| TD-021 | profiles.plan_type CHECK vs FK | plan_type definido em 2 lugares (plans table + CHECK constraint). Sem integridade referencial. Adicionar novo plano requer migrar CHECK + tabela. | Risco de inconsistencia de dados. |
-| TD-022 | pncp_raw_bids.content_hash usa MD5 | MD5 tem ataques de colisao conhecidos. Campos hasheados nao documentados. | Risco de colisao (baixo em pratica), falta de documentacao. |
+### HIGH
 
-#### Medium Priority
+| ID         | Débito                                                        | Área         | Impacto                                                | File/Path                                    |
+|------------|---------------------------------------------------------------|--------------|--------------------------------------------------------|----------------------------------------------|
+| TD-SYS-010 | L1 cache não shared entre Gunicorn workers                    | Backend      | Hit ratio baixo multi-worker                           | cache.py, gunicorn_conf.py                   |
+| TD-SYS-011 | Feature flags em 3 lugares (env+Redis+código)                 | Backend      | Valores conflitantes; ordem de eval pouco clara        | config.py, feature_flags.py, .env            |
+| TD-SYS-012 | Setores duplicados backend YAML + frontend hardcoded          | Backend/FE   | Frontend stale se não sincronizado                     | sectors_data.yaml, buscar/page.tsx           |
+| TD-SYS-013 | Session dedup 6-24h eventual consistency                      | Backend      | Duplicatas UI; confusão usuário                        | consolidation.py                             |
+| TD-SYS-014 | LLM concurrency bottleneck (ThreadPoolExecutor 10)            | Backend      | Latência 30s+ em alta concorrência                     | llm_arbiter.py                               |
+| TD-SYS-015 | FTS não otimizado para Português                              | Backend/DB   | Falsos positivos; menor precisão                       | datalake_query.py                            |
+| TD-SYS-016 | `search_results_cache` growth unbounded (sem cron)            | DB           | Table bloat; disk usage                                | migrations/026_*                             |
+| TD-SYS-017 | Rate limit ausente endpoints públicos                         | Security     | Scraping; DoS vector                                   | routes/stats_public.py                       |
+| TD-SYS-018 | LLM sem cap de custo mensal                                   | Cost         | Runaway spending possível                              | llm_arbiter.py                               |
 
-| ID | Debito | Descricao | Impacto |
-|----|--------|-----------|---------|
-| TD-023 | Missing covering index user_subscriptions (user_id, created_at DESC) WHERE is_active | Plan lookup queries nao tem index-only scan. | Elimina table lookups para query frequente. |
-| TD-024 | Missing index audit_events (target_id_hash) | Admin dashboards investigando impacto em usuarios fazem seq scan. | Melhora investigacao admin. |
-| TD-025 | stripe_webhook_events sem retention policy | Sem limpeza automatica. Crescimento ilimitado (~100K+ rows). | Storage crescente sem necessidade. |
-| TD-026 | alert_sent_items sem retention policy | Sem cleanup automatico. | Storage crescente. |
-| TD-027 | trial_email_log sem retention policy | Sem cleanup automatico. | Storage crescente. |
-| TD-028 | audit_events hash sem versioning | Sem campo para track de mudanca de algoritmo de hash. | Dificuldade de migrar algoritmo no futuro. |
-| TD-029 | Alert cron job sequencial (1000 alerts = 60-100s) | Execucao sequencial de RPCs para cada alert. | Latencia de alertas em escala. Solucao: asyncio.gather (10 concurrent). |
-| TD-030 | RLS policy docs incompletas | shared_analyses increment_share_view() sem GRANT explicito documentado. pncp_raw_bids sem comment sobre base legal. | Auditoria de seguranca dificultada. |
+### MEDIUM
 
-#### Low Priority
+| ID         | Débito                                                        | Área       |
+|------------|---------------------------------------------------------------|------------|
+| TD-SYS-020 | sectors_data.yaml sem validação startup                       | Backend    |
+| TD-SYS-021 | Feature flags docs inconsistentes                             | Backend    |
+| TD-SYS-022 | Mock location inconsistente em testes                         | Testes     |
+| TD-SYS-023 | Integration tests flaky (shared state)                        | Testes     |
+| TD-SYS-024 | `schemas.py` 1500+ LOC monolítico                             | Backend    |
+| TD-SYS-025 | Logs JSON-vs-text inconsistentes                              | Observ     |
 
-| ID | Debito | Descricao | Impacto |
-|----|--------|-----------|---------|
-| TD-031 | Organizations cascade RESTRICT orphan risk | Se owner auth.users deletado por admin Supabase, org fica orfao. | Edge case raro. Monitoramento query recomendado. |
-| TD-032 | conversations/messages sem soft-delete | Sem audit trail se conversa deletada. | Compliance LGPD futuro. |
-| TD-033 | Supabase FREE tier 500MB vs estimated ~3GB datalake | pncp_raw_bids + indices estimados em ~3GB. | Migracao para paid tier necessaria antes de escalar. |
-| TD-034 | Backup: daily only, 1-day retention, no PITR | Sem Point-in-Time Recovery. Sem backup externo S3. RTO=1h, RPO=24h nao validados. | Risco de perda de dados em falha catastrofica. |
+### LOW
 
----
+| ID         | Débito                                                        | Área       |
+|------------|---------------------------------------------------------------|------------|
+| TD-SYS-030 | Python + SQL migrations coexistem sem doc clara               | DevOps     |
+| TD-SYS-031 | Dead code em `backend/legacy/`                                | Code       |
+| TD-SYS-032 | OTEL spans incompletos (HTTP-only por CRIT-080)               | Observ     |
 
-### 3. Debitos de Frontend/UX
-
-*Fonte: `docs/frontend/frontend-spec.md` -- DEBT-FE items, gaps de a11y, features faltantes*
-**PENDENTE: Revisao do @ux-expert**
-
-#### High
-
-| ID | Debito | Descricao |
-|----|--------|-----------|
-| TD-035 | DEBT-FE-001: Search filters hook 600+ lines | useSearchFilters() com 600+ linhas. Complexidade excessiva, dificulta manutencao e testes. |
-
-#### Medium
-
-| ID | Debito | Descricao |
-|----|--------|-----------|
-| TD-036 | Visual regression testing ausente | Sem Percy/Chromatic. Regressoes visuais detectadas manualmente. |
-| TD-037 | Saved filter presets ausente | Feature solicitada: usuarios nao conseguem salvar combinacoes de filtro frequentes. |
-| TD-038 | Modal focus trap edge cases | FocusTrap em modais tem edge cases nao cobertos. a11y gap. |
-| TD-039 | Small touch targets (<44px) em componentes legacy | Componentes antigos nao atendem WCAG 2.5.5 (min 44x44px). Novos componentes ja atendem. |
-| TD-040 | /planos e /pricing duplicados (SEO variant) | Duas rotas servindo conteudo similar. Potencial canibalizacao SEO. |
-
-#### Low
-
-| ID | Debito | Descricao |
-|----|--------|-----------|
-| TD-041 | DEBT-012: Raw hex colors em vez de design tokens | Alguns componentes usam cores hardcoded em vez de variaveis CSS. |
-| TD-042 | DEBT-116: style-src unsafe-inline para Tailwind | CSP relaxado para Tailwind funcionar. Risco aceito. |
-| TD-043 | Component Storybook ausente | Sem Storybook para documentacao visual de componentes. |
-| TD-044 | Icons missing aria-hidden em alguns casos | Icones decorativos sem aria-hidden. |
-| TD-045 | Live region config em Sonner toasts | Configuracao de aria-live em toasts pode nao estar correta em todos os cenarios. |
-| TD-046 | Scroll jank durante SSE updates (mobile) | Debounce mitiga mas nao resolve completamente. |
-| TD-047 | Bottom nav covers content | Padding adjustment necessario em algumas paginas. |
-| TD-048 | Multi-language (i18n) ausente | App 100% portugues. Sem suporte a outros idiomas. |
-| TD-049 | Offline support (Service Worker) ausente | Sem modo offline. |
+**Subtotal Sistema: 20 débitos**
 
 ---
 
-### 4. Debitos Cross-Cutting
+## 2. Débitos de Database (Fonte: Phase 2)
 
-*Debitos que atravessam multiplas areas*
+⚠️ **PENDENTE revisão do @data-engineer (Phase 5)**
 
-#### Security
+### CRITICAL
 
-| ID | Debito | Area | Descricao |
-|----|--------|------|-----------|
-| TD-005 | Per-user Supabase tokens | Backend/DB | Service role usado para operacoes user-scoped. RLS mitiga mas nao e ideal. |
-| TD-030 | RLS policy docs incompletas | DB/Security | Falta documentacao explicita de GRANTs e base legal. |
-| TD-042 | CSP unsafe-inline | Frontend/Security | Necessario para Tailwind. Risco aceito. |
-| TD-022 | MD5 content hash | DB/Security | Algoritmo com colisoes conhecidas. |
+| ID         | Débito                                                                       | Status      | File/Path                                    |
+|------------|------------------------------------------------------------------------------|-------------|----------------------------------------------|
+| TD-DB-001  | Service-Role RLS bypass missing em `search_sessions`                         | ✅ FIXED    | 006b_search_sessions_service_role_policy.sql |
+| TD-DB-002  | Missing `user_id` indexes on RLS-heavy tables                                | ✅ FIXED    | DEBT-001 migration                           |
+| TD-DB-003  | FK conflict: partner_referrals NOT NULL + ON DELETE SET NULL                 | ✅ FIXED    | DEBT-001 migration                           |
+| TD-DB-004  | `purge_old_bids()` cron NOT SCHEDULED em prod                                | 🔴 OPEN     | migrations/020260326000000_*                 |
 
-#### Monitoring/Observability
+### HIGH
 
-| ID | Debito | Area | Descricao |
-|----|--------|------|-----------|
-| TD-013 | PNCP health canary limitado | Backend | Canary usa tamanhoPagina=10 -- nao detecta mudancas em limites de pagina. |
-| TD-017 | OpenTelemetry HTTP-only | Backend | Sem gRPC exporter (fork-safety limitation). |
-| TD-034 | Backup sem PITR e sem teste de restore | DB/Infra | Sem validacao de restore. RPO/RTO nao testados. |
+| ID         | Débito                                                                       | File/Path                              |
+|------------|------------------------------------------------------------------------------|----------------------------------------|
+| TD-DB-010  | Improper RLS em `stripe_webhook_events` (admins sem SELECT)                  | migrations/stripe_webhook_events       |
+| TD-DB-011  | No UNIQUE constraint em `profiles.email`                                     | migrations/001_profiles_and_sessions   |
+| TD-DB-012  | RLS policy complexa em `messages.INSERT` (triple nested EXISTS)              | migrations/012_create_messages         |
+| TD-DB-013  | `search_results_cache` sem pg_cron global cleanup                            | migrations/026_search_results_cache    |
+| TD-DB-014  | `search_results_store.expires_at` sem cron cleanup                           | migrations/search_results_store        |
+| TD-DB-015  | Alert digest scan index missing                                              | migrations/alert_preferences           |
 
-#### CI/CD
+### MEDIUM
 
-| ID | Debito | Area | Descricao |
-|----|--------|------|-----------|
-| TD-016 | 121 migrations sem squash | DB/CI | Fresh environments lentos (2-3 min). |
-| TD-018 | Dual migration naming | DB/CI | Inconsistencia em naming. |
-| TD-036 | Visual regression testing ausente | Frontend/CI | Sem gate de regressao visual no CI. |
+| ID         | Débito                                                                       |
+|------------|------------------------------------------------------------------------------|
+| TD-DB-020  | `audit_events` sem `is_active` flag (soft-delete)                            |
+| TD-DB-021  | `classification_feedback` table status unclear (shipped vs WIP)              |
+| TD-DB-022  | `pncp_raw_bids.data_*` nullable — 5-10% bids excluded em filtros             |
+| TD-DB-023  | `health_checks` manual cleanup (30-day)                                      |
+| TD-DB-024  | `stripe_webhook_events.payload` PII plaintext (LGPD risk)                    |
 
-#### Documentation
+### LOW
 
-| ID | Debito | Area | Descricao |
-|----|--------|------|-----------|
-| TD-030 | RLS docs incompletas | DB | Falta comments SQL em politicas RLS. |
-| TD-022 | Content hash nao documentado | DB | Campos incluidos no hash MD5 nao documentados. |
+| ID         | Débito                                                                       |
+|------------|------------------------------------------------------------------------------|
+| TD-DB-030  | Sem `down.sql` rollback templates                                            |
+| TD-DB-031  | Duplicate trigger functions (FIXED via DEBT-001)                             |
+| TD-DB-032  | Soft FK `pncp_raw_bids.crawl_batch_id` (documented trade-off)                |
+| TD-DB-033  | `search_results_store.user_id` NO ACTION vs sister CASCADE (inconsistent)    |
 
----
-
-### 5. Matriz Preliminar de Priorizacao
-
-| ID | Debito | Area | Severidade | Impacto | Esforco | Prioridade |
-|----|--------|------|------------|---------|---------|------------|
-| TD-019 | Missing composite index pncp_raw_bids | DB | High | Alto (50-70% query speedup) | Baixo (1 migration) | **P0** |
-| TD-020 | Soft-delete bloat pncp_raw_bids | DB | High | Alto (storage + performance) | Medio (cron + migration) | **P0** |
-| TD-005 | Per-user Supabase tokens (SYS-023) | Backend | High | Alto (security posture) | Alto (refactor auth layer) | **P1** |
-| TD-021 | profiles.plan_type CHECK vs FK | DB | High | Medio (data integrity) | Medio (migration + code changes) | **P1** |
-| TD-025 | stripe_webhook_events sem retention | DB | Medium | Medio (storage) | Baixo (1 cron job) | **P1** |
-| TD-026 | alert_sent_items sem retention | DB | Medium | Medio (storage) | Baixo (1 cron job) | **P1** |
-| TD-027 | trial_email_log sem retention | DB | Medium | Medio (storage) | Baixo (1 cron job) | **P1** |
-| TD-029 | Alert cron job sequencial | DB/Backend | Medium | Medio (latencia alertas) | Baixo (asyncio.gather) | **P1** |
-| TD-034 | Backup sem PITR | DB/Infra | Medium | Alto (risco de dados) | Medio (paid tier + config) | **P1** |
-| TD-035 | Search filters hook 600+ lines | Frontend | High | Medio (maintainability) | Medio (refactor) | **P1** |
-| TD-022 | MD5 content hash | DB | High | Baixo (colisao rara) | Medio (migration + code) | **P2** |
-| TD-023 | Missing covering index user_subscriptions | DB | Medium | Baixo (query optimization) | Baixo (1 migration) | **P2** |
-| TD-024 | Missing index audit_events target_hash | DB | Medium | Baixo (admin queries) | Baixo (1 migration) | **P2** |
-| TD-030 | RLS policy docs incompletas | DB | Medium | Medio (auditoria) | Baixo (SQL comments) | **P2** |
-| TD-006 | Exchange rate USD/BRL hardcoded | Backend | Medium | Baixo (afeta poucos usuarios) | Baixo (API integration) | **P2** |
-| TD-007 | Execute.py oversized (58KB) | Backend | Medium | Medio (maintainability) | Alto (refactor) | **P2** |
-| TD-008 | Generate.py oversized (27KB) | Backend | Medium | Medio (maintainability) | Medio (refactor) | **P2** |
-| TD-009 | Filter_stage.py oversized (20KB) | Backend | Medium | Medio (maintainability) | Medio (refactor) | **P2** |
-| TD-010 | Quota.py oversized (65KB) | Backend | Medium | Medio (maintainability) | Alto (refactor) | **P2** |
-| TD-036 | Visual regression testing ausente | Frontend | Medium | Medio (quality gate) | Medio (Percy setup) | **P2** |
-| TD-037 | Saved filter presets | Frontend | Medium | Medio (UX) | Medio (feature dev) | **P2** |
-| TD-038 | Modal focus trap edge cases | Frontend | Medium | Baixo (a11y) | Baixo (fix) | **P2** |
-| TD-039 | Touch targets <44px legacy | Frontend | Medium | Baixo (a11y mobile) | Medio (audit + fix) | **P2** |
-| TD-012 | Cryptography fork-safe testing | Backend | Medium | Baixo (risco em upgrade) | Baixo (CI test) | **P3** |
-| TD-013 | PNCP health canary limitado | Backend | Medium | Baixo (deteccao) | Baixo (canary update) | **P3** |
-| TD-014 | Cache hit rate marginal | Backend | Medium | Baixo (performance) | Medio (warming strategy) | **P3** |
-| TD-015 | Railway 120s vs Gunicorn 180s timeout | Backend | Medium | Baixo (edge case) | Baixo (config align) | **P3** |
-| TD-016 | 121 migrations sem squash | DB | Low | Baixo (dev velocity) | Medio (squash migration) | **P3** |
-| TD-018 | Dual migration naming | DB | Low | Baixo (consistency) | Baixo (convention only) | **P3** |
-| TD-028 | Audit hash sem versioning | DB | Medium | Baixo (futuro) | Baixo (1 column) | **P3** |
-| TD-031 | Org ownership orphan risk | DB | Low | Baixo (edge case) | Baixo (monitoring query) | **P3** |
-| TD-032 | conversations sem soft-delete | DB | Low | Baixo (compliance futuro) | Medio (schema change) | **P3** |
-| TD-033 | Supabase FREE tier vs datalake size | DB/Infra | Low | Alto (blocker em escala) | Baixo (upgrade tier) | **P3** |
-| TD-040 | /planos e /pricing duplicados | Frontend | Medium | Baixo (SEO) | Baixo (redirect) | **P3** |
-| TD-011 | Single-worker no auto-scaling | Backend/Infra | Medium | Medio (throughput) | Medio (Railway config) | **P3** |
-| TD-017 | OpenTelemetry HTTP-only | Backend | Low | Baixo | N/A (limitation) | **P4** |
-| TD-041 | Raw hex colors vs tokens | Frontend | Low | Baixo (consistency) | Baixo (refactor) | **P4** |
-| TD-042 | CSP unsafe-inline | Frontend | Low | Baixo (aceito) | N/A (Tailwind req) | **P4** |
-| TD-043 | Storybook ausente | Frontend | Low | Baixo (dev experience) | Medio (setup) | **P4** |
-| TD-044 | Icons missing aria-hidden | Frontend | Low | Baixo (a11y) | Baixo (audit) | **P4** |
-| TD-045 | Sonner toast live regions | Frontend | Low | Baixo (a11y) | Baixo (config) | **P4** |
-| TD-046 | Scroll jank SSE (mobile) | Frontend | Low | Baixo (UX mobile) | Medio (optimization) | **P4** |
-| TD-047 | Bottom nav covers content | Frontend | Low | Baixo (UX mobile) | Baixo (CSS fix) | **P4** |
-| TD-048 | i18n ausente | Frontend | Low | Baixo (BR-only product) | Alto (full i18n) | **P4** |
-| TD-049 | Offline support ausente | Frontend | Low | Baixo (SaaS web app) | Alto (SW implementation) | **P4** |
-
-**Legenda Prioridade:**
-- **P0** -- Proximo sprint (impacto imediato, esforco baixo-medio)
-- **P1** -- 1-2 meses (impacto alto, esforco variado)
-- **P2** -- 2-4 meses (impacto medio, melhorias incrementais)
-- **P3** -- 4-6 meses (baixo impacto, nice-to-have)
-- **P4** -- Backlog (limitacoes aceitas ou baixa prioridade)
+**Subtotal Database: 18 débitos** (4 already fixed; 14 open)
 
 ---
 
-### 6. Perguntas para Especialistas
+## 3. Débitos de Frontend/UX (Fonte: Phase 3)
 
-#### @data-engineer (Dara)
+⚠️ **PENDENTE revisão do @ux-design-expert (Phase 6)**
 
-1. **TD-019 (composite index):** Qual o query plan atual do `search_datalake` RPC? Confirma que o composite index (uf, modalidade_id, data_publicacao) e a melhor estrategia vs partial indexes separados?
-2. **TD-020 (soft-delete bloat):** Qual o tamanho atual de `pg_total_relation_size('pncp_raw_bids')`? O hybrid approach (hard-delete >3 dias) e seguro considerando que o crawler pode revisitar bids?
-3. **TD-021 (plan_type FK):** Existe algum caso de uso que depende do CHECK constraint ser inline (e.g., migrations de rollback)? Ou podemos migrar para FK com seguranca?
-4. **TD-022 (MD5 -> SHA-256):** Quais campos exatos sao incluidos no content_hash? A migracao para SHA-256 invalida todos os hashes existentes -- qual a estrategia de transicao?
-5. **TD-025/026/027 (retention):** Confirma os periodos de retencao: stripe_webhook_events=90d, alert_sent_items=90d, trial_email_log=1y? Existe dependencia de relatorios que consulta dados antigos?
-6. **TD-033 (FREE tier):** Quando estimamos ultrapassar 500MB? Devemos migrar para paid tier agora preventivamente?
-7. **TD-034 (backup):** Qual o RTO/RPO aceitavel para o negocio? Weekly pg_dump para S3 e suficiente ou precisamos de PITR?
-8. **TD-029 (alert cron):** Qual o numero atual de alertas ativos? O asyncio.gather com 10 concurrent e seguro considerando rate limits do Supabase?
+### CRITICAL
 
-#### @ux-design-expert (Uma)
+| ID         | Débito                                                         | File/Path (espalhado)                   |
+|------------|----------------------------------------------------------------|-----------------------------------------|
+| TD-FE-001  | 296 `any` types em TypeScript                                  | frontend/**/*.tsx                       |
+| TD-FE-002  | Shepherd.js hardcoded HTML — screen readers broken             | frontend/components/ShepherdTour.tsx    |
+| TD-FE-003  | 139 inline `style={{...}}` bypassam Tailwind                   | frontend/**/*.tsx                       |
 
-1. **TD-035 (search filters 600+ lines):** Quais responsabilidades podem ser extraidas do useSearchFilters()? Sugestao de split: form state, validation, persistence, analytics?
-2. **TD-036 (visual regression):** Percy ou Chromatic? Qual coverage minimo recomendado para o primeiro setup (top 10 componentes? todas as paginas?)?
-3. **TD-037 (saved filters):** Qual o UX pattern recomendado? Dropdown com presets + "salvar atual"? Limite de presets por usuario?
-4. **TD-038 (focus trap):** Quais edge cases especificos estao documentados? Nested modals? Portals?
-5. **TD-039 (touch targets):** Quantos componentes legacy estao abaixo de 44px? Existe inventario?
-6. **TD-040 (/planos vs /pricing):** Redirect 301 de /pricing -> /planos, ou manter ambos com canonical?
-7. **TD-043 (Storybook):** Prioridade real considerando que temos 65+ componentes? Recomendacao de scope minimo?
-8. **TD-046 (scroll jank SSE):** O debounce atual e de quantos ms? Virtualized list (react-window) seria mais efetivo?
+### HIGH
+
+| ID         | Débito                                                                    |
+|------------|---------------------------------------------------------------------------|
+| TD-FE-004  | 194 inline hex colors bypassam design tokens                              |
+| TD-FE-005  | 62% `<button>` nativo em vez de `<Button>` CVA                            |
+| TD-FE-006  | Kanban (@dnd-kit) sem keyboard nav — WCAG 2.1 AA gap                      |
+| TD-FE-007  | ~88% "use client" directives — underutiliza RSC                           |
+| TD-FE-008  | Sem visual regression testing                                             |
+
+### MEDIUM
+
+| ID         | Débito                                                                    |
+|------------|---------------------------------------------------------------------------|
+| TD-FE-010  | i18n não implementado (strings hardcoded pt-BR)                           |
+| TD-FE-011  | Sem Storybook                                                             |
+| TD-FE-012  | Framer Motion/dnd-kit não tree-shaken                                     |
+| TD-FE-013  | SSE reconnection não surface para user                                    |
+| TD-FE-014  | Image optimization incompleta (`<Image>` nem sempre usado)                |
+| TD-FE-015  | Loading state inconsistency (skeleton vs spinner)                         |
+| TD-FE-016  | Error messages genéricos ("Erro inesperado")                              |
+| TD-FE-017  | Shepherd tour não dismissível persistente                                 |
+| TD-FE-018  | Bottom nav mobile não sticky durante scroll                               |
+| TD-FE-019  | Cache freshness unclear para user                                         |
+| TD-FE-020  | Form validation errors fáceis de perder                                   |
+| TD-FE-021  | Blog content não responsivo (images overflow mobile)                      |
+
+### LOW
+
+| ID         | Débito                                                                    |
+|------------|---------------------------------------------------------------------------|
+| TD-FE-030  | Toast positioning em mobile sub-ótimo                                     |
+| TD-FE-031  | Missing JSDoc em components core                                          |
+| TD-FE-032  | `Button.examples.tsx` órfão (não em Storybook)                            |
+
+**Subtotal Frontend: 23 débitos**
 
 ---
 
-**Proximo passo:** Revisao por @data-engineer (Phase 5) e @ux-design-expert (Phase 6), seguido de priorizacao final (Phase 7).
+## 4. Matriz Preliminar Consolidada
+
+| ID          | Débito                                               | Área      | Severidade | Esforço Est. | Prioridade Prelim |
+|-------------|------------------------------------------------------|-----------|------------|--------------|-------------------|
+| TD-SYS-001  | CRIT-080 SIGSEGV                                     | Backend   | CRIT       | 16-40h       | P0                |
+| TD-SYS-002  | PNCP page size 50                                    | Integr    | CRIT       | 4h (detect)  | P0                |
+| TD-SYS-003  | Railway 120s timeout                                 | Infra     | CRIT       | 8-16h        | P0                |
+| TD-SYS-004  | Migration CI                                         | DevOps    | CRIT       | ✅ DONE      | ✅                |
+| TD-SYS-005  | search.py monolítico                                 | Backend   | CRIT       | 24-40h       | P1                |
+| TD-DB-004   | purge_old_bids cron                                  | DB        | CRIT       | 0.5h         | P0                |
+| TD-FE-001   | 296 `any` types                                      | Frontend  | CRIT       | 24-40h       | P1                |
+| TD-FE-002   | Shepherd.js a11y                                     | Frontend  | CRIT       | 16-24h       | P1                |
+| TD-FE-003   | 139 inline styles                                    | Frontend  | CRIT       | 16-24h       | P2                |
+| TD-SYS-010  | L1 cache não shared                                  | Backend   | HIGH       | 8h           | P2                |
+| TD-SYS-011  | Feature flags 3 places                               | Backend   | HIGH       | 8-16h        | P2                |
+| TD-SYS-012  | Setores duplicados                                   | Backend/FE| HIGH       | 4h           | P1                |
+| TD-SYS-013  | Dedup 6-24h window                                   | Backend   | HIGH       | 16h          | P2                |
+| TD-SYS-014  | LLM concurrency                                      | Backend   | HIGH       | 16-24h       | P1                |
+| TD-SYS-015  | FTS Português                                        | Backend   | HIGH       | 8-16h        | P2                |
+| TD-SYS-016  | search_cache growth                                  | DB        | HIGH       | 1h           | P0                |
+| TD-SYS-017  | Rate limit público                                   | Security  | HIGH       | 4-8h         | P1                |
+| TD-SYS-018  | LLM cost cap                                         | Cost      | HIGH       | 4-8h         | P1                |
+| TD-DB-010   | stripe webhook RLS admin                             | DB        | HIGH       | 1h           | P1                |
+| TD-DB-011   | profiles.email UNIQUE                                | DB        | HIGH       | 2-4h         | P1                |
+| TD-DB-012   | messages RLS complexity                              | DB        | HIGH       | 4-6h         | P2                |
+| TD-DB-013   | search_cache cron                                    | DB        | HIGH       | 0.5h         | P0                |
+| TD-DB-014   | search_store cron                                    | DB        | HIGH       | 0.5h         | P0                |
+| TD-DB-015   | alert digest index                                   | DB        | HIGH       | 1h           | P2                |
+| TD-FE-004   | 194 inline hex                                       | Frontend  | HIGH       | 8-16h        | P2                |
+| TD-FE-005   | `<button>` → `<Button>`                              | Frontend  | HIGH       | 8h           | P1                |
+| TD-FE-006   | Kanban keyboard                                      | Frontend  | HIGH       | 8-16h        | P1                |
+| TD-FE-007   | "use client" overuse                                 | Frontend  | HIGH       | 40-56h       | P3                |
+| TD-FE-008   | Visual regression                                    | QA        | HIGH       | 8-16h        | P2                |
+
+**Total preliminar de débitos**: 61 (20 sys + 18 db + 23 fe)
+
+---
+
+## 5. Perguntas para Especialistas
+
+### Para @data-engineer (Phase 5)
+
+1. O `purge_old_bids()` cron está configurado em prod? Sem isso, a table excede 500MB FREE tier em 3-4 semanas.
+2. Por que `pncp_raw_bids.is_active=false` soft-delete vs hard delete? Audit trail requirement?
+3. `partner_referrals` table — feature shipped ou WIP? Pouco referenciada em código.
+4. `classification_feedback` table — shipped ou optional? Conditional checks em migrations sugerem optional.
+5. Service role bypass wide-open em quase todas tabelas — intencional ou deve ser narrowed?
+6. `messages.INSERT` RLS triple nested EXISTS — refactor ou accept?
+7. `profiles.email` UNIQUE — adicionar? Duplicate account risk real.
+8. PII em `stripe_webhook_events.payload` — mask ou archive após 7 days?
+9. `organizations.owner_id` ON DELETE RESTRICT — se owner morre, org orfã. Soft-delete?
+10. Avaliar PostgreSQL FTS Portuguese dictionary tuning (TD-SYS-015)?
+
+### Para @ux-design-expert (Phase 6)
+
+1. Server Components strategy — atualmente 88% client-side. Migration plan?
+2. TypeScript strict mode — quando habilitar? Blocker para 296 `any` types?
+3. Design token enforcement — ESLint (`no-arbitrary-values`) ou code review?
+4. i18n roadmap — retrofit agora ou deferir? LATAM roadmap?
+5. Storybook — implementar quando?
+6. `<Button>` migration — 62% ainda `<button>` nativo. Codemod aprovado?
+7. Kanban keyboard nav — prioritize WCAG 2.1 AA compliance?
+8. Performance budget targets — LCP/FID/CLS?
+9. Mobile-first vs desktop-first — oficial stance?
+10. Visual regression tool choice — Percy, Chromatic, Loki?
+
+### Para @qa (Phase 7)
+
+1. Gaps de testing identificados acima são completos? (visual regression, load test, chaos, contract)
+2. Riscos cruzados entre TD-SYS-001 (SIGSEGV) e feature flags/rollout — como mitigar?
+3. Dependências: TD-SYS-005 (search.py decomposition) precisa ser antes de TD-SYS-014 (LLM async)?
+4. Testes necessários pós-resolução de cada CRIT/HIGH?
+5. Parecer final: assessment está completo o suficiente para seguir a Planning (Epic + Stories)?
+
+---
+
+## 6. Hotspots Consolidados
+
+### Backend (20 débitos)
+- CRITICAL: 5 (SIGSEGV, PNCP 50, Railway 120s, search.py mono, migration CI defended)
+- HIGH: 9 (cache, feature flags, dedup, LLM, FTS, rate limit, cost cap)
+- Concentração: `backend/routes/search.py`, `llm_arbiter.py`, `cache.py`
+
+### Database (18 débitos, 4 fixed)
+- CRITICAL OPEN: 1 (purge_old_bids cron)
+- HIGH: 6 (RLS policies, UNIQUE email, messages complexity, cleanup crons)
+- Concentração: `supabase/migrations/` RLS + retention
+
+### Frontend (23 débitos)
+- CRITICAL: 3 (any types, Shepherd a11y, inline styles)
+- HIGH: 5 (hex colors, button migration, kanban keyboard, RSC, visual regression)
+- Concentração: type safety + design system adoption
+
+### Cross-Cutting
+- **Testing**: 135 FE + 169 BE test files; 0 failures; mas visual regression ausente
+- **Observability**: OTEL limitado por CRIT-080; Sentry parcial
+- **Docs**: feature flags doc inconsistente; sem down.sql templates
+
+---
+
+## 7. Proposta de Priorização Inicial
+
+**P0 — Storage Quota & Production Critical (~5h total + ongoing):**
+- TD-DB-004: Schedule purge_old_bids cron (0.5h)
+- TD-DB-013: Schedule search_results_cache cleanup cron (0.5h)
+- TD-DB-014: Schedule search_results_store cleanup cron (0.5h)
+- TD-SYS-016: search_results_cache growth (overlap com TD-DB-013)
+- TD-SYS-001: CRIT-080 SIGSEGV investigation — deep dive (ongoing)
+- TD-SYS-003: Railway 120s timeout — time budgets audit (8-16h)
+
+**P1 — Critical Path (1-2 sprints, ~80-120h):**
+- TD-SYS-005: search.py decomposition (24-40h)
+- TD-FE-001: TypeScript strict + any removal (24-40h)
+- TD-FE-002: Shepherd.js a11y replacement (16-24h)
+- TD-SYS-012: Setores sync automatizado (4h)
+- TD-FE-005: `<button>` → `<Button>` codemod (8h)
+- TD-FE-006: Kanban keyboard nav (8-16h)
+- TD-SYS-014: LLM async + batching (16-24h)
+- TD-SYS-017: Rate limit público (4-8h)
+- TD-SYS-018: LLM cost cap (4-8h)
+- TD-DB-010: Stripe webhook admin RLS (1h)
+- TD-DB-011: profiles.email UNIQUE (2-4h, após cleanup)
+
+**P2 — Maintainability (3-4 sprints, ~60-80h):**
+- TD-SYS-010, 011, 013, 015 (backend)
+- TD-DB-012, 015 (DB)
+- TD-FE-003, 004, 008 (frontend)
+
+**P3 — Strategic (6+ sprints, ~80-120h):**
+- TD-FE-007: RSC migration (40-56h)
+- TD-FE-010: i18n retrofit (TBD)
+- TD-FE-011: Storybook (TBD)
+
+---
+
+## 8. Próximos Passos
+
+1. ✅ **Phase 4 (este DRAFT)** — consolidação inicial
+2. ➡️ **Phase 5** — @data-engineer revisa seção 2, estima horas, priorização DB
+3. ➡️ **Phase 6** — @ux-design-expert revisa seção 3, estima horas, priorização UX
+4. ➡️ **Phase 7** — @qa review geral, gaps, riscos cruzados, parecer APPROVED/NEEDS WORK
+5. ➡️ **Phase 8** — @architect finaliza `docs/prd/technical-debt-assessment.md` incorporando todos os inputs
+6. ➡️ **Phase 9** — @analyst cria `docs/reports/TECHNICAL-DEBT-REPORT.md` (executivo para stakeholders)
+7. ➡️ **Phase 10** — @pm cria Epic + Stories baseadas na priorização final
+
+---
+
+**Document Status**: DRAFT v1 (2026-04-14) — Phase 4 of brownfield-discovery. Aguardando reviews dos especialistas.

@@ -1,613 +1,602 @@
-# SmartLic System Architecture Document
+# SmartLic Brownfield Architecture Document
 
-## Executive Summary
+## Introduction
 
-**SmartLic** is a sophisticated public procurement intelligence platform for Brazilian licitacoes (public bids). Built with **FastAPI** (Python backend) and **Next.js** (TypeScript frontend), it provides real-time search, AI-powered bid analysis, subscription billing, and comprehensive monitoring for procurement opportunities across PNCP, PCP v2, and ComprasGov sources.
+Este documento captura o **ESTADO ATUAL** do codebase SmartLic — uma plataforma SaaS B2G (Business-to-Government) de inteligência em licitações públicas — incluindo dívida técnica, workarounds conhecidos, padrões inconsistentes e restrições de integração. Serve como referência para agentes AI trabalhando em aprimoramentos e para a fase de Planning (Epic/Stories) do workflow brownfield-discovery.
 
-**Project Type:** Brownfield Discovery Phase 1
-**Last Updated:** 2026-04-08
-**Auditor:** @architect (Aria)
-**Technology Stack:** FastAPI + Next.js + Supabase + PostgreSQL + Redis + OpenAI + Stripe + Railway
+**NÃO é um documento arquitetural aspiracional.** É um retrato honesto do sistema em produção em https://smartlic.tech.
 
----
+### Document Scope
 
-## Table of Contents
+Auditoria compreensiva do sistema inteiro (sem filtro de PRD). Cobertura:
 
-1. [Tech Stack Overview](#tech-stack-overview)
-2. [Backend Architecture](#backend-architecture)
-3. [Frontend Architecture](#frontend-architecture)
-4. [Data Pipeline & Search Engine](#data-pipeline--search-engine)
-5. [API Routes & Endpoints](#api-routes--endpoints)
-6. [Database Schema & RLS](#database-schema--rls)
-7. [Authentication & Authorization](#authentication--authorization)
-8. [Billing & Subscription Management](#billing--subscription-management)
-9. [Background Jobs & Cron](#background-jobs--cron)
-10. [Caching Strategy](#caching-strategy)
-11. [External Integrations](#external-integrations)
-12. [Monitoring & Observability](#monitoring--observability)
-13. [Infrastructure & Deployment](#infrastructure--deployment)
-14. [Security Posture](#security-posture)
-15. [Configuration & Feature Flags](#configuration--feature-flags)
-16. [Known Issues & Debt](#known-issues--debt)
+- Backend (FastAPI 0.129 + Python 3.12, 65+ módulos)
+- Frontend (Next.js 16 + React 18 + TypeScript 5.9, 22 páginas, 243 componentes)
+- Database (Supabase PostgreSQL 17, 23 tabelas, 35+ migrations)
+- Infraestrutura (Railway, Supabase Cloud, Redis, GitHub Actions)
+- Integrações externas (PNCP, PCP v2, ComprasGov v3, OpenAI, Stripe, Resend, Sentry, Mixpanel)
+
+### Change Log
+
+| Date       | Version | Description                                                   | Author       |
+|------------|---------|---------------------------------------------------------------|--------------|
+| 2026-02-23 | 1.0     | Análise inicial de arquitetura                                | @architect   |
+| 2026-04-08 | 1.5     | Atualização pós-GTM-resilience                                | @architect   |
+| 2026-04-14 | 2.0     | Rewrite completo via workflow brownfield-discovery (YOLO)     | @architect   |
 
 ---
 
-## Tech Stack Overview
+## Quick Reference — Key Files and Entry Points
 
-### Backend Dependencies (Python 3.12)
+### Critical Files for Understanding the System
 
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| **FastAPI** | 0.129.0 | Async web framework |
-| **Uvicorn** | 0.41.0 | ASGI server (NO uvloop -- fork-safe) |
-| **Gunicorn** | 23.0.0 | Application server (single-worker mode only) |
-| **Pydantic** | 2.12.5 | Data validation & settings |
-| **Python-multipart** | >=0.0.22 | Path traversal fix (CVE-2026-24486) |
-| **Httpx** | 0.28.1 | Async HTTP client |
-| **Supabase** | 2.28.0 | PostgreSQL + Auth backend |
-| **PyJWT** | >=2.12.0 | ES256/JWKS JWT validation |
-| **BCrypt** | >=4.0.0 | TOTP MFA code hashing |
-| **Stripe** | 11.4.1 | Payment processing |
-| **Redis** | 5.3.1 | Caching & feature flags |
-| **OpenAI** | 1.109.1 | GPT-4.1-nano LLM integration |
-| **ReportLab** | 4.4.0 | PDF report generation |
-| **Openpyxl** | 3.1.5 | Excel generation |
-| **OpenTelemetry** | 1.25+ | Distributed tracing (HTTP only) |
-| **Prometheus Client** | >=0.20.0 | Metrics exporter |
-| **ARQ** | 0.26+ | Async job queue (Redis-backed) |
-| **Sentry SDK** | >=2.0.0 | Error tracking |
-| **Resend** | >=2.0.0 | Transactional email |
-| **Google APIs** | 2.190.0 | Google Sheets integration |
-| **PyYAML** | >=6.0 | Configuration loading |
+- **Backend Entry**: `backend/main.py` (FastAPI app setup, middleware stack, route registration, SSE endpoints, Sentry init)
+- **Frontend Entry**: `frontend/app/layout.tsx` (Next.js App Router root layout, provider hierarchy)
+- **Configuration**: `backend/config.py` (feature flags, timeouts, cache TTLs, LLM params), `.env.example` (env vars reference)
+- **Core Business Logic**:
+  - `backend/search_pipeline.py` — orquestração multi-fonte (PNCP + PCP v2 + ComprasGov v3)
+  - `backend/consolidation.py` — dedup priority-based (PNCP=1 > PCP=2 > ComprasGov=3)
+  - `backend/filter.py` — density scoring + UF/value/keyword filtering
+  - `backend/llm_arbiter.py` — classificação LLM (zero-match + gray zone + arbiter)
+  - `backend/viability.py` — análise de 4 fatores (modalidade 30%, timeline 25%, valor 25%, geografia 20%)
+- **Ingestion Pipeline (Layer 1)**: `backend/ingestion/` (config, crawler, transformer, loader, checkpoint, scheduler)
+- **Datalake Query (Layer 2)**: `backend/datalake_query.py` → `search_datalake` RPC
+- **Cache (Layer 3)**: `backend/search_cache.py`, `backend/cache.py`, `backend/redis_client.py`
+- **API Routes**: `backend/routes/` (19 módulos, 49 endpoints públicos)
+- **Database**: `supabase/migrations/` (35+ SQL files), `backend/migrations/` (7+ Python migrations)
+- **Background Jobs**: `backend/job_queue.py` (ARQ WorkerSettings), `backend/cron_jobs.py`
+- **Billing**: `backend/services/billing.py`, `backend/webhooks/stripe.py`
+- **Observability**: `backend/metrics.py` (Prometheus), `backend/telemetry.py` (OpenTelemetry), Sentry initialized in `main.py`
+- **Sectors**: `backend/sectors.py` + `backend/sectors_data.yaml` (15 setores com keywords + exclusões)
 
-### Frontend Dependencies (Node.js 20.11)
+### Key Algorithms
 
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| **Next.js** | 16.1.6 | React framework (App Router) |
-| **React** | 18.3.1 | UI library |
-| **TypeScript** | 5.9.3 | Type safety |
-| **Tailwind CSS** | 3.4.19 | Utility-first styling |
-| **Supabase JS** | 2.95.3 | Client SDK (auth + DB) |
-| **SWR** | 2.4.1 | Client-side data fetching with SWR cache |
-| **Zod** | 4.3.6 | Runtime validation |
-| **React Hook Form** | 7.71.2 | Form state management |
-| **Sentry/Nextjs** | 10.38.0 | Error tracking |
-| **Mixpanel** | 2.74.0 | Analytics |
-| **Lucide React** | 0.563.0 | Icon library |
-| **Recharts** | 3.7.0 | Data visualization |
-| **Framer Motion** | 12.33.0 | Animations |
-| **DnD Kit** | 6.3.1+ | Drag-and-drop (pipeline) |
-
-### Infrastructure
-
-| Component | Purpose |
-|-----------|---------|
-| **PostgreSQL 17** | Supabase-managed database |
-| **Redis** | Queue + cache layer |
-| **Railway** | Deployment platform (web + worker + frontend) |
-| **Docker** | Containerization (multi-stage builds) |
+- **Density Scoring**: `backend/filter.py` — keyword >5% = "keyword"; 2-5% = "llm_standard"; 1-2% = "llm_conservative"; 0% = "llm_zero_match"
+- **LLM Zero-Match Prompt**: `backend/llm_arbiter.py` → `_build_zero_match_prompt()`
+- **Content-Hash Dedup**: `backend/ingestion/transformer.py` + `upsert_pncp_raw_bids` RPC
+- **Checkpoint Resume**: `backend/ingestion/checkpoint.py`
+- **SSE Progress Tracking**: `backend/progress.py` (asyncio.Queue por search_id)
+- **SWR Cache Strategy**: `backend/search_cache.py` (fresh 0-6h → stale 6-24h → expired >24h)
+- **Phased UF Batching**: `backend/search_pipeline.py` (PNCP_BATCH_SIZE=5, 2s delay)
 
 ---
 
-## Backend Architecture
+## High Level Architecture
 
-### Directory Structure
+### Technical Summary
 
-```
-backend/
-+-- main.py                          # Entry point (thin facade, 31 LOC)
-+-- startup/                         # App initialization
-|   +-- app_factory.py              # FastAPI app creation
-|   +-- lifespan.py                 # Startup/shutdown hooks
-|   +-- middleware_setup.py         # CORS, logging, metrics
-|   +-- routes.py                   # Route registration
-|   +-- endpoints.py                # Root endpoints
-|   +-- exception_handlers.py       # Custom error handling
-|   +-- sentry.py                   # Sentry integration
-+-- config/                          # Configuration system
-|   +-- base.py                     # Logging, env validation
-|   +-- features.py                 # Feature flags (100+ flags)
-|   +-- pipeline.py                 # Search pipeline config
-|   +-- pncp.py                     # PNCP client config
-|   +-- cors.py                     # CORS policy
-+-- routes/                          # 52 route modules (144 endpoints)
-|   +-- search.py                   # POST /buscar (main search)
-|   +-- search_sse.py              # GET /buscar-progress SSE stream
-|   +-- search_state.py            # Async search state & results
-|   +-- search_status.py           # Status, retry, cancel endpoints
-|   +-- billing.py                 # Stripe checkout & plans
-|   +-- user.py                    # Profile, preferences
-|   +-- alerts.py                  # Smart alerts system
-|   +-- analytics.py               # Usage analytics
-|   +-- health.py                  # Health checks & readiness
-|   +-- admin_*.py                 # Admin operations
-|   +-- feature_flags.py           # Feature flag management
-|   +-- ... (40+ more)
-+-- schemas/                         # Pydantic models
-+-- services/                        # Business logic
-+-- search_pipeline.py               # 7-stage orchestrator
-+-- search_context.py               # Intermediate state container
-+-- pipeline/                        # Pipeline stages
-|   +-- stages/
-|   |   +-- validate.py            # Stage 1: Input validation
-|   |   +-- prepare.py             # Stage 2: Sector/keywords
-|   |   +-- execute.py             # Stage 3: Multi-source fetch
-|   |   +-- filter_stage.py        # Stage 4: Keyword/rules filter
-|   |   +-- enrich.py              # Stage 5: Data enrichment
-|   |   +-- post_filter_llm.py    # Stage 6a: LLM refinement
-|   |   +-- generate.py            # Stage 6b: Output generation
-|   |   +-- persist.py             # Stage 7: DB persistence
-|   +-- cache_manager.py           # Cache orchestration
-|   +-- helpers.py                 # Pipeline utilities
-|   +-- tracing.py                 # Span instrumentation
-+-- ingestion/                       # ETL pipeline (PNCP data)
-|   +-- crawler.py                 # Web scraper for PNCP
-|   +-- transformer.py             # Data transformation
-|   +-- loader.py                  # Bulk insert to pncp_raw_bids
-|   +-- checkpoint.py              # Resume capability
-|   +-- scheduler.py               # Cron scheduling
-|   +-- config.py                  # Ingestion settings
-+-- clients/                         # External API clients
-|   +-- pncp/
-|   |   +-- async_client.py       # Async PNCP API
-|   |   +-- sync_client.py        # Sync PNCP API
-|   |   +-- circuit_breaker.py    # Resilience pattern
-|   |   +-- retry.py              # Exponential backoff
-|   |   +-- adapter.py            # Response normalization
-|   +-- portal_compras_client.py  # PCP v2 integration
-|   +-- compras_gov_client.py     # ComprasGov v3 API
-|   +-- sanctions.py              # Sanctions list checker
-+-- cache/                           # Multi-tier caching
-|   +-- manager.py                # Cache orchestration
-|   +-- redis.py                  # Redis L2 cache
-|   +-- memory.py                 # In-memory L1 cache
-|   +-- supabase.py               # Supabase table cache
-|   +-- swr.py                    # Stale-while-revalidate
-+-- auth.py                          # JWT validation (ES256/JWKS)
-+-- authorization.py                 # Role-based access control
-+-- quota.py                         # Plan-based quotas (65KB)
-+-- rate_limiter.py                 # Per-user rate limiting
-+-- llm.py                           # OpenAI integration
-+-- llm_arbiter.py                  # Classification orchestrator
-+-- job_queue.py                     # ARQ facade + enqueue
-+-- jobs/                            # Background job implementations
-|   +-- queue/                      # Async job definitions
-|   +-- cron/                       # Scheduled tasks
-+-- metrics.py                       # Prometheus metrics (35KB)
-+-- health.py                        # Health check endpoints
-+-- excel.py                         # Excel report generation
-+-- pdf_report.py                    # PDF report generation
-+-- webhooks/                        # Stripe webhooks
-+-- Dockerfile                       # Multi-stage build
-```
+SmartLic é uma aplicação web monorepo com separação clara entre **backend (FastAPI/Python)** e **frontend (Next.js/TypeScript)**. O backend segue arquitetura em **3 camadas de dados**: ingestão periódica (ETL → datalake), query pipeline (busca local com fallback live), e cache SWR. Classificação de relevância usa **LLM (GPT-4.1-nano)** como arbiter em 3 modos (standard, conservative, zero-match). Deploy em **Railway** (serviços web + worker + frontend separados) com auto-deploy via GitHub Actions. **Supabase** hospeda PostgreSQL + Auth + RLS. **Redis** serve como cache L1, circuit breaker state e token bucket para rate limiting.
 
-### Core Modules Overview
+### Actual Tech Stack
 
-#### `main.py` (31 LOC)
-- Entry point for uvicorn/gunicorn
-- Imports `startup/app_factory.py` to create the FastAPI instance
-- Enables faulthandler for C extension crash diagnostics
+| Category         | Technology         | Version     | Notes                                                        |
+|------------------|--------------------|-------------|--------------------------------------------------------------|
+| **Backend**      |                    |             |                                                              |
+| Runtime          | Python             | 3.12        | Railway + Gunicorn + Uvicorn workers                         |
+| Framework        | FastAPI            | 0.129       | Async-first, Pydantic v2 contracts                           |
+| HTTP Client      | httpx              | 0.28+       | async, connection pooling                                    |
+| Job Queue        | ARQ                | 0.26+       | Redis-backed, web+worker via PROCESS_TYPE                    |
+| DB Access        | supabase-py        | 2.x         | Service-role para backend; auth.uid() RLS para users         |
+| LLM              | openai             | 1.x         | GPT-4.1-nano, ThreadPoolExecutor(max_workers=10)             |
+| Billing          | stripe             | 11.x        | Webhooks com signature verification                          |
+| Email            | Resend SDK         | custom      | Templates em `backend/templates/emails/`                     |
+| Excel            | openpyxl           | 3.x         | Estilização + ARQ background job                             |
+| Observability    | prometheus-client  | 0.20+       | `/metrics` endpoint                                          |
+|                  | opentelemetry-api  | 1.30+       | HTTP-only (limitado por CRIT-080 SIGSEGV)                    |
+|                  | sentry-sdk         | 2.x         | StarletteIntegration desabilitado (CRIT-080)                 |
+| **Frontend**     |                    |             |                                                              |
+| Framework        | Next.js            | 16.1.6      | App Router, mix RSC com ~88% "use client"                    |
+| UI Runtime       | React              | 18.3.1      |                                                              |
+| Types            | TypeScript         | 5.9.3       | strict NÃO habilitado (296 `any` types)                      |
+| Styling          | Tailwind CSS       | 3.4.19      | 50+ tokens; ~70% adoção (194 hex hardcoded)                  |
+| Animations       | Framer Motion      | 12.33       | Não tree-shakeable                                           |
+| Charts           | Recharts           | 3.7         | 10-color palette                                             |
+| Drag-Drop        | @dnd-kit/core      | 6.3.1       | /pipeline kanban; SEM keyboard nav                           |
+| Onboarding       | Shepherd.js        | 14.5.1      | HTML hardcoded (screen reader issue)                         |
+| Forms            | react-hook-form    | 7.71.2      | + Zod 4.3.6                                                  |
+| Auth             | @supabase/ssr      | 0.8.0       | Server Components compatible                                 |
+| Data Fetching    | SWR                | 2.4.1       |                                                              |
+| Toasts           | Sonner             | 2.0.7       |                                                              |
+| Analytics        | Mixpanel/Sentry/GA4| 2.74/10.38  |                                                              |
+| Icons            | lucide-react       | 0.563.0     |                                                              |
+| **Database**     |                    |             |                                                              |
+| Engine           | PostgreSQL         | 17          | Supabase Cloud (project ref `fqqyovlzdzimiwfofdjk`)          |
+| Auth             | Supabase Auth      | -           | JWT, RLS em todas tabelas user-data                          |
+| FTS              | tsvector           | Portuguese  | GIN index em `pncp_raw_bids.tsv`                             |
+| Extensions       | pg_cron, pg_trgm   | -           | Cron para purge/retention                                    |
+| **Cache/Queue**  |                    |             |                                                              |
+| Cache/Broker     | Redis              | 7.x         | Upstash/Railway; L1 + circuit breaker + ARQ                  |
+| **Infra**        |                    |             |                                                              |
+| Hosting          | Railway            | -           | Web + Worker + Frontend (serviços separados)                 |
+| CI/CD            | GitHub Actions     | -           | migration-gate.yml, deploy.yml, test workflows               |
+| Container        | Docker             | -           | `backend/Dockerfile`, `frontend/Dockerfile`                  |
 
-#### `search_pipeline.py` (148 LOC)
-- **7-stage orchestrator** for procurement search
-- Uses state machine for async search (GTM-RESILIENCE-A04)
-- Emits Prometheus metrics at each stage
-- Supports queue mode (offload LLM/Excel to ARQ workers)
+### Repository Structure Reality Check
 
-#### `auth.py` (150+ LOC)
-- JWT validation with ES256/JWKS support (STORY-227)
-- Two-tier cache: L1 in-memory (60s) + L2 Redis (5m)
-- Local JWT validation (no API calls) with public key caching
-
-#### `quota.py` (65+ KB)
-- Plan-based usage quotas (STORY-203 SYS-M04)
-- Atomic check-and-increment via PostgreSQL function
-- Circuit breaker integration for Supabase unavailability (fail-open)
+- **Type**: Monorepo (backend + frontend + supabase + docs)
+- **Package Managers**: `npm` (frontend), `pip`/`requirements.txt` (backend)
+- **Notable Decisions**:
+  - Não usa Turborepo/Nx — separação por Railway service roots (`RAILWAY_SERVICE_ROOT_DIRECTORY=backend|frontend`)
+  - `.railwayignore` exclui docs/data/scripts para reduzir upload
+  - Cada serviço Railway tem seu próprio `railway.toml` + `Dockerfile`
 
 ---
 
-## Data Pipeline & Search Engine
+## Source Tree and Module Organization
 
-### 3-Layer Architecture
+### Project Structure (Actual)
 
+```text
+PNCP-poc/
+├── backend/                   # FastAPI app (Python 3.12)
+│   ├── main.py                # Entry: middleware, routes, SSE, lifespan
+│   ├── config.py              # Feature flags + env parsing
+│   ├── schemas.py             # Pydantic contracts (API I/O)
+│   ├── search_pipeline.py     # Orquestração multi-fonte
+│   ├── consolidation.py       # Dedup priority-based
+│   ├── search_context.py      # Context holder (request-scoped)
+│   ├── search_state_manager.py# State machine (pending/running/done/failed)
+│   ├── filter.py              # Keyword density + UF/value filter
+│   ├── filter_stats.py        # Agregação de stats de filtragem
+│   ├── term_parser.py         # Parse de termos (AND/OR/quotes)
+│   ├── synonyms.py            # Expansão de sinônimos
+│   ├── status_inference.py    # Inferência de status (aberto/encerrado)
+│   ├── llm.py                 # OpenAI wrapper + resumos
+│   ├── llm_arbiter.py         # Zero-match + gray zone classification
+│   ├── relevance.py           # Score de relevância final
+│   ├── viability.py           # 4-fator viability assessment
+│   ├── search_cache.py        # L1+L2 cache SWR
+│   ├── cache.py               # InMemoryCache primitive
+│   ├── redis_client.py        # Redis async wrapper
+│   ├── redis_pool.py          # Connection pool
+│   ├── pncp_client.py         # Cliente PNCP (prioridade 1)
+│   ├── portal_compras_client.py # Cliente PCP v2 (prioridade 2)
+│   ├── compras_gov_client.py  # Cliente ComprasGov v3 (prioridade 3)
+│   ├── clients/               # 4+ clients auxiliares
+│   ├── datalake_query.py      # RPC wrapper search_datalake
+│   ├── ingestion/             # ETL Layer 1
+│   ├── auth.py, authorization.py, oauth.py, quota.py
+│   ├── routes/                # 19 modules, 49 endpoints
+│   ├── services/billing.py    # Stripe service layer
+│   ├── webhooks/stripe.py     # Signature-verified handlers
+│   ├── job_queue.py           # ARQ WorkerSettings
+│   ├── cron_jobs.py           # Cron handlers
+│   ├── metrics.py, telemetry.py, health.py, audit.py, progress.py
+│   ├── email_service.py       # Resend wrapper
+│   ├── feedback_analyzer.py   # Bi-gram pattern analysis
+│   ├── excel.py, google_sheets.py, report_generator.py
+│   ├── sectors.py, sectors_data.yaml # 15 setores
+│   ├── log_sanitizer.py       # PII redaction
+│   ├── templates/emails/      # HTML email templates
+│   ├── migrations/            # Python-based migrations (7+)
+│   ├── tests/                 # 169 test files, 5131+ passing
+│   └── requirements.txt
+├── frontend/                  # Next.js 16 (App Router)
+│   ├── app/
+│   │   ├── layout.tsx, globals.css
+│   │   ├── (pages 22)/
+│   │   ├── buscar/            # Main search page + 20+ components
+│   │   ├── pipeline/          # Kanban com @dnd-kit
+│   │   ├── admin/             # is_admin/is_master gated
+│   │   └── api/               # Route handlers (proxy to backend)
+│   ├── components/            # Shared (68)
+│   ├── lib/, hooks/
+│   ├── __tests__/             # Jest+RTL (135 files, 2681+)
+│   ├── e2e-tests/             # Playwright (60 tests)
+│   ├── jest.setup.js          # Polyfills (crypto.randomUUID, EventSource)
+│   ├── tailwind.config.ts     # 50+ design tokens
+│   ├── next.config.js, package.json, tsconfig.json
+├── supabase/
+│   ├── migrations/            # 35+ SQL (source of truth)
+│   └── docs/                  # SCHEMA.md, DB-AUDIT.md
+├── docs/
+│   ├── architecture/          # ADRs + this document
+│   ├── frontend/              # frontend-spec.md
+│   ├── prd/                   # technical-debt-DRAFT + assessment
+│   ├── reviews/               # Specialist reviews
+│   ├── reports/               # TECHNICAL-DEBT-REPORT.md + audits anteriores
+│   ├── stories/               # Epics + stories numeradas
+│   ├── sessions/, guides/, summaries/
+├── .aios-core/, .aiox-core/   # Framework (L1/L2)
+├── .claude/                   # CLAUDE.md, rules, commands, settings
+├── .github/workflows/         # CI/CD
+├── scripts/                   # sync-setores-fallback, etc.
+└── CLAUDE.md                  # Project instructions (source of truth)
 ```
-+------------------------------------------------------------------+
-| User Request (POST /buscar with filters)                          |
-+-----------------------------+------------------------------------+
-                              |
-          +-------------------v------------------+
-          |  Layer 1: Search Pipeline            |  (search_pipeline.py)
-          |  +-- Validate request                |
-          |  +-- Prepare keywords                |  7 Stages
-          |  +-- Execute (multi-source)          |
-          |  +-- Filter results                  |
-          |  +-- Enrich data                     |
-          |  +-- Generate output                 |
-          |  +-- Persist to DB                   |
-          +-------------------+------------------+
-                              |
-          +-------------------v------------------+
-          |  Layer 2: Data Sources               |  (clients/)
-          |  +-- PNCP (primary)                  |
-          |  +-- PCP v2 (secondary)              |  Multi-source
-          |  +-- ComprasGov v3 (tertiary)        |  parallel fetch
-          |  +-- Datalake (fallback)             |
-          +-------------------+------------------+
-                              |
-          +-------------------v------------------+
-          |  Layer 3: Caching (SWR)              |  (cache/)
-          |  +-- Supabase RLS table              |
-          |  +-- Redis cluster                   |  3-tier cache
-          |  +-- In-memory (local)               |
-          |  +-- Stale-while-revalidate          |
-          +--------------------------------------+
-```
 
-### Stage Details
+### Key Modules
 
-| Stage | Module | Purpose | Output |
-|-------|--------|---------|--------|
-| 1. Validate | validate.py | Request validation, auth, quotas | `ctx.is_admin`, `ctx.quota_info` |
-| 2. Prepare | prepare.py | Load sector keywords, parse terms | `ctx.sector`, `ctx.active_keywords` |
-| 3. Execute | execute.py (58KB) | Parallel multi-source fetch | `ctx.licitacoes_raw`, `ctx.data_sources` |
-| 4. Filter | filter_stage.py (20KB) | Keyword matching, exclusion rules | `ctx.licitacoes_filtradas`, `ctx.filter_stats` |
-| 5. Enrich | enrich.py | Sanctions, status inference, CNAE | Enhanced licitacoes |
-| 6a. LLM | post_filter_llm.py | Zero-match reclassification (batch) | Additional matches |
-| 6b. Generate | generate.py (27KB) | Excel/PDF, API response | `ctx.response`, `ctx.excel_base64` |
-| 7. Persist | persist.py | Save session, log analytics | `ctx.session_id` |
+- **`backend/main.py`**: FastAPI app, CORS, middleware (rate limit, request ID), Sentry init, lifespan (Redis pool, HTTP client, Supabase client), route registration, SSE endpoints.
+- **`backend/search_pipeline.py`**: Pipeline de busca com gates por fonte, phased UF batching, timeout chain ARQ Job(300s) > Pipeline(110s) > PerSource(80s) > PerUF(30s).
+- **`backend/consolidation.py`**: Dedup baseado em `numeroControlePNCP` + hash de objeto; merge priority-based (PNCP=1 > PCP=2 > ComprasGov=3).
+- **`backend/filter.py`**: Density scoring — keyword/llm_standard/llm_conservative/llm_zero_match.
+- **`backend/llm_arbiter.py`**: Monta prompts, chama OpenAI, classifica YES/NO com fallback `PENDING_REVIEW` quando `LLM_FALLBACK_PENDING_ENABLED=true`.
+- **`backend/ingestion/`**: ARQ cron — full daily 5 UTC (2am BRT), incremental 11/17/23 UTC, purge 7 UTC. Escopo: 27 UFs × 6 modalidades, 10-day window full, 3-day incremental. Concurrency 5 UFs paralelas, 2s delay, max 50 pages/UF/modalidade.
+- **`backend/search_cache.py`**: L1 InMemoryCache (4h, hot/warm/cold) + L2 Supabase `search_results_cache` (24h). SWR: serve stale + revalidate background (max 3 concurrent, 180s timeout).
+- **`backend/job_queue.py`**: ARQ WorkerSettings — LLM summaries + Excel generation como background jobs; resposta imediata com fallback summary.
+- **`frontend/app/buscar/`**: Página principal — filtros, SSE progress, resultados paginados, degradation banners.
+- **`frontend/hooks/useSearchOrchestration`**: Gerencia POST /buscar → SSE + polling fallback → render results.
 
 ---
 
-## API Routes & Endpoints
+## Data Architecture (3 Layers)
 
-### Route Summary (~144 endpoints across 52 modules)
+### Layer 1 — Periodic Ingestion (ETL → `pncp_raw_bids`)
 
-#### Core Search
-```
-POST   /buscar                              Search (main)
-GET    /buscar-progress/{id}               Progress stream (SSE)
-POST   /v1/search/{id}/status              Status & results
-POST   /v1/search/{id}/cancel              Cancel search
-POST   /v1/search/{id}/retry               Retry failed search
-GET    /v1/search/{id}/results             Get results
-POST   /v1/search/{id}/excel-download      Excel link
-```
+- **Cron jobs (ARQ)**: full daily 5 UTC, incremental 11/17/23 UTC, purge 7 UTC.
+- **Tabela**: `pncp_raw_bids` (~40K-100K rows), GIN FTS em `tsv` (pre-computed, DEBT-210), content_hash dedup, 12-day retention (soft-delete `is_active=false`).
+- **Config**: `backend/ingestion/config.py`.
+- **Checkpoints**: `ingestion_checkpoints` (resumable) + `ingestion_runs` (audit).
+- **Feature flag**: `DATALAKE_ENABLED` (default `true`).
+- **Loader**: `upsert_pncp_raw_bids(p_records JSONB)` RPC — batch 500 rows, DISTINCT ON dedup intra-batch, INSERT ON CONFLICT com WHERE por content_hash.
 
-#### Billing & Subscription
-```
-GET    /plans                               List plans
-POST   /checkout                            Create checkout session
-GET    /subscription                        Current subscription
-POST   /cancel-subscription                 Cancel subscription
-GET    /invoices                            Invoice history
-```
+### Layer 2 — Search Pipeline (queries local DB, fallback live)
 
-#### Authentication
-```
-POST   /auth/signup                         Email signup
-POST   /auth/login                          Email login
-POST   /auth/logout                         Logout
-POST   /auth/refresh                        Refresh token
-POST   /auth/google                         Google OAuth
-POST   /auth/mfa/setup                      Setup TOTP
-POST   /auth/mfa/verify                     Verify TOTP code
-```
+- **Default**: `DATALAKE_QUERY_ENABLED=true` → `datalake_query.py` chama `search_datalake` RPC (tsquery Portuguese + filtros UF/data/modalidade/valor/esfera).
+- **Fallback**: Se datalake 0 results, live multi-source fetch (PNCP + PCP v2 + ComprasGov v3).
+- **Async-first (CRIT-072)**: `POST /buscar` → 202 em <2s → resultados via SSE + polling.
+- **SSE chain**: `bodyTimeout(0)` + heartbeat 15s > Railway idle 60s | SSE inactivity timeout 120s.
 
-#### User & Profile
-```
-GET    /user/profile                        Get profile
-PATCH  /user/profile                        Update profile
-GET    /user/preferences                    Get preferences
-POST   /user/feedback                       Submit feedback
-GET    /user/quota                          Check quota usage
-```
+### Layer 3 — Search Results Cache (SWR)
 
-#### Alerts
-```
-POST   /alerts                              Create alert
-GET    /alerts                              List alerts
-PATCH  /alerts/{id}                         Update alert
-DELETE /alerts/{id}                         Delete alert
-POST   /alerts/{id}/test                    Test alert
-```
+- **L1 — InMemoryCache**: 4h TTL, hot/warm/cold priority, por processo Gunicorn (NÃO shared — TD-SYS-010).
+- **L2 — Supabase `search_results_cache`**: 24h TTL, persistente, cleanup trigger max 5/user.
+- **SWR states**: fresh (0-6h) → stale (6-24h, served + background refresh) → expired (>24h, não served).
 
-#### Admin
-```
-GET    /admin/users                         List users
-PATCH  /admin/users/{id}/quota              Set quota
-POST   /admin/cache/clear                   Clear cache
-POST   /admin/feature-flags/{flag}          Toggle feature flag
-```
+### Legacy Fallback — Live API Fetch
 
-#### Health & Monitoring
-```
-GET    /health                              Health check
-GET    /health/ready                        Readiness probe
-GET    /health/live                         Liveness probe
-GET    /metrics                             Prometheus metrics
-```
+Apenas quando `DATALAKE_QUERY_ENABLED=false` ou datalake 0:
+
+- `pncp_client.py` / `portal_compras_client.py` / `compras_gov_client.py`
+- Per-source circuit breakers (15 failures threshold, 60s cooldown)
+- Priority-based dedup, phased UF batching
+- Timeout chain: ARQ Job(300s) > Pipeline(110s) > Consolidation(100s) > PerSource(80s) > PerUF(30s)
 
 ---
 
-## Authentication & Authorization
+## Data Models and APIs
 
-### JWT Flow
+### Core Data Models
 
-1. **Signup/Login** -> Supabase Auth issues JWT
-2. **Token Format:** ES256 algorithm, public key cached from Supabase JWKS endpoint (5m TTL)
-3. **Validation (auth.py):** L1 cache (in-memory, 60s) -> L2 cache (Redis, 5m) -> local validation with public key
+Schemas Pydantic em `backend/schemas.py`:
 
-### Role-Based Access Control
+- **`SearchRequest`** — filtros de entrada (sectors, ufs, date range, custom_keywords, valor_min/max)
+- **`SearchResponse`** — payload SSE/JSON (search_id, status, progress, items, sources_status)
+- **`LicitacaoItem`** — representação unificada de um edital (cross-source)
+- **`ViabilityAssessment`** — 4 fatores + score final
+- **`ClassificationResult`** — source, confidence, reasoning
 
-| Role | Permissions |
-|------|-------------|
-| **User (default)** | Search, alerts, profile |
-| **Trial User** | 10 searches/month, basic features |
-| **Premium** | Unlimited searches, all features |
-| **Admin** | User management, feature flags, metrics |
-| **Master** | System-wide operations |
+Tabelas DB (ver `supabase/docs/SCHEMA.md` para detalhes): `profiles`, `plans`, `user_subscriptions`, `search_sessions`, `monthly_quota`, `stripe_webhook_events`, `conversations`, `messages`, `alert_preferences`, `alerts`, `alert_sent_items`, `health_checks`, `incidents`, `organizations`, `organization_members`, `pipeline_items`, `search_results_cache`, `search_results_store`, `pncp_raw_bids`, `ingestion_checkpoints`, `ingestion_runs`, `audit_events`, `partner_referrals`, `classification_feedback`.
 
----
+### API Specifications
 
-## Billing & Subscription Management
+49 endpoints públicos em 19 módulos de `backend/routes/`:
 
-### Plans & Pricing (STORY-277/360)
-
-| Plan | Price | Billing Periods |
-|------|-------|-----------------|
-| **Free Trial** | R$0 | 14 dias |
-| **SmartLic Pro** | R$397/mes | Mensal, Semestral (10%), Anual (25%) |
-| **Consultoria** | R$997/mes | Mensal, Semestral (10%), Anual (20%) |
-
-### Stripe Integration
-- Webhook: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
-- Atomic quota check via PostgreSQL function (prevents TOCTOU race conditions)
-- 3-day grace period for subscription gaps
+| Module            | Key Endpoints                                                                                      |
+|-------------------|----------------------------------------------------------------------------------------------------|
+| `search.py`       | `POST /buscar`, `GET /buscar-progress/{id}` (SSE), `GET /v1/search/{id}/status`, `POST /v1/search/{id}/retry` |
+| `pipeline.py`     | `POST/GET/PATCH/DELETE /pipeline`, `GET /pipeline/alerts`                                          |
+| `billing.py`      | `GET /plans`, `POST /checkout`, `POST /billing-portal`, `GET /subscription/status`                 |
+| `user.py`         | `GET /me`, `POST /change-password`, `GET /trial-status`, `PUT/GET /profile/context`                |
+| `analytics.py`    | `GET /summary`, `GET /searches-over-time`, `GET /top-dimensions`, `GET /trial-value`               |
+| `feedback.py`     | `POST/DELETE /feedback`, `GET /admin/feedback/patterns`                                            |
+| `messages.py`     | `POST/GET /conversations`, `POST /{id}/reply`, `PATCH /{id}/status`                                |
+| `auth_oauth.py`   | `GET /google`, `GET /google/callback`, `DELETE /google`                                            |
+| `admin_trace.py`  | `GET /search-trace/{search_id}`                                                                    |
+| Outros            | plans, exports, features, subscriptions, emails, onboarding, sessions, health, stats_public        |
 
 ---
 
-## Background Jobs & Cron
+## Technical Debt and Known Issues
 
-### ARQ Job Queue (Redis-backed)
+### CRITICAL
 
-| Job | Purpose |
-|-----|---------|
-| `search_job` | Execute full pipeline in background |
-| `llm_summary_job` | Generate LLM summary asynchronously |
-| `excel_generation_job` | Generate Excel file |
-| `cache_refresh_job` | Update stale cache entries |
-| `email_alerts_job` | Send saved search alerts |
+#### TD-SYS-001 — CRIT-080 SIGSEGV em POST requests
 
-### Cron Jobs
+- **Location**: `backend/Dockerfile` (jemalloc LD_PRELOAD), `backend/requirements.txt` (cryptography>=46), `backend/main.py` (Sentry StarletteIntegration)
+- **Impact**: POST `/buscar`, `/checkout`, `/feedback` crasham com segfault em TLS handshake. GET requests funcionam.
+- **Root cause**: `jemalloc LD_PRELOAD` + `Sentry StarletteIntegration` + `cryptography>=46` interagem mal em worker forking Gunicorn.
+- **Current mitigation**: StarletteIntegration desabilitado; uvloop desabilitado; OTEL HTTP-only; Sentry graceful degradation.
+- **Emergency deploy**: `railway redeploy --service bidiq-backend -y`.
 
-| Job | Interval | Purpose |
-|-----|----------|---------|
-| Alerts Runner | 5 min | Fetch matches, send notifications |
-| Trial Sequence | 3 hours | Onboarding email sequence |
-| Cache Cleanup | 1 hour | Remove expired entries |
-| Cache Warmup | 6 hours | Pre-fetch top sectors |
-| Reconciliation | 12 hours | Sync Stripe subscriptions |
-| Health Canary | 5 min | Check PNCP API health |
+#### TD-SYS-002 — PNCP API page size limit drop (Feb 2026)
+
+- **Location**: `backend/pncp_client.py`, `backend/ingestion/crawler.py`
+- **Impact**: `tamanhoPagina` reduzido de 500 → 50 (>50 retorna HTTP 400 silencioso). 10x mais chamadas.
+- **Detection**: Health canary usa `tamanhoPagina=10`, não detecta o limite.
+- **Retry**: exponential backoff; HTTP 422 retryable (max 1); circuit breaker 15 fails / 60s cooldown.
+- **Mitigation**: Phased UF batching (`PNCP_BATCH_SIZE=5`, `PNCP_BATCH_DELAY_S=2.0`).
+
+#### TD-SYS-003 — Railway hard timeout 120s < Gunicorn 180s
+
+- **Location**: `backend/start.sh`, `backend/gunicorn_conf.py`, CLAUDE.md
+- **Impact**: Requests >120s são killed pelo proxy Railway, ignorando Gunicorn timeout.
+- **Mitigation**: Time budgets stage-wise (80s execute, 20s filter, 30s LLM); `asyncio.to_thread()` para wraps sync; Gunicorn keep-alive 75s (>Railway 60s) previne 502s intermitentes.
+
+#### TD-SYS-004 — Migrations não aplicadas bloqueiam features (CRIT-039/045/050)
+
+- **Location**: `.github/workflows/migration-gate.yml`, `migration-check.yml`, `deploy.yml`
+- **Impact**: Incidentes históricos (ES256 JWT, multipart CVE, PGRST205); features flag habilitadas mas schema ausente.
+- **Mitigation (CRIT-050)**: 3 camadas — PR warning, push alert, auto-apply on deploy com `NOTIFY pgrst`.
+
+#### TD-SYS-005 — `search.py` monolítico (1000+ LOC), state distribuído
+
+- **Location**: `backend/routes/search.py`
+- **Impact**: Debug difícil, mudanças cascateiam, fragilidade de testes, backward compat constraints.
+- **Partial fix**: Decomposição iniciada (`search_sse.py`, `search_state.py`, `search_status.py`), re-exportadas via `search.py`.
+
+### HIGH
+
+#### TD-SYS-010 — In-memory cache não shared entre Gunicorn workers
+
+- **Impact**: Hit ratio L1 baixo em multi-worker. Redis L2 compensa parcialmente.
+- **Fix**: Migrar L1 para Redis-backed ou `gunicorn --preload`.
+
+#### TD-SYS-011 — Feature flags em 3 lugares (env vars + Redis + código)
+
+- **Impact**: Valores conflitantes; ordem de avaliação pouco clara.
+- **Fix**: Single source of truth (Redis ou DB table) com admin UI.
+
+#### TD-SYS-012 — Setores duplicados (backend YAML + frontend hardcoded)
+
+- **Location**: `backend/sectors_data.yaml` + `frontend/app/buscar/page.tsx` (`SETORES_FALLBACK`)
+- **Mitigation**: Script `node scripts/sync-setores-fallback.js` (mensal, manual).
+- **Fix**: Expor `/setores` endpoint + consumir em runtime.
+
+#### TD-SYS-013 — Session dedup eventual consistency 6-24h
+
+- **Impact**: Duplicatas na UI; confusão usuário.
+
+#### TD-SYS-014 — LLM concurrency bottleneck
+
+- **Location**: `backend/llm_arbiter.py`
+- **Impact**: `ThreadPoolExecutor(max_workers=10)`; max 3 searches concurrent por user; latência 30s+.
+- **Fix**: Async OpenAI; Batch API (50% custo); ARQ summaries (parcial).
+
+#### TD-SYS-015 — FTS não otimizado para Português
+
+- **Location**: `backend/datalake_query.py`
+- **Fix**: Dicionário customizado `public.portuguese_smartlic`; synonyms agressivos.
+
+#### TD-SYS-016 — `search_results_cache` growth unbounded
+
+- **Location**: `supabase/migrations/026_*`
+- **Fix**: pg_cron `DELETE WHERE created_at < now() - interval '24 hours'`.
+
+#### TD-SYS-017 — Rate limit ausente em endpoints públicos
+
+- **Location**: `backend/routes/stats_public.py`, `/setores`, `/planos`
+- **Fix**: Token bucket Redis.
+
+#### TD-SYS-018 — LLM sem cap de custo mensal
+
+- **Impact**: Runaway cost se trigger loop.
+- **Fix**: Counter Prometheus + budget alert + hard cap.
+
+### MEDIUM
+
+- **TD-SYS-020**: `sectors_data.yaml` sem validação em startup (`backend/sectors.py`)
+- **TD-SYS-021**: Feature flags docs inconsistentes (`backend/FEATURE_FLAGS.md`)
+- **TD-SYS-022**: Mock location inconsistente em testes (`conftest.py`)
+- **TD-SYS-023**: Integration tests flaky (shared state)
+- **TD-SYS-024**: `backend/schemas.py` 1500+ LOC monolítico
+- **TD-SYS-025**: Logs JSON-vs-text inconsistentes
+
+### LOW
+
+- **TD-SYS-030**: `backend/migrations/` (Python) + `supabase/migrations/` (SQL) coexistem sem doc
+- **TD-SYS-031**: Dead code (`backend/legacy/`, ADR-TD004 fragments)
+- **TD-SYS-032**: Telemetria spans incompletos (OTEL HTTP-only)
+
+### Workarounds and Gotchas
+
+- **PNCP `tamanhoPagina` max 50** (TD-SYS-002). Health canary não detecta.
+- **Railway hard timeout 120s** (TD-SYS-003). Gunicorn 180s ineffective.
+- **`LLM_FALLBACK_PENDING_ENABLED`**: true → PENDING_REVIEW, false → REJECT.
+- **Deploy Railway**: NUNCA `railway up` de dentro de `backend/` ou `frontend/` — sempre do root; prefira GitHub auto-deploy.
+- **Force rebuild**: bump `LABEL build.timestamp` + `ARG CACHEBUST` em `backend/Dockerfile` se skipped.
+- **413 Payload Too Large**: use `.railwayignore` ou GitHub auto-deploy.
+- **Sync `NOTIFY pgrst, 'reload schema'`**: após `supabase db push --include-all`.
+- **Quota tests**: testes mockando `/buscar` DEVEM mockar `check_and_increment_quota_atomic`.
+- **ARQ mock**: use conftest `_isolate_arq_module` fixture; nunca raw assignment.
+- **pytest-timeout**: 30s default; `@pytest.mark.timeout(60)` para slow integration.
+- **Stripe webhooks**: ALL handlers syncam `profiles.plan_type`; "fail to last known plan"; 3-day grace `SUBSCRIPTION_GRACE_DAYS`.
+- **CRIT-080 billing diagnose**: `gh api /repos/.../actions/runs` — se status queued & conclusion null → billing issue.
 
 ---
 
-## Caching Strategy
+## Integration Points and External Dependencies
 
-### Multi-Tier SWR Cache
+### External Services
 
+| Service        | Purpose                              | Integration Type           | Key Files                           |
+|----------------|--------------------------------------|----------------------------|-------------------------------------|
+| PNCP           | Fonte primária (priority 1)          | REST (GET, no auth)        | `backend/pncp_client.py`            |
+| PCP v2         | Fonte secundária (priority 2)        | REST (GET, no auth, v2)    | `backend/portal_compras_client.py`  |
+| ComprasGov v3  | Fonte terciária (priority 3)         | REST dual-endpoint         | `backend/compras_gov_client.py`     |
+| OpenAI         | GPT-4.1-nano classificação + resumos | SDK (openai)               | `backend/llm.py`, `llm_arbiter.py`  |
+| Supabase       | DB + Auth + Storage + RLS            | PostgreSQL + REST + JWT    | `backend/supabase_client.py`        |
+| Stripe         | Billing, webhooks, portal            | SDK + webhooks             | `backend/services/billing.py`       |
+| Resend         | Transactional emails                 | SDK + HTML templates       | `backend/email_service.py`          |
+| Sentry         | Error tracking                       | SDK (backend + frontend)   | `backend/main.py`, `frontend/` init |
+| Mixpanel       | Analytics frontend                   | JS SDK                     | `frontend/` provider                |
+| Google OAuth   | Social login                         | OAuth 2.0 flow             | `backend/oauth.py`                  |
+
+### Internal Integration Points
+
+- **SSE chain**: `POST /buscar` (search_id) → `GET /buscar-progress/{id}` (SSE) → asyncio.Queue tracker → emit events (`progress`, `source_done`, `llm_ready`, `excel_ready`, `done`).
+- **ARQ worker/web split**: `PROCESS_TYPE=web` → FastAPI Uvicorn; `PROCESS_TYPE=worker` → `arq backend.job_queue.WorkerSettings`.
+- **Supabase RLS**: Todas tabelas user-data; policies `USING (auth.uid() = user_id)` + `WITH CHECK`; service_role bypass para backend writes.
+- **Redis circuit breaker**: State distribuído entre workers via Redis key `cb:{source_name}:state`.
+- **Ingestion checkpoints**: `ingestion_checkpoints` — resumable crawl; `crawl_batch_id` soft-FK.
+
+---
+
+## Development and Deployment
+
+### Local Development Setup
+
+```bash
+# Backend
+cd backend && python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp ../.env.example .env  # edit OPENAI_API_KEY, SUPABASE_URL
+uvicorn main:app --reload --port 8000
+
+# Frontend
+cd ../frontend && npm install && npm run dev  # localhost:3000
 ```
-Layer 3: Supabase     (cold, persistent -- search_cache table)
-    | miss/expired
-Layer 2: Redis        (warm, shared -- 24h TTL)
-    | miss/expired
-Layer 1: Memory       (hot, local -- 5m TTL)
-    | miss
-    -> Execute (fetch from APIs)
-    -> Refresh all layers
-```
 
-### Fallback Strategy (GTM-RESILIENCE-A04)
-1. Fresh cache -> Serve if <24h old
-2. Stale cache -> Serve + background refresh
-3. Fallback date range -> Try adjacent dates
-4. Datalake -> Query `pncp_raw_bids` if all sources fail
-5. Empty result -> Return 0 matches if all layers exhausted
+### Build and Deployment Process
+
+- **Monorepo Railway**: `RAILWAY_SERVICE_ROOT_DIRECTORY=backend|frontend`; `railway.toml` + `Dockerfile` por serviço.
+- **Auto-deploy**: Push em `main` → GitHub Actions → Railway webhook.
+- **Migration CI (CRIT-050)**: `migration-gate.yml` (PR) + `migration-check.yml` (push/daily) + `deploy.yml` auto-apply.
+- **Required secrets**: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_URL`.
+- **Force rebuild**: `LABEL build.timestamp` + `ARG CACHEBUST`.
+- **Emergency deploy**: `railway redeploy --service bidiq-backend -y`.
 
 ---
 
-## External Integrations
+## Testing Reality
 
-| Integration | Purpose | Client |
-|-------------|---------|--------|
-| **PNCP API** | Primary data source (public bids) | `clients/pncp/async_client.py` |
-| **PCP v2** | Secondary source (Sao Paulo) | `clients/portal_compras_client.py` |
-| **ComprasGov v3** | Tertiary source | `clients/compras_gov_client.py` |
-| **OpenAI GPT-4.1-nano** | Classification + summaries | `llm.py`, `llm_arbiter.py` |
-| **Stripe** | Billing + webhooks | `webhooks/stripe.py` |
-| **Supabase Auth** | Email + Google OAuth + MFA | `auth.py` |
-| **Google Sheets** | Export results to Drive | `google_sheets.py` |
-| **Resend** | Transactional emails | `email_service.py` |
-| **Sentry** | Error tracking | `startup/sentry.py` |
+- **Backend**: 169 test files, 5131+ passing, 0 failures. Coverage threshold 70%.
+- **Frontend**: 135 test files, 2681+ passing, 0 failures. Coverage threshold 60%.
+- **E2E**: 60 Playwright specs.
 
----
+### Testing Gaps
 
-## Monitoring & Observability
+- Visual regression (Percy/Chromatic) — não configurado.
+- Load testing (k6/Locust) — sem baseline.
+- Chaos tests — sem failure injection.
+- Contract tests (PNCP, Stripe) — snapshots manuais.
 
-### Prometheus Metrics
+### Running Tests
 
-**Histograms (Latency):**
-- `smartlic_search_duration_seconds` (sector, uf_count, cache_status)
-- `smartlic_fetch_duration_seconds` (source)
-- `smartlic_filter_duration_seconds` (mode)
-- `smartlic_llm_latency_seconds` (model, phase)
-- `smartlic_cache_get_latency_seconds` (layer, hit)
+```bash
+# Backend
+pytest -k "test_name"
+python scripts/run_tests_safe.py --parallel 4
+pytest --timeout=30 --cov
 
-**Counters:**
-- `smartlic_searches_total` (sector, result_status, search_mode)
-- `smartlic_cache_hits_total` (level)
-- `smartlic_http_requests_total` (method, path, status_code)
-- `smartlic_auth_failures_total` (reason)
-- `smartlic_quota_exceeded_total` (plan)
-
-**Gauges:**
-- `smartlic_active_searches`
-- `smartlic_auth_cache_size`
-- `smartlic_queue_length`
-- `smartlic_worker_alive`
-
-### Structured Logging
-- JSON format in production, text in development
-- User IDs masked with `log_sanitizer.mask_user_id()`
-- No PII in logs
-
-### OpenTelemetry Tracing
-- FastAPI + httpx instrumentation
-- OTLP HTTP exporter (NOT gRPC -- fork-safe)
-- Per-stage spans in search pipeline
-
-### Health Checks
-- `GET /health/ready` (readiness: supabase, redis, queue)
-- `GET /health/live` (liveness: uptime)
-- `GET /health` (basic: version)
-- Health Canary: 5-min PNCP API ping with circuit breaker
-
----
-
-## Infrastructure & Deployment
-
-### Docker (Multi-stage builds)
-
-**Backend:** Python 3.12-slim, no uvloop (fork-safe), single-worker mode, non-root user (appuser)
-
-**Frontend:** Node.js 20.11-alpine, standalone output, 512MB heap limit, non-root user (nextjs)
-
-### Railway Configuration
-
-**Backend:** Dockerfile build, `uvicorn main:app`, healthcheck at `/health`, 300s timeout, zero-downtime deploy (45s overlap, 120s drain)
-
-**Frontend:** Dockerfile build, standalone Next.js server
-
-### CI/CD (GitHub Actions)
-- `deploy.yml`: Auto-deploy on push to main
-- `backend-tests.yml`: pytest + coverage + lint + security scan
-- `frontend-tests.yml`: jest + build + Lighthouse
-- `e2e.yml`: Daily Playwright tests
-
-### Deployment Topology
-
-```
-Internet
-    |
-    +-> Frontend (Railway) -- Next.js 16 standalone
-    |
-    +-> Backend (Railway) -- Uvicorn single-worker
-    
-Supabase (Managed) -- PostgreSQL + Auth + RLS
-Redis (Railway) -- Cache + Queue
-External APIs -- PNCP, PCP v2, ComprasGov, Stripe, OpenAI, Resend, Sentry
+# Frontend
+npm test
+npm run test:coverage
+npm run test:e2e
 ```
 
 ---
 
-## Security Posture
+## Risk Register (Forward-Looking)
 
-### Authentication & Authorization
-- Short-lived JWTs (60m) + refresh token rotation
-- Atomic quota operations (prevent TOCTOU bypass)
-- RLS policies enforce user isolation
-- HTTPBearer auth on all protected routes
+### CRITICAL (Security, Data Loss, Downtime)
 
-### Data Protection
-- PII sanitization in logs
-- Supabase PostgREST parameterization (no raw SQL)
-- React escaping + CSP headers
-- Secrets in Railway (not in code/env files)
+| ID           | Description                                                   | File/Path                                    |
+|--------------|---------------------------------------------------------------|----------------------------------------------|
+| TD-SYS-001   | CRIT-080 SIGSEGV em POST                                      | Dockerfile, requirements.txt, main.py        |
+| TD-SYS-002   | PNCP max 50/page (Feb 2026)                                   | pncp_client.py                               |
+| TD-SYS-003   | Railway 120s hard timeout                                     | start.sh, gunicorn_conf.py                   |
+| TD-SYS-004   | Migrations não aplicadas (CRIT-039/045/050)                   | .github/workflows/*                          |
+| TD-SYS-005   | `search.py` monolítico                                        | routes/search.py                             |
 
-### Infrastructure Security
-- Non-root containers (UID 1001)
-- Removed fork-unsafe C extensions (grpcio, httptools, uvloop)
-- Dependabot + CVE scanning
-- PCI-DSS compliance via Stripe (no card data stored)
+### HIGH
 
-### Fixed CVEs
-- CVE-2026-24486 (Path Traversal) -- python-multipart >=0.0.22
-- CVE-2026-26007, CVE-2026-34073 -- cryptography >=46.0.6
-- CVE-2026-32597 (JWT header bypass) -- PyJWT >=2.12.0
+| ID           | Description                                                   | File/Path                                    |
+|--------------|---------------------------------------------------------------|----------------------------------------------|
+| TD-SYS-010   | L1 cache não shared                                           | cache.py, gunicorn_conf.py                   |
+| TD-SYS-011   | Feature flags em 3 lugares                                    | config.py, feature_flags.py, .env            |
+| TD-SYS-012   | Setores duplicados                                            | sectors_data.yaml, buscar/page.tsx           |
+| TD-SYS-013   | Session dedup 6-24h window                                    | consolidation.py                             |
+| TD-SYS-014   | LLM concurrency bottleneck                                    | llm_arbiter.py                               |
+| TD-SYS-015   | FTS não otimizado Português                                   | datalake_query.py                            |
+| TD-SYS-016   | search_results_cache growth unbounded                         | migrations/026_*                             |
+| TD-SYS-017   | Rate limit ausente público                                    | routes/stats_public.py                       |
+| TD-SYS-018   | LLM sem cap custo mensal                                      | llm_arbiter.py                               |
 
----
+### MEDIUM
 
-## Configuration & Feature Flags
+| ID           | Description                                                   | File/Path                                    |
+|--------------|---------------------------------------------------------------|----------------------------------------------|
+| TD-SYS-020   | sectors_data.yaml sem validação startup                       | sectors.py                                   |
+| TD-SYS-021   | Feature flags docs inconsistentes                             | FEATURE_FLAGS.md                             |
+| TD-SYS-022   | Mock location inconsistente                                   | tests/conftest.py                            |
+| TD-SYS-023   | Integration tests flaky                                       | tests/integration/                           |
+| TD-SYS-024   | schemas.py 1500+ LOC                                          | schemas.py                                   |
+| TD-SYS-025   | Logs JSON-vs-text inconsistentes                              | config.py                                    |
 
-### Feature Flag System (100+ flags)
-- Runtime-reloadable via database + 60s cache
-- Categories: LLM/Classification, Data Sources, Cache, Search Pipeline, Billing/Trial
-- Access: `get_feature_flag("FLAG_NAME")` in Python
-- Admin toggle: `POST /admin/feature-flags/{flag}`
+### LOW
 
-### Key Feature Flags
-- `LLM_ARBITER_ENABLED`, `LLM_ZERO_MATCH_ENABLED` (AI classification)
-- `DATALAKE_ENABLED`, `DATALAKE_QUERY_ENABLED` (data sources)
-- `CACHE_WARMING_ENABLED`, `CACHE_REFRESH_ENABLED` (caching)
-- `SEARCH_ASYNC_ENABLED` (async pipeline)
-- `TRIAL_PAYWALL_ENABLED` (billing)
+| ID           | Description                                                   | File/Path                                    |
+|--------------|---------------------------------------------------------------|----------------------------------------------|
+| TD-SYS-030   | Python + SQL migrations coexistem sem doc                     | migrations/                                  |
+| TD-SYS-031   | Dead code legacy                                              | backend/legacy/                              |
+| TD-SYS-032   | OTEL spans incompletos                                        | telemetry.py                                 |
 
----
-
-## Known Issues & Debt
-
-### Critical Issues (Resolved)
-
-| ID | Description |
-|----|-------------|
-| CRIT-SIGSEGV-v2 | Uvicorn single-worker mode (no forking) |
-| CRIT-041 | Removed fork-unsafe C extensions |
-| CRIT-033 | ARQ worker health detection + inline fallback |
-| CRIT-072 | Async search deadline + time budget checks |
-
-### Open Technical Debt
-
-| ID | Priority | Description |
-|----|----------|-------------|
-| SYS-023 | Medium | Per-user Supabase tokens for user-scoped operations |
-| DEBT-018 | Open | Cryptography fork-safe testing required |
-| DEBT-325 | Open | USD/BRL exchange rate hardcoded (should be dynamic) |
+**Total sistema**: 20 debits. Complementado por DB-AUDIT.md e frontend-spec.md.
 
 ---
 
-## Architecture Decisions
+## Questions for Specialists (Phase 4+)
 
-### Why Single-Worker Uvicorn?
-C extensions (cryptography, chardet) are fork-unsafe. In-memory state not shareable. Scaling via horizontal scaling (multiple Railway services).
+### For @data-engineer (Phase 5)
 
-### Why SWR Over Eager Refresh?
-Fast response time (<50ms cache hit). Graceful degradation (stale > empty). Background refresh prevents thundering herd.
+1. `purge_old_bids()` cron configurado em prod? (TD-DB-retention)
+2. `pncp_raw_bids.is_active=false` soft-delete vs hard delete — audit trail requirement?
+3. `partner_referrals` table — feature shipped ou WIP?
+4. `classification_feedback` table — shipped ou optional?
+5. RLS `messages` (triple nested EXISTS) — refactor ou accept?
+6. `profiles.email` UNIQUE constraint — adicionar?
+7. PII em `stripe_webhook_events.payload` — mask ou archive?
+8. Owner deletion em `organizations` — soft-delete vs RESTRICT?
 
-### Why Multiple Cache Layers?
-L1 (5m): Worker-local, fastest. L2 (24h): Shared via Redis. L3 (persistent): Supabase, survives deploys.
+### For @ux-design-expert (Phase 6)
 
-### Why ARQ Over Celery?
-Simpler API, Redis-only (no RabbitMQ), native asyncio, smaller image (Railway coldstart).
-
----
-
-## Performance Metrics (Observed)
-
-| Metric | Target | Actual |
-|--------|--------|--------|
-| Search Latency (p50) | <5s | 3-4s (cache hit) |
-| Search Latency (p99) | <30s | 15-20s (multi-source) |
-| Cache Hit Rate | >70% | 65-75% |
-| Auth Cache Hit | >90% | 92-96% |
-| PNCP API Availability | >95% | 94% |
-| Cold Start | <30s | 10-15s |
-| ARQ Job Processing | <60s | 45s avg |
+1. Server Components strategy — atualmente 88% client-side, plan de migração?
+2. TypeScript strict mode — bloqueador para 296 `any` types?
+3. Storybook implementation — quando?
+4. i18n roadmap — retrofit ou deferir?
+5. Design token enforcement — ESLint ou code review?
+6. `<Button>` migration (62% ainda `<button>` nativo)?
+7. Kanban keyboard nav (@dnd-kit) — WCAG 2.1 AA gap?
+8. Performance budgets (LCP/FID targets)?
+9. Mobile-first vs desktop-first?
+10. Visual regression tool (Percy/Chromatic/Loki)?
 
 ---
 
-**Document Generated:** 2026-04-08
-**Architecture Phase:** Brownfield Discovery Phase 1 (Comprehensive)
-**Deployment Platform:** Railway
-**Database:** Supabase PostgreSQL
-**Cache:** Redis
-**Observability:** Prometheus + Sentry + OpenTelemetry
+## Appendix — Useful Commands
+
+```bash
+# Supabase CLI
+export SUPABASE_ACCESS_TOKEN=$(grep SUPABASE_ACCESS_TOKEN .env | cut -d '=' -f2)
+npx supabase db push
+npx supabase db diff
+npx supabase migration new <name>
+
+# Railway CLI
+railway status / logs --tail / variables
+railway redeploy --service bidiq-backend -y
+
+# GitHub CLI
+gh pr list / create / view <n>
+gh api repos/{owner}/{repo}/actions/runs --jq '.workflow_runs[:5]'
+
+# Backend dev
+cd backend && uvicorn main:app --reload --port 8000
+pytest -k "test_name" / --cov
+ruff check . && mypy .
+
+# Frontend dev
+cd frontend && npm run dev
+npm test / run test:e2e
+
+# AIOS story management
+node .aios-core/development/scripts/story-manager.js create --title "..."
+
+# Sector fallback sync
+node scripts/sync-setores-fallback.js --dry-run
+```
+
+---
+
+**Document Status**: 2.0 (2026-04-14) — Phase 1 of brownfield-discovery workflow complete. Handoff to Phase 2 (@data-engineer) and Phase 3 (@ux-design-expert).

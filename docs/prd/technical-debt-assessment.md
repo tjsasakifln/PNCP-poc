@@ -1,394 +1,373 @@
-# Technical Debt Assessment - FINAL
+# Technical Debt Assessment — FINAL
 
-**Project:** SmartLic (smartlic.tech)
-**Date:** 2026-04-08
-**Version:** 2.0
-**Validated by:** @architect (Aria), @data-engineer (Dara), @ux-design-expert (Uma), @qa (Quinn)
-
-**Source Documents:**
-- `docs/prd/technical-debt-DRAFT.md` -- Phase 1-3 consolidation (49 items)
-- `docs/reviews/db-specialist-review.md` -- Phase 5, @data-engineer adjustments
-- `docs/reviews/ux-specialist-review.md` -- Phase 6, @ux-design-expert adjustments (+6 items)
-- `docs/reviews/qa-review.md` -- Phase 7, QA gate (+6 items, 3 corrections)
+**Project:** SmartLic (Inteligência em Licitações Públicas)
+**Date:** 2026-04-14
+**Author:** @architect (Aria), incorporando Phases 5 (DB), 6 (UX), 7 (QA)
+**Workflow:** brownfield-discovery v3.1 — Phase 8
+**Status:** ✅ APPROVED pela Phase 7 QA gate (com observações incorporadas)
 
 ---
 
 ## Executive Summary
 
-- **Total de debitos:** 61 (4 resolved/monitoring, 57 active)
-- **Criticos (P0):** 2 | **Altos (P1):** 12 | **Medios (P2):** 17 | **Baixos (P3):** 12 | **Backlog (P4):** 14 | **Resolved (monitoring):** 4
-- **Esforco total estimado (Phases 1-4):** 100-130h
-- **Esforco backlog (Phase 5):** 150-250h
-- **Critical path:** ~7h (TD-019 + retention crons + RPC audit + timeout fix)
-
-### Dados Reais do Banco (medidos 2026-04-08 via SQL Editor)
-
-| Metrica | Valor |
-|---------|-------|
-| DB total | **146 MB** (29% do limite FREE 500MB) |
-| pncp_raw_bids total | **107 MB** |
-| Total rows | 37.087 |
-| Active rows (is_active=true) | 37.087 |
-| Inactive rows (is_active=false) | **0** |
-
-**Impacto:** TD-033 (Supabase FREE tier) rebaixado de P0 para P2 — headroom de ~350MB. TD-020 (soft-delete bloat) rebaixado de P0 para P2 — zero rows inativas confirmam que o pattern e vestigial.
-
-### QA Blocking Conditions -- Status
-
-| # | Condition | Status |
-|---|-----------|--------|
-| 1 | Fix TD-007/008/009 phantom file references | FIXED -- replaced with actual oversized files: `quota.py` (1,660 LOC), `consolidation.py` (1,394 LOC), `llm_arbiter.py` (1,362 LOC) |
-| 2 | Upgrade TD-033 to P0 | REVERTED to P2 — DB real = 146MB (29% do FREE 500MB). Estimativa de ~3GB era incorreta. |
-| 3 | Add TD-056 to TD-061 from QA review | DONE -- all 6 items incorporated |
-| 4 | Incorporate all severity recalibrations | DONE -- see inventory tables below |
+| Métrica                          | Valor                       |
+|----------------------------------|-----------------------------|
+| **Total de débitos identificados** | 73                          |
+| **Débitos já resolvidos (fixed)**  | 4 (DB CRITICAL hotfixes)    |
+| **Débitos abertos**                | 69                          |
+| **CRITICAL** abertos               | 9                           |
+| **HIGH** abertos                   | 26                          |
+| **MEDIUM** abertos                 | 22                          |
+| **LOW** abertos                    | 12                          |
+| **Esforço total estimado**         | **350-560 horas**           |
+| **Custo estimado (R$150/h)**       | **R$ 52.500 — R$ 84.000**   |
+| **Timeline recomendado**           | 12-18 semanas (3-4.5 meses) |
 
 ---
 
-## Inventario Completo de Debitos
+## 1. Inventário Completo de Débitos (Validado)
 
-### 1. Sistema/Backend (validado por @architect + @qa)
+### 1.1 Sistema (20 débitos — validados por @architect)
 
-#### Resolved (monitoring only)
+#### CRITICAL
 
-| ID | Debito | Status | Notas |
-|----|--------|--------|-------|
-| TD-001 | CRIT-SIGSEGV-v2: Uvicorn single-worker mode | Resolved | Horizontal scaling via Railway. Monitor throughput at peak. |
-| TD-002 | CRIT-041: Fork-unsafe C extensions removed | Resolved | No uvloop/httptools in prod. Test on dependency updates. |
-| TD-003 | CRIT-033: ARQ worker health + inline fallback | Resolved | Worker monitored; inline fallback if worker down. |
-| TD-004 | CRIT-072: Async search deadline + time budget | Resolved | Implemented; monitor timeout metrics. |
+| ID         | Débito                                         | Severidade | Horas    | Prioridade |
+|------------|------------------------------------------------|------------|----------|------------|
+| TD-SYS-001 | CRIT-080 SIGSEGV em POST                       | CRITICAL   | 16-40h   | P0         |
+| TD-SYS-002 | PNCP page size 50 (Feb 2026)                   | CRITICAL   | 4h       | P0         |
+| TD-SYS-003 | Railway 120s hard timeout                      | CRITICAL   | 8-16h    | P0         |
+| TD-SYS-004 | Migration CI (CRIT-050) — DEFENDED            | CRITICAL   | ✅ DONE  | -          |
+| TD-SYS-005 | search.py monolítico                           | CRITICAL   | 24-40h   | P1         |
 
-#### Active Debts
+#### HIGH
 
-| ID | Debito | Severidade | Horas | Prioridade | Status |
-|----|--------|------------|-------|------------|--------|
-| TD-005 | SYS-023: Per-user Supabase tokens -- service_role used for user-scoped ops. RLS mitigates but not ideal. | High | 16 | P1 | Open -- scope depends on TD-059 audit |
-| TD-006 | DEBT-325: Exchange rate USD/BRL hardcoded | Medium | 2 | P2 | Open |
-| TD-007 | `quota.py` oversized (1,660 LOC) -- quota logic, plan enforcement, atomic operations in single file | Medium | 12 | P2 | Open (corrected: was phantom `Execute.py`) |
-| TD-008 | `consolidation.py` oversized (1,394 LOC) -- multi-source result consolidation in single file | Medium | 8 | P2 | Open (corrected: was phantom `Generate.py`) |
-| TD-009 | `llm_arbiter.py` oversized (1,362 LOC) -- LLM classification pipeline in single file | Medium | 8 | P2 | Open (corrected: was phantom `Filter_stage.py`) |
-| TD-010 | `quota.py` complexity -- high cyclomatic complexity (alias of TD-007 for tracking) | Medium | -- | P2 | Merged into TD-007 |
-| TD-011 | Single-worker no auto-scaling -- Railway horizontal scaling manual, no auto-scale | Medium-High | 4 | P2 | Open |
-| TD-012 | DEBT-018: Cryptography fork-safe testing not automated in CI | Low | 2 | P3 | Open |
-| TD-013 | PNCP API availability 94% (target 95%) -- health canary uses tamanhoPagina=10 | Medium | 2 | P3 | Open |
-| TD-014 | Cache hit rate 65-75% (target >70%) -- warming strategy could improve | Medium | 4 | P3 | Open |
-| TD-015 | Railway 120s hard timeout vs Gunicorn 180s -- silent request death, no Sentry trace | Medium-High | 2 | P2 | Open (upgraded per QA) |
-| TD-016 | 121 migration files sem squash -- fresh env takes 2-3 min | Low | 24 | P3 | Open -- must be LAST after all Phase 1-2 migrations |
-| TD-017 | OpenTelemetry HTTP-only (no gRPC) -- fork-safety limitation | Low | 0 | P4 | Accepted limitation |
-| TD-018 | Dual migration naming convention (001_ vs 20260326_) | Low | 0 | P4 | Resolved by TD-016 squash |
+| ID         | Débito                                         | Horas    | Prioridade |
+|------------|------------------------------------------------|----------|------------|
+| TD-SYS-010 | L1 cache não shared workers                    | 8h       | P2         |
+| TD-SYS-011 | Feature flags em 3 lugares                     | 8-16h    | P2         |
+| TD-SYS-012 | Setores duplicados sync manual                 | 4h       | P1         |
+| TD-SYS-013 | Session dedup eventual consistency             | 16h      | P2         |
+| TD-SYS-014 | LLM concurrency bottleneck                     | 16-24h   | P1         |
+| TD-SYS-015 | FTS Português não otimizado                    | 8-16h    | P2         |
+| TD-SYS-016 | search_results_cache growth (overlap TD-DB-013)| -        | P0         |
+| TD-SYS-017 | Rate limit ausente endpoints públicos          | 4-8h     | P1         |
+| TD-SYS-018 | LLM sem cap de custo mensal                    | 4-8h     | P1         |
 
-### 2. Database (validado por @data-engineer)
+#### MEDIUM
 
-| ID | Debito | Severidade | Horas | Prioridade | Status |
-|----|--------|------------|-------|------------|--------|
-| TD-019 | Missing composite index `pncp_raw_bids (uf, modalidade_id, data_publicacao DESC) WHERE is_active=true` -- 50-70% query speedup | High | 1 | P0 | Open |
-| TD-020 | pncp_raw_bids soft-delete bloat -- `is_active=false` rows never cleaned | Low | 1 | P2 | **DOWNGRADED** — 0 inactive rows confirmado (2026-04-08). Pattern vestigial; investigar remocao da coluna. |
-| TD-021 | profiles.plan_type CHECK vs FK -- dual definition, no referential integrity | Medium | 4 | P1 | Open (downgraded from High per @data-engineer) |
-| TD-022 | pncp_raw_bids.content_hash COMMENT says MD5 but code uses SHA-256 -- stale documentation only | Low | 0.5 | P3 | Open (downgraded from High -- DRAFT was factually wrong) |
-| TD-023 | Missing covering index user_subscriptions (user_id, created_at DESC) WHERE is_active | Medium | 1 | P2 | Open |
-| TD-024 | Missing index audit_events (target_id_hash) | Medium | 1 | P2 | Open |
-| TD-025 | stripe_webhook_events sem retention policy -- unbounded growth | Medium | 0.5 | P1 | Open |
-| TD-026 | alert_sent_items sem retention policy -- unbounded growth | Medium | 0.5 | P1 | Open |
-| TD-027 | trial_email_log sem retention policy -- low volume, 1yr retention sufficient | Low | 0.5 | P2 | Open (downgraded per @data-engineer) |
-| TD-028 | audit_events hash sem versioning column | Low | 0.5 | P3 | Open (downgraded per @data-engineer) |
-| TD-029 | Alert cron job sequential (1000 alerts = 60-100s) -- needs asyncio.gather | Medium | 2 | P1 | Open |
-| TD-030 | RLS policy docs incompletas -- shared_analyses + pncp_raw_bids gaps | Low | 2 | P2 | Open (downgraded -- migration 20260404 addressed most gaps) |
-| TD-031 | Organizations cascade RESTRICT orphan risk | Low | 0.5 | P3 | Open -- zero orgs in prod |
-| TD-032 | conversations/messages sem soft-delete -- LGPD compliance future | Low | 4 | P3 | Open |
-| TD-033 | Supabase FREE tier 500MB — DB real = 146MB (29%). Monitorar; upgrade quando >350MB | Medium | 0.5 | P2 | **DOWNGRADED** — dados reais refutam urgencia (medido 2026-04-08) |
-| TD-034 | Backup: daily only, 1-day retention, no PITR, no independent backup | Medium | 2 | P1 | Open (upgraded from Low per @data-engineer) |
-| TD-NEW-001 | health_checks table no retention despite COMMENT saying 30-day -- ~43K rows/month growth | Low | 0.5 | P1 | New (@data-engineer) -- bundle with TD-025/026/027 |
-| TD-NEW-002 | purge_old_bids() does not clean is_active=false rows -- may be vestigial pattern | Medium | 1 | P1 | New (@data-engineer) -- investigate first |
-| TD-NEW-003 | datalake_query.py in-memory cache has no Prometheus observability | Low | 2 | P3 | New (@data-engineer) |
+- TD-SYS-020 (sectors validate startup): 2h, P2
+- TD-SYS-021 (feature flags docs): 4h, P2
+- TD-SYS-022 (mock location consistency): 8h, P2
+- TD-SYS-023 (integration tests flaky): 8-16h, P2
+- TD-SYS-024 (schemas.py monolítico): 16h, P3
+- TD-SYS-025 (logs JSON-vs-text): 4h, P3
 
-### 3. Frontend/UX (validado por @ux-design-expert)
+#### LOW
 
-| ID | Debito | Severidade | Horas | Prioridade | Status |
-|----|--------|------------|-------|------------|--------|
-| TD-035 | useSearchFilters() 607 lines -- extractable into 5 hooks (form, validation, persistence, analytics, sector data) | Medium | 14 | P1 | Open (downgraded from High per QA -- functional, well-structured) |
-| TD-036 | Visual regression testing ausente -- no Percy/Chromatic | Medium | 18 | P2 | Open -- recommend Chromatic (free tier 5K snapshots) |
-| TD-037 | Saved filter presets ausente -- power users lose time reconfiguring | Medium | 22 | P2 | Open -- user-facing value |
-| TD-038 | Modal focus trap edge cases -- DeepAnalysisModal portal conflict, TrialConversion no returnFocus, BottomNav no trap | Medium-Low | 5 | P2 | Open |
-| TD-039 | Small touch targets (<44px) in 3 legacy components (FeedbackButtons, CompatibilityBadge, TrialUpsellCTA) | Medium | 3 | P2 | Open |
-| TD-040 | /planos e /pricing not true duplicates -- /pricing has ROI calculator | Low | 2.5 | P3 | Open (downgraded -- canonical tag sufficient) |
-| TD-041 | Raw hex colors (~89 occurrences) vs design tokens -- mostly in legal/error pages | Low | 9 | P4 | Open |
-| TD-042 | CSP unsafe-inline for Tailwind -- accepted industry tradeoff | Low | 0 | P4 | Accepted |
-| TD-043 | Component Storybook ausente -- 65+ components without visual catalog | Low | 28 | P4 | Open -- defer unless team grows to 3+ FE devs |
-| TD-044 | Icons missing aria-hidden in older components -- 90 usages correct, gap is partial | Low | 3.5 | P4 | Open |
-| TD-045 | Sonner toast live regions -- default aria-live="polite" correct, edge case for error toasts | Low | 1.5 | P4 | Open |
-| TD-046 | Scroll jank during SSE updates (mobile) -- no debounce/virtualization, use useDeferredValue instead | Medium-Low | 10 | P3 | Open (upgraded from Low per @ux-expert) |
-| TD-047 | Bottom nav covers content -- only comparador has pb-20, other pages may clip | Low | 2.5 | P4 | Open |
-| TD-048 | i18n ausente -- Brazil-only product, correct to defer | Low | 100 | P4 | Deferred |
-| TD-049 | Offline support (Service Worker) ausente -- SaaS web app, low demand | Low | 50 | P4 | Deferred |
-| TD-050 | **useSearchExecution.ts 852 lines** -- largest hook, handles API calls + errors + retry + SSE + analytics | Medium-High | 18 | P1 | New (@ux-expert) |
-| TD-051 | Search hooks total complexity -- 3,775 lines across 13 hooks, steep onboarding curve | Medium | 16 | P2 | New (@ux-expert) -- 4h docs + 12h simplification |
-| TD-052 | FeedbackButtons touch target ~28x28px (needs 44x44px) -- appears on every result card | Medium | 1.5 | P1 | New (@ux-expert) -- quick win |
-| TD-053 | CompatibilityBadge text-[10px] below 12px minimum -- mobile readability | Low | 0.5 | P3 | New (@ux-expert) |
-| TD-054 | 5 inconsistent error boundary implementations -- varying UI/a11y/recovery patterns | Low | 5 | P3 | New (@ux-expert) |
-| TD-055 | Missing bottom padding for BottomNav on multiple pages -- content clipped on mobile | Low | 2.5 | P4 | New (@ux-expert) |
+- TD-SYS-030, 031, 032: 8-12h total, P3
 
-### 4. Cross-Cutting / QA (validado por @qa)
+**Subtotal Sistema (excluindo fixed): 19 débitos, ~140-220h**
 
-| ID | Debito | Severidade | Horas | Prioridade | Status |
-|----|--------|------------|-------|------------|--------|
-| TD-056 | Frontend a11y testing ausente -- no jest-axe in CI for top 10 components | Medium | 14 | P2 | New (@qa) |
-| TD-057 | Flaky test tracking/quarantine mechanism absent for 5,131+ backend tests | Low | 8 | P3 | New (@qa) |
-| TD-058 | Dependency vulnerability scanning absent -- no pip-audit or npm audit in CI | Medium | 4 | P2 | New (@qa) |
-| TD-059 | **RPC auth.uid() validation audit** -- unknown how many user-scoped RPCs lack validation | Medium | 4 | P1 | New (@qa) -- informs TD-005 scope |
-| TD-060 | GitHub secret scanning + SAST absent in CI | Low | 6 | P3 | New (@qa) |
-| TD-061 | **Ingestion pipeline failure alerting absent** -- no Slack/PagerDuty notification when daily crawl fails | Medium | 3 | P1 | New (@qa) |
+### 1.2 Database (21 débitos — validados por @data-engineer)
 
----
+#### CRITICAL
 
-## Matriz de Priorizacao Final
+| ID         | Débito                                         | Horas    | Prioridade |
+|------------|------------------------------------------------|----------|------------|
+| TD-DB-001  | RLS bypass `search_sessions`                   | ✅ FIXED | -          |
+| TD-DB-002  | Missing user_id indexes                        | ✅ FIXED | -          |
+| TD-DB-003  | partner_referrals NOT NULL conflict            | ✅ FIXED | -          |
+| TD-DB-004  | purge_old_bids cron NOT SCHEDULED              | 0.5h     | **P0**     |
 
-Sorted by priority, then by estimated hours (quick wins first within each tier).
+#### HIGH
 
-| Prio | ID | Debito | Area | Horas | Notas |
-|------|----|--------|------|-------|-------|
-| **P0** | TD-019 | Missing composite index pncp_raw_bids | DB | 1 | CREATE INDEX CONCURRENTLY -- 50-70% query speedup |
-| **P0** | TD-025/026/027 + TD-NEW-001 | 4 retention policies missing (stripe_webhook, alert_sent, trial_email, health_checks) | DB | 2 | Bundle in 1 migration with 4 cron.schedule() calls |
-| **P1** | TD-052 | FeedbackButtons touch target 28px -> 44px | Frontend | 1.5 | Quick win, a11y compliance, every result card |
-| **P1** | TD-034 | Weekly pg_dump to S3 + PITR (quando upgrade Pro) | DB/Infra | 2 | Independente; PITR requer Pro tier |
-| **P1** | TD-029 | Alert cron sequential -> asyncio.gather(10) | Backend | 2 | Independent, backend-only |
-| **P1** | TD-061 | Ingestion failure alerting (Slack webhook) | Infra | 3 | Independent, no code dependencies |
-| **P1** | TD-021 | plan_type CHECK -> FK migration (NOT VALID + VALIDATE) | DB | 4 | Off-peak execution, verify no orphan values first |
-| **P1** | TD-059 | RPC auth.uid() validation audit | Security | 4 | Informs TD-005 scope |
-| **P1** | TD-050 | useSearchExecution 852 lines -> 3 hooks | Frontend | 18 | Before TD-035 (shared patterns) |
-| **P1** | TD-035 | useSearchFilters 607 lines -> 5 hooks | Frontend | 14 | After TD-050 |
-| **P1** | TD-NEW-002 | purge_old_bids() ignores is_active=false | DB | 1 | Investigate vestigial pattern |
-| **P1** | TD-005 | Per-user Supabase tokens (SYS-023) | Backend | 16 | After TD-059 audit defines scope |
-| **P2** | TD-015 | Railway 120s vs Gunicorn 180s timeout mismatch | Backend | 2 | Silent request death, no Sentry trace |
-| **P2** | TD-006 | Exchange rate USD/BRL hardcoded | Backend | 2 | Low user impact |
-| **P2** | TD-011 | Single-worker no auto-scaling | Backend/Infra | 4 | Latency cliff under load |
-| **P2** | TD-023 | Missing covering index user_subscriptions | DB | 1 | Small optimization |
-| **P2** | TD-024 | Missing index audit_events target_id_hash | DB | 1 | Admin investigation improvement |
-| **P2** | TD-027 | trial_email_log retention (1yr) | DB | 0.5 | Low volume, non-urgent |
-| **P2** | TD-030 | RLS policy documentation gaps | DB | 2 | Documentation-only changes |
-| **P2** | TD-039 | Touch targets <44px (3 components) | Frontend | 3 | a11y compliance |
-| **P2** | TD-058 | Dependency vulnerability scanning in CI | Security | 4 | pip-audit + npm audit |
-| **P2** | TD-038 | Modal focus trap edge cases | Frontend | 5 | a11y, low frequency |
-| **P2** | TD-007 | quota.py oversized (1,660 LOC) | Backend | 12 | Refactor into submodules |
-| **P2** | TD-008 | consolidation.py oversized (1,394 LOC) | Backend | 8 | Refactor into submodules |
-| **P2** | TD-009 | llm_arbiter.py oversized (1,362 LOC) | Backend | 8 | Refactor into submodules |
-| **P2** | TD-056 | jest-axe a11y testing in CI | Frontend | 14 | Top 10 components |
-| **P2** | TD-051 | Search hooks total complexity documentation + simplification | Frontend | 16 | Architecture docs + state machine |
-| **P2** | TD-036 | Visual regression testing (Chromatic) | Frontend | 18 | 10 critical screens |
-| **P2** | TD-037 | Saved filter presets feature | Frontend | 22 | User-facing value for consultancies |
-| **P3** | TD-022 | content_hash COMMENT fix (MD5 -> SHA-256) | DB | 0.5 | Documentation-only |
-| **P3** | TD-028 | audit_events hash versioning column | DB | 0.5 | Theoretical, low value |
-| **P3** | TD-031 | Organizations cascade orphan risk | DB | 0.5 | Zero orgs in production |
-| **P3** | TD-053 | CompatibilityBadge text-[10px] readability | Frontend | 0.5 | Quick fix |
-| **P3** | TD-012 | Cryptography fork-safe testing in CI | Backend | 2 | Risk only on dep upgrade |
-| **P3** | TD-013 | PNCP health canary limited detection | Backend | 2 | Canary update |
-| **P3** | TD-040 | /planos vs /pricing canonical tag | Frontend | 2.5 | SEO-only |
-| **P3** | TD-014 | Cache hit rate marginal (65-75%) | Backend | 4 | Warming strategy |
-| **P3** | TD-032 | conversations sem soft-delete (LGPD future) | DB | 4 | Only if compliance mandates |
-| **P3** | TD-054 | 5 inconsistent error boundary patterns | Frontend | 5 | Shared BaseErrorBoundary |
-| **P3** | TD-060 | GitHub secret scanning + SAST in CI | Security | 6 | Long-term improvement |
-| **P3** | TD-057 | Flaky test tracking/quarantine | Testing | 8 | Development velocity |
-| **P3** | TD-046 | Scroll jank SSE mobile (useDeferredValue) | Frontend | 10 | Effective > virtualization |
-| **P3** | TD-016 | 121 migrations squash -> ~10 files | DB | 24 | MUST be LAST after all other migrations |
-| **P3** | TD-NEW-003 | datalake_query cache Prometheus observability | Backend | 2 | Metrics for hit/miss/size |
-| **P4** | TD-017 | OpenTelemetry HTTP-only | Backend | 0 | Accepted limitation |
-| **P4** | TD-018 | Dual migration naming | DB | 0 | Resolved by TD-016 |
-| **P4** | TD-042 | CSP unsafe-inline for Tailwind | Frontend | 0 | Accepted risk |
-| **P4** | TD-045 | Sonner toast live regions edge case | Frontend | 1.5 | Minor a11y |
-| **P4** | TD-047 | Bottom nav covers content | Frontend | 2.5 | CSS fix |
-| **P4** | TD-055 | Missing bottom padding multiple pages | Frontend | 2.5 | Global CSS fix |
-| **P4** | TD-044 | Icons missing aria-hidden (partial) | Frontend | 3.5 | Minor a11y |
-| **P4** | TD-041 | Raw hex colors vs design tokens (~89 occurrences) | Frontend | 9 | Mostly legal/error pages |
-| **P4** | TD-043 | Storybook ausente (65+ components) | Frontend | 28 | Defer unless team grows |
-| **P4** | TD-049 | Offline support (Service Worker) | Frontend | 50 | No user demand |
-| **P4** | TD-048 | i18n ausente | Frontend | 100 | Brazil-only product |
+| ID         | Débito                                         | Horas | Prioridade |
+|------------|------------------------------------------------|-------|------------|
+| TD-DB-010  | stripe_webhook_events RLS admin                | 1h    | P1         |
+| TD-DB-011  | profiles.email UNIQUE + dedup                  | 2-4h  | P1         |
+| TD-DB-013  | search_results_cache cron cleanup              | 0.5h  | P0         |
+| TD-DB-014  | search_results_store cron cleanup              | 0.5h  | P0         |
+| TD-DB-022  | pncp_raw_bids.data_* nullable (HIGH ↑)         | 4-8h  | P1         |
+| TD-DB-040  | pg_cron monitoring/alertas (NEW)               | 4-8h  | P1         |
+| TD-DB-041  | Backup off-site (NEW)                          | 4-8h  | P2         |
+
+#### MEDIUM
+
+- TD-DB-012 (messages RLS comment): 4-6h, P2 (DOWNGRADED ↓)
+- TD-DB-015 (alert digest index): 1h, P2 (DOWNGRADED ↓)
+- TD-DB-020 (audit_events soft-delete): 1h, P2
+- TD-DB-021 (classification_feedback docs): 2-4h, P2
+- TD-DB-024 (stripe webhook PII archive): 4-8h, P2
+- TD-DB-042 (connection pooler tune NEW): 2-4h, P2
+
+#### LOW
+
+- TD-DB-023 (health_checks cron): 0.5h, P3 (DOWNGRADED ↓)
+- TD-DB-030 (down.sql templates): 4-8h, P3
+- TD-DB-032 (soft FK comment): 0.5h, P3
+- TD-DB-033 (search_results_store CASCADE): 1h, P3
+
+**Subtotal Database (excluindo fixed): 17 débitos, ~42-70h**
+
+### 1.3 Frontend (27 débitos — validados por @ux-design-expert)
+
+#### CRITICAL
+
+| ID         | Débito                                         | Horas    | Prioridade |
+|------------|------------------------------------------------|----------|------------|
+| TD-FE-001  | 296 `any` types                                | 24-40h   | P1         |
+| TD-FE-002  | Shepherd.js hardcoded HTML a11y                | 16-24h   | P1         |
+| TD-FE-006  | Kanban sem keyboard nav (UPGRADED ↑)           | 8-16h    | **P0**     |
+
+#### HIGH
+
+| ID         | Débito                                         | Horas    | Prioridade |
+|------------|------------------------------------------------|----------|------------|
+| TD-FE-003  | 139 inline styles (DOWNGRADED ↓)               | 16-24h   | P2         |
+| TD-FE-004  | 194 inline hex colors                          | 8-16h    | P1         |
+| TD-FE-005  | `<button>` codemod                             | 8h       | P1         |
+| TD-FE-008  | Visual regression Percy                        | 8-16h    | P2         |
+| TD-FE-013  | SSE reconnection feedback (UPGRADED ↑)         | 4-8h     | P1         |
+| TD-FE-016  | Error messages humanizados (UPGRADED ↑)        | 4-8h     | P1         |
+| TD-FE-050  | Disabled contrast WCAG (NEW)                   | 2-4h     | P1         |
+| TD-FE-051  | Modal ARIA padronization (NEW)                 | 4-8h     | P1         |
+
+#### MEDIUM
+
+- TD-FE-007 (RSC opportunistic, DOWNGRADED ↓): 40-56h, P3
+- TD-FE-010 (i18n deferred): TBD, P3
+- TD-FE-011 (Storybook): 16-24h, P2
+- TD-FE-012 (tree-shake): 4-8h, P2
+- TD-FE-014 (image opt): 4-8h, P2
+- TD-FE-015 (loading consistency): 4-8h, P2
+- TD-FE-017 (tour dismiss): 2-4h, P2
+- TD-FE-018 (bottom nav sticky): 2-4h, P2
+- TD-FE-019 (cache freshness badge): 2-4h, P2
+- TD-FE-020 (form validation prominence): 4-8h, P2
+- TD-FE-021 (blog responsive): 2-4h, P2
+- TD-FE-052 (SWR invalidation NEW): 4-8h, P2
+- TD-FE-053 (skeleton CLS NEW): 2-4h, P2
+
+#### LOW
+
+- TD-FE-030, 031, 032: ~6-13h, P3
+
+**Subtotal Frontend: 27 débitos, ~140-240h**
+
+### 1.4 QA / Testing (5 débitos — adicionados por @qa)
+
+| ID         | Débito                                         | Horas | Prioridade |
+|------------|------------------------------------------------|-------|------------|
+| TD-QA-060  | Load test baseline (k6/Locust + Grafana)       | 8-16h | P1         |
+| TD-QA-061  | Chaos/failure injection (toxiproxy)            | 16-24h| P2         |
+| TD-QA-062  | Contract tests PNCP/Stripe                     | 8-12h | P1         |
+| TD-QA-063  | E2E billing/subscription flow                  | 8-16h | P1         |
+| TD-QA-064  | Pydantic→TS type generation                    | 4-8h  | P1         |
+
+**Subtotal QA: 5 débitos, ~44-76h**
 
 ---
 
-## Plano de Resolucao (5 Fases)
+## 2. Matriz de Priorização Final Consolidada
 
-### Phase 1: Quick Wins (Week 1-2) -- ~9.5h
+### P0 — IMEDIATO (sprint 0, ~12-30h, semana 1)
 
-**Objective:** Ship high-impact low-effort fixes. Performance + security + a11y.
+Bloqueios de produção e storage. Custo: R$ 1.800 — R$ 4.500.
 
-**Track A -- DB (no dependencies):**
-| Item | Hours | Action |
-|------|-------|--------|
-| TD-019 | 1 | `CREATE INDEX CONCURRENTLY idx_pncp_raw_bids_dashboard_query ON pncp_raw_bids (uf, modalidade_id, data_publicacao DESC) WHERE is_active = true` |
-| TD-025/026/027 + TD-NEW-001 | 2 | Single migration with 4 `cron.schedule()` retention jobs (90d webhooks, 90d alerts, 1yr trial emails, 30d health_checks) |
-| TD-022 | 0.5 | Update `COMMENT ON COLUMN content_hash` from MD5 to SHA-256 |
+| ID         | Débito                                         | Horas      | Owner            |
+|------------|------------------------------------------------|------------|------------------|
+| TD-DB-040  | pg_cron monitoring (PRECEDE crons)             | 4-8h       | @data-engineer   |
+| TD-DB-004  | Schedule purge_old_bids cron                   | 0.5h       | @data-engineer   |
+| TD-DB-013  | Schedule search_results_cache cleanup          | 0.5h       | @data-engineer   |
+| TD-DB-014  | Schedule search_results_store cleanup          | 0.5h       | @data-engineer   |
+| TD-FE-006  | Kanban keyboard nav (WCAG/legal)               | 8-16h      | @ux-design-expert + @dev |
+| TD-SYS-001 | CRIT-080 SIGSEGV deep dive (kickoff)           | (ongoing)  | @architect + @dev |
 
-**Track B -- Frontend (parallel):**
-| Item | Hours | Action |
-|------|-------|--------|
-| TD-052 | 1.5 | Add `min-w-[44px] min-h-[44px]` to FeedbackButtons |
-| TD-053 | 0.5 | Change CompatibilityBadge `text-[10px]` to `text-xs` |
+### P1 — Critical Path (sprints 1-3, ~110-200h, semanas 2-7)
 
-**Track C -- Security (parallel):**
-| Item | Hours | Action |
-|------|-------|--------|
-| TD-059 | 4 | Audit all Supabase RPCs for auth.uid() validation. Document findings. |
+ROI alto, dependências + risk reduction. Custo: R$ 16.500 — R$ 30.000.
 
-**Subtotal: ~9.5h across 3 parallel tracks. Elapsed: ~4h if all tracks run in parallel.**
+**Sprint 1 (foundations, ~40-60h):**
+- TD-QA-064 — Pydantic→TS type gen (4-8h) — **PRECEDE TD-FE-001**
+- TD-FE-005 — `<button>` codemod (8h)
+- TD-FE-016 — Error messages humanizados (4-8h)
+- TD-FE-013 — SSE reconnection feedback (4-8h)
+- TD-FE-050 — Disabled contrast (2-4h)
+- TD-FE-051 — Modal ARIA padronization (4-8h)
+- TD-DB-010 — Stripe webhook admin RLS (1h)
+- TD-DB-011 — profiles.email UNIQUE + dedup script (2-4h)
+- TD-SYS-012 — Setores sync automatizado (4h)
+- TD-SYS-017 — Rate limit público (4-8h)
+- TD-SYS-018 — LLM cost cap (4-8h)
+- TD-DB-022 — pncp_raw_bids.data_* nullability (4-8h)
 
-### Phase 2: Foundation (Weeks 3-6) -- ~16h
+**Sprint 2 (refactor + tests, ~40-70h):**
+- TD-SYS-005 — search.py decomposition (24-40h) — **PRECEDE TD-SYS-014**
+- TD-FE-001 — TypeScript strict + any progressive (24-40h, parallel)
+- TD-QA-060 — Load test baseline (8-16h)
+- TD-QA-062 — Contract tests PNCP/Stripe (8-12h)
+- TD-QA-063 — E2E billing flow (8-16h)
 
-| Item | Hours | Dependencies | Action |
-|------|-------|-------------|--------|
-| TD-034 | 2 | TD-033 (Pro tier) | GitHub Actions workflow for weekly pg_dump to S3. Enable PITR on Pro. |
-| TD-020 + TD-NEW-002 | 3 | None | Verify `SELECT count(*) FROM pncp_raw_bids WHERE is_active=false`. If >0, add cleanup cron. If 0, consider dropping is_active column. |
-| TD-021 | 4 | Verify no orphan plan_types | Three-step FK migration: drop CHECK, add FK NOT VALID, VALIDATE. |
-| TD-029 | 2 | None | asyncio.gather with Semaphore(10) for alert cron. Separate email batching. |
-| TD-061 | 3 | None | Sentry alert rule or Slack webhook on ingestion_runs failure. |
-| TD-015 | 2 | None | Align timeouts: set `GUNICORN_TIMEOUT=110` (< Railway 120s). Add Railway timeout detection middleware. |
+**Sprint 3 (perf + a11y, ~30-70h):**
+- TD-SYS-014 — LLM async + batching (16-24h)
+- TD-FE-002 — Shepherd.js a11y replacement (16-24h)
+- TD-FE-004 — ESLint hex enforcement + cleanup (8-16h)
+- TD-SYS-003 — Railway 120s time budgets audit (8-16h)
+- TD-SYS-002 — PNCP page size detect/alert (4h)
 
-### Phase 3: Hardening (Weeks 5-8) -- ~54h
+### P2 — Maintainability (sprints 4-6, ~80-140h, semanas 8-13)
 
-**Track A -- Frontend Refactoring:**
-| Item | Hours | Dependencies | Action |
-|------|-------|-------------|--------|
-| TD-050 | 18 | None | Split useSearchExecution into useSearchAPI, useSearchErrorHandling, useSearchPartialResults |
-| TD-035 | 14 | TD-050 (shared patterns) | Split useSearchFilters into 5 hooks: FormState, Validation, Persistence, Analytics, SectorData |
-| TD-037 | 22 | TD-035 (cleaner hook surface) | Implement saved filter presets: Supabase table + dropdown UX + 10 preset limit |
+Quality + DX. Custo: R$ 12.000 — R$ 21.000.
 
-**Track B -- Backend Refactoring (parallel):**
-| Item | Hours | Dependencies | Action |
-|------|-------|-------------|--------|
-| TD-007 | 12 | None | Split quota.py into quota_core, quota_atomic, plan_enforcement |
-| TD-008 | 8 | None | Split consolidation.py into source_merger, dedup, priority_resolver |
+- TD-SYS-010 (L1 cache shared): 8h
+- TD-SYS-011 (feature flags SoT): 8-16h
+- TD-SYS-013 (session dedup): 16h
+- TD-SYS-015 (FTS Português): 8-16h
+- TD-SYS-020-025 (medium backend cleanup): 30-50h
+- TD-DB-012, 015, 020, 021, 024, 041, 042: ~25-45h
+- TD-FE-003, 008, 011, 012, 014, 015, 017, 018, 019, 020, 021, 052, 053: ~50-90h
+- TD-QA-061 (chaos tests): 16-24h
+- G-010 (axe-core E2E): 2-4h
+- G-011 (Lighthouse CI): 4-8h
 
-### Phase 4: Polish (Weeks 9-12) -- ~40h
+### P3 — Strategic (sprints 7+, ~80-150h, semanas 14-18+)
 
-| Item | Hours | Dependencies | Action |
-|------|-------|-------------|--------|
-| TD-036 | 18 | None | Chromatic setup with 10 critical screen snapshots. CI integration. |
-| TD-056 | 14 | None | jest-axe for top 10 components. CI gate. |
-| TD-058 | 4 | None | pip-audit + npm audit in CI workflow. |
-| TD-009 | 8 | None | Split llm_arbiter.py into classification, zero_match, prompt_builder |
+Polish + long-term. Custo: R$ 12.000 — R$ 22.500.
 
-### Phase 5: Long-term (Weeks 13-20+) -- ongoing
-
-| Item | Hours | Notes |
-|------|-------|-------|
-| TD-016 | 24 | Migration squash -- MUST be after all Phase 1-4 migrations merged |
-| TD-005 | 16 | Per-user tokens -- scope defined by TD-059 audit results |
-| TD-051 | 16 | Search hooks architecture docs + state machine (XState) |
-| TD-011 | 4 | Railway auto-scaling configuration |
-| TD-046 | 10 | useDeferredValue for SSE streaming + React.memo on ResultCard |
-| TD-043 | 28 | Storybook -- only if team grows to 3+ FE devs |
-| TD-048/049 | 150 | i18n + offline -- deferred, no current demand |
-| Others | ~30 | P3/P4 items addressed opportunistically |
-
----
-
-## Riscos Cruzados
-
-From @qa Phase 7 review -- cross-area risks where debts compound:
-
-| # | Risco | Areas | Severidade | Mitigacao |
-|---|-------|-------|------------|-----------|
-| 1 | **DB storage growth (monitorar):** TD-025/026/027 retention policies prevent unbounded table growth. DB atual = 146MB (29% do FREE 500MB). Nao e urgente mas sem retention crons, tabelas auxiliares crescem indefinidamente. | DB | Medium | Retention crons (TD-025/026/027) resolvem. Monitorar `pg_database_size()` mensalmente. |
-| 2 | **Silent request death:** TD-015 (Railway 120s kills) + TD-011 (single worker blocks) = long searches die with no Sentry trace, users see generic 504 | Backend, Infra | High | Align timeouts (TD-015), add timeout detection middleware |
-| 3 | **Data loss without recovery:** TD-034 (no PITR, no independent backup) = if Supabase incident, no recovery path | DB, Infra | Medium-High | Add pg_dump to S3 (independente de tier). PITR requer Pro quando necessario. |
-| 4 | **Search page maintainability cliff:** TD-035 (607 LOC) + TD-050 (852 LOC) + TD-051 (3,775 total) = any search feature change requires understanding 3,775 lines of interconnected hooks | Frontend | Medium | Planned refactoring order: TD-050 first, then TD-035 |
-| 5 | **Security audit readiness:** TD-005 (service_role) + TD-030 (incomplete RLS docs) + TD-059 (no RPC audit) = cannot pass security audit | Backend, DB | Medium | RPC audit (TD-059) first, document (TD-030), then migrate tokens (TD-005) |
-| 6 | **Mobile UX degradation:** TD-046 (SSE jank) + TD-052 (touch targets) + TD-047/055 (BottomNav padding) = mobile experience materially worse than desktop | Frontend | Medium | Bundle mobile fixes into single sprint (4-6h total) |
+- TD-FE-007 (RSC opportunistic): 40-56h
+- TD-FE-010 (i18n deferred): TBD
+- TD-DB-023, 030, 032, 033: ~6-15h
+- TD-SYS-030, 031, 032: ~8-12h
+- TD-FE-030, 031, 032: ~6-13h
+- G-012 (mutation testing): 8-16h
+- G-013 (fuzz testing): 4-8h
 
 ---
 
-## Criterios de Sucesso
+## 3. Plano de Resolução
 
-### Performance Benchmarks
-
-| Metric | Current | Target | Measurement |
-|--------|---------|--------|-------------|
-| `search_datalake` RPC latency (p50) | Needs baseline | 50-70% reduction after TD-019 | `EXPLAIN ANALYZE` before/after |
-| PNCP API availability | 94% | >= 95% | Prometheus `smartlic_pncp_health_*` |
-| Cache hit rate | 65-75% | >= 75% sustained | Prometheus `smartlic_cache_hit_rate` |
-| DB size | 146 MB (29% FREE) | Monitored, < 80% of tier limit (400MB) | `pg_database_size()` mensal |
-| Search page hooks total lines | 3,775 | < 2,500 after refactoring | `wc -l frontend/app/buscar/hooks/*.ts` |
-
-### Coverage Thresholds
-
-| Area | Current | Target | Gate |
-|------|---------|--------|------|
-| Backend test coverage | >= 70% (CI gate) | Maintain >= 70% | `pytest --cov` |
-| Frontend test coverage | >= 60% (CI gate) | Maintain >= 60% | `npm run test:coverage` |
-| a11y automated coverage | 0% | >= 80% of top 10 components | jest-axe after TD-056 |
-| Visual regression | 0% | 10 critical screens | Chromatic after TD-036 |
-| Dependency vulnerability scan | Not in CI | 0 high/critical findings | pip-audit + npm audit after TD-058 |
-
-### Security Targets
-
-| Check | Current | Target |
-|-------|---------|--------|
-| RPCs with auth.uid() validation | Unknown | 100% of user-scoped RPCs (after TD-059) |
-| Dependencies with known CVEs | Unknown | 0 high/critical (after TD-058) |
-| Secrets in git history | Unknown | 0 (after TD-060) |
-
----
-
-## Dependencias
-
-### Resolution Order (DAG -- no circular dependencies)
+### Sequenciamento Crítico (NÃO REORDENAR)
 
 ```
-PHASE 1 (Week 1-2, parallel tracks):
-  TD-019 composite index ────> no dependencies, ship immediately
-  TD-025/026/027 + NEW-001 ──> retention crons, bundle in 1 migration
-  TD-022 COMMENT fix ────────> ship with retention migration
-  TD-052 FeedbackButtons ───> ship independently (1.5h)
-  TD-059 RPC audit ─────────> informs TD-005 scope
+Sprint 0 (semana 1):
+  TD-DB-040 (cron monitoring)
+       ↓
+  TD-DB-004, 013, 014 (cron schedules) + smoke test
+  TD-FE-006 (kanban a11y)
+  TD-SYS-001 (SIGSEGV kickoff)
 
-PHASE 2 (Weeks 3-6):
-  TD-034 pg_dump to S3 ─────> independente (PITR requer Pro, mas pg_dump nao)
-  TD-020 + NEW-002 investigate > must precede TD-016 (squash)
-  TD-021 plan_type FK ──────> must precede TD-016 (squash)
-  TD-029 alert cron async ──> independent
-  TD-061 ingestion alerting > independent
-  TD-015 timeout alignment ─> independent
+Sprint 1 (semanas 2-3):
+  TD-QA-064 (Pydantic→TS) — PRECEDE TD-FE-001
+       ↓
+  Quick wins (TD-FE-005, 016, 050, 051; TD-DB-010, 011, 022;
+              TD-SYS-012, 017, 018; TD-FE-013)
 
-PHASE 3 (Weeks 7-12):
-  TD-050 useSearchExecution split ──> before TD-035
-  TD-035 useSearchFilters split ───> after TD-050, before TD-037
-  TD-037 saved filter presets ─────> after TD-035
-  TD-007/008/009 backend splits ──> independent, parallel with FE
+Sprint 2 (semanas 4-5):
+  TD-SYS-005 (search.py decompose) [paralelo com:]
+  TD-FE-001 (TS strict + any progressive)
+  TD-QA-060, 062, 063 (test infra)
 
-PHASE 4 (Weeks 9-12):
-  TD-036 visual regression ────> parallel with Phase 3
-  TD-056 jest-axe ─────────────> independent
-  TD-058 dep scanning ────────> independent
-
-PHASE 5 (Weeks 13-20+):
-  TD-016 migration squash ────> AFTER all Phase 1-4 migrations merged
-  TD-005 per-user tokens ─────> after TD-059 defines scope
-  Remaining P3/P4 items ──────> opportunistic
+Sprint 3 (semanas 6-7):
+  TD-SYS-014 (LLM async — DEPENDS on TD-SYS-005 done)
+  TD-FE-002 (Shepherd a11y)
+  TD-FE-004 (hex cleanup)
+  TD-SYS-003 (Railway timeout)
+  TD-SYS-002 (PNCP detect)
 ```
 
-### Parallelization Tracks
+### Ondas de Resolução
 
-| Track A (DB/Infra) | Track B (Frontend) | Track C (Security/CI) |
-|--------------------|--------------------|-----------------------|
-| TD-019 composite index | TD-052 touch targets | TD-059 RPC audit |
-| TD-019 composite index | TD-050 hook split | TD-058 dep scanning |
-| TD-025/026/027 retention | TD-035 hook split | TD-061 alerting |
-| TD-034 pg_dump backup | TD-037 saved presets | TD-060 secret scanning |
-| TD-020 bloat cleanup | TD-036 visual regression | |
-| TD-021 FK migration | TD-056 jest-axe | |
-
-Three parallel tracks can execute simultaneously if staffed.
+| Onda | Foco                        | Sprints | Esforço     | Custo R$           |
+|------|-----------------------------|---------|-------------|--------------------|
+| 1    | P0 — Production Critical    | 0       | 12-30h      | 1.800 — 4.500     |
+| 2    | P1 — Critical Path          | 1-3     | 110-200h    | 16.500 — 30.000   |
+| 3    | P2 — Maintainability        | 4-6     | 80-140h     | 12.000 — 21.000   |
+| 4    | P3 — Strategic              | 7+      | 80-150h     | 12.000 — 22.500   |
+| **TOTAL** |                       | 12-18 sem | **282-520h**| **42.300 — 78.000** |
 
 ---
 
-## Legenda
+## 4. Riscos e Mitigações (do QA Review)
 
-- **P0** -- Proximo sprint, impacto imediato (blocker ou risk)
-- **P1** -- 1-2 meses, alto impacto
-- **P2** -- 2-4 meses, melhorias incrementais
-- **P3** -- 4-6 meses, nice-to-have
-- **P4** -- Backlog, limitacoes aceitas ou baixa prioridade
+| Risco | Mitigação |
+|-------|-----------|
+| R-001: TD-SYS-005 + TD-SYS-014 simultâneo | Sequenciar: 005 primeiro, depois 014. |
+| R-002: TD-DB-011 sem TD-DB-040 monitoring | Bundle ambos no mesmo PR ou monitoring antes. |
+| R-003: TD-FE-001 sem TD-QA-064 type gen | TD-QA-064 precede TD-FE-001 (pode reduzir 30-50% esforço). |
+| R-004: TD-SYS-001 + Sentry/OTEL change | Feature flag toggle + canary deploy + rollback ready. |
+| R-005: TD-DB-004 sem monitoring | Smoke test pós-deploy + alerts. |
+| R-006: A11y bundle requer screen reader real | Sprint A11y dedicada + parceria tester acessibilidade. |
+| R-007: TD-SYS-002 PNCP externo | TD-QA-062 contract tests + alert response shape. |
 
 ---
 
-*Phase 8 Final Assessment compiled 2026-04-08 by @architect (Aria).*
-*Incorporates all feedback from @data-engineer (Phase 5), @ux-design-expert (Phase 6), and @qa (Phase 7).*
-*This document supersedes `technical-debt-DRAFT.md` and the previous v1.0 (2026-03-31).*
-*Next step: Story creation from P0/P1 items for sprint planning.*
+## 5. Critérios de Sucesso (Definition of Done para Epic)
+
+### Métricas Mensuráveis
+
+| Métrica                       | Atual               | Meta                |
+|-------------------------------|---------------------|---------------------|
+| Backend test coverage         | ~70%                | 80%                 |
+| Frontend test coverage        | ~60%                | 75%                 |
+| TypeScript `any` count        | 296                 | <50                 |
+| ARIA violations (axe-core)    | desconhecido        | 0 críticas          |
+| Lighthouse Performance        | desconhecido        | >85                 |
+| Lighthouse Accessibility      | desconhecido        | >95                 |
+| Visual regression diff        | n/a                 | <1%                 |
+| pg_cron job success rate      | desconhecido        | >99% (com alerts)   |
+| Sentry POST error rate        | alto (CRIT-080)     | <0.1% requests      |
+| LLM monthly cost              | uncapped            | budget definido     |
+| pncp_raw_bids storage         | risco unbounded     | <300MB sustained    |
+
+### Critérios Globais
+
+1. ✅ Zero failures em backend pytest (mantém política existente)
+2. ✅ Zero failures em frontend jest
+3. ✅ All Playwright passing + novos E2E billing
+4. ✅ Lighthouse CI verde (LCP <2.5s, FID <100ms, CLS <0.1)
+5. ✅ Visual regression Percy <1% diff em rotas core
+6. ✅ axe-core 0 violations em rotas core
+7. ✅ pg_cron monitoring com Sentry alerts ativos
+
+---
+
+## 6. Estimativas Finais
+
+### Esforço
+
+- **Mínimo**: 282h (sweet spot)
+- **Realista**: 400h
+- **Máximo**: 520h
+
+### Custo (a R$150/hora)
+
+- **Mínimo**: R$ 42.300
+- **Realista**: R$ 60.000
+- **Máximo**: R$ 78.000
+
+### Timeline (1 dev full-time, 30h/semana líquido)
+
+- **Mínimo**: 10 semanas
+- **Realista**: 13-14 semanas
+- **Máximo**: 17-18 semanas
+
+### Timeline com 2 devs (50h/semana líquido somando)
+
+- **Realista**: 8-10 semanas
+
+---
+
+## 7. Recomendações Finais
+
+1. **Tratar P0 imediatamente** (semana 1) — bloqueios de produção e storage. Custo <R$5K.
+2. **Não deferir P1 além de 6 semanas** — dívida acumulada exponencializa risco.
+3. **Definir budget LLM mensal** (TD-SYS-018) antes de ANY launch maior — proteger downside.
+4. **WCAG 2.1 AA é compliance B2G** (TD-FE-006, 050, 051) — bloqueio de vendas enterprise.
+5. **TypeScript strict (TD-FE-001)** é o ROI mais alto — destrava velocity.
+6. **TD-QA-064 (Pydantic→TS)** PRECEDE TD-FE-001 — evita esforço duplicado.
+7. **Bundle relacionados em PRs** (sprint a11y, sprint cleanup, sprint perf) — reduz overhead de review.
+8. **Métricas antes/depois** — Phase 9 (relatório executivo) deve usar para narrativa ROI.
+
+---
+
+**Status**: ✅ FINAL — pronto para Phase 9 (executive report) e Phase 10 (Epic + Stories).
