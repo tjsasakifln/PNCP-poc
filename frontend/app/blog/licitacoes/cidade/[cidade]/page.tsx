@@ -6,7 +6,7 @@ import Footer from '@/app/components/Footer';
 import SchemaMarkup from '@/components/blog/SchemaMarkup';
 import BlogCTA from '@/components/blog/BlogCTA';
 import BreadcrumbNav from '@/components/seo/BreadcrumbNav';
-import HistoricalContractsFallback from '@/components/blog/HistoricalContractsFallback';
+import ContractsPanoramaBlock from '@/components/blog/ContractsPanoramaBlock';
 import { CITIES, getCityBySlug, fetchCidadeStats, getCitiesByUf } from '@/lib/cities';
 import { UF_NAMES, formatBRL } from '@/lib/programmatic';
 import {
@@ -50,24 +50,38 @@ export async function generateMetadata({
   const city = getCityBySlug(cidade);
   if (!city) return { title: 'Cidade não encontrada | SmartLic' };
 
-  const stats = await fetchCidadeStats(city.slug);
+  // AC1: fetch bids + contracts in parallel
+  const [stats, contractsMeta] = await Promise.all([
+    fetchCidadeStats(city.slug),
+    fetchContratosCidadeStats(city.slug),
+  ]);
   const total = stats?.total_editais ?? 0;
+  const totalContracts = contractsMeta?.total_contracts ?? 0;
   const ufName = UF_NAMES[city.uf] || city.uf;
   const year = new Date().getFullYear();
   const canonicalUrl = `https://smartlic.tech/blog/licitacoes/cidade/${city.slug}`;
 
+  // AC4/AC5: noindex only when both datasets are empty
+  const shouldIndex = total > 0 || totalContracts > 0;
+
   const title = `Licitações em ${city.name}/${city.uf}${
     total > 0 ? ` — ${total} editais abertos ${year}` : ` — Editais ${year}`
   } | SmartLic`;
-  const description =
+
+  // AC7: enrich description with contract count when available
+  let description =
     `Encontre licitações abertas em ${city.name} (${ufName}). ` +
-    `${total > 0 ? `${total} editais ativos nos últimos 10 dias. ` : ''}` +
-    `Dados consolidados de PNCP, PCP e ComprasGov. Filtre por modalidade, valor e prazo. Teste grátis.`;
+    `${total > 0 ? `${total} editais ativos nos últimos 10 dias. ` : ''}`;
+  if (totalContracts > 0) {
+    description += `${totalContracts.toLocaleString('pt-BR')} contratos históricos firmados em ${city.name}. `;
+  }
+  description += `Dados consolidados de PNCP, PCP e ComprasGov. Filtre por modalidade, valor e prazo. Teste grátis.`;
 
   return {
     title,
     description,
-    alternates: { canonical: canonicalUrl },
+    alternates: { canonical: canonicalUrl }, // AC6: always present
+    robots: shouldIndex ? { index: true, follow: true } : { index: false, follow: true }, // AC4/AC5
     openGraph: {
       title,
       description,
@@ -92,7 +106,11 @@ export default async function LicitacoesCidadePage({
   const city = getCityBySlug(cidade);
   if (!city) notFound();
 
-  const stats = await fetchCidadeStats(city.slug);
+  // AC1: fetch bids + contracts in parallel; AC8: graceful — contractsFallback stays null on failure
+  const [stats, contractsFallback] = await Promise.all([
+    fetchCidadeStats(city.slug),
+    fetchContratosCidadeStats(city.slug),
+  ]);
   const ufName = UF_NAMES[city.uf] || city.uf;
   const monthYear = getMonthYear();
   const url = `https://smartlic.tech/blog/licitacoes/cidade/${city.slug}`;
@@ -114,12 +132,6 @@ export default async function LicitacoesCidadePage({
     { name: `${city.name}/${city.uf}`, url },
   ];
 
-  // Zero-state fallback: when there are no open editais, fetch historical
-  // contract activity (all sectors) for this city from pncp_supplier_contracts.
-  const hasZeroEditais = total === 0;
-  const contractsFallback = hasZeroEditais
-    ? await fetchContratosCidadeStats(city.slug)
-    : null;
   const contractsContext = buildContractsContext(contractsFallback);
 
   const liveTopOrgaos = stats?.orgaos_frequentes?.map((o) => o.name);
@@ -273,15 +285,12 @@ export default async function LicitacoesCidadePage({
             </div>
           </section>
 
-          {/* Zero-editais fallback: historical contract activity (all sectors) */}
-          {hasZeroEditais && contractsFallback && contractsFallback.total_contracts > 0 && (
-            <HistoricalContractsFallback
-              scope="cidade"
-              cityName={city.name}
-              data={contractsFallback}
-              ctaSlug={`cidade-${city.slug}`}
-            />
-          )}
+          {/* AC2/AC3: Panorama de contratos históricos — renderiza quando total_contracts > 0 */}
+          <ContractsPanoramaBlock
+            variant="cidade"
+            data={contractsFallback}
+            cityName={city.name}
+          />
 
           {/* Explore by sector in city */}
           <section className="mb-10">

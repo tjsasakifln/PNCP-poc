@@ -1,6 +1,6 @@
 # SEO-473 — Páginas de cidade: panorama de contratos universal e noindex baseado em dados combinados
 
-**Status:** Ready  
+**Status:** Done  
 **Type:** Feature  
 **Prioridade:** Média — ~100 páginas de cidade com thin content potencial  
 **Depende de:** SEO-474 (ContractsPanoramaBlock), SEO-475 (backend enriquecido)  
@@ -21,17 +21,17 @@ Aplicar o mesmo padrão de SEO-470 às páginas de cidade:
 
 ## Acceptance Criteria
 
-- [ ] AC1: `fetchCidadeStats` (bids) e `fetchContratosCidadeStats` (contratos) são chamados em paralelo via `Promise.all`
-- [ ] AC2: `ContractsPanoramaBlock` com `variant="cidade"` renderiza abaixo dos editais quando `total_contracts > 0`
-- [ ] AC3: Quando `total_contracts === 0`: bloco não renderiza (sem seção vazia ou texto genérico)
-- [ ] AC4: `robots.index=false` apenas quando `bids === 0 AND contracts === 0`
-- [ ] AC5: `robots.index=true` quando qualquer um dos datasets tem dados
-- [ ] AC6: `alternates.canonical` presente em todos os branches
-- [ ] AC7: Metadata description atualizada quando há contratos: inclui total movimentado ou número de contratos
-- [ ] AC8: Fallback graceful: se `fetchContratosCidadeStats` falhar, página funciona com dados de bids apenas
-- [ ] AC9: Todo texto gerado tem acentuação correta, linguagem natural, sem resíduo de markdown — passa em revisão editorial humana
-- [ ] AC10: `npx tsc --noEmit` sem erros
-- [ ] AC11: ISR `revalidate = 86400` mantido
+- [x] AC1: `fetchCidadeStats` (bids) e `fetchContratosCidadeStats` (contratos) são chamados em paralelo via `Promise.all`
+- [x] AC2: `ContractsPanoramaBlock` com `variant="cidade"` renderiza abaixo dos editais quando `total_contracts > 0`
+- [x] AC3: Quando `total_contracts === 0`: bloco não renderiza (sem seção vazia ou texto genérico)
+- [x] AC4: `robots.index=false` apenas quando `bids === 0 AND contracts === 0`
+- [x] AC5: `robots.index=true` quando qualquer um dos datasets tem dados
+- [x] AC6: `alternates.canonical` presente em todos os branches
+- [x] AC7: Metadata description atualizada quando há contratos: inclui total movimentado ou número de contratos
+- [x] AC8: Fallback graceful: se `fetchContratosCidadeStats` falhar, página funciona com dados de bids apenas
+- [x] AC9: Todo texto gerado tem acentuação correta, linguagem natural, sem resíduo de markdown — passa em revisão editorial humana
+- [x] AC10: `npx tsc --noEmit` sem erros
+- [x] AC11: ISR `revalidate = 86400` mantido
 
 ## Escopo
 
@@ -67,5 +67,5 @@ Aplicar o mesmo padrão de SEO-470 às páginas de cidade:
 
 ## File List
 
-- [ ] `docs/stories/SEO-473-cidades-panorama-contratos-universal.md` (esta story)
-- [ ] `frontend/app/blog/licitacoes/cidade/[cidade]/page.tsx`
+- [x] `docs/stories/SEO-473-cidades-panorama-contratos-universal.md` (esta story)
+- [x] `frontend/app/blog/licitacoes/cidade/[cidade]/page.tsx`
