@@ -130,6 +130,11 @@ export default async function FornecedorCnpjPage({ params }: Props) {
 
   const localizacao = [profile.municipio, profile.uf_sede].filter(Boolean).join(' — ') || 'Nao informado';
 
+  // SEO-Sprint2 P6.6: filter FAQ answers shorter than 300 chars
+  const eligibleFaqs = (profile.faq_items ?? []).filter(
+    (f) => f.answer.replace(/<[^>]*>/g, '').length >= 300
+  );
+
   const jsonLd = [
     {
       '@context': 'https://schema.org',
@@ -148,6 +153,24 @@ export default async function FornecedorCnpjPage({ params }: Props) {
           }
         : {}),
       url: `https://smartlic.tech/fornecedores/${cnpj}`,
+      // SEO-Sprint2 P6.3: enrich with offer catalog and area served
+      ...(profile.cnae_descricao
+        ? {
+            hasOfferCatalog: {
+              '@type': 'OfferCatalog',
+              name: `Serviços de ${profile.razao_social}`,
+              description: profile.cnae_descricao,
+            },
+          }
+        : {}),
+      ...((profile.ufs_atuantes ?? []).length > 0
+        ? {
+            areaServed: profile.ufs_atuantes.map((uf: string) => ({
+              '@type': 'AdministrativeArea',
+              name: uf,
+            })),
+          }
+        : {}),
     },
     {
       '@context': 'https://schema.org',
@@ -159,15 +182,19 @@ export default async function FornecedorCnpjPage({ params }: Props) {
         item: `https://smartlic.tech${b.url}`,
       })),
     },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: profile.faq_items.map((f) => ({
-        '@type': 'Question',
-        name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.answer },
-      })),
-    },
+    ...(eligibleFaqs.length > 0
+      ? [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: eligibleFaqs.map((f) => ({
+              '@type': 'Question',
+              name: f.question,
+              acceptedAnswer: { '@type': 'Answer', text: f.answer },
+            })),
+          },
+        ]
+      : []),
   ];
 
   return (

@@ -89,12 +89,21 @@ export interface SectorUfStats {
   top_oportunidades: {
     titulo: string;
     orgao: string;
+    orgao_cnpj?: string | null;
     valor: number | null;
     uf: string;
     data: string;
   }[];
   last_updated: string;
   most_recent_bid_date?: string;
+  municipios_ativos?: number;
+  vs_media_nacional_pct?: number | null;
+  top_compradores?: {
+    nome: string;
+    cnpj: string;
+    total_contratos: number;
+    valor_total: number;
+  }[];
 }
 
 export interface PanoramaStats {

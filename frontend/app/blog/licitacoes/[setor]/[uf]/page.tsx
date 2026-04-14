@@ -247,9 +247,11 @@ export default async function LicitacoesSectorUfPage({
         url={url}
         sectorName={sector.name}
         uf={ufUpper}
+        ufName={ufName}
         totalEditais={stats?.total_editais}
         breadcrumbs={breadcrumbs}
         faqs={allFaqs}
+        topOportunidades={stats?.top_oportunidades}
         dataPoints={[
           { name: 'Total de Editais', value: stats?.total_editais ?? 0 },
           { name: 'Valor Mínimo', value: stats?.value_range_min ?? 0 },
@@ -396,7 +398,16 @@ export default async function LicitacoesSectorUfPage({
                   >
                     <p className="font-medium text-ink mb-1 line-clamp-2">{item.titulo}</p>
                     <div className="flex flex-wrap gap-3 text-sm text-ink-secondary">
-                      <span>{item.orgao}</span>
+                      {item.orgao_cnpj ? (
+                        <Link
+                          href={`/contratos/orgao/${item.orgao_cnpj}`}
+                          className="hover:text-brand-blue hover:underline transition-colors"
+                        >
+                          {item.orgao}
+                        </Link>
+                      ) : (
+                        <span>{item.orgao}</span>
+                      )}
                       {item.valor && <span className="font-medium text-ink">{formatBRL(item.valor)}</span>}
                       {item.data && <span>{item.data}</span>}
                     </div>
@@ -416,12 +427,76 @@ export default async function LicitacoesSectorUfPage({
             slug={`${setor}-${uf}`}
           />
 
+          {/* SEO-Sprint2 P5.1: Maiores compradores — conteúdo único por setor×UF */}
+          {stats?.top_compradores && stats.top_compradores.length > 0 && (
+            <section className="mb-10">
+              <h2 className="text-xl font-semibold text-ink mb-4">
+                Maiores compradores de {sector.name} {getUfPrep(ufUpper)} {ufName}
+              </h2>
+              <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+                <table className="w-full text-sm">
+                  <thead className="bg-surface-1 border-b border-[var(--border)]">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-semibold text-ink">#</th>
+                      <th className="text-left px-4 py-3 font-semibold text-ink">Órgão Comprador</th>
+                      <th className="text-right px-4 py-3 font-semibold text-ink">Contratos</th>
+                      <th className="text-right px-4 py-3 font-semibold text-ink">Volume Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    {stats.top_compradores.map((c, i) => (
+                      <tr key={c.cnpj} className="hover:bg-surface-1 transition-colors">
+                        <td className="px-4 py-3 text-ink-secondary font-medium">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/contratos/orgao/${c.cnpj}`}
+                            className="font-medium text-brand-blue hover:underline"
+                          >
+                            {c.nome}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-right text-ink-secondary">{c.total_contratos}</td>
+                        <td className="px-4 py-3 text-right font-medium text-ink">
+                          {formatBRL(c.valor_total)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
           {/* AC2: Regional editorial block (300+ words) */}
           <section className="mb-10">
             <h2 className="text-xl font-semibold text-ink mb-4">
               {sector.name} {getUfPrep(ufUpper)} {ufName}: panorama de licitações
             </h2>
             <div className="prose prose-slate max-w-none text-ink-secondary leading-relaxed">
+              {/* SEO-Sprint2 P5.2: parágrafo contextual único (dados factuais por setor×UF) */}
+              {(stats?.municipios_ativos != null && stats.municipios_ativos > 0) || stats?.vs_media_nacional_pct != null ? (
+                <p>
+                  {stats?.municipios_ativos != null && stats.municipios_ativos > 0 && (
+                    <>
+                      {stats.municipios_ativos === 1
+                        ? `1 município de ${ufName}`
+                        : `${stats.municipios_ativos} municípios de ${ufName}`}{' '}
+                      {stats.municipios_ativos === 1 ? 'registrou' : 'registraram'} licitações ativas
+                      no setor de {sector.name} nos dados mais recentes disponíveis.
+                    </>
+                  )}
+                  {stats?.vs_media_nacional_pct != null && (
+                    <>
+                      {' '}
+                      {stats.vs_media_nacional_pct > 5
+                        ? `O valor médio dos contratos em ${ufUpper} é ${Math.abs(stats.vs_media_nacional_pct).toFixed(1)}% acima da média nacional, posicionando o estado como um mercado premium para fornecedores de ${sector.name}.`
+                        : stats.vs_media_nacional_pct < -5
+                        ? `Com valor médio ${Math.abs(stats.vs_media_nacional_pct).toFixed(1)}% abaixo da média nacional, ${ufUpper} oferece oportunidades acessíveis para empresas de ${sector.name} que buscam expandir no setor público.`
+                        : `O valor médio dos contratos em ${ufUpper} está alinhado à média nacional para o setor de ${sector.name}.`}
+                    </>
+                  )}
+                </p>
+              ) : null}
               {editorial.map((paragraph, i) => (
                 <p key={i}>{paragraph}</p>
               ))}

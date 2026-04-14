@@ -303,6 +303,18 @@ export default function OrgaoPerfilClient({ stats }: { stats: OrgaoStats }) {
         </div>
       )}
 
+      {/* SEO-Sprint2 P7.3: Link para contratos históricos deste órgão */}
+      {total_contratos_24m != null && total_contratos_24m > 0 && (
+        <div className="mb-6">
+          <Link
+            href={`/contratos/orgao/${cnpj}`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors text-sm font-medium"
+          >
+            Ver {total_contratos_24m.toLocaleString('pt-BR')} contratos históricos deste órgão →
+          </Link>
+        </div>
+      )}
+
       {/* Principais Fornecedores */}
       {top_fornecedores && top_fornecedores.length > 0 && (
         <div className="mb-8">
@@ -324,7 +336,7 @@ export default function OrgaoPerfilClient({ stats }: { stats: OrgaoStats }) {
                   <tr key={f.cnpj} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-2">
                       <Link
-                        href={`/cnpj/${f.cnpj}`}
+                        href={`/fornecedores/${f.cnpj}`}
                         className="font-medium text-blue-600 hover:underline"
                       >
                         {f.nome || formatCnpj(f.cnpj)}

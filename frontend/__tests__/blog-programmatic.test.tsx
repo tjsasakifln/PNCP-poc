@@ -54,9 +54,11 @@ describe('SchemaMarkup (AC3)', () => {
   });
 
   it('renders FAQPage schema when FAQs provided', () => {
+    // Answers must be >= 300 chars to pass the rich-results eligibility filter (SEO-Sprint2 P6.6)
+    const longAnswer = 'Esta é uma resposta completa sobre licitações públicas que fornece informações detalhadas e contextualizadas para o usuário. O processo de licitação pública no Brasil é regido pela Lei 14.133/2021 e envolve diversas modalidades como pregão eletrônico, concorrência e dispensa. Empresas que desejam participar devem estar regularizadas e com documentação em dia.';
     const faqs = [
-      { question: 'Test Q?', answer: 'Test A.' },
-      { question: 'Test Q2?', answer: 'Test A2.' },
+      { question: 'Test Q?', answer: longAnswer },
+      { question: 'Test Q2?', answer: longAnswer },
     ];
 
     const { container } = render(

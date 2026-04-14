@@ -96,6 +96,10 @@ export default async function SectorPage({
 
   const stats = await fetchSectorStats(setor);
   const faqs = getSectorFaqs(sector.id);
+  // SEO-Sprint2 P6.6: filter FAQ answers shorter than 300 chars (rich-results eligibility)
+  const eligibleFaqs = faqs.filter(
+    (f) => f.answer.replace(/<[^>]*>/g, "").length >= 300
+  );
   const relatedSectors = getRelatedSectors(setor);
 
   return (
@@ -289,6 +293,32 @@ export default async function SectorPage({
         </div>
       </section>
 
+      {/* SEO-Sprint2 P7.1: Top estados por volume — hub de distribuição de PageRank */}
+      {stats?.top_ufs && stats.top_ufs.length > 0 && (
+        <section className="max-w-5xl mx-auto py-8 px-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            Estados com mais licitações de {sector.name}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {stats.top_ufs.slice(0, 5).map((item: { name: string; count: number }) => (
+              <Link
+                key={item.name}
+                href={`/blog/licitacoes/${setor}/${item.name.toLowerCase()}`}
+                className="p-4 rounded-xl border border-brand-blue/30 bg-brand-blue/5
+                           hover:border-brand-blue hover:bg-brand-blue/10 transition-all text-center"
+              >
+                <span className="block font-bold text-lg text-brand-navy dark:text-white uppercase">
+                  {item.name}
+                </span>
+                <span className="block text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {item.count.toLocaleString("pt-BR")} licitações
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* SEO-PLAYBOOK Fundação §5: Todos os 27 UFs agrupados por região + Calculator link */}
       <section className="max-w-5xl mx-auto py-12 px-4">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
@@ -407,15 +437,15 @@ export default async function SectorPage({
         }}
       />
 
-      {/* FAQ JSON-LD for rich snippets */}
-      {faqs.length > 0 && (
+      {/* FAQ JSON-LD for rich snippets — SEO-Sprint2 P6.6: only answers >= 300 chars */}
+      {eligibleFaqs.length > 0 && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "FAQPage",
-              mainEntity: faqs.map((faq) => ({
+              mainEntity: eligibleFaqs.map((faq) => ({
                 "@type": "Question",
                 name: faq.question,
                 acceptedAnswer: {

@@ -267,7 +267,7 @@ export default async function ContratosSetorUfPage({ params }: Props) {
                             {data.top_orgaos.map((o) => (
                               <tr key={o.cnpj} className="hover:bg-gray-50">
                                 <td className="px-4 py-2">
-                                  <Link href={`/orgaos/${o.cnpj}`} className="text-blue-600 hover:underline">
+                                  <Link href={`/contratos/orgao/${o.cnpj}`} className="text-blue-600 hover:underline">
                                     {o.nome}
                                   </Link>
                                 </td>

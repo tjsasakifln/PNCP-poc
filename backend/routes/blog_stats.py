@@ -98,9 +98,17 @@ class TopEntry(BaseModel):
 class SampleItem(BaseModel):
     titulo: str
     orgao: str
+    orgao_cnpj: Optional[str] = None
     valor: Optional[float] = None
     uf: str
     data: str
+
+
+class TopComprador(BaseModel):
+    nome: str
+    cnpj: str
+    total_contratos: int
+    valor_total: float
 
 
 class TrendPoint(BaseModel):
@@ -135,6 +143,9 @@ class SectorUfStats(BaseModel):
     top_oportunidades: list[SampleItem]
     last_updated: str
     most_recent_bid_date: Optional[str] = None
+    municipios_ativos: int = 0
+    vs_media_nacional_pct: Optional[float] = None
+    top_compradores: list[TopComprador] = []
 
 
 class CidadeStats(BaseModel):
@@ -393,6 +404,7 @@ def _make_sample_item(item: dict) -> dict:
     return {
         "titulo": titulo,
         "orgao": _extract_orgao(item),
+        "orgao_cnpj": item.get("orgaoCnpj") or None,
         "valor": _extract_value(item),
         "uf": _extract_uf(item),
         "data": _extract_date(item),
@@ -534,6 +546,35 @@ async def get_sector_uf_stats(setor_id: str, uf: str):
     dates = [_extract_date(item) for item in uf_results if _extract_date(item)]
     most_recent_bid_date = max(dates) if dates else None
 
+    # SEO-Sprint2 P5/P7: municípios ativos, comparação nacional, top compradores
+    municipios_ativos = len(set(
+        item.get("municipio", "").strip()
+        for item in uf_results
+        if item.get("municipio", "").strip()
+    ))
+
+    national_cached = _cache_get(f"setor:{sector.id}")
+    if national_cached and national_cached.get("avg_value", 0) > 0 and avg_val > 0:
+        nat_avg = float(national_cached["avg_value"])
+        vs_media_nacional_pct: Optional[float] = round((avg_val - nat_avg) / nat_avg * 100, 1)
+    else:
+        vs_media_nacional_pct = None
+
+    from collections import defaultdict
+    comprador_acc: dict[str, dict] = defaultdict(lambda: {"nome": "", "total_contratos": 0, "valor_total": 0.0})
+    for item in uf_results:
+        cnpj = item.get("orgaoCnpj") or ""
+        if not cnpj:
+            continue
+        comprador_acc[cnpj]["nome"] = item.get("nomeOrgao") or _extract_orgao(item)
+        comprador_acc[cnpj]["total_contratos"] += 1
+        comprador_acc[cnpj]["valor_total"] += _extract_value(item) or 0.0
+    top_compradores = sorted(
+        [{"cnpj": c, **v} for c, v in comprador_acc.items()],
+        key=lambda x: x["valor_total"],
+        reverse=True,
+    )[:3]
+
     data = {
         "sector_id": sector.id,
         "sector_name": sector.name,
@@ -547,6 +588,9 @@ async def get_sector_uf_stats(setor_id: str, uf: str):
         "top_oportunidades": top_items,
         "last_updated": now.isoformat(),
         "most_recent_bid_date": most_recent_bid_date,
+        "municipios_ativos": municipios_ativos,
+        "vs_media_nacional_pct": vs_media_nacional_pct,
+        "top_compradores": top_compradores,
     }
     _cache_set(cache_key, data)
     return SectorUfStats(**data)

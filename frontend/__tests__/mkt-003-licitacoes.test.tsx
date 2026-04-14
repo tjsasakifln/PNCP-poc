@@ -826,10 +826,12 @@ describe('MKT-003 — SchemaMarkup component (unit)', () => {
   });
 
   it('FAQ schema generated when faqs provided', () => {
+    // Answers must be >= 300 chars to pass the rich-results eligibility filter (SEO-Sprint2 P6.6)
+    const longAnswer = 'Esta é uma resposta completa sobre licitações públicas que fornece informações detalhadas e contextualizadas para o usuário. O processo de licitação pública no Brasil é regido pela Lei 14.133/2021 e envolve diversas modalidades como pregão eletrônico, concorrência e dispensa. Empresas que desejam participar devem estar regularizadas e com documentação em dia.';
     const faqs = [
-      { question: 'Q1?', answer: 'A1.' },
-      { question: 'Q2?', answer: 'A2.' },
-      { question: 'Q3?', answer: 'A3.' },
+      { question: 'Q1?', answer: longAnswer },
+      { question: 'Q2?', answer: longAnswer },
+      { question: 'Q3?', answer: longAnswer },
     ];
 
     const { container } = render(
@@ -857,7 +859,7 @@ describe('MKT-003 — SchemaMarkup component (unit)', () => {
     const parsed = JSON.parse(faqScript!.textContent || '');
     expect(parsed.mainEntity).toHaveLength(3);
     expect(parsed.mainEntity[0].name).toBe('Q1?');
-    expect(parsed.mainEntity[0].acceptedAnswer.text).toBe('A1.');
+    expect(parsed.mainEntity[0].acceptedAnswer.text).toContain('licitações públicas');
   });
 
   it('pageType="sector-uf" emits Article, BreadcrumbList, FAQPage, Dataset schemas', () => {
@@ -871,7 +873,7 @@ describe('MKT-003 — SchemaMarkup component (unit)', () => {
         uf="SP"
         totalEditais={10}
         breadcrumbs={[{ name: 'SmartLic', url: 'https://smartlic.tech' }]}
-        faqs={[{ question: 'Q?', answer: 'A.' }]}
+        faqs={[{ question: 'Q?', answer: 'Esta é uma resposta completa sobre licitações públicas que fornece informações detalhadas e contextualizadas para o usuário. O processo de licitação pública no Brasil é regido pela Lei 14.133/2021 e envolve diversas modalidades como pregão eletrônico, concorrência e dispensa. Empresas que desejam participar devem estar regularizadas e com documentação em dia.' }]}
         dataPoints={[{ name: 'Total', value: 10 }]}
       />,
     );

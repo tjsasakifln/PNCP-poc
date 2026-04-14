@@ -121,6 +121,24 @@ export default async function ItemCatmatPage({ params }: Props) {
   // Gráfico de barras proporcional para P10/P50/P90
   const maxValor = profile.valor_p90 ?? profile.valor_medio ?? 1;
 
+  // SEO-Sprint2 P6.5: only emit AggregateOffer when prices are non-null
+  const aggregateOffer =
+    profile.valor_p10 != null && profile.valor_p90 != null
+      ? {
+          '@type': 'AggregateOffer',
+          priceCurrency: 'BRL',
+          lowPrice: profile.valor_p10,
+          highPrice: profile.valor_p90,
+          ...(profile.valor_p50 != null ? { price: profile.valor_p50 } : {}),
+          offerCount: profile.total_contratos,
+        }
+      : undefined;
+
+  // SEO-Sprint2 P6.6: filter FAQ answers shorter than 300 chars
+  const eligibleFaqsItens = (profile.faq_items ?? []).filter(
+    (f: { question: string; answer: string }) => f.answer.replace(/<[^>]*>/g, '').length >= 300
+  );
+
   const jsonLd = [
     {
       '@context': 'https://schema.org',
@@ -128,14 +146,7 @@ export default async function ItemCatmatPage({ params }: Props) {
       name: profile.nome_item,
       description: `${profile.nome_item} — código CATMAT ${catmat}`,
       category: profile.categoria,
-      offers: {
-        '@type': 'AggregateOffer',
-        priceCurrency: 'BRL',
-        lowPrice: profile.valor_p10,
-        highPrice: profile.valor_p90,
-        price: profile.valor_p50,
-        offerCount: profile.total_contratos,
-      },
+      ...(aggregateOffer ? { offers: aggregateOffer } : {}),
     },
     {
       '@context': 'https://schema.org',
@@ -147,15 +158,19 @@ export default async function ItemCatmatPage({ params }: Props) {
         item: `https://smartlic.tech${b.url}`,
       })),
     },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: profile.faq_items.map((f) => ({
-        '@type': 'Question',
-        name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.answer },
-      })),
-    },
+    ...(eligibleFaqsItens.length > 0
+      ? [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: eligibleFaqsItens.map((f: { question: string; answer: string }) => ({
+              '@type': 'Question',
+              name: f.question,
+              acceptedAnswer: { '@type': 'Answer', text: f.answer },
+            })),
+          },
+        ]
+      : []),
   ];
 
   return (

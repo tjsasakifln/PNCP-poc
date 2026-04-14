@@ -228,9 +228,11 @@ describe('MKT-004 — generateSectorParams() for panorama', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe('MKT-004 — SchemaMarkup panorama', () => {
+  // Answers must be >= 300 chars to pass the rich-results eligibility filter (SEO-Sprint2 P6.6)
+  const longAnswer = 'Esta é uma resposta completa sobre licitações públicas que fornece informações detalhadas e contextualizadas para o usuário. O processo de licitação pública no Brasil é regido pela Lei 14.133/2021 e envolve diversas modalidades como pregão eletrônico, concorrência e dispensa. Empresas que desejam participar devem estar regularizadas e com documentação em dia.';
   const faqs = [
-    { question: 'Q1?', answer: 'A1' },
-    { question: 'Q2?', answer: 'A2' },
+    { question: 'Q1?', answer: longAnswer },
+    { question: 'Q2?', answer: longAnswer },
   ];
 
   it('renders JSON-LD script tags for panorama page type', () => {

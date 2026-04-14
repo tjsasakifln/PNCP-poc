@@ -119,13 +119,19 @@ export default async function MunicipioSlugPage({ params }: Props) {
     { name: `${profile.nome}-${profile.uf}`, url: `/municipios/${slug}` },
   ];
 
+  // SEO-Sprint2 P6.6: filter FAQ answers shorter than 300 chars
+  const eligibleFaqsMunicipios = (profile.faq_items ?? []).filter(
+    (f: { question: string; answer: string }) => f.answer.replace(/<[^>]*>/g, '').length >= 300
+  );
+
   const jsonLd = [
     {
+      // SEO-Sprint2 P6.4: AdministrativeArea (was City) with containedInPlace hierarchy
       '@context': 'https://schema.org',
-      '@type': 'City',
-      name: profile.nome,
+      '@type': 'AdministrativeArea',
+      name: `${profile.nome} — ${profile.uf}`,
       containedInPlace: {
-        '@type': 'State',
+        '@type': 'AdministrativeArea',
         name: profile.uf,
         containedInPlace: { '@type': 'Country', name: 'Brasil' },
       },
@@ -155,15 +161,19 @@ export default async function MunicipioSlugPage({ params }: Props) {
         item: `https://smartlic.tech${b.url}`,
       })),
     },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: profile.faq_items.map((f) => ({
-        '@type': 'Question',
-        name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.answer },
-      })),
-    },
+    ...(eligibleFaqsMunicipios.length > 0
+      ? [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: eligibleFaqsMunicipios.map((f: { question: string; answer: string }) => ({
+              '@type': 'Question',
+              name: f.question,
+              acceptedAnswer: { '@type': 'Answer', text: f.answer },
+            })),
+          },
+        ]
+      : []),
   ];
 
   return (

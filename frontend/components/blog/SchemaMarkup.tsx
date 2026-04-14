@@ -32,6 +32,12 @@ interface DatasetItem {
   value: string | number;
 }
 
+interface TopOportunidade {
+  titulo: string;
+  orgao: string;
+  valor?: number | null;
+}
+
 export interface SchemaMarkupProps {
   pageType: SchemaPageType;
   title: string;
@@ -44,9 +50,11 @@ export interface SchemaMarkupProps {
   dataPoints?: DatasetItem[];
   sectorName?: string;
   uf?: string;
+  ufName?: string;
   cidade?: string;
   totalEditais?: number;
   avgValue?: number;
+  topOportunidades?: TopOportunidade[];
 }
 
 function buildArticleSchema(props: SchemaMarkupProps) {
@@ -89,12 +97,23 @@ function buildArticleSchema(props: SchemaMarkupProps) {
   return base;
 }
 
+// SEO-Sprint2 P6.6: Filter FAQ answers shorter than 300 chars (not eligible for rich results)
+const MIN_FAQ_ANSWER_LENGTH = 300;
+
+function stripHtml(text: string): string {
+  return text.replace(/<[^>]*>/g, '');
+}
+
 function buildFAQSchema(faqs: FAQ[]) {
   if (!faqs || faqs.length === 0) return null;
+  const eligible = faqs.filter(
+    (faq) => stripHtml(faq.answer).length >= MIN_FAQ_ANSWER_LENGTH
+  );
+  if (eligible.length === 0) return null;
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: faqs.map((faq) => ({
+    mainEntity: eligible.map((faq) => ({
       '@type': 'Question',
       name: faq.question,
       acceptedAnswer: {
@@ -216,6 +235,31 @@ function buildLocalBusinessSchema(props: SchemaMarkupProps) {
   };
 }
 
+// SEO-Sprint2 P6.2: GovernmentService schema for sector×UF pages
+function buildGovernmentServiceSchema(props: SchemaMarkupProps) {
+  if (props.pageType !== 'sector-uf') return null;
+  if (!props.sectorName || !props.uf) return null;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'GovernmentService',
+    name: `Licitações Públicas de ${props.sectorName} — ${props.uf}`,
+    description: `Editais e licitações públicas do setor de ${props.sectorName} no estado de ${props.ufName || props.uf}`,
+    serviceType: 'Procurement',
+    provider: {
+      '@type': 'GovernmentOrganization',
+      name: 'Governo Brasileiro',
+      url: 'https://www.gov.br',
+    },
+    areaServed: {
+      '@type': 'AdministrativeArea',
+      name: props.ufName || props.uf,
+    },
+    url: props.url,
+  };
+}
+
+// SEO-Sprint2 P6.1: ItemList with real bid items (not just a static hub entry)
 function buildItemListSchema(props: SchemaMarkupProps) {
   if (
     props.pageType !== 'sector-uf' &&
@@ -225,6 +269,13 @@ function buildItemListSchema(props: SchemaMarkupProps) {
   )
     return null;
   if (!props.totalEditais || props.totalEditais === 0) return null;
+
+  const topItems = (props.topOportunidades ?? []).slice(0, 5).map((item, idx) => ({
+    '@type': 'ListItem',
+    position: idx + 2,
+    name: item.titulo,
+    description: `${item.orgao}${item.valor ? ` — R$ ${item.valor.toLocaleString('pt-BR')}` : ''}`,
+  }));
 
   return {
     '@context': 'https://schema.org',
@@ -239,6 +290,7 @@ function buildItemListSchema(props: SchemaMarkupProps) {
         name: `${props.totalEditais} licitações abertas`,
         url: props.url,
       },
+      ...topItems,
     ],
   };
 }
@@ -274,6 +326,10 @@ function getSchemas(props: SchemaMarkupProps): object[] {
   // LocalBusiness — city pages
   const localBiz = buildLocalBusinessSchema(props);
   if (localBiz) schemas.push(localBiz);
+
+  // GovernmentService — sector×UF pages (SEO-Sprint2 P6.2)
+  const govService = buildGovernmentServiceSchema(props);
+  if (govService) schemas.push(govService);
 
   // ItemList — sector×UF and city pages
   const itemList = buildItemListSchema(props);
