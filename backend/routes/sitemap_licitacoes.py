@@ -190,8 +190,9 @@ async def _compute_bids_combos(threshold: int) -> list[dict]:
 async def _compute_contracts_combos(threshold: int) -> list[dict]:
     """Consulta pncp_supplier_contracts via RPC count_contracts_by_setor_uf.
 
-    15 setores em paralelo (AC4). Dentro de cada setor, 27 UFs em paralelo.
-    Usa asyncio.to_thread para não bloquear o event loop com chamadas supabase-py síncronas.
+    15 setores × 27 UFs = 405 RPCs disparadas com Semaphore(10) para limitar
+    concorrência ao banco. Sem throttle, 405 conexões simultâneas travam o
+    event loop e causam timeout em todos os outros endpoints.
     """
     try:
         from supabase_client import get_supabase
@@ -206,26 +207,31 @@ async def _compute_contracts_combos(threshold: int) -> list[dict]:
         logger.warning("sitemap_licitacoes: falha ao obter supabase client: %s", e)
         return []
 
+    # Limite de concorrência: evita disparar 405 RPCs simultâneas ao Supabase,
+    # o que travava o event loop (528s por tick observado em prod).
+    _sem = asyncio.Semaphore(10)
+
     async def count_contracts(setor_id: str, keywords: list[str], uf: str) -> tuple[str, str, int]:
         """Chama RPC count_contracts_by_setor_uf para um par (setor, uf)."""
-        try:
-            resp = await asyncio.to_thread(
-                lambda: sb.rpc(
-                    "count_contracts_by_setor_uf",
-                    {"p_keywords": keywords, "p_uf": uf},
-                ).execute()
-            )
-            count = resp.data if isinstance(resp.data, int) else 0
-            return setor_id, uf, count
-        except Exception as e:
-            logger.debug(
-                "sitemap_licitacoes: contracts RPC falhou setor=%s uf=%s: %s",
-                setor_id, uf, e,
-            )
-            return setor_id, uf, 0
+        async with _sem:
+            try:
+                resp = await asyncio.to_thread(
+                    lambda: sb.rpc(
+                        "count_contracts_by_setor_uf",
+                        {"p_keywords": keywords, "p_uf": uf},
+                    ).execute()
+                )
+                count = resp.data if isinstance(resp.data, int) else 0
+                return setor_id, uf, count
+            except Exception as e:
+                logger.debug(
+                    "sitemap_licitacoes: contracts RPC falhou setor=%s uf=%s: %s",
+                    setor_id, uf, e,
+                )
+                return setor_id, uf, 0
 
     async def query_sector_contracts(setor_id: str, sector) -> list[dict]:
-        """Consulta todos as UFs para um setor em paralelo."""
+        """Consulta todos as UFs para um setor em paralelo (throttled pelo semaphore global)."""
         keywords = list(sector.keywords)[:20]
         uf_tasks = [count_contracts(setor_id, keywords, uf) for uf in _ALL_UFS]
         results = await asyncio.gather(*uf_tasks, return_exceptions=True)
