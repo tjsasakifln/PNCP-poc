@@ -239,7 +239,6 @@ export default function PdfOptionsModal({
                   </legend>
                   <div className="flex gap-2" role="group" aria-label="Selecione o número de oportunidades">
                     {ITEM_OPTIONS.map((option) => {
-                      const disabled = totalResults < option;
                       const isSelected = maxItems === option;
                       return (
                         <label
@@ -247,21 +246,20 @@ export default function PdfOptionsModal({
                           className={[
                             "flex-1 flex items-center justify-center px-3 py-2.5 rounded-button border cursor-pointer",
                             "text-sm font-medium transition-colors select-none",
-                            disabled
+                            isGenerating
                               ? "border-DEFAULT text-ink-muted opacity-40 cursor-not-allowed"
                               : isSelected
                               ? "border-brand-navy bg-brand-navy text-white"
                               : "border-DEFAULT text-ink bg-surface-0 hover:bg-surface-1",
                           ].join(" ")}
-                          aria-disabled={disabled}
                         >
                           <input
                             type="radio"
                             name="pdf-max-items"
                             value={option}
                             checked={isSelected}
-                            disabled={disabled || isGenerating}
-                            onChange={() => !disabled && setMaxItems(option)}
+                            disabled={isGenerating}
+                            onChange={() => setMaxItems(option)}
                             className="sr-only"
                             aria-label={`${option} oportunidades`}
                           />
@@ -271,7 +269,7 @@ export default function PdfOptionsModal({
                     })}
                   </div>
                   <p className="mt-1.5 text-xs text-ink-muted">
-                    Opções com mais itens do que os resultados disponíveis estão desabilitadas.
+                    O relatório incluirá até o número selecionado de oportunidades.
                   </p>
                 </fieldset>
               </div>

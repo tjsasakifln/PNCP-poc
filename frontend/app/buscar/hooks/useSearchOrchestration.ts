@@ -267,8 +267,18 @@ export function useSearchOrchestration() {
   useNavigationGuard({ isLoading: search.loading });
 
   // ── PDF ─────────────────────────────────────────────────────────────
+  // searchId é zerado após o search completar. Preservamos o último valor
+  // não-nulo para que handleGeneratePdf funcione após a busca terminar.
+  const lastSearchIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (search.searchId) {
+      lastSearchIdRef.current = search.searchId;
+    }
+  }, [search.searchId]);
+
   const handleGeneratePdf = useCallback(async (options: { clientName: string; maxItems: number }) => {
-    if (!session?.access_token || !search.searchId) return;
+    const effectiveSearchId = search.searchId ?? lastSearchIdRef.current;
+    if (!session?.access_token || !effectiveSearchId) return;
     uiState.setPdfLoading(true);
     uiState.setPdfModalOpen(false);
     try {
@@ -279,7 +289,7 @@ export function useSearchOrchestration() {
           "Authorization": `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          search_id: search.searchId,
+          search_id: effectiveSearchId,
           client_name: options.clientName || null,
           max_items: options.maxItems,
         }),
