@@ -56,7 +56,8 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
       {...listeners}
       data-tour="pipeline-card"
       aria-roledescription="item de pipeline"
-      className={`bg-[var(--surface-0)] rounded-lg border border-[var(--border-strong)] border-l-4 ${urgencyClass} p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all hover:scale-[1.02] ${
+      aria-label={`Card ${item.objeto.slice(0, 60)}${item.uf ? ` — ${item.uf}` : ""}`}
+      className={`bg-[var(--surface-0)] rounded-lg border border-[var(--border-strong)] border-l-4 ${urgencyClass} p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-1)] ${
         isDragging || isSortableDragging ? "opacity-50 shadow-lg ring-2 ring-brand-blue" : ""
       }`}
     >
@@ -116,7 +117,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
                 onUpdateNotes?.(notesValue);
                 setEditingNotes(false);
               }}
-              className="text-[10px] px-2 py-0.5 rounded bg-brand-blue text-white hover:bg-brand-blue/90"
+              className="text-[10px] px-2 py-0.5 rounded bg-brand-blue text-white hover:bg-brand-blue/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1"
             >
               Salvar
             </button>
@@ -125,7 +126,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
                 setNotesValue(item.notes || "");
                 setEditingNotes(false);
               }}
-              className="text-[10px] px-2 py-0.5 rounded text-[var(--text-secondary)] hover:bg-[var(--surface-1)]"
+              className="text-[10px] px-2 py-0.5 rounded text-[var(--text-secondary)] hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1"
             >
               Cancelar
             </button>
@@ -149,7 +150,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
               href={item.link_pncp}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] text-brand-blue hover:underline"
+              className="text-[10px] text-brand-blue hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 rounded-sm"
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
             >
@@ -159,7 +160,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
           <button
             onClick={(e) => { e.stopPropagation(); setEditingNotes(true); }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 rounded-sm px-0.5"
           >
             {item.notes ? "Editar nota" : "Anotar"}
           </button>
@@ -168,7 +169,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
           <button
             onClick={(e) => { e.stopPropagation(); onRemove(); }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="text-[10px] text-red-500 hover:text-red-700"
+            className="text-[10px] text-red-500 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 rounded-sm px-0.5"
           >
             Remover
           </button>

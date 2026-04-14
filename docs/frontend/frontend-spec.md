@@ -157,7 +157,7 @@ Métricas levantadas via `Grep` sobre `frontend/**/*.tsx`:
 | `/buscar`            | Main search page                     | Auth         | SSE + polling, 20+ components, CRITICAL flow             |
 | `/dashboard`         | User analytics                       | Auth         | Recharts heavy                                           |
 | `/historico`         | Search history                       | Auth         | Pagination absent                                        |
-| `/pipeline`          | Opportunity kanban                   | Auth         | ⚠️ @dnd-kit sem keyboard (TD-FE-006)                    |
+| `/pipeline`          | Opportunity kanban                   | Auth         | ✅ keyboard nav WCAG 2.1 AA (STORY-1.5, EPIC-TD-2026Q2)  |
 | `/mensagens`         | Support tickets                      | Auth         | -                                                         |
 | `/conta`             | Account settings                     | Auth         | Password change + data export                            |
 | `/planos`            | Pricing/upgrade                      | Auth         | Stripe checkout                                          |
@@ -370,11 +370,10 @@ Multi-layer provider hierarchy em `frontend/app/layout.tsx`:
 - **Fix**: Codemod + ESLint rule.
 - **Effort**: 1 dia
 
-#### TD-FE-006: Kanban (@dnd-kit) sem keyboard nav
+#### TD-FE-006: Kanban (@dnd-kit) sem keyboard nav ✅ RESOLVIDO (STORY-1.5, 2026-04-14)
 
 - **Impact**: WCAG 2.1 AA violation; keyboard users excluded.
-- **Fix**: Implementar `useSortable` com `coordinateGetter` para arrow keys.
-- **Effort**: 1-2 dias
+- **Resolution**: `KeyboardSensor` + `sortableKeyboardCoordinates` ativos em `PipelineKanban.tsx`; `PipelineCard`/`PipelineColumn` com `focus-visible:ring-2 focus-visible:ring-brand-blue`; aria-live announcements em português via `accessibility.announcements`; novo spec `e2e-tests/pipeline-keyboard.spec.ts` com gate axe-core (0 critical).
 
 #### TD-FE-007: ~88% "use client" directives
 

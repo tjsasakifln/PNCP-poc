@@ -19,6 +19,8 @@ export function PipelineColumn({ stage, items, onRemove, onUpdateNotes }: Pipeli
   return (
     <div
       ref={setNodeRef}
+      role="group"
+      aria-labelledby={`pipeline-column-heading-${stage}`}
       className={`flex-shrink-0 w-72 flex flex-col rounded-xl transition-colors ${
         isOver
           ? "bg-brand-blue/10 ring-2 ring-brand-blue/30"
@@ -29,10 +31,20 @@ export function PipelineColumn({ stage, items, onRemove, onUpdateNotes }: Pipeli
       <div className="p-3 border-b border-[var(--border-strong)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg">{config.icon}</span>
-            <h3 className="font-semibold text-sm text-[var(--text-primary)]">{config.label}</h3>
+            <span className="text-lg" aria-hidden="true">
+              {config.icon}
+            </span>
+            <h3
+              id={`pipeline-column-heading-${stage}`}
+              className="font-semibold text-sm text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-1 rounded-sm"
+            >
+              {config.label}
+            </h3>
           </div>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${config.color}`}>
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${config.color}`}
+            aria-label={`${items.length} itens nesta etapa`}
+          >
             {items.length}
           </span>
         </div>
