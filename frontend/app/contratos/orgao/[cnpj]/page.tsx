@@ -42,7 +42,7 @@ interface OrgaoContratosStats {
   aviso_legal: string;
 }
 
-export const revalidate = 86400; // 24h ISR
+export const revalidate = 14400; // 4h ISR (reduzido de 24h para melhorar freshness)
 
 export function generateStaticParams() {
   return []; // SSR on-demand
@@ -51,7 +51,7 @@ export function generateStaticParams() {
 async function fetchOrgaoContratosStats(cnpj: string): Promise<OrgaoContratosStats | null> {
   try {
     const resp = await fetch(`${BACKEND_URL}/v1/contratos/orgao/${cnpj}/stats`, {
-      next: { revalidate: 86400 },
+      next: { revalidate: 14400 },
     });
     if (!resp.ok) return null;
     return resp.json();

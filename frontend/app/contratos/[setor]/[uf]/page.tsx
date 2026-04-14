@@ -14,7 +14,7 @@ import { buildCanonical, getFreshnessLabel } from '@/lib/seo';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
 
-export const revalidate = 86400; // 24h ISR — AC11
+export const revalidate = 14400; // 4h ISR (reduzido de 24h para melhorar freshness dos dados)
 
 export function generateStaticParams() {
   return generateSectorUfParams();
@@ -41,7 +41,7 @@ async function fetchContratosStats(setor: string, uf: string): Promise<Contratos
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
   try {
     const res = await fetch(`${backendUrl}/v1/contratos/${setor}/${uf}/stats`, {
-      next: { revalidate: 86400 },
+      next: { revalidate: 14400 },
     });
     if (!res.ok) return null;
     return await res.json();
