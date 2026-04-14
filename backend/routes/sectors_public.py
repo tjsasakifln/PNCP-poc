@@ -14,13 +14,26 @@ from collections import Counter
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from sectors import SECTORS, SectorConfig
+from public_rate_limit import rate_limit_public
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["sectors-public"])
+router = APIRouter(
+    tags=["sectors-public"],
+    # STORY-2.10 (EPIC-TD-2026Q2 P0): Rate limit público (60/min por IP).
+    dependencies=[
+        Depends(
+            rate_limit_public(
+                limit_unauth=60,
+                limit_auth=600,
+                endpoint_name="sectors_public",
+            )
+        )
+    ],
+)
 
 # AC2: 6h InMemory cache
 _CACHE_TTL_SECONDS = 6 * 60 * 60

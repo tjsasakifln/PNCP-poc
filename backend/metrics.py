@@ -233,6 +233,25 @@ RATE_LIMIT_EXCEEDED = _create_counter(
     labelnames=["endpoint", "limit_type"],
 )
 
+# STORY-2.10 (EPIC-TD-2026Q2 P0): Public endpoint rate limit hits (429 returned)
+RATE_LIMIT_HITS = _create_counter(
+    "smartlic_rate_limit_hits_total",
+    "Public endpoint rate limit hits (429 returned)",
+    labelnames=["endpoint", "caller_type"],
+)
+
+# STORY-2.11 (EPIC-TD-2026Q2 P0): LLM monthly budget metrics
+LLM_BUDGET_USD_MTD = _create_gauge(
+    "smartlic_llm_budget_usd_mtd",
+    "LLM month-to-date cost in USD (cumulative)",
+)
+
+LLM_BUDGET_REJECTIONS = _create_counter(
+    "smartlic_llm_budget_rejections_total",
+    "LLM calls rejected because monthly budget was exceeded",
+    labelnames=["caller"],
+)
+
 # HARDEN-003 AC3: SSE queue drops (backpressure when client disconnects)
 SSE_QUEUE_DROPS = _create_counter(
     "smartlic_sse_queue_drops_total",

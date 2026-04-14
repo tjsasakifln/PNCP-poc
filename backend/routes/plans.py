@@ -17,10 +17,24 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from database import get_db
+from public_rate_limit import rate_limit_public
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["plans"])
+router = APIRouter(
+    tags=["plans"],
+    # STORY-2.10 (EPIC-TD-2026Q2 P0): Rate limit público (60/min por IP).
+    # GET /v1/api/plans é usado pela landing/pricing sem auth.
+    dependencies=[
+        Depends(
+            rate_limit_public(
+                limit_unauth=60,
+                limit_auth=600,
+                endpoint_name="plans_public",
+            )
+        )
+    ],
+)
 
 
 class PlanDetails(BaseModel):

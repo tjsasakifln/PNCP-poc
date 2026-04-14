@@ -9,12 +9,26 @@ import time
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from public_rate_limit import rate_limit_public
+
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["stats_public"])
+router = APIRouter(
+    tags=["stats_public"],
+    # STORY-2.10 (EPIC-TD-2026Q2 P0): Rate limit público (60/min por IP).
+    dependencies=[
+        Depends(
+            rate_limit_public(
+                limit_unauth=60,
+                limit_auth=600,
+                endpoint_name="stats_public",
+            )
+        )
+    ],
+)
 
 _CACHE_TTL_SECONDS = 6 * 60 * 60  # 6h
 _stats_cache: dict[str, tuple[dict, float]] = {}
