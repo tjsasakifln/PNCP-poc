@@ -4,13 +4,23 @@ Responsibilities:
 - Extract and normalise all required fields from nested PNCP response dicts
 - Compute a content_hash for change-detection (avoids redundant DB writes)
 - Skip malformed items gracefully (log warning, continue batch)
+- STORY-2.12 AC4: defensive fallback for NULL/empty dataPublicacaoPncp so
+  newly-ingested rows are always searchable (pairs with the DB-side
+  COALESCE wrapper in 20260414133000_search_datalake_coalesce_dates.sql).
 """
 
 import hashlib
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+# STORY-2.12 AC4: conservative fallback — one day before "now" so the row is
+# visible in the default 10-day search window but not masquerading as fresh.
+def _date_fallback_iso() -> str:
+    return (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
 
 
 # ---------------------------------------------------------------------------
@@ -110,8 +120,20 @@ def transform_pncp_item(
     # ------------------------------------------------------------------
     # Dates (keep as ISO strings; DB will cast to timestamptz)
     # ------------------------------------------------------------------
+    # STORY-2.12 AC4: forward-looking defensive fallback. If PNCP ever
+    # returns an empty/NULL dataPublicacaoPncp again, we substitute a safe
+    # default so the row still gets indexed and searchable. data_abertura
+    # then mirrors data_publicacao (when missing) because "when does this
+    # bid open for proposals?" practically defaults to "today" for the
+    # consumer-facing timeline.
     data_publicacao = raw_item.get("dataPublicacaoPncp")
-    data_abertura = raw_item.get("dataAberturaProposta")
+    if not data_publicacao:
+        data_publicacao = _date_fallback_iso()
+        logger.warning(
+            "transform_pncp_item: dataPublicacaoPncp missing for pncp_id=%s — applied STORY-2.12 fallback",
+            pncp_id,
+        )
+    data_abertura = raw_item.get("dataAberturaProposta") or data_publicacao
     data_encerramento = raw_item.get("dataEncerramentoProposta")
 
     # ------------------------------------------------------------------

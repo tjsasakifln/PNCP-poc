@@ -11,10 +11,25 @@ logged but never block the upsert (graceful degradation).
 
 import json
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from supabase_client import get_supabase
 from ingestion.config import INGESTION_UPSERT_BATCH_SIZE
+
+
+def _apply_date_fallbacks(records: list[dict]) -> list[dict]:
+    """STORY-2.12 AC4: ensure data_publicacao/data_abertura are never NULL.
+
+    Caller-supplied lists are mutated in place and returned for chaining.
+    """
+    fallback = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    for r in records:
+        if not r.get("data_publicacao"):
+            r["data_publicacao"] = fallback
+        if not r.get("data_abertura"):
+            r["data_abertura"] = r["data_publicacao"]
+    return records
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +66,19 @@ async def bulk_upsert(
     if not records:
         logger.debug("bulk_upsert: no records to upsert")
         return {"inserted": 0, "updated": 0, "unchanged": 0, "total": 0, "batches": 0}
+
+    # STORY-2.12 AC4: defence-in-depth. The transformer already applies a
+    # fallback, but re-assert the invariant here so a hand-written caller
+    # that bypassed transform_pncp_item cannot insert NULL data_publicacao.
+    _null_pub = sum(1 for r in records if not r.get("data_publicacao"))
+    if _null_pub:
+        logger.warning(
+            "bulk_upsert: %d/%d records still had NULL data_publicacao — "
+            "applying loader-level fallback",
+            _null_pub,
+            len(records),
+        )
+        records = _apply_date_fallbacks(records)
 
     # STORY-438: Enrich records with embeddings when enabled
     from config.features import EMBEDDING_ENABLED

@@ -197,14 +197,21 @@ class TestTransformPncpItem:
         assert row["codigo_municipio_ibge"] == ""
 
     def test_missing_optional_dates_are_none(self):
-        """Missing date fields must result in None values, not crash."""
+        """Missing optional date fields must not crash.
+
+        STORY-2.12 AC4 (2026-04-14): data_abertura now falls back to
+        data_publicacao when dataAberturaProposta is absent, so the bid is
+        still indexable. data_encerramento stays None (meaningful: 'open
+        indefinitely' for p_modo='abertas').
+        """
         item = {
             k: v
             for k, v in SAMPLE_PNCP_ITEM.items()
             if k not in ("dataAberturaProposta", "dataEncerramentoProposta")
         }
         row = transform_pncp_item(item)
-        assert row["data_abertura"] is None
+        # STORY-2.12 AC4: data_abertura now defaults to data_publicacao
+        assert row["data_abertura"] == row["data_publicacao"]
         assert row["data_encerramento"] is None
 
     def test_modalidade_falls_back_to_codigo_field(self):
