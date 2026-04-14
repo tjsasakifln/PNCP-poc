@@ -10,7 +10,7 @@
  * avoid accidental regressions in the heavily-watched main file.
  */
 
-import { formatBRL, getUfPrep } from './programmatic';
+import { formatBRL, getUfPrep, SECTOR_SLUG_TO_BACKEND_ID } from './programmatic';
 
 // ---------------------------------------------------------------------------
 // Shared entry types (mirror the backend ContratosSetor* models)
@@ -83,7 +83,7 @@ export async function fetchContratosSetorUfStats(
   if (!backendUrl) return null;
 
   try {
-    const sectorId = sectorSlug.replace(/-/g, '_');
+    const sectorId = SECTOR_SLUG_TO_BACKEND_ID[sectorSlug] ?? sectorSlug.replace(/-/g, '_');
     const res = await fetch(
       `${backendUrl}/v1/blog/stats/contratos/${sectorId}/uf/${uf.toUpperCase()}`,
       { next: { revalidate: 86400 }, signal: AbortSignal.timeout(10000) },
@@ -121,7 +121,7 @@ export async function fetchContratosCidadeSetorStats(
   if (!backendUrl) return null;
 
   try {
-    const sectorId = sectorSlug.replace(/-/g, '_');
+    const sectorId = SECTOR_SLUG_TO_BACKEND_ID[sectorSlug] ?? sectorSlug.replace(/-/g, '_');
     const res = await fetch(
       `${backendUrl}/v1/blog/stats/contratos/cidade/${encodeURIComponent(cidadeSlug)}/setor/${sectorId}`,
       { next: { revalidate: 86400 }, signal: AbortSignal.timeout(10000) },

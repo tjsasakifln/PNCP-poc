@@ -7,6 +7,15 @@
 
 import { SECTORS, type SectorMeta } from './sectors';
 
+// SEO-478: Slugs cujo ID no backend difere do padrão slug.replace(/-/g, '_').
+// Preserva URLs existentes sem quebrar o mapeamento para IDs do backend.
+export const SECTOR_SLUG_TO_BACKEND_ID: Record<string, string> = {
+  software: 'software_desenvolvimento',
+  facilities: 'servicos_prediais',
+  saude: 'medicamentos',
+  transporte: 'transporte_servicos',
+};
+
 // All 27 Brazilian UFs
 export const ALL_UFS = [
   'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
@@ -149,7 +158,7 @@ export async function fetchSectorBlogStats(sectorSlug: string): Promise<SectorBl
   if (!backendUrl) return null;
 
   try {
-    const sectorId = sectorSlug.replace(/-/g, '_');
+    const sectorId = SECTOR_SLUG_TO_BACKEND_ID[sectorSlug] ?? sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/blog/stats/setor/${sectorId}`, {
       next: { revalidate: 86400 },
       signal: AbortSignal.timeout(10000),
@@ -172,7 +181,7 @@ export async function fetchSectorUfBlogStats(
   if (!backendUrl) return null;
 
   try {
-    const sectorId = sectorSlug.replace(/-/g, '_');
+    const sectorId = SECTOR_SLUG_TO_BACKEND_ID[sectorSlug] ?? sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/blog/stats/setor/${sectorId}/uf/${uf.toUpperCase()}`, {
       next: { revalidate: 86400 },
       signal: AbortSignal.timeout(10000),
@@ -192,7 +201,7 @@ export async function fetchPanoramaStats(sectorSlug: string): Promise<PanoramaSt
   if (!backendUrl) return null;
 
   try {
-    const sectorId = sectorSlug.replace(/-/g, '_');
+    const sectorId = SECTOR_SLUG_TO_BACKEND_ID[sectorSlug] ?? sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/blog/stats/panorama/${sectorId}`, {
       next: { revalidate: 86400 },
       signal: AbortSignal.timeout(10000),
@@ -543,7 +552,7 @@ export async function fetchAlertasPublicos(
   if (!backendUrl) return null;
 
   try {
-    const sectorId = sectorSlug.replace(/-/g, '_');
+    const sectorId = SECTOR_SLUG_TO_BACKEND_ID[sectorSlug] ?? sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/alertas/${sectorId}/uf/${uf.toUpperCase()}`, {
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(10000),
@@ -798,7 +807,7 @@ export async function fetchContratosSetorStats(sectorSlug: string): Promise<Cont
   if (!backendUrl) return null;
 
   try {
-    const sectorId = sectorSlug.replace(/-/g, '_');
+    const sectorId = SECTOR_SLUG_TO_BACKEND_ID[sectorSlug] ?? sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/blog/stats/contratos/${sectorId}`, {
       next: { revalidate: 86400 },
       signal: AbortSignal.timeout(10000),
