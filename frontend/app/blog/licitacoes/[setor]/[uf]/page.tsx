@@ -12,6 +12,7 @@ import {
   fetchSectorUfBlogStats,
   getSectorFromSlug,
   formatBRL,
+  formatBRLCompact,
   getRegionalEditorial,
   getUfPrep,
   ALL_UFS,
@@ -293,7 +294,7 @@ export default async function LicitacoesSectorUfPage({
             <p className="text-base sm:text-lg text-ink-secondary max-w-2xl leading-relaxed">
               {stats?.total_editais ?? 0} editais publicados nos últimos 30 dias.
               {stats?.value_range_min && stats?.value_range_max
-                ? ` Faixa de valores: ${formatBRL(stats.value_range_min)} a ${formatBRL(stats.value_range_max)}.`
+                ? ` Faixa de valores: ${formatBRLCompact(stats.value_range_min)} a ${formatBRLCompact(stats.value_range_max)}.`
                 : ''}
             </p>
 
@@ -324,14 +325,14 @@ export default async function LicitacoesSectorUfPage({
             </div>
             <div className="p-4 rounded-lg border border-[var(--border)] text-center">
               <p className="text-sm text-ink-secondary mb-1">Valor Médio</p>
-              <p className="text-2xl font-bold text-ink">{formatBRL(stats?.avg_value ?? 0)}</p>
+              <p className="text-2xl font-bold text-ink">{formatBRLCompact(stats?.avg_value ?? 0)}</p>
             </div>
             <div className="p-4 rounded-lg border border-[var(--border)] text-center">
               <p className="text-sm text-ink-secondary mb-1">Faixa de Valores</p>
               <p className="text-lg font-bold text-ink">
-                {stats?.value_range_min ? formatBRL(stats.value_range_min) : 'R$ 0'}
+                {stats?.value_range_min ? formatBRLCompact(stats.value_range_min) : 'R$ 0'}
                 <span className="text-ink-secondary font-normal text-sm"> a </span>
-                {stats?.value_range_max ? formatBRL(stats.value_range_max) : 'R$ 0'}
+                {stats?.value_range_max ? formatBRLCompact(stats.value_range_max) : 'R$ 0'}
               </p>
             </div>
             <div className="p-4 rounded-lg border border-[var(--border)] text-center">

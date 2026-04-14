@@ -342,9 +342,15 @@ def _extract_text(item: dict) -> str:
     return " ".join(p for p in parts if p)
 
 
+# R$500M cap — valores acima são quase certamente erros de digitação no PNCP.
+# O maior viability_value_range do sistema é R$20M; 500M = 25× esse teto,
+# cobrindo contratos legítimos mas grandes sem deixar outliers destruírem as médias.
+_STATS_VALUE_CAP = 500_000_000
+
+
 def _extract_value(item: dict) -> Optional[float]:
     v = item.get("valorTotalEstimado") or item.get("valorEstimado") or item.get("valor_estimado")
-    if v and isinstance(v, (int, float)) and v > 0:
+    if v and isinstance(v, (int, float)) and 0 < v <= _STATS_VALUE_CAP:
         return float(v)
     return None
 

@@ -224,6 +224,28 @@ export function formatBRL(value: number): string {
 }
 
 /**
+ * Format BRL currency value with compact notation for large amounts.
+ * Use este em cards de stats de blog — NÃO substitui formatBRL nos outros contextos.
+ *   >= R$1B → "R$10,8 bi"
+ *   >= R$1M → "R$1,5 mi"
+ *   < R$1M  → "R$750.000" (comportamento igual ao formatBRL)
+ */
+export function formatBRLCompact(value: number): string {
+  if (value >= 1_000_000_000) {
+    return `R$${(value / 1_000_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} bi`;
+  }
+  if (value >= 1_000_000) {
+    return `R$${(value / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mi`;
+  }
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+/**
  * Generate FAQs for a sector programmatic page.
  * Returns 5 FAQs specific to the sector context.
  */
