@@ -3,22 +3,8 @@
 import { useState } from "react";
 import { PLAN_CONFIGS } from "../../../lib/plans";
 import { toast } from "sonner";
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string | null;
-  company: string | null;
-  plan_type: string;
-  created_at: string;
-  user_subscriptions: Array<{
-    id: string;
-    plan_id: string;
-    credits_remaining: number | null;
-    expires_at: string | null;
-    is_active: boolean;
-  }>;
-}
+// STORY-2.1 (EPIC-TD-2026Q2): Shared admin user shape.
+import type { AdminUserProfile as UserProfile } from "../types";
 
 const PLAN_OPTIONS = Object.keys(PLAN_CONFIGS);
 

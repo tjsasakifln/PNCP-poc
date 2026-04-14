@@ -1,0 +1,133 @@
+# STORY-2.1 (EPIC-TD-2026Q2) — Pydantic → TypeScript type sync gate.
+#
+# Purpose: Prevent schema drift between backend Pydantic models and frontend
+# TypeScript types. On every PR touching backend schemas/routes or the generated
+# file itself, we extract the OpenAPI schema directly from FastAPI, regenerate
+# TypeScript types with openapi-typescript, and fail if the committed
+# `frontend/app/api-types.generated.ts` doesn't match.
+#
+# Local fix when CI fails:
+#   1. Run backend: `cd backend && uvicorn main:app --port 8000`
+#   2. In another shell: `npm --prefix frontend run generate:api-types`
+#   3. `git add frontend/app/api-types.generated.ts && git commit`
+
+name: "API Types Check"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/schemas/**'
+      - 'backend/routes/**'
+      - 'backend/main.py'
+      - 'backend/startup/**'
+      - 'frontend/app/api-types.generated.ts'
+      - 'scripts/generate-api-types.sh'
+      - '.github/workflows/api-types-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/schemas/**'
+      - 'backend/routes/**'
+      - 'backend/main.py'
+      - 'backend/startup/**'
+      - 'frontend/app/api-types.generated.ts'
+      - 'scripts/generate-api-types.sh'
+      - '.github/workflows/api-types-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  api-types-check:
+    name: Verify frontend types match backend OpenAPI schema
+    runs-on: ubuntu-latest
+    # Env stubs mirror .github/workflows/backend-tests.yml so that
+    # `from main import app` succeeds at import time (config.py + Sentry init
+    # read these during app_factory.create_app()).
+    env:
+      SUPABASE_URL: https://test.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+      OPENAI_API_KEY: sk-test-key
+      ENCRYPTION_KEY: bzc732A921Puw9JN4lrzMo1nw0EjlcUdAyR6Z6N7Sqc=
+      ENVIRONMENT: test
+      SENTRY_DSN: ""
+      REDIS_URL: ""
+      LOG_LEVEL: WARNING
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Extract OpenAPI schema from FastAPI (no backend server required)
+        run: |
+          cd backend
+          python -c "
+          import json
+          from main import app
+          app.openapi_schema = None
+          schema = app.openapi()
+          with open('/tmp/openapi.json', 'w') as f:
+              json.dump(schema, f, indent=2, sort_keys=True)
+          print(f'OpenAPI schema extracted: {len(schema.get(\"paths\", {}))} paths, {len(schema.get(\"components\", {}).get(\"schemas\", {}))} schemas')
+          "
+          ls -la /tmp/openapi.json
+
+      - name: Regenerate TypeScript types
+        run: |
+          cd frontend
+          npx openapi-typescript /tmp/openapi.json \
+            --output /tmp/api-types.generated.new.ts
+          echo "Generated /tmp/api-types.generated.new.ts ($(wc -l < /tmp/api-types.generated.new.ts) lines)"
+
+      - name: Diff check — fail if committed types are stale
+        run: |
+          if ! diff -u \
+              frontend/app/api-types.generated.ts \
+              /tmp/api-types.generated.new.ts \
+              > /tmp/diff.out; then
+            echo "::error title=API types drift::frontend/app/api-types.generated.ts is out of sync with backend schemas."
+            echo ""
+            echo "First 100 lines of diff:"
+            head -100 /tmp/diff.out
+            echo ""
+            echo "::group::How to fix"
+            echo "Run locally (with backend running at http://localhost:8000):"
+            echo "  npm --prefix frontend run generate:api-types"
+            echo "Then commit the updated frontend/app/api-types.generated.ts"
+            echo "::endgroup::"
+            exit 1
+          fi
+          echo "✅ frontend/app/api-types.generated.ts is in sync with backend schemas"
+
+      # Defense-in-depth: ensure the frontend still type-checks with the
+      # committed generated file (catches accidental manual edits).
+      - name: TypeScript compile check
+        run: |
+          cd frontend
+          npx tsc --noEmit --pretty
+          echo "✅ frontend/ compiles with committed generated types"

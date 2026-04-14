@@ -1,6 +1,7 @@
 "use client";
 
 import { useUserProfile } from "./useUserProfile";
+import type { components } from "../app/api-types.generated";
 
 /**
  * Plan capabilities from backend PLAN_CAPABILITIES
@@ -15,9 +16,17 @@ export interface PlanCapabilities {
 }
 
 /**
- * User plan information from /api/me endpoint
+ * STORY-2.1 (EPIC-TD-2026Q2): Base on the generated UserProfileResponse so
+ * fields stay in sync with backend/schemas/user.py::UserProfileResponse,
+ * then layer on the billing/dunning fields that the /api/me endpoint
+ * returns (routes/user.py adds dunning_phase, days_since_failure,
+ * subscription_end_date alongside the response_model). Fields are all
+ * optional on the frontend side to tolerate the partial fallback payloads
+ * served from localStorage cache (CRIT-028).
  */
-export interface PlanInfo {
+type UserProfileResponse = components["schemas"]["UserProfileResponse"];
+
+export type PlanInfo = Partial<Omit<UserProfileResponse, "capabilities" | "user_id" | "email" | "plan_id" | "plan_name">> & {
   user_id: string;
   email: string;
   plan_id: string;
@@ -31,7 +40,7 @@ export interface PlanInfo {
   dunning_phase: string;
   days_since_failure: number | null;
   subscription_end_date: string | null;
-}
+};
 
 interface UsePlanReturn {
   planInfo: PlanInfo | null;

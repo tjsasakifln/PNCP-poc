@@ -22,12 +22,12 @@ import { PlanProCard } from "./components/PlanProCard";
 import { PlanConsultoriaCard } from "./components/PlanConsultoriaCard";
 import { PlanFAQ } from "./components/PlanFAQ";
 import { trackViewItem, trackBeginCheckout } from "../components/GoogleAnalytics";
+import type { components } from "../api-types.generated";
 
-interface UserProfile {
-  plan_id?: string;
-  plan_name?: string;
-  is_admin?: boolean;
-}
+// STORY-2.1 (EPIC-TD-2026Q2): Profile shape is a subset of the backend
+// UserProfileResponse schema. Fields we don't consume here stay optional so
+// callers can pass the full response unchanged.
+type UserProfile = Partial<components["schemas"]["UserProfileResponse"]>;
 
 // STORY-360 AC2: Static fallback pricing (source of truth: backend GET /v1/plans -> Stripe)
 const PRICING_FALLBACK: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {

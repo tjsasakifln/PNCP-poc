@@ -3,15 +3,17 @@
 import { useCallback } from "react";
 import useSWR from "swr";
 import { useAuth } from "../app/components/AuthProvider";
-import type { PipelineItem, PipelineStage } from "../app/pipeline/types";
+import type { PipelineItem, PipelineStage, PipelineListResponse } from "../app/pipeline/types";
 import { getUserFriendlyError } from "../lib/error-messages";
 import { FetchError } from "../lib/fetcher";
 import { useAnalytics } from "./useAnalytics";
 
-interface PipelineApiResponse {
-  items: PipelineItem[];
-  total: number;
-}
+// STORY-2.1 (EPIC-TD-2026Q2): Reuse the shared PipelineListResponse shape
+// declared in app/pipeline/types.ts. Backend counterpart is
+// backend/schemas/pipeline.py::PipelineListResponse. After the next
+// regeneration of api-types.generated.ts (CI: api-types-check.yml) this
+// can be swapped for `components["schemas"]["PipelineListResponse"]`.
+type PipelineApiResponse = Pick<PipelineListResponse, "items" | "total">;
 
 /**
  * TD-008 AC6/AC9/AC11/AC12: SWR-based pipeline hook.

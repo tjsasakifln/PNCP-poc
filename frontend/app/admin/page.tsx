@@ -13,27 +13,11 @@ import { AdminSupportSLA } from "./components/AdminSupportSLA";
 import { AdminTrialMetrics } from "./components/AdminTrialMetrics";
 import { AdminUserTable } from "./components/AdminUserTable";
 import { AdminCreateUser } from "./components/AdminCreateUser";
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string | null;
-  company: string | null;
-  plan_type: string;
-  created_at: string;
-  user_subscriptions: Array<{
-    id: string;
-    plan_id: string;
-    credits_remaining: number | null;
-    expires_at: string | null;
-    is_active: boolean;
-  }>;
-}
-
-interface UsersResponse {
-  users: UserProfile[];
-  total: number;
-}
+// STORY-2.1 (EPIC-TD-2026Q2): Share the admin user shape with AdminUserTable.
+import type {
+  AdminUserProfile as UserProfile,
+  AdminUsersResponse as UsersResponse,
+} from "./types";
 
 interface StatusResponse {
   sources: Record<string, {
