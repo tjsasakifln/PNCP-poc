@@ -100,10 +100,24 @@ async def _compute_indexable_combos(bids_threshold: int) -> list[dict]:
     """
     contracts_threshold = int(os.getenv("MIN_CONTRACTS_FOR_INDEX", str(_DEFAULT_CONTRACTS_THRESHOLD)))
 
-    bids_task = _compute_bids_combos(bids_threshold)
-    contracts_task = _compute_contracts_combos(contracts_threshold)
+    # Paralelismo: bids como Task (inicia imediatamente) + contracts com timeout.
+    # Sem timeout, 405 RPCs com ILIKE travam o event loop por >120s.
+    _CONTRACTS_TIMEOUT_S = int(os.getenv("CONTRACTS_COMPUTE_TIMEOUT_S", "60"))
+    bids_task = asyncio.create_task(_compute_bids_combos(bids_threshold))
 
-    bids_combos, contracts_combos = await asyncio.gather(bids_task, contracts_task)
+    try:
+        contracts_combos = await asyncio.wait_for(
+            _compute_contracts_combos(contracts_threshold),
+            timeout=_CONTRACTS_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        logger.warning(
+            "sitemap_licitacoes: _compute_contracts_combos excedeu %ds — retornando vazio",
+            _CONTRACTS_TIMEOUT_S,
+        )
+        contracts_combos = []
+
+    bids_combos = await bids_task
 
     # União dedup: bids têm precedência, contracts adicionam apenas combos novos
     seen: set[tuple[str, str]] = set()
