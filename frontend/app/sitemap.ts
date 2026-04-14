@@ -35,6 +35,7 @@ async function fetchLicitacoesIndexable(): Promise<{ setor: string; uf: string }
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const resp = await fetch(`${backendUrl}/v1/sitemap/licitacoes-indexable`, {
       cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) {
       // SEO-440: fallback vazio — não incluir combos sem dados confirmados no sitemap.
@@ -63,6 +64,7 @@ async function fetchContratosOrgaoIndexable(): Promise<string[]> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const resp = await fetch(`${backendUrl}/v1/sitemap/contratos-orgao-indexable`, {
       cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) return [];
     const data = await resp.json();
@@ -84,6 +86,7 @@ async function fetchSitemapCnpjs(): Promise<string[]> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const resp = await fetch(`${backendUrl}/v1/sitemap/cnpjs`, {
       cache: 'no-store', // always fresh at build/ISR time — sitemap data must be current
+      signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) return [];
     const data = await resp.json();
@@ -109,6 +112,7 @@ async function fetchSitemapFornecedoresCnpj(): Promise<string[]> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const resp = await fetch(`${backendUrl}/v1/sitemap/fornecedores-cnpj`, {
       cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) return [];
     const data = await resp.json();
@@ -130,6 +134,7 @@ async function fetchSitemapMunicipios(): Promise<string[]> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const resp = await fetch(`${backendUrl}/v1/sitemap/municipios`, {
       cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) return [];
     const data = await resp.json();
@@ -151,6 +156,7 @@ async function fetchSitemapItens(): Promise<string[]> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const resp = await fetch(`${backendUrl}/v1/sitemap/itens`, {
       cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) return [];
     const data = await resp.json();
@@ -168,6 +174,7 @@ async function fetchSitemapOrgaos(): Promise<string[]> {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const resp = await fetch(`${backendUrl}/v1/sitemap/orgaos`, {
       cache: 'no-store', // always fresh at build/ISR time — sitemap data must be current
+      signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) return [];
     const data = await resp.json();
@@ -215,9 +222,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // Parallelizar todas as 7 chamadas ao backend — eram sequenciais (até ~100s total → HTTP 524).
+  // Promise.all garante que todas correm em paralelo; cada helper tem AbortSignal.timeout(15000).
+  // Worst-case: 15s (um fetch lento) em vez de 7×15s = 105s.
+  const [
+    indexableCombos,
+    cnpjList,
+    contratosOrgaoList,
+    orgaoList,
+    fornecedoresCnpjList,
+    municipiosList,
+    itensList,
+  ] = await Promise.all([
+    fetchLicitacoesIndexable(),
+    fetchSitemapCnpjs(),
+    fetchContratosOrgaoIndexable(),
+    fetchSitemapOrgaos(),
+    fetchSitemapFornecedoresCnpj(),
+    fetchSitemapMunicipios(),
+    fetchSitemapItens(),
+  ]);
+
   // STORY-430 AC4 / SEO-440: Sector×UF pages filtradas — somente combos com >= MIN_ACTIVE_BIDS_FOR_INDEX editais
   // SEO-440: fallback vazio quando endpoint falha (não mais todas as 405 combos)
-  const indexableCombos = await fetchLicitacoesIndexable();
   const licitacoesUfRoutes: MetadataRoute.Sitemap = indexableCombos.map(({ setor, uf }) => ({
     url: `${baseUrl}/blog/licitacoes/${setor}/${uf}`,
     lastModified: today,
@@ -259,7 +286,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // );
 
   // SEO-PLAYBOOK Onda 1: CNPJ pages from datalake
-  const cnpjList = await fetchSitemapCnpjs();
   const cnpjRoutes: MetadataRoute.Sitemap = cnpjList.map((cnpj) => ({
     url: `${baseUrl}/cnpj/${cnpj}`,
     lastModified: today,
@@ -267,11 +293,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  // SEO-460: órgãos com contratos reais (pncp_supplier_contracts) — para /contratos/orgao/
-  const contratosOrgaoList = await fetchContratosOrgaoIndexable();
-
   // SEO-PLAYBOOK Onda 2: Órgãos compradores pages from datalake
-  const orgaoList = await fetchSitemapOrgaos();
   const orgaoRoutes: MetadataRoute.Sitemap = orgaoList.map((cnpj) => ({
     url: `${baseUrl}/orgaos/${cnpj}`,
     lastModified: today,
@@ -280,7 +302,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Parte 13 Sprint 3: /fornecedores/{cnpj} — perfis de fornecedores do governo
-  const fornecedoresCnpjList = await fetchSitemapFornecedoresCnpj();
   const fornecedoresCnpjRoutes: MetadataRoute.Sitemap = fornecedoresCnpjList.map((cnpj) => ({
     url: `${baseUrl}/fornecedores/${cnpj}`,
     lastModified: today,
@@ -289,7 +310,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Parte 13 Sprint 4: /municipios/{slug} — licitações por município
-  const municipiosList = await fetchSitemapMunicipios();
   const municipiosRoutes: MetadataRoute.Sitemap = municipiosList.map((slug) => ({
     url: `${baseUrl}/municipios/${slug}`,
     lastModified: today,
@@ -298,7 +318,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Parte 13 Sprint 6: /itens/{catmat} — benchmark de preços por CATMAT
-  const itensList = await fetchSitemapItens();
   const itensRoutes: MetadataRoute.Sitemap = itensList.map((catmat) => ({
     url: `${baseUrl}/itens/${catmat}`,
     lastModified: today,
