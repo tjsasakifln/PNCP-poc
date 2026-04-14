@@ -46,6 +46,7 @@ async function fetchProfile(slug: string): Promise<MunicipioProfile | null> {
   try {
     const res = await fetch(`${backendUrl}/v1/municipios/${slug}/profile`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (res.status === 404) return null;
     if (!res.ok) return null;
@@ -60,6 +61,7 @@ export async function generateStaticParams() {
   try {
     const res = await fetch(`${backendUrl}/v1/sitemap/municipios`, {
       cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
     const data = await res.json();

@@ -36,7 +36,7 @@ async function fetchMunicipio(slug: string, periodo: string) {
   try {
     const res = await fetch(
       `${backendUrl}/v1/indice-municipal/${slug}?periodo=${periodo}`,
-      { next: { revalidate: 3600 } }
+      { next: { revalidate: 3600 }, signal: AbortSignal.timeout(10000) }
     );
     if (!res.ok) return null;
     return await res.json();

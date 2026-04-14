@@ -43,6 +43,7 @@ async function fetchFornecedoresStats(setor: string, uf: string): Promise<Fornec
   try {
     const res = await fetch(`${backendUrl}/v1/fornecedores/${setor}/${uf}/stats`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return await res.json();

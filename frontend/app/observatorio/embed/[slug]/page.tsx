@@ -46,6 +46,7 @@ export default async function ObservatorioEmbedPage({
   try {
     const resp = await fetch(`${BACKEND_URL}/v1/observatorio/relatorio/${mes}/${ano}`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (resp.ok) relatorio = await resp.json();
   } catch {/* fail gracefully */}

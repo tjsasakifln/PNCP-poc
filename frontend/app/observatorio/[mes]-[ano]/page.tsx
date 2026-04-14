@@ -37,6 +37,7 @@ async function fetchRelatorio(mes: number, ano: number) {
   try {
     const resp = await fetch(`${BACKEND_URL}/v1/observatorio/relatorio/${mes}/${ano}`, {
       next: { revalidate: 86400 }, // 24h ISR
+      signal: AbortSignal.timeout(10000),
     });
     if (!resp.ok) return null;
     return await resp.json();

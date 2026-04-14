@@ -63,6 +63,7 @@ export async function generateStaticParams() {
   try {
     const res = await fetch(`${backendUrl}/v1/sitemap/itens`, {
       cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
     const data = await res.json();
