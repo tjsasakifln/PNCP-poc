@@ -210,12 +210,15 @@ export async function generateSitemaps() {
   ];
 }
 
-export default async function sitemap({ id }: { id: number | string }): Promise<MetadataRoute.Sitemap> {
+// SEO-476: Next.js 16 breaking change — id is now Promise<string>, not number.
+// Must receive as props object and await the promise before using.
+// See: https://nextjs.org/docs/app/api-reference/functions/generate-sitemaps (v16.0.0)
+export default async function sitemap(props: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_CANONICAL_URL || 'https://smartlic.tech';
   const STATIC_LAST_EDIT = new Date('2026-04-06');
   const today = new Date();
-  // SEO-476: Next.js passes id as string from URL segment during ISR/SSR. Coerce to number.
-  const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+  // Await the Promise<string> and convert to number for switch comparison.
+  const numericId = parseInt(await props.id, 10);
 
   switch (numericId) {
     // -----------------------------------------------------------------------
