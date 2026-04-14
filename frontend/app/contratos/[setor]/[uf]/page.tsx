@@ -41,7 +41,7 @@ async function fetchContratosStats(setor: string, uf: string): Promise<Contratos
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
   try {
     const res = await fetch(`${backendUrl}/v1/contratos/${setor}/${uf}/stats`, {
-      next: { revalidate: 14400 },
+      cache: 'no-store', // bypass Next.js Data Cache — sempre fresh no ISR regen
     });
     if (!res.ok) return null;
     return await res.json();

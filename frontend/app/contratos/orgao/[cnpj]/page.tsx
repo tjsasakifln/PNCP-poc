@@ -51,7 +51,7 @@ export function generateStaticParams() {
 async function fetchOrgaoContratosStats(cnpj: string): Promise<OrgaoContratosStats | null> {
   try {
     const resp = await fetch(`${BACKEND_URL}/v1/contratos/orgao/${cnpj}/stats`, {
-      next: { revalidate: 14400 },
+      cache: 'no-store', // bypass Next.js Data Cache — sempre fresh no ISR regen
     });
     if (!resp.ok) return null;
     return resp.json();
