@@ -3,7 +3,7 @@
 **Priority:** P1 (admins não conseguem debug payment failures)
 **Effort:** XS (1h)
 **Squad:** @data-engineer + @dev quality gate
-**Status:** Draft
+**Status:** Ready for Review
 **Epic:** [EPIC-TD-2026Q2](../epic-technical-debt.md)
 **Sprint:** Sprint 1
 
@@ -21,8 +21,8 @@
 
 ### AC1: RLS policy fix
 
-- [ ] Drop policy atual `webhook_events_select_admin` (que checa `plan_type='master'`)
-- [ ] Recreate policy checking `is_admin=true OR is_master=true`
+- [x] Drop policy atual `webhook_events_select_admin` (que checa `plan_type='master'`)
+- [x] Recreate policy checking `is_admin=true OR is_master=true` — adaptação: `is_admin = true OR plan_type = 'master'` porque `is_master` **não existe como coluna real** em `profiles` (é derivação lógica conforme `backend/authorization.py`). Mantém paridade semântica com backend.
 
 ```sql
 DROP POLICY IF EXISTS "webhook_events_select_admin" ON public.stripe_webhook_events;
@@ -34,30 +34,37 @@ CREATE POLICY "webhook_events_select_admin" ON public.stripe_webhook_events
 
 ### AC2: Test em prod
 
-- [ ] Login com user `is_admin=true` (não master) — pode listar webhook events via Supabase REST
-- [ ] Login com user regular — recebe empty list (RLS funciona)
+- [x] Validação via regex test cobre correctness da migration (9 testes passando em `backend/tests/test_stripe_webhook_rls.py`).
+- [ ] Smoke E2E prod após CRIT-050 auto-apply: login com `is_admin=true` lista webhook events; regular retorna empty list. Gated em deploy.
 
 ---
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Migration nova
-- [ ] Task 2: Aplicar via CRIT-050 deploy
-- [ ] Task 3: Validation com 2 user types
+- [x] Task 1: Migration nova — `supabase/migrations/20260414130000_fix_stripe_webhook_rls_admin.sql`
+- [ ] Task 2: Aplicar via CRIT-050 deploy — automático após push para main
+- [ ] Task 3: Validation com 2 user types em prod — post-deploy smoke
 
 ## Dev Notes
 
 - DB-AUDIT TD-DB-010 ref
-- `profiles.is_admin` boolean já existe; `is_master` também
+- `profiles.is_admin` boolean já existe; `is_master` é derivado (`is_admin OR plan_type='master'`), não coluna real.
 
 ## Testing
 
 - pytest backend test que admin pode SELECT
 - Manual via Supabase Studio
 
+## File List
+
+- **Created**:
+  - `supabase/migrations/20260414130000_fix_stripe_webhook_rls_admin.sql`
+  - `backend/tests/test_stripe_webhook_rls.py`
+
 ## Definition of Done
 
-- [ ] Migration aplicada + admin debug funciona
+- [x] Migration criada + tests passando (pre-deploy).
+- [ ] Migration aplicada via deploy.yml (CRIT-050) + admin debug funciona (post-deploy).
 
 ## Risks
 
@@ -68,3 +75,4 @@ CREATE POLICY "webhook_events_select_admin" ON public.stripe_webhook_events
 | Date       | Version | Description     | Author |
 |------------|---------|-----------------|--------|
 | 2026-04-14 | 1.0     | Initial draft   | @sm    |
+| 2026-04-14 | 1.1     | Implementation complete — migration + 9 tests. Adapted `is_master` to `plan_type='master'` (coluna real). | @dev (EPIC-TD Sprint 1 batch) |
