@@ -145,14 +145,14 @@
 - **Constraint**: UNIQUE (user_id, params_hash)
 - **RLS**: service_role ALL; own SELECT
 - **Triggers**: `trg_cleanup_search_cache` AFTER INSERT (mantém max 5/user)
-- **Notes**: 24h TTL enforced at app layer (não DB). ⚠️ TD-SYS-016: sem pg_cron cleanup global.
+- **Notes**: 24h TTL enforced at app layer (não DB). Cleanup automatizado via pg_cron `cleanup-search-cache` (04:00 UTC diário, STORY-1.3 EPIC-TD-2026Q2) — resolve TD-SYS-016.
 
 ### 18. `search_results_store`
 - **Purpose**: Long-term persistent storage (fallback para expired cache)
 - **Columns**: `search_id uuid PK, user_id FK auth.users, results jsonb, sector text, ufs text[], total_filtered int, created_at, expires_at (default now()+24h)`
 - **Indexes**: `idx_search_results_user`; `idx_search_results_expires`; `idx_search_results_store_user_id` (post-CRIT-002)
 - **RLS**: own SELECT; service_role ALL
-- **Notes**: Imutável (sem UPDATE); 24h soft TTL; ⚠️ sem cron cleanup.
+- **Notes**: Imutável (sem UPDATE); 24h soft TTL. Cleanup automatizado via pg_cron `cleanup-search-store` (04:15 UTC diário, STORY-1.4 EPIC-TD-2026Q2).
 
 ### 19. `pncp_raw_bids` (Data Lake Layer 1)
 - **Purpose**: Raw PNCP bid ingestion

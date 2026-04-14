@@ -40,6 +40,14 @@ try:
     if ALERTS_ENABLED:
         _worker_cron_jobs.append(_arq_cron(email_alerts_job, hour={ALERTS_HOUR_UTC}, minute=0, timeout=1800))
 
+    # STORY-1.1 (EPIC-TD-2026Q2 P0): hourly pg_cron health monitor.
+    # Always registered — surfaces silent failures of purge_old_bids + cleanup crons.
+    try:
+        from jobs.cron.cron_monitor import cron_monitoring_job
+        _worker_cron_jobs.append(_arq_cron(cron_monitoring_job, minute={0}, timeout=300))
+    except ImportError:
+        pass
+
     try:
         from ingestion.config import DATALAKE_ENABLED
         if DATALAKE_ENABLED:
@@ -138,11 +146,19 @@ class WorkerSettings:
     except ImportError:
         pass
 
+    # STORY-1.1: include cron_monitoring_job so ARQ can dispatch hourly runs.
+    try:
+        from jobs.cron.cron_monitor import cron_monitoring_job as _cron_monitoring_job
+        _monitoring_functions = [_cron_monitoring_job]
+    except ImportError:
+        _monitoring_functions = []
+
     functions = [
         llm_summary_job, excel_generation_job, cache_refresh_job, search_job,
         bid_analysis_job, cache_warming_job, daily_digest_job, email_alerts_job,
         reclassify_pending_bids_job, classify_zero_match_job,
         *_ingestion_functions,
+        *_monitoring_functions,
     ]
     cron_jobs = _worker_cron_jobs
     on_startup = _worker_on_startup

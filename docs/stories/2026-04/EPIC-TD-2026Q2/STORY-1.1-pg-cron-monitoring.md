@@ -3,7 +3,7 @@
 **Priority:** P0 (precede crons; sem monitoring, falha silenciosa)
 **Effort:** S (4-8h)
 **Squad:** @data-engineer (executor) + @dev (quality gate)
-**Status:** Ready
+**Status:** Done
 **Epic:** [EPIC-TD-2026Q2](../epic-technical-debt.md)
 **Sprint:** Sprint 0 — P0 Critical (Semana 1)
 
@@ -32,51 +32,65 @@ A Phase 5 do brownfield-discovery (TD-DB-040) identificou que o SmartLic hoje te
 
 ### AC1: View `cron_job_health` exposta via RPC
 
-- [ ] Migration cria view `public.cron_job_health` agregando `cron.job` + `cron.job_run_details` (last 7 days)
-- [ ] Colunas: `jobname`, `last_run_at`, `last_status` (succeeded/failed), `runs_24h`, `failures_24h`, `latency_avg_ms`
-- [ ] RPC `get_cron_health()` SECURITY DEFINER granted to `service_role` (admin-only via backend)
+- [x] Migration cria view `public.cron_job_health` agregando `cron.job` + `cron.job_run_details` (last 7 days)
+- [x] Colunas: `jobname`, `last_run_at`, `last_status` (succeeded/failed), `runs_24h`, `failures_24h`, `latency_avg_ms`
+- [x] RPC `get_cron_health()` SECURITY DEFINER granted to `service_role` (admin-only via backend)
 
 ### AC2: Endpoint backend `/admin/cron-status`
 
-- [ ] Novo route handler `GET /admin/cron-status` em `backend/routes/admin_*.py`
-- [ ] Requer `is_admin=true` ou `is_master=true` (via `authorization.py`)
-- [ ] Retorna JSON com array de health rows; status code 200 sempre que query funciona
+- [x] Novo route handler `GET /v1/admin/cron-status` em `backend/routes/admin_cron.py`
+- [x] Requer `is_admin=true` ou `is_master=true` (via `admin.require_admin`)
+- [x] Retorna JSON com array de health rows; status code 200 sempre que query funciona (graceful degrade para `status=error` quando RPC falha)
 
 ### AC3: Sentry alert on stale/failed jobs
 
-- [ ] Monitor cron job (Python ARQ scheduled, hourly) chama `get_cron_health()`
-- [ ] Para cada job, se `last_run_at < now() - interval '25 hours'` ou `last_status='failed'` → `sentry_sdk.capture_message(level="error")` com tags `cron_job={jobname}`
-- [ ] Dedup: não spamar — usar fingerprint `[cron_job, jobname]` no Sentry
+- [x] Monitor cron job (ARQ, hourly minute=0) chama `get_cron_health()`
+- [x] Para cada job, se `last_run_at < now() - interval '25 hours'` ou `last_status='failed'` → `sentry_sdk.capture_message(level="error")` com tags `cron_job={jobname}` + `cron_job.reason`
+- [x] Dedup: fingerprint `["cron_job", jobname, reason]` no Sentry
 
 ### AC4: Documentação
 
-- [ ] CLAUDE.md atualizado com seção "pg_cron Monitoring"
-- [ ] Quando usar e como interpretar `/admin/cron-status`
-- [ ] Como adicionar novo cron job + auto-monitoring
+- [x] CLAUDE.md atualizado com seção "pg_cron Monitoring (STORY-1.1 EPIC-TD-2026Q2)"
+- [x] Quando usar e como interpretar `/v1/admin/cron-status`
+- [x] Como adicionar novo cron job + auto-monitoring (1 step: criar migration)
 
 ### AC5: Testes
 
-- [ ] Unit test backend: mock supabase client, verifica formato JSON resposta
-- [ ] Integration test: smoke test em ambiente de staging confirma view existe e RPC retorna dados
+- [x] Unit tests backend: `test_admin_cron.py` (4 tests) + `test_cron_monitoring.py` (12 tests) = 16 passing, 0 regressões
+- [ ] Integration test em staging — aplicável após merge + migration apply via CRIT-050 deploy flow
 
 ---
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Criar migration `cron_job_health_view.sql` (AC1)
-  - [ ] Definir view com JOINs `cron.job` + `cron.job_run_details`
-  - [ ] Criar RPC `get_cron_health()` SECURITY DEFINER
-  - [ ] Grant ao `service_role`
-- [ ] Task 2: Implementar endpoint backend (AC2)
-  - [ ] Novo módulo `backend/routes/admin_cron.py` ou estender `admin_*.py`
-  - [ ] Decorator `@require_admin`
-  - [ ] Chama RPC + retorna JSON
-- [ ] Task 3: Implementar monitor cron job (AC3)
-  - [ ] Adicionar handler em `backend/cron_jobs.py`
-  - [ ] Schedule hourly via ARQ WorkerSettings
-  - [ ] Logic: query health, detectar stale/failed, capture_message
-- [ ] Task 4: Documentação (AC4)
-- [ ] Task 5: Testes (AC5)
+- [x] Task 1: Criar migration `20260414120000_cron_job_health.sql` (AC1)
+  - [x] View com JOINs `cron.job` + `cron.job_run_details` (7-day window)
+  - [x] RPC `get_cron_health()` SECURITY DEFINER
+  - [x] Grant `service_role` + revoke anon/authenticated
+- [x] Task 2: Implementar endpoint backend (AC2)
+  - [x] Novo módulo `backend/routes/admin_cron.py`
+  - [x] `Depends(require_admin)`
+  - [x] Chama RPC via `sb_execute_direct` + serializa datetime/numeric
+- [x] Task 3: Implementar monitor cron job (AC3)
+  - [x] Handler `cron_monitoring_job` em `backend/jobs/cron/cron_monitor.py`
+  - [x] Schedule hourly (`minute={0}`) em `backend/jobs/queue/config.py`
+  - [x] Logic: `evaluate_jobs()` detecta stale (>25h) / failed + fingerprint dedup
+- [x] Task 4: Documentação (AC4)
+- [x] Task 5: Testes (AC5) — 16 tests pass
+
+## File List
+
+**New:**
+- `supabase/migrations/20260414120000_cron_job_health.sql`
+- `backend/routes/admin_cron.py`
+- `backend/jobs/cron/cron_monitor.py`
+- `backend/tests/test_admin_cron.py`
+- `backend/tests/test_cron_monitoring.py`
+
+**Modified:**
+- `backend/startup/routes.py` (+2 lines — include_router admin_cron)
+- `backend/jobs/queue/config.py` (+14 lines — register cron_monitoring_job)
+- `CLAUDE.md` (+section "pg_cron Monitoring")
 
 ---
 
@@ -134,3 +148,4 @@ A Phase 5 do brownfield-discovery (TD-DB-040) identificou que o SmartLic hoje te
 |------------|---------|----------------------------------------------|--------|
 | 2026-04-14 | 1.0     | Initial draft from EPIC-TD-2026Q2 Phase 10  | @sm    |
 | 2026-04-14 | 1.1     | GO (8/10) — Draft → Ready. Obs: adicionar IN/OUT antes de InProgress | @po    |
+| 2026-04-14 | 2.0     | Implementation complete — view + RPC + /v1/admin/cron-status + ARQ hourly monitor + Sentry alerts + 16 unit tests passing; Status Ready → Done | @dev |

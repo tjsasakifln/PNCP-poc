@@ -345,6 +345,20 @@ For detailed module tables and route maps, see `.claude/rules/architecture-detai
 - **Retention:** 12 days (purge sets `is_active=false`, soft-delete)
 - **Tables:** `pncp_raw_bids` (data), `ingestion_checkpoints` (progress), `ingestion_runs` (audit)
 - **Worker:** `PROCESS_TYPE=worker` → `arq job_queue.WorkerSettings`
+- **pg_cron backup (STORY-1.2):** `purge-old-bids` scheduled via `cron.schedule('purge-old-bids', '0 7 * * *', ...)` — runs server-side even if Railway worker is offline. Monitored by STORY-1.1.
+
+### pg_cron Monitoring (STORY-1.1 EPIC-TD-2026Q2)
+
+All scheduled pg_cron jobs (purge-old-bids, cleanup-search-cache, cleanup-search-store, and any future additions) are monitored end-to-end:
+
+- **View:** `public.cron_job_health` joins `cron.job` + `cron.job_run_details` over a 7-day window.
+- **RPC:** `public.get_cron_health()` (SECURITY DEFINER) — invoked by backend only.
+- **Endpoint:** `GET /v1/admin/cron-status` (admin-only) returns JSON snapshot — shape `{status, count, jobs: [{jobname, last_status, last_run_at, runs_24h, failures_24h, latency_avg_ms}]}`.
+- **Alerting:** hourly ARQ cron `cron_monitoring_job` (in `backend/jobs/cron/cron_monitor.py`) emits a Sentry `capture_message(level="error")` for any job that is `failed` or stale (>25h since last run). Fingerprint `["cron_job", jobname, reason]` dedups across runs.
+
+**To add a new scheduled cron:**
+1. Create a migration `supabase/migrations/YYYYMMDDHHMMSS_schedule_<name>.sql` calling `cron.schedule(...)`.
+2. That's it — the existing monitor will start checking the new job on the next hourly tick. No code changes required unless you want custom thresholds.
 
 ### PNCP API (used by ingestion + legacy fallback)
 - **Max tamanhoPagina = 50** (reduced from 500 in Feb 2026, >50 -> HTTP 400 silent)
