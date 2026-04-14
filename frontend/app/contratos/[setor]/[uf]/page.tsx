@@ -1,13 +1,20 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { generateSectorUfParams, getSectorFromSlug, getUfPrep, ALL_UFS, UF_NAMES } from '@/lib/programmatic';
+import {
+  generateSectorUfParams,
+  getSectorFromSlug,
+  getUfPrep,
+  ALL_UFS,
+  UF_NAMES,
+  fetchSectorUfBlogStats,
+} from '@/lib/programmatic';
 import { formatBRL } from '@/lib/sectors';
 import { buildCanonical, getFreshnessLabel } from '@/lib/seo';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
 
-export const revalidate = 86400; // 24h ISR
+export const revalidate = 86400; // 24h ISR — AC11
 
 export function generateStaticParams() {
   return generateSectorUfParams();
@@ -50,22 +57,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ufUpper = uf.toUpperCase();
   const ufName = UF_NAMES[ufUpper] || ufUpper;
   const year = new Date().getFullYear();
-  const data = await fetchContratosStats(setor, ufUpper.toLowerCase());
-  // STORY-430 AC2: noindex quando abaixo do limiar configurável (igual às demais páginas programáticas)
-  const minBids = parseInt(process.env.MIN_ACTIVE_BIDS_FOR_INDEX ?? '5', 10);
-  const hasData = !!(data && data.total_contracts >= minBids);
+
+  // AC1: fetch paralelo de contratos e editais
+  const [data, blogStats] = await Promise.all([
+    fetchContratosStats(setor, ufUpper.toLowerCase()),
+    fetchSectorUfBlogStats(setor, uf), // AC8: retorna null em caso de falha
+  ]);
+
+  const totalContracts = data?.total_contracts ?? 0;
+  const totalEditais = blogStats?.total_editais ?? 0;
+
+  // AC4/AC5: noindex apenas quando AMBOS os datasets estão zerados
+  const shouldIndex = totalContracts >= 1 || totalEditais >= 1;
+
+  // AC7: description dinâmica — menciona editais quando disponíveis
+  let description: string;
+  if (totalContracts > 0 && totalEditais > 0) {
+    description = `${totalContracts.toLocaleString('pt-BR')} contratos firmados em ${sector.name} ${getUfPrep(ufUpper)} ${ufName} — ${totalEditais} editais abertos agora. Dados PNCP atualizados.`;
+  } else if (totalContracts > 0) {
+    description = `Quanto o governo gasta em ${sector.name} ${getUfPrep(ufUpper)} ${ufName}? Veja ${totalContracts.toLocaleString('pt-BR')} contratos firmados, principais órgãos compradores e fornecedores. Dados PNCP atualizados.`;
+  } else if (totalEditais > 0) {
+    description = `${totalEditais} editais abertos em ${sector.name} ${getUfPrep(ufUpper)} ${ufName} agora. Acompanhe oportunidades de licitação e o histórico de contratos públicos.`;
+  } else {
+    description = `Dados de contratos públicos de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}. Fonte: Portal Nacional de Contratações Públicas.`;
+  }
 
   return {
     title: `Contratos Publicos de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} ${year} — SmartLic`,
-    description: `Quanto o governo gasta em ${sector.name} ${getUfPrep(ufUpper)} ${ufName}? Veja contratos firmados, principais orgaos compradores e fornecedores. Dados PNCP atualizados.`,
-    alternates: { canonical: buildCanonical(`/contratos/${setor}/${uf}`) },
+    description,
+    alternates: { canonical: buildCanonical(`/contratos/${setor}/${uf}`) }, // AC6
     openGraph: {
       title: `Contratos Publicos: ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`,
       description: `Transparencia em gastos publicos de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}`,
       type: 'website',
       locale: 'pt_BR',
     },
-    robots: { index: hasData, follow: true },
+    robots: { index: shouldIndex, follow: true }, // AC4/AC5
   };
 }
 
@@ -78,8 +105,16 @@ export default async function ContratosSetorUfPage({ params }: Props) {
   if (!ALL_UFS.includes(ufUpper)) notFound();
 
   const ufName = UF_NAMES[ufUpper] || ufUpper;
-  const data = await fetchContratosStats(setor, ufUpper.toLowerCase());
+
+  // AC1: fetch paralelo — contratos históricos + editais ativos
+  const [data, blogStats] = await Promise.all([
+    fetchContratosStats(setor, ufUpper.toLowerCase()),
+    fetchSectorUfBlogStats(setor, uf), // AC8: null se falhar, página degrada graciosamente
+  ]);
+
   const year = new Date().getFullYear();
+  const totalContracts = data?.total_contracts ?? 0;
+  const totalEditais = blogStats?.total_editais ?? 0;
 
   const breadcrumbs = [
     { name: 'SmartLic', url: '/' },
@@ -101,6 +136,14 @@ export default async function ContratosSetorUfPage({ params }: Props) {
         ? `Os maiores compradores sao: ${data.top_orgaos.slice(0, 3).map((o) => o.nome).join(', ')}.`
         : `Veja a lista completa de orgaos compradores nesta pagina.`,
     },
+    ...(totalEditais > 0
+      ? [
+          {
+            question: `Ha editais abertos de ${sector.name} em ${ufName} agora?`,
+            answer: `Sim, ha ${totalEditais} ${totalEditais === 1 ? 'edital aberto' : 'editais abertos'} de ${sector.name} ${getUfPrep(ufUpper)} ${ufName} nos ultimos 30 dias. Acesse o SmartLic para ver todos com detalhes de valor e prazos.`,
+          },
+        ]
+      : []),
     {
       question: `Como consultar contratos publicos de ${sector.name}?`,
       answer: `O SmartLic agrega dados do PNCP e permite consultar contratos por setor e estado. Os dados sao atualizados diariamente.`,
@@ -175,7 +218,8 @@ export default async function ContratosSetorUfPage({ params }: Props) {
             {' · Fonte: Portal Nacional de Contratacoes Publicas'}
           </p>
 
-          {!data || data.total_contracts === 0 ? (
+          {/* AC4: empty state apenas quando AMBOS os datasets estão zerados */}
+          {totalContracts === 0 && totalEditais === 0 ? (
             <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
               <p className="text-gray-500">
                 Nenhum contrato de {sector.name} encontrado {getUfPrep(ufUpper)} {ufName} no periodo consultado.
@@ -186,127 +230,167 @@ export default async function ContratosSetorUfPage({ params }: Props) {
             </div>
           ) : (
             <>
-              {/* KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                <div className="bg-white rounded-lg shadow-sm border p-5">
-                  <p className="text-sm text-gray-500">Total de Contratos</p>
-                  <p className="text-2xl font-bold text-gray-900">{data.total_contracts.toLocaleString('pt-BR')}</p>
-                </div>
-                <div className="bg-white rounded-lg shadow-sm border p-5">
-                  <p className="text-sm text-gray-500">Valor Total</p>
-                  <p className="text-2xl font-bold text-green-700">{formatBRL(data.total_value)}</p>
-                </div>
-                <div className="bg-white rounded-lg shadow-sm border p-5">
-                  <p className="text-sm text-gray-500">Valor Medio</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatBRL(data.avg_value)}</p>
-                </div>
-              </div>
-
-              {/* Top Orgaos */}
-              {data.top_orgaos.length > 0 && (
-                <section className="mb-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Principais Orgaos Compradores</h2>
-                  <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                          <th className="text-left px-4 py-3">Orgao</th>
-                          <th className="text-right px-4 py-3">Contratos</th>
-                          <th className="text-right px-4 py-3">Valor Total</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {data.top_orgaos.map((o) => (
-                          <tr key={o.cnpj} className="hover:bg-gray-50">
-                            <td className="px-4 py-2">
-                              <Link href={`/orgaos/${o.cnpj}`} className="text-blue-600 hover:underline">
-                                {o.nome}
-                              </Link>
-                            </td>
-                            <td className="text-right px-4 py-2">{o.total_contratos}</td>
-                            <td className="text-right px-4 py-2 text-green-700">{formatBRL(o.valor_total)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              {/* Seções de contratos históricos — visíveis somente quando há dados */}
+              {data && totalContracts > 0 && (
+                <>
+                  {/* KPI Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-white rounded-lg shadow-sm border p-5">
+                      <p className="text-sm text-gray-500">Total de Contratos</p>
+                      <p className="text-2xl font-bold text-gray-900">{data.total_contracts.toLocaleString('pt-BR')}</p>
+                    </div>
+                    <div className="bg-white rounded-lg shadow-sm border p-5">
+                      <p className="text-sm text-gray-500">Valor Total</p>
+                      <p className="text-2xl font-bold text-green-700">{formatBRL(data.total_value)}</p>
+                    </div>
+                    <div className="bg-white rounded-lg shadow-sm border p-5">
+                      <p className="text-sm text-gray-500">Valor Medio</p>
+                      <p className="text-2xl font-bold text-gray-900">{formatBRL(data.avg_value)}</p>
+                    </div>
                   </div>
-                </section>
-              )}
 
-              {/* Top Fornecedores */}
-              {data.top_fornecedores.length > 0 && (
-                <section className="mb-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Principais Fornecedores</h2>
-                  <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                          <th className="text-left px-4 py-3">Fornecedor</th>
-                          <th className="text-right px-4 py-3">Contratos</th>
-                          <th className="text-right px-4 py-3">Valor Total</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {data.top_fornecedores.map((f) => (
-                          <tr key={f.cnpj} className="hover:bg-gray-50">
-                            <td className="px-4 py-2">
-                              <Link href={`/cnpj/${f.cnpj}`} className="text-blue-600 hover:underline">
-                                {f.nome}
-                              </Link>
-                            </td>
-                            <td className="text-right px-4 py-2">{f.total_contratos}</td>
-                            <td className="text-right px-4 py-2 text-green-700">{formatBRL(f.valor_total)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              )}
-
-              {/* Sample Contracts */}
-              {data.sample_contracts.length > 0 && (
-                <section className="mb-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Contratos Recentes</h2>
-                  <div className="space-y-3">
-                    {data.sample_contracts.map((c, i) => (
-                      <div key={i} className="bg-white rounded-lg shadow-sm border p-4">
-                        <p className="font-medium text-gray-900 text-sm">{c.objeto}</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
-                          <span>Orgao: {c.orgao}</span>
-                          <span>Fornecedor: {c.fornecedor}</span>
-                          {c.valor && <span className="text-green-700">{formatBRL(c.valor)}</span>}
-                          <span>{c.data_assinatura}</span>
-                        </div>
+                  {/* Top Orgaos */}
+                  {data.top_orgaos.length > 0 && (
+                    <section className="mb-8">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-3">Principais Orgaos Compradores</h2>
+                      <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                              <th className="text-left px-4 py-3">Orgao</th>
+                              <th className="text-right px-4 py-3">Contratos</th>
+                              <th className="text-right px-4 py-3">Valor Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {data.top_orgaos.map((o) => (
+                              <tr key={o.cnpj} className="hover:bg-gray-50">
+                                <td className="px-4 py-2">
+                                  <Link href={`/orgaos/${o.cnpj}`} className="text-blue-600 hover:underline">
+                                    {o.nome}
+                                  </Link>
+                                </td>
+                                <td className="text-right px-4 py-2">{o.total_contratos}</td>
+                                <td className="text-right px-4 py-2 text-green-700">{formatBRL(o.valor_total)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    ))}
-                  </div>
-                </section>
+                    </section>
+                  )}
+
+                  {/* Top Fornecedores */}
+                  {data.top_fornecedores.length > 0 && (
+                    <section className="mb-8">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-3">Principais Fornecedores</h2>
+                      <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                              <th className="text-left px-4 py-3">Fornecedor</th>
+                              <th className="text-right px-4 py-3">Contratos</th>
+                              <th className="text-right px-4 py-3">Valor Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {data.top_fornecedores.map((f) => (
+                              <tr key={f.cnpj} className="hover:bg-gray-50">
+                                <td className="px-4 py-2">
+                                  <Link href={`/cnpj/${f.cnpj}`} className="text-blue-600 hover:underline">
+                                    {f.nome}
+                                  </Link>
+                                </td>
+                                <td className="text-right px-4 py-2">{f.total_contratos}</td>
+                                <td className="text-right px-4 py-2 text-green-700">{formatBRL(f.valor_total)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Sample Contracts */}
+                  {data.sample_contracts.length > 0 && (
+                    <section className="mb-8">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-3">Contratos Recentes</h2>
+                      <div className="space-y-3">
+                        {data.sample_contracts.map((c, i) => (
+                          <div key={i} className="bg-white rounded-lg shadow-sm border p-4">
+                            <p className="font-medium text-gray-900 text-sm">{c.objeto}</p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
+                              <span>Orgao: {c.orgao}</span>
+                              <span>Fornecedor: {c.fornecedor}</span>
+                              {c.valor && <span className="text-green-700">{formatBRL(c.valor)}</span>}
+                              <span>{c.data_assinatura}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Monthly Trend */}
+                  {data.monthly_trend.some((m) => m.count > 0) && (
+                    <section className="mb-8">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-3">Evolucao Mensal</h2>
+                      <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                              <th className="text-left px-4 py-3">Mes</th>
+                              <th className="text-right px-4 py-3">Contratos</th>
+                              <th className="text-right px-4 py-3">Valor</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {data.monthly_trend.filter((m) => m.count > 0).map((m) => (
+                              <tr key={m.month} className="hover:bg-gray-50">
+                                <td className="px-4 py-2">{m.month}</td>
+                                <td className="text-right px-4 py-2">{m.count}</td>
+                                <td className="text-right px-4 py-2 text-green-700">{formatBRL(m.value)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  )}
+                </>
               )}
 
-              {/* Monthly Trend */}
-              {data.monthly_trend.some((m) => m.count > 0) && (
+              {/* AC2/AC3: Seção "Editais Abertos Agora" — abaixo dos contratos, só quando total_editais > 0 */}
+              {totalEditais > 0 && blogStats && (
                 <section className="mb-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Evolucao Mensal</h2>
-                  <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                          <th className="text-left px-4 py-3">Mes</th>
-                          <th className="text-right px-4 py-3">Contratos</th>
-                          <th className="text-right px-4 py-3">Valor</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {data.monthly_trend.filter((m) => m.count > 0).map((m) => (
-                          <tr key={m.month} className="hover:bg-gray-50">
-                            <td className="px-4 py-2">{m.month}</td>
-                            <td className="text-right px-4 py-2">{m.count}</td>
-                            <td className="text-right px-4 py-2 text-green-700">{formatBRL(m.value)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Editais Abertos Agora</h2>
+                  <div className="bg-white rounded-lg shadow-sm border p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                      <div>
+                        <p className="text-sm text-gray-500">Editais nos últimos 30 dias</p>
+                        <p className="text-2xl font-bold text-blue-700">{totalEditais.toLocaleString('pt-BR')}</p>
+                      </div>
+                      {blogStats.value_range_min > 0 && (
+                        <div>
+                          <p className="text-sm text-gray-500">Faixa de valores</p>
+                          <p className="font-semibold text-gray-900">
+                            {formatBRL(blogStats.value_range_min)} – {formatBRL(blogStats.value_range_max)}
+                          </p>
+                        </div>
+                      )}
+                      {blogStats.avg_value > 0 && (
+                        <div>
+                          <p className="text-sm text-gray-500">Valor médio por edital</p>
+                          <p className="font-semibold text-gray-900">{formatBRL(blogStats.avg_value)}</p>
+                        </div>
+                      )}
+                    </div>
+                    <Link
+                      href="/buscar"
+                      className="inline-block px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Ver todos no SmartLic →
+                    </Link>
                   </div>
                 </section>
               )}
