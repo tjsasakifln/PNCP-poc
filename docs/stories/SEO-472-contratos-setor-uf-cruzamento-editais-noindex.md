@@ -1,6 +1,6 @@
 # SEO-472 — Contratos/[setor]/[uf]: cruzamento com editais ativos e noindex relaxado
 
-**Status:** Ready  
+**Status:** Done  
 **Type:** Feature  
 **Prioridade:** Média — 405 páginas de contratos com thin content potencial  
 **Depende de:** SEO-474 (ContractsPanoramaBlock), SEO-475 (backend enriquecido)  
@@ -32,17 +32,17 @@ Adicionar fetch de editais ativos (`fetchSectorUfBlogStats`) em paralelo com o f
 
 ## Acceptance Criteria
 
-- [ ] AC1: `fetchSectorUfBlogStats` chamado em paralelo com `fetchContratosStats` via `Promise.all`
-- [ ] AC2: Seção "Editais Abertos" renderiza quando `total_editais > 0`, posicionada abaixo dos dados de contratos
-- [ ] AC3: Seção "Editais Abertos" inclui: contagem, faixa de valores, e link CTA para busca no app
-- [ ] AC4: `robots.index=false` apenas quando `total_contracts === 0 AND total_editais === 0`
-- [ ] AC5: `robots.index=true` quando `contracts ≥ 1 OR editais ≥ 1`
-- [ ] AC6: `alternates.canonical` presente em todos os branches (incluindo noindex) — autocanonical
-- [ ] AC7: Metadata description atualizada: menciona editais quando disponíveis ("X contratos firmados — Y editais abertos agora")
-- [ ] AC8: Fallback graceful: se `fetchSectorUfBlogStats` falhar, página renderiza apenas dados de contratos (sem erro 500)
-- [ ] AC9: Todo texto gerado dinamicamente usa português correto, com acentuação perfeita e construção de frases naturais — nenhum vestígio de formatação markdown visível ao usuário
-- [ ] AC10: `npx tsc --noEmit` sem erros
-- [ ] AC11: ISR `revalidate = 86400` mantido
+- [x] AC1: `fetchSectorUfBlogStats` chamado em paralelo com `fetchContratosStats` via `Promise.all`
+- [x] AC2: Seção "Editais Abertos" renderiza quando `total_editais > 0`, posicionada abaixo dos dados de contratos
+- [x] AC3: Seção "Editais Abertos" inclui: contagem, faixa de valores, e link CTA para busca no app
+- [x] AC4: `robots.index=false` apenas quando `total_contracts === 0 AND total_editais === 0`
+- [x] AC5: `robots.index=true` quando `contracts ≥ 1 OR editais ≥ 1`
+- [x] AC6: `alternates.canonical` presente em todos os branches (incluindo noindex) — autocanonical
+- [x] AC7: Metadata description atualizada: menciona editais quando disponíveis ("X contratos firmados — Y editais abertos agora")
+- [x] AC8: Fallback graceful: se `fetchSectorUfBlogStats` falhar, página renderiza apenas dados de contratos (sem erro 500)
+- [x] AC9: Todo texto gerado dinamicamente usa português correto, com acentuação perfeita e construção de frases naturais — nenhum vestígio de formatação markdown visível ao usuário
+- [x] AC10: `npx tsc --noEmit` sem erros
+- [x] AC11: ISR `revalidate = 86400` mantido
 
 ## Escopo
 
@@ -79,5 +79,5 @@ Adicionar fetch de editais ativos (`fetchSectorUfBlogStats`) em paralelo com o f
 
 ## File List
 
-- [ ] `docs/stories/SEO-472-contratos-setor-uf-cruzamento-editais-noindex.md` (esta story)
-- [ ] `frontend/app/contratos/[setor]/[uf]/page.tsx`
+- [x] `docs/stories/SEO-472-contratos-setor-uf-cruzamento-editais-noindex.md` (esta story)
+- [x] `frontend/app/contratos/[setor]/[uf]/page.tsx`
