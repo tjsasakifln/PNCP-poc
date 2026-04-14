@@ -65,6 +65,7 @@ async function fetchDailyData(date: string): Promise<DailyData | null> {
   try {
     const res = await fetch(`${BACKEND_URL}/v1/blog/daily/${date}`, {
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return res.json();

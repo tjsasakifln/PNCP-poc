@@ -38,6 +38,7 @@ async function fetchAnalysis(hash: string): Promise<SharedAnalysis | null> {
   try {
     const res = await fetch(`${backendUrl}/v1/share/analise/${hash}`, {
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return await res.json();

@@ -21,9 +21,9 @@ jest.mock('@/app/components/landing/LandingNavbar', () => () => <nav data-testid
 jest.mock('@/app/components/Footer', () => () => <footer data-testid="footer" />);
 
 describe('OrgaoContratosPage types and structure', () => {
-  it('exports revalidate = 86400', async () => {
+  it('exports revalidate = 14400 (4h ISR, reduzido de 24h no SEO-hotfix)', async () => {
     const mod = await import('@/app/contratos/orgao/[cnpj]/page');
-    expect(mod.revalidate).toBe(86400);
+    expect(mod.revalidate).toBe(14400);
   });
 
   it('generateStaticParams returns empty array', async () => {

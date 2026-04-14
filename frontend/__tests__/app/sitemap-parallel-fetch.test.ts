@@ -3,11 +3,15 @@
  *
  * Regression test for HTTP 524 sitemap timeout fix.
  *
- * Bug: sitemap() chamava 7 endpoints do backend sequencialmente (cada await bloqueava
- * o próximo), somando até ~100s de latência → Railway/Cloudflare retornava HTTP 524.
+ * Bug: sitemap() chamava endpoints do backend sequencialmente, somando latência →
+ * Railway/Cloudflare retornava HTTP 524.
  *
- * Fix: Promise.all() paraleliza as 7 chamadas; AbortSignal.timeout(15000) limita cada
- * fetch a 15s individualmente. Worst-case: 15s total em vez de 7×15s = 105s.
+ * Fix: Promise.all() paraleliza as chamadas; AbortSignal.timeout(15000) limita cada
+ * fetch a 15s individualmente.
+ *
+ * Com o Sitemap Index (SEO-460), os endpoints ficam distribuídos por sub-sitemap:
+ *  - id:2 → /v1/sitemap/licitacoes-indexable (1 endpoint)
+ *  - id:4 → 6 endpoints de entidades em Promise.all
  */
 
 // Mock fetch globally (node env pattern — see __tests__/api/buscar.test.ts)
@@ -17,8 +21,7 @@ global.fetch = jest.fn();
 process.env.BACKEND_URL = 'http://mock-backend';
 process.env.NEXT_PUBLIC_CANONICAL_URL = 'https://smartlic.tech';
 
-const BACKEND_ENDPOINTS = [
-  '/v1/sitemap/licitacoes-indexable',
+const ENTITY_ENDPOINTS = [
   '/v1/sitemap/cnpjs',
   '/v1/sitemap/contratos-orgao-indexable',
   '/v1/sitemap/orgaos',
@@ -62,7 +65,8 @@ function makeFastFetchMock() {
   (global.fetch as jest.Mock).mockImplementation(
     (url: string | URL | Request, _init?: RequestInit) => {
       const urlStr = typeof url === 'string' ? url : url.toString();
-      const endpoint = BACKEND_ENDPOINTS.find((e) => urlStr.includes(e));
+      const allEndpoints = [...ENTITY_ENDPOINTS, '/v1/sitemap/licitacoes-indexable'];
+      const endpoint = allEndpoints.find((e) => urlStr.includes(e));
       const payload = endpoint ? PAYLOAD_BY_ENDPOINT[endpoint] : {};
       return Promise.resolve({
         ok: true,
@@ -77,12 +81,25 @@ describe('sitemap() — parallel fetch regression (HTTP 524 fix)', () => {
     (global.fetch as jest.Mock).mockReset();
   });
 
-  it('chama todos os 7 endpoints com opção signal (AbortSignal.timeout)', async () => {
+  it('sub-sitemap id:2 chama licitacoes-indexable com signal (AbortSignal.timeout)', async () => {
     makeFastFetchMock();
     const sitemap = await importSitemapFresh();
-    await sitemap();
+    await sitemap({ id: 2 });
 
-    for (const endpoint of BACKEND_ENDPOINTS) {
+    const call = (global.fetch as jest.Mock).mock.calls.find(([url]: [string]) =>
+      url.includes('/v1/sitemap/licitacoes-indexable'),
+    );
+    expect(call).toBeDefined();
+    const [, init] = call as [string, RequestInit | undefined];
+    expect(init?.signal).toBeDefined();
+  });
+
+  it('sub-sitemap id:4 chama todos os 6 endpoints de entidades com signal (AbortSignal.timeout)', async () => {
+    makeFastFetchMock();
+    const sitemap = await importSitemapFresh();
+    await sitemap({ id: 4 });
+
+    for (const endpoint of ENTITY_ENDPOINTS) {
       const call = (global.fetch as jest.Mock).mock.calls.find(([url]: [string]) =>
         url.includes(endpoint),
       );
@@ -93,7 +110,7 @@ describe('sitemap() — parallel fetch regression (HTTP 524 fix)', () => {
     }
   });
 
-  it('inicia todos os 7 fetches antes de qualquer resposta resolver (Promise.all)', async () => {
+  it('sub-sitemap id:4 inicia todos os 6 fetches antes de qualquer resposta resolver (Promise.all)', async () => {
     const initiated: string[] = [];
     let releaseAll!: () => void;
     const gate = new Promise<void>((res) => {
@@ -103,7 +120,7 @@ describe('sitemap() — parallel fetch regression (HTTP 524 fix)', () => {
     (global.fetch as jest.Mock).mockImplementation(
       (url: string | URL | Request) => {
         const urlStr = typeof url === 'string' ? url : url.toString();
-        const endpoint = BACKEND_ENDPOINTS.find((e) => urlStr.includes(e));
+        const endpoint = ENTITY_ENDPOINTS.find((e) => urlStr.includes(e));
         if (endpoint) {
           initiated.push(endpoint);
           return gate.then(() => ({
@@ -116,14 +133,14 @@ describe('sitemap() — parallel fetch regression (HTTP 524 fix)', () => {
     );
 
     const sitemap = await importSitemapFresh();
-    const sitemapPromise = sitemap();
+    const sitemapPromise = sitemap({ id: 4 });
 
     // Flush microtasks para que Promise.all dispare todos os fetches
     for (let i = 0; i < 20; i++) await Promise.resolve();
 
-    // Com Promise.all: todos os 7 devem estar em voo antes de qualquer resposta resolver
+    // Com Promise.all: todos os 6 devem estar em voo antes de qualquer resposta resolver
     // Com sequential awaits (bug original): apenas 1 teria sido iniciado
-    expect(initiated.length).toBe(7);
+    expect(initiated.length).toBe(6);
 
     releaseAll();
     await sitemapPromise;

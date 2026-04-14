@@ -49,6 +49,7 @@ async function fetchOrgaoStats(slug: string): Promise<OrgaoStats | null> {
   try {
     const resp = await fetch(`${BACKEND_URL}/v1/orgao/${slug}/stats`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!resp.ok) return null;
     return resp.json();

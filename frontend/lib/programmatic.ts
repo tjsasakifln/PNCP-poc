@@ -143,6 +143,7 @@ export async function fetchSectorBlogStats(sectorSlug: string): Promise<SectorBl
     const sectorId = sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/blog/stats/setor/${sectorId}`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -165,6 +166,7 @@ export async function fetchSectorUfBlogStats(
     const sectorId = sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/blog/stats/setor/${sectorId}/uf/${uf.toUpperCase()}`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -184,6 +186,7 @@ export async function fetchPanoramaStats(sectorSlug: string): Promise<PanoramaSt
     const sectorId = sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/blog/stats/panorama/${sectorId}`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -512,6 +515,7 @@ export async function fetchAlertasPublicos(
     const sectorId = sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/alertas/${sectorId}/uf/${uf.toUpperCase()}`, {
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -766,6 +770,7 @@ export async function fetchContratosSetorStats(sectorSlug: string): Promise<Cont
     const sectorId = sectorSlug.replace(/-/g, '_');
     const res = await fetch(`${backendUrl}/v1/blog/stats/contratos/${sectorId}`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return res.json();

@@ -37,6 +37,7 @@ async function fetchProfile(cnpj: string): Promise<ComplianceProfile | null> {
   try {
     const res = await fetch(`${backendUrl}/v1/compliance/${cnpj}/profile`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (res.status === 404 || res.status === 400) return null;
     if (!res.ok) return null;

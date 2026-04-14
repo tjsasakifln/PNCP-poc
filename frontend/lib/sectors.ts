@@ -92,6 +92,7 @@ export async function fetchSectorStats(slug: string): Promise<SectorStats | null
   try {
     const res = await fetch(`${backendUrl}/v1/sectors/${slug}/stats`, {
       next: { revalidate: 21600 }, // 6h ISR
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -127,6 +128,7 @@ export async function fetchTrendingSectors(): Promise<TrendingSector[] | null> {
   try {
     const res = await fetch(`${backendUrl}/v1/sectors/trending`, {
       next: { revalidate: 21600 }, // 6h ISR
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return await res.json();

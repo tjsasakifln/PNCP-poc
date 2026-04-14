@@ -58,6 +58,7 @@ async function fetchProfile(cnpj: string): Promise<FornecedorProfile | null> {
   try {
     const res = await fetch(`${backendUrl}/v1/fornecedores/${cnpj}/profile`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (res.status === 404) return null;
     if (!res.ok) return null;

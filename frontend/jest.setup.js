@@ -49,6 +49,15 @@ if (!globalThis.crypto.randomUUID) {
   globalThis.crypto.randomUUID = () => 'test-uuid-0000-0000-0000-000000000000';
 }
 
+// Polyfill AbortSignal.timeout for jsdom (not available in jsdom, but used in server-side fetches)
+if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'undefined') {
+  AbortSignal.timeout = (ms) => {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(new DOMException('TimeoutError', 'TimeoutError')), ms);
+    return controller.signal;
+  };
+}
+
 // Mock EventSource for jsdom (used by SSE progress tracking)
 // Shared MockEventSource from __tests__/utils/mock-event-source.ts (STORY-368)
 // NO auto-trigger onerror — tests control lifecycle explicitly via simulateOpen/simulateError.

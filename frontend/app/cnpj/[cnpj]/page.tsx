@@ -54,6 +54,7 @@ async function fetchPerfil(cnpj: string): Promise<PerfilB2G | null> {
   try {
     const resp = await fetch(`${BACKEND_URL}/v1/empresa/${cnpj}/perfil-b2g`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!resp.ok) return null;
     return resp.json();

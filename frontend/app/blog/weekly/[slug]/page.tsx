@@ -63,7 +63,7 @@ async function fetchWeeklyData(slug: string): Promise<WeeklyData | null> {
   try {
     const res = await fetch(
       `${BACKEND_URL}/v1/blog/weekly/${year}/${week}`,
-      { next: { revalidate: 3600 } }
+      { next: { revalidate: 3600 }, signal: AbortSignal.timeout(10000) }
     );
     if (!res.ok) return null;
     return res.json();

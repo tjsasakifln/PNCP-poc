@@ -52,6 +52,7 @@ async function fetchOrgaoContratosStats(cnpj: string): Promise<OrgaoContratosSta
   try {
     const resp = await fetch(`${BACKEND_URL}/v1/contratos/orgao/${cnpj}/stats`, {
       cache: 'no-store', // bypass Next.js Data Cache — sempre fresh no ISR regen
+      signal: AbortSignal.timeout(10000),
     });
     if (!resp.ok) return null;
     return resp.json();

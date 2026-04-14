@@ -32,6 +32,7 @@ async function fetchDados(): Promise<DadosData | null> {
   try {
     const res = await fetch(`${BACKEND_URL}/v1/dados/agregados`, {
       next: { revalidate: 21600 },
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     return res.json();

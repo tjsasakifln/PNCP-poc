@@ -86,7 +86,7 @@ export async function fetchContratosSetorUfStats(
     const sectorId = sectorSlug.replace(/-/g, '_');
     const res = await fetch(
       `${backendUrl}/v1/blog/stats/contratos/${sectorId}/uf/${uf.toUpperCase()}`,
-      { next: { revalidate: 86400 } },
+      { next: { revalidate: 86400 }, signal: AbortSignal.timeout(10000) },
     );
     if (!res.ok) return null;
     return res.json();
@@ -104,7 +104,7 @@ export async function fetchContratosCidadeStats(
   try {
     const res = await fetch(
       `${backendUrl}/v1/blog/stats/contratos/cidade/${encodeURIComponent(cidadeSlug)}`,
-      { next: { revalidate: 86400 } },
+      { next: { revalidate: 86400 }, signal: AbortSignal.timeout(10000) },
     );
     if (!res.ok) return null;
     return res.json();
@@ -124,7 +124,7 @@ export async function fetchContratosCidadeSetorStats(
     const sectorId = sectorSlug.replace(/-/g, '_');
     const res = await fetch(
       `${backendUrl}/v1/blog/stats/contratos/cidade/${encodeURIComponent(cidadeSlug)}/setor/${sectorId}`,
-      { next: { revalidate: 86400 } },
+      { next: { revalidate: 86400 }, signal: AbortSignal.timeout(10000) },
     );
     if (!res.ok) return null;
     return res.json();
