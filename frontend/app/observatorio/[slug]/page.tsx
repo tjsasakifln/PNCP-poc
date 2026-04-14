@@ -49,10 +49,9 @@ async function fetchRelatorio(mes: number, ano: number) {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ mes: string; ano: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { mes: mesParam, ano: anoParam } = await params;
-  const slug = `${mesParam}-${anoParam}`;
+  const { slug } = await params;
   const parsed = parseSlug(slug);
   if (!parsed) return { title: 'Relatório não encontrado' };
 
@@ -90,10 +89,9 @@ export async function generateMetadata({
 export default async function RelatorioPage({
   params,
 }: {
-  params: Promise<{ mes: string; ano: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { mes: mesParam, ano: anoParam } = await params;
-  const slug = `${mesParam}-${anoParam}`;
+  const { slug } = await params;
   const parsed = parseSlug(slug);
   if (!parsed) notFound();
 
