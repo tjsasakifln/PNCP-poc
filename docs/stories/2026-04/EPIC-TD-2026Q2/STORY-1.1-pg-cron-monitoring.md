@@ -3,7 +3,7 @@
 **Priority:** P0 (precede crons; sem monitoring, falha silenciosa)
 **Effort:** S (4-8h)
 **Squad:** @data-engineer (executor) + @dev (quality gate)
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-TD-2026Q2](../epic-technical-debt.md)
 **Sprint:** Sprint 0 — P0 Critical (Semana 1)
 
@@ -133,3 +133,4 @@ A Phase 5 do brownfield-discovery (TD-DB-040) identificou que o SmartLic hoje te
 | Date       | Version | Description                                  | Author |
 |------------|---------|----------------------------------------------|--------|
 | 2026-04-14 | 1.0     | Initial draft from EPIC-TD-2026Q2 Phase 10  | @sm    |
+| 2026-04-14 | 1.1     | GO (8/10) — Draft → Ready. Obs: adicionar IN/OUT antes de InProgress | @po    |

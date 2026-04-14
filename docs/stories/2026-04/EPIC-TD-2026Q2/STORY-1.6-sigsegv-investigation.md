@@ -3,7 +3,7 @@
 **Priority:** P0 (production reliability — POST endpoints crasham intermitentemente)
 **Effort:** L (16-40h, ongoing — kickoff é P0 mas full resolução pode estender)
 **Squad:** @architect (lead) + @dev (executor) + @devops (deployment validation)
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-TD-2026Q2](../epic-technical-debt.md)
 **Sprint:** Sprint 0 (kickoff) → potencial sprint 1-2 spillover
 
@@ -155,3 +155,4 @@ ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 | Date       | Version | Description                                  | Author |
 |------------|---------|----------------------------------------------|--------|
 | 2026-04-14 | 1.0     | Initial draft from EPIC-TD-2026Q2 Phase 10  | @sm    |
+| 2026-04-14 | 1.1     | GO (9/10) — Draft → Ready. Obs: adicionar IN/OUT explícito (fix = OUT do kickoff) antes de InProgress | @po    |

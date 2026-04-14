@@ -3,7 +3,7 @@
 **Priority:** P0 (storage growth — table bloat sem cron global cleanup)
 **Effort:** XS (0.5h)
 **Squad:** @data-engineer + @dev quality gate
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-TD-2026Q2](../epic-technical-debt.md)
 **Sprint:** Sprint 0
 **Depends on:** STORY-1.1
@@ -21,6 +21,12 @@
 ## Contexto
 
 A Phase 2 (DB-AUDIT TD-DB-013) e Phase 5 (specialist review) identificaram: trigger `trg_cleanup_search_cache` mantém max 5 entries/user MAS só dispara em INSERT novo. Se user não retorna, entries antigas ficam para sempre. Sobrepõe-se com TD-SYS-016 (Phase 1 architect notes).
+
+**Impacto estimado de storage sem este cron:**
+- `search_results_cache` armazena resultado JSON por busca (~50-200KB/row dependendo do volume de licitações)
+- Usuários inativos (trial expirado, churned) acumulam rows indefinidamente
+- Estimativa conservadora: 500 usuários × 5 entries × 100KB médio = **~250MB** de dados obsoletos em 6 meses
+- Com crescimento de usuários, pode contribuir materialmente para exceder os 500MB do FREE tier
 
 Esta story é a metade-irmã de STORY-1.2 — outro cron crítico para storage hygiene.
 
@@ -63,18 +69,34 @@ Esta story é a metade-irmã de STORY-1.2 — outro cron crítico para storage h
 
 - Tabela `search_results_cache`: ver `supabase/docs/SCHEMA.md` linha 17
 - TTL alinhado com `backend/search_cache.py` constants (24h hard expire)
-- Cron 4 UTC = entre purge_old_bids (3 UTC) e search_results_store cleanup (4 UTC) — paralelizar OK
+- Cron 4 UTC = entre purge_old_bids (7 UTC) e search_results_store cleanup (4:15 UTC) — paralelizar OK (decisão @data-engineer: purge_old_bids é 7 UTC, não 3 UTC)
 
 ## Testing
 
 - **Smoke**: `SELECT * FROM cron.job WHERE jobname='cleanup-search-cache'`
 - **Validation**: insert old row em staging, run job manually, confirma deletion
 
+## Escopo
+
+### IN
+- Schedule pg_cron para deletar rows com `created_at < now() - interval '24 hours'` de `search_results_cache`
+- Verificação de que job aparece no monitoring (STORY-1.1)
+
+### OUT
+- Modificação do trigger `trg_cleanup_search_cache` existente (complementar, não substituir)
+- Alteração do TTL de 24h (mudança de produto, não deste epic)
+
+---
+
 ## Definition of Done
 
-- [ ] Migration aplicada
-- [ ] Cron monitorado
-- [ ] CLAUDE.md atualizado
+- [ ] Migration criada em `supabase/migrations/`
+- [ ] Migration aplicada em prod via CRIT-050 flow
+- [ ] Cron job aparece em `SELECT * FROM cron.job WHERE jobname = 'cleanup-search-cache'`
+- [ ] Primeiro run confirmado: `cron.job_run_details` mostra `status = 'succeeded'`
+- [ ] `/admin/cron-status` lista job (STORY-1.1 prerequisite)
+- [ ] All backend tests passing (zero regressões)
+- [ ] PR aprovado por @qa
 
 ## Risks
 
@@ -85,3 +107,5 @@ Esta story é a metade-irmã de STORY-1.2 — outro cron crítico para storage h
 | Date       | Version | Description     | Author |
 |------------|---------|-----------------|--------|
 | 2026-04-14 | 1.0     | Initial draft   | @sm    |
+| 2026-04-14 | 1.1     | GO condicional (7/10) — Draft → Ready. @sm: expandir DoD (adicionar "All backend tests passing" e "PR aprovado por @qa") + quantificar impacto de storage no Contexto | @po    |
+| 2026-04-14 | 1.2     | @data-engineer: DoD expandido para 7 itens; Escopo IN/OUT adicionado; storage impact quantificado (~250MB); nota de horário corrigida (purge_old_bids = 7 UTC) | @data-engineer |

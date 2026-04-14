@@ -3,7 +3,7 @@
 **Priority:** P0 (compliance B2G obrigatório — LBI 13.146/2015 + Lei 14.738/2023)
 **Effort:** M (8-16h)
 **Squad:** @ux-design-expert (lead) + @dev (executor) + @qa (quality gate)
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-TD-2026Q2](../epic-technical-debt.md)
 **Sprint:** Sprint 0
 
@@ -153,3 +153,4 @@ const sensors = useSensors(
 | Date       | Version | Description     | Author |
 |------------|---------|-----------------|--------|
 | 2026-04-14 | 1.0     | Initial draft   | @sm    |
+| 2026-04-14 | 1.1     | GO (9/10) — Draft → Ready. Obs: adicionar IN/OUT (mobile swipe = OUT) antes de InProgress | @po    |
