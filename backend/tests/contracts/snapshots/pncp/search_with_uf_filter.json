@@ -1,0 +1,39 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py",
+  "_params": {
+    "codigoModalidadeContratacao": 6,
+    "dataInicial": "20260401",
+    "dataFinal": "20260410",
+    "uf": "RS",
+    "pagina": 1,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "66600000000100-1-000301/2026",
+        "codigoCompra": "PNCP-2026-RS-000301",
+        "codigoModalidadeContratacao": 6,
+        "modalidadeNome": "Pregão Eletrônico",
+        "objetoCompra": "Locação de veículos leves para a frota municipal",
+        "nomeOrgao": "Prefeitura de Porto Alegre",
+        "cnpjOrgao": "66600000000100",
+        "uf": "RS",
+        "municipio": "Porto Alegre",
+        "valorTotalEstimado": 360000.0,
+        "dataPublicacaoPncp": "2026-04-08",
+        "dataAberturaProposta": "2026-04-22",
+        "dataEncerramentoProposta": "2026-05-06",
+        "situacaoCompra": "Aberta",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/301",
+        "codigoUnidadeCompradora": "UC-000301"
+      }
+    ],
+    "totalRegistros": 1,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

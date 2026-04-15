@@ -1,0 +1,38 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py",
+  "_params": {
+    "codigoModalidadeContratacao": 12,
+    "dataInicial": "20260401",
+    "dataFinal": "20260410",
+    "pagina": 1,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "88800000000100-1-000088/2026",
+        "codigoCompra": "PNCP-2026-DF-000088",
+        "codigoModalidadeContratacao": 12,
+        "modalidadeNome": "Regime Diferenciado de Contratação",
+        "objetoCompra": "Obras de duplicação de rodovia federal trecho 10",
+        "nomeOrgao": "DNIT - Superintendência Regional DF",
+        "cnpjOrgao": "88800000000100",
+        "uf": "DF",
+        "municipio": "Brasília",
+        "valorTotalEstimado": 75000000.0,
+        "dataPublicacaoPncp": "2026-04-01",
+        "dataAberturaProposta": "2026-05-20",
+        "dataEncerramentoProposta": "2026-06-20",
+        "situacaoCompra": "Aberta",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/88",
+        "codigoUnidadeCompradora": "UC-000088"
+      }
+    ],
+    "totalRegistros": 1,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

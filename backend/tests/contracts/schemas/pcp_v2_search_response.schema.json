@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "currentPage": {
+      "type": "integer"
+    },
+    "limit": {
+      "type": "integer"
+    },
+    "nextPage": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "offset": {
+      "type": "integer"
+    },
+    "pageCount": {
+      "type": "integer"
+    },
+    "previousPage": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "result": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "codigoLicitacao": {
+            "type": "integer"
+          },
+          "codigoSituacaoCadastroLicitacao": {
+            "type": "integer"
+          },
+          "codigoSituacaoEdital": {
+            "type": "integer"
+          },
+          "codigoTratamentoDiferenciado": {
+            "type": "integer"
+          },
+          "comprador": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "dataHoraFinalLances": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataHoraFinalPropostas": {
+            "type": "string"
+          },
+          "dataHoraInicioLances": {
+            "type": "string"
+          },
+          "dataHoraInicioPropostas": {
+            "type": "string"
+          },
+          "dataHoraPublicacao": {
+            "type": "string"
+          },
+          "identificacao": {
+            "type": "string"
+          },
+          "isBeneficoLocal": {
+            "type": "boolean"
+          },
+          "isExclusivoME": {
+            "type": "boolean"
+          },
+          "isPublicado": {
+            "type": "boolean"
+          },
+          "nomeUnidade": {
+            "type": "string"
+          },
+          "numero": {
+            "type": "string"
+          },
+          "numeroLicitacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "razaoSocial": {
+            "type": "string"
+          },
+          "resumo": {
+            "type": "string"
+          },
+          "situacao": {
+            "additionalProperties": true,
+            "properties": {
+              "codigo": {
+                "type": "integer"
+              },
+              "descricao": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "codigo",
+              "descricao"
+            ],
+            "type": "object"
+          },
+          "status": {
+            "additionalProperties": true,
+            "properties": {
+              "codigo": {
+                "type": "integer"
+              },
+              "descricao": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "codigo",
+              "descricao"
+            ],
+            "type": "object"
+          },
+          "statusProcessoPublico": {
+            "additionalProperties": true,
+            "properties": {
+              "codigo": {
+                "type": "integer"
+              },
+              "descricao": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "codigo",
+              "descricao"
+            ],
+            "type": "object"
+          },
+          "tipoLicitacao": {
+            "additionalProperties": true,
+            "properties": {
+              "codigoModalidadeLicitacao": {
+                "type": "integer"
+              },
+              "codigoTipoLicitacao": {
+                "type": "integer"
+              },
+              "modalidadeLicitacao": {
+                "type": "string"
+              },
+              "siglaTipoLicitacao": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "tipoJulgamento": {
+                "type": "string"
+              },
+              "tipoLicitacao": {
+                "type": "string"
+              },
+              "tipoRealizacao": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "codigoModalidadeLicitacao",
+              "codigoTipoLicitacao",
+              "modalidadeLicitacao",
+              "siglaTipoLicitacao",
+              "tipoJulgamento",
+              "tipoLicitacao",
+              "tipoRealizacao"
+            ],
+            "type": "object"
+          },
+          "unidadeCompradora": {
+            "additionalProperties": true,
+            "properties": {
+              "cidade": {
+                "type": "string"
+              },
+              "codigoComprador": {
+                "type": "integer"
+              },
+              "codigoMunicipioIbge": {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              "codigoUnidadeCompradora": {
+                "type": "integer"
+              },
+              "nomeComprador": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "nomeUnidadeCompradora": {
+                "type": "string"
+              },
+              "uf": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "cidade",
+              "codigoComprador",
+              "codigoMunicipioIbge",
+              "codigoUnidadeCompradora",
+              "nomeComprador",
+              "nomeUnidadeCompradora",
+              "uf"
+            ],
+            "type": "object"
+          },
+          "urlReferencia": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "codigoLicitacao",
+          "codigoSituacaoCadastroLicitacao",
+          "codigoSituacaoEdital",
+          "codigoTratamentoDiferenciado",
+          "comprador",
+          "dataHoraFinalLances",
+          "dataHoraFinalPropostas",
+          "dataHoraInicioLances",
+          "dataHoraInicioPropostas",
+          "dataHoraPublicacao",
+          "identificacao",
+          "isBeneficoLocal",
+          "isExclusivoME",
+          "isPublicado",
+          "nomeUnidade",
+          "numero",
+          "numeroLicitacao",
+          "razaoSocial",
+          "resumo",
+          "situacao",
+          "status",
+          "statusProcessoPublico",
+          "tipoLicitacao",
+          "unidadeCompradora",
+          "urlReferencia"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "total": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "currentPage",
+    "limit",
+    "nextPage",
+    "offset",
+    "pageCount",
+    "previousPage",
+    "result",
+    "total"
+  ],
+  "title": "PCP v2 Search Response",
+  "type": "object"
+}

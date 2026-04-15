@@ -1,0 +1,49 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_source": "Stripe docs example — https://stripe.com/docs/api/events/types (synthetic, no real keys)",
+  "_event_type": "invoice.paid",
+  "response": {
+    "id": "evt_1NhZz7XXXXXXXXXXXXXXXXXX",
+    "object": "event",
+    "api_version": "2024-06-20",
+    "created": 1712700000,
+    "livemode": false,
+    "pending_webhooks": 0,
+    "request": {
+      "id": null,
+      "idempotency_key": null
+    },
+    "type": "invoice.paid",
+    "data": {
+      "object": {
+        "id": "in_1NhZz6XXXXXXXXXXXXXXXXXX",
+        "object": "invoice",
+        "account_country": "BR",
+        "amount_due": 39700,
+        "amount_paid": 39700,
+        "amount_remaining": 0,
+        "billing_reason": "subscription_cycle",
+        "collection_method": "charge_automatically",
+        "currency": "brl",
+        "customer": "cus_XXXXXXXXXXXXXX",
+        "customer_email": "test@example.com",
+        "hosted_invoice_url": "https://invoice.stripe.com/i/acct_X/test_XXX",
+        "invoice_pdf": "https://pay.stripe.com/invoice/acct_X/test_XXX/pdf",
+        "number": "XXX-0001",
+        "paid": true,
+        "payment_intent": "pi_1NhZz7XXXXXXXXXXXXXXXXXX",
+        "period_end": 1715292000,
+        "period_start": 1712700000,
+        "status": "paid",
+        "subscription": "sub_1NhZz5XXXXXXXXXXXXXXXXXX",
+        "total": 39700,
+        "lines": {
+          "object": "list",
+          "data": [],
+          "has_more": false,
+          "url": "/v1/invoices/in_X/lines"
+        }
+      }
+    }
+  }
+}

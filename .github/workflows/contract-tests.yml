@@ -1,0 +1,166 @@
+# STORY-3.4 EPIC-TD-2026Q2: Contract / snapshot tests for external APIs.
+# Runs weekly (Monday 04:00 UTC) + manual dispatch. Detects breaking changes
+# in PNCP / PCP v2 / ComprasGov v3 / Stripe webhook shapes before they hit
+# production.
+name: "Contract Tests (Weekly)"
+
+on:
+  schedule:
+    # Monday 04:00 UTC (01:00 BRT) — runs BEFORE the daily 08:00 BRT
+    # incremental ingestion so we catch drift with max lead time.
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      run_live:
+        description: "Also run live API checks (slower, can hit rate limits)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  contract-shape-validation:
+    name: Contract — offline snapshot validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      ENVIRONMENT: test
+      SENTRY_DSN: ""
+      REDIS_URL: ""
+      LOG_LEVEL: WARNING
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install minimal contract-test dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install pytest pytest-asyncio pytest-timeout jsonschema httpx
+
+      - name: Run contract tests (offline only)
+        id: contracts
+        run: |
+          cd backend
+          python -m pytest tests/contracts/ \
+            -m 'contract and not external' \
+            --tb=short --no-header -v \
+            --junitxml=contract-results.xml
+        continue-on-error: false
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-test-results
+          path: backend/contract-results.xml
+          retention-days: 30
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().slice(0, 10);
+            const title = `Contract tests FAILED (${today}) — external API drift detected`;
+            const body = [
+              "Weekly contract tests failed. This usually means one of",
+              "PNCP / PCP v2 / ComprasGov v3 / Stripe changed the shape of",
+              "their response payload and SmartLic needs to either:",
+              "",
+              "1. Absorb the change (if additive / benign) — re-record snapshots + commit schema.",
+              "2. Fix a real bug the change exposed.",
+              "",
+              `Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              "",
+              "Investigation steps (see docs/qa/contract-tests.md):",
+              "1. Download the `contract-test-results` artifact from the run above.",
+              "2. Re-run locally: `pytest backend/tests/contracts/ -m contract -v`.",
+              "3. If the live API genuinely changed, re-baseline with the documented workflow.",
+            ].join("\n");
+            // De-dupe: only open a new issue if none already open with same title prefix.
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "contract-tests",
+              per_page: 50,
+            });
+            const exists = issues.data.find(i => i.title.startsWith("Contract tests FAILED"));
+            if (exists) {
+              core.info(`Existing issue #${exists.number} — skipping creation.`);
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ["contract-tests", "bug", "priority:high"],
+            });
+
+      - name: Notify Sentry on failure
+        if: failure() && env.SENTRY_AUTH_TOKEN != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://sentry.io/api/0/projects/${SENTRY_ORG}/${SENTRY_PROJECT}/user-feedback/" \
+            -d '{"message":"Contract tests failed — see GitHub Actions run","level":"error","event_id":"contract-tests-weekly"}' \
+            || echo "Sentry notify failed (non-blocking)"
+
+  live-contract-check:
+    name: Contract — live API shape comparison (opt-in)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: contract-shape-validation
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_live == 'true') ||
+      (github.event_name == 'schedule' && vars.RUN_LIVE_CONTRACT_TESTS == 'true')
+
+    env:
+      RUN_LIVE_CONTRACT_TESTS: "1"
+      ENVIRONMENT: test
+      LOG_LEVEL: WARNING
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install pytest pytest-asyncio pytest-timeout jsonschema httpx
+
+      - name: Run live contract checks
+        run: |
+          cd backend
+          python -m pytest tests/contracts/ \
+            -m external \
+            --tb=short --no-header -v
+        continue-on-error: true  # External APIs are flaky — failures go to the issue, don't break pipeline

@@ -1,0 +1,48 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/modulo-contratacoes/3_consultarLicitacao",
+  "_source": "derived from backend/clients/compras_gov_client.py (_normalize_legacy field mapping)",
+  "_params": {
+    "pagina": 1,
+    "tamanhoPagina": 500
+  },
+  "response": {
+    "_embedded": {
+      "licitacoes": [
+        {
+          "numero_aviso": "123456",
+          "identificador": "20260001",
+          "objeto": "Aquisição de mobiliário para sala de reuniões",
+          "descricao": "Cadeiras, mesas e armários",
+          "valor_estimado": 85000.0,
+          "valor": 85000.0,
+          "uasg": {
+            "codigo": "200100",
+            "nome": "MINISTÉRIO DA FAZENDA",
+            "cnpj": "00000000000191"
+          },
+          "orgao_nome": "MINISTÉRIO DA FAZENDA",
+          "cnpj": "00000000000191",
+          "uf": "DF",
+          "municipio": "Brasília",
+          "modalidade": {
+            "codigo": 5,
+            "descricao": "Pregão Eletrônico"
+          },
+          "situacao": {
+            "codigo": 1,
+            "descricao": "Publicada"
+          },
+          "data_publicacao": "2026-04-05",
+          "data_entrega_proposta": "2026-04-20"
+        }
+      ]
+    },
+    "_links": {
+      "self": {"href": "https://dadosabertos.compras.gov.br/modulo-contratacoes/3_consultarLicitacao?pagina=1"},
+      "next": {"href": "https://dadosabertos.compras.gov.br/modulo-contratacoes/3_consultarLicitacao?pagina=2"}
+    },
+    "count": 1,
+    "total": 1250
+  }
+}

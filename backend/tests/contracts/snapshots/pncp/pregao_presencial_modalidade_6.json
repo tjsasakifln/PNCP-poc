@@ -1,0 +1,39 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py",
+  "_params": {
+    "codigoModalidadeContratacao": 6,
+    "dataInicial": "20260401",
+    "dataFinal": "20260410",
+    "pagina": 1,
+    "tamanhoPagina": 50,
+    "uf": "BA"
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "33300000000100-1-000045/2026",
+        "codigoCompra": "PNCP-2026-BA-000045",
+        "codigoModalidadeContratacao": 6,
+        "modalidadeNome": "Pregão Presencial",
+        "objetoCompra": "Aquisição de medicamentos para atenção básica",
+        "nomeOrgao": "Secretaria de Saúde de Salvador",
+        "cnpjOrgao": "33300000000100",
+        "uf": "BA",
+        "municipio": "Salvador",
+        "valorTotalEstimado": 720000.0,
+        "dataPublicacaoPncp": "2026-04-03",
+        "dataAberturaProposta": "2026-04-18",
+        "dataEncerramentoProposta": "2026-05-02",
+        "situacaoCompra": "Aberta",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/45",
+        "codigoUnidadeCompradora": "UC-000045"
+      }
+    ],
+    "totalRegistros": 1,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

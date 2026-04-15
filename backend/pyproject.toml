@@ -31,6 +31,8 @@ markers = [
     "slow: Slow tests (> 1s)",
     "asyncio: Async tests",
     "benchmark: Performance benchmarks (require pytest-benchmark, skipped in CI)",
+    "contract: Contract/snapshot tests (shape validation against committed snapshots — offline, default run)",
+    "external: Tests that hit live external APIs (opt-in via RUN_LIVE_CONTRACT_TESTS=1)",
 ]
 
 # pytest-asyncio configuration

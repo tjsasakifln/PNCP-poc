@@ -1,0 +1,77 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_source": "Stripe docs example — https://stripe.com/docs/api/events/types (synthetic, no real keys)",
+  "_event_type": "customer.subscription.deleted",
+  "response": {
+    "id": "evt_1Del001XXXXXXXXXXXXXXXX",
+    "object": "event",
+    "api_version": "2024-06-20",
+    "created": 1712800000,
+    "livemode": false,
+    "pending_webhooks": 0,
+    "request": {
+      "id": "req_XXXXXXXXXXXXXX",
+      "idempotency_key": null
+    },
+    "type": "customer.subscription.deleted",
+    "data": {
+      "object": {
+        "id": "sub_1Del001XXXXXXXXXXXXXXXX",
+        "object": "subscription",
+        "application": null,
+        "billing_cycle_anchor": 1712000000,
+        "cancel_at": null,
+        "cancel_at_period_end": false,
+        "canceled_at": 1712800000,
+        "collection_method": "charge_automatically",
+        "created": 1710000000,
+        "currency": "brl",
+        "current_period_end": 1714500000,
+        "current_period_start": 1712000000,
+        "customer": "cus_XXXXXXXXXXXXXX",
+        "days_until_due": null,
+        "default_payment_method": "pm_XXXXXXXXXXXXXX",
+        "ended_at": 1712800000,
+        "items": {
+          "object": "list",
+          "data": [
+            {
+              "id": "si_XXXXXXXXXXXXXX",
+              "object": "subscription_item",
+              "created": 1710000000,
+              "price": {
+                "id": "price_XXXXXXXXXXXXXX",
+                "object": "price",
+                "active": true,
+                "currency": "brl",
+                "unit_amount": 39700
+              },
+              "quantity": 1,
+              "subscription": "sub_1Del001XXXXXXXXXXXXXXXX"
+            }
+          ],
+          "has_more": false,
+          "url": "/v1/subscription_items"
+        },
+        "latest_invoice": "in_XXXXXXXXXXXXXX",
+        "metadata": {},
+        "pause_collection": null,
+        "payment_settings": null,
+        "pending_update": null,
+        "plan": {
+          "id": "price_XXXXXXXXXXXXXX",
+          "object": "plan",
+          "active": true,
+          "amount": 39700,
+          "currency": "brl",
+          "interval": "month",
+          "interval_count": 1
+        },
+        "start_date": 1710000000,
+        "status": "canceled",
+        "trial_end": null,
+        "trial_start": null
+      }
+    }
+  }
+}

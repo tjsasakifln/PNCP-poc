@@ -1,0 +1,20 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py (PNCP_SUCCESS_EMPTY)",
+  "_params": {
+    "codigoModalidadeContratacao": 6,
+    "dataInicial": "20260101",
+    "dataFinal": "20260105",
+    "uf": "AC",
+    "pagina": 1,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [],
+    "totalRegistros": 0,
+    "totalPaginas": 0,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

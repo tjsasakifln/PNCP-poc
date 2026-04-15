@@ -1,0 +1,42 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratos",
+  "_source": "derived from backend/routes/empresa_publica.py (_fetch_contratos_pncp shape usage)",
+  "_params": {
+    "cnpjFornecedor": "00000000000191",
+    "dataInicial": "20250101",
+    "dataFinal": "20260410",
+    "pagina": 1,
+    "tamanhoPagina": 500
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "12345678000100-1-000001/2025",
+        "numeroContratoEmpenho": "0001/2025",
+        "niFornecedor": "00000000000191",
+        "nomeRazaoSocialFornecedor": "Fornecedor Exemplo LTDA",
+        "orgaoEntidadeCnpj": "12345678000100",
+        "orgaoEntidadeRazaoSocial": "Prefeitura Exemplo",
+        "objetoContrato": "Fornecimento de uniformes escolares",
+        "informacaoComplementar": "Contrato firmado em 2025",
+        "valorInicial": 250000.0,
+        "valorGlobal": 250000.0,
+        "dataAssinatura": "2025-03-10",
+        "dataVigenciaInicio": "2025-03-15",
+        "dataVigenciaFim": "2026-03-14",
+        "unidadeOrgao": {
+          "ufSigla": "SP",
+          "municipioNome": "São Paulo"
+        },
+        "tipoContrato": {
+          "nome": "Contrato"
+        }
+      }
+    ],
+    "totalRegistros": 1,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

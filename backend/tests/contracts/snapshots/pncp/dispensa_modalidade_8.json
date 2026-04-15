@@ -1,0 +1,38 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py",
+  "_params": {
+    "codigoModalidadeContratacao": 8,
+    "dataInicial": "20260401",
+    "dataFinal": "20260410",
+    "pagina": 1,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "44400000000100-1-000055/2026",
+        "codigoCompra": "PNCP-2026-PR-000055",
+        "codigoModalidadeContratacao": 8,
+        "modalidadeNome": "Dispensa",
+        "objetoCompra": "Aquisição emergencial de oxigênio medicinal",
+        "nomeOrgao": "Hospital Municipal de Curitiba",
+        "cnpjOrgao": "44400000000100",
+        "uf": "PR",
+        "municipio": "Curitiba",
+        "valorTotalEstimado": 49000.0,
+        "dataPublicacaoPncp": "2026-04-07",
+        "dataAberturaProposta": "2026-04-07",
+        "dataEncerramentoProposta": "2026-04-07",
+        "situacaoCompra": "Homologada",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/55",
+        "codigoUnidadeCompradora": "UC-000055"
+      }
+    ],
+    "totalRegistros": 1,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py + snapshots/api_contracts/pncp_record_schema.json",
+  "_params": {
+    "codigoModalidadeContratacao": 4,
+    "dataInicial": "20260401",
+    "dataFinal": "20260410",
+    "pagina": 1,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "12345678000100-1-000077/2026",
+        "codigoCompra": "PNCP-2026-RJ-000077",
+        "codigoModalidadeContratacao": 4,
+        "modalidadeNome": "Concorrência",
+        "objetoCompra": "Construção de escola municipal padrão FNDE",
+        "nomeOrgao": "Secretaria Municipal de Educação",
+        "cnpjOrgao": "12345678000100",
+        "uf": "RJ",
+        "municipio": "Rio de Janeiro",
+        "valorTotalEstimado": 4500000.0,
+        "dataPublicacaoPncp": "2026-04-02",
+        "dataAberturaProposta": "2026-05-02",
+        "dataEncerramentoProposta": "2026-05-16",
+        "situacaoCompra": "Aberta",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/77",
+        "codigoUnidadeCompradora": "UC-000077"
+      }
+    ],
+    "totalRegistros": 1,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

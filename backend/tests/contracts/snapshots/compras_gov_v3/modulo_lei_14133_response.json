@@ -1,0 +1,43 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/modulo-legislacao/2_consultarLei14133",
+  "_source": "derived from backend/clients/compras_gov_client.py (_normalize_lei_14133 field mapping)",
+  "_params": {
+    "pagina": 1,
+    "tamanhoPagina": 500
+  },
+  "response": {
+    "_embedded": {
+      "licitacoes": [
+        {
+          "numeroControlePNCP": "12345678000100-1-000002/2026",
+          "objetoCompra": "Prestação de serviços de vigilância patrimonial armada",
+          "valorTotalEstimado": 1500000.0,
+          "orgaoEntidade": {
+            "cnpj": "12345678000100",
+            "razaoSocial": "Ministério da Defesa",
+            "poderId": "E",
+            "esferaId": "F"
+          },
+          "unidadeOrgao": {
+            "ufSigla": "DF",
+            "municipioNome": "Brasília",
+            "codigoUnidade": "110120",
+            "nomeUnidade": "Comando Logístico"
+          },
+          "modalidadeNome": "Pregão Eletrônico",
+          "modalidadeId": 6,
+          "situacaoCompraNome": "Divulgada no PNCP",
+          "dataPublicacaoPncp": "2026-04-02",
+          "dataAberturaProposta": "2026-04-18",
+          "linkSistemaOrigem": "https://www.gov.br/compras/licitacoes/111"
+        }
+      ]
+    },
+    "_links": {
+      "self": {"href": "https://dadosabertos.compras.gov.br/modulo-legislacao/2_consultarLei14133?pagina=1"}
+    },
+    "count": 1,
+    "total": 890
+  }
+}

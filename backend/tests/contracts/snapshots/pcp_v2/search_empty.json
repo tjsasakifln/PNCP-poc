@@ -1,0 +1,18 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v2/licitacao/processos",
+  "_source": "derived from backend/tests/snapshots/api_contracts/pcp_response_toplevel.json (empty case)",
+  "_params": {
+    "page": 500
+  },
+  "response": {
+    "currentPage": 500,
+    "pageCount": 10,
+    "limit": 10,
+    "offset": 4990,
+    "total": 100,
+    "nextPage": null,
+    "previousPage": 499,
+    "result": []
+  }
+}

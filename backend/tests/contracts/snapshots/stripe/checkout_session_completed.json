@@ -1,0 +1,43 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_source": "Stripe docs example — https://stripe.com/docs/api/events/types (synthetic, no real keys)",
+  "_event_type": "checkout.session.completed",
+  "response": {
+    "id": "evt_1Chk001XXXXXXXXXXXXXXXX",
+    "object": "event",
+    "api_version": "2024-06-20",
+    "created": 1713000000,
+    "livemode": false,
+    "pending_webhooks": 0,
+    "request": {
+      "id": "req_XXXXXXXXXXXXXX",
+      "idempotency_key": null
+    },
+    "type": "checkout.session.completed",
+    "data": {
+      "object": {
+        "id": "cs_test_XXXXXXXXXXXXXX",
+        "object": "checkout.session",
+        "amount_subtotal": 39700,
+        "amount_total": 39700,
+        "client_reference_id": "user_abc123",
+        "currency": "brl",
+        "customer": "cus_XXXXXXXXXXXXXX",
+        "customer_email": "test@example.com",
+        "expires_at": 1713086400,
+        "livemode": false,
+        "metadata": {
+          "user_id": "user_abc123",
+          "plan_type": "smartlic_pro"
+        },
+        "mode": "subscription",
+        "payment_intent": null,
+        "payment_status": "paid",
+        "status": "complete",
+        "subscription": "sub_XXXXXXXXXXXXXX",
+        "success_url": "https://smartlic.tech/planos/obrigado",
+        "url": null
+      }
+    }
+  }
+}

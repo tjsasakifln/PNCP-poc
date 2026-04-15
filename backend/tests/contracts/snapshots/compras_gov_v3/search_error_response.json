@@ -1,0 +1,16 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/modulo-contratacoes/3_consultarLicitacao",
+  "_source": "observed error envelope",
+  "_params": {
+    "pagina": 9999,
+    "tamanhoPagina": 500
+  },
+  "response": {
+    "timestamp": "2026-04-14T10:30:00Z",
+    "status": 404,
+    "error": "Not Found",
+    "message": "Nenhuma licitação encontrada para os parâmetros informados",
+    "path": "/modulo-contratacoes/3_consultarLicitacao"
+  }
+}

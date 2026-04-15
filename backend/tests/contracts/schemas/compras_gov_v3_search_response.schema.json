@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "_embedded": {
+      "additionalProperties": true,
+      "properties": {
+        "licitacoes": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "cnpj": {
+                "type": "string"
+              },
+              "dataAberturaProposta": {
+                "type": "string"
+              },
+              "dataPublicacaoPncp": {
+                "type": "string"
+              },
+              "data_entrega_proposta": {
+                "type": "string"
+              },
+              "data_publicacao": {
+                "type": "string"
+              },
+              "descricao": {
+                "type": "string"
+              },
+              "identificador": {
+                "type": "string"
+              },
+              "linkSistemaOrigem": {
+                "type": "string"
+              },
+              "modalidade": {
+                "additionalProperties": true,
+                "properties": {
+                  "codigo": {
+                    "type": "integer"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "codigo",
+                  "descricao"
+                ],
+                "type": "object"
+              },
+              "modalidadeId": {
+                "type": "integer"
+              },
+              "modalidadeNome": {
+                "type": "string"
+              },
+              "municipio": {
+                "type": "string"
+              },
+              "numeroControlePNCP": {
+                "type": "string"
+              },
+              "numero_aviso": {
+                "type": "string"
+              },
+              "objeto": {
+                "type": "string"
+              },
+              "objetoCompra": {
+                "type": "string"
+              },
+              "orgaoEntidade": {
+                "additionalProperties": true,
+                "properties": {
+                  "cnpj": {
+                    "type": "string"
+                  },
+                  "esferaId": {
+                    "type": "string"
+                  },
+                  "poderId": {
+                    "type": "string"
+                  },
+                  "razaoSocial": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "cnpj",
+                  "esferaId",
+                  "poderId",
+                  "razaoSocial"
+                ],
+                "type": "object"
+              },
+              "orgao_nome": {
+                "type": "string"
+              },
+              "situacao": {
+                "additionalProperties": true,
+                "properties": {
+                  "codigo": {
+                    "type": "integer"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "codigo",
+                  "descricao"
+                ],
+                "type": "object"
+              },
+              "situacaoCompraNome": {
+                "type": "string"
+              },
+              "uasg": {
+                "additionalProperties": true,
+                "properties": {
+                  "cnpj": {
+                    "type": "string"
+                  },
+                  "codigo": {
+                    "type": "string"
+                  },
+                  "nome": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "cnpj",
+                  "codigo",
+                  "nome"
+                ],
+                "type": "object"
+              },
+              "uf": {
+                "type": "string"
+              },
+              "unidadeOrgao": {
+                "additionalProperties": true,
+                "properties": {
+                  "codigoUnidade": {
+                    "type": "string"
+                  },
+                  "municipioNome": {
+                    "type": "string"
+                  },
+                  "nomeUnidade": {
+                    "type": "string"
+                  },
+                  "ufSigla": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "codigoUnidade",
+                  "municipioNome",
+                  "nomeUnidade",
+                  "ufSigla"
+                ],
+                "type": "object"
+              },
+              "valor": {
+                "type": "number"
+              },
+              "valorTotalEstimado": {
+                "type": "number"
+              },
+              "valor_estimado": {
+                "type": "number"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "licitacoes"
+      ],
+      "type": "object"
+    },
+    "_links": {
+      "additionalProperties": true,
+      "properties": {
+        "next": {
+          "additionalProperties": true,
+          "properties": {
+            "href": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "href"
+          ],
+          "type": "object"
+        },
+        "self": {
+          "additionalProperties": true,
+          "properties": {
+            "href": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "href"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "self"
+      ],
+      "type": "object"
+    },
+    "count": {
+      "type": "integer"
+    },
+    "total": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "_embedded",
+    "_links",
+    "count",
+    "total"
+  ],
+  "title": "ComprasGov v3 Search Response",
+  "type": "object"
+}

@@ -1,0 +1,56 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py + snapshots/api_contracts/pncp_record_schema.json",
+  "_params": {
+    "codigoModalidadeContratacao": 6,
+    "dataInicial": "20260401",
+    "dataFinal": "20260410",
+    "pagina": 1,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "00000000000191-1-000123/2026",
+        "codigoCompra": "PNCP-2026-SP-000001",
+        "codigoModalidadeContratacao": 6,
+        "modalidadeNome": "Pregão Eletrônico",
+        "objetoCompra": "Aquisição de uniformes escolares para unidade 1",
+        "nomeOrgao": "Prefeitura Municipal 1",
+        "cnpjOrgao": "00010000000001",
+        "uf": "SP",
+        "municipio": "Cidade 1",
+        "valorTotalEstimado": 125000.0,
+        "dataPublicacaoPncp": "2026-04-05",
+        "dataAberturaProposta": "2026-04-14",
+        "dataEncerramentoProposta": "2026-04-28",
+        "situacaoCompra": "Aberta",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/1",
+        "codigoUnidadeCompradora": "UC-000001"
+      },
+      {
+        "numeroControlePNCP": "00000000000192-1-000124/2026",
+        "codigoCompra": "PNCP-2026-SP-000002",
+        "codigoModalidadeContratacao": 6,
+        "modalidadeNome": "Pregão Eletrônico",
+        "objetoCompra": "Serviços de limpeza predial continuada",
+        "nomeOrgao": "Prefeitura Municipal 2",
+        "cnpjOrgao": "00010000000002",
+        "uf": "SP",
+        "municipio": "Cidade 2",
+        "valorTotalEstimado": 890000.5,
+        "dataPublicacaoPncp": "2026-04-06",
+        "dataAberturaProposta": "2026-04-15",
+        "dataEncerramentoProposta": "2026-04-29",
+        "situacaoCompra": "Aberta",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/2",
+        "codigoUnidadeCompradora": "UC-000002"
+      }
+    ],
+    "totalRegistros": 2,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

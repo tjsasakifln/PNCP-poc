@@ -1,0 +1,74 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v2/licitacao/processos",
+  "_source": "derived from backend/tests/snapshots/api_contracts/pcp_record_schema.json (second page navigation)",
+  "_params": {
+    "page": 2
+  },
+  "response": {
+    "currentPage": 2,
+    "pageCount": 10,
+    "limit": 10,
+    "offset": 10,
+    "total": 100,
+    "nextPage": 3,
+    "previousPage": 1,
+    "result": [
+      {
+        "codigoLicitacao": 471100,
+        "numeroLicitacao": "2026/010",
+        "identificacao": "010/2026",
+        "numero": "010/2026",
+        "resumo": "Aquisição de tonners para impressoras da rede municipal",
+        "razaoSocial": "Prefeitura Municipal de Blumenau",
+        "nomeUnidade": "Secretaria Municipal de Administração",
+        "status": {
+          "codigo": 2,
+          "descricao": "Em Andamento"
+        },
+        "situacao": {
+          "codigo": 1,
+          "descricao": "Regular"
+        },
+        "tipoLicitacao": {
+          "codigoModalidadeLicitacao": 5,
+          "modalidadeLicitacao": "Pregão Eletrônico",
+          "codigoTipoLicitacao": 1,
+          "siglaTipoLicitacao": "PE",
+          "tipoLicitacao": "Pregão Eletrônico",
+          "tipoRealizacao": "Eletrônico",
+          "tipoJulgamento": "Menor Preço"
+        },
+        "codigoSituacaoEdital": 1,
+        "codigoTratamentoDiferenciado": 0,
+        "codigoSituacaoCadastroLicitacao": 1,
+        "dataHoraInicioLances": "2026-04-18T10:00:00Z",
+        "dataHoraInicioPropostas": "2026-04-10T09:00:00Z",
+        "dataHoraFinalPropostas": "2026-04-18T09:59:00Z",
+        "dataHoraFinalLances": "2026-04-18T12:00:00Z",
+        "dataHoraPublicacao": "2026-04-10T08:30:00Z",
+        "isPublicado": true,
+        "unidadeCompradora": {
+          "codigoUnidadeCompradora": 1200,
+          "nomeUnidadeCompradora": "Secretaria Municipal de Administração",
+          "codigoComprador": 800,
+          "nomeComprador": "Central de Compras",
+          "cidade": "Blumenau",
+          "codigoMunicipioIbge": 4202404,
+          "uf": "SC"
+        },
+        "comprador": {
+          "codigo": 800,
+          "nome": "Central de Compras"
+        },
+        "urlReferencia": "/sc/prefeitura-municipal-de-blumenau-800/pe-010-2026-2026-471100",
+        "statusProcessoPublico": {
+          "codigo": 2,
+          "descricao": "Em Andamento"
+        },
+        "isExclusivoME": true,
+        "isBeneficoLocal": false
+      }
+    ]
+  }
+}

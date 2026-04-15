@@ -1,0 +1,420 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "api_version": {
+      "type": "string"
+    },
+    "created": {
+      "type": "integer"
+    },
+    "data": {
+      "additionalProperties": true,
+      "properties": {
+        "object": {
+          "additionalProperties": true,
+          "properties": {
+            "account_country": {
+              "type": "string"
+            },
+            "amount_due": {
+              "type": "integer"
+            },
+            "amount_paid": {
+              "type": "integer"
+            },
+            "amount_remaining": {
+              "type": "integer"
+            },
+            "amount_subtotal": {
+              "type": "integer"
+            },
+            "amount_total": {
+              "type": "integer"
+            },
+            "application": {
+              "type": "null"
+            },
+            "billing_cycle_anchor": {
+              "type": "integer"
+            },
+            "billing_reason": {
+              "type": "string"
+            },
+            "cancel_at": {
+              "type": "null"
+            },
+            "cancel_at_period_end": {
+              "type": "boolean"
+            },
+            "canceled_at": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "client_reference_id": {
+              "type": "string"
+            },
+            "collection_method": {
+              "type": "string"
+            },
+            "created": {
+              "type": "integer"
+            },
+            "currency": {
+              "type": "string"
+            },
+            "current_period_end": {
+              "type": "integer"
+            },
+            "current_period_start": {
+              "type": "integer"
+            },
+            "customer": {
+              "type": "string"
+            },
+            "customer_email": {
+              "type": "string"
+            },
+            "days_until_due": {
+              "type": "null"
+            },
+            "default_payment_method": {
+              "type": "string"
+            },
+            "ended_at": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "expires_at": {
+              "type": "integer"
+            },
+            "hosted_invoice_url": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "invoice_pdf": {
+              "type": "string"
+            },
+            "items": {
+              "additionalProperties": true,
+              "properties": {
+                "data": {
+                  "items": {
+                    "additionalProperties": true,
+                    "properties": {
+                      "created": {
+                        "type": "integer"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "object": {
+                        "type": "string"
+                      },
+                      "price": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "object": {
+                            "type": "string"
+                          },
+                          "unit_amount": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "active",
+                          "currency",
+                          "id",
+                          "object",
+                          "unit_amount"
+                        ],
+                        "type": "object"
+                      },
+                      "quantity": {
+                        "type": "integer"
+                      },
+                      "subscription": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "created",
+                      "id",
+                      "object",
+                      "price",
+                      "quantity",
+                      "subscription"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "has_more": {
+                  "type": "boolean"
+                },
+                "object": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "data",
+                "has_more",
+                "object",
+                "url"
+              ],
+              "type": "object"
+            },
+            "latest_invoice": {
+              "type": "string"
+            },
+            "lines": {
+              "additionalProperties": true,
+              "properties": {
+                "data": {
+                  "items": {},
+                  "type": "array"
+                },
+                "has_more": {
+                  "type": "boolean"
+                },
+                "object": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "data",
+                "has_more",
+                "object",
+                "url"
+              ],
+              "type": "object"
+            },
+            "livemode": {
+              "type": "boolean"
+            },
+            "metadata": {
+              "additionalProperties": true,
+              "properties": {
+                "billing_period": {
+                  "type": "string"
+                },
+                "plan_type": {
+                  "type": "string"
+                },
+                "user_id": {
+                  "type": "string"
+                }
+              },
+              "required": [],
+              "type": "object"
+            },
+            "mode": {
+              "type": "string"
+            },
+            "number": {
+              "type": "string"
+            },
+            "object": {
+              "type": "string"
+            },
+            "paid": {
+              "type": "boolean"
+            },
+            "pause_collection": {
+              "type": "null"
+            },
+            "payment_intent": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "payment_settings": {
+              "type": "null"
+            },
+            "payment_status": {
+              "type": "string"
+            },
+            "pending_update": {
+              "type": "null"
+            },
+            "period_end": {
+              "type": "integer"
+            },
+            "period_start": {
+              "type": "integer"
+            },
+            "plan": {
+              "additionalProperties": true,
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "amount": {
+                  "type": "integer"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "interval": {
+                  "type": "string"
+                },
+                "interval_count": {
+                  "type": "integer"
+                },
+                "object": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "active",
+                "amount",
+                "currency",
+                "id",
+                "interval",
+                "interval_count",
+                "object"
+              ],
+              "type": "object"
+            },
+            "start_date": {
+              "type": "integer"
+            },
+            "status": {
+              "type": "string"
+            },
+            "subscription": {
+              "type": "string"
+            },
+            "success_url": {
+              "type": "string"
+            },
+            "total": {
+              "type": "integer"
+            },
+            "trial_end": {
+              "type": "null"
+            },
+            "trial_start": {
+              "type": "null"
+            },
+            "url": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "currency",
+            "customer",
+            "id",
+            "object",
+            "status"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "object"
+      ],
+      "type": "object"
+    },
+    "id": {
+      "type": "string"
+    },
+    "livemode": {
+      "type": "boolean"
+    },
+    "object": {
+      "type": "string"
+    },
+    "pending_webhooks": {
+      "type": "integer"
+    },
+    "previous_attributes": {
+      "additionalProperties": true,
+      "properties": {
+        "plan": {
+          "additionalProperties": true,
+          "properties": {
+            "amount": {
+              "type": "integer"
+            },
+            "interval": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "amount",
+            "interval"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "plan"
+      ],
+      "type": "object"
+    },
+    "request": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "idempotency_key": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "idempotency_key"
+      ],
+      "type": "object"
+    },
+    "type": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "api_version",
+    "created",
+    "data",
+    "id",
+    "livemode",
+    "object",
+    "pending_webhooks",
+    "request",
+    "type"
+  ],
+  "title": "Stripe Webhook Event",
+  "type": "object"
+}

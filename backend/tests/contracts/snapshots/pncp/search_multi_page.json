@@ -1,0 +1,38 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py (PAGE_2_OF_3 shape)",
+  "_params": {
+    "codigoModalidadeContratacao": 6,
+    "dataInicial": "20260401",
+    "dataFinal": "20260410",
+    "pagina": 2,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "55500000000100-1-000501/2026",
+        "codigoCompra": "PNCP-2026-SP-000501",
+        "codigoModalidadeContratacao": 6,
+        "modalidadeNome": "Pregão Eletrônico",
+        "objetoCompra": "Aquisição de materiais de expediente para unidade 501",
+        "nomeOrgao": "Prefeitura Municipal 501",
+        "cnpjOrgao": "55500000000100",
+        "uf": "SP",
+        "municipio": "Cidade 501",
+        "valorTotalEstimado": 47500.0,
+        "dataPublicacaoPncp": "2026-04-05",
+        "dataAberturaProposta": "2026-04-19",
+        "dataEncerramentoProposta": "2026-05-03",
+        "situacaoCompra": "Aberta",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/501",
+        "codigoUnidadeCompradora": "UC-000501"
+      }
+    ],
+    "totalRegistros": 1200,
+    "totalPaginas": 24,
+    "paginaAtual": 2,
+    "temProximaPagina": true
+  }
+}

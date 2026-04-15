@@ -1,0 +1,38 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py",
+  "_params": {
+    "codigoModalidadeContratacao": 8,
+    "dataInicial": "20260401",
+    "dataFinal": "20260410",
+    "pagina": 1,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "98765432000199-1-000009/2026",
+        "codigoCompra": "PNCP-2026-MG-000009",
+        "codigoModalidadeContratacao": 8,
+        "modalidadeNome": "Inexigibilidade",
+        "objetoCompra": "Contratação de artista consagrado - show musical cívico",
+        "nomeOrgao": "Prefeitura Municipal de Belo Horizonte",
+        "cnpjOrgao": "98765432000199",
+        "uf": "MG",
+        "municipio": "Belo Horizonte",
+        "valorTotalEstimado": 180000.0,
+        "dataPublicacaoPncp": "2026-04-04",
+        "dataAberturaProposta": "2026-04-04",
+        "dataEncerramentoProposta": "2026-04-04",
+        "situacaoCompra": "Homologada",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/9",
+        "codigoUnidadeCompradora": "UC-000009"
+      }
+    ],
+    "totalRegistros": 1,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}

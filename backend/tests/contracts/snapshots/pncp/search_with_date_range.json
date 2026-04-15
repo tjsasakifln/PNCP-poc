@@ -1,0 +1,38 @@
+{
+  "_recorded_at": "2026-04-14",
+  "_endpoint": "/v1/contratacoes/publicacao",
+  "_source": "derived from backend/tests/fixtures/pncp_responses.py",
+  "_params": {
+    "codigoModalidadeContratacao": 6,
+    "dataInicial": "20260315",
+    "dataFinal": "20260325",
+    "pagina": 1,
+    "tamanhoPagina": 50
+  },
+  "response": {
+    "data": [
+      {
+        "numeroControlePNCP": "77700000000100-1-000777/2026",
+        "codigoCompra": "PNCP-2026-SC-000777",
+        "codigoModalidadeContratacao": 6,
+        "modalidadeNome": "Pregão Eletrônico",
+        "objetoCompra": "Fornecimento de gêneros alimentícios para merenda escolar",
+        "nomeOrgao": "Prefeitura de Florianópolis",
+        "cnpjOrgao": "77700000000100",
+        "uf": "SC",
+        "municipio": "Florianópolis",
+        "valorTotalEstimado": 1250000.0,
+        "dataPublicacaoPncp": "2026-03-20",
+        "dataAberturaProposta": "2026-04-05",
+        "dataEncerramentoProposta": "2026-04-19",
+        "situacaoCompra": "Encerrada",
+        "linkSistemaOrigem": "https://pncp.gov.br/app/editais/777",
+        "codigoUnidadeCompradora": "UC-000777"
+      }
+    ],
+    "totalRegistros": 1,
+    "totalPaginas": 1,
+    "paginaAtual": 1,
+    "temProximaPagina": false
+  }
+}
