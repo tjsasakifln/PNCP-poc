@@ -28,6 +28,9 @@ openpyxl==3.1.5
 # Pure Python — no C extensions, Railway-safe
 reportlab==4.4.0
 
+# JSON Schema validation (STORY-3.4 contract tests + STORY-4.5 PNCP canary shape drift)
+jsonschema==4.24.0
+
 # LLM integration
 openai==1.109.1
 
