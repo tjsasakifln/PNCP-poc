@@ -1,5 +1,5 @@
-version: 5.0.3
-installed_at: '2026-03-22T14:17:38.530Z'
+version: 5.0.4
+installed_at: '2026-04-14T14:52:09.571Z'
 install_type: full
 files:
   - core\code-intel-client.js
@@ -67,6 +67,7 @@ files:
   - core\context-injector.js
   - core\parallel-executor.js
   - core\parallel-monitor.js
+  - core\predictive-pipeline.js
   - core\rate-limit-manager.js
   - core\result-aggregator.js
   - core\semantic-merge-engine.js
@@ -158,6 +159,7 @@ files:
   - core\index.js
   - core\os-detector.js
   - core\symlink-manager.js
+  - core\decision-memory.js
   - core\gotchas-memory.js
   - core\active-modules.verify.js
   - core\migration-config.yaml

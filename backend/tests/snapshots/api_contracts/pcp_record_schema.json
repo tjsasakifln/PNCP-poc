@@ -78,16 +78,16 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 471087,
+    "codigoLicitacao": 472555,
     "numeroLicitacao": null,
-    "identificacao": "027/2026",
-    "numero": "007/2026",
-    "resumo": "contratação de empresa especializada para prestação de serviços de publicações oficiais em jornais e órgãos de imprensa oficial, para divulgação dos atos oficiais e administrativos do Município de Josenópolis–MG, compreendendo publicações no Diário...",
-    "razaoSocial": "Prefeitura Municipal de Josenópolis",
-    "nomeUnidade": "Prefeitura Municipal de Josenópolis",
+    "identificacao": "001",
+    "numero": "001/2026",
+    "resumo": "CHAMAMENTO DE INTERESSADOS PARA CREDENCIAMENTO, A FIM DE CONTRATAÇÃO DE PESSOAS JURÍDICAS ESPECIALIZADAS NA PRESTAÇÃO DE SERVIÇOS MÉDICOS NA ÁREA DE PSIQUIATRIA DESTINADOS AOS USUÁRIOS DO SISTEMA ÚNICO DE SAÚDE – SUS RESIDENTES NO MUNICÍPIO DE...",
+    "razaoSocial": "Prefeitura Municipal de Corupá",
+    "nomeUnidade": "FUNDO MUNICIPAL DE SAÚDE DE CORUPÁ - FMS",
     "status": {
-      "codigo": 1,
-      "descricao": "Recebendo Propostas"
+      "codigo": 14,
+      "descricao": "Aguardando Inicio de Recebimento de Propostas"
     },
     "situacao": {
       "codigo": 0,
@@ -95,39 +95,39 @@
     },
     "tipoLicitacao": {
       "codigoModalidadeLicitacao": 0,
-      "modalidadeLicitacao": "Dispensa",
-      "codigoTipoLicitacao": 34,
-      "siglaTipoLicitacao": null,
-      "tipoLicitacao": "Dispensa Presencial",
-      "tipoRealizacao": "Presencial",
-      "tipoJulgamento": "Menor Preço"
+      "modalidadeLicitacao": "Credenciamento",
+      "codigoTipoLicitacao": 17,
+      "siglaTipoLicitacao": "CRED",
+      "tipoLicitacao": "Credenciamento",
+      "tipoRealizacao": "Eletrônico",
+      "tipoJulgamento": "Simples informação"
     },
     "codigoSituacaoEdital": 5,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-04-14T02:59:00Z",
-    "dataHoraInicioPropostas": "2026-04-09T02:00:00Z",
-    "dataHoraFinalPropostas": "2026-04-14T02:59:00Z",
+    "dataHoraInicioLances": "2026-04-15T02:59:00Z",
+    "dataHoraInicioPropostas": "2026-04-15T02:59:00Z",
+    "dataHoraFinalPropostas": "2027-04-15T02:59:00Z",
     "dataHoraFinalLances": null,
-    "dataHoraPublicacao": "2026-04-09T01:22:00Z",
+    "dataHoraPublicacao": "2026-04-14T18:22:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 4623,
-      "nomeUnidadeCompradora": "Prefeitura Municipal de Josenópolis",
-      "codigoComprador": 2531,
+      "codigoUnidadeCompradora": 9721,
+      "nomeUnidadeCompradora": "FUNDO MUNICIPAL DE SAÚDE DE CORUPÁ - FMS",
+      "codigoComprador": 1563,
       "nomeComprador": null,
-      "cidade": "Josenópolis",
+      "cidade": "Corupá",
       "codigoMunicipioIbge": null,
-      "uf": "MG"
+      "uf": "SC"
     },
     "comprador": null,
-    "urlReferencia": "/mg/prefeitura-municipal-de-josenopolis-2531/dp-007-2026-2026-471087",
+    "urlReferencia": "/sc/prefeitura-municipal-de-corupa-1563/cred-001-2026-2026-472555",
     "statusProcessoPublico": {
-      "codigo": 1,
-      "descricao": "Recebendo Propostas"
+      "codigo": 14,
+      "descricao": "Aguardando Inicio de Recebimento de Propostas"
     },
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-04-13T21:55:49.635516+00:00"
+  "captured_at": "2026-04-14T21:42:47.840349+00:00"
 }
