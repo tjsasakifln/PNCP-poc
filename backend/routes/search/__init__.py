@@ -1,17 +1,32 @@
-"""
-Search Router — Main procurement search endpoint (POST /buscar).
+"""Search routes package — STORY-3.1 (EPIC-TD-2026Q2 / TD-SYS-005).
 
-DEBT-115: Decomposed from 2177 LOC monolith into focused modules:
-- routes/search_sse.py: SSE progress stream (GET /buscar-progress/{id})
-- routes/search_state.py: Background results, async search, persistence
-- routes/search_status.py: Status, results, retry, cancel endpoints
-- routes/search.py (this file): POST /buscar orchestration + backward-compat re-exports
+Replaces the former monolithic ``backend/routes/search.py`` with a package of
+focused submodules:
 
-STORY-216: buscar_licitacoes() decomposed into SearchPipeline (search_pipeline.py).
-This module is now a thin wrapper that delegates to the pipeline.
+- ``post_handler``  → POST /buscar orchestration (cache-first, async dispatch).
+- ``sse``           → GET /buscar-progress/{id} streaming.
+- ``state``         → background results, async search, persistence helpers.
+- ``status``        → /search/{id}/{status,timeline,results,...}.
+- ``retry``         → /search/{id}/{retry,cancel}.
 
-GTM-RESILIENCE-A04: Cache-first progressive delivery.
-When cache exists, returns immediately and spawns background live fetch.
+Backward compatibility:
+
+- ``from routes.search import router``  → aggregated APIRouter (POST handler
+  + SSE + status + retry/cancel — same behaviour as the legacy flat module).
+- ``from routes.search import buscar_licitacoes`` → still works.
+- All test patches such as ``@patch("routes.search.X")``,
+  ``@patch("routes.search_sse.X")``, ``@patch("routes.search_state.X")`` and
+  ``@patch("routes.search_status.X")`` remain valid because:
+
+  1. The canonical SSE / state / status implementations still live in the
+     flat ``routes/search_sse.py``, ``search_state.py`` and ``search_status.py``
+     modules — patches against those module paths keep targeting the same
+     objects.
+  2. The POST /buscar handler is defined **directly in this package's
+     ``__init__``** (not in the ``post_handler`` submodule) so that
+     ``@patch("routes.search.SearchPipeline")`` and similar still mutate the
+     names that the handler resolves at call time. ``post_handler`` is kept
+     as a thin re-export shim for the package's documented module list.
 """
 
 import asyncio
@@ -57,6 +72,10 @@ from search_state_manager import (
 
 logger = get_sanitized_logger(__name__)
 
+# ---------------------------------------------------------------------------
+# Aggregated router. Sub-routers from the canonical flat modules
+# (search_sse, search_status) are mounted further down.
+# ---------------------------------------------------------------------------
 router = APIRouter(tags=["search"])
 
 # SYS-011 / DEBT-015: delegate to the project-wide helper; keep local name for
@@ -67,26 +86,11 @@ from error_response import build_error_detail as _build_error_detail  # noqa: E4
 from pipeline.helpers import _build_pncp_link, _calcular_urgencia, _calcular_dias_restantes, _convert_to_licitacao_items  # noqa: F401, E402
 
 # ---------------------------------------------------------------------------
-# DEBT-115: Include sub-routers for decomposed endpoints
+# Background results + state helpers (canonical: routes.search_state).
+# Re-imported into this namespace so existing tests that patch
+# ``routes.search.X`` continue to mutate the same references the POST handler
+# resolves at call time.
 # ---------------------------------------------------------------------------
-from routes.search_sse import router as _sse_router  # noqa: E402
-from routes.search_status import router as _status_router  # noqa: E402
-
-router.include_router(_sse_router)
-router.include_router(_status_router)
-
-# ---------------------------------------------------------------------------
-# DEBT-115: Re-export all symbols from sub-modules for backward compatibility.
-# Tests and other modules import these from routes.search — keep working.
-# ---------------------------------------------------------------------------
-from routes.search_sse import (  # noqa: F401, E402
-    _SSE_HEARTBEAT_INTERVAL,
-    _SSE_WAIT_HEARTBEAT_EVERY,
-    _SSE_POLL_INTERVAL,
-    _SSE_POLLS_PER_HEARTBEAT,
-    buscar_progress_stream,
-)
-
 from routes.search_state import (  # noqa: F401, E402
     _background_results,
     _RESULTS_TTL,
@@ -94,6 +98,7 @@ from routes.search_state import (  # noqa: F401, E402
     _MAX_BACKGROUND_TASKS,
     _MAX_BACKGROUND_RESULTS,
     _RESULTS_REDIS_PREFIX,
+    _ASYNC_SEARCH_TIMEOUT,
     get_background_results_count,
     _cleanup_stale_results,
     store_background_results,
@@ -110,10 +115,23 @@ from routes.search_state import (  # noqa: F401, E402
     _apply_trial_paywall,
     _execute_background_fetch,
     _run_async_search,
-    _ASYNC_SEARCH_TIMEOUT,
 )
 
+# SSE constants + endpoint (canonical: routes.search_sse)
+from routes.search_sse import (  # noqa: F401, E402
+    _SSE_HEARTBEAT_INTERVAL,
+    _SSE_WAIT_HEARTBEAT_EVERY,
+    _SSE_TRACKER_WAIT_TIMEOUT_S,
+    _SSE_POLL_INTERVAL,
+    _SSE_POLLS_PER_HEARTBEAT,
+    buscar_progress_stream,
+    router as _sse_router,
+)
+
+# Status / results / timeline / regenerate-excel + retry / cancel
+# (canonical: routes.search_status)
 from routes.search_status import (  # noqa: F401, E402
+    _verify_search_ownership,
     search_status_endpoint,
     search_timeline_endpoint,
     get_search_results,
@@ -122,7 +140,12 @@ from routes.search_status import (  # noqa: F401, E402
     regenerate_excel_endpoint,
     retry_search,
     cancel_search,
+    router as _status_router,
 )
+
+# Mount sibling sub-routers onto the aggregate router.
+router.include_router(_sse_router)
+router.include_router(_status_router)
 
 
 def get_correlation_id() -> str | None:
@@ -140,7 +163,8 @@ def get_correlation_id() -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Main search endpoint
+# Main search endpoint — kept in __init__ so that patches against
+# ``routes.search.X`` continue to substitute the names the body resolves.
 # ---------------------------------------------------------------------------
 
 @router.post("/buscar", response_model=BuscaResponse)
@@ -782,3 +806,57 @@ async def buscar_licitacoes(
                 correlation_id=get_correlation_id(),
             ),
         )
+
+
+__all__ = [
+    "router",
+    "buscar_licitacoes",
+    "get_correlation_id",
+    "_build_error_detail",
+    "_build_pncp_link",
+    "_calcular_urgencia",
+    "_calcular_dias_restantes",
+    "_convert_to_licitacao_items",
+    "logger",
+    # SSE
+    "_SSE_HEARTBEAT_INTERVAL",
+    "_SSE_WAIT_HEARTBEAT_EVERY",
+    "_SSE_TRACKER_WAIT_TIMEOUT_S",
+    "_SSE_POLL_INTERVAL",
+    "_SSE_POLLS_PER_HEARTBEAT",
+    "buscar_progress_stream",
+    # State / background
+    "_background_results",
+    "_RESULTS_TTL",
+    "_active_background_tasks",
+    "_MAX_BACKGROUND_TASKS",
+    "_MAX_BACKGROUND_RESULTS",
+    "_RESULTS_REDIS_PREFIX",
+    "_ASYNC_SEARCH_TIMEOUT",
+    "get_background_results_count",
+    "_cleanup_stale_results",
+    "store_background_results",
+    "_persist_results_to_redis",
+    "_persist_results_to_supabase",
+    "_safe_persist_results",
+    "_persist_done_callback",
+    "_get_results_from_supabase",
+    "_get_results_from_redis",
+    "get_background_results",
+    "get_background_results_async",
+    "_update_session_on_error",
+    "_update_session_on_complete",
+    "_apply_trial_paywall",
+    "_execute_background_fetch",
+    "_run_async_search",
+    # Status / results / retry / cancel
+    "_verify_search_ownership",
+    "search_status_endpoint",
+    "search_timeline_endpoint",
+    "get_search_results",
+    "get_search_results_v1",
+    "get_zero_match_results_endpoint",
+    "regenerate_excel_endpoint",
+    "retry_search",
+    "cancel_search",
+]
