@@ -46,6 +46,21 @@ export class ErrorBoundary extends Component<Props, State> {
         })
         .catch(() => {});
     } catch {}
+    // STORY-2.3 AC4: emitir telemetria humanizada (Mixpanel)
+    try {
+      import("mixpanel-browser")
+        .then((mod) => {
+          const mp = (mod as { default?: { track?: (e: string, p: Record<string, unknown>) => void } }).default ?? mod;
+          if (mp && typeof (mp as { track?: unknown }).track === "function") {
+            (mp as { track: (e: string, p: Record<string, unknown>) => void }).track("error_message_shown", {
+              error_type: "boundary.render_crash",
+              page: this.props.pageName ?? (typeof window !== "undefined" ? window.location.pathname : "unknown"),
+              severity: "warning",
+            });
+          }
+        })
+        .catch(() => {});
+    } catch {}
   }
 
   handleRetry = () => {
