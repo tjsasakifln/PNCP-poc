@@ -384,7 +384,21 @@ All scheduled pg_cron jobs (purge-old-bids, cleanup-search-cache, cleanup-search
 - Phased UF batching: PNCP_BATCH_SIZE=5, PNCP_BATCH_DELAY_S=2.0
 - Retry: exponential backoff, HTTP 422 is retryable (max 1 retry)
 - Circuit breaker: 15 failures threshold, 60s cooldown
-- Health canary uses `tamanhoPagina=10` — doesn't detect page size limits
+- Fast health canary (`backend/health.py`) validates `tamanhoPagina=50` succeeds (production value) + delegates to `pncp_canary.validate_page_size_limit` to probe `tamanhoPagina=51` on every health cycle.
+
+### PNCP Breaking Change Canary (STORY-4.5)
+
+Background ARQ cron in `backend/jobs/cron/pncp_canary.py` runs every `PNCP_CANARY_INTERVAL_S` seconds (default 600s = 10 min) and triggers Sentry fatal alerts when:
+
+| Reason | Probe | Sentry gate |
+|--------|-------|-------------|
+| `max_page_size_changed` | `tamanhoPagina=51` accepted (HTTP < 400) | immediate (1 occurrence) |
+| `canary_3x_failed` | `tamanhoPagina=50` fails or returns non-JSON for 3 consecutive runs | threshold gated |
+| `shape_drift` | `tamanhoPagina=50` payload fails `backend/contracts/schemas/pncp_search_response.schema.json` | immediate |
+
+Dedup: each reason uses a Redis flag with 6h TTL so operators get one Sentry event per incident, not 36/day. Tags: `pncp_breaking_change={reason}`, `source=pncp`. Fingerprint: `["pncp_canary", reason]`.
+
+Metrics (Prometheus): `smartlic_pncp_max_page_size_changed_total`, `smartlic_pncp_canary_consecutive_failures`, `smartlic_pncp_canary_shape_drift_total`. Disable the cron with `PNCP_CANARY_INTERVAL_S=0`; raise/lower the threshold via `PNCP_CANARY_FAIL_THRESHOLD` (default 3).
 
 ### PCP v2 (Secondary)
 - No auth required (fully public v2 API)

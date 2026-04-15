@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "data": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "cnpjOrgao": {
+            "type": "string"
+          },
+          "codigoCompra": {
+            "type": "string"
+          },
+          "codigoModalidadeContratacao": {
+            "type": "integer"
+          },
+          "codigoUnidadeCompradora": {
+            "type": "string"
+          },
+          "dataAberturaProposta": {
+            "type": "string"
+          },
+          "dataEncerramentoProposta": {
+            "type": "string"
+          },
+          "dataPublicacaoPncp": {
+            "type": "string"
+          },
+          "linkSistemaOrigem": {
+            "type": "string"
+          },
+          "modalidadeNome": {
+            "type": "string"
+          },
+          "municipio": {
+            "type": "string"
+          },
+          "nomeOrgao": {
+            "type": "string"
+          },
+          "numeroControlePNCP": {
+            "type": "string"
+          },
+          "objetoCompra": {
+            "type": "string"
+          },
+          "situacaoCompra": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          },
+          "valorTotalEstimado": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "cnpjOrgao",
+          "codigoCompra",
+          "codigoModalidadeContratacao",
+          "codigoUnidadeCompradora",
+          "dataAberturaProposta",
+          "dataEncerramentoProposta",
+          "dataPublicacaoPncp",
+          "linkSistemaOrigem",
+          "modalidadeNome",
+          "municipio",
+          "nomeOrgao",
+          "numeroControlePNCP",
+          "objetoCompra",
+          "situacaoCompra",
+          "uf",
+          "valorTotalEstimado"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "paginaAtual": {
+      "type": "integer"
+    },
+    "temProximaPagina": {
+      "type": "boolean"
+    },
+    "totalPaginas": {
+      "type": "integer"
+    },
+    "totalRegistros": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "data",
+    "paginaAtual",
+    "temProximaPagina",
+    "totalPaginas",
+    "totalRegistros"
+  ],
+  "title": "PNCP Search Response",
+  "type": "object"
+}

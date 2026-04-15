@@ -78,6 +78,11 @@ CACHE_FIRST_FRESH_TIMEOUT: int = int(os.getenv("CACHE_FIRST_FRESH_TIMEOUT", "60"
 PNCP_CANARY_TIMEOUT_S: float = float(os.getenv("PNCP_CANARY_TIMEOUT_S", "10"))
 PNCP_CANARY_TIMEOUT_EXTENDED_S: float = float(os.getenv("PNCP_CANARY_TIMEOUT_EXTENDED_S", "15"))
 
+# STORY-4.5 (TD-SYS-002): Breaking-change canary run cadence and escalation threshold.
+# Set PNCP_CANARY_INTERVAL_S=0 to disable the background cron.
+PNCP_CANARY_INTERVAL_S: int = int(os.getenv("PNCP_CANARY_INTERVAL_S", "600"))
+PNCP_CANARY_FAIL_THRESHOLD: int = int(os.getenv("PNCP_CANARY_FAIL_THRESHOLD", "3"))
+
 # STORY-296: Bulkhead Per Source
 PNCP_BULKHEAD_CONCURRENCY: int = int(os.getenv("PNCP_BULKHEAD_CONCURRENCY", "5"))
 PCP_BULKHEAD_CONCURRENCY: int = int(os.getenv("PCP_BULKHEAD_CONCURRENCY", "3"))

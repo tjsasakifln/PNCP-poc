@@ -963,6 +963,26 @@ PNCP_PAGE_SIZE_LIMIT = _create_gauge(
 
 
 # ============================================================================
+# STORY-4.5 (TD-SYS-002): PNCP breaking-change canary
+# ============================================================================
+
+PNCP_MAX_PAGE_SIZE_CHANGED = _create_counter(
+    "smartlic_pncp_max_page_size_changed_total",
+    "PNCP accepted tamanhoPagina=51 — historical max limit drift detected",
+)
+
+PNCP_CANARY_CONSECUTIVE_FAILURES = _create_gauge(
+    "smartlic_pncp_canary_consecutive_failures",
+    "Consecutive PNCP canary failures (resets on first healthy run)",
+)
+
+PNCP_CANARY_SHAPE_DRIFT = _create_counter(
+    "smartlic_pncp_canary_shape_drift_total",
+    "PNCP response payload failed schema validation (field rename/type flip)",
+)
+
+
+# ============================================================================
 # DEBT-008 SYS-016: Memory monitoring
 # ============================================================================
 
