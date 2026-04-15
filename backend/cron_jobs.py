@@ -130,3 +130,10 @@ from jobs.cron.new_bids_notifier import (  # noqa: F401
     run_new_bids_notifier,
     start_new_bids_notifier_task,
 )
+
+# pg_cron health monitor — STORY-1.1 (TD-DB-040)
+from jobs.cron.cron_monitor import (  # noqa: F401
+    CRON_MONITOR_INTERVAL_SECONDS,
+    run_cron_monitor,
+    start_cron_monitor_task,
+)
