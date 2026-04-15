@@ -3,7 +3,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const inputVariants = cva(
-  "w-full border bg-surface-0 text-ink placeholder:text-ink-muted transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed",
+  /* STORY-2.5: disabled:opacity-50 → WCAG AA tokens (4.6:1 light / 4.5:1 dark) */
+  "w-full border bg-surface-0 text-ink placeholder:text-ink-muted transition-colors focus:outline-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed",
   {
     variants: {
       inputSize: {

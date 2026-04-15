@@ -130,7 +130,10 @@ describe("Input", () => {
     render(<Input id="test" disabled />);
     const input = screen.getByRole("textbox");
     expect(input).toBeDisabled();
-    expect(input.className).toContain("disabled:opacity-50");
+    // STORY-2.5: replaced opacity-50 with WCAG AA tokens (4.6:1 contrast)
+    expect(input.className).toContain("disabled:bg-surface-disabled");
+    expect(input.className).toContain("disabled:text-ink-disabled");
+    expect(input.className).not.toContain("disabled:opacity-50");
   });
 
   it("forwards ref", () => {

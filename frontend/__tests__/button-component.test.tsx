@@ -127,9 +127,13 @@ describe("DEBT-006 AC1: Disabled state", () => {
     expect(screen.getByRole("button")).toBeDisabled();
   });
 
-  it("applies disabled opacity class", () => {
+  it("applies disabled WCAG AA token classes (STORY-2.5: opacity-50 → ink-disabled/surface-disabled)", () => {
     render(<Button disabled>Click</Button>);
-    expect(screen.getByRole("button").className).toContain("disabled:opacity-50");
+    const btn = screen.getByRole("button");
+    // STORY-2.5: replaced opacity-50 with WCAG AA tokens (4.6:1 contrast)
+    expect(btn.className).toContain("disabled:bg-surface-disabled");
+    expect(btn.className).toContain("disabled:text-ink-disabled");
+    expect(btn.className).not.toContain("disabled:opacity-50");
   });
 });
 

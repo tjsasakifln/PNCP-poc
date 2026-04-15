@@ -2,7 +2,7 @@
 
 exports[`DEBT-006: Snapshot tests snapshot: destructive/default 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-error text-white hover:bg-red-700 rounded-button h-10 px-4 py-2 text-sm gap-2"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-error text-white hover:bg-red-700 rounded-button h-10 px-4 py-2 text-sm gap-2"
 >
   destructive
    
@@ -12,7 +12,7 @@ exports[`DEBT-006: Snapshot tests snapshot: destructive/default 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: destructive/lg 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-error text-white hover:bg-red-700 rounded-button h-12 px-6 text-base gap-2.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-error text-white hover:bg-red-700 rounded-button h-12 px-6 text-base gap-2.5"
 >
   destructive
    
@@ -22,7 +22,7 @@ exports[`DEBT-006: Snapshot tests snapshot: destructive/lg 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: destructive/sm 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-error text-white hover:bg-red-700 rounded-button h-8 px-3 text-xs gap-1.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-error text-white hover:bg-red-700 rounded-button h-8 px-3 text-xs gap-1.5"
 >
   destructive
    
@@ -32,7 +32,7 @@ exports[`DEBT-006: Snapshot tests snapshot: destructive/sm 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: disabled state 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-10 px-4 py-2 text-sm gap-2"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-10 px-4 py-2 text-sm gap-2"
   disabled=""
 >
   Disabled
@@ -41,7 +41,7 @@ exports[`DEBT-006: Snapshot tests snapshot: disabled state 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: ghost/default 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-ink-secondary hover:text-ink hover:bg-surface-1 rounded-button h-10 px-4 py-2 text-sm gap-2"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed text-ink-secondary hover:text-ink hover:bg-surface-1 rounded-button h-10 px-4 py-2 text-sm gap-2"
 >
   ghost
    
@@ -51,7 +51,7 @@ exports[`DEBT-006: Snapshot tests snapshot: ghost/default 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: ghost/lg 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-ink-secondary hover:text-ink hover:bg-surface-1 rounded-button h-12 px-6 text-base gap-2.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed text-ink-secondary hover:text-ink hover:bg-surface-1 rounded-button h-12 px-6 text-base gap-2.5"
 >
   ghost
    
@@ -61,7 +61,7 @@ exports[`DEBT-006: Snapshot tests snapshot: ghost/lg 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: ghost/sm 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-ink-secondary hover:text-ink hover:bg-surface-1 rounded-button h-8 px-3 text-xs gap-1.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed text-ink-secondary hover:text-ink hover:bg-surface-1 rounded-button h-8 px-3 text-xs gap-1.5"
 >
   ghost
    
@@ -72,7 +72,7 @@ exports[`DEBT-006: Snapshot tests snapshot: ghost/sm 1`] = `
 exports[`DEBT-006: Snapshot tests snapshot: icon size 1`] = `
 <button
   aria-label="Close"
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-10 w-10"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-10 w-10"
 >
   X
 </button>
@@ -80,7 +80,7 @@ exports[`DEBT-006: Snapshot tests snapshot: icon size 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: link/default 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-brand-blue underline-offset-4 hover:underline h-10 px-4 py-2 text-sm gap-2"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed text-brand-blue underline-offset-4 hover:underline h-10 px-4 py-2 text-sm gap-2"
 >
   link
    
@@ -90,7 +90,7 @@ exports[`DEBT-006: Snapshot tests snapshot: link/default 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: link/lg 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-brand-blue underline-offset-4 hover:underline h-12 px-6 text-base gap-2.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed text-brand-blue underline-offset-4 hover:underline h-12 px-6 text-base gap-2.5"
 >
   link
    
@@ -100,7 +100,7 @@ exports[`DEBT-006: Snapshot tests snapshot: link/lg 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: link/sm 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-brand-blue underline-offset-4 hover:underline h-8 px-3 text-xs gap-1.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed text-brand-blue underline-offset-4 hover:underline h-8 px-3 text-xs gap-1.5"
 >
   link
    
@@ -110,7 +110,7 @@ exports[`DEBT-006: Snapshot tests snapshot: link/sm 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: loading state 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-10 px-4 py-2 text-sm gap-2"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-10 px-4 py-2 text-sm gap-2"
   disabled=""
 >
   <svg
@@ -140,7 +140,7 @@ exports[`DEBT-006: Snapshot tests snapshot: loading state 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: outline/default 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-DEFAULT bg-transparent text-ink hover:bg-surface-1 rounded-button h-10 px-4 py-2 text-sm gap-2"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed border border-DEFAULT bg-transparent text-ink hover:bg-surface-1 rounded-button h-10 px-4 py-2 text-sm gap-2"
 >
   outline
    
@@ -150,7 +150,7 @@ exports[`DEBT-006: Snapshot tests snapshot: outline/default 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: outline/lg 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-DEFAULT bg-transparent text-ink hover:bg-surface-1 rounded-button h-12 px-6 text-base gap-2.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed border border-DEFAULT bg-transparent text-ink hover:bg-surface-1 rounded-button h-12 px-6 text-base gap-2.5"
 >
   outline
    
@@ -160,7 +160,7 @@ exports[`DEBT-006: Snapshot tests snapshot: outline/lg 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: outline/sm 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-DEFAULT bg-transparent text-ink hover:bg-surface-1 rounded-button h-8 px-3 text-xs gap-1.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed border border-DEFAULT bg-transparent text-ink hover:bg-surface-1 rounded-button h-8 px-3 text-xs gap-1.5"
 >
   outline
    
@@ -170,7 +170,7 @@ exports[`DEBT-006: Snapshot tests snapshot: outline/sm 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: primary/default 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-10 px-4 py-2 text-sm gap-2"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-10 px-4 py-2 text-sm gap-2"
 >
   primary
    
@@ -180,7 +180,7 @@ exports[`DEBT-006: Snapshot tests snapshot: primary/default 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: primary/lg 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-12 px-6 text-base gap-2.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-12 px-6 text-base gap-2.5"
 >
   primary
    
@@ -190,7 +190,7 @@ exports[`DEBT-006: Snapshot tests snapshot: primary/lg 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: primary/sm 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-8 px-3 text-xs gap-1.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-brand-navy text-white hover:bg-brand-blue-hover rounded-button h-8 px-3 text-xs gap-1.5"
 >
   primary
    
@@ -200,7 +200,7 @@ exports[`DEBT-006: Snapshot tests snapshot: primary/sm 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: secondary/default 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-surface-1 text-ink-secondary hover:text-ink hover:bg-surface-2 rounded-button border border-DEFAULT h-10 px-4 py-2 text-sm gap-2"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-surface-1 text-ink-secondary hover:text-ink hover:bg-surface-2 rounded-button border border-DEFAULT h-10 px-4 py-2 text-sm gap-2"
 >
   secondary
    
@@ -210,7 +210,7 @@ exports[`DEBT-006: Snapshot tests snapshot: secondary/default 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: secondary/lg 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-surface-1 text-ink-secondary hover:text-ink hover:bg-surface-2 rounded-button border border-DEFAULT h-12 px-6 text-base gap-2.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-surface-1 text-ink-secondary hover:text-ink hover:bg-surface-2 rounded-button border border-DEFAULT h-12 px-6 text-base gap-2.5"
 >
   secondary
    
@@ -220,7 +220,7 @@ exports[`DEBT-006: Snapshot tests snapshot: secondary/lg 1`] = `
 
 exports[`DEBT-006: Snapshot tests snapshot: secondary/sm 1`] = `
 <button
-  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-surface-1 text-ink-secondary hover:text-ink hover:bg-surface-2 rounded-button border border-DEFAULT h-8 px-3 text-xs gap-1.5"
+  class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed bg-surface-1 text-ink-secondary hover:text-ink hover:bg-surface-2 rounded-button border border-DEFAULT h-8 px-3 text-xs gap-1.5"
 >
   secondary
    

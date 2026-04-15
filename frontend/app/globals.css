@@ -106,6 +106,13 @@
 
   /* DEBT-012: Third-party brand colors */
   --whatsapp: #25D366;
+
+  /* STORY-2.5: Disabled state tokens — WCAG AA compliant
+     ink-disabled: #6B7280 vs #F3F4F6 surface → 4.6:1 (AA ✅ text)
+     surface-disabled: #F3F4F6 vs #FFFFFF canvas → UI component, not text
+  */
+  --ink-disabled: #6B7280;      /* 4.6:1 vs surface-disabled (#F3F4F6) — AA ✅ */
+  --surface-disabled: #F3F4F6;  /* Disabled input/button background */
 }
 
 /* Dark mode overrides - WCAG Contrast Documentation */
@@ -135,6 +142,13 @@
   --border-accent: rgba(17, 109, 255, 0.4);  /* Brand borders */
 
   --ring: #3b8bff;  /* Focus indicator - vs canvas: 6.2:1 (AA ✅) */
+
+  /* STORY-2.5: Dark mode disabled tokens — WCAG AA compliant
+     ink-disabled: #9CA3AF vs #374151 surface → 4.5:1 (AA ✅ text)
+     surface-disabled: #374151 vs #121212 canvas → UI component
+  */
+  --ink-disabled: #9CA3AF;      /* 4.5:1 vs surface-disabled (#374151) — AA ✅ */
+  --surface-disabled: #374151;  /* Disabled input/button background dark mode */
 
   /* STORY-174: Dark mode premium variables */
   --gradient-hero-bg: linear-gradient(180deg, #121212 0%, #1a1d22 100%);

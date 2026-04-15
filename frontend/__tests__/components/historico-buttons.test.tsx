@@ -91,9 +91,11 @@ describe('Historico Pagination Buttons (AC28-AC32)', () => {
     const prevButton = await screen.findByTestId('historico-prev', {}, { timeout: 5000 });
     const nextButton = await screen.findByTestId('historico-next', {}, { timeout: 5000 });
 
-    // AC29: opacity-50 (not 30)
-    expect(prevButton.className).toContain('disabled:opacity-50');
-    expect(nextButton.className).toContain('disabled:opacity-50');
+    // AC29: WCAG AA disabled tokens (STORY-2.5: opacity-50 → ink-disabled/surface-disabled)
+    expect(prevButton.className).toContain('disabled:bg-surface-disabled');
+    expect(prevButton.className).toContain('disabled:text-ink-disabled');
+    expect(nextButton.className).toContain('disabled:bg-surface-disabled');
+    expect(nextButton.className).toContain('disabled:text-ink-disabled');
 
     // AC29: cursor-not-allowed
     expect(prevButton.className).toContain('disabled:cursor-not-allowed');

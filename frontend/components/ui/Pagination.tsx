@@ -134,7 +134,7 @@ export function Pagination({
             onClick={handlePrev}
             disabled={currentPage <= 1}
             className="px-4 py-2 text-base font-medium border border-[var(--border)] rounded-button
-                       disabled:opacity-50 disabled:cursor-not-allowed
+                       disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed
                        hover:bg-[var(--surface-1)] transition-colors"
             aria-label="Página anterior"
             aria-disabled={currentPage <= 1}
@@ -153,7 +153,7 @@ export function Pagination({
             onClick={handleNext}
             disabled={currentPage >= totalPages}
             className="px-4 py-2 text-base font-medium border border-[var(--border)] rounded-button
-                       disabled:opacity-50 disabled:cursor-not-allowed
+                       disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed
                        hover:bg-[var(--surface-1)] transition-colors"
             aria-label="Próxima página"
             aria-disabled={currentPage >= totalPages}
