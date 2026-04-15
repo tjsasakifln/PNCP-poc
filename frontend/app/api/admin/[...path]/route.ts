@@ -25,6 +25,14 @@ export async function PUT(
   return handleAdminRequest(request, path, "PUT");
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  const { path } = await params;
+  return handleAdminRequest(request, path, "PATCH");
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
@@ -79,8 +87,8 @@ async function handleAdminRequest(
       headers,
     };
 
-    // Add body for POST/PUT requests
-    if (method === "POST" || method === "PUT") {
+    // Add body for POST/PUT/PATCH requests
+    if (method === "POST" || method === "PUT" || method === "PATCH") {
       const body = await request.json().catch(() => null);
       if (body) {
         fetchOptions.body = JSON.stringify(body);

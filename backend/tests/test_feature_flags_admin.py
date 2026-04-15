@@ -250,6 +250,46 @@ class TestReloadFeatureFlags:
             assert flag_name in data["flags"]
 
 
+class TestUpdateFeatureFlagAudit:
+    """AC3 — STORY-5.2: PATCH must emit persistent audit_logger event."""
+
+    @patch("routes.feature_flags._redis_set_override", new_callable=AsyncMock, return_value=True)
+    @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
+    @patch("routes.feature_flags.audit_logger")
+    def test_update_feature_flag_logs_audit_event(self, mock_audit_logger, mock_get, mock_set, client):
+        """PATCH should call audit_logger.log with event_type=admin.feature_flag_change."""
+        mock_audit_logger.log = AsyncMock()
+
+        resp = client.patch(
+            "/admin/feature-flags/LLM_ARBITER_ENABLED",
+            json={"value": False},
+        )
+        assert resp.status_code == 200
+
+        mock_audit_logger.log.assert_called_once()
+        call_kwargs = mock_audit_logger.log.call_args
+        assert call_kwargs.kwargs["event_type"] == "admin.feature_flag_change"
+        assert call_kwargs.kwargs["actor_id"] == ADMIN_UUID
+        assert call_kwargs.kwargs["target_id"] == "LLM_ARBITER_ENABLED"
+        details = call_kwargs.kwargs["details"]
+        assert details["flag_name"] == "LLM_ARBITER_ENABLED"
+        assert details["new_value"] == "False"
+
+    @patch("routes.feature_flags._redis_set_override", new_callable=AsyncMock, return_value=True)
+    @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
+    @patch("routes.feature_flags.audit_logger")
+    def test_audit_event_not_logged_for_invalid_flag(self, mock_audit_logger, mock_get, mock_set, client):
+        """PATCH with non-existent flag returns 404 and does NOT call audit_logger."""
+        mock_audit_logger.log = AsyncMock()
+
+        resp = client.patch(
+            "/admin/feature-flags/TOTALLY_FAKE_FLAG_XYZ",
+            json={"value": True},
+        )
+        assert resp.status_code == 404
+        mock_audit_logger.log.assert_not_called()
+
+
 class TestFeatureFlagsSecurity:
     """Test admin-only access control."""
 

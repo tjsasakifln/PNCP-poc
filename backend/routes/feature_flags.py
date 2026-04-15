@@ -31,6 +31,7 @@ from config.features import (
     reload_feature_flags,
 )
 from config.base import str_to_bool
+from audit import audit_logger
 from log_sanitizer import log_admin_action
 
 logger = logging.getLogger(__name__)
@@ -428,6 +429,19 @@ async def update_feature_flag(
             "old_value": prev_value,
             "new_value": new_value,
             "source": source,
+        },
+    )
+
+    await audit_logger.log(
+        event_type="admin.feature_flag_change",
+        actor_id=admin["id"],
+        target_id=flag_name,
+        ip_address=None,
+        details={
+            "flag_name": flag_name,
+            "old_value": str(prev_value),
+            "new_value": str(new_value),
+            "old_source": prev_source,
         },
     )
 
