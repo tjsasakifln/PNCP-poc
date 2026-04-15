@@ -187,8 +187,9 @@ def recompute_temporal_alerts(
             )
     elif closing_soon:
         count_7d = len(closing_soon)
+        _verbo_abertura = "licitação com abertura" if count_7d == 1 else "licitações com abertura"
         resumo.destaques.append(
-            f"{count_7d} {'licita\u00e7\u00e3o com abertura' if count_7d == 1 else 'licita\u00e7\u00f5es com abertura'} nos pr\u00f3ximos 7 dias"
+            f"{count_7d} {_verbo_abertura} nos próximos 7 dias"
         )
 
 
