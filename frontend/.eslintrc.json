@@ -20,6 +20,17 @@
           }
         ]
       }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "JSXAttribute[name.name='className'] Literal[value=/\\b(bg|text|border|ring|fill|stroke|from|to|via|outline|decoration|placeholder|caret|accent|shadow|divide)-\\[#[0-9a-fA-F]{3,8}\\]/]",
+        "message": "STORY-4.3 (TD-FE-004): use Tailwind semantic tokens (bg-primary, text-success) instead of arbitrary hex classes. See frontend/tailwind.config.ts. Override: // eslint-disable-next-line no-restricted-syntax -- reason"
+      },
+      {
+        "selector": "JSXAttribute[name.name='style'] ObjectExpression Property Literal[value=/#[0-9a-fA-F]{3,8}/]",
+        "message": "STORY-4.3 (TD-FE-004): hardcoded hex in inline style. Use Tailwind className with semantic token, or add a token in tailwind.config.ts. Override: // eslint-disable-next-line no-restricted-syntax -- reason"
+      }
     ]
   },
   "overrides": [
@@ -45,6 +56,20 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "files": [
+        "app/api/og/**/*",
+        "**/*.test.{ts,tsx}",
+        "**/__tests__/**",
+        "tailwind.config.ts",
+        "sentry.*.config.ts",
+        "next.config.js",
+        "scripts/**/*"
+      ],
+      "rules": {
+        "no-restricted-syntax": "off"
       }
     }
   ]
