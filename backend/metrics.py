@@ -963,6 +963,28 @@ PNCP_PAGE_SIZE_LIMIT = _create_gauge(
 
 
 # ============================================================================
+# STORY-4.1 (TD-SYS-014): LLM async runtime + Batch API observability
+# ============================================================================
+
+LLM_CONCURRENT_CALLS = _create_gauge(
+    "smartlic_llm_concurrent_calls",
+    "In-flight LLM calls bounded by LLM_MAX_CONCURRENT",
+    labelnames=["call_type"],
+)
+
+LLM_BATCH_JOBS_ACTIVE = _create_gauge(
+    "smartlic_llm_batch_jobs_active",
+    "Active OpenAI Batch API jobs (offline reclassification only)",
+)
+
+LLM_BATCH_JOB_DURATION = _create_histogram(
+    "smartlic_llm_batch_job_duration_seconds",
+    "OpenAI Batch API job total wallclock (submission to terminal)",
+    buckets=[60, 300, 900, 1800, 3600, 7200, 14400, 86400],
+)
+
+
+# ============================================================================
 # STORY-4.4 (TD-SYS-003): Railway 120s time budgets
 # ============================================================================
 
