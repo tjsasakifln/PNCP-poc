@@ -1833,7 +1833,7 @@
             "top_oportunidades": {
               "default": [],
               "items": {
-                "$ref": "#/components/schemas/SampleItem"
+                "$ref": "#/components/schemas/routes__blog_stats__SampleItem"
               },
               "title": "Top Oportunidades",
               "type": "array"
@@ -2223,6 +2223,24 @@
               "title": "Monthly Trend",
               "type": "array"
             },
+            "n_unique_fornecedores": {
+              "default": 0,
+              "title": "N Unique Fornecedores",
+              "type": "integer"
+            },
+            "n_unique_orgaos": {
+              "default": 0,
+              "title": "N Unique Orgaos",
+              "type": "integer"
+            },
+            "sample_contracts": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/routes__blog_stats__SampleContract"
+              },
+              "title": "Sample Contracts",
+              "type": "array"
+            },
             "sector_id": {
               "title": "Sector Id",
               "type": "string"
@@ -2296,6 +2314,24 @@
               "title": "Monthly Trend",
               "type": "array"
             },
+            "n_unique_fornecedores": {
+              "default": 0,
+              "title": "N Unique Fornecedores",
+              "type": "integer"
+            },
+            "n_unique_orgaos": {
+              "default": 0,
+              "title": "N Unique Orgaos",
+              "type": "integer"
+            },
+            "sample_contracts": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/routes__blog_stats__SampleContract"
+              },
+              "title": "Sample Contracts",
+              "type": "array"
+            },
             "top_fornecedores": {
               "items": {
                 "$ref": "#/components/schemas/ContratosSetorTopEntry"
@@ -2359,6 +2395,24 @@
                 "$ref": "#/components/schemas/ContratosSetorTrend"
               },
               "title": "Monthly Trend",
+              "type": "array"
+            },
+            "n_unique_fornecedores": {
+              "default": 0,
+              "title": "N Unique Fornecedores",
+              "type": "integer"
+            },
+            "n_unique_orgaos": {
+              "default": 0,
+              "title": "N Unique Orgaos",
+              "type": "integer"
+            },
+            "sample_contracts": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/routes__blog_stats__SampleContract"
+              },
+              "title": "Sample Contracts",
               "type": "array"
             },
             "sector_id": {
@@ -2499,6 +2553,24 @@
               "title": "Monthly Trend",
               "type": "array"
             },
+            "n_unique_fornecedores": {
+              "default": 0,
+              "title": "N Unique Fornecedores",
+              "type": "integer"
+            },
+            "n_unique_orgaos": {
+              "default": 0,
+              "title": "N Unique Orgaos",
+              "type": "integer"
+            },
+            "sample_contracts": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/routes__blog_stats__SampleContract"
+              },
+              "title": "Sample Contracts",
+              "type": "array"
+            },
             "sector_id": {
               "title": "Sector Id",
               "type": "string"
@@ -2572,7 +2644,7 @@
             },
             "sample_contracts": {
               "items": {
-                "$ref": "#/components/schemas/SampleContract"
+                "$ref": "#/components/schemas/routes__contratos_publicos__SampleContract"
               },
               "title": "Sample Contracts",
               "type": "array"
@@ -5955,7 +6027,7 @@
             },
             "sample_contracts": {
               "items": {
-                "$ref": "#/components/schemas/SampleContract"
+                "$ref": "#/components/schemas/routes__contratos_publicos__SampleContract"
               },
               "title": "Sample Contracts",
               "type": "array"
@@ -8024,84 +8096,6 @@
           "title": "SEOMetricsResponse",
           "type": "object"
         },
-        "SampleContract": {
-          "properties": {
-            "data_assinatura": {
-              "title": "Data Assinatura",
-              "type": "string"
-            },
-            "fornecedor": {
-              "title": "Fornecedor",
-              "type": "string"
-            },
-            "objeto": {
-              "title": "Objeto",
-              "type": "string"
-            },
-            "orgao": {
-              "title": "Orgao",
-              "type": "string"
-            },
-            "valor": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Valor"
-            }
-          },
-          "required": [
-            "objeto",
-            "orgao",
-            "fornecedor",
-            "data_assinatura"
-          ],
-          "title": "SampleContract",
-          "type": "object"
-        },
-        "SampleItem": {
-          "properties": {
-            "data": {
-              "title": "Data",
-              "type": "string"
-            },
-            "orgao": {
-              "title": "Orgao",
-              "type": "string"
-            },
-            "titulo": {
-              "title": "Titulo",
-              "type": "string"
-            },
-            "uf": {
-              "title": "Uf",
-              "type": "string"
-            },
-            "valor": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Valor"
-            }
-          },
-          "required": [
-            "titulo",
-            "orgao",
-            "uf",
-            "data"
-          ],
-          "title": "SampleItem",
-          "type": "object"
-        },
         "SancaoEntry": {
           "properties": {
             "data_fim": {
@@ -8457,7 +8451,7 @@
             },
             "sample_items": {
               "items": {
-                "$ref": "#/components/schemas/SampleItem"
+                "$ref": "#/components/schemas/routes__sectors_public__SampleItem"
               },
               "title": "Sample Items",
               "type": "array"
@@ -8538,6 +8532,11 @@
               ],
               "title": "Most Recent Bid Date"
             },
+            "municipios_ativos": {
+              "default": 0,
+              "title": "Municipios Ativos",
+              "type": "integer"
+            },
             "sector_id": {
               "title": "Sector Id",
               "type": "string"
@@ -8545,6 +8544,14 @@
             "sector_name": {
               "title": "Sector Name",
               "type": "string"
+            },
+            "top_compradores": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/TopComprador"
+              },
+              "title": "Top Compradores",
+              "type": "array"
             },
             "top_modalidades": {
               "default": [],
@@ -8556,7 +8563,7 @@
             },
             "top_oportunidades": {
               "items": {
-                "$ref": "#/components/schemas/SampleItem"
+                "$ref": "#/components/schemas/routes__blog_stats__SampleItem"
               },
               "title": "Top Oportunidades",
               "type": "array"
@@ -8586,6 +8593,17 @@
               "default": 0.0,
               "title": "Value Range Min",
               "type": "number"
+            },
+            "vs_media_nacional_pct": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vs Media Nacional Pct"
             }
           },
           "required": [
@@ -9180,6 +9198,34 @@
             "value"
           ],
           "title": "TimeSeriesDataPoint",
+          "type": "object"
+        },
+        "TopComprador": {
+          "properties": {
+            "cnpj": {
+              "title": "Cnpj",
+              "type": "string"
+            },
+            "nome": {
+              "title": "Nome",
+              "type": "string"
+            },
+            "total_contratos": {
+              "title": "Total Contratos",
+              "type": "integer"
+            },
+            "valor_total": {
+              "title": "Valor Total",
+              "type": "number"
+            }
+          },
+          "required": [
+            "nome",
+            "cnpj",
+            "total_contratos",
+            "valor_total"
+          ],
+          "title": "TopComprador",
           "type": "object"
         },
         "TopDimensionsResponse": {
@@ -10158,6 +10204,96 @@
           "title": "WelcomeEmailResponse",
           "type": "object"
         },
+        "routes__blog_stats__SampleContract": {
+          "properties": {
+            "data_assinatura": {
+              "title": "Data Assinatura",
+              "type": "string"
+            },
+            "fornecedor": {
+              "title": "Fornecedor",
+              "type": "string"
+            },
+            "objeto": {
+              "title": "Objeto",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "valor": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor"
+            }
+          },
+          "required": [
+            "objeto",
+            "orgao",
+            "fornecedor",
+            "valor",
+            "data_assinatura"
+          ],
+          "title": "SampleContract",
+          "type": "object"
+        },
+        "routes__blog_stats__SampleItem": {
+          "properties": {
+            "data": {
+              "title": "Data",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "orgao_cnpj": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Orgao Cnpj"
+            },
+            "titulo": {
+              "title": "Titulo",
+              "type": "string"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "valor": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor"
+            }
+          },
+          "required": [
+            "titulo",
+            "orgao",
+            "uf",
+            "data"
+          ],
+          "title": "SampleItem",
+          "type": "object"
+        },
         "routes__blog_stats__TrendPoint": {
           "properties": {
             "avg_value": {
@@ -10202,6 +10338,45 @@
             "value"
           ],
           "title": "MonthlyTrend",
+          "type": "object"
+        },
+        "routes__contratos_publicos__SampleContract": {
+          "properties": {
+            "data_assinatura": {
+              "title": "Data Assinatura",
+              "type": "string"
+            },
+            "fornecedor": {
+              "title": "Fornecedor",
+              "type": "string"
+            },
+            "objeto": {
+              "title": "Objeto",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "valor": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor"
+            }
+          },
+          "required": [
+            "objeto",
+            "orgao",
+            "fornecedor",
+            "data_assinatura"
+          ],
+          "title": "SampleContract",
           "type": "object"
         },
         "routes__dados_publicos__TrendPoint": {
@@ -10367,6 +10542,45 @@
             "count"
           ],
           "title": "ModalidadeCount",
+          "type": "object"
+        },
+        "routes__sectors_public__SampleItem": {
+          "properties": {
+            "data": {
+              "title": "Data",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "titulo": {
+              "title": "Titulo",
+              "type": "string"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "valor": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor"
+            }
+          },
+          "required": [
+            "titulo",
+            "orgao",
+            "uf",
+            "data"
+          ],
+          "title": "SampleItem",
           "type": "object"
         }
       },
@@ -10840,6 +11054,35 @@
           ]
         }
       },
+      "/v1/admin/cron-status": {
+        "get": {
+          "description": "Return the pg_cron health snapshot.\n\nCalls ``public.get_cron_health()`` (SECURITY DEFINER) via the backend's\nservice-role Supabase client. Response shape::\n\n    {\n        \"queried_at\": \"2026-04-14T12:00:00+00:00\",\n        \"jobs\": [\n            {\n                \"jobname\": \"purge-old-bids\",\n                \"schedule\": \"0 7 * * *\",\n                \"active\": true,\n                \"last_status\": \"succeeded\",\n                \"last_run_at\": \"2026-04-14T07:00:04+00:00\",\n                \"runs_24h\": 1,\n                \"failures_24h\": 0,\n                \"latency_avg_ms\": 120,\n                \"last_return_message\": null\n            },\n            ...\n        ],\n        \"count\": 6\n    }\n\nOn transient failure (Supabase CB open, RPC error) returns ``status=error``\nwith ``jobs=[]`` so that dashboards degrade gracefully instead of 500-ing.",
+          "operationId": "get_cron_status_v1_admin_cron_status_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "title": "Response Get Cron Status V1 Admin Cron Status Get",
+                    "type": "object"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Cron Status",
+          "tags": [
+            "admin"
+          ]
+        }
+      },
       "/v1/admin/feature-flags": {
         "get": {
           "description": "List all registered feature flags with current values and sources.\n\nReturns each flag's effective value, where it comes from (redis override,\nenv var, or default), its description, and registry metadata.\n\nAdmin only.",
@@ -11025,6 +11268,35 @@
           "summary": "Feedback Patterns",
           "tags": [
             "feedback"
+          ]
+        }
+      },
+      "/v1/admin/llm-cost": {
+        "get": {
+          "description": "Return LLM cost snapshot para o m\u00eas corrente (admin-only).\n\nResponse shape::\n\n    {\n        \"month_to_date_usd\": 42.1234,\n        \"budget_usd\": 100.0,\n        \"pct_used\": 42.12,\n        \"projected_end_of_month_usd\": 78.55,\n        \"month\": \"llm_cost_month_2026_04\",\n        \"exceeded\": false\n    }\n\nEm caso de Redis indispon\u00edvel, retorna zeros (graceful degradation).",
+          "operationId": "admin_llm_cost_v1_admin_llm_cost_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "title": "Response Admin Llm Cost V1 Admin Llm Cost Get",
+                    "type": "object"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Admin Llm Cost",
+          "tags": [
+            "admin"
           ]
         }
       },
@@ -18114,7 +18386,7 @@
       },
       "/v1/sitemap/licitacoes-indexable": {
         "get": {
-          "description": "Retorna combos setor\u00d7UF com >= threshold editais ativos (\u00faltimos 30 dias).",
+          "description": "Retorna combos setor\u00d7UF com bids OR contracts suficientes.",
           "operationId": "get_licitacoes_indexable_v1_sitemap_licitacoes_indexable_get",
           "responses": {
             "200": {
