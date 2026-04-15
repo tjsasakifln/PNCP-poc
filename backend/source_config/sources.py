@@ -267,10 +267,11 @@ class ConsolidationConfig:
     def from_env(cls) -> "ConsolidationConfig":
         """Load consolidation config from environment."""
         return cls(
-            # GTM-FIX-029 AC7/AC6: Raised from 120→300 global, 50→180 per-source
-            # With tamanhoPagina=50, PNCP needs 10x more pages → much longer fetch times
-            timeout_global=int(os.getenv("CONSOLIDATION_TIMEOUT_GLOBAL", "300")),
-            timeout_per_source=int(os.getenv("CONSOLIDATION_TIMEOUT_PER_SOURCE", "180")),
+            # STORY-4.4 (TD-SYS-003): Sync with config/pncp.py defaults so the invariant
+            # pipeline(100) > consolidation(90) > per_source(70) holds whichever knob ops
+            # uses. Env vars still override — raise them in an emergency.
+            timeout_global=int(os.getenv("CONSOLIDATION_TIMEOUT_GLOBAL", "90")),
+            timeout_per_source=int(os.getenv("CONSOLIDATION_TIMEOUT_PER_SOURCE", "70")),
             fail_on_all_errors=os.getenv("CONSOLIDATION_FAIL_ON_ALL", "true").lower()
             == "true",
             dedup_strategy=os.getenv("CONSOLIDATION_DEDUP_STRATEGY", "first_seen"),

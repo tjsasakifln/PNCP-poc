@@ -963,6 +963,23 @@ PNCP_PAGE_SIZE_LIMIT = _create_gauge(
 
 
 # ============================================================================
+# STORY-4.4 (TD-SYS-003): Railway 120s time budgets
+# ============================================================================
+
+PIPELINE_BUDGET_EXCEEDED_TOTAL = _create_counter(
+    "smartlic_pipeline_budget_exceeded_total",
+    "Pipeline phase exceeded its time budget (per Railway 120s proxy)",
+    labelnames=["phase", "source"],
+)
+
+PIPELINE_DURATION_SECONDS = _create_histogram(
+    "smartlic_pipeline_duration_seconds",
+    "End-to-end pipeline duration — used to derive %>100s SLI",
+    buckets=[10, 30, 60, 90, 100, 110, 120, 180],
+)
+
+
+# ============================================================================
 # STORY-4.5 (TD-SYS-002): PNCP breaking-change canary
 # ============================================================================
 

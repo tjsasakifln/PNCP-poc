@@ -105,13 +105,16 @@ COMPRASGOV_CB_ENABLED: bool = os.getenv("COMPRASGOV_CB_ENABLED", "true").lower()
 COMPRASGOV_ENABLED: bool = str_to_bool(os.getenv("COMPRASGOV_ENABLED", "false"))
 
 # GTM-STAB-003: Timeout Chain
-PIPELINE_TIMEOUT: int = int(os.getenv("PIPELINE_TIMEOUT", "110"))
-CONSOLIDATION_TIMEOUT: int = int(os.getenv("CONSOLIDATION_TIMEOUT", "100"))
-PNCP_TIMEOUT_PER_SOURCE: int = int(os.getenv("PNCP_TIMEOUT_PER_SOURCE", "80"))
+# STORY-4.4 (TD-SYS-003): Tightened defaults to leave 20s headroom before Railway 120s kill.
+# Invariant: pipeline(100) > consolidation(90) > per_source(70) > per_uf(25) > (per_modality 20 + httpx 15).
+# Env vars preserve the ability to override in an emergency.
+PIPELINE_TIMEOUT: int = int(os.getenv("PIPELINE_TIMEOUT", "100"))
+CONSOLIDATION_TIMEOUT: int = int(os.getenv("CONSOLIDATION_TIMEOUT", "90"))
+PNCP_TIMEOUT_PER_SOURCE: int = int(os.getenv("PNCP_TIMEOUT_PER_SOURCE", "70"))
 # Per-UF timeout (GTM-FIX-029 AC1/AC5) — configurable
-# Calculation: 4 modalities × ~15s/mod (with retry) = ~60s + 30s margin = 90s
-PNCP_TIMEOUT_PER_UF: int = int(os.getenv("PNCP_TIMEOUT_PER_UF", "30"))
-PNCP_TIMEOUT_PER_UF_DEGRADED: int = int(os.getenv("PNCP_TIMEOUT_PER_UF_DEGRADED", "15"))
+# Calculation: 4 modalities × ~6s/mod (with retry) = ~24s + 1s margin = 25s
+PNCP_TIMEOUT_PER_UF: int = int(os.getenv("PNCP_TIMEOUT_PER_UF", "25"))
+PNCP_TIMEOUT_PER_UF_DEGRADED: int = int(os.getenv("PNCP_TIMEOUT_PER_UF_DEGRADED", "12"))
 PIPELINE_SKIP_LLM_AFTER_S: int = int(os.getenv("PIPELINE_SKIP_LLM_AFTER_S", "90"))
 PIPELINE_SKIP_VIABILITY_AFTER_S: int = int(os.getenv("PIPELINE_SKIP_VIABILITY_AFTER_S", "100"))
 

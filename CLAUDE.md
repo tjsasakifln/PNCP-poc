@@ -449,6 +449,28 @@ Metrics (Prometheus): `smartlic_pncp_max_page_size_changed_total`, `smartlic_pnc
 - Sync PNCPClient fallback wrapped in `asyncio.to_thread()` — never blocks event loop
 - Gunicorn keep-alive: 75s (> Railway proxy 60s) prevents intermittent 502s
 
+### Time Budget Waterfall (STORY-4.4 TD-SYS-003)
+
+Defaults tightened in `backend/config/pncp.py` so the inner timeout always expires before Railway kills the request — leaving ~20s headroom for response serialization:
+
+```
+Railway proxy     [========================== 120s ==========================]
+Gunicorn worker   [======================= 110s ========================]
+Pipeline budget   [==================== 100s ====================]
+  Consolidation   [================== 90s ===================]
+    PerSource     [============= 70s =============]
+      PerUF       [===== 25s =====]
+        httpx r/w [10c+15r]
+```
+
+Invariant (enforced by `backend/tests/test_timeout_invariants.py`): `pipeline(100) > consolidation(90) > per_source(70) > per_uf(25) > (per_modality 20 + httpx 15)`.
+
+Both knobs (`config/pncp.py` and `source_config/sources.ConsolidationConfig`) now share defaults — the "divergência 300s vs 100s" documented pre-STORY-4.4 is resolved.
+
+Pipeline call sites go through `backend/pipeline/budget.py::_run_with_budget` so every TimeoutError increments `smartlic_pipeline_budget_exceeded_total{phase,source}`. Query `histogram_quantile(0.95, rate(smartlic_pipeline_duration_seconds_bucket[5m]))` for the current p95; alert `rate(smartlic_pipeline_budget_exceeded_total[5m]) > 0`.
+
+To unblock a specific deploy (emergency), override via Railway vars: `PIPELINE_TIMEOUT=110`, `CONSOLIDATION_TIMEOUT=100`, `PNCP_TIMEOUT_PER_SOURCE=80`, etc. — no code change needed.
+
 ### Type Safety
 - **Python:** Type hints on all functions, Pydantic for API contracts, pattern validation for dates
 - **TypeScript:** Interfaces over types, no `any`, strict null checks enabled
