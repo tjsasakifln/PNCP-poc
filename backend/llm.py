@@ -157,16 +157,12 @@ def recompute_temporal_alerts(
     # Replace alerta_urgencia with ground-truth
     if urgent_bids:
         _n = len(urgent_bids)
-        resumo.alerta_urgencia = (
-            f"\u26a0\ufe0f {_n} "
-            f"{'licita\u00e7\u00e3o encerra' if _n == 1 else 'licita\u00e7\u00f5es encerram'} nas pr\u00f3ximas 24 horas."
-        )
+        _verbo_urgencia = "licitação encerra" if _n == 1 else "licitações encerram"
+        resumo.alerta_urgencia = f"⚠️ {_n} {_verbo_urgencia} nas próximas 24 horas."
     elif closing_soon:
         _n = len(closing_soon)
-        resumo.alerta_urgencia = (
-            f"\u26a0\ufe0f {_n} "
-            f"{'licita\u00e7\u00e3o encerra' if _n == 1 else 'licita\u00e7\u00f5es encerram'} em at\u00e9 7 dias."
-        )
+        _verbo_7d = "licitação encerra" if _n == 1 else "licitações encerram"
+        resumo.alerta_urgencia = f"⚠️ {_n} {_verbo_7d} em até 7 dias."
     else:
         resumo.alerta_urgencia = None
 
@@ -191,8 +187,9 @@ def recompute_temporal_alerts(
             )
     elif closing_soon:
         count_7d = len(closing_soon)
+        _verbo_abertura = "licitação com abertura" if count_7d == 1 else "licitações com abertura"
         resumo.destaques.append(
-            f"{count_7d} {'licita\u00e7\u00e3o com abertura' if count_7d == 1 else 'licita\u00e7\u00f5es com abertura'} nos pr\u00f3ximos 7 dias"
+            f"{count_7d} {_verbo_abertura} nos próximos 7 dias"
         )
 
 

@@ -38,10 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd backend
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
-          pip install pytest pytest-cov pytest-asyncio httpx
+          pip install -r requirements-dev.txt
 
       # CRIT-001 AC5: Validate migration prefixes
       - name: Validate migration prefixes
