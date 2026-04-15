@@ -277,3 +277,33 @@ def _cleanup_pending_async_tasks():
         pass
 
 
+# ---------------------------------------------------------------------------
+# TD-SYS-022: Standardized mock builder fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def mock_supabase_builder():
+    """Factory fixture for configurable Supabase mocks (TD-SYS-022).
+
+    Usage:
+        def test_foo(mock_supabase_builder):
+            mock = mock_supabase_builder.with_data([{"id": "1"}]).build()
+    """
+    from tests.helpers.mock_factories import MockSupabaseBuilder
+    return MockSupabaseBuilder()
+
+
+@pytest.fixture
+def mock_pncp_builder():
+    """Factory fixture for PNCP API mocks (TD-SYS-022)."""
+    from tests.helpers.mock_factories import MockPNCPBuilder
+    return MockPNCPBuilder()
+
+
+@pytest.fixture
+def mock_llm_builder():
+    """Factory fixture for LLM mocks (TD-SYS-022)."""
+    from tests.helpers.mock_factories import MockLLMBuilder
+    return MockLLMBuilder()
+
+
