@@ -724,6 +724,18 @@ export function useSearchSSE({
         if (typeof fetch !== 'undefined') {
           fetch('/api/metrics/sse-fallback', { method: 'POST' }).catch(() => {});
         }
+        // STORY-2.4 AC4: Telemetria — fallback para polling
+        try {
+          import("mixpanel-browser").then((mod) => {
+            const mp = (mod as { default?: { track?: (e: string, p: Record<string, unknown>) => void } }).default ?? mod;
+            if (mp && typeof (mp as { track?: unknown }).track === "function") {
+              (mp as { track: (e: string, p: Record<string, unknown>) => void }).track("sse_failed_fallback_polling", {
+                searchId: currentSearchId,
+                attempts: retryAttemptRef.current,
+              });
+            }
+          }).catch(() => {});
+        } catch {}
         // STORY-367 AC1: Start polling fallback
         if (currentSearchId) startPollingFallback(currentSearchId, authToken);
         onErrorRef.current?.();
@@ -735,6 +747,20 @@ export function useSearchSSE({
       // STORY-297 AC9: Show reconnecting indicator
       setIsReconnecting(true);
       console.info(`SSE reconnecting in ${delay}ms (attempt ${retryAttemptRef.current}/${SSE_MAX_RETRIES})`);
+      // STORY-2.4 AC4: Telemetria — tentativa de reconexão SSE
+      try {
+        import("mixpanel-browser").then((mod) => {
+          const mp = (mod as { default?: { track?: (e: string, p: Record<string, unknown>) => void } }).default ?? mod;
+          if (mp && typeof (mp as { track?: unknown }).track === "function") {
+            (mp as { track: (e: string, p: Record<string, unknown>) => void }).track("sse_reconnect_attempt", {
+              attempt: retryAttemptRef.current,
+              maxAttempts: SSE_MAX_RETRIES,
+              delayMs: delay,
+              searchId: currentSearchId,
+            });
+          }
+        }).catch(() => {});
+      } catch {}
 
       reconnectTimerRef.current = setTimeout(() => {
         reconnectTimerRef.current = null;
