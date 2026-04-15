@@ -164,3 +164,148 @@ jobs:
             backend/backend.log
             frontend/frontend.log
           retention-days: 7
+
+  # STORY-3.5 — Secondary job for billing E2E specs that exercise Stripe test mode.
+  # Runs only when STRIPE_TEST_SECRET_KEY is configured as a repo secret, and
+  # never blocks the main e2e-tests job.  Cleans up test customers after run.
+  e2e-billing:
+    name: E2E Billing Tests (Stripe test mode)
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    timeout-minutes: 20
+    if: ${{ needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped' }}
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-fallback-key' }}
+      FRONTEND_URL: http://localhost:3000
+      BACKEND_URL: http://localhost:8000
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+      E2E_BILLING_ENABLED: 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Guard — skip gracefully when STRIPE_TEST_SECRET_KEY is unset
+        id: guard
+        run: |
+          if [ -z "${{ secrets.STRIPE_TEST_SECRET_KEY }}" ]; then
+            echo "::warning::STRIPE_TEST_SECRET_KEY is not set; skipping billing E2E."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Python (Backend)
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Set up Node.js (Frontend)
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install backend dependencies
+        if: steps.guard.outputs.skip == 'false'
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Install frontend dependencies
+        if: steps.guard.outputs.skip == 'false'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        if: steps.guard.outputs.skip == 'false'
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend server
+        if: steps.guard.outputs.skip == 'false'
+        working-directory: backend
+        run: |
+          uvicorn main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
+          BACKEND_PID=$!
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+              echo "Backend is ready"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 1
+          done
+          echo "Backend failed to start"
+          cat backend.log
+          exit 1
+
+      - name: Build and start frontend server
+        if: steps.guard.outputs.skip == 'false'
+        working-directory: frontend
+        run: |
+          npm run build
+          if [ -f .next/standalone/server.js ]; then
+            node .next/standalone/server.js > frontend.log 2>&1 &
+          else
+            npx next start > frontend.log 2>&1 &
+          fi
+          FRONTEND_PID=$!
+          echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
+          for i in {1..60}; do
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready"
+              exit 0
+            fi
+            echo "Waiting for frontend... ($i/60)"
+            sleep 1
+          done
+          echo "Frontend failed to start"
+          cat frontend.log
+          exit 1
+
+      - name: Run billing E2E specs
+        if: steps.guard.outputs.skip == 'false'
+        working-directory: frontend
+        run: npx playwright test --grep @billing --project=chromium
+        env:
+          CI: true
+
+      - name: Cleanup Stripe test customers
+        if: always() && steps.guard.outputs.skip == 'false'
+        working-directory: frontend
+        run: node scripts/cleanup-stripe-test-customers.js
+        continue-on-error: true
+
+      - name: Stop services
+        if: always() && steps.guard.outputs.skip == 'false'
+        run: |
+          [ -n "$BACKEND_PID" ] && kill $BACKEND_PID || true
+          [ -n "$FRONTEND_PID" ] && kill $FRONTEND_PID || true
+
+      - name: Upload Playwright report (billing)
+        if: failure() && steps.guard.outputs.skip == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-billing
+          path: frontend/playwright-report/
+          retention-days: 7
+
+      - name: Upload server logs (billing)
+        if: failure() && steps.guard.outputs.skip == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs-billing
+          path: |
+            backend/backend.log
+            frontend/frontend.log
+          retention-days: 7

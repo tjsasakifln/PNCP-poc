@@ -261,9 +261,63 @@ Saved searches and theme preferences use controlled test data:
 - Update page objects if UI changed
 - Use Playwright Inspector: `npx playwright test --debug`
 
+## Billing E2E Suite (STORY-3.5)
+
+The `billing/` subfolder contains Stripe-dependent E2E specs tagged `@billing @stripe`:
+
+- `billing-trial-to-paid.spec.ts` — signup → trial → upgrade (AC1)
+- `billing-downgrade.spec.ts` — switch billing period annual → monthly (AC2)
+- `billing-cancel.spec.ts` — cancel + grace period (AC3)
+- `billing-resubscribe.spec.ts` — reactivate after cancel (AC4)
+
+### Running locally
+
+```bash
+# Required env vars (test mode only!)
+export STRIPE_TEST_SECRET_KEY=sk_test_...
+export E2E_BILLING_ENABLED=true
+export SUPABASE_SERVICE_ROLE_KEY=...   # for user cleanup
+
+# Run the tagged suite
+npx playwright test --grep @billing --project=chromium
+```
+
+If either env var is missing, every billing test auto-skips with a clear
+message — it never fails.
+
+### Test user lifecycle
+
+- Each spec provisions a unique `e2e-billing-<timestamp>@test.smartlic.tech` user.
+- `afterAll` hooks call `cleanupTestCustomer(email)` + `deleteTestUser(email)`.
+- CI additionally runs `scripts/cleanup-stripe-test-customers.js` as a last-line sweep.
+
+### Cleanup script
+
+```bash
+# Preview
+STRIPE_TEST_SECRET_KEY=sk_test_... node scripts/cleanup-stripe-test-customers.js --dry-run
+
+# Live delete
+STRIPE_TEST_SECRET_KEY=sk_test_... node scripts/cleanup-stripe-test-customers.js
+```
+
+The script refuses to run against a live key (`sk_live_*`) and only touches
+customers whose email matches `e2e-billing-*@test.smartlic.tech`.
+
+### CI integration
+
+`.github/workflows/e2e.yml` defines a secondary `e2e-billing` job that:
+
+- Runs only when `STRIPE_TEST_SECRET_KEY` secret is configured.
+- Depends on the primary `e2e-tests` job.
+- Runs `npx playwright test --grep @billing` on Chromium.
+- Always runs the cleanup script afterwards (even on failure).
+- Never blocks the main suite — absence of the secret = graceful skip + warning.
+
 ## References
 
 - **Playwright Docs:** https://playwright.dev
 - **QA Analysis:** `docs/reviews/qa-testing-analysis.md`
 - **Task Definition:** Task #2 (QA-7)
 - **Config:** `frontend/playwright.config.ts`
+- **STORY-3.5:** `docs/stories/2026-04/EPIC-TD-2026Q2/STORY-3.5-e2e-billing-flow.md`
