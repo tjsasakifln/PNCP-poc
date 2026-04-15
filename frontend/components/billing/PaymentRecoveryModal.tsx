@@ -66,6 +66,10 @@ export function PaymentRecoveryModal({ daysRemaining, trialValue, onClose }: Pay
     <div
       className="fixed inset-0 z-[60] bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/30 flex items-center justify-center p-4 overflow-y-auto"
       data-testid="payment-recovery-modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="payment-recovery-title"
+      aria-describedby="payment-recovery-desc"
     >
       {/* Close → /planos */}
       <button
@@ -89,7 +93,7 @@ export function PaymentRecoveryModal({ daysRemaining, trialValue, onClose }: Pay
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl md:text-3xl font-bold text-center mb-4 text-red-800 dark:text-red-200">
+        <h1 id="payment-recovery-title" className="text-2xl md:text-3xl font-bold text-center mb-4 text-red-800 dark:text-red-200">
           Regularize seu pagamento
         </h1>
 
@@ -117,7 +121,7 @@ export function PaymentRecoveryModal({ daysRemaining, trialValue, onClose }: Pay
         )}
 
         {/* Message */}
-        <p className="text-gray-600 dark:text-gray-300 text-center mb-6">
+        <p id="payment-recovery-desc" className="text-gray-600 dark:text-gray-300 text-center mb-6">
           Novas análises estao suspensas ate a regularizacao do pagamento.
           Seu historico e pipeline continuam acessiveis.
         </p>
