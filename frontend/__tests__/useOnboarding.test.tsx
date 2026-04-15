@@ -1,59 +1,19 @@
 /**
  * useOnboarding Hook Tests
- * Feature #3 - Phase 3 Day 9
- * Target: +4% test coverage
+ * STORY-4.2: Migrado de shepherd.js → Tour component
+ *
+ * O hook agora usa estado React + Tour component em vez de Shepherd.
+ * Mantém a mesma API pública: startTour, restartTour, cancelTour,
+ * isActive, currentStep, hasCompleted, hasDismissed, shouldShowOnboarding, tourElement.
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useOnboarding } from '../hooks/useOnboarding';
 
-// Mock shepherd.js so the lazy import('shepherd.js').then(...) resolves with a
-// controllable Tour constructor in jsdom (real Shepherd throws DOM errors).
-// The mock fires registered event handlers when cancel/complete are called,
-// matching the behaviour of real Shepherd (needed for isActive state transitions).
-jest.mock('shepherd.js', () => {
-  // Event handler registry keyed by event name
-  const handlers: Record<string, Array<(...args: unknown[]) => void>> = {};
-
-  const mockStart = jest.fn();
-  const mockAddStep = jest.fn();
-  const mockIsActive = jest.fn(() => false);
-  const mockNext = jest.fn();
-  const mockBack = jest.fn();
-
-  const mockOn = jest.fn((event: string, handler: (...args: unknown[]) => void) => {
-    if (!handlers[event]) handlers[event] = [];
-    handlers[event].push(handler);
-  });
-
-  const fire = (event: string, ...args: unknown[]) => {
-    (handlers[event] || []).forEach((h) => h(...args));
-  };
-
-  const mockCancel = jest.fn(() => fire('cancel'));
-  const mockComplete = jest.fn(() => fire('complete'));
-
-  const instance = {
-    start: mockStart,
-    cancel: mockCancel,
-    complete: mockComplete,
-    next: mockNext,
-    back: mockBack,
-    addStep: mockAddStep,
-    isActive: mockIsActive,
-    on: mockOn,
-    steps: [],
-    __handlers: handlers,
-  };
-
-  return {
-    __esModule: true,
-    default: {
-      Tour: jest.fn(() => instance),
-    },
-    __mockInstance: instance,
-  };
-});
+// Mock Tour component — evita erros de FocusTrap/jsdom
+jest.mock('../components/tour/Tour', () => ({
+  Tour: () => null,
+}));
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -71,33 +31,6 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 describe('useOnboarding Hook', () => {
   beforeEach(() => {
     localStorageMock.clear();
-
-    // resetMocks: true clears mock implementations between tests — restore them
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const shepherd = require('shepherd.js') as any;
-    const instance = shepherd.__mockInstance;
-
-    // Clear the event handler registry so each test starts fresh
-    const handlers = instance.__handlers as Record<string, Array<(...args: unknown[]) => void>>;
-    Object.keys(handlers).forEach((k) => { handlers[k] = []; });
-
-    const fire = (event: string, ...args: unknown[]) => {
-      (handlers[event] || []).forEach((h) => h(...args));
-    };
-
-    instance.start.mockImplementation(() => {});
-    instance.cancel.mockImplementation(() => fire('cancel'));
-    instance.complete.mockImplementation(() => fire('complete'));
-    instance.next.mockImplementation(() => {});
-    instance.back.mockImplementation(() => {});
-    instance.addStep.mockImplementation(() => {});
-    instance.isActive.mockReturnValue(false);
-    instance.on.mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
-      if (!handlers[event]) handlers[event] = [];
-      handlers[event].push(handler);
-    });
-
-    shepherd.default.Tour.mockImplementation(() => instance);
   });
 
   describe('TC-ONBOARDING-001: Initialization', () => {
@@ -136,11 +69,8 @@ describe('useOnboarding Hook', () => {
   });
 
   describe('TC-ONBOARDING-002: Tour control', () => {
-    it('should start tour manually', async () => {
+    it('should start tour manually', () => {
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
-
-      // Wait for Shepherd to load via lazy import('shepherd.js').then(...)
-      await act(async () => {});
 
       act(() => {
         result.current.startTour();
@@ -162,13 +92,11 @@ describe('useOnboarding Hook', () => {
 
       expect(localStorageMock.getItem('smartlic_onboarding_completed')).toBeNull();
       expect(result.current.hasCompleted).toBe(false);
+      expect(result.current.isActive).toBe(true);
     });
 
-    it('should cancel tour', async () => {
+    it('should cancel tour', () => {
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
-
-      // Wait for Shepherd to load via lazy import('shepherd.js').then(...)
-      await act(async () => {});
 
       act(() => {
         result.current.startTour();
@@ -180,13 +108,13 @@ describe('useOnboarding Hook', () => {
         result.current.cancelTour();
       });
 
-      // Tour should be cancelled
       expect(result.current.isActive).toBe(false);
+      expect(result.current.hasDismissed).toBe(true);
     });
   });
 
   describe('TC-ONBOARDING-003: Callbacks', () => {
-    it('should call onComplete callback', async () => {
+    it('should call onComplete callback when provided', () => {
       const onComplete = jest.fn();
 
       renderHook(() => useOnboarding({
@@ -194,28 +122,25 @@ describe('useOnboarding Hook', () => {
         onComplete,
       }));
 
-      // Simulate tour completion by setting localStorage directly
-      act(() => {
-        localStorageMock.setItem('smartlic_onboarding_completed', 'true');
-      });
-
-      // Note: In real scenario, Shepherd.js would trigger this
-      // For unit test, we verify the callback is passed correctly
       expect(onComplete).toBeDefined();
     });
 
-    it('should call onDismiss callback', () => {
+    it('should call onDismiss callback when cancelTour is called', () => {
       const onDismiss = jest.fn();
 
-      renderHook(() => useOnboarding({
+      const { result } = renderHook(() => useOnboarding({
         autoStart: false,
         onDismiss,
       }));
 
-      expect(onDismiss).toBeDefined();
+      act(() => {
+        result.current.cancelTour();
+      });
+
+      expect(onDismiss).toHaveBeenCalled();
     });
 
-    it('should call onStepChange callback', () => {
+    it('should call onStepChange callback when provided', () => {
       const onStepChange = jest.fn();
 
       renderHook(() => useOnboarding({
@@ -229,8 +154,6 @@ describe('useOnboarding Hook', () => {
 
   describe('TC-ONBOARDING-004: localStorage persistence', () => {
     it('should save completion to localStorage', () => {
-      renderHook(() => useOnboarding({ autoStart: false }));
-
       act(() => {
         localStorageMock.setItem('smartlic_onboarding_completed', 'true');
       });
@@ -239,8 +162,6 @@ describe('useOnboarding Hook', () => {
     });
 
     it('should save dismissal to localStorage', () => {
-      renderHook(() => useOnboarding({ autoStart: false }));
-
       act(() => {
         localStorageMock.setItem('smartlic_onboarding_dismissed', 'true');
       });
@@ -287,24 +208,33 @@ describe('useOnboarding Hook', () => {
     });
   });
 
-  describe('TC-ONBOARDING-006: Tour instance', () => {
-    it('should provide tour instance', () => {
+  describe('TC-ONBOARDING-006: Tour instance (deprecated)', () => {
+    it('should return null for deprecated tour property', () => {
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
-      // Tour instance should be available (may be null before initialization)
-      expect(result.current.tour).toBeDefined();
+      // tour is always null — Shepherd.js was removed (STORY-4.2)
+      expect(result.current.tour).toBeNull();
     });
   });
 
   describe('TC-ONBOARDING-007: Current step tracking', () => {
-    it('should track current step index', () => {
+    it('should track current step index (starts at 0)', () => {
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
       expect(result.current.currentStep).toBe(0);
     });
   });
 
-  describe('TC-ONBOARDING-008: Edge cases', () => {
+  describe('TC-ONBOARDING-008: tourElement', () => {
+    it('should expose tourElement as ReactNode', () => {
+      const { result } = renderHook(() => useOnboarding({ autoStart: false }));
+
+      // tourElement should be defined (it's a JSX element from useMemo)
+      expect(result.current.tourElement).toBeDefined();
+    });
+  });
+
+  describe('TC-ONBOARDING-009: Edge cases', () => {
     it('should handle missing localStorage gracefully', () => {
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
@@ -317,23 +247,27 @@ describe('useOnboarding Hook', () => {
 
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
-      // Should not consider 'invalid' as completed
+      // 'invalid' !== 'true', so not considered completed
       expect(result.current.hasCompleted).toBe(false);
     });
 
-    it('should allow multiple restarts', () => {
+    it('should allow multiple restarts without error', () => {
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
-      act(() => {
-        result.current.restartTour();
-      });
+      act(() => { result.current.restartTour(); });
+      act(() => { result.current.restartTour(); });
 
-      act(() => {
-        result.current.restartTour();
-      });
-
-      // Should not throw error
       expect(result.current.hasCompleted).toBe(false);
+      expect(result.current.isActive).toBe(true);
+    });
+
+    it('cancelTour marks hasDismissed=true and sets localStorage', () => {
+      const { result } = renderHook(() => useOnboarding({ autoStart: false }));
+
+      act(() => { result.current.cancelTour(); });
+
+      expect(result.current.hasDismissed).toBe(true);
+      expect(localStorageMock.getItem('smartlic_onboarding_dismissed')).toBe('true');
     });
   });
 });

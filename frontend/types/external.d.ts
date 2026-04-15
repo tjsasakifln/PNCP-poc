@@ -3,8 +3,7 @@
  * third-party globals and SDKs we attach at runtime.
  *
  * Keeps the production code free of `any` casts when interacting with
- * Mixpanel (loaded via script tag at runtime) and Shepherd.js (assigned
- * to `window` by the npm package side-effect).
+ * Mixpanel (loaded via script tag at runtime).
  */
 
 declare global {
@@ -13,18 +12,6 @@ declare global {
     identify?(distinctId: string): void;
     people?: {
       set(properties: Record<string, unknown>): void;
-    };
-  }
-
-  interface ShepherdGlobal {
-    Tour: new (options?: Record<string, unknown>) => {
-      addStep(step: Record<string, unknown>): void;
-      start(): void;
-      complete(): void;
-      cancel(): void;
-      next(): void;
-      back(): void;
-      on(event: string, handler: (...args: unknown[]) => void): void;
     };
   }
 

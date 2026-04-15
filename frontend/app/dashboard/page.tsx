@@ -3,7 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics } from "../../hooks/useAnalytics";
-import { useShepherdTour, type TourStep } from "../../hooks/useShepherdTour";
+import { Tour, type TourStepDef } from "../../components/tour/Tour";
+import { safeGetItem, safeSetItem } from "../../lib/storage";
 import { useBackendStatusContext } from "../components/BackendStatusIndicator";
 import { useFetchWithBackoff } from "../../hooks/useFetchWithBackoff";
 import { useProfileCompleteness } from "../../hooks/useProfileCompleteness";
@@ -41,27 +42,29 @@ import { PageErrorBoundary } from "../../components/PageErrorBoundary";
 
 const LOADING_TIMEOUT_MS = 10_000;
 
+const DASHBOARD_TOUR_STORAGE_KEY = "onboarding_dashboard_tour_completed";
+
 // P0 zero-churn: Dashboard tour steps (auto-triggered on first visit)
-const DASHBOARD_TOUR_STEPS: TourStep[] = [
+const DASHBOARD_TOUR_STEPS: TourStepDef[] = [
   {
     id: "dashboard-stats",
     title: "Seu resumo de atividade",
-    text: '<span class="tour-step-counter">Passo 1 de 3</span><p>Aqui você vê o total de buscas, oportunidades encontradas e valor acumulado.</p>',
-    attachTo: { element: '[data-testid="dashboard-stat-cards"]', on: "bottom" },
+    text: "Aqui você vê o total de buscas, oportunidades encontradas e valor acumulado.",
+    attachTo: { selector: '[data-testid="dashboard-stat-cards"]', placement: "bottom" },
     showOn: () => !!document.querySelector('[data-testid="dashboard-stat-cards"]'),
   },
   {
     id: "dashboard-chart",
     title: "Tendência de buscas",
-    text: '<span class="tour-step-counter">Passo 2 de 3</span><p>Acompanhe sua atividade ao longo do tempo. Mais buscas = mais oportunidades.</p>',
-    attachTo: { element: '[data-testid="timeseries-chart"]', on: "top" },
+    text: "Acompanhe sua atividade ao longo do tempo. Mais buscas = mais oportunidades.",
+    attachTo: { selector: '[data-testid="timeseries-chart"]', placement: "top" },
     showOn: () => !!document.querySelector('[data-testid="timeseries-chart"]'),
   },
   {
     id: "dashboard-dimensions",
     title: "Suas dimensões",
-    text: '<span class="tour-step-counter">Passo 3 de 3</span><p>Veja quais setores, estados e faixas de valor você mais pesquisa.</p>',
-    attachTo: { element: '[data-testid="dimensions-widget"]', on: "top" },
+    text: "Veja quais setores, estados e faixas de valor você mais pesquisa.",
+    attachTo: { selector: '[data-testid="dimensions-widget"]', placement: "top" },
     showOn: () => !!document.querySelector('[data-testid="dimensions-widget"]'),
   },
 ];
@@ -80,17 +83,7 @@ export default function DashboardPage() {
   const isMobile = useIsMobile();
 
   const [period, setPeriod] = useState<Period>("week");
-
-  // P0 zero-churn: Dashboard tour (auto-trigger on first visit)
-  const {
-    isCompleted: isDashboardTourCompleted,
-    startTour: startDashboardTour,
-  } = useShepherdTour({
-    tourId: "dashboard",
-    steps: DASHBOARD_TOUR_STEPS,
-    onComplete: (stepsSeen) => trackEvent("onboarding_tour_completed", { tour: "dashboard", steps_seen: stepsSeen }),
-    onSkip: (stepsSeen) => trackEvent("onboarding_tour_skipped", { tour: "dashboard", skipped_at_step: stepsSeen }),
-  });
+  const [dashboardTourActive, setDashboardTourActive] = useState(false);
 
   // STORY-260: Profile completeness (FE-007: SWR)
   // Local override allows ProfileCompletionPrompt to show immediate feedback;
@@ -206,12 +199,12 @@ export default function DashboardPage() {
   // P0 zero-churn: Auto-start dashboard tour on first visit (must be before any early returns)
   const dashboardTourStarted = useRef(false);
   useEffect(() => {
-    if (!loading && data && !dashboardTourStarted.current && !isDashboardTourCompleted()) {
+    if (!loading && data && !dashboardTourStarted.current && safeGetItem(DASHBOARD_TOUR_STORAGE_KEY) !== "true") {
       dashboardTourStarted.current = true;
-      const timer = setTimeout(() => startDashboardTour(), 800);
+      const timer = setTimeout(() => setDashboardTourActive(true), 800);
       return () => clearTimeout(timer);
     }
-  }, [loading, data, isDashboardTourCompleted, startDashboardTour]);
+  }, [loading, data]);
 
   // ── Auth guard ──────────────────────────────────────────────────────────────
 
@@ -352,6 +345,23 @@ export default function DashboardPage() {
         <DashboardQuickLinks />
       </div>
     </div>
+
+    <Tour
+      tourId="dashboard"
+      steps={DASHBOARD_TOUR_STEPS}
+      active={dashboardTourActive}
+      storageKey={DASHBOARD_TOUR_STORAGE_KEY}
+      onComplete={(stepsSeen) => {
+        safeSetItem(DASHBOARD_TOUR_STORAGE_KEY, "true");
+        setDashboardTourActive(false);
+        trackEvent("onboarding_tour_completed", { tour: "dashboard", steps_seen: stepsSeen });
+      }}
+      onSkip={(skippedAtStep) => {
+        safeSetItem(DASHBOARD_TOUR_STORAGE_KEY, "true");
+        setDashboardTourActive(false);
+        trackEvent("onboarding_tour_skipped", { tour: "dashboard", skipped_at_step: skippedAtStep });
+      }}
+    />
     </PageErrorBoundary>
   );
 }

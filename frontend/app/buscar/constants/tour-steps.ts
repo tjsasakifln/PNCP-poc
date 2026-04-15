@@ -1,4 +1,4 @@
-import type { TourStep } from "../../../hooks/useShepherdTour";
+import type { TourStepDef } from "../../../components/tour/Tour";
 
 // Trial value type matching backend TrialValueResponse
 export interface TrialValue {
@@ -10,19 +10,19 @@ export interface TrialValue {
 }
 
 // STORY-313: Tour step definitions (static, outside component to avoid re-creation)
-export const SEARCH_TOUR_STEPS: TourStep[] = [
+export const SEARCH_TOUR_STEPS: TourStepDef[] = [
   {
     id: 'search-setor',
     title: 'Escolha seu setor',
-    text: '<span class="tour-step-counter">Passo 1 de 4</span><p>Escolha o setor da sua empresa para filtrar oportunidades relevantes.</p>',
-    attachTo: { element: '[data-tour="setor-filter"]', on: 'bottom' },
+    text: 'Escolha o setor da sua empresa para filtrar oportunidades relevantes.',
+    attachTo: { selector: '[data-tour="setor-filter"]', placement: 'bottom' },
   },
   {
     id: 'search-ufs',
     title: 'Selecione os estados',
-    text: '<span class="tour-step-counter">Passo 2 de 4</span><p>Selecione os estados onde sua empresa atua ou quer atuar.</p>',
-    attachTo: { element: '[data-tour="uf-selector"]', on: 'bottom' },
-    beforeShowPromise: () => new Promise<void>((resolve) => {
+    text: 'Selecione os estados onde sua empresa atua ou quer atuar.',
+    attachTo: { selector: '[data-tour="uf-selector"]', placement: 'bottom' },
+    beforeShow: () => new Promise<void>((resolve) => {
       const btn = document.querySelector('[data-tour="customize-toggle"]') as HTMLElement;
       if (btn?.getAttribute('aria-expanded') === 'false') {
         btn.click();
@@ -35,79 +35,79 @@ export const SEARCH_TOUR_STEPS: TourStep[] = [
   {
     id: 'search-period',
     title: 'Defina o período',
-    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Defina o período para buscar editais recentes.</p>',
-    attachTo: { element: '[data-tour="period-selector"]', on: 'bottom' },
+    text: 'Defina o período para buscar editais recentes.',
+    attachTo: { selector: '[data-tour="period-selector"]', placement: 'bottom' },
   },
   {
     id: 'search-button',
     title: 'Inicie sua busca!',
-    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Clique para iniciar sua busca inteligente!</p>',
-    attachTo: { element: '[data-tour="search-button"]', on: 'top' },
+    text: 'Clique para iniciar sua busca inteligente!',
+    attachTo: { selector: '[data-tour="search-button"]', placement: 'top' },
   },
 ];
 
 // STORY-442: Guided tour for /buscar — 5-step post-onboarding tour (AC2)
 // localStorage key: smartlic_buscar_tour_completed
-export const GUIDED_TOUR_STEPS: TourStep[] = [
+export const GUIDED_TOUR_STEPS: TourStepDef[] = [
   {
     id: 'guided-busca',
     title: 'Busca inteligente',
-    text: '<span class="tour-step-counter">Passo 1 de 5</span><p>Escolha seu setor e os estados onde sua empresa atua para encontrar as melhores oportunidades.</p>',
-    attachTo: { element: '[data-tour="setor-filter"]', on: 'bottom' },
+    text: 'Escolha seu setor e os estados onde sua empresa atua para encontrar as melhores oportunidades.',
+    attachTo: { selector: '[data-tour="setor-filter"]', placement: 'bottom' },
   },
   {
     id: 'guided-viability',
     title: 'Score de viabilidade',
-    text: '<span class="tour-step-counter">Passo 2 de 5</span><p>Cada oportunidade recebe um score de viabilidade com base em modalidade, prazo, valor e geografia.</p>',
-    attachTo: { element: '[data-tour="viability-badge"]', on: 'bottom' },
+    text: 'Cada oportunidade recebe um score de viabilidade com base em modalidade, prazo, valor e geografia.',
+    attachTo: { selector: '[data-tour="viability-badge"]', placement: 'bottom' },
     showOn: () => !!document.querySelector('[data-tour="viability-badge"]'),
   },
   {
     id: 'guided-ia-summary',
     title: 'Resumo com IA',
-    text: '<span class="tour-step-counter">Passo 3 de 5</span><p>A IA resume o objeto da licitação e destaca os pontos mais relevantes para sua empresa.</p>',
-    attachTo: { element: '[data-tour="result-card"]', on: 'bottom' },
+    text: 'A IA resume o objeto da licitação e destaca os pontos mais relevantes para sua empresa.',
+    attachTo: { selector: '[data-tour="result-card"]', placement: 'bottom' },
     showOn: () => !!document.querySelector('[data-tour="result-card"]'),
   },
   {
     id: 'guided-pipeline',
     title: 'Pipeline de oportunidades',
-    text: '<span class="tour-step-counter">Passo 4 de 5</span><p>Salve oportunidades promissoras no pipeline para acompanhá-las no kanban e não perder prazos.</p>',
-    attachTo: { element: '[data-tour="pipeline-button"]', on: 'bottom' },
+    text: 'Salve oportunidades promissoras no pipeline para acompanhá-las no kanban e não perder prazos.',
+    attachTo: { selector: '[data-tour="pipeline-button"]', placement: 'bottom' },
     showOn: () => !!document.querySelector('[data-tour="pipeline-button"]'),
   },
   {
     id: 'guided-export',
     title: 'Exportar para Excel',
-    text: '<span class="tour-step-counter">Passo 5 de 5</span><p>Exporte todas as oportunidades encontradas para Excel e compartilhe com sua equipe.</p>',
-    attachTo: { element: '[data-tour="excel-button"]', on: 'top' },
+    text: 'Exporte todas as oportunidades encontradas para Excel e compartilhe com sua equipe.',
+    attachTo: { selector: '[data-tour="excel-button"]', placement: 'top' },
     showOn: () => !!document.querySelector('[data-tour="excel-button"]'),
   },
 ];
 
-export const RESULTS_TOUR_STEPS: TourStep[] = [
+export const RESULTS_TOUR_STEPS: TourStepDef[] = [
   {
     id: 'results-card',
     title: 'Suas oportunidades',
-    text: '<span class="tour-step-counter">Passo 1 de 4</span><p>Cada card mostra uma oportunidade com data, valor e órgão.</p>',
-    attachTo: { element: '[data-tour="result-card"]', on: 'bottom' },
+    text: 'Cada card mostra uma oportunidade com data, valor e órgão.',
+    attachTo: { selector: '[data-tour="result-card"]', placement: 'bottom' },
   },
   {
     id: 'results-viability',
     title: 'Score de viabilidade',
-    text: '<span class="tour-step-counter">Passo 2 de 4</span><p>O score de viabilidade indica o potencial desta oportunidade para sua empresa.</p>',
-    attachTo: { element: '[data-tour="viability-badge"]', on: 'bottom' },
+    text: 'O score de viabilidade indica o potencial desta oportunidade para sua empresa.',
+    attachTo: { selector: '[data-tour="viability-badge"]', placement: 'bottom' },
   },
   {
     id: 'results-pipeline',
     title: 'Pipeline de oportunidades',
-    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Clique em "Pipeline" para salvar oportunidades promissoras e acompanhá-las no kanban.</p>',
-    attachTo: { element: '[data-tour="pipeline-button"]', on: 'bottom' },
+    text: 'Clique em "Pipeline" para salvar oportunidades promissoras e acompanhá-las no kanban.',
+    attachTo: { selector: '[data-tour="pipeline-button"]', placement: 'bottom' },
   },
   {
     id: 'results-excel',
     title: 'Exporte para Excel',
-    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Exporte resultados para Excel para análise detalhada.</p>',
-    attachTo: { element: '[data-tour="excel-button"]', on: 'top' },
+    text: 'Exporte resultados para Excel para análise detalhada.',
+    attachTo: { selector: '[data-tour="excel-button"]', placement: 'top' },
   },
 ];

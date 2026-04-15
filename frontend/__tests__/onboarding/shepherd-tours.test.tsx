@@ -1,662 +1,465 @@
 /**
- * STORY-313: Shepherd.js Onboarding Tours Tests
+ * STORY-4.2: Tour Component & OnboardingTourButton Tests
  *
- * AC19: Tests for each tour (search, results, pipeline) — render, step navigation, skip
- * AC20: localStorage persistence (don't repeat tour)
- * AC21: Replay button test
- * AC22: Zero regressions
+ * Migrado de shepherd-tours (useShepherdTour) → Tour component WCAG 2.1 AA.
+ *
+ * Cobre:
+ * AC1: renders steps with ARIA attributes
+ * AC2: não inicia se localStorage marcado como completado
+ * AC3: navegação Próximo / Voltar / Pular
+ * AC4: localStorage persistence por tourId
+ * AC5: callbacks onComplete e onSkip
+ * AC6: onStepChange callback
+ * AC7: ESC fecha o tour
+ * AC8: showOn pula steps condicionalmente
+ * AC9: beforeShow chamado antes de exibir step
  */
 
 import "@testing-library/jest-dom";
+import React from "react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 
-// ============================================================================
-// Mocks — must be self-contained to avoid Jest hoisting issues
-// ============================================================================
-
-jest.mock("shepherd.js", () => {
-  const mockStart = jest.fn();
-  const mockNext = jest.fn();
-  const mockBack = jest.fn();
-  const mockComplete = jest.fn();
-  const mockCancel = jest.fn();
-  const mockIsActive = jest.fn(() => false);
-  const mockAddStep = jest.fn();
-  const mockOn = jest.fn();
-
-  const instance = {
-    start: mockStart,
-    next: mockNext,
-    back: mockBack,
-    complete: mockComplete,
-    cancel: mockCancel,
-    isActive: mockIsActive,
-    addStep: mockAddStep,
-    on: mockOn,
-    steps: [],
-  };
-
-  return {
-    __esModule: true,
-    default: {
-      Tour: jest.fn(() => instance),
-    },
-    __mockInstance: instance,
+// Mock focus-trap-react para evitar erros de jsdom (sem layout real)
+jest.mock("focus-trap-react", () => {
+  return function FocusTrap({ children }: { children: React.ReactNode }) {
+    return <>{children}</>;
   };
 });
 
-// Mock next/navigation
+import { Tour, type TourStepDef } from "../../components/tour/Tour";
+import { OnboardingTourButton } from "../../components/OnboardingTourButton";
+
+// ============================================================================
+// Mocks compartilhados
+// ============================================================================
+
 const mockPush = jest.fn();
 let currentPathname = "/buscar";
+
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
   usePathname: () => currentPathname,
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock analytics
 jest.mock("../../hooks/useAnalytics", () => ({
   useAnalytics: () => ({ trackEvent: jest.fn() }),
 }));
 
-// Mock fetch
-global.fetch = jest.fn(() => Promise.resolve(new Response(null, { status: 204 }))) as any;
-
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
-
-import { render, screen, fireEvent, act } from "@testing-library/react";
-import { renderHook, waitFor } from "@testing-library/react";
-import { useShepherdTour, type TourStep } from "../../hooks/useShepherdTour";
-import { OnboardingTourButton } from "../../components/OnboardingTourButton";
-
-// Access mock instance
-function getMockInstance() {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return (require("shepherd.js") as any).__mockInstance;
-}
-
-function getMockTourConstructor() {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return (require("shepherd.js") as any).default.Tour;
-}
-
-// DEBT-013: Shepherd is now lazy-loaded via import('shepherd.js').then(...)
-// Need to flush the microtask queue for the .then() callback to run
-async function flushShepherdImport() {
-  await act(async () => {});
-}
+global.fetch = jest.fn(() =>
+  Promise.resolve(new Response(null, { status: 204 }))
+) as jest.Mock;
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
-const SAMPLE_STEPS: TourStep[] = [
-  { id: "step-1", title: "Step 1", text: "First step", attachTo: { element: "#t1", on: "bottom" } },
-  { id: "step-2", title: "Step 2", text: "Second step", attachTo: { element: "#t2", on: "top" } },
-  { id: "step-3", title: "Step 3", text: "Third step" },
+const SAMPLE_STEPS: TourStepDef[] = [
+  { id: "step-1", title: "Passo Um", text: "Primeiro passo" },
+  { id: "step-2", title: "Passo Dois", text: "Segundo passo" },
+  { id: "step-3", title: "Passo Três", text: "Terceiro passo" },
 ];
 
-function resetAll() {
+function renderTour(props: Partial<React.ComponentProps<typeof Tour>> = {}) {
+  return render(
+    <Tour
+      tourId="test"
+      steps={SAMPLE_STEPS}
+      active={true}
+      {...props}
+    />
+  );
+}
+
+beforeEach(() => {
   localStorage.clear();
-  sessionStorage.clear();
-
-  // Mock document.querySelector so startTour() element-existence check always passes
-  jest.spyOn(document, "querySelector").mockReturnValue(document.body as any);
-
-  // Jest config has resetMocks: true — must re-establish implementations each test
-  const shepherd = require("shepherd.js") as any;
-  const instance = shepherd.__mockInstance;
-
-  instance.start.mockImplementation(() => {});
-  instance.next.mockImplementation(() => {});
-  instance.back.mockImplementation(() => {});
-  instance.complete.mockImplementation(() => {});
-  instance.cancel.mockImplementation(() => {});
-  instance.isActive.mockReturnValue(false);
-  instance.addStep.mockImplementation(() => {});
-  instance.on.mockImplementation(() => {});
-
-  shepherd.default.Tour.mockImplementation(() => instance);
-
-  mockPush.mockImplementation(() => {});
+  mockPush.mockClear();
   currentPathname = "/buscar";
-}
-
-function getEventHandler(eventName: string) {
-  const mock = getMockInstance();
-  const call = mock.on.mock.calls.find((c: any[]) => c[0] === eventName);
-  return call?.[1];
-}
+});
 
 // ============================================================================
-// useShepherdTour Hook Tests
+// AC1: ARIA + render
 // ============================================================================
 
-describe("useShepherdTour hook", () => {
-  beforeEach(resetAll);
-
-  it("creates a Shepherd Tour with correct options", async () => {
-    renderHook(() => useShepherdTour({ tourId: "test", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    expect(getMockTourConstructor()).toHaveBeenCalledWith(
-      expect.objectContaining({
-        useModalOverlay: true,
-        exitOnEsc: true,
-        keyboardNavigation: true,
-      })
+describe("Tour component — ARIA e render (AC1)", () => {
+  it("renderiza null quando active=false", () => {
+    const { container } = render(
+      <Tour tourId="t" steps={SAMPLE_STEPS} active={false} />
     );
+    expect(container.firstChild).toBeNull();
   });
 
-  it("adds correct number of steps", async () => {
-    renderHook(() => useShepherdTour({ tourId: "test", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-    expect(getMockInstance().addStep).toHaveBeenCalledTimes(3);
-  });
-
-  it("first step has no 'Voltar' button, has 'Pular tour' and 'Próximo'", async () => {
-    renderHook(() => useShepherdTour({ tourId: "test", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    const firstStep = getMockInstance().addStep.mock.calls[0][0];
-    expect(firstStep.id).toBe("step-1");
-    expect(firstStep.buttons).toHaveLength(2);
-    expect(firstStep.buttons[0].text).toBe("Pular tour");
-    expect(firstStep.buttons[1].text).toBe("Próximo");
-  });
-
-  it("middle step has 'Voltar', 'Pular tour', 'Próximo'", async () => {
-    renderHook(() => useShepherdTour({ tourId: "test", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    const middleStep = getMockInstance().addStep.mock.calls[1][0];
-    expect(middleStep.buttons).toHaveLength(3);
-    expect(middleStep.buttons[0].text).toBe("Voltar");
-    expect(middleStep.buttons[1].text).toBe("Pular tour");
-    expect(middleStep.buttons[2].text).toBe("Próximo");
-  });
-
-  it("last step has 'Concluir' instead of 'Próximo'", async () => {
-    renderHook(() => useShepherdTour({ tourId: "test", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    const lastStep = getMockInstance().addStep.mock.calls[2][0];
-    expect(lastStep.buttons[2].text).toBe("Concluir");
-  });
-
-  it("registers show, complete, and cancel event handlers", async () => {
-    renderHook(() => useShepherdTour({ tourId: "test", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    const events = getMockInstance().on.mock.calls.map((c: any[]) => c[0]);
-    expect(events).toContain("show");
-    expect(events).toContain("complete");
-    expect(events).toContain("cancel");
-  });
-
-  // AC20: localStorage persistence
-  it("isCompleted returns false when not in localStorage", () => {
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "test", steps: SAMPLE_STEPS })
+  it("renderiza null quando steps=[]", () => {
+    const { container } = render(
+      <Tour tourId="t" steps={[]} active={true} />
     );
-    expect(result.current.isCompleted()).toBe(false);
+    expect(container.firstChild).toBeNull();
   });
 
-  it("isCompleted returns true when localStorage key is set", () => {
-    localStorage.setItem("onboarding_test_tour_completed", "true");
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "test", steps: SAMPLE_STEPS })
-    );
-    expect(result.current.isCompleted()).toBe(true);
+  it("renderiza dialog com role='dialog' quando active=true", () => {
+    renderTour();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  // AC3: Skip marks as completed
-  it("cancel (skip) marks tour as completed in localStorage", async () => {
-    renderHook(() => useShepherdTour({ tourId: "skip-test", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    act(() => { getEventHandler("cancel")(); });
-
-    expect(localStorage.getItem("onboarding_skip-test_tour_completed")).toBe("true");
+  it("aria-modal é 'false' — tour não bloqueia a árvore a11y", () => {
+    renderTour();
+    expect(screen.getByRole("dialog")).toHaveAttribute("aria-modal", "false");
   });
 
-  it("complete marks tour as completed in localStorage", async () => {
-    renderHook(() => useShepherdTour({ tourId: "complete-test", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    act(() => { getEventHandler("complete")(); });
-
-    expect(localStorage.getItem("onboarding_complete-test_tour_completed")).toBe("true");
+  it("aria-labelledby aponta para o título do step", () => {
+    renderTour();
+    const dialog = screen.getByRole("dialog");
+    const labelledBy = dialog.getAttribute("aria-labelledby");
+    expect(labelledBy).toBeTruthy();
+    const titleEl = document.getElementById(labelledBy!);
+    expect(titleEl).toBeInTheDocument();
+    expect(titleEl!.textContent).toBe("Passo Um");
   });
 
-  it("calls onComplete callback with steps_seen count", async () => {
-    const onComplete = jest.fn();
-    renderHook(() =>
-      useShepherdTour({ tourId: "cb-test", steps: SAMPLE_STEPS, onComplete })
-    );
-    await flushShepherdImport();
-
-    act(() => {
-      getEventHandler("show")();
-      getEventHandler("show")();
-      getEventHandler("complete")();
-    });
-
-    expect(onComplete).toHaveBeenCalledWith(2);
+  it("aria-live='polite' para screen readers", () => {
+    renderTour();
+    const liveRegion = document.querySelector("[aria-live='polite']");
+    expect(liveRegion).toBeInTheDocument();
+    expect(liveRegion!.textContent).toContain("Passo Um");
   });
 
-  it("calls onSkip callback with steps_seen on cancel", async () => {
-    const onSkip = jest.fn();
-    renderHook(() =>
-      useShepherdTour({ tourId: "skip-cb", steps: SAMPLE_STEPS, onSkip })
-    );
-    await flushShepherdImport();
-
-    act(() => {
-      getEventHandler("show")();
-      getEventHandler("cancel")();
-    });
-
-    expect(onSkip).toHaveBeenCalledWith(1);
+  it("exibe título e texto do step atual", () => {
+    renderTour();
+    expect(screen.getByText("Passo Um")).toBeInTheDocument();
+    expect(screen.getByText("Primeiro passo")).toBeInTheDocument();
   });
 
-  it("startTour calls tour.start()", async () => {
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "start-test", steps: SAMPLE_STEPS })
-    );
-    await flushShepherdImport();
-
-    act(() => { result.current.startTour(); });
-
-    expect(getMockInstance().start).toHaveBeenCalled();
-  });
-
-  // AC21: Replay
-  it("restartTour clears localStorage and starts", async () => {
-    localStorage.setItem("onboarding_replay-test_tour_completed", "true");
-
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "replay-test", steps: SAMPLE_STEPS })
-    );
-
-    expect(result.current.isCompleted()).toBe(true);
-    await flushShepherdImport();
-
-    act(() => { result.current.restartTour(); });
-
-    expect(localStorage.getItem("onboarding_replay-test_tour_completed")).toBeNull();
-    expect(getMockInstance().start).toHaveBeenCalled();
-  });
-
-  it("passes attachTo correctly", async () => {
-    renderHook(() => useShepherdTour({ tourId: "attach", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    const step = getMockInstance().addStep.mock.calls[0][0];
-    expect(step.attachTo).toEqual({ element: "#t1", on: "bottom" });
-  });
-
-  it("handles step without attachTo (centered tooltip)", async () => {
-    renderHook(() => useShepherdTour({ tourId: "no-attach", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    const step = getMockInstance().addStep.mock.calls[2][0];
-    expect(step.attachTo).toBeUndefined();
-  });
-
-  it("sets scrollTo smooth on all steps by default (AC14)", async () => {
-    renderHook(() => useShepherdTour({ tourId: "scroll", steps: SAMPLE_STEPS }));
-    await flushShepherdImport();
-
-    for (let i = 0; i < 3; i++) {
-      const step = getMockInstance().addStep.mock.calls[i][0];
-      expect(step.scrollTo).toEqual({ behavior: "smooth", block: "center" });
-    }
-  });
-
-  it("exposes storageKey for external use", () => {
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "key-test", steps: SAMPLE_STEPS })
-    );
-    expect(result.current.storageKey).toBe("onboarding_key-test_tour_completed");
+  it("exibe contador '1 / 3'", () => {
+    renderTour();
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
   });
 });
 
 // ============================================================================
-// OnboardingTourButton Component Tests
+// AC2: localStorage — não repetir tour já completado
+// ============================================================================
+
+describe("Tour component — localStorage permanent dismiss (AC2)", () => {
+  it("renderiza null se tourId foi permanentemente descartado", () => {
+    localStorage.setItem("smartlic_tour_test_dismissed_permanent", "true");
+    const { container } = renderTour();
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("botão 'Não mostrar novamente' persiste dismiss permanente", () => {
+    renderTour();
+    fireEvent.click(screen.getByText("Não mostrar novamente"));
+    expect(
+      localStorage.getItem("smartlic_tour_test_dismissed_permanent")
+    ).toBe("true");
+  });
+
+  it("storageKey custom override funciona", () => {
+    localStorage.setItem("custom_key", "true");
+    const { container } = renderTour({ storageKey: "custom_key" });
+    expect(container.firstChild).toBeNull();
+  });
+});
+
+// ============================================================================
+// AC3: Navegação Próximo / Voltar / Pular
+// ============================================================================
+
+describe("Tour component — navegação (AC3)", () => {
+  it("primeiro step não tem botão Voltar", () => {
+    renderTour();
+    expect(screen.queryByText("Voltar")).not.toBeInTheDocument();
+  });
+
+  it("primeiro step mostra botão 'Próximo'", () => {
+    renderTour();
+    expect(screen.getByText("Próximo")).toBeInTheDocument();
+  });
+
+  it("último step mostra botão 'Concluir'", () => {
+    const single: TourStepDef[] = [{ id: "s", title: "T", text: "X" }];
+    render(<Tour tourId="t" steps={single} active={true} />);
+    expect(screen.getByText("Concluir")).toBeInTheDocument();
+  });
+
+  it("Próximo avança para o segundo step", async () => {
+    renderTour();
+    fireEvent.click(screen.getByText("Próximo"));
+    await waitFor(() => {
+      expect(screen.getByText("Passo Dois")).toBeInTheDocument();
+    });
+  });
+
+  it("Voltar retorna ao step anterior", async () => {
+    renderTour();
+    fireEvent.click(screen.getByText("Próximo"));
+    await waitFor(() => expect(screen.getByText("Passo Dois")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Voltar"));
+    await waitFor(() => expect(screen.getByText("Passo Um")).toBeInTheDocument());
+  });
+
+  it("Pular chama onSkip com índice atual", () => {
+    const onSkip = jest.fn();
+    renderTour({ onSkip });
+    fireEvent.click(screen.getByText("Pular"));
+    expect(onSkip).toHaveBeenCalledWith(0);
+  });
+
+  it("Concluir no último step chama onComplete", async () => {
+    const onComplete = jest.fn();
+    renderTour({ onComplete });
+    fireEvent.click(screen.getByText("Próximo")); // → step 2
+    await waitFor(() => expect(screen.getByText("Passo Dois")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Próximo")); // → step 3
+    await waitFor(() => expect(screen.getByText("Passo Três")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Concluir"));
+    expect(onComplete).toHaveBeenCalledWith(3);
+  });
+});
+
+// ============================================================================
+// AC4: Storage key única por tourId
+// ============================================================================
+
+describe("Tour component — storage key por tourId (AC4)", () => {
+  it("tourId diferente usa chave de storage diferente", () => {
+    localStorage.setItem("smartlic_tour_tour-a_dismissed_permanent", "true");
+    // tour-b não deve ser afetado
+    const { container } = render(
+      <Tour tourId="tour-b" steps={SAMPLE_STEPS} active={true} />
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
+
+// ============================================================================
+// AC5: Callbacks onComplete e onSkip
+// ============================================================================
+
+describe("Tour component — callbacks (AC5)", () => {
+  it("onSkip recebe índice do step ao pular no primeiro", () => {
+    const onSkip = jest.fn();
+    renderTour({ onSkip });
+    fireEvent.click(screen.getByText("Pular"));
+    expect(onSkip).toHaveBeenCalledWith(0);
+  });
+
+  it("onComplete recebe contagem de steps vistos ao concluir", async () => {
+    const single: TourStepDef[] = [{ id: "s1", title: "T1", text: "X1" }];
+    const onComplete = jest.fn();
+    render(<Tour tourId="t" steps={single} active={true} onComplete={onComplete} />);
+    fireEvent.click(screen.getByText("Concluir"));
+    expect(onComplete).toHaveBeenCalledWith(1);
+  });
+});
+
+// ============================================================================
+// AC6: onStepChange
+// ============================================================================
+
+describe("Tour component — onStepChange (AC6)", () => {
+  it("chama onStepChange com step inicial ao abrir", () => {
+    const onStepChange = jest.fn();
+    renderTour({ onStepChange });
+    expect(onStepChange).toHaveBeenCalledWith(0, SAMPLE_STEPS[0]);
+  });
+
+  it("chama onStepChange ao navegar para próximo step", async () => {
+    const onStepChange = jest.fn();
+    renderTour({ onStepChange });
+    fireEvent.click(screen.getByText("Próximo"));
+    await waitFor(() => {
+      expect(onStepChange).toHaveBeenCalledWith(1, SAMPLE_STEPS[1]);
+    });
+  });
+});
+
+// ============================================================================
+// AC7: ESC fecha o tour
+// ============================================================================
+
+describe("Tour component — teclado ESC (AC7)", () => {
+  it("ESC chama onSkip com índice atual", () => {
+    const onSkip = jest.fn();
+    renderTour({ onSkip });
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onSkip).toHaveBeenCalledWith(0);
+  });
+});
+
+// ============================================================================
+// AC8: showOn — pula steps condicionalmente
+// ============================================================================
+
+describe("Tour component — showOn condicional (AC8)", () => {
+  it("pula steps onde showOn retorna false", async () => {
+    const steps: TourStepDef[] = [
+      { id: "s1", title: "Step 1", text: "X1" },
+      { id: "s2", title: "Step 2", text: "X2", showOn: () => false },
+      { id: "s3", title: "Step 3", text: "X3" },
+    ];
+    render(<Tour tourId="t" steps={steps} active={true} />);
+    expect(screen.getByText("Step 1")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Próximo"));
+    await waitFor(() => {
+      // Step 2 deve ser pulado, ir direto pro Step 3
+      expect(screen.getByText("Step 3")).toBeInTheDocument();
+    });
+  });
+
+  it("se todos os steps têm showOn=false, chama onComplete imediatamente", async () => {
+    const onComplete = jest.fn();
+    const steps: TourStepDef[] = [
+      { id: "s1", title: "T", text: "X", showOn: () => false },
+    ];
+    render(
+      <Tour tourId="t" steps={steps} active={true} onComplete={onComplete} />
+    );
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith(0);
+    });
+  });
+});
+
+// ============================================================================
+// AC9: beforeShow callback
+// ============================================================================
+
+describe("Tour component — beforeShow (AC9)", () => {
+  it("chama beforeShow ao navegar para um step", async () => {
+    const beforeShow = jest.fn().mockResolvedValue(undefined);
+    const steps: TourStepDef[] = [
+      { id: "s1", title: "Step 1", text: "X1" },
+      { id: "s2", title: "Step 2", text: "X2", beforeShow },
+    ];
+    render(<Tour tourId="t" steps={steps} active={true} />);
+    fireEvent.click(screen.getByText("Próximo"));
+    await waitFor(() => {
+      expect(beforeShow).toHaveBeenCalled();
+    });
+  });
+});
+
+// ============================================================================
+// OnboardingTourButton Component Tests (AC15-17)
 // ============================================================================
 
 describe("OnboardingTourButton (AC15-17)", () => {
-  beforeEach(resetAll);
-
-  // AC15: Floating button
-  it("renders the floating '?' button", () => {
+  it("renderiza o botão '?' flutuante", () => {
     render(<OnboardingTourButton />);
     expect(screen.getByTestId("tour-trigger-button")).toBeInTheDocument();
     expect(screen.getByLabelText("Guia interativo")).toBeInTheDocument();
   });
 
-  it("button displays '?' text", () => {
+  it("botão exibe texto '?'", () => {
     render(<OnboardingTourButton />);
     expect(screen.getByTestId("tour-trigger-button")).toHaveTextContent("?");
   });
 
-  // AC16: Menu with 3 options
-  it("shows menu with 3 tour options on click", () => {
+  it("exibe menu com 3 opções ao clicar (AC16)", () => {
     render(<OnboardingTourButton />);
     expect(screen.queryByTestId("tour-menu")).not.toBeInTheDocument();
-
     fireEvent.click(screen.getByTestId("tour-trigger-button"));
-
     expect(screen.getByTestId("tour-menu")).toBeInTheDocument();
     expect(screen.getByTestId("tour-option-search")).toBeInTheDocument();
     expect(screen.getByTestId("tour-option-results")).toBeInTheDocument();
     expect(screen.getByTestId("tour-option-pipeline")).toBeInTheDocument();
   });
 
-  it("shows correct Portuguese labels", () => {
+  it("exibe labels corretos em português", () => {
     render(<OnboardingTourButton />);
     fireEvent.click(screen.getByTestId("tour-trigger-button"));
-
     expect(screen.getByText("Tour de busca")).toBeInTheDocument();
     expect(screen.getByText("Tour de resultados")).toBeInTheDocument();
     expect(screen.getByText("Tour de pipeline")).toBeInTheDocument();
   });
 
-  it("shows numbered badges (1, 2, 3)", () => {
+  it("exibe badges numerados (1, 2, 3)", () => {
     render(<OnboardingTourButton />);
     fireEvent.click(screen.getByTestId("tour-trigger-button"));
-
     expect(screen.getByText("1")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  it("toggles menu open/close on button click", () => {
+  it("alterna menu abrir/fechar no clique", () => {
     render(<OnboardingTourButton />);
     const btn = screen.getByTestId("tour-trigger-button");
-
     fireEvent.click(btn);
     expect(screen.getByTestId("tour-menu")).toBeInTheDocument();
-
     fireEvent.click(btn);
     expect(screen.queryByTestId("tour-menu")).not.toBeInTheDocument();
   });
 
-  it("has aria-expanded attribute", () => {
+  it("tem atributo aria-expanded correto", () => {
     render(<OnboardingTourButton />);
     const btn = screen.getByTestId("tour-trigger-button");
-
     expect(btn).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(btn);
     expect(btn).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("closes menu on Escape key", () => {
+  it("fecha menu ao pressionar Escape", () => {
     render(<OnboardingTourButton />);
     fireEvent.click(screen.getByTestId("tour-trigger-button"));
     expect(screen.getByTestId("tour-menu")).toBeInTheDocument();
-
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByTestId("tour-menu")).not.toBeInTheDocument();
   });
 
-  // AC17: Replay — calls available tour restart callback
-  it("calls restart callback when clicking an available tour option", () => {
+  it("chama callback ao clicar em opção disponível (AC17)", () => {
     const mockRestart = jest.fn();
     render(<OnboardingTourButton availableTours={{ search: mockRestart }} />);
-
     fireEvent.click(screen.getByTestId("tour-trigger-button"));
     fireEvent.click(screen.getByTestId("tour-option-search"));
-
     expect(mockRestart).toHaveBeenCalled();
   });
 
-  it("navigates to correct page when tour is on different page", () => {
+  it("navega para página correta quando tour está em outra página", () => {
     currentPathname = "/dashboard";
     render(<OnboardingTourButton availableTours={{}} />);
-
     fireEvent.click(screen.getByTestId("tour-trigger-button"));
     fireEvent.click(screen.getByTestId("tour-option-pipeline"));
-
     expect(mockPush).toHaveBeenCalledWith("/pipeline?tour=pipeline");
   });
 
-  it("does not navigate when already on correct page", () => {
+  it("não navega quando já está na página correta", () => {
     currentPathname = "/buscar";
     render(<OnboardingTourButton availableTours={{}} />);
-
     fireEvent.click(screen.getByTestId("tour-trigger-button"));
     fireEvent.click(screen.getByTestId("tour-option-search"));
-
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it("closes menu after clicking an option", () => {
+  it("fecha menu após clicar em uma opção", () => {
     render(<OnboardingTourButton availableTours={{ search: jest.fn() }} />);
-
     fireEvent.click(screen.getByTestId("tour-trigger-button"));
     expect(screen.getByTestId("tour-menu")).toBeInTheDocument();
-
     fireEvent.click(screen.getByTestId("tour-option-search"));
     expect(screen.queryByTestId("tour-menu")).not.toBeInTheDocument();
   });
 });
 
 // ============================================================================
-// Tour Step Definitions (AC1, AC7, AC9)
+// localStorage persistence por tourId (AC4 — storage keys únicas)
 // ============================================================================
 
-describe("Search tour (AC1)", () => {
-  beforeEach(resetAll);
-
-  it("has 4 steps targeting correct elements", async () => {
-    const searchSteps: TourStep[] = [
-      { id: "search-setor", title: "T", text: "X", attachTo: { element: "[data-tour='setor-filter']", on: "bottom" } },
-      { id: "search-ufs", title: "T", text: "X", attachTo: { element: "[data-tour='uf-selector']", on: "bottom" } },
-      { id: "search-period", title: "T", text: "X", attachTo: { element: "[data-tour='period-selector']", on: "bottom" } },
-      { id: "search-button", title: "T", text: "X", attachTo: { element: "[data-tour='search-button']", on: "top" } },
-    ];
-
-    renderHook(() => useShepherdTour({ tourId: "search", steps: searchSteps }));
-    await flushShepherdImport();
-
-    expect(getMockInstance().addStep).toHaveBeenCalledTimes(4);
-    const ids = getMockInstance().addStep.mock.calls.map((c: any[]) => c[0].id);
-    expect(ids).toEqual(["search-setor", "search-ufs", "search-period", "search-button"]);
-  });
-
-  // AC2: Not shown if already completed
-  it("AC2: detects completed via localStorage key", () => {
-    localStorage.setItem("onboarding_search_tour_completed", "true");
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "search", steps: SAMPLE_STEPS })
+describe("localStorage — chaves únicas por tourId", () => {
+  it("completar tour 'search' não afeta tour 'results'", () => {
+    localStorage.setItem("smartlic_tour_search_dismissed_permanent", "true");
+    // results não deve ser afetado
+    const { container } = render(
+      <Tour tourId="results" steps={SAMPLE_STEPS} active={true} />
     );
-    expect(result.current.isCompleted()).toBe(true);
-  });
-});
-
-describe("Results tour (AC7-8)", () => {
-  beforeEach(resetAll);
-
-  it("has 4 steps with correct IDs", async () => {
-    const steps: TourStep[] = [
-      { id: "results-card", title: "T", text: "X", attachTo: { element: "[data-tour='result-card']", on: "bottom" } },
-      { id: "results-viability", title: "T", text: "X", attachTo: { element: "[data-tour='viability-badge']", on: "bottom" } },
-      { id: "results-pipeline", title: "T", text: "X" },
-      { id: "results-excel", title: "T", text: "X", attachTo: { element: "[data-tour='excel-button']", on: "top" } },
-    ];
-
-    renderHook(() => useShepherdTour({ tourId: "results", steps }));
-    await flushShepherdImport();
-
-    expect(getMockInstance().addStep).toHaveBeenCalledTimes(4);
-    const ids = getMockInstance().addStep.mock.calls.map((c: any[]) => c[0].id);
-    expect(ids).toEqual(["results-card", "results-viability", "results-pipeline", "results-excel"]);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  // AC8: Conditional via localStorage
-  it("AC8: detects completed via localStorage key", () => {
-    localStorage.setItem("onboarding_results_tour_completed", "true");
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "results", steps: SAMPLE_STEPS })
+  it("tour não ativo quando mesmo tourId foi permanentemente dispensado", () => {
+    localStorage.setItem("smartlic_tour_persist-test_dismissed_permanent", "true");
+    const { container } = render(
+      <Tour tourId="persist-test" steps={SAMPLE_STEPS} active={true} />
     );
-    expect(result.current.isCompleted()).toBe(true);
-  });
-
-  it("not completed by default", () => {
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "results", steps: SAMPLE_STEPS })
-    );
-    expect(result.current.isCompleted()).toBe(false);
-  });
-});
-
-describe("Pipeline tour (AC9-10)", () => {
-  beforeEach(resetAll);
-
-  it("has 3 steps with correct IDs", async () => {
-    const steps: TourStep[] = [
-      { id: "pipeline-columns", title: "T", text: "X", attachTo: { element: "[data-tour='kanban-columns']", on: "top" } },
-      { id: "pipeline-card", title: "T", text: "X", attachTo: { element: "[data-tour='pipeline-card']", on: "right" } },
-      { id: "pipeline-alerts", title: "T", text: "X", attachTo: { element: "[data-tour='kanban-columns']", on: "bottom" } },
-    ];
-
-    renderHook(() => useShepherdTour({ tourId: "pipeline", steps }));
-    await flushShepherdImport();
-
-    expect(getMockInstance().addStep).toHaveBeenCalledTimes(3);
-    const ids = getMockInstance().addStep.mock.calls.map((c: any[]) => c[0].id);
-    expect(ids).toEqual(["pipeline-columns", "pipeline-card", "pipeline-alerts"]);
-  });
-
-  // AC10: Conditional via localStorage
-  it("AC10: detects completed via localStorage key", () => {
-    localStorage.setItem("onboarding_pipeline_tour_completed", "true");
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "pipeline", steps: SAMPLE_STEPS })
-    );
-    expect(result.current.isCompleted()).toBe(true);
-  });
-});
-
-// ============================================================================
-// Tracking Tests (AC4-6)
-// ============================================================================
-
-describe("Tour tracking (AC4-6)", () => {
-  beforeEach(resetAll);
-
-  it("AC5: onComplete receives correct steps_seen count", async () => {
-    const onComplete = jest.fn();
-    renderHook(() =>
-      useShepherdTour({ tourId: "track", steps: SAMPLE_STEPS, onComplete })
-    );
-    await flushShepherdImport();
-
-    act(() => {
-      getEventHandler("show")();
-      getEventHandler("show")();
-      getEventHandler("show")();
-      getEventHandler("complete")();
-    });
-
-    expect(onComplete).toHaveBeenCalledWith(3);
-  });
-
-  it("AC6: onSkip receives correct steps_seen on cancel", async () => {
-    const onSkip = jest.fn();
-    renderHook(() =>
-      useShepherdTour({ tourId: "track-skip", steps: SAMPLE_STEPS, onSkip })
-    );
-    await flushShepherdImport();
-
-    act(() => {
-      getEventHandler("show")();
-      getEventHandler("show")();
-      getEventHandler("cancel")();
-    });
-
-    expect(onSkip).toHaveBeenCalledWith(2);
-  });
-});
-
-// ============================================================================
-// localStorage Persistence (AC20)
-// ============================================================================
-
-describe("localStorage persistence (AC20)", () => {
-  beforeEach(resetAll);
-
-  it("each tour has unique storage key", () => {
-    const { result: r1 } = renderHook(() => useShepherdTour({ tourId: "search", steps: SAMPLE_STEPS }));
-    const { result: r2 } = renderHook(() => useShepherdTour({ tourId: "results", steps: SAMPLE_STEPS }));
-    const { result: r3 } = renderHook(() => useShepherdTour({ tourId: "pipeline", steps: SAMPLE_STEPS }));
-
-    expect(r1.current.storageKey).toBe("onboarding_search_tour_completed");
-    expect(r2.current.storageKey).toBe("onboarding_results_tour_completed");
-    expect(r3.current.storageKey).toBe("onboarding_pipeline_tour_completed");
-  });
-
-  it("completing one tour does not affect others", () => {
-    localStorage.setItem("onboarding_search_tour_completed", "true");
-
-    const { result: r1 } = renderHook(() => useShepherdTour({ tourId: "search", steps: SAMPLE_STEPS }));
-    const { result: r2 } = renderHook(() => useShepherdTour({ tourId: "results", steps: SAMPLE_STEPS }));
-
-    expect(r1.current.isCompleted()).toBe(true);
-    expect(r2.current.isCompleted()).toBe(false);
-  });
-
-  it("tour remains completed across re-renders", () => {
-    localStorage.setItem("onboarding_persist_tour_completed", "true");
-    const { result, rerender } = renderHook(() =>
-      useShepherdTour({ tourId: "persist", steps: SAMPLE_STEPS })
-    );
-
-    expect(result.current.isCompleted()).toBe(true);
-    rerender();
-    expect(result.current.isCompleted()).toBe(true);
-  });
-});
-
-// ============================================================================
-// Tour Replay (AC17/AC21)
-// ============================================================================
-
-describe("Tour replay (AC17/AC21)", () => {
-  beforeEach(resetAll);
-
-  it("replay resets completed flag and starts tour", async () => {
-    localStorage.setItem("onboarding_replay_tour_completed", "true");
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "replay", steps: SAMPLE_STEPS })
-    );
-
-    expect(result.current.isCompleted()).toBe(true);
-    await flushShepherdImport();
-
-    act(() => { result.current.restartTour(); });
-
-    expect(result.current.isCompleted()).toBe(false);
-    expect(getMockInstance().start).toHaveBeenCalled();
-  });
-
-  it("can replay multiple times", async () => {
-    const { result } = renderHook(() =>
-      useShepherdTour({ tourId: "multi-replay", steps: SAMPLE_STEPS })
-    );
-    await flushShepherdImport();
-
-    act(() => { result.current.startTour(); });
-    expect(getMockInstance().start).toHaveBeenCalledTimes(1);
-
-    act(() => { getEventHandler("complete")(); });
-    expect(result.current.isCompleted()).toBe(true);
-
-    act(() => { result.current.restartTour(); });
-    expect(getMockInstance().start).toHaveBeenCalledTimes(2);
-    expect(result.current.isCompleted()).toBe(false);
+    expect(container.firstChild).toBeNull();
   });
 });

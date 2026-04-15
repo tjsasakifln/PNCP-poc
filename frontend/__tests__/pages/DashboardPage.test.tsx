@@ -43,17 +43,6 @@ jest.mock('next/link', () => {
   };
 });
 
-// Mock useShepherdTour (P0 zero-churn: dashboard tour)
-jest.mock('../../hooks/useShepherdTour', () => ({
-  useShepherdTour: () => ({
-    isCompleted: () => true,
-    startTour: jest.fn(),
-    restartTour: jest.fn(),
-    isActive: false,
-    storageKey: 'test',
-  }),
-}));
-
 // Mock TrialValueTracker (P0 zero-churn: trial value widget)
 jest.mock('../../components/billing/TrialValueTracker', () => ({
   TrialValueTracker: () => null,

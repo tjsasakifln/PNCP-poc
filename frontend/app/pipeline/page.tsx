@@ -15,7 +15,8 @@ import { AuthLoadingScreen } from "../../components/AuthLoadingScreen";
 import { useAuth } from "../components/AuthProvider";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { TrialUpsellCTA } from "../../components/billing/TrialUpsellCTA";
-import { useShepherdTour, type TourStep } from "../../hooks/useShepherdTour";
+import { Tour, type TourStepDef } from "../../components/tour/Tour";
+import { safeGetItem, safeSetItem } from "../../lib/storage";
 import { OnboardingTourButton } from "../../components/OnboardingTourButton";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useTrialPhase } from "../../hooks/useTrialPhase";
@@ -40,33 +41,35 @@ const ReadOnlyKanban = dynamic(
   { ssr: false, loading: () => _KanbanSkeleton }
 );
 
+const PIPELINE_TOUR_STORAGE_KEY = "onboarding_pipeline_tour_completed";
+
 // STORY-313 AC9: Pipeline tour steps
 // Zero-churn P2 §6.2: Tour expanded with trial limit warning (step 4)
-const PIPELINE_TOUR_STEPS: TourStep[] = [
+const PIPELINE_TOUR_STEPS: TourStepDef[] = [
   {
     id: 'pipeline-columns',
     title: 'Kanban de oportunidades',
-    text: '<span class="tour-step-counter">Passo 1 de 4</span><p>Arraste oportunidades entre etapas para acompanhar seu progresso.</p>',
-    attachTo: { element: '[data-tour="kanban-columns"]', on: 'top' },
+    text: 'Arraste oportunidades entre etapas para acompanhar seu progresso.',
+    attachTo: { selector: '[data-tour="kanban-columns"]', placement: 'top' },
   },
   {
     id: 'pipeline-card',
     title: 'Detalhes do card',
-    text: '<span class="tour-step-counter">Passo 2 de 4</span><p>Clique para ver detalhes e adicionar notas.</p>',
-    attachTo: { element: '[data-tour="pipeline-card"]', on: 'right' },
+    text: 'Clique para ver detalhes e adicionar notas.',
+    attachTo: { selector: '[data-tour="pipeline-card"]', placement: 'right' },
     showOn: () => !!document.querySelector('[data-tour="pipeline-card"]'),
   },
   {
     id: 'pipeline-alerts',
     title: 'Alertas e prazos',
-    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Fique atento aos prazos — cards com borda vermelha estão próximos do encerramento.</p>',
-    attachTo: { element: '[data-tour="kanban-columns"]', on: 'bottom' },
+    text: 'Fique atento aos prazos — cards com borda vermelha estão próximos do encerramento.',
+    attachTo: { selector: '[data-tour="kanban-columns"]', placement: 'bottom' },
   },
   {
     id: 'pipeline-trial-limit',
     title: 'Limite do trial',
-    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Durante o trial, você pode acompanhar até 5 oportunidades. Assine o SmartLic Pro para pipeline ilimitado.</p>',
-    attachTo: { element: '[data-tour="kanban-columns"]', on: 'bottom' },
+    text: 'Durante o trial, você pode acompanhar até 5 oportunidades. Assine o SmartLic Pro para pipeline ilimitado.',
+    attachTo: { selector: '[data-tour="kanban-columns"]', placement: 'bottom' },
   },
 ];
 
@@ -103,6 +106,8 @@ export default function PipelinePage() {
 
   const [initialLoadFailed, setInitialLoadFailed] = useState(false);
 
+  const [pipelineTourActive, setPipelineTourActive] = useState(false);
+
   // STORY-313 AC9-10: Pipeline tour
   const reportTourEvent = useCallback(async (tourId: string, event: string, stepsSeen: number) => {
     try {
@@ -118,38 +123,25 @@ export default function PipelinePage() {
     } catch { /* fire-and-forget */ }
   }, [session?.access_token]);
 
-  const {
-    isCompleted: isPipelineTourCompleted,
-    startTour: startPipelineTour,
-    restartTour: restartPipelineTour,
-  } = useShepherdTour({
-    tourId: 'pipeline',
-    steps: PIPELINE_TOUR_STEPS,
-    onComplete: (stepsSeen) => {
-      trackEvent('onboarding_tour_completed', { tour: 'pipeline', steps_seen: stepsSeen });
-      reportTourEvent('pipeline', 'completed', stepsSeen);
-    },
-    onSkip: (stepsSeen) => {
-      trackEvent('onboarding_tour_skipped', { tour: 'pipeline', skipped_at_step: stepsSeen });
-      reportTourEvent('pipeline', 'skipped', stepsSeen);
-    },
-  });
+  const restartPipelineTour = useCallback(() => {
+    safeSetItem(PIPELINE_TOUR_STORAGE_KEY, "false");
+    setPipelineTourActive(true);
+  }, []);
 
   // Auto-start pipeline tour on first visit (AC9/AC10).
-  // trackEvent accessed via ref — it is not memoized in useAnalytics.
   const pipelineTourStarted = useRef(false);
   const trackEventRef = useRef(trackEvent);
   trackEventRef.current = trackEvent;
   useEffect(() => {
-    if (!loading && !pipelineTourStarted.current && !isPipelineTourCompleted()) {
+    if (!loading && !pipelineTourStarted.current && safeGetItem(PIPELINE_TOUR_STORAGE_KEY) !== "true") {
       pipelineTourStarted.current = true;
       const timer = setTimeout(() => {
-        startPipelineTour();
+        setPipelineTourActive(true);
         trackEventRef.current('onboarding_tour_started', { tour: 'pipeline' });
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [loading, isPipelineTourCompleted, startPipelineTour]);
+  }, [loading]);
 
   const wrappedFetchItems = useCallback(async () => {
     setInitialLoadFailed(false);
@@ -346,6 +338,25 @@ export default function PipelinePage() {
       <OnboardingTourButton
         availableTours={{
           pipeline: restartPipelineTour,
+        }}
+      />
+
+      <Tour
+        tourId="pipeline"
+        steps={PIPELINE_TOUR_STEPS}
+        active={pipelineTourActive}
+        storageKey={PIPELINE_TOUR_STORAGE_KEY}
+        onComplete={(stepsSeen) => {
+          safeSetItem(PIPELINE_TOUR_STORAGE_KEY, "true");
+          setPipelineTourActive(false);
+          trackEventRef.current('onboarding_tour_completed', { tour: 'pipeline', steps_seen: stepsSeen });
+          void reportTourEvent('pipeline', 'completed', stepsSeen);
+        }}
+        onSkip={(skippedAtStep) => {
+          safeSetItem(PIPELINE_TOUR_STORAGE_KEY, "true");
+          setPipelineTourActive(false);
+          trackEventRef.current('onboarding_tour_skipped', { tour: 'pipeline', skipped_at_step: skippedAtStep });
+          void reportTourEvent('pipeline', 'skipped', skippedAtStep);
         }}
       />
 

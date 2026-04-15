@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import { Tour, type TourStepDef } from '../../components/tour/Tour';
 import { MOCK_BIDS, DEMO_SECTOR, DEMO_UF, formatBRL, getViabilityColor } from './mock-data';
 
 type DemoState = 'idle' | 'selecting' | 'searching' | 'results' | 'detail';
@@ -32,8 +33,7 @@ export default function DemoClient() {
   const [state, setState] = useState<DemoState>('selecting');
   const [selectedBidId, setSelectedBidId] = useState<string | null>(null);
   const [tourCompleted, setTourCompleted] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tourRef = useRef<any>(null);
+  const [tourActive, setTourActive] = useState(false);
   const stateRef = useRef<DemoState>('selecting');
 
   // Keep stateRef in sync so beforeShowPromise closures can read current state
@@ -45,7 +45,7 @@ export default function DemoClient() {
     return new Promise((resolve) => {
       setState(next);
       stateRef.current = next;
-      // Give React time to render the new state before Shepherd attaches
+      // Give React time to render the new state before the tour attaches
       setTimeout(resolve, 350);
     });
   }, []);
@@ -62,116 +62,49 @@ export default function DemoClient() {
     });
   }, []);
 
+  // Tour steps: beforeShow replaces shepherd's beforeShowPromise.
+  // Defined via useMemo so closures capture stable transitionTo/startSearchAnimation refs.
+  const demoTourSteps: TourStepDef[] = useMemo(
+    () => [
+      {
+        id: 'demo-step-1',
+        title: 'Selecione seu setor de atuação',
+        text: 'O SmartLic classifica editais por setor usando IA. Escolha entre 15 setores pré-configurados — cada um com keywords, exclusões e faixas de valor ideais.',
+        attachTo: { selector: '[data-tour="demo-sector"]', placement: 'bottom' },
+        beforeShow: () => transitionTo('selecting'),
+      },
+      {
+        id: 'demo-step-2',
+        title: 'Inicie a busca multi-fonte',
+        text: 'Um clique aciona busca simultânea no PNCP, Portal de Compras Públicas e ComprasGov. O SmartLic deduplica e normaliza resultados de todas as fontes automaticamente.',
+        attachTo: { selector: '[data-tour="demo-search"]', placement: 'bottom' },
+        beforeShow: () => transitionTo('selecting'),
+      },
+      {
+        id: 'demo-step-3',
+        title: 'Resultados com score de viabilidade',
+        text: 'Cada edital recebe um score de 0–100 calculado com 4 fatores: modalidade (30%), prazo (25%), valor (25%) e geografia (20%). Verde = alta viabilidade.',
+        attachTo: { selector: '[data-tour="demo-results"]', placement: 'top' },
+        beforeShow: startSearchAnimation,
+      },
+      {
+        id: 'demo-step-4',
+        title: 'Análise detalhada com 4 fatores',
+        text: 'Expanda qualquer edital para ver o detalhamento fator a fator com justificativa em linguagem natural. Chega de decisões no feeling — tome decisões baseadas em dados.',
+        attachTo: { selector: '[data-tour="demo-analysis"]', placement: 'top' },
+        beforeShow: async () => {
+          setSelectedBidId(MOCK_BIDS[0].id);
+          await transitionTo('detail');
+        },
+      },
+    ],
+    [transitionTo, startSearchAnimation],
+  );
+
+  // Auto-start after a short delay so the page finishes rendering
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    let cancelled = false;
-
-    Promise.all([
-      import('shepherd.js'),
-      import('shepherd.js/dist/css/shepherd.css'),
-      import('../../styles/shepherd-theme.css'),
-    ]).then(([{ default: Shepherd }]) => {
-      if (cancelled) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tour = new (Shepherd as any).Tour({
-        useModalOverlay: true,
-        exitOnEsc: true,
-        keyboardNavigation: true,
-        defaultStepOptions: {
-          classes: 'smartlic-shepherd-step',
-          scrollTo: { behavior: 'smooth', block: 'center' } as ScrollIntoViewOptions,
-          cancelIcon: { enabled: true },
-          modalOverlayOpeningPadding: 8,
-          modalOverlayOpeningRadius: 8,
-        },
-      });
-
-      const steps = [
-        {
-          id: 'demo-step-1',
-          title: 'Selecione seu setor de atuação',
-          text: 'O SmartLic classifica editais por setor usando IA. Escolha entre 15 setores pré-configurados — cada um com keywords, exclusões e faixas de valor ideais.',
-          attachTo: { element: '[data-tour="demo-sector"]', on: 'bottom' },
-          beforeShowPromise: () => transitionTo('selecting'),
-          buttons: [
-            { text: 'Pular tour', action: () => tour.cancel(), secondary: true },
-            { text: 'Próximo →', action: () => tour.next() },
-          ],
-        },
-        {
-          id: 'demo-step-2',
-          title: 'Inicie a busca multi-fonte',
-          text: 'Um clique aciona busca simultânea no PNCP, Portal de Compras Públicas e ComprasGov. O SmartLic deduplica e normaliza resultados de todas as fontes automaticamente.',
-          attachTo: { element: '[data-tour="demo-search"]', on: 'bottom' },
-          beforeShowPromise: () => transitionTo('selecting'),
-          buttons: [
-            { text: '← Voltar', action: () => tour.back(), secondary: true },
-            { text: 'Pular tour', action: () => tour.cancel(), secondary: true },
-            { text: 'Ver resultados →', action: () => tour.next() },
-          ],
-        },
-        {
-          id: 'demo-step-3',
-          title: 'Resultados com score de viabilidade',
-          text: 'Cada edital recebe um score de 0–100 calculado com 4 fatores: modalidade (30%), prazo (25%), valor (25%) e geografia (20%). Verde = alta viabilidade.',
-          attachTo: { element: '[data-tour="demo-results"]', on: 'top' },
-          beforeShowPromise: startSearchAnimation,
-          buttons: [
-            { text: '← Voltar', action: () => tour.back(), secondary: true },
-            { text: 'Pular tour', action: () => tour.cancel(), secondary: true },
-            { text: 'Ver análise →', action: () => tour.next() },
-          ],
-        },
-        {
-          id: 'demo-step-4',
-          title: 'Análise detalhada com 4 fatores',
-          text: 'Expanda qualquer edital para ver o detalhamento fator a fator com justificativa em linguagem natural. Chega de decisões no feeling — tome decisões baseadas em dados.',
-          attachTo: { element: '[data-tour="demo-analysis"]', on: 'top' },
-          beforeShowPromise: () => {
-            setSelectedBidId(MOCK_BIDS[0].id);
-            return new Promise((resolve) => {
-              setState('detail');
-              stateRef.current = 'detail';
-              setTimeout(resolve, 350);
-            });
-          },
-          buttons: [
-            { text: '← Voltar', action: () => tour.back(), secondary: true },
-            { text: 'Concluir demo ✓', action: () => tour.complete() },
-          ],
-        },
-      ];
-
-      steps.forEach((step) => {
-        tour.addStep(step);
-      });
-
-      tour.on('complete', () => {
-        setTourCompleted(true);
-      });
-
-      tour.on('cancel', () => {
-        setTourCompleted(true);
-      });
-
-      tourRef.current = tour;
-
-      // Auto-start after a short delay so the page finishes rendering
-      setTimeout(() => {
-        if (!cancelled && tourRef.current && !tourRef.current.isActive()) {
-          tourRef.current.start();
-        }
-      }, 600);
-    });
-
-    return () => {
-      cancelled = true;
-      if (tourRef.current?.isActive()) {
-        tourRef.current.cancel();
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const timer = setTimeout(() => setTourActive(true), 600);
+    return () => { clearTimeout(timer); setTourActive(false); };
   }, []);
 
   const selectedBid = selectedBidId ? MOCK_BIDS.find((b) => b.id === selectedBidId) ?? MOCK_BIDS[0] : MOCK_BIDS[0];
@@ -414,6 +347,14 @@ export default function DemoClient() {
           Começar grátis →
         </Link>
       </div>
+
+      <Tour
+        tourId="demo"
+        steps={demoTourSteps}
+        active={tourActive}
+        onComplete={() => { setTourCompleted(true); setTourActive(false); }}
+        onSkip={() => { setTourCompleted(true); setTourActive(false); }}
+      />
 
       {/* Post-tour CTA card */}
       {tourCompleted && (

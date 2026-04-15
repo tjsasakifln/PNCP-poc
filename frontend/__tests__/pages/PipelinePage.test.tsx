@@ -69,14 +69,6 @@ jest.mock('../../hooks/useAnalytics', () => ({
   useAnalytics: () => ({ trackEvent: mockTrackEvent }),
 }));
 
-// useShepherdTour
-jest.mock('../../hooks/useShepherdTour', () => ({
-  useShepherdTour: () => ({
-    isCompleted: () => true, // mark as completed to suppress auto-start
-    startTour: jest.fn(),
-    restartTour: jest.fn(),
-  }),
-}));
 
 // OnboardingTourButton — no-op render
 jest.mock('../../components/OnboardingTourButton', () => ({
