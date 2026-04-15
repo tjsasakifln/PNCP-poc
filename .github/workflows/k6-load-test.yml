@@ -1,0 +1,213 @@
+name: "Load Testing (k6 baseline)"
+
+# STORY-3.3 (EPIC-TD-2026Q2)
+#
+# k6 baseline for /buscar, /analytics, /buscar-progress (SSE).
+# Runs alongside the legacy Locust suite (.github/workflows/load-test.yml).
+#
+# Triggers:
+#   - schedule  : Mondays 03:00 UTC (low-traffic window)
+#   - manual    : workflow_dispatch with script + duration overrides
+#
+# DOES NOT run on PRs (cost control). To validate a PR, use
+# workflow_dispatch with the PR head SHA, or run k6 locally:
+#   k6 run tests/load/buscar.k6.js --env BACKEND_URL=...
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # weekly Monday 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'k6 script to run (buscar | dashboard | sse | all)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - buscar
+          - dashboard
+          - sse
+      duration:
+        description: 'Override sustain duration (e.g. 5m, 30s, 1m). Empty = script default.'
+        required: false
+        default: ''
+      vus:
+        description: 'Override max VUs. Empty = script default.'
+        required: false
+        default: ''
+      backend_url:
+        description: 'Backend URL override. Empty = STAGING_BACKEND_URL secret.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  k6-load-test:
+    name: k6 baseline (${{ github.event.inputs.script || 'all' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      BACKEND_URL: ${{ github.event.inputs.backend_url || secrets.STAGING_BACKEND_URL }}
+      JWTS_PATH: tests/load/fixtures/jwts.json
+      OVERRIDE_DURATION: ${{ github.event.inputs.duration }}
+      OVERRIDE_VUS: ${{ github.event.inputs.vus }}
+      SCRIPT_FILTER: ${{ github.event.inputs.script || 'all' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate prerequisites
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "ERROR: BACKEND_URL is empty. Set repo secret STAGING_BACKEND_URL or use workflow_dispatch.backend_url."
+            exit 1
+          fi
+          if [ -z "${{ secrets.LOAD_TEST_JWTS }}" ]; then
+            echo "ERROR: secret LOAD_TEST_JWTS is empty. See tests/load/README.md."
+            exit 1
+          fi
+          echo "Target: $BACKEND_URL"
+
+      - name: Materialize JWT fixture
+        env:
+          LOAD_TEST_JWTS: ${{ secrets.LOAD_TEST_JWTS }}
+        run: |
+          mkdir -p tests/load/fixtures
+          # LOAD_TEST_JWTS is a multi-line secret (one JWT per line).
+          # Convert to {"tokens": [...]} JSON.
+          python3 <<'PY'
+          import json, os
+          raw = os.environ.get("LOAD_TEST_JWTS", "")
+          tokens = [line.strip() for line in raw.splitlines() if line.strip() and not line.startswith("#")]
+          if not tokens:
+              raise SystemExit("LOAD_TEST_JWTS contained no tokens after stripping comments/blanks")
+          with open("tests/load/fixtures/jwts.json", "w") as f:
+              json.dump({"tokens": tokens, "_source": "github actions secret"}, f)
+          print(f"Wrote {len(tokens)} JWTs to tests/load/fixtures/jwts.json")
+          PY
+
+      - name: Prepare results dir
+        run: mkdir -p results
+
+      - name: Run k6 — buscar
+        if: env.SCRIPT_FILTER == 'all' || env.SCRIPT_FILTER == 'buscar'
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: tests/load/buscar.k6.js
+          flags: --summary-export=results/buscar-summary.json
+        env:
+          K6_BACKEND_URL: ${{ env.BACKEND_URL }}
+          BACKEND_URL: ${{ env.BACKEND_URL }}
+          JWTS_PATH: tests/load/fixtures/jwts.json
+
+      - name: Run k6 — dashboard
+        if: env.SCRIPT_FILTER == 'all' || env.SCRIPT_FILTER == 'dashboard'
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: tests/load/dashboard.k6.js
+          flags: --summary-export=results/dashboard-summary.json
+        env:
+          BACKEND_URL: ${{ env.BACKEND_URL }}
+          JWTS_PATH: tests/load/fixtures/jwts.json
+
+      - name: Run k6 — sse
+        if: env.SCRIPT_FILTER == 'all' || env.SCRIPT_FILTER == 'sse'
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: tests/load/sse.k6.js
+          flags: --summary-export=results/sse-summary.json
+        env:
+          BACKEND_URL: ${{ env.BACKEND_URL }}
+          JWTS_PATH: tests/load/fixtures/jwts.json
+
+      - name: Compare to baseline (block on >20% p95 regression)
+        if: always()
+        run: |
+          python3 <<'PY'
+          import json, os, sys, glob
+
+          BASELINE = "docs/performance/baseline-2026-04-14.json"
+          REG_THRESHOLD_PCT = 20.0
+
+          if not os.path.exists(BASELINE):
+              print(f"WARN: no baseline file at {BASELINE}, skipping comparison")
+              sys.exit(0)
+
+          baseline = json.load(open(BASELINE))
+          script_filter = os.environ.get("SCRIPT_FILTER", "all")
+
+          # Map summary file -> baseline endpoint key
+          summaries = {
+              "results/buscar-summary.json": "buscar",
+              "results/dashboard-summary.json": "dashboard_summary",
+              "results/sse-summary.json": "sse_progress",
+          }
+
+          regressions = []
+          missing = []
+          observed = []
+
+          for summary_path, ep_key in summaries.items():
+              if script_filter != "all" and not summary_path.endswith(f"{script_filter}-summary.json"):
+                  continue
+              if not os.path.exists(summary_path):
+                  missing.append(summary_path)
+                  continue
+              try:
+                  s = json.load(open(summary_path))
+              except Exception as e:
+                  print(f"WARN: could not parse {summary_path}: {e}")
+                  continue
+
+              metrics = s.get("metrics", {})
+              dur = metrics.get("http_req_duration", {}).get("values", {})
+              p95 = dur.get("p(95)") or dur.get("p95")
+              ep = baseline["endpoints"].get(ep_key, {})
+
+              # SSE compares connect time, others compare p95 duration
+              if ep_key == "sse_progress":
+                  conn = metrics.get("http_req_connecting", {}).get("values", {})
+                  observed_val = conn.get("p(95)") or conn.get("p95")
+                  baseline_val = ep.get("connect_p95_ms")
+                  metric_name = "connect_p95_ms"
+              else:
+                  observed_val = p95
+                  baseline_val = ep.get("p95_ms")
+                  metric_name = "p95_ms"
+
+              observed.append((ep_key, metric_name, baseline_val, observed_val))
+
+              if baseline_val is None:
+                  print(f"INFO {ep_key}: baseline {metric_name}=null (placeholder), recording observed={observed_val}")
+                  continue
+              if observed_val is None:
+                  print(f"WARN {ep_key}: no observed {metric_name} in summary, skipping")
+                  continue
+
+              delta_pct = (observed_val - baseline_val) / baseline_val * 100
+              flag = "FAIL" if delta_pct > REG_THRESHOLD_PCT else "OK"
+              print(f"{flag} {ep_key}: {metric_name} {baseline_val:.1f} -> {observed_val:.1f} ({delta_pct:+.1f}%)")
+              if flag == "FAIL":
+                  regressions.append((ep_key, baseline_val, observed_val, delta_pct))
+
+          if missing:
+              print(f"\nWARN: {len(missing)} summary file(s) missing: {missing}")
+
+          if regressions:
+              print(f"\nFAIL: {len(regressions)} endpoint(s) regressed >{REG_THRESHOLD_PCT}%")
+              sys.exit(1)
+          print("\nOK: no regressions vs baseline.")
+          PY
+
+      - name: Upload k6 summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summaries-${{ github.run_id }}
+          path: results/
+          retention-days: 30

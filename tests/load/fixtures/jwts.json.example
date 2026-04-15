@@ -1,0 +1,8 @@
+{
+  "tokens": [
+    "<JWT_USER_1>",
+    "<JWT_USER_2>",
+    "<JWT_USER_3>"
+  ],
+  "_note": "Copie este arquivo para tests/load/fixtures/jwts.json (gitignored) com JWTs reais do Supabase auth antes de rodar em staging. Cada token deve ser um access_token valido (Bearer) emitido pelo Supabase para um usuario de teste com plano ativo. Veja tests/load/README.md para gerar os tokens via supabase auth admin CLI."
+}

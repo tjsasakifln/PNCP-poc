@@ -414,3 +414,10 @@ nul
 .aiox-core/local/
 .aiox/install-log.txt
 scripts/.accent_cache.json
+
+# Load test fixtures (STORY-3.3 EPIC-TD-2026Q2) — never commit real JWTs
+tests/load/fixtures/jwts.json
+
+# Billing E2E fixtures (STORY-3.5 EPIC-TD-2026Q2) — never commit Stripe secrets
+frontend/e2e-tests/billing/fixtures/*.secret.json
+frontend/e2e-tests/billing/fixtures/*.secret.yaml

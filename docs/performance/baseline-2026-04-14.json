@@ -1,0 +1,78 @@
+{
+  "_note": "Baseline real sera registrado apos primeira execucao em staging tier equivalente a producao. Valores null sao placeholders documentando o schema esperado pela CI comparison step (.github/workflows/k6-load-test.yml).",
+  "schema_version": "1.0",
+  "story": "STORY-3.3 (EPIC-TD-2026Q2)",
+  "captured_at": null,
+  "captured_by": null,
+  "target": {
+    "url": "https://smartlic-backend-staging.up.railway.app",
+    "railway_service": "bidiq-backend-staging",
+    "git_sha": null,
+    "deploy_id": null
+  },
+  "k6_version": null,
+  "endpoints": {
+    "buscar": {
+      "script": "tests/load/buscar.k6.js",
+      "method": "POST",
+      "path": "/buscar",
+      "load_profile": "ramping-arrival-rate, target 50 RPS, sustain 4m",
+      "p50_ms": null,
+      "p95_ms": null,
+      "p99_ms": null,
+      "avg_ms": null,
+      "max_ms": null,
+      "rps_actual": null,
+      "rps_target": 50,
+      "error_rate": null,
+      "thresholds": {
+        "p95_ms": 3000,
+        "error_rate": 0.02
+      },
+      "iterations": null,
+      "data_received_bytes": null,
+      "data_sent_bytes": null
+    },
+    "dashboard_summary": {
+      "script": "tests/load/dashboard.k6.js",
+      "method": "GET",
+      "path": "/analytics?endpoint=summary",
+      "load_profile": "ramping-arrival-rate, target 100 RPS, sustain 4m",
+      "p50_ms": null,
+      "p95_ms": null,
+      "p99_ms": null,
+      "avg_ms": null,
+      "max_ms": null,
+      "rps_actual": null,
+      "rps_target": 100,
+      "error_rate": null,
+      "thresholds": {
+        "p95_ms": 500,
+        "error_rate": 0.01
+      },
+      "iterations": null
+    },
+    "sse_progress": {
+      "script": "tests/load/sse.k6.js",
+      "method": "GET",
+      "path": "/buscar-progress/{search_id}",
+      "load_profile": "constant-vus, 50 connections, 5m wall, 60s hold",
+      "connect_p95_ms": null,
+      "connect_p99_ms": null,
+      "hold_p50_ms": null,
+      "hold_p95_ms": null,
+      "premature_disconnect_rate": null,
+      "thresholds": {
+        "connect_p95_ms": 2000,
+        "premature_disconnect_rate": 0.05
+      },
+      "iterations": null
+    }
+  },
+  "comparison_rules": {
+    "regression_threshold_pct": 20,
+    "regression_metrics": ["p95_ms", "connect_p95_ms"],
+    "fail_action": "block merge",
+    "improvement_action": "promote to baseline after 2 consecutive confirming runs"
+  }
+}
