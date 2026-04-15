@@ -151,6 +151,20 @@ CACHE_MISSES = _create_counter(
     labelnames=["level"],
 )
 
+# STORY-5.1 (TD-SYS-010): L1 shared Redis cache hit/miss counters
+# backend label: "redis" (shared across workers) or "memory" (per-process fallback)
+L1_CACHE_HITS_TOTAL = _create_counter(
+    "smartlic_l1_cache_hits_total",
+    "L1 cache hit count — Redis-backed shared cache (STORY-5.1)",
+    labelnames=["backend"],
+)
+
+L1_CACHE_MISSES_TOTAL = _create_counter(
+    "smartlic_l1_cache_misses_total",
+    "L1 cache miss count — Redis-backed shared cache (STORY-5.1)",
+    labelnames=["backend"],
+)
+
 # DEBT-103 AC4: Arbiter LRU cache hit/miss/eviction counters
 ARBITER_CACHE_HITS = _create_counter(
     "smartlic_arbiter_cache_hits_total",
