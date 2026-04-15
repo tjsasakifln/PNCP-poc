@@ -21,5 +21,31 @@
         ]
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["app/**/*.tsx", "components/**/*.tsx"],
+      "excludedFiles": [
+        "components/ui/button.tsx",
+        "components/ui/Pagination.tsx",
+        "components/ErrorMessage.tsx",
+        "components/Modal.tsx",
+        "**/*.test.tsx",
+        "**/__tests__/**"
+      ],
+      "rules": {
+        "react/forbid-elements": [
+          "warn",
+          {
+            "forbid": [
+              {
+                "element": "button",
+                "message": "STORY-2.2 (TD-FE-005): use <Button> from @/components/ui/button. Run `node frontend/scripts/codemod-button.js --dry` to preview migration. Override with `/* eslint-disable-next-line react/forbid-elements */` when intentional (e.g. internal of UI primitive)."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
