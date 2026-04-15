@@ -10,6 +10,10 @@ requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
 # Test discovery
+# TD-SYS-023: Integration tests support --dist loadfile for file-level isolation.
+# Run with: pytest tests/integration/ --dist loadfile -n 4 --timeout=30
+# Default runner on Windows: python scripts/run_tests_safe.py --parallel 4
+# Linux CI: pytest --timeout=30 --timeout-method=signal
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]

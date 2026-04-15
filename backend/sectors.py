@@ -13,6 +13,52 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 
 import yaml
+from pydantic import BaseModel, field_validator
+
+
+# ---------------------------------------------------------------------------
+# TD-SYS-020: Pydantic models for structural validation of sectors_data.yaml
+# ---------------------------------------------------------------------------
+
+class CoOccurrenceRuleYaml(BaseModel):
+    trigger: str
+    negative_contexts: list[str] = []
+    positive_signals: list[str] = []
+
+
+class DomainSignalsYaml(BaseModel):
+    ncm_prefixes: list[str] = []
+    unit_patterns: list[str] = []
+    size_patterns: list[str] = []
+
+
+class SectorYaml(BaseModel):
+    name: str
+    description: str
+    keywords: list[str]
+    exclusions: list[str] = []
+    context_required_keywords: dict[str, list[str]] = {}
+    max_contract_value: int | None = None
+    co_occurrence_rules: list[CoOccurrenceRuleYaml] = []
+    domain_signals: DomainSignalsYaml = DomainSignalsYaml()
+    viability_value_range: list[float] | None = None
+    signature_terms: list[str] = []
+    negative_keywords: list[str] = []
+    zero_match_acceptance_cap: float | None = None
+
+    @field_validator("viability_value_range")
+    @classmethod
+    def validate_range_length(cls, v: list[float] | None) -> list[float] | None:
+        if v is not None and len(v) != 2:
+            raise ValueError("viability_value_range must have exactly 2 elements [min, max]")
+        return v
+
+
+class SectorsYamlSchema(BaseModel):
+    sectors: dict[str, SectorYaml]
+
+
+# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -100,6 +146,16 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
     yaml_path = os.path.join(os.path.dirname(__file__), "sectors_data.yaml")
     with open(yaml_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
+
+    # TD-SYS-020: Pydantic startup validation — catches structural YAML errors early
+    from pydantic import ValidationError as PydanticValidationError
+    try:
+        SectorsYamlSchema.model_validate(data)
+    except PydanticValidationError as e:
+        _logger.critical(
+            "TD-SYS-020: sectors_data.yaml failed Pydantic validation at startup: %s", e
+        )
+        raise RuntimeError(f"Invalid sectors_data.yaml structure: {e}") from e
 
     sectors: Dict[str, SectorConfig] = {}
     for sector_id, cfg in data["sectors"].items():
