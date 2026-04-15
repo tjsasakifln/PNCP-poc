@@ -221,13 +221,6 @@ jest.mock("../../hooks/useTrialPhase", () => ({
   useTrialPhase: () => ({ phase: "active" }),
 }));
 
-jest.mock("../../hooks/useShepherdTour", () => ({
-  useShepherdTour: () => ({
-    isCompleted: () => true,
-    startTour: jest.fn(),
-    restartTour: jest.fn(),
-  }),
-}));
 
 jest.mock("../../components/billing/TrialUpsellCTA", () => ({
   TrialUpsellCTA: () => <div data-testid="trial-upsell-cta" />,

@@ -48,6 +48,21 @@ export interface TourProps {
 
 const DEFAULT_STORAGE_PREFIX = 'smartlic_tour_';
 
+/**
+ * Scan `steps` from `from` in direction `dir` (+1 = forward, -1 = back)
+ * and return the first index where `showOn` is absent or returns true.
+ * Returns -1 when no valid step exists in that direction.
+ */
+function findValidIndex(steps: TourStepDef[], from: number, dir: 1 | -1): number {
+  let i = from;
+  while (i >= 0 && i < steps.length) {
+    const s = steps[i];
+    if (!s.showOn || s.showOn()) return i;
+    i += dir;
+  }
+  return -1;
+}
+
 function getStorageKey(tourId: string, override?: string): string {
   return override ?? `${DEFAULT_STORAGE_PREFIX}${tourId}_dismissed_permanent`;
 }
@@ -83,6 +98,8 @@ export function Tour({
   const [index, setIndex] = useState(0);
   const total = steps.length;
   const stepRef = useRef<HTMLDivElement | null>(null);
+  // Guard against concurrent navigations while `beforeShow` awaits.
+  const isTransitioningRef = useRef(false);
 
   // Honor `disabled` + permanent dismiss — evaluated every render because the
   // localStorage flag is flipped imperatively by the "Não mostrar novamente"
@@ -93,9 +110,19 @@ export function Tour({
     total > 0 &&
     !isTourPermanentlyDismissed(tourId, storageKey);
 
-  // Advance + completion callbacks share timers so we reset index on reopen.
+  // On (re)open: find the first visible step, call its beforeShow, then show it.
   useEffect(() => {
-    if (active) setIndex(0);
+    if (!active) return;
+    const first = findValidIndex(steps, 0, 1);
+    if (first === -1) {
+      onComplete?.(0);
+      return;
+    }
+    setIndex(first);
+    void steps[first].beforeShow?.();
+    // `steps` and `onComplete` refs are intentionally omitted — we only want
+    // to re-run when the tour is (re)opened or switched to a new tourId.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, tourId]);
 
   const current = steps[Math.min(index, total - 1)] ?? null;
@@ -118,17 +145,38 @@ export function Tour({
     onSkip?.(index);
   }, [index, onSkip]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
+    if (isTransitioningRef.current) return;
     if (index >= total - 1) {
       handleComplete();
-    } else {
-      setIndex((i) => Math.min(i + 1, total - 1));
+      return;
     }
-  }, [index, total, handleComplete]);
+    const next = findValidIndex(steps, index + 1, 1);
+    if (next === -1) {
+      handleComplete();
+      return;
+    }
+    isTransitioningRef.current = true;
+    try {
+      await steps[next].beforeShow?.();
+    } finally {
+      isTransitioningRef.current = false;
+    }
+    setIndex(next);
+  }, [index, total, steps, handleComplete]);
 
-  const handleBack = useCallback(() => {
-    setIndex((i) => Math.max(i - 1, 0));
-  }, []);
+  const handleBack = useCallback(async () => {
+    if (isTransitioningRef.current) return;
+    const prev = findValidIndex(steps, index - 1, -1);
+    if (prev < 0) return;
+    isTransitioningRef.current = true;
+    try {
+      await steps[prev].beforeShow?.();
+    } finally {
+      isTransitioningRef.current = false;
+    }
+    setIndex(prev);
+  }, [index, steps]);
 
   const handleDismissPermanently = useCallback(() => {
     markTourPermanentlyDismissed(tourId, storageKey);

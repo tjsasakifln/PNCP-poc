@@ -1,11 +1,13 @@
 /**
- * STORY-442: Testes do componente GuidedTour
+ * STORY-442 / STORY-4.2: Testes do componente GuidedTour
  *
  * Cobre:
  * 1. Não inicia se tour já completado (localStorage — AC4)
  * 2. Inicia automaticamente na primeira visita pós-onboarding (AC1)
  * 3. Dispara trackEvent 'tour_started' (AC6)
  * 4. Marca como completado no localStorage ao finalizar (AC4)
+ *
+ * Migrado de shepherd.js mock → Tour component mock (STORY-4.2).
  */
 import React from "react";
 import { render, act } from "@testing-library/react";
@@ -14,29 +16,26 @@ import "@testing-library/jest-dom";
 // Refs para capturar mocks — inicializados na factory e acessíveis nos testes
 const mockFns = {
   trackEvent: jest.fn(),
-  startTour: jest.fn(),
   onComplete: undefined as ((stepsSeen: number) => void) | undefined,
-  onSkip: undefined as ((stepsSeen: number) => void) | undefined,
+  onSkip: undefined as ((skippedAtStep: number) => void) | undefined,
+  lastActiveValue: false,
 };
 
 // Mock storage — usa Map para simular localStorage
 const storageMap = new Map<string, string>();
 
-jest.mock("@/hooks/useShepherdTour", () => ({
-  useShepherdTour: (opts: {
-    tourId: string;
-    steps: unknown[];
-    onComplete?: (s: number) => void;
-    onSkip?: (s: number) => void;
+// Mock Tour component — captura props active, onComplete, onSkip
+jest.mock("@/components/tour/Tour", () => ({
+  Tour: ({ active, onComplete, onSkip }: {
+    active: boolean;
+    onComplete?: (stepsSeen: number) => void;
+    onSkip?: (skippedAtStep: number) => void;
+    [key: string]: unknown;
   }) => {
-    mockFns.onComplete = opts.onComplete;
-    mockFns.onSkip = opts.onSkip;
-    return {
-      isCompleted: () => false,
-      startTour: mockFns.startTour,
-      restartTour: jest.fn(),
-      isActive: false,
-    };
+    mockFns.lastActiveValue = active;
+    mockFns.onComplete = onComplete;
+    mockFns.onSkip = onSkip;
+    return null;
   },
 }));
 
@@ -58,9 +57,9 @@ import { GuidedTour, GUIDED_TOUR_STORAGE_KEY } from "@/app/buscar/components/Gui
 describe("GuidedTour", () => {
   beforeEach(() => {
     mockFns.trackEvent.mockClear();
-    mockFns.startTour.mockClear();
     mockFns.onComplete = undefined;
     mockFns.onSkip = undefined;
+    mockFns.lastActiveValue = false;
     storageMap.clear();
     jest.useFakeTimers();
   });
@@ -69,7 +68,7 @@ describe("GuidedTour", () => {
     jest.useRealTimers();
   });
 
-  it("não inicia o tour se já foi completado (AC4)", () => {
+  it("não ativa o tour se já foi completado (AC4)", () => {
     storageMap.set(GUIDED_TOUR_STORAGE_KEY, "true");
     storageMap.set("smartlic_onboarding_completed", "true");
 
@@ -79,20 +78,20 @@ describe("GuidedTour", () => {
       jest.runAllTimers();
     });
 
-    expect(mockFns.startTour).not.toHaveBeenCalled();
+    expect(mockFns.lastActiveValue).toBe(false);
   });
 
-  it("não inicia o tour se onboarding não foi concluído (AC1)", () => {
+  it("não ativa o tour se onboarding não foi concluído (AC1)", () => {
     render(<GuidedTour />);
 
     act(() => {
-      jest.runAllTimers();
+      jest.advanceTimersByTime(700);
     });
 
-    expect(mockFns.startTour).not.toHaveBeenCalled();
+    expect(mockFns.lastActiveValue).toBe(false);
   });
 
-  it("inicia automaticamente após onboarding concluído e tour não completado (AC1)", () => {
+  it("ativa automaticamente após onboarding concluído e tour não completado (AC1)", () => {
     storageMap.set("smartlic_onboarding_completed", "true");
 
     render(<GuidedTour />);
@@ -101,10 +100,10 @@ describe("GuidedTour", () => {
       jest.advanceTimersByTime(700);
     });
 
-    expect(mockFns.startTour).toHaveBeenCalledTimes(1);
+    expect(mockFns.lastActiveValue).toBe(true);
   });
 
-  it("inicia quando onboarding foi dispensado (AC1 — dismissed)", () => {
+  it("ativa quando onboarding foi dispensado (AC1 — dismissed)", () => {
     storageMap.set("smartlic_onboarding_dismissed", "true");
 
     render(<GuidedTour />);
@@ -113,10 +112,10 @@ describe("GuidedTour", () => {
       jest.advanceTimersByTime(700);
     });
 
-    expect(mockFns.startTour).toHaveBeenCalledTimes(1);
+    expect(mockFns.lastActiveValue).toBe(true);
   });
 
-  it("dispara trackEvent 'tour_started' ao iniciar (AC6)", () => {
+  it("dispara trackEvent 'tour_started' ao ativar (AC6)", () => {
     storageMap.set("smartlic_onboarding_completed", "true");
 
     render(<GuidedTour />);
@@ -184,8 +183,9 @@ describe("GuidedTour", () => {
     });
   });
 
-  it("retorna null (não renderiza nada no DOM)", () => {
+  it("retorna null (não renderiza nada visível no DOM)", () => {
     const { container } = render(<GuidedTour />);
+    // Tour mock returns null — container should be empty
     expect(container.firstChild).toBeNull();
   });
 });

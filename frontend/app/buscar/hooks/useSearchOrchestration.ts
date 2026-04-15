@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAnalytics } from "../../../hooks/useAnalytics";
 import { useOnboarding } from "../../../hooks/useOnboarding";
-import { useShepherdTour } from "../../../hooks/useShepherdTour";
+import type { ReactNode } from "react";
 import { useKeyboardShortcuts } from "../../../hooks/useKeyboardShortcuts";
 import { useAuth } from "../../components/AuthProvider";
 import { useSearchFilters } from "./useSearchFilters";
@@ -71,39 +71,48 @@ export function useSearchOrchestration() {
     } catch { /* fire-and-forget */ }
   }, [session?.access_token]);
 
-  const {
-    isCompleted: isSearchTourCompleted,
-    startTour: startSearchTour,
-    restartTour: restartSearchTour,
-  } = useShepherdTour({
-    tourId: 'search',
-    steps: SEARCH_TOUR_STEPS,
-    onComplete: (stepsSeen) => {
-      trackEvent('onboarding_tour_completed', { tour: 'search', steps_seen: stepsSeen });
-      reportTourEvent('search', 'completed', stepsSeen);
-    },
-    onSkip: (stepsSeen) => {
-      trackEvent('onboarding_tour_skipped', { tour: 'search', skipped_at_step: stepsSeen });
-      reportTourEvent('search', 'skipped', stepsSeen);
-    },
-  });
+  const SEARCH_TOUR_KEY = 'onboarding_search_tour_completed';
+  const RESULTS_TOUR_KEY = 'onboarding_results_tour_completed';
 
-  const {
-    isCompleted: isResultsTourCompleted,
-    startTour: startResultsTour,
-    restartTour: restartResultsTour,
-  } = useShepherdTour({
-    tourId: 'results',
-    steps: RESULTS_TOUR_STEPS,
-    onComplete: (stepsSeen) => {
-      trackEvent('onboarding_tour_completed', { tour: 'results', steps_seen: stepsSeen });
-      reportTourEvent('results', 'completed', stepsSeen);
-    },
-    onSkip: (stepsSeen) => {
-      trackEvent('onboarding_tour_skipped', { tour: 'results', skipped_at_step: stepsSeen });
-      reportTourEvent('results', 'skipped', stepsSeen);
-    },
-  });
+  const [searchTourActive, setSearchTourActive] = useState(false);
+  const [resultsTourActive, setResultsTourActive] = useState(false);
+
+  const isSearchTourCompleted = useCallback(() => safeGetItem(SEARCH_TOUR_KEY) === 'true', []);
+  const isResultsTourCompleted = useCallback(() => safeGetItem(RESULTS_TOUR_KEY) === 'true', []);
+
+  const startSearchTour = useCallback(() => setSearchTourActive(true), []);
+  const startResultsTour = useCallback(() => setResultsTourActive(true), []);
+  const restartSearchTour = useCallback(() => { safeSetItem(SEARCH_TOUR_KEY, 'false'); setSearchTourActive(true); }, []);
+  const restartResultsTour = useCallback(() => { safeSetItem(RESULTS_TOUR_KEY, 'false'); setResultsTourActive(true); }, []);
+
+  // Handlers passed to <Tour /> in buscar/page.tsx
+  const handleSearchTourComplete = useCallback((stepsSeen: number) => {
+    safeSetItem(SEARCH_TOUR_KEY, 'true');
+    setSearchTourActive(false);
+    trackEventRef.current('onboarding_tour_completed', { tour: 'search', steps_seen: stepsSeen });
+    void reportTourEvent('search', 'completed', stepsSeen);
+  }, [reportTourEvent]);
+
+  const handleSearchTourSkip = useCallback((skippedAtStep: number) => {
+    safeSetItem(SEARCH_TOUR_KEY, 'true');
+    setSearchTourActive(false);
+    trackEventRef.current('onboarding_tour_skipped', { tour: 'search', skipped_at_step: skippedAtStep });
+    void reportTourEvent('search', 'skipped', skippedAtStep);
+  }, [reportTourEvent]);
+
+  const handleResultsTourComplete = useCallback((stepsSeen: number) => {
+    safeSetItem(RESULTS_TOUR_KEY, 'true');
+    setResultsTourActive(false);
+    trackEventRef.current('onboarding_tour_completed', { tour: 'results', steps_seen: stepsSeen });
+    void reportTourEvent('results', 'completed', stepsSeen);
+  }, [reportTourEvent]);
+
+  const handleResultsTourSkip = useCallback((skippedAtStep: number) => {
+    safeSetItem(RESULTS_TOUR_KEY, 'true');
+    setResultsTourActive(false);
+    trackEventRef.current('onboarding_tour_skipped', { tour: 'results', skipped_at_step: skippedAtStep });
+    void reportTourEvent('results', 'skipped', skippedAtStep);
+  }, [reportTourEvent]);
 
   const searchTourStartRef = useRef<() => void>(() => {});
   searchTourStartRef.current = () => {
@@ -113,7 +122,7 @@ export function useSearchOrchestration() {
     }
   };
 
-  const { shouldShowOnboarding, restartTour } = useOnboarding({
+  const { shouldShowOnboarding, restartTour, tourElement: onboardingTourElement } = useOnboarding({
     autoStart: true,
     onComplete: () => {
       trackEvent('onboarding_completed', { completion_time: Date.now() });
@@ -125,6 +134,8 @@ export function useSearchOrchestration() {
     },
     onStepChange: (stepId, stepIndex) => trackEvent('onboarding_step', { step_id: stepId, step_index: stepIndex }),
   });
+  // Typed as ReactNode — the consumer (buscar/page.tsx) must render this
+  const onboardingElement: ReactNode = onboardingTourElement;
 
   useEffect(() => {
     const welcomeDone = safeGetItem('smartlic_onboarding_completed') === 'true' ||
@@ -414,6 +425,14 @@ export function useSearchOrchestration() {
     restartTour,
     restartSearchTour,
     restartResultsTour,
+    // Tour elements — rendered in buscar/page.tsx
+    onboardingTourElement: onboardingElement,
+    searchTourActive,
+    resultsTourActive,
+    handleSearchTourComplete,
+    handleSearchTourSkip,
+    handleResultsTourComplete,
+    handleResultsTourSkip,
 
     // Progress — delegated to useSearchSSE
     progressAreaRef: sse.progressAreaRef,

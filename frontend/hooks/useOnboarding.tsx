@@ -1,46 +1,56 @@
 /**
- * useOnboarding Hook - Feature #3 Interactive Onboarding
- * Phase 3 - Day 8 Implementation (Skeleton)
+ * useOnboarding Hook — STORY-4.2 (TD-FE-002)
  *
- * Manages Shepherd.js tour lifecycle:
+ * Manages onboarding tour lifecycle using the accessible Tour component
+ * (replaces Shepherd.js — resolves TD-FE-002 for this callsite).
+ *
+ * Steps:
  * - Step 1: Welcome & value proposition
  * - Step 2: Interactive demo (trigger real search)
  * - Step 3: Your turn (prompt user's first search)
  *
- * Persistence: localStorage flag `smartlic_onboarding_completed`
+ * Persistence:
+ * - `smartlic_onboarding_completed` — completed flag
+ * - `smartlic_onboarding_dismissed` — early-exit flag
+ *
+ * Returns `tourElement: React.ReactNode` that the consumer MUST render in
+ * its JSX tree (previously Shepherd managed its own DOM; now we rely on React).
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { safeSetItem, safeGetItem, safeRemoveItem } from '../lib/storage';
-
-// Type definitions for Shepherd.js (using any temporarily until @types available)
-// TODO: Add @types/shepherd.js if available or create custom types
-type ShepherdTour = any;
-type ShepherdStep = any;
+import { Tour, type TourStepDef } from '../components/tour/Tour';
 
 const ONBOARDING_STORAGE_KEY = 'smartlic_onboarding_completed';
 const ONBOARDING_DISMISSED_KEY = 'smartlic_onboarding_dismissed';
 
+const ONBOARDING_STEPS: TourStepDef[] = [
+  {
+    id: 'welcome',
+    title: 'Bem-vindo ao SmartLic!',
+    text: 'Descubra oportunidades de licitação de forma inteligente e automatizada — busca em 27 estados, avaliação por IA e relatórios Excel prontos.',
+  },
+  {
+    id: 'demo-search',
+    title: 'Vamos fazer uma busca de demonstração',
+    text: 'Selecionamos SC, PR e RS (região Sul) para mostrar como funciona. Clique em Buscar para ver os resultados!',
+    attachTo: { selector: '[data-tour="search-button"]', placement: 'bottom' },
+  },
+  {
+    id: 'your-turn',
+    title: 'Agora é sua vez!',
+    text: 'Personalize sua busca: escolha os estados, ajuste o período, selecione o setor e clique em Buscar para ver suas oportunidades!',
+  },
+];
+
 export interface OnboardingOptions {
-  /**
-   * Auto-start onboarding if user hasn't completed it
-   * Default: true
-   */
+  /** Auto-start onboarding if user hasn't completed it. Default: true */
   autoStart?: boolean;
-
-  /**
-   * Callback when user completes all steps
-   */
+  /** Callback when user completes all steps */
   onComplete?: () => void;
-
-  /**
-   * Callback when user skips/exits early
-   */
+  /** Callback when user skips/exits early */
   onDismiss?: () => void;
-
-  /**
-   * Callback for analytics tracking per step
-   */
+  /** Callback for analytics tracking per step */
   onStepChange?: (stepId: string, stepIndex: number) => void;
 }
 
@@ -52,15 +62,13 @@ export function useOnboarding(options: OnboardingOptions = {}) {
     onStepChange,
   } = options;
 
-  const tourRef = useRef<ShepherdTour | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [hasCompleted, setHasCompleted] = useState(false);
   const [hasDismissed, setHasDismissed] = useState(false);
 
-  // Check localStorage on mount
+  // Check localStorage on mount + migrate legacy keys
   useEffect(() => {
-    // Migrate legacy keys
     const legacyCompleted = safeGetItem('bidiq_onboarding_completed');
     if (legacyCompleted) {
       safeSetItem(ONBOARDING_STORAGE_KEY, legacyCompleted);
@@ -77,253 +85,78 @@ export function useOnboarding(options: OnboardingOptions = {}) {
     setHasDismissed(dismissed);
   }, []);
 
-  // Initialize Shepherd tour
-  useEffect(() => {
-    if (tourRef.current) return; // Already initialized
-
-    Promise.all([
-      import('shepherd.js'),
-      import('shepherd.js/dist/css/shepherd.css'),
-    ]).then(([{ default: Shepherd }]) => {
-      if (tourRef.current) return; // double-check in case of race
-
-      const tour = new Shepherd.Tour({
-        useModalOverlay: true,
-        defaultStepOptions: {
-          classes: 'shepherd-theme-custom',
-          scrollTo: { behavior: 'smooth', block: 'center' },
-          cancelIcon: {
-            enabled: true,
-          },
-        },
-      });
-
-      // Step 1: Welcome & Value Proposition
-      tour.addStep({
-        id: 'welcome',
-        title: '👋 Bem-vindo ao SmartLic!',
-        text: `
-        <p class="mb-3">
-          Descubra oportunidades de licitação de forma <strong>inteligente e automatizada</strong>.
-        </p>
-        <ul class="list-disc list-inside space-y-1 text-sm">
-          <li>🔍 Busca em 27 estados simultaneamente</li>
-          <li>🤖 Avaliação estratégica por IA</li>
-          <li>📊 Relatórios Excel prontos para análise</li>
-        </ul>
-      `,
-        buttons: [
-          {
-            text: 'Pular Tutorial',
-            action: tour.cancel,
-            secondary: true,
-          },
-          {
-            text: 'Começar',
-            action: tour.next,
-          },
-        ],
-      });
-
-      // Step 2: Interactive Demo (Real Search)
-      tour.addStep({
-        id: 'demo-search',
-        title: '🎯 Vamos fazer uma busca de demonstração',
-        text: `
-        <p class="mb-2">
-          Selecionamos <strong>SC, PR e RS</strong> (região Sul) para mostrar como funciona.
-        </p>
-        <p class="text-sm text-gray-600">
-          Clique em "Buscar" para ver os resultados em ação!
-        </p>
-      `,
-        attachTo: {
-          element: 'button[type="button"][aria-busy]', // Main search button
-          on: 'bottom',
-        },
-        buttons: [
-          {
-            text: 'Voltar',
-            action: tour.back,
-            secondary: true,
-          },
-          {
-            text: 'Fazer Busca Demo',
-            action: function() {
-              // Trigger demo search (handled by callback)
-              tour.next();
-            },
-          },
-        ],
-        when: {
-          show() {
-            // Pre-populate demo search parameters (handled by parent component)
-          },
-        },
-      });
-
-      // Step 3: Your Turn (First Personalized Search)
-      tour.addStep({
-        id: 'your-turn',
-        title: '🚀 Agora é sua vez!',
-        text: `
-        <p class="mb-3">
-          Personalize sua busca:
-        </p>
-        <ol class="list-decimal list-inside space-y-2 text-sm">
-          <li>Escolha os <strong>estados</strong> de interesse</li>
-          <li>Ajuste o <strong>período</strong> (últimos 7, 15 ou 30 dias)</li>
-          <li>Selecione o <strong>setor</strong> ou use termos específicos</li>
-          <li>Clique em <strong>"Buscar"</strong> e aguarde os resultados!</li>
-        </ol>
-        <p class="text-xs text-gray-500 mt-3">
-          💡 Dica: Quanto mais estados, maior o tempo de busca (~6s por estado)
-        </p>
-      `,
-        attachTo: {
-          element: '.min-h-screen', // Center of screen
-          on: 'top',
-        },
-        buttons: [
-          {
-            text: 'Voltar',
-            action: tour.back,
-            secondary: true,
-          },
-          {
-            text: 'Entendi, vamos lá!',
-            action: function() {
-              tour.complete();
-            },
-          },
-        ],
-      });
-
-      // Event listeners
-      tour.on('complete', () => {
-        safeSetItem(ONBOARDING_STORAGE_KEY, 'true');
-        setHasCompleted(true);
-        setIsActive(false);
-        onComplete?.();
-      });
-
-      tour.on('cancel', () => {
-        safeSetItem(ONBOARDING_DISMISSED_KEY, 'true');
-        setHasDismissed(true);
-        setIsActive(false);
-        onDismiss?.();
-      });
-
-      tour.on('show', (event: { step: ShepherdStep }) => {
-        const step = event.step;
-        const stepId = step.id || '';
-        const stepIndex = tour.steps.indexOf(step);
-        setCurrentStep(stepIndex);
-        onStepChange?.(stepId, stepIndex);
-      });
-
-      tourRef.current = tour;
-    });
-
-    return () => {
-      if (tourRef.current) {
-        tourRef.current.complete();
-      }
-    };
-  }, [onComplete, onDismiss, onStepChange]);
-
-  /**
-   * Start the onboarding tour
-   */
   const startTour = useCallback(() => {
-    if (tourRef.current) {
-      tourRef.current.start();
-      setIsActive(true);
-    }
+    setIsActive(true);
   }, []);
 
-  // Auto-start logic
-  // Bug fix P2-4 & P2-5: Prevent race conditions with rapid mount/unmount and dismissed flag
-  useEffect(() => {
-    // Add a small delay to prevent race conditions during rapid component mount/unmount
-    const timeout = setTimeout(() => {
-      if (autoStart && !hasCompleted && !hasDismissed && tourRef.current && !isActive) {
-        startTour();
-      }
-    }, 100); // 100ms debounce
-
-    return () => clearTimeout(timeout);
-  }, [autoStart, hasCompleted, hasDismissed, isActive, startTour]);
-
-  /**
-   * Manually trigger the tour (for returning users)
-   */
   const restartTour = useCallback(() => {
     safeRemoveItem(ONBOARDING_STORAGE_KEY);
     safeRemoveItem(ONBOARDING_DISMISSED_KEY);
     setHasCompleted(false);
     setHasDismissed(false);
-    startTour();
-  }, [startTour]);
-
-  /**
-   * Cancel the tour
-   */
-  const cancelTour = useCallback(() => {
-    if (tourRef.current) {
-      tourRef.current.cancel();
-    }
+    setIsActive(true);
   }, []);
 
-  /**
-   * Check if onboarding should show (new user)
-   */
+  const cancelTour = useCallback(() => {
+    safeSetItem(ONBOARDING_DISMISSED_KEY, 'true');
+    setHasDismissed(true);
+    setIsActive(false);
+    onDismiss?.();
+  }, [onDismiss]);
+
+  // Auto-start: small delay to prevent race during rapid mount/unmount
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (autoStart && !hasCompleted && !hasDismissed && !isActive) {
+        startTour();
+      }
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [autoStart, hasCompleted, hasDismissed, isActive, startTour]);
+
   const shouldShowOnboarding = !hasCompleted && !hasDismissed;
 
+  // Tour element — consumer MUST render this in their JSX tree
+  const tourElement = useMemo(
+    () => (
+      <Tour
+        tourId="onboarding"
+        steps={ONBOARDING_STEPS}
+        active={isActive}
+        onComplete={() => {
+          safeSetItem(ONBOARDING_STORAGE_KEY, 'true');
+          setHasCompleted(true);
+          setIsActive(false);
+          onComplete?.();
+        }}
+        onSkip={() => {
+          safeSetItem(ONBOARDING_DISMISSED_KEY, 'true');
+          setHasDismissed(true);
+          setIsActive(false);
+          onDismiss?.();
+        }}
+        onStepChange={(stepIndex, step) => {
+          setCurrentStep(stepIndex);
+          onStepChange?.(step.id, stepIndex);
+        }}
+      />
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isActive],
+  );
+
   return {
-    /**
-     * Start the tour
-     */
     startTour,
-
-    /**
-     * Restart tour (clears completion flag)
-     */
     restartTour,
-
-    /**
-     * Cancel/dismiss tour
-     */
     cancelTour,
-
-    /**
-     * Whether tour is currently active
-     */
     isActive,
-
-    /**
-     * Current step index (0-based)
-     */
     currentStep,
-
-    /**
-     * Whether user has completed onboarding
-     */
     hasCompleted,
-
-    /**
-     * Whether user dismissed without completing
-     */
     hasDismissed,
-
-    /**
-     * Whether onboarding should auto-show (new user)
-     */
     shouldShowOnboarding,
-
-    /**
-     * Direct access to Shepherd tour instance
-     */
-    tour: tourRef.current as ShepherdTour | null,
+    /** @deprecated — was Shepherd.js instance; now always null */
+    tour: null,
+    /** Render this element in the consumer's JSX tree */
+    tourElement,
   };
 }
