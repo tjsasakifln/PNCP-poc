@@ -42,13 +42,20 @@ export default async function ObservatorioEmbedPage({
 
   const { mes, ano } = parsed;
 
-  let relatorio: any = null;
+  type UfBreakdown = { uf: string; total: number };
+  type ObservatorioRelatorio = {
+    mes_nome: string;
+    total_editais: number;
+    valor_medio: number;
+    top_ufs: UfBreakdown[];
+  };
+  let relatorio: ObservatorioRelatorio | null = null;
   try {
     const resp = await fetch(`${BACKEND_URL}/v1/observatorio/relatorio/${mes}/${ano}`, {
       next: { revalidate: 86400 },
       signal: AbortSignal.timeout(10000),
     });
-    if (resp.ok) relatorio = await resp.json();
+    if (resp.ok) relatorio = (await resp.json()) as ObservatorioRelatorio;
   } catch {/* fail gracefully */}
 
   if (!relatorio) {
@@ -56,8 +63,8 @@ export default async function ObservatorioEmbedPage({
   }
 
   const fullUrl = `https://smartlic.tech/observatorio/${slug}`;
-  const topUfs = (relatorio.top_ufs ?? []).slice(0, 5);
-  const maxCount = topUfs.reduce((m: number, u: any) => Math.max(m, u.total), 1);
+  const topUfs: UfBreakdown[] = (relatorio.top_ufs ?? []).slice(0, 5);
+  const maxCount = topUfs.reduce((m: number, u: UfBreakdown) => Math.max(m, u.total), 1);
 
   return (
     <div className="min-h-screen bg-white font-sans text-sm">
@@ -96,7 +103,7 @@ export default async function ObservatorioEmbedPage({
       {topUfs.length > 0 && (
         <div className="px-4 pb-4">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Top 5 estados</p>
-          {topUfs.map((u: any) => (
+          {topUfs.map((u: UfBreakdown) => (
             <div key={u.uf} className="flex items-center gap-2 mb-1">
               <span className="text-xs text-gray-500 w-6 shrink-0">{u.uf}</span>
               <div className="flex-1 bg-gray-100 rounded-full h-3">

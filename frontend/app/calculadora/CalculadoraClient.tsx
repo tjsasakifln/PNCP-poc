@@ -161,8 +161,8 @@ export default function CalculadoraClient() {
       setStep(4);
 
       // Mixpanel event
-      if (typeof window !== 'undefined' && (window as any).mixpanel) {
-        (window as any).mixpanel.track('calculadora_completed', {
+      if (typeof window !== 'undefined' && window.mixpanel) {
+        window.mixpanel.track('calculadora_completed', {
           setor,
           uf,
           resultado_valor: valorPerdido,

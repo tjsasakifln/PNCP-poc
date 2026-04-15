@@ -30,7 +30,7 @@ export interface ComparisonRow {
   smartlic: string;
   advantage: string;
   tooltip?: string;
-  icon?: React.ComponentType<any>;
+  icon?: React.ComponentType<Record<string, unknown>>;
 }
 
 // GTM-COPY-001 AC9: Risk-oriented comparison — "Outros" = risk, "SmartLic" = concrete result
@@ -365,7 +365,7 @@ export interface BeforeAfterItem {
   aspect: string;
   before: string;
   after: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<Record<string, unknown>>;
 }
 
 // GTM-COPY-001 AC6: Concrete consequences, not features

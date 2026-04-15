@@ -34,7 +34,7 @@ interface OrgaoFilterProps {
 /**
  * Custom debounce hook - lightweight alternative to use-debounce package
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- TD-FE-001 STORY-3.2: generic callback signature requires variadic any[]
 function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   delay: number

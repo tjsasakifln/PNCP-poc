@@ -288,8 +288,8 @@ export default function CnpjPerfilClient({ perfil }: { perfil: PerfilB2G }) {
           href={`/signup?${ctaRef}`}
           className="inline-block w-full sm:w-auto py-3 px-8 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 transition-colors text-center shadow-lg"
           onClick={() => {
-            if (typeof window !== 'undefined' && (window as any).mixpanel) {
-              (window as any).mixpanel.track('cnpj_lookup', {
+            if (typeof window !== 'undefined' && window.mixpanel) {
+              window.mixpanel.track('cnpj_lookup', {
                 setor_detectado: perfil.setor_detectado,
                 uf: empresa.uf,
                 total_contratos: total_contratos_24m,

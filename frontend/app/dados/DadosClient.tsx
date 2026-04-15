@@ -462,7 +462,7 @@ function ModalidadeTab({ data }: { data: ModalidadeAggregate[] }) {
                 cx="50%"
                 cy="50%"
                 outerRadius={90}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TD-FE-001 STORY-3.2: recharts PieLabelRenderProps doesn't expose custom data shape
                 label={(entry: any) => `${(entry as { pct: number }).pct}%`}
                 labelLine
               >

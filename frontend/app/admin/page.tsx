@@ -64,9 +64,11 @@ export default function AdminPage() {
 
   const { data: reconData, isLoading: reconLoading, mutate: mutateRecon } = useAdminSWR<ReconResponse>(isAdmin ? "/api/admin/reconciliation/history?limit=5" : null);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TD-FE-001 STORY-3.2: TrialMetrics shape inferred from runtime backend response
   const { data: trialMetrics, isLoading: metricsLoading } = useAdminSWR<any>(
     isAdmin ? "/api/admin/trial-metrics" : null
   );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TD-FE-001 STORY-3.2: AtRiskUser shape inferred from runtime backend response
   const { data: atRiskData } = useAdminSWR<any>(
     isAdmin ? "/api/admin/at-risk-trials?limit=10" : null
   );

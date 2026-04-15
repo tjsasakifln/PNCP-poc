@@ -160,6 +160,7 @@ export default function ObservatorioRelatorioClient({
                   cx="50%"
                   cy="50%"
                   outerRadius={110}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TD-FE-001 STORY-3.2: recharts PieLabelRenderProps doesn't expose custom data shape
                   label={(entry: any) => `${(entry.pct as number ?? 0).toFixed(0)}%`}
                 >
                   {relatorio.modalidades.map((_, i) => (

@@ -76,7 +76,8 @@ function HomePageContent() {
   // STORY-445: Clear new-bids badge after user performs a search
   useEffect(() => {
     if (!orch.search.result || orch.search.loading) return;
-    const token = (orch as any).session?.access_token as string | undefined;
+    const orchSession = (orch as { session?: { access_token?: string } }).session;
+    const token = orchSession?.access_token;
     if (!token) return;
     clearNewBidsBadge(token).catch(() => {/* best-effort */});
   }, [orch.search.result]);

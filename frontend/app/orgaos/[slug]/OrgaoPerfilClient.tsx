@@ -369,8 +369,8 @@ export default function OrgaoPerfilClient({ stats }: { stats: OrgaoStats }) {
           href={`/signup?ref=orgao&uf=${uf}`}
           className="inline-block w-full sm:w-auto py-3 px-8 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 transition-colors text-center shadow-lg"
           onClick={() => {
-            if (typeof window !== 'undefined' && (window as any).mixpanel) {
-              (window as any).mixpanel.track('orgao_lookup', {
+            if (typeof window !== 'undefined' && window.mixpanel) {
+              window.mixpanel.track('orgao_lookup', {
                 cnpj: stats.cnpj,
                 uf: stats.uf,
                 total_licitacoes: stats.total_licitacoes,

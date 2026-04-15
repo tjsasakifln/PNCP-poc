@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { BuscaResult } from "../../../types";
 import { LlmSourceBadge } from "../LlmSourceBadge";
 import { formatCurrencyBR } from "../../../../lib/format-currency";
-import ViabilityBadge from "@/components/ViabilityBadge";
+import ViabilityBadge, { type ViabilityFactors } from "@/components/ViabilityBadge";
 
 interface ResultCardProps {
   result: BuscaResult;
@@ -169,7 +169,7 @@ export function ResultCard({
                         <ViabilityBadge
                           level={matchedBid.viability_level}
                           score={matchedBid.viability_score ?? undefined}
-                          factors={matchedBid.viability_factors as any ?? undefined}
+                          factors={(matchedBid.viability_factors as ViabilityFactors | null | undefined) ?? undefined}
                           valueSource={matchedBid._value_source ?? undefined}
                         />
                       </span>
