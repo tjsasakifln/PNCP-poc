@@ -1,0 +1,107 @@
+name: Setores Sync Check (STORY-2.9)
+
+# STORY-2.9 AC2: roda mensal verificando se a lista hardcoded SETORES_FALLBACK
+# em frontend/ ainda corresponde ao backend /v1/setores. Em caso de drift,
+# abre um issue automaticamente.
+
+on:
+  schedule:
+    # 1º dia do mês às 09:00 UTC (06:00 BRT)
+    - cron: '0 9 1 * *'
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'backend/sectors_data.yaml'
+      - 'backend/sectors.py'
+      - 'frontend/app/buscar/hooks/filters/sectorData.ts'
+      - 'scripts/sync-setores-fallback.js'
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install backend deps
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Start backend (background)
+        working-directory: backend
+        env:
+          PYTHONUNBUFFERED: '1'
+          OPENAI_API_KEY: 'sk-test-dummy-not-used-by-/setores'
+          DATALAKE_ENABLED: 'false'
+        run: |
+          uvicorn main:app --port 8000 > backend.log 2>&1 &
+          echo $! > backend.pid
+          # wait until /healthz responds
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/v1/setores >/dev/null 2>&1; then
+              echo "Backend ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend failed to start"
+          cat backend.log
+          exit 1
+
+      - name: Run drift check
+        env:
+          BACKEND_URL: http://localhost:8000
+        run: node scripts/sync-setores-fallback.js --check
+
+      - name: Stop backend
+        if: always()
+        working-directory: backend
+        run: |
+          if [ -f backend.pid ]; then kill "$(cat backend.pid)" || true; fi
+
+      - name: Open issue on drift
+        if: failure() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `[STORY-2.9] Setores fallback drift detected (${new Date().toISOString().slice(0, 10)})`;
+            const body = [
+              '## Drift detectado: SETORES_FALLBACK desatualizado',
+              '',
+              'O CI mensal detectou que `frontend/app/buscar/hooks/filters/sectorData.ts` está fora de sincronia com o backend `/v1/setores`.',
+              '',
+              '### Como resolver',
+              '```bash',
+              'cd backend && uvicorn main:app --port 8000 &',
+              'node scripts/sync-setores-fallback.js',
+              'git add frontend/app/buscar/hooks/filters/sectorData.ts',
+              'git commit -m "chore(frontend): sync SETORES_FALLBACK with backend"',
+              '```',
+              '',
+              '_Auto-criado por `.github/workflows/setores-sync-check.yml`._',
+            ].join('\n');
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'technical-debt,setores',
+              state: 'open',
+            });
+            if (existing.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['technical-debt', 'setores', 'STORY-2.9'],
+              });
+            }

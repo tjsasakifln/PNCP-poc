@@ -29,10 +29,12 @@ const path = require('path');
 // Parse command line arguments
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
+// STORY-2.9 AC2+AC3: --check mode → CI gate (exit 1 if drift detected, no writes)
+const isCheckMode = args.includes('--check');
 const backendUrlIndex = args.indexOf('--backend-url');
 const BACKEND_URL = backendUrlIndex !== -1 && args[backendUrlIndex + 1]
   ? args[backendUrlIndex + 1]
-  : 'http://localhost:8000';
+  : (process.env.BACKEND_URL || 'http://localhost:8000');
 
 // Target file paths
 const SEARCH_FILTERS_PATH = path.join(__dirname, '../frontend/app/buscar/hooks/useSearchFilters.ts');
@@ -236,13 +238,58 @@ async function updateSignupPage(setores) {
   }
 }
 
+// ─── STORY-2.9 AC2+AC3: --check mode (CI drift detection) ────────────────────
+
+async function checkDrift() {
+  log('\n   Mode: --check (CI drift detection, no writes)\n', 'cyan');
+  const backendSetores = await fetchBackendSetores();
+  validateSetores(backendSetores);
+  const backendIds = new Set(backendSetores.map((s) => s.id));
+
+  // Read current SETORES_FALLBACK from frontend source-of-truth
+  const SECTOR_DATA_PATH = path.join(__dirname, '../frontend/app/buscar/hooks/filters/sectorData.ts');
+  const src = await fs.readFile(SECTOR_DATA_PATH, 'utf-8');
+  const idMatches = [...src.matchAll(/id:\s*['"]([a-z0-9_-]+)['"]/g)];
+  const fallbackIds = new Set(idMatches.map((m) => m[1]));
+
+  const missing = [...backendIds].filter((id) => !fallbackIds.has(id));
+  const extra = [...fallbackIds].filter((id) => !backendIds.has(id));
+
+  const result = {
+    status: missing.length === 0 && extra.length === 0 ? 'OK' : 'DRIFT',
+    backend_count: backendIds.size,
+    fallback_count: fallbackIds.size,
+    missing_in_fallback: missing,
+    extra_in_fallback: extra,
+    timestamp: new Date().toISOString(),
+  };
+
+  // Structured JSON for CI parsing
+  console.log('\n--- DRIFT CHECK RESULT ---');
+  console.log(JSON.stringify(result, null, 2));
+  console.log('--- END ---\n');
+
+  if (result.status === 'DRIFT') {
+    log(`   DRIFT DETECTED: ${missing.length} missing, ${extra.length} extra`, 'red');
+    log('   Run: node scripts/sync-setores-fallback.js (without --check) to fix', 'yellow');
+    process.exit(1);
+  }
+  log('   No drift — frontend fallback in sync with backend ✓', 'green');
+  process.exit(0);
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
   log('\n' + '='.repeat(60), 'bright');
   log('  Sync Setores Fallback Script', 'bright');
-  log('  STORY-249 AC4: Sync useSearchFilters.ts + signup/page.tsx', 'cyan');
+  log('  STORY-249 AC4 + STORY-2.9: Sync + CI drift check', 'cyan');
   log('='.repeat(60) + '\n', 'bright');
+
+  // STORY-2.9: --check mode bypasses sync, only validates drift
+  if (isCheckMode) {
+    return checkDrift();
+  }
 
   if (isDryRun) {
     log('   Running in DRY RUN mode\n', 'yellow');
