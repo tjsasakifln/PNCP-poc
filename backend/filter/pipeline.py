@@ -892,73 +892,96 @@ def aplicar_todos_filtros(
 
             _llm_total = len(zero_match_pool)
             _llm_completed = 0
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                futures = {
-                    executor.submit(_classify_one, lic): lic
-                    for lic in zero_match_pool
-                }
-                for future in as_completed(futures):
-                    _llm_completed += 1
-                    stats["llm_zero_match_calls"] += 1
-                    # STORY-329 AC3: LLM zero-match progress
-                    if on_progress:
-                        on_progress(_llm_completed, _llm_total, "llm_classify")
-                    try:
-                        lic_item, llm_result = future.result()
-                        is_relevant = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
-                        # ISSUE-017: Post-LLM gate — reject if custom terms not in text
-                        if is_relevant and custom_terms:
-                            obj_norm = normalize_text(lic_item.get("objetoCompra", ""))
-                            has_term_evidence = any(
-                                normalize_text(term) in obj_norm
-                                for term in custom_terms
-                            )
-                            if not has_term_evidence:
-                                is_relevant = False
-                                logger.debug(
-                                    f"LLM zero_match: OVERRIDE to NO — no custom term "
-                                    f"found in text. terms={custom_terms}, "
-                                    f"objeto={lic_item.get('objetoCompra', '')[:80]}"
-                                )
-                        if is_relevant:
-                            stats["llm_zero_match_aprovadas"] += 1
-                            # STORY-267 AC16: Track term search metrics
-                            if custom_terms:
-                                from metrics import TERM_SEARCH_LLM_ACCEPTS
-                                TERM_SEARCH_LLM_ACCEPTS.labels(zone="zero_match").inc()
-                            # AC8: Tag relevance source
-                            lic_item["_relevance_source"] = "llm_zero_match"
-                            lic_item["_term_density"] = 0.0
-                            lic_item["_matched_terms"] = []
-                            # D-02 AC4: Confidence capped at 70 for zero-match
-                            if isinstance(llm_result, dict):
-                                raw_conf = llm_result.get("confidence", 60)
-                                lic_item["_confidence_score"] = min(raw_conf, 70)
-                                lic_item["_llm_evidence"] = llm_result.get("evidence", [])
-                            else:
-                                lic_item["_confidence_score"] = 60
-                                lic_item["_llm_evidence"] = []
-                            resultado_llm_zero.append(lic_item)
+
+            # STORY-4.1 (TD-SYS-014): Replaced ThreadPoolExecutor(max_workers=10) with
+            # asyncio.gather bounded by LLM_MAX_CONCURRENT (default 50). The inner
+            # _classify_one remains sync; async_runtime.run_bounded_in_thread executes
+            # it in a worker thread under the shared semaphore + Prometheus gauge.
+            import asyncio as _asyncio_zm
+            from llm_arbiter.async_runtime import (
+                gather_classifications as _gather_zm,
+                unwrap_result as _unwrap_zm,
+            )
+
+            def _on_zm_progress(done: int, total: int, phase: str) -> None:
+                nonlocal _llm_completed
+                _llm_completed = done
+                stats["llm_zero_match_calls"] += 1
+                if on_progress:
+                    on_progress(done, total, phase)
+
+            _paired_results = _asyncio_zm.run(
+                _gather_zm(
+                    _classify_one,
+                    list(zero_match_pool),
+                    call_type="zero_match",
+                    on_progress=_on_zm_progress,
+                )
+            )
+
+            class _ResolvedFuture:
+                def __init__(self, value): self._v = value
+                def result(self): return _unwrap_zm(self._v)
+
+            futures = {_ResolvedFuture(r): None for r in _paired_results}
+
+            for future in futures:
+                try:
+                    lic_item, llm_result = future.result()
+                    is_relevant = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
+                    # ISSUE-017: Post-LLM gate — reject if custom terms not in text
+                    if is_relevant and custom_terms:
+                        obj_norm = normalize_text(lic_item.get("objetoCompra", ""))
+                        has_term_evidence = any(
+                            normalize_text(term) in obj_norm
+                            for term in custom_terms
+                        )
+                        if not has_term_evidence:
+                            is_relevant = False
                             logger.debug(
-                                f"LLM zero_match: ACCEPT conf={lic_item.get('_confidence_score')} "
+                                f"LLM zero_match: OVERRIDE to NO — no custom term "
+                                f"found in text. terms={custom_terms}, "
                                 f"objeto={lic_item.get('objetoCompra', '')[:80]}"
                             )
+                    if is_relevant:
+                        stats["llm_zero_match_aprovadas"] += 1
+                        # STORY-267 AC16: Track term search metrics
+                        if custom_terms:
+                            from metrics import TERM_SEARCH_LLM_ACCEPTS
+                            TERM_SEARCH_LLM_ACCEPTS.labels(zone="zero_match").inc()
+                        # AC8: Tag relevance source
+                        lic_item["_relevance_source"] = "llm_zero_match"
+                        lic_item["_term_density"] = 0.0
+                        lic_item["_matched_terms"] = []
+                        # D-02 AC4: Confidence capped at 70 for zero-match
+                        if isinstance(llm_result, dict):
+                            raw_conf = llm_result.get("confidence", 60)
+                            lic_item["_confidence_score"] = min(raw_conf, 70)
+                            lic_item["_llm_evidence"] = llm_result.get("evidence", [])
                         else:
-                            stats["llm_zero_match_rejeitadas"] += 1
-                            # STORY-267 AC16: Track term search metrics
-                            if custom_terms:
-                                from metrics import TERM_SEARCH_LLM_REJECTS
-                                TERM_SEARCH_LLM_REJECTS.labels(zone="zero_match").inc()
-                            # D-02 AC6: Store rejection reason for audit
-                            if isinstance(llm_result, dict):
-                                lic_item["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
-                            logger.debug(
-                                f"LLM zero_match: REJECT objeto={lic_item.get('objetoCompra', '')[:80]}"
-                            )
-                    except Exception as e:
-                        # AC9: Fallback on LLM failure = REJECT
+                            lic_item["_confidence_score"] = 60
+                            lic_item["_llm_evidence"] = []
+                        resultado_llm_zero.append(lic_item)
+                        logger.debug(
+                            f"LLM zero_match: ACCEPT conf={lic_item.get('_confidence_score')} "
+                            f"objeto={lic_item.get('objetoCompra', '')[:80]}"
+                        )
+                    else:
                         stats["llm_zero_match_rejeitadas"] += 1
-                        logger.error(f"LLM zero_match: FAILED (REJECT fallback): {e}")
+                        # STORY-267 AC16: Track term search metrics
+                        if custom_terms:
+                            from metrics import TERM_SEARCH_LLM_REJECTS
+                            TERM_SEARCH_LLM_REJECTS.labels(zone="zero_match").inc()
+                        # D-02 AC6: Store rejection reason for audit
+                        if isinstance(llm_result, dict):
+                            lic_item["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
+                        logger.debug(
+                            f"LLM zero_match: REJECT objeto={lic_item.get('objetoCompra', '')[:80]}"
+                        )
+                except Exception as e:
+                    # AC9: Fallback on LLM failure = REJECT
+                    stats["llm_zero_match_rejeitadas"] += 1
+                    logger.error(f"LLM zero_match: FAILED (REJECT fallback): {e}")
 
             # ISSUE-029: Acceptance ratio circuit breaker — narrow sectors cap acceptance.
             # If LLM accepted too many zero-match bids, demote all to pending_review
@@ -1281,105 +1304,124 @@ def aplicar_todos_filtros(
         # CRIT-FLT-002 AC1+AC5: Parallel execution with timing
         t0_arbiter = time.monotonic()
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = {
-                executor.submit(_classify_one_arbiter, lic): lic
-                for lic in resultado_llm_candidates
-            }
-            for future in as_completed(futures):
-                with _arbiter_stats_lock:
-                    stats["llm_arbiter_calls"] += 1
-                try:
-                    lic, llm_result, valor = future.result()
-                    trace_id = lic.get("_trace_id", "unknown")
-                    prompt_level = lic.get("_llm_prompt_level", "standard")
-                    objeto = lic.get("objetoCompra", "")
-                    is_primary = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
+        # STORY-4.1 (TD-SYS-014): Replaced ThreadPoolExecutor(max_workers=10) with
+        # asyncio.gather bounded by LLM_MAX_CONCURRENT. Inner function _classify_one_arbiter
+        # remains sync; gather_classifications runs it in threads under the shared
+        # semaphore + Prometheus gauge.
+        import asyncio as _asyncio_ar
+        from llm_arbiter.async_runtime import (
+            gather_classifications as _gather_ar,
+            unwrap_result as _unwrap_ar,
+        )
 
-                    # ISSUE-017: Post-LLM gate — reject if custom terms not in text
-                    if is_primary and custom_terms:
-                        obj_norm = normalize_text(objeto)
-                        has_term_evidence = any(
-                            normalize_text(term) in obj_norm
-                            for term in custom_terms
-                        )
-                        if not has_term_evidence:
-                            is_primary = False
-                            logger.debug(
-                                f"[{trace_id}] Camada 3A: OVERRIDE to NO — no custom "
-                                f"term in text. terms={custom_terms}, objeto={objeto[:80]}"
-                            )
+        _arbiter_paired_results = _asyncio_ar.run(
+            _gather_ar(
+                _classify_one_arbiter,
+                list(resultado_llm_candidates),
+                call_type="arbiter",
+            )
+        )
 
-                    if is_primary:
-                        with _arbiter_stats_lock:
-                            stats["aprovadas_llm_arbiter"] += 1
-                        # GTM-FIX-028 AC8: Tag relevance source based on prompt level
-                        lic["_relevance_source"] = f"llm_{prompt_level}"
-                        # D-02 AC4: Confidence from LLM structured output
-                        if isinstance(llm_result, dict):
-                            lic["_confidence_score"] = llm_result.get("confidence", 70)
-                            lic["_llm_evidence"] = llm_result.get("evidence", [])
-                        else:
-                            lic["_confidence_score"] = 70
-                            lic["_llm_evidence"] = []
-                        resultado_densidade.append(lic)
+        class _ResolvedArbiterFuture:
+            def __init__(self, value): self._v = value
+            def result(self): return _unwrap_ar(self._v)
+
+        futures = {_ResolvedArbiterFuture(r): None for r in _arbiter_paired_results}
+
+        for future in futures:
+            with _arbiter_stats_lock:
+                stats["llm_arbiter_calls"] += 1
+            try:
+                lic, llm_result, valor = future.result()
+                trace_id = lic.get("_trace_id", "unknown")
+                prompt_level = lic.get("_llm_prompt_level", "standard")
+                objeto = lic.get("objetoCompra", "")
+                is_primary = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
+
+                # ISSUE-017: Post-LLM gate — reject if custom terms not in text
+                if is_primary and custom_terms:
+                    obj_norm = normalize_text(objeto)
+                    has_term_evidence = any(
+                        normalize_text(term) in obj_norm
+                        for term in custom_terms
+                    )
+                    if not has_term_evidence:
+                        is_primary = False
                         logger.debug(
-                            f"[{trace_id}] Camada 3A: ACCEPT (LLM={prompt_level}) "
-                            f"conf={lic.get('_confidence_score')} "
-                            f"density={lic.get('_term_density', 0):.1%} "
-                            f"objeto={objeto[:80]}"
+                            f"[{trace_id}] Camada 3A: OVERRIDE to NO — no custom "
+                            f"term in text. terms={custom_terms}, objeto={objeto[:80]}"
                         )
-                        try:
-                            from metrics import FILTER_DECISIONS_BY_SETOR
-                            FILTER_DECISIONS_BY_SETOR.labels(setor=setor or "unknown", decision="llm_approved").inc()
-                        except Exception:
-                            pass
+
+                if is_primary:
+                    with _arbiter_stats_lock:
+                        stats["aprovadas_llm_arbiter"] += 1
+                    # GTM-FIX-028 AC8: Tag relevance source based on prompt level
+                    lic["_relevance_source"] = f"llm_{prompt_level}"
+                    # D-02 AC4: Confidence from LLM structured output
+                    if isinstance(llm_result, dict):
+                        lic["_confidence_score"] = llm_result.get("confidence", 70)
+                        lic["_llm_evidence"] = llm_result.get("evidence", [])
                     else:
-                        with _arbiter_stats_lock:
-                            stats["rejeitadas_llm_arbiter"] += 1
-                        # D-02 AC6: Store rejection reason for audit
-                        if isinstance(llm_result, dict):
-                            lic["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
-                        logger.debug(
-                            f"[{trace_id}] Camada 3A: REJECT (LLM={prompt_level}) "
-                            f"density={lic.get('_term_density', 0):.1%} "
-                            f"valor=R$ {valor:,.2f} objeto={objeto[:80]}"
-                        )
-                        # STORY-248 AC9: Record LLM rejection
-                        try:
-                            _get_tracker().record_rejection(
-                                "llm_reject",
-                                sector=setor,
-                                description_preview=objeto[:100],
-                            )
-                        except Exception:
-                            pass
-                        try:
-                            from metrics import FILTER_DECISIONS_BY_SETOR
-                            FILTER_DECISIONS_BY_SETOR.labels(setor=setor or "unknown", decision="llm_rejected").inc()
-                        except Exception:
-                            pass
-
-                    # STORY-181 AC7: QA Audit sampling (AC2: preserved in parallel)
-                    # D-02 AC6: Now includes evidence and confidence in audit log
-                    if random.random() < QA_AUDIT_SAMPLE_RATE:
-                        lic["_qa_audit"] = True
-                        lic["_qa_audit_decision"] = {
-                            "trace_id": trace_id,
-                            "llm_response": "SIM" if is_primary else "NAO",
-                            "prompt_level": prompt_level,
-                            "density": lic.get("_term_density", 0),
-                            "matched_terms": lic.get("_matched_terms", []),
-                            "valor": valor,
-                            "confidence": llm_result.get("confidence") if isinstance(llm_result, dict) else None,
-                            "evidence": llm_result.get("evidence") if isinstance(llm_result, dict) else None,
-                            "rejection_reason": llm_result.get("rejection_reason") if isinstance(llm_result, dict) else None,
-                        }
-
-                except Exception as e:
-                    # AC4: Fallback on LLM failure = REJECT (zero-noise philosophy)
+                        lic["_confidence_score"] = 70
+                        lic["_llm_evidence"] = []
+                    resultado_densidade.append(lic)
+                    logger.debug(
+                        f"[{trace_id}] Camada 3A: ACCEPT (LLM={prompt_level}) "
+                        f"conf={lic.get('_confidence_score')} "
+                        f"density={lic.get('_term_density', 0):.1%} "
+                        f"objeto={objeto[:80]}"
+                    )
+                    try:
+                        from metrics import FILTER_DECISIONS_BY_SETOR
+                        FILTER_DECISIONS_BY_SETOR.labels(setor=setor or "unknown", decision="llm_approved").inc()
+                    except Exception:
+                        pass
+                else:
                     with _arbiter_stats_lock:
                         stats["rejeitadas_llm_arbiter"] += 1
+                    # D-02 AC6: Store rejection reason for audit
+                    if isinstance(llm_result, dict):
+                        lic["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
+                    logger.debug(
+                        f"[{trace_id}] Camada 3A: REJECT (LLM={prompt_level}) "
+                        f"density={lic.get('_term_density', 0):.1%} "
+                        f"valor=R$ {valor:,.2f} objeto={objeto[:80]}"
+                    )
+                    # STORY-248 AC9: Record LLM rejection
+                    try:
+                        _get_tracker().record_rejection(
+                            "llm_reject",
+                            sector=setor,
+                            description_preview=objeto[:100],
+                        )
+                    except Exception:
+                        pass
+                    try:
+                        from metrics import FILTER_DECISIONS_BY_SETOR
+                        FILTER_DECISIONS_BY_SETOR.labels(setor=setor or "unknown", decision="llm_rejected").inc()
+                    except Exception:
+                        pass
+
+                # STORY-181 AC7: QA Audit sampling (AC2: preserved in parallel)
+                # D-02 AC6: Now includes evidence and confidence in audit log
+                if random.random() < QA_AUDIT_SAMPLE_RATE:
+                    lic["_qa_audit"] = True
+                    lic["_qa_audit_decision"] = {
+                        "trace_id": trace_id,
+                        "llm_response": "SIM" if is_primary else "NAO",
+                        "prompt_level": prompt_level,
+                        "density": lic.get("_term_density", 0),
+                        "matched_terms": lic.get("_matched_terms", []),
+                        "valor": valor,
+                        "confidence": llm_result.get("confidence") if isinstance(llm_result, dict) else None,
+                        "evidence": llm_result.get("evidence") if isinstance(llm_result, dict) else None,
+                        "rejection_reason": llm_result.get("rejection_reason") if isinstance(llm_result, dict) else None,
+                    }
+
+            except Exception as e:
+                # AC4: Fallback on LLM failure = REJECT (zero-noise philosophy)
+                with _arbiter_stats_lock:
+                    stats["rejeitadas_llm_arbiter"] += 1
                     logger.error(f"Camada 3A: LLM FAILED (REJECT fallback): {e}")
 
         elapsed_arbiter = time.monotonic() - t0_arbiter

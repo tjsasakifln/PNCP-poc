@@ -31,6 +31,7 @@ from pipeline.cache_manager import (
     _build_cache_params,
     _maybe_trigger_revalidation,
 )
+from pipeline.budget import _run_with_budget  # STORY-4.4 TD-SYS-003
 
 logger = logging.getLogger(__name__)
 
@@ -609,7 +610,9 @@ async def _execute_multi_source(
                 )
 
     try:
-        consolidation_result = await asyncio.wait_for(
+        # STORY-4.4 (TD-SYS-003): wraps in _run_with_budget for Prometheus observability.
+        # fallback=None preserves legacy TimeoutError propagation into the except blocks below.
+        consolidation_result = await _run_with_budget(
             consolidation_svc.fetch_all(
                 data_inicial=request.data_inicial,
                 data_final=request.data_final,
@@ -618,7 +621,8 @@ async def _execute_multi_source(
                 on_early_return=early_return_cb,
                 on_source_done=source_done_cb,
             ),
-            timeout=fetch_timeout,
+            budget=fetch_timeout,
+            phase="consolidation",
         )
         ctx.licitacoes_raw = consolidation_result.records
         ctx.source_stats_data = [
@@ -1076,7 +1080,10 @@ async def _execute_pncp_only(
             return list(fetch_result)
 
     try:
-        ctx.licitacoes_raw = await asyncio.wait_for(_do_fetch(), timeout=fetch_timeout)
+        # STORY-4.4 (TD-SYS-003): wraps in _run_with_budget for Prometheus observability.
+        ctx.licitacoes_raw = await _run_with_budget(
+            _do_fetch(), budget=fetch_timeout, phase="per_source", source="pncp"
+        )
         # STORY-257A AC5: Track UF metadata
         if ctx.failed_ufs is None:
             ctx.failed_ufs = []

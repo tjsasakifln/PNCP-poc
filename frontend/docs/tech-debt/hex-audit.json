@@ -1,0 +1,1059 @@
+[
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/components/AdminTrialMetrics.tsx",
+    "line": 47,
+    "kind": "hex_literal",
+    "match": "#ef4444",
+    "context": "critical: \"#ef4444\","
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/components/AdminTrialMetrics.tsx",
+    "line": 48,
+    "kind": "hex_literal",
+    "match": "#f59e0b",
+    "context": "at_risk: \"#f59e0b\","
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/components/AdminTrialMetrics.tsx",
+    "line": 49,
+    "kind": "hex_literal",
+    "match": "#22c55e",
+    "context": "healthy: \"#22c55e\","
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/components/AdminTrialMetrics.tsx",
+    "line": 76,
+    "kind": "hex_literal",
+    "match": "#6b7280",
+    "context": "color: RISK_COLORS[key] ?? \"#6b7280\","
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/components/AdminTrialMetrics.tsx",
+    "line": 148,
+    "kind": "hex_literal",
+    "match": "#93c5fd",
+    "context": "<Bar dataKey=\"sent\" fill=\"#93c5fd\" name=\"Enviados\" />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/components/AdminTrialMetrics.tsx",
+    "line": 149,
+    "kind": "hex_literal",
+    "match": "#3b82f6",
+    "context": "<Bar dataKey=\"opened\" fill=\"#3b82f6\" name=\"Abertos\" />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/components/AdminTrialMetrics.tsx",
+    "line": 150,
+    "kind": "hex_literal",
+    "match": "#1d4ed8",
+    "context": "<Bar dataKey=\"clicked\" fill=\"#1d4ed8\" name=\"Clicados\" />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/partners/page.tsx",
+    "line": 367,
+    "kind": "hex_literal",
+    "match": "#10005",
+    "context": "&#10005;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/seo/page.tsx",
+    "line": 140,
+    "kind": "hex_literal",
+    "match": "#3b82f6",
+    "context": "<Line type=\"monotone\" dataKey=\"impressions\" name=\"Impressões\" stroke=\"#3b82f6\" strokeWidth={2} dot={false} />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/seo/page.tsx",
+    "line": 141,
+    "kind": "hex_literal",
+    "match": "#10b981",
+    "context": "<Line type=\"monotone\" dataKey=\"clicks\" name=\"Cliques\" stroke=\"#10b981\" strokeWidth={2} dot={false} />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/admin/seo/page.tsx",
+    "line": 155,
+    "kind": "hex_literal",
+    "match": "#f59e0b",
+    "context": "<Line type=\"monotone\" dataKey=\"position\" name=\"Posição\" stroke=\"#f59e0b\" strokeWidth={2} dot={false} />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/api/badge/stats/route.ts",
+    "line": 48,
+    "kind": "hex_literal",
+    "match": "#fff",
+    "context": "<clipPath id=\"r\"><rect width=\"200\" height=\"28\" rx=\"5\" fill=\"#fff\"/></clipPath>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/api/badge/stats/route.ts",
+    "line": 50,
+    "kind": "hex_literal",
+    "match": "#1e3a5f",
+    "context": "<rect width=\"100\" height=\"28\" fill=\"#1e3a5f\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/api/badge/stats/route.ts",
+    "line": 51,
+    "kind": "hex_literal",
+    "match": "#6b7280",
+    "context": "<rect x=\"100\" width=\"100\" height=\"28\" fill=\"#6b7280\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/api/badge/stats/route.ts",
+    "line": 53,
+    "kind": "hex_literal",
+    "match": "#fff",
+    "context": "<g fill=\"#fff\" text-anchor=\"middle\" font-family=\"Verdana,Geneva,sans-serif\" font-size=\"11\">"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/auth/callback/page.tsx",
+    "line": 246,
+    "kind": "hex_literal",
+    "match": "#10005",
+    "context": "<div className=\"text-red-500 text-5xl mb-4\">&#10005;</div>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/auth/callback/page.tsx",
+    "line": 263,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<div className=\"text-green-500 text-5xl mb-4\">&#10003;</div>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/buscar/components/EnhancedLoadingProgress.tsx",
+    "line": 29,
+    "kind": "hex_literal",
+    "match": "#109",
+    "context": "/** Issue #109: Show \"X of Y states processed\" for better feedback */"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/buscar/components/GoogleSheetsExportButton.tsx",
+    "line": 30,
+    "kind": "hex_literal",
+    "match": "#0F9D58",
+    "context": "<path d=\"M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z\" fill=\"#0F9D58\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/buscar/components/GoogleSheetsExportButton.tsx",
+    "line": 31,
+    "kind": "hex_literal",
+    "match": "#87CEAC",
+    "context": "<path d=\"M14 2V8H20L14 2Z\" fill=\"#87CEAC\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/buscar/components/GoogleSheetsExportButton.tsx",
+    "line": 202,
+    "kind": "arbitrary_class",
+    "match": "text-[#4285F4]",
+    "context": "<Loader2 className=\"w-4 h-4 animate-spin text-[#4285F4]\" aria-hidden=\"true\" />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/como-avaliar-licitacao/page.tsx",
+    "line": 235,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<span className=\"text-success font-bold mt-0.5 shrink-0\">&#10003;</span>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/como-avaliar-licitacao/page.tsx",
+    "line": 239,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<span className=\"text-success font-bold mt-0.5 shrink-0\">&#10003;</span>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/como-avaliar-licitacao/page.tsx",
+    "line": 243,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<span className=\"text-success font-bold mt-0.5 shrink-0\">&#10003;</span>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/como-avaliar-licitacao/page.tsx",
+    "line": 247,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<span className=\"text-success font-bold mt-0.5 shrink-0\">&#10003;</span>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/como-avaliar-licitacao/page.tsx",
+    "line": 251,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<span className=\"text-success font-bold mt-0.5 shrink-0\">&#10003;</span>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/CustomDateInput.tsx",
+    "line": 13,
+    "kind": "hex_literal",
+    "match": "#118",
+    "context": "* Issue #118: Mobile-optimized date picker using react-day-picker"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/CustomDateInput.tsx",
+    "line": 52,
+    "kind": "hex_literal",
+    "match": "#118",
+    "context": "// Detect mobile device (Issue #118)"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/CustomDateInput.tsx",
+    "line": 163,
+    "kind": "hex_literal",
+    "match": "#118",
+    "context": "{/* Mobile Date Picker Modal - Issue #118, improved landscape support */}"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/landing/StatsSection.tsx",
+    "line": 28,
+    "kind": "hex_literal",
+    "match": "#231",
+    "context": "Impacto real no mercado de licita&#231;&#245;es"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/landing/StatsSection.tsx",
+    "line": 28,
+    "kind": "hex_literal",
+    "match": "#245",
+    "context": "Impacto real no mercado de licita&#231;&#245;es"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/LoadingResultsSkeleton.tsx",
+    "line": 3,
+    "kind": "hex_literal",
+    "match": "#111",
+    "context": "* Issue #111: Loading skeleton for search results"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 18,
+    "kind": "hex_literal",
+    "match": "#ffffff",
+    "context": "{ id: \"light\", label: \"Light\", isDark: false, canvas: \"#ffffff\", ink: \"#1e2d3b\", preview: \"#ffffff\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 18,
+    "kind": "hex_literal",
+    "match": "#1e2d3b",
+    "context": "{ id: \"light\", label: \"Light\", isDark: false, canvas: \"#ffffff\", ink: \"#1e2d3b\", preview: \"#ffffff\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 18,
+    "kind": "hex_literal",
+    "match": "#ffffff",
+    "context": "{ id: \"light\", label: \"Light\", isDark: false, canvas: \"#ffffff\", ink: \"#1e2d3b\", preview: \"#ffffff\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 19,
+    "kind": "hex_literal",
+    "match": "#ffffff",
+    "context": "{ id: \"system\", label: \"Sistema\", isDark: false, canvas: \"#ffffff\", ink: \"#1e2d3b\", preview: \"#808080\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 19,
+    "kind": "hex_literal",
+    "match": "#1e2d3b",
+    "context": "{ id: \"system\", label: \"Sistema\", isDark: false, canvas: \"#ffffff\", ink: \"#1e2d3b\", preview: \"#808080\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 19,
+    "kind": "hex_literal",
+    "match": "#808080",
+    "context": "{ id: \"system\", label: \"Sistema\", isDark: false, canvas: \"#ffffff\", ink: \"#1e2d3b\", preview: \"#808080\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 20,
+    "kind": "hex_literal",
+    "match": "#121212",
+    "context": "{ id: \"dark\", label: \"Dark\", isDark: true, canvas: \"#121212\", ink: \"#e0e0e0\", preview: \"#121212\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 20,
+    "kind": "hex_literal",
+    "match": "#e0e0e0",
+    "context": "{ id: \"dark\", label: \"Dark\", isDark: true, canvas: \"#121212\", ink: \"#e0e0e0\", preview: \"#121212\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 20,
+    "kind": "hex_literal",
+    "match": "#121212",
+    "context": "{ id: \"dark\", label: \"Dark\", isDark: true, canvas: \"#121212\", ink: \"#e0e0e0\", preview: \"#121212\" },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 56,
+    "kind": "hex_literal",
+    "match": "#a8b4c0",
+    "context": "root.style.setProperty(\"--ink-secondary\", \"#a8b4c0\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 57,
+    "kind": "hex_literal",
+    "match": "#8b9bb0",
+    "context": "root.style.setProperty(\"--ink-muted\", \"#8b9bb0\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 58,
+    "kind": "hex_literal",
+    "match": "#5a6a7a",
+    "context": "root.style.setProperty(\"--ink-faint\", \"#5a6a7a\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 61,
+    "kind": "hex_literal",
+    "match": "#1a1d22",
+    "context": "root.style.setProperty(\"--surface-1\", \"#1a1d22\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 62,
+    "kind": "hex_literal",
+    "match": "#242830",
+    "context": "root.style.setProperty(\"--surface-2\", \"#242830\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 63,
+    "kind": "hex_literal",
+    "match": "#1e2128",
+    "context": "root.style.setProperty(\"--surface-elevated\", \"#1e2128\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 64,
+    "kind": "hex_literal",
+    "match": "#22c55e",
+    "context": "root.style.setProperty(\"--success\", \"#22c55e\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 65,
+    "kind": "hex_literal",
+    "match": "#052e16",
+    "context": "root.style.setProperty(\"--success-subtle\", \"#052e16\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 66,
+    "kind": "hex_literal",
+    "match": "#f87171",
+    "context": "root.style.setProperty(\"--error\", \"#f87171\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 67,
+    "kind": "hex_literal",
+    "match": "#450a0a",
+    "context": "root.style.setProperty(\"--error-subtle\", \"#450a0a\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 68,
+    "kind": "hex_literal",
+    "match": "#facc15",
+    "context": "root.style.setProperty(\"--warning\", \"#facc15\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 69,
+    "kind": "hex_literal",
+    "match": "#422006",
+    "context": "root.style.setProperty(\"--warning-subtle\", \"#422006\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 72,
+    "kind": "hex_literal",
+    "match": "#3b8bff",
+    "context": "root.style.setProperty(\"--ring\", \"#3b8bff\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 75,
+    "kind": "hex_literal",
+    "match": "#3d5975",
+    "context": "root.style.setProperty(\"--ink-secondary\", \"#3d5975\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 76,
+    "kind": "hex_literal",
+    "match": "#808f9f",
+    "context": "root.style.setProperty(\"--ink-muted\", \"#808f9f\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 77,
+    "kind": "hex_literal",
+    "match": "#c0d2e5",
+    "context": "root.style.setProperty(\"--ink-faint\", \"#c0d2e5\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 78,
+    "kind": "hex_literal",
+    "match": "#e8f0ff",
+    "context": "root.style.setProperty(\"--brand-blue-subtle\", \"#e8f0ff\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 80,
+    "kind": "hex_literal",
+    "match": "#f7f8fa",
+    "context": "root.style.setProperty(\"--surface-1\", \"#f7f8fa\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 81,
+    "kind": "hex_literal",
+    "match": "#f0f2f5",
+    "context": "root.style.setProperty(\"--surface-2\", \"#f0f2f5\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 83,
+    "kind": "hex_literal",
+    "match": "#16a34a",
+    "context": "root.style.setProperty(\"--success\", \"#16a34a\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 84,
+    "kind": "hex_literal",
+    "match": "#f0fdf4",
+    "context": "root.style.setProperty(\"--success-subtle\", \"#f0fdf4\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 85,
+    "kind": "hex_literal",
+    "match": "#dc2626",
+    "context": "root.style.setProperty(\"--error\", \"#dc2626\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 86,
+    "kind": "hex_literal",
+    "match": "#fef2f2",
+    "context": "root.style.setProperty(\"--error-subtle\", \"#fef2f2\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 87,
+    "kind": "hex_literal",
+    "match": "#ca8a04",
+    "context": "root.style.setProperty(\"--warning\", \"#ca8a04\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 88,
+    "kind": "hex_literal",
+    "match": "#fefce8",
+    "context": "root.style.setProperty(\"--warning-subtle\", \"#fefce8\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeProvider.tsx",
+    "line": 91,
+    "kind": "hex_literal",
+    "match": "#116dff",
+    "context": "root.style.setProperty(\"--ring\", \"#116dff\");"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/ThemeToggle.tsx",
+    "line": 8,
+    "kind": "hex_literal",
+    "match": "#116",
+    "context": "* Issue #116 - Dark mode preview before selection"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/components/UpgradeModal.tsx",
+    "line": 87,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<span className=\"flex-shrink-0 mt-0.5 text-green-500\" aria-hidden=\"true\">&#10003;</span>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 76,
+    "kind": "hex_literal",
+    "match": "#2563eb",
+    "context": "'#2563eb',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 77,
+    "kind": "hex_literal",
+    "match": "#16a34a",
+    "context": "'#16a34a',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 78,
+    "kind": "hex_literal",
+    "match": "#d97706",
+    "context": "'#d97706',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 79,
+    "kind": "hex_literal",
+    "match": "#dc2626",
+    "context": "'#dc2626',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 80,
+    "kind": "hex_literal",
+    "match": "#7c3aed",
+    "context": "'#7c3aed',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 81,
+    "kind": "hex_literal",
+    "match": "#0891b2",
+    "context": "'#0891b2',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 82,
+    "kind": "hex_literal",
+    "match": "#db2777",
+    "context": "'#db2777',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 83,
+    "kind": "hex_literal",
+    "match": "#059669",
+    "context": "'#059669',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 353,
+    "kind": "hex_literal",
+    "match": "#2563eb",
+    "context": "<Bar dataKey=\"count\" fill=\"#2563eb\" radius={[0, 4, 4, 0]} />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 416,
+    "kind": "hex_literal",
+    "match": "#16a34a",
+    "context": "<Bar dataKey=\"count\" fill=\"#16a34a\" radius={[0, 4, 4, 0]} />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 547,
+    "kind": "hex_literal",
+    "match": "#6b7280",
+    "context": "style: { fontSize: 11, fill: '#6b7280' },"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 582,
+    "kind": "hex_literal",
+    "match": "#2563eb",
+    "context": "stroke=\"#2563eb\""
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/dados/DadosClient.tsx",
+    "line": 591,
+    "kind": "hex_literal",
+    "match": "#16a34a",
+    "context": "stroke=\"#16a34a\""
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 30,
+    "kind": "hex_literal",
+    "match": "#f8fafc",
+    "context": "--ge-bg: #f8fafc;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 31,
+    "kind": "hex_literal",
+    "match": "#ffffff",
+    "context": "--ge-card-bg: #ffffff;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 32,
+    "kind": "hex_literal",
+    "match": "#0f172a",
+    "context": "--ge-text: #0f172a;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 33,
+    "kind": "hex_literal",
+    "match": "#64748b",
+    "context": "--ge-text-secondary: #64748b;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 34,
+    "kind": "hex_literal",
+    "match": "#0a1e3f",
+    "context": "--ge-brand-navy: #0a1e3f;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 35,
+    "kind": "hex_literal",
+    "match": "#116dff",
+    "context": "--ge-brand-blue: #116dff;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 36,
+    "kind": "hex_literal",
+    "match": "#0e5cd6",
+    "context": "--ge-brand-blue-hover: #0e5cd6;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 38,
+    "kind": "hex_literal",
+    "match": "#116dff",
+    "context": "--ge-link: #116dff;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 42,
+    "kind": "hex_literal",
+    "match": "#0f172a",
+    "context": "--ge-bg: #0f172a;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 43,
+    "kind": "hex_literal",
+    "match": "#1e293b",
+    "context": "--ge-card-bg: #1e293b;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 44,
+    "kind": "hex_literal",
+    "match": "#f1f5f9",
+    "context": "--ge-text: #f1f5f9;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 45,
+    "kind": "hex_literal",
+    "match": "#94a3b8",
+    "context": "--ge-text-secondary: #94a3b8;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 46,
+    "kind": "hex_literal",
+    "match": "#3b82f6",
+    "context": "--ge-brand-navy: #3b82f6;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 47,
+    "kind": "hex_literal",
+    "match": "#60a5fa",
+    "context": "--ge-brand-blue: #60a5fa;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 48,
+    "kind": "hex_literal",
+    "match": "#3b82f6",
+    "context": "--ge-brand-blue-hover: #3b82f6;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 50,
+    "kind": "hex_literal",
+    "match": "#60a5fa",
+    "context": "--ge-link: #60a5fa;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/global-error.tsx",
+    "line": 79,
+    "kind": "hex_literal",
+    "match": "#9888",
+    "context": "&#9888;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/layout.tsx",
+    "line": 149,
+    "kind": "hex_literal",
+    "match": "#0a1e3f",
+    "context": "<meta name=\"theme-color\" content=\"#0a1e3f\" />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/login/components/LoginForm.tsx",
+    "line": 65,
+    "kind": "hex_literal",
+    "match": "#4285F4",
+    "context": "<path fill=\"#4285F4\" d=\"M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/login/components/LoginForm.tsx",
+    "line": 66,
+    "kind": "hex_literal",
+    "match": "#34A853",
+    "context": "<path fill=\"#34A853\" d=\"M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/login/components/LoginForm.tsx",
+    "line": 67,
+    "kind": "hex_literal",
+    "match": "#FBBC05",
+    "context": "<path fill=\"#FBBC05\" d=\"M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/login/components/LoginForm.tsx",
+    "line": 68,
+    "kind": "hex_literal",
+    "match": "#EA4335",
+    "context": "<path fill=\"#EA4335\" d=\"M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/login/page.tsx",
+    "line": 230,
+    "kind": "hex_literal",
+    "match": "#9993",
+    "context": "<div className=\"text-4xl mb-4\">&#9993;</div>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 15,
+    "kind": "hex_literal",
+    "match": "#2563eb",
+    "context": "'#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 15,
+    "kind": "hex_literal",
+    "match": "#7c3aed",
+    "context": "'#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 15,
+    "kind": "hex_literal",
+    "match": "#db2777",
+    "context": "'#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 15,
+    "kind": "hex_literal",
+    "match": "#ea580c",
+    "context": "'#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 15,
+    "kind": "hex_literal",
+    "match": "#d97706",
+    "context": "'#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 16,
+    "kind": "hex_literal",
+    "match": "#65a30d",
+    "context": "'#65a30d', '#0891b2', '#4f46e5', '#be185d', '#b45309',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 16,
+    "kind": "hex_literal",
+    "match": "#0891b2",
+    "context": "'#65a30d', '#0891b2', '#4f46e5', '#be185d', '#b45309',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 16,
+    "kind": "hex_literal",
+    "match": "#4f46e5",
+    "context": "'#65a30d', '#0891b2', '#4f46e5', '#be185d', '#b45309',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 16,
+    "kind": "hex_literal",
+    "match": "#be185d",
+    "context": "'#65a30d', '#0891b2', '#4f46e5', '#be185d', '#b45309',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 16,
+    "kind": "hex_literal",
+    "match": "#b45309",
+    "context": "'#65a30d', '#0891b2', '#4f46e5', '#be185d', '#b45309',"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/observatorio/[slug]/ObservatorioRelatorioClient.tsx",
+    "line": 141,
+    "kind": "hex_literal",
+    "match": "#2563eb",
+    "context": "<Bar dataKey=\"total\" fill=\"#2563eb\" radius={[0, 4, 4, 0]} />"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/planos/components/PlanConsultoriaCard.tsx",
+    "line": 76,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<span className=\"flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold\">&#10003;</span>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/planos/components/PlanProCard.tsx",
+    "line": 87,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "&#10003;"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 53,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "3. Dados Coletados, Finalidade e Base Legal (Art. 7&#176; LGPD)"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 56,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "Cada tipo de dado pessoal que coletamos possui uma finalidade especifica e uma base legal conforme o Art. 7&#176; da LGPD:"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 65,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<th className=\"px-4 py-3 text-left font-semibold text-gray-900 dark:text-white border-b\">Base Legal (Art. 7&#176;)</th>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 73,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Execucao de contrato (Art. 7&#176;, V)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 79,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Execucao de contrato (Art. 7&#176;, V)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 85,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Execucao de contrato (Art. 7&#176;, V)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 91,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Execucao de contrato (Art. 7&#176;, V)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 97,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Execucao de contrato (Art. 7&#176;, V)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 103,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Interesse legitimo (Art. 7&#176;, IX)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 109,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Consentimento (Art. 7&#176;, I)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 115,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Execucao de contrato (Art. 7&#176;, V)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 121,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Consentimento (Art. 7&#176;, I)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 127,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "<td className=\"px-4 py-3\">Interesse legitimo (Art. 7&#176;, IX)</td>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/privacidade/page.tsx",
+    "line": 194,
+    "kind": "hex_literal",
+    "match": "#176",
+    "context": "7. Seus Direitos (Art. 18&#176; LGPD)"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/recuperar-senha/page.tsx",
+    "line": 108,
+    "kind": "hex_literal",
+    "match": "#9993",
+    "context": "<div className=\"text-4xl mb-4\">&#9993;</div>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/redefinir-senha/page.tsx",
+    "line": 121,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<div className=\"text-6xl mb-4\">&#10003;</div>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/redefinir-senha/page.tsx",
+    "line": 138,
+    "kind": "hex_literal",
+    "match": "#10007",
+    "context": "<div className=\"text-5xl mb-4 text-[var(--error)]\">&#10007;</div>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/components/SignupForm.tsx",
+    "line": 355,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "&#10003; Senhas coincidem"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/components/SignupOAuth.tsx",
+    "line": 15,
+    "kind": "hex_literal",
+    "match": "#4285F4",
+    "context": "<path fill=\"#4285F4\" d=\"M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/components/SignupOAuth.tsx",
+    "line": 16,
+    "kind": "hex_literal",
+    "match": "#34A853",
+    "context": "<path fill=\"#34A853\" d=\"M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/components/SignupOAuth.tsx",
+    "line": 17,
+    "kind": "hex_literal",
+    "match": "#FBBC05",
+    "context": "<path fill=\"#FBBC05\" d=\"M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/components/SignupOAuth.tsx",
+    "line": 18,
+    "kind": "hex_literal",
+    "match": "#EA4335",
+    "context": "<path fill=\"#EA4335\" d=\"M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z\"/>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/components/SignupSuccess.tsx",
+    "line": 26,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<div className=\"text-4xl mb-4\" data-testid=\"confirmed-icon\">&#10003;</div>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/components/SignupSuccess.tsx",
+    "line": 35,
+    "kind": "hex_literal",
+    "match": "#9993",
+    "context": "<div className=\"text-4xl mb-4\" data-testid=\"mail-icon\">&#9993;</div>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/page.tsx",
+    "line": 280,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<li>&#10003; Análise de compatibilidade com seu perfil</li>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/page.tsx",
+    "line": 281,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<li>&#10003; Editais filtrados por setor e região</li>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/app/signup/page.tsx",
+    "line": 282,
+    "kind": "hex_literal",
+    "match": "#10003",
+    "context": "<li>&#10003; Sem cartão de crédito</li>"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/components/seo/MicroDemo.tsx",
+    "line": 98,
+    "kind": "hex_literal",
+    "match": "#22c55e",
+    "context": "animate={litSources.includes(i) ? { borderColor: '#22c55e', backgroundColor: '#f0fdf4' } : {}}"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/components/seo/MicroDemo.tsx",
+    "line": 98,
+    "kind": "hex_literal",
+    "match": "#f0fdf4",
+    "context": "animate={litSources.includes(i) ? { borderColor: '#22c55e', backgroundColor: '#f0fdf4' } : {}}"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/components/seo/MicroDemo.tsx",
+    "line": 103,
+    "kind": "hex_literal",
+    "match": "#22c55e",
+    "context": "animate={litSources.includes(i) ? { backgroundColor: '#22c55e', scale: [1, 1.4, 1] } : {}}"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/components/seo/MicroDemo.tsx",
+    "line": 260,
+    "kind": "hex_literal",
+    "match": "#3b82f6",
+    "context": "stroke=\"#3b82f6\""
+  },
+  {
+    "file": "D:/pncp-poc/frontend/hooks/useKeyboardShortcuts.ts",
+    "line": 5,
+    "kind": "hex_literal",
+    "match": "#122",
+    "context": "* Issue #122 [P3] No keyboard shortcuts for power users"
+  },
+  {
+    "file": "D:/pncp-poc/frontend/hooks/useServiceWorker.ts",
+    "line": 7,
+    "kind": "hex_literal",
+    "match": "#108",
+    "context": "* Issue #108 - Offline fallback UI for mobile users"
+  }
+]

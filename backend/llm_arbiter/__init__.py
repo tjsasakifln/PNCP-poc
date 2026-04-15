@@ -58,6 +58,22 @@ from llm_arbiter.zero_match import (
     classify_contract_recovery,
 )
 
+# STORY-4.1 (TD-SYS-014): Async runtime + Batch API
+from llm_arbiter.async_runtime import (  # noqa: F401
+    _bounded,
+    _get_async_client,
+    _get_semaphore,
+    gather_classifications,
+    get_max_concurrent,
+    reset_semaphore,
+    run_bounded_in_thread,
+)
+from llm_arbiter.batch_api import (  # noqa: F401
+    list_pending_batch_ids,
+    poll_batch,
+    submit_batch,
+)
+
 __all__ = [
     # prompt_builder
     "_SECTOR_NEGATIVE_EXAMPLES",

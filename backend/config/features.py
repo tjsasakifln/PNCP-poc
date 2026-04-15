@@ -35,6 +35,16 @@ LLM_TIMEOUT_S: float = float(os.getenv("OPENAI_TIMEOUT_S", os.getenv("LLM_TIMEOU
 # 20s = 4× p99 batch latency. Prevents thread starvation on LLM hangs.
 LLM_FUTURE_TIMEOUT_S: float = float(os.getenv("LLM_FUTURE_TIMEOUT_S", "20"))
 
+# STORY-4.1 (TD-SYS-014): Async runtime + Batch API.
+# LLM_MAX_CONCURRENT caps the number of LLM calls in flight at any given
+# time (previously hardcoded to ThreadPoolExecutor(max_workers=10)).
+LLM_MAX_CONCURRENT: int = int(os.getenv("LLM_MAX_CONCURRENT", "50"))
+# Offline Batch API gate — 24h SLA so not viable for /buscar, only for
+# reclassify_pending_bids_job. Set to false to revert to live classification.
+LLM_BATCH_ENABLED: bool = str_to_bool(os.getenv("LLM_BATCH_ENABLED", "false"))
+LLM_BATCH_MIN_ITEMS: int = int(os.getenv("LLM_BATCH_MIN_ITEMS", "20"))
+LLM_BATCH_POLL_INTERVAL_S: int = int(os.getenv("LLM_BATCH_POLL_INTERVAL_S", "60"))
+
 # Term density thresholds (STORY-248 reviewed 2026-02-14 — kept unchanged)
 TERM_DENSITY_HIGH_THRESHOLD: float = float(os.getenv("TERM_DENSITY_HIGH_THRESHOLD", "0.05"))
 TERM_DENSITY_MEDIUM_THRESHOLD: float = float(os.getenv("TERM_DENSITY_MEDIUM_THRESHOLD", "0.02"))

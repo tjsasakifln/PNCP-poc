@@ -180,37 +180,30 @@ async def check_source_health(
 
             response_time_ms = int((time.time() - start_time) * 1000)
 
-            # DEBT-008 SYS-017: PNCP page size limit validation (non-blocking)
+            # DEBT-008 SYS-017 / STORY-4.5: PNCP page size limit validation.
+            # Delegates to pncp_canary.validate_page_size_limit so the logic lives
+            # in one place (the breaking-change canary cron covers the same probe
+            # every 10 min with full Redis+Sentry escalation).
             if source_code == "PNCP" and response.status_code < 400:
                 try:
                     from metrics import PNCP_PAGE_SIZE_LIMIT
-                    PNCP_PAGE_SIZE_LIMIT.set(50)  # Current known limit
-
-                    # Test with tamanhoPagina=51 to detect if the limit has changed
-                    limit_test = await client.get(
-                        endpoint,
-                        params={
-                            "dataInicial": "20260101",
-                            "dataFinal": "20260101",
-                            "codigoModalidadeContratacao": 6,
-                            "pagina": 1,
-                            "tamanhoPagina": 51,
-                        },
-                    )
-                    if limit_test.status_code < 400:
+                    from pncp_canary import validate_page_size_limit
+                    PNCP_PAGE_SIZE_LIMIT.set(50)
+                    result = await validate_page_size_limit(client, expected_limit=50)
+                    if result.get("drifted"):
                         logger.warning(
-                            "DEBT-008 SYS-017: PNCP accepted tamanhoPagina=51 — "
+                            "STORY-4.5: PNCP accepted tamanhoPagina=51 — "
                             "page size limit may have increased (was 50)"
                         )
                         PNCP_PAGE_SIZE_LIMIT.set(51)
                     else:
                         logger.debug(
-                            "DEBT-008 SYS-017: PNCP page size limit confirmed at 50 "
-                            "(tamanhoPagina=51 returned HTTP %d)",
-                            limit_test.status_code,
+                            "STORY-4.5: PNCP page size limit confirmed at 50 "
+                            "(tamanhoPagina=51 returned HTTP %s)",
+                            result.get("probe_status"),
                         )
                 except Exception as e:
-                    logger.debug("DEBT-008: Page size validation skipped: %s", e)
+                    logger.debug("STORY-4.5: Page size validation skipped: %s", e)
 
             if response.status_code < 400:
                 return SourceHealthResult(
