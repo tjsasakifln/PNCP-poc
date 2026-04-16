@@ -35,7 +35,7 @@ export function SelectField({ label, value, onChange, options, error }: {
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
-      {error && <p className="mt-1 text-xs text-error" role="alert">{error}</p>}
+      {error && <p className="mt-1 text-xs text-error" role="alert" aria-live="assertive">{error}</p>}
     </div>
   );
 }
@@ -58,7 +58,7 @@ export function NumberField({ label, value, onChange, placeholder, error }: {
         placeholder={placeholder}
         className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] text-sm focus:border-[var(--brand-blue)] focus:outline-none"
       />
-      {error && <p className="mt-1 text-xs text-error" role="alert">{error}</p>}
+      {error && <p className="mt-1 text-xs text-error" role="alert" aria-live="assertive">{error}</p>}
     </div>
   );
 }
