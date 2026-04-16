@@ -28,6 +28,30 @@ const inputVariants = cva(
   }
 );
 
+/**
+ * Accessible Input component with CVA variants, error/helper text, and WCAG AA contrast.
+ * Wraps a native `<input>` with optional error message (role="alert") and helper text.
+ * Supports size variants (sm/default/lg) and state variants (default/error/success).
+ *
+ * @param inputSize - Size variant: "sm" | "default" | "lg"
+ * @param state - Visual state: "default" | "error" | "success" (auto-set to "error" when error prop present)
+ * @param error - Error message shown below input with role="alert"; also sets aria-invalid
+ * @param errorTestId - data-testid for the error message paragraph
+ * @param helperText - Helper text shown below input when no error
+ * @param id - Required for aria-describedby linkage between input and error/helper
+ *
+ * @example
+ * // Basic usage
+ * <Input placeholder="Digite seu CNPJ" />
+ *
+ * @example
+ * // With error
+ * <Input id="cnpj" error="CNPJ inválido" errorTestId="cnpj-error" />
+ *
+ * @example
+ * // With helper text
+ * <Input id="keyword" helperText="Separe palavras com vírgula" inputSize="sm" />
+ */
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
     VariantProps<typeof inputVariants> {
