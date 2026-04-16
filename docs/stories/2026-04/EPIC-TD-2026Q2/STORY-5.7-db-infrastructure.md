@@ -1,6 +1,6 @@
 # STORY-5.7: DB Infrastructure (TD-DB-040, 041, 042 — monitoring/backup/pool)
 
-**Priority:** P2 | **Effort:** M (10-20h) | **Squad:** @data-engineer + @devops | **Status:** Draft
+**Priority:** P2 | **Effort:** M (10-20h) | **Squad:** @data-engineer + @devops | **Status:** Blocked
 **Epic:** EPIC-TD-2026Q2 | **Sprint:** 4-6
 **Note:** TD-DB-040 (cron monitoring) já está em STORY-1.1; aqui foco em 041 + 042
 
@@ -33,3 +33,4 @@
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-04-14 | 1.0 | Initial draft | @sm |
+| 2026-04-16 | 1.1 | Status→Blocked: requires S3 bucket + IAM credentials (external infra) | @dev |
