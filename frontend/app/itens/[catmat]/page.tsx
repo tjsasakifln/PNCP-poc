@@ -262,6 +262,7 @@ export default async function ItemCatmatPage({ params }: Props) {
                   <div key={bar.label} className="flex items-center gap-3">
                     <span className="text-xs text-gray-500 w-28 shrink-0">{bar.label}</span>
                     <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
+                      {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from bar value relative to max value */}
                       <div
                         className={`h-4 rounded-full ${bar.color}`}
                         style={{ width: `${Math.max(4, ((bar.value ?? 0) / maxValor) * 100)}%` }}

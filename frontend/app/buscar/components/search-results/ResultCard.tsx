@@ -157,6 +157,7 @@ export function ResultCard({
                 )
               );
               return (
+                // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDelay computed from index
                 <div
                   key={i}
                   className="p-3 sm:p-4 bg-surface border border-border rounded-card animate-fade-in-up"
@@ -216,6 +217,7 @@ export function ResultCard({
           <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-2 sm:mb-3">Destaques:</h4>
           <ul className="list-disc list-inside text-sm sm:text-base space-y-2 text-ink-secondary">
             {result.resumo.destaques.map((d, i) => (
+              // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDelay computed from index
               <li key={i} className="animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>{d}</li>
             ))}
           </ul>

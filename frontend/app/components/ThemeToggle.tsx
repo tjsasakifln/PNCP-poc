@@ -66,6 +66,7 @@ export function ThemeToggle() {
                    bg-surface-0 text-ink-secondary
                    hover:border-accent transition-colors text-sm"
       >
+        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: backgroundColor is a theme-specific color value resolved at runtime from THEMES config */}
         <span
           className="w-4 h-4 rounded-full border border-strong"
           style={{ backgroundColor: THEMES.find(t => t.id === theme)?.preview }}

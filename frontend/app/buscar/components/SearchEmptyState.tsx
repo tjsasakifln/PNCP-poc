@@ -88,6 +88,7 @@ export function SearchEmptyState({
           </p>
           <div className="text-left max-w-md mx-auto space-y-2">
             {rejectionBreakdown.map((item, i) => (
+              // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDelay computed from index
               <div key={i} className="flex items-start gap-3 p-3 bg-surface-0 rounded-card border animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
                 <span className="inline-flex items-center justify-center min-w-[2.5rem] h-7 rounded-full bg-error-subtle text-error text-sm font-bold tabular-nums">
                   {item.count}

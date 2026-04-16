@@ -266,6 +266,7 @@ export function ValorFilter({
           aria-label="Seletor de faixa de valor"
         >
           {/* Active range highlight */}
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: left and width are computed from slider thumb positions */}
           <div
             className="absolute h-full bg-brand-blue rounded-full"
             style={{
@@ -302,6 +303,7 @@ export function ValorFilter({
               ${disabled ? "opacity-50 cursor-not-allowed" : "hover:scale-110"}
               transition-transform duration-150
             `}
+            // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: left position computed from min slider value
             style={{ left: `${minPosition}%` }}
             role="slider"
             aria-label="Valor mínimo"
@@ -340,6 +342,7 @@ export function ValorFilter({
               ${disabled ? "opacity-50 cursor-not-allowed" : "hover:scale-110"}
               transition-transform duration-150
             `}
+            // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: left position computed from max slider value
             style={{ left: `${maxPosition}%` }}
             role="slider"
             aria-label="Valor máximo"

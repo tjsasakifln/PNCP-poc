@@ -70,6 +70,7 @@ function FadePanel({
   if (!show) return null;
 
   return (
+    // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: custom CSS animation string cannot be expressed as a static Tailwind class
     <div
       className={`animate-fadeIn ${className}`}
       style={{ animation: "fadeIn 200ms ease-in-out" }}

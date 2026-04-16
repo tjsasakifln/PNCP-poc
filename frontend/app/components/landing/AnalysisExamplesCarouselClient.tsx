@@ -214,6 +214,7 @@ export default function AnalysisExamplesCarouselClient() {
 
         {/* Carousel Track */}
         <div className="overflow-hidden">
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: track width computed from examples.length / visibleCount at runtime */}
           <motion.div
             className="flex"
             style={{ width: `${trackWidthPercent}%` }}
@@ -221,6 +222,7 @@ export default function AnalysisExamplesCarouselClient() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
             {examples.map((example) => (
+              // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: per-card width computed from examples.length at runtime
               <div
                 key={example.id}
                 className="px-2 sm:px-3"

@@ -356,6 +356,7 @@ function MensagensPageInner() {
                   <div key={i} className="px-4 py-3 border-b border-[var(--border)]">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
+                        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDelay is computed from skeleton item index */}
                         <div className="h-4 w-3/4 bg-[var(--surface-1)] rounded animate-pulse mb-2" style={{ animationDelay: `${i * 100}ms` }} />
                         <div className="flex items-center gap-2">
                           <div className="h-3 w-16 bg-[var(--surface-1)] rounded animate-pulse" />

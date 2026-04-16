@@ -79,6 +79,7 @@ export function CoverageBar({ coverageMetadata, cacheBannerVisible }: CoverageBa
           aria-label={ariaLabel}
           className="h-2.5 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700"
         >
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is a computed percentage from coverage_pct */}
           <div
             className={`h-full rounded-full transition-all duration-500 ${colors.bar}`}
             style={{ width: `${Math.min(coverage_pct, 100)}%` }}

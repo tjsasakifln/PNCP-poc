@@ -9,9 +9,11 @@
 'use strict';
 
 const noHardcodedHex = require('./no-hardcoded-hex');
+const noInlineStyles = require('./no-inline-styles');
 
 module.exports = {
   rules: {
     'no-hardcoded-hex': noHardcodedHex,
+    'no-inline-styles': noInlineStyles,
   },
 };

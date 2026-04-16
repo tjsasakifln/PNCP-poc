@@ -68,7 +68,7 @@ export default function PlanoPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm"><span className="text-[var(--ink-secondary)]">Dias restantes</span><span className="font-medium text-[var(--ink)]">{daysLeft} de 7</span></div>
                   <div className="flex items-center justify-between text-sm"><span className="text-[var(--ink-secondary)]">Análises usadas</span><span className="font-medium text-[var(--ink)]">{used} de {total}</span></div>
-                  <div className="w-full h-2 bg-[var(--surface-1)] rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${usagePct}%`, backgroundColor: usagePct > 80 ? "var(--error)" : "var(--brand-blue)" }} /></div>
+                  <div className="w-full h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">{/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width and backgroundColor are computed from quota usage percentage */}<div className="h-full rounded-full transition-all duration-500" style={{ width: `${usagePct}%`, backgroundColor: usagePct > 80 ? "var(--error)" : "var(--brand-blue)" }} /></div>
                   <p className="text-xs text-[var(--ink-muted)] text-right">{usagePct}% utilizado</p>
                 </div>
               );
