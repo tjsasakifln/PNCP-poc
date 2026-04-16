@@ -6,7 +6,7 @@
 
 # CACHE BUST - forces Railway rebuild (change to invalidate cache)
 # GTM-FIX-002: Add missing NEXT_PUBLIC_* build ARGs for Sentry/Mixpanel/Stripe
-ARG CACHEBUST=20260413-fix-contracts-isr-cache
+ARG CACHEBUST=20260416-fix-storybook-peer-deps
 
 # Stage 1: Dependencies
 # Using node:20.11-alpine3.19 instead of node:20-alpine to force layer rebuild
@@ -21,7 +21,7 @@ RUN echo "DEPS STAGE CACHE BUST: $CACHEBUST - BUILD $(date +%s)"
 COPY package.json package-lock.json* ./
 
 # Install dependencies with verbose output
-RUN npm ci && echo "Dependencies installed at $(date)"
+RUN npm ci --legacy-peer-deps && echo "Dependencies installed at $(date)"
 
 # Stage 2: Build
 FROM node:20.11-alpine3.19 AS builder
