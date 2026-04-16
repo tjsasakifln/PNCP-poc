@@ -93,6 +93,7 @@ export function FilterStatsBreakdown({ stats }: FilterStatsBreakdownProps) {
                 </span>
               </div>
               <div className="w-full h-2 rounded-full bg-[var(--surface-2)] overflow-hidden">
+                {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is a computed percentage from filter stage results */}
                 <div
                   className={`h-full rounded-full ${stage.color} transition-all duration-500`}
                   style={{ width: `${Math.max(pct, 2)}%` }}

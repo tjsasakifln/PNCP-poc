@@ -45,6 +45,7 @@ export default function ProfileProgressBar({
   }
 
   const element = (
+    // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width/height driven by `size` prop (default 64, configurable by parent)
     <div
       className="relative inline-flex items-center justify-center"
       style={{ width: size, height: size }}
@@ -67,6 +68,7 @@ export default function ProfileProgressBar({
           className="text-slate-200 dark:text-slate-700"
         />
         {/* Progress */}
+        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: SVG stroke-dashoffset transition cannot be expressed as Tailwind class on SVG elements */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -81,6 +83,7 @@ export default function ProfileProgressBar({
         />
       </svg>
       {/* Percentage text in center */}
+      {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: fontSize computed from size prop (10px when size<56, else 12px) at runtime */}
       <span
         className={`absolute text-xs font-bold ${textColor}`}
         style={{ fontSize: size < 56 ? 10 : 12 }}

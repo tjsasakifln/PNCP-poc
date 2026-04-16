@@ -242,6 +242,7 @@ export function LoadingProgress({
 
         {/* Progress Bar */}
         <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width computed from elapsed/total time ratio at runtime */}
           <div
             className="h-full bg-gradient-to-r from-brand-blue to-brand-navy rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${Math.max(progress, 3)}%` }}

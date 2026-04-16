@@ -82,6 +82,7 @@ export default function AnimateOnScroll({
   }, [once, threshold]);
 
   return (
+    // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: transitionDelay driven by `delay` prop (ms value from parent) at runtime
     <Tag
       ref={ref as React.RefObject<HTMLDivElement>}
       className={`transition-all duration-500 ${isInView ? visibleClass : hiddenClass} ${className}`}

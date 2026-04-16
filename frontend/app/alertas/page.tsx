@@ -200,6 +200,7 @@ function AlertasPageInner() {
         {loading ? (
           <div className="space-y-4" data-testid="alerts-skeleton">
             {[1, 2, 3].map((i) => (
+              // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDelay computed from index
               <div
                 key={i}
                 className="h-32 rounded-xl bg-[var(--surface-1)] animate-pulse"

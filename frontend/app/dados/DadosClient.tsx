@@ -499,6 +499,7 @@ function ModalidadeTab({ data }: { data: ModalidadeAggregate[] }) {
                   className="border-b border-gray-100 hover:bg-gray-50"
                 >
                   <td className="flex items-center gap-2 py-2 pr-4 font-medium text-gray-900">
+                    {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: background color is computed from chart color palette by index */}
                     <span
                       className="inline-block h-3 w-3 rounded-full flex-shrink-0"
                       style={{

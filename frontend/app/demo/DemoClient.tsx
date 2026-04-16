@@ -201,6 +201,7 @@ export default function DemoClient() {
             {['PNCP', 'Portal de Compras', 'ComprasGov'].map((src, i) => (
               <div key={src} className="flex items-center gap-3 text-sm">
                 <div className="flex-1 h-1.5 bg-[var(--surface-0)] rounded-full overflow-hidden">
+                  {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width and transition are computed from source index for demo animation */}
                   <div
                     className="h-full bg-blue-500 rounded-full transition-all"
                     style={{ width: i === 0 ? '100%' : i === 1 ? '70%' : '40%', transition: 'width 1.5s ease' }}
@@ -302,6 +303,7 @@ export default function DemoClient() {
                     <span className={`text-sm font-bold ${color.text}`}>{factor.score}/100</span>
                   </div>
                   <div className="h-2 bg-[var(--surface-0)] rounded-full overflow-hidden mb-1.5">
+                    {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from viability factor score */}
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${factor.score >= 70 ? 'bg-emerald-500' : factor.score >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
                       style={{ width: `${factor.score}%` }}

@@ -268,8 +268,7 @@ export default function AdminEmailsPage() {
                     <iframe
                       srcDoc={preview.html}
                       title={`Preview email #${preview.number}`}
-                      className="w-full border-0"
-                      style={{ height: '600px' }}
+                      className="w-full border-0 h-[600px]"
                       sandbox="allow-same-origin"
                     />
                   </div>

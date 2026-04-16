@@ -3,6 +3,7 @@
 import { forwardRef } from "react";
 import type { BuscaResult } from "../../../types";
 import type { FilterSummary } from "../../../../hooks/useSearchSSE";
+import { FreshnessIndicator } from "../FreshnessIndicator";
 
 interface ResultsHeaderProps {
   result: BuscaResult;
@@ -34,6 +35,13 @@ export const ResultsHeader = forwardRef<HTMLHeadingElement, ResultsHeaderProps>(
           <h2 ref={ref} className="text-lg font-semibold text-ink" data-testid="results-header" tabIndex={-1}>
             {result.resumo.total_oportunidades} {result.resumo.total_oportunidades === 1 ? 'oportunidade selecionada' : 'oportunidades selecionadas'}{rawCount > 0 ? ` de ${rawCount.toLocaleString("pt-BR")} analisadas` : ''}
           </h2>
+          {/* STORY-5.13 AC3: "Updated X min ago" freshness badge */}
+          {(() => {
+            const ts = result.coverage_metadata?.data_timestamp || result.ultima_atualizacao || result.cached_at;
+            if (!ts) return null;
+            const freshness = result.coverage_metadata?.freshness || (result.cached ? "cached_stale" : "live");
+            return <FreshnessIndicator timestamp={ts} freshness={freshness} />;
+          })()}
           {/* STORY-260 AC17: "Análise personalizada" badge when profile is complete */}
           {isProfileComplete && result.resumo.total_oportunidades > 0 && (
             <div

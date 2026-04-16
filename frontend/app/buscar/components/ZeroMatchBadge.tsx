@@ -45,6 +45,7 @@ export function ZeroMatchBadge({ progress }: ZeroMatchBadgeProps) {
           </span>
         </div>
         <div className="w-full bg-indigo-200 dark:bg-indigo-800 rounded-full h-1.5">
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is a computed percentage from classification progress */}
           <div
             className="bg-indigo-600 dark:bg-indigo-400 h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${pct}%` }}

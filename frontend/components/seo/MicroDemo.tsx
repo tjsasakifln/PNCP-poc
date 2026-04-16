@@ -115,6 +115,7 @@ function BuscaDemo({ play }: { play: boolean }) {
           <span>{progress}%</span>
         </div>
         <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width animated from 0 to 100% by setInterval-driven progress state */}
           <motion.div
             className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full"
             style={{ width: `${progress}%` }}
@@ -342,8 +343,7 @@ export function MicroDemo({ variant, className = '' }: MicroDemoProps) {
   return (
     <div
       ref={ref}
-      className={`relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-hidden cursor-pointer select-none ${className}`}
-      style={{ aspectRatio: '16/9' }}
+      className={`relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-hidden cursor-pointer select-none aspect-video ${className}`}
       onClick={handleReplay}
       title="Clique para repetir a animação"
     >

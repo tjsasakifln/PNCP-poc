@@ -417,6 +417,7 @@ function ErrorBudgetBar({ slo }: { slo: SLOData }) {
         </span>
       </div>
       <div className="w-full h-3 bg-[var(--surface-2)] rounded-full overflow-hidden">
+        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from error budget consumed percentage */}
         <div
           className={`h-full ${barColor} rounded-full transition-all duration-500`}
           style={{ width: `${Math.min(100, consumed)}%` }}

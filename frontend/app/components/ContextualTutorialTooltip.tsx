@@ -102,12 +102,12 @@ export function ContextualTutorialTooltip({
       />
 
       {/* Tooltip */}
+      {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: position computed from getBoundingClientRect() at runtime */}
       <div
-        className="fixed z-50 animate-fadeIn"
+        className="fixed z-50 animate-fadeIn -translate-x-1/2 -translate-y-full"
         style={{
           top: `${position.top}px`,
           left: `${position.left}px`,
-          transform: 'translate(-50%, -100%)',
         }}
       >
         <div className="relative max-w-xs sm:max-w-sm bg-brand-navy text-white px-4 py-3 rounded-lg shadow-xl border border-brand-blue">
@@ -129,6 +129,7 @@ export function ContextualTutorialTooltip({
           </button>
 
           {/* Arrow pointing down to target */}
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: CSS triangle trick requires border shorthand not expressible in Tailwind */}
           <div
             className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-full w-0 h-0"
             style={{

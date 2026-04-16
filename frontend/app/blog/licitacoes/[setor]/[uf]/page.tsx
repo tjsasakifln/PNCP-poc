@@ -372,6 +372,7 @@ export default async function LicitacoesSectorUfPage({
                     <div key={mod.name} className="flex items-center gap-3">
                       <span className="text-sm text-ink-secondary w-48 shrink-0 truncate">{mod.name}</span>
                       <div className="flex-1 bg-surface-2 rounded-full h-3 overflow-hidden">
+                        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: percentage width computed from mod.count/totalModCount at runtime */}
                         <div
                           className="bg-brand-blue h-full rounded-full transition-all"
                           style={{ width: `${Math.max(pct, 2)}%` }}

@@ -123,8 +123,7 @@ export default async function SectorProgrammaticPage({
               <span className="text-ink">{sector.name}</span>
             </nav>
             <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4 font-serif"
             >
               Licitações de {sector.name}
             </h1>
@@ -193,6 +192,7 @@ export default async function SectorProgrammaticPage({
                 {stats.top_modalidades.map((mod) => (
                   <div key={mod.name} className="flex items-center gap-3">
                     <div className="flex-1 bg-surface-1 rounded-full h-3 overflow-hidden">
+                      {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: percentage width computed from mod.count relative to top modalidade count at runtime */}
                       <div
                         className="h-full bg-brand-blue rounded-full"
                         style={{

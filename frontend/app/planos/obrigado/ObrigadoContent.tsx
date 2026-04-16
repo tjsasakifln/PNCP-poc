@@ -165,6 +165,7 @@ export default function ObrigadoContent() {
       <div className="max-w-lg w-full text-center">
         <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-card p-8 shadow-lg">
           {/* Status Icon */}
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: backgroundColor is computed from activation status using CSS custom properties */}
           <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center"
                style={{ backgroundColor: activationStatus === "timeout" ? "var(--warning-subtle)" : "var(--success-subtle)" }}>
             {activationStatus === "polling" ? (

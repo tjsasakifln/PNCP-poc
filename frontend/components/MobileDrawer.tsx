@@ -147,6 +147,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
       />
 
       {/* AC9: Panel -- slide from right, 200ms */}
+      {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDuration overrides the CSS animation timing for precise slide-in control */}
       <div
         className="absolute top-0 right-0 bottom-0 w-[280px] max-w-[85vw] bg-[var(--surface-0)] shadow-2xl flex flex-col animate-slide-in-right"
         style={{ animationDuration: "200ms" }}
