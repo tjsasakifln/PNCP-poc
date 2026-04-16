@@ -46,12 +46,13 @@ LLM_BATCH_MIN_ITEMS: int = int(os.getenv("LLM_BATCH_MIN_ITEMS", "20"))
 LLM_BATCH_POLL_INTERVAL_S: int = int(os.getenv("LLM_BATCH_POLL_INTERVAL_S", "60"))
 
 # STORY-5.3 (TD-SYS-013): Session dedup fuzzy configuration.
-# DEDUP_FUZZY_ENABLED can disable the fuzzy/process/title-prefix layers without code change.
-# DEDUP_FUZZY_THRESHOLD is the Jaccard similarity floor for same-cnpj fuzzy dedup
-# (layer _deduplicate_fuzzy). Conservative default 0.85 avoids false-positive hides of
-# legitimate parallel bids. Lower = more aggressive dedup; higher = safer.
 DEDUP_FUZZY_ENABLED: bool = str_to_bool(os.getenv("DEDUP_FUZZY_ENABLED", "true"))
 DEDUP_FUZZY_THRESHOLD: float = float(os.getenv("DEDUP_FUZZY_THRESHOLD", "0.85"))
+
+# STORY-5.4 (TD-SYS-015): Portuguese-BR synonym expansion at FTS query-build time.
+FTS_SYNONYM_EXPANSION_ENABLED: bool = str_to_bool(
+    os.getenv("FTS_SYNONYM_EXPANSION_ENABLED", "true")
+)
 
 # Term density thresholds (STORY-248 reviewed 2026-02-14 — kept unchanged)
 TERM_DENSITY_HIGH_THRESHOLD: float = float(os.getenv("TERM_DENSITY_HIGH_THRESHOLD", "0.05"))

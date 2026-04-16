@@ -405,13 +405,33 @@ def _clean_token(token: str) -> str:
 def _keyword_to_tstoken(keyword: str) -> str:
     """Convert a keyword to a tsquery token.
 
-    Single word -> plain lexeme.
+    Single word -> plain lexeme (optionally synonym-expanded — STORY-5.4 AC2).
     Multi-word  -> phrase query using <-> operator (e.g. "pré moldado" -> "pré<->moldado").
+
+    Synonym expansion policy: guarded by `FTS_SYNONYM_EXPANSION_ENABLED`.
+    When enabled and the token is single-word, we consult
+    `data.fts_synonyms.SYNONYMS`; when hits exist we emit a grouped OR
+    block `(term | synonym1 | synonym2)`. Multi-word phrases are NOT
+    expanded — phrase matching is brittle and expansion would confuse
+    operator precedence.
     """
     words = keyword.split()
-    if len(words) == 1:
+    if len(words) != 1:
+        return "<->".join(words)
+
+    # Single-word: try synonym expansion (opt-in via feature flag).
+    from config import FTS_SYNONYM_EXPANSION_ENABLED
+
+    if not FTS_SYNONYM_EXPANSION_ENABLED:
         return words[0]
-    return "<->".join(words)
+
+    from data.fts_synonyms import expand_term
+
+    expansions = expand_term(words[0].lower())
+    if len(expansions) == 1:
+        return words[0]
+    # Parenthesize so precedence with outer `|` is unambiguous.
+    return "(" + " | ".join(expansions) + ")"
 
 
 # ---------------------------------------------------------------------------
