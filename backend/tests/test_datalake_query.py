@@ -52,6 +52,23 @@ SAMPLE_TRIGRAM_ROW = {
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def _disable_synonym_expansion_for_legacy_format(monkeypatch):
+    """Legacy tsquery-text format tests pre-date STORY-5.4 synonym expansion.
+
+    These assertions compare the produced tsquery string verbatim; turning on
+    synonym expansion (now the default) reshapes the output into
+    `(term | synonym | synonym) | ...`. Disable the flag for this module so
+    the regressions stay focused on routing/precedence, not expansion.
+    """
+    monkeypatch.setattr(
+        "config.FTS_SYNONYM_EXPANSION_ENABLED", False, raising=False
+    )
+    monkeypatch.setattr(
+        "config.features.FTS_SYNONYM_EXPANSION_ENABLED", False, raising=False
+    )
+
+
 class TestBuildTsquery:
     """Tests for _build_tsquery() — now returns (tsquery_text, websearch_text) tuple."""
 
