@@ -55,7 +55,7 @@ async function fetchOrgaoContratosStats(cnpj: string): Promise<OrgaoContratosSta
       signal: AbortSignal.timeout(10000),
     });
     if (!resp.ok) return null;
-    return resp.json();
+    return await resp.json();
   } catch {
     return null;
   }

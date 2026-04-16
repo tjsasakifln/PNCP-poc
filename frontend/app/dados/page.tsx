@@ -35,7 +35,7 @@ async function fetchDados(): Promise<DadosData | null> {
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
-    return res.json();
+    return await res.json();
   } catch {
     return null;
   }
