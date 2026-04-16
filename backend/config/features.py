@@ -45,10 +45,11 @@ LLM_BATCH_ENABLED: bool = str_to_bool(os.getenv("LLM_BATCH_ENABLED", "false"))
 LLM_BATCH_MIN_ITEMS: int = int(os.getenv("LLM_BATCH_MIN_ITEMS", "20"))
 LLM_BATCH_POLL_INTERVAL_S: int = int(os.getenv("LLM_BATCH_POLL_INTERVAL_S", "60"))
 
+# STORY-5.3 (TD-SYS-013): Session dedup fuzzy configuration.
+DEDUP_FUZZY_ENABLED: bool = str_to_bool(os.getenv("DEDUP_FUZZY_ENABLED", "true"))
+DEDUP_FUZZY_THRESHOLD: float = float(os.getenv("DEDUP_FUZZY_THRESHOLD", "0.85"))
+
 # STORY-5.4 (TD-SYS-015): Portuguese-BR synonym expansion at FTS query-build time.
-# When enabled, single-word keywords are expanded using `data.fts_synonyms.SYNONYMS`
-# before being handed to to_tsquery. Disable to restore the legacy one-term
-# behavior (useful for A/B testing and regression isolation).
 FTS_SYNONYM_EXPANSION_ENABLED: bool = str_to_bool(
     os.getenv("FTS_SYNONYM_EXPANSION_ENABLED", "true")
 )

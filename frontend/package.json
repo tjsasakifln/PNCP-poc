@@ -25,7 +25,8 @@
     "lighthouse": "lhci autorun",
     "lighthouse:collect": "lhci collect",
     "lighthouse:assert": "lhci assert",
-    "size-limit": "size-limit"
+    "size-limit": "size-limit",
+    "analyze": "ANALYZE=true next build --webpack"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -64,6 +65,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@lhci/cli": "^0.15.0",
+    "@next/bundle-analyzer": "^16.2.4",
     "@playwright/test": "^1.58.2",
     "@size-limit/file": "^11.2.0",
     "@swc/jest": "^0.2.29",

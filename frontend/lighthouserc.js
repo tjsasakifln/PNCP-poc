@@ -17,8 +17,16 @@ module.exports = {
       startServerCommand: 'npm run start',
       startServerReadyPattern: 'Ready',
       startServerReadyTimeout: 30000,
+      // STORY-5.16 (EPIC-TD-2026Q2): core public routes audited per PR.
+      // Authenticated routes (/buscar, /pipeline, /dashboard) are audited
+      // in e2e.yml via @axe-core/playwright — that's the right tool for
+      // session-gated pages; Lighthouse here covers public LCP-critical
+      // routes.
       url: [
         'http://localhost:3000',
+        'http://localhost:3000/login',
+        'http://localhost:3000/planos',
+        'http://localhost:3000/features',
       ],
       numberOfRuns: 3, // Run 3 times and take median
       settings: {
@@ -73,10 +81,14 @@ module.exports = {
         // Category Scores (0-100)
         // ====================================================================
 
+        // STORY-5.16 (EPIC-TD-2026Q2 AC2+AC5): escalate from 'warn' → 'error'
+        // so the PR check fails when budgets are violated. A11y budget raised
+        // to 0.95 to enforce WCAG 2.1 AA quality on public pages (the critical-
+        // violation zero-tolerance is still enforced in accessibility-audit.spec.ts).
         'categories:performance': ['error', { minScore: 0.85 }], // 85+
-        'categories:accessibility': ['warn', { minScore: 0.90 }], // 90+
-        'categories:best-practices': ['warn', { minScore: 0.90 }], // 90+
-        'categories:seo': ['warn', { minScore: 0.90 }], // 90+
+        'categories:accessibility': ['error', { minScore: 0.95 }], // 95+
+        'categories:best-practices': ['error', { minScore: 0.90 }], // 90+
+        'categories:seo': ['error', { minScore: 0.90 }], // 90+
 
         // ====================================================================
         // Resource Optimization
