@@ -299,6 +299,15 @@ DEDUP_FIELDS_MERGED = _create_counter(
     labelnames=["field"],
 )
 
+# STORY-5.3 (TD-SYS-013): Fuzzy dedup hit counter — labeled by dedup layer so we can
+# see which strategy is removing the most duplicates over time.
+#   layer = "fuzzy" | "process_number" | "title_prefix"
+DEDUP_FUZZY_HITS = _create_counter(
+    "smartlic_dedup_fuzzy_hits_total",
+    "STORY-5.3: Fuzzy dedup hits by layer (fuzzy | process_number | title_prefix)",
+    labelnames=["layer"],
+)
+
 # CRIT-012 AC8: SSE connection errors
 SSE_CONNECTION_ERRORS = _create_counter(
     "smartlic_sse_connection_errors_total",
