@@ -18,6 +18,7 @@ export default function Footer() {
   return (
     <footer id="site-footer" className="relative bg-surface-1 text-ink">
       {/* Gradient border-top separator */}
+      {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: gradient uses CSS custom properties (--brand-blue) not available as Tailwind utility */}
       <div
         className="absolute top-0 left-0 right-0 h-[2px]"
         style={{

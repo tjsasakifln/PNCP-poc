@@ -308,6 +308,7 @@ export default function EquipePage() {
           {/* Slot progress bar */}
           <div className="mt-4">
             <div className="h-1.5 rounded-full bg-[var(--surface-1)] overflow-hidden">
+              {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from member seat usage percentage */}
               <div
                 className={`h-full rounded-full transition-all ${
                   slotsUsed >= maxSeats ? "bg-[var(--error)]" : "bg-[var(--brand-blue)]"

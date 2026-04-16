@@ -28,6 +28,7 @@ interface ConfettiDotProps {
 
 function ConfettiDot({ x, y, color, delay, size }: ConfettiDotProps) {
   return (
+    // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: all properties (position, size, color, animation delay) are runtime-computed confetti values
     <div
       className="absolute rounded-full pointer-events-none"
       style={{

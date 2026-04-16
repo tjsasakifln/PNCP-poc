@@ -131,8 +131,7 @@ export default async function SectorUfProgrammaticPage({
               <span className="text-ink">{ufName}</span>
             </nav>
             <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4 font-serif"
             >
               Licitações de {sector.name} {getUfPrep(ufUpper)} {ufName}
             </h1>

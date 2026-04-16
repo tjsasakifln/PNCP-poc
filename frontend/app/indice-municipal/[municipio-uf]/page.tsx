@@ -243,6 +243,7 @@ export default async function MunicipioPage({ params, searchParams }: PageProps)
                     </span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
+                    {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from dimension score relative to maximum */}
                     <div
                       className={`h-2 rounded-full ${
                         dim.score >= 14

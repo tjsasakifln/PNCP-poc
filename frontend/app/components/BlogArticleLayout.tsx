@@ -40,6 +40,7 @@ function ReadingProgressBar() {
   }, []);
 
   return (
+    // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: progress bar width computed from scroll position at runtime
     <div
       className="fixed top-0 left-0 z-[60] h-[3px] bg-brand-blue transition-[width] duration-150 ease-out"
       style={{ width: `${progress}%` }}
@@ -231,8 +232,7 @@ export default function BlogArticleLayout({
                   {article.category}
                 </span>
                 <h1
-                  className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-ink leading-tight tracking-tight mb-4"
-                  style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+                  className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-ink leading-tight tracking-tight mb-4 font-serif"
                 >
                   {article.title}
                 </h1>

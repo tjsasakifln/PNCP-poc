@@ -30,6 +30,7 @@ export function AuthLoadingScreen() {
         {/* Card grid skeleton */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {[1, 2, 3].map((i) => (
+            // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDelay computed from array index to stagger skeleton pulses
             <div
               key={i}
               className="h-32 bg-[var(--surface-1)] rounded-card animate-pulse"
@@ -41,6 +42,7 @@ export function AuthLoadingScreen() {
         {/* List skeleton */}
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
+            // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDelay computed from array index to stagger skeleton pulses
             <div
               key={i}
               className="h-20 bg-[var(--surface-1)] rounded-card animate-pulse"

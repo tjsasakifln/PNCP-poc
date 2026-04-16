@@ -34,8 +34,7 @@ export default function BlogPage() {
         <div className="bg-surface-1 border-b border-[var(--border)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 text-center">
             <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4 font-serif"
             >
               Inteligência em Licitações
             </h1>

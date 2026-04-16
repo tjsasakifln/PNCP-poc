@@ -49,6 +49,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
   const formatCurrency = (value: number) => formatCurrencyBR(value);
 
   return (
+    // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: style is provided by dnd-kit useSortable (transform + transition for drag-and-drop)
     <div
       ref={setNodeRef}
       style={style}

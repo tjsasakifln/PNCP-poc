@@ -150,8 +150,7 @@ export default async function PanoramaSectorPage({
             </nav>
 
             <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4 font-serif"
             >
               Panorama de Licitações de {sector.name} no Brasil — {year}
             </h1>
@@ -207,6 +206,7 @@ export default async function PanoramaSectorPage({
                         {ufName} ({uf.name})
                       </Link>
                       <div className="flex-1 bg-surface-2 rounded-full h-3 overflow-hidden">
+                        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: percentage width computed from uf.count/totalUfCount at runtime */}
                         <div
                           className="bg-brand-blue h-full rounded-full transition-all"
                           style={{ width: `${Math.max(pct, 2)}%` }}
@@ -234,6 +234,7 @@ export default async function PanoramaSectorPage({
                     <div key={mod.name} className="flex items-center gap-3">
                       <span className="text-sm text-ink-secondary w-48 shrink-0 truncate">{mod.name}</span>
                       <div className="flex-1 bg-surface-2 rounded-full h-3 overflow-hidden">
+                        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: percentage width computed from mod.count/totalModCount at runtime */}
                         <div
                           className="bg-brand-blue h-full rounded-full transition-all"
                           style={{ width: `${Math.max(pct, 2)}%` }}
@@ -260,6 +261,7 @@ export default async function PanoramaSectorPage({
                   return (
                     <div key={month.period} className="text-center">
                       <div className="h-24 flex items-end justify-center mb-2">
+                        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: bar height computed from month.count/maxCount at runtime */}
                         <div
                           className="w-8 bg-brand-blue/80 rounded-t"
                           style={{ height: `${Math.max(heightPct, 5)}%` }}
