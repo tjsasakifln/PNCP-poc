@@ -196,7 +196,18 @@ export default function RootLayout({
                     {children}
                   </NavigationShell>
                   {/* GTM-POLISH-002 AC4: bottom-center for proper mobile stacking */}
-                  <Toaster position="bottom-center" richColors closeButton />
+                  {/* TD-FE-030: max-w-[90vw] mobile, mobileOffset=80 clears BottomNav (h-16=64px + 16px gap) */}
+                  <Toaster
+                    position="bottom-center"
+                    richColors
+                    closeButton
+                    toastOptions={{
+                      classNames: {
+                        toast: "max-w-[90vw] sm:max-w-md",
+                      },
+                    }}
+                    mobileOffset={{ bottom: 80 }}
+                  />
                   <CookieConsentBanner />
                 </BackendStatusProvider>
               </NProgressProvider>
