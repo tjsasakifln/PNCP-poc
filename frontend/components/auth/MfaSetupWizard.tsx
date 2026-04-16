@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { supabase } from "../../lib/supabase";
 
 interface MfaSetupWizardProps {
@@ -157,8 +158,16 @@ export function MfaSetupWizard({ userEmail, onComplete, onCancel }: MfaSetupWiza
 
           {qrCode ? (
             <div className="flex justify-center p-4 bg-white rounded-lg">
-              {/* AC11: QR code with issuer SmartLic + email label */}
-              <img src={qrCode} alt="QR Code para configuração TOTP" className="w-48 h-48" />
+              {/* AC11: QR code with issuer SmartLic + email label (STORY-5.11: next/image) */}
+              <Image
+                src={qrCode}
+                alt="QR Code para configuração TOTP"
+                width={192}
+                height={192}
+                className="w-48 h-48"
+                unoptimized
+                priority
+              />
             </div>
           ) : (
             <div className="flex justify-center p-4">
