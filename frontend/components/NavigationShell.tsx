@@ -10,12 +10,12 @@ import { MfaEnforcementBanner } from "./auth/MfaEnforcementBanner";
  * Routes where the sidebar/bottom nav should appear.
  * Only authenticated (protected) routes get navigation chrome.
  */
+// SHIP-002 AC9: /mensagens and /alertas are feature-gated — no navigation chrome
 const PROTECTED_ROUTES = [
   "/buscar",
   "/dashboard",
   "/pipeline",
   "/historico",
-  "/mensagens",
   "/conta",
   "/admin",
 ];
