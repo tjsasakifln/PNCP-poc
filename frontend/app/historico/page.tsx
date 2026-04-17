@@ -526,7 +526,7 @@ export default function HistoricoPage() {
                   onClick={() => setPage(Math.max(0, page - 1))}
                   disabled={page === 0}
                   className="px-4 py-2 text-base font-medium border border-[var(--border)] rounded-button
-                             disabled:opacity-50 disabled:cursor-not-allowed
+                             disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed
                              hover:bg-[var(--surface-1)] transition-colors"
                   aria-label="Página anterior"
                   aria-disabled={page === 0}
@@ -541,7 +541,7 @@ export default function HistoricoPage() {
                   onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                   disabled={page >= totalPages - 1}
                   className="px-4 py-2 text-base font-medium border border-[var(--border)] rounded-button
-                             disabled:opacity-50 disabled:cursor-not-allowed
+                             disabled:bg-surface-disabled disabled:text-ink-disabled disabled:cursor-not-allowed
                              hover:bg-[var(--surface-1)] transition-colors"
                   aria-label="Próxima página"
                   aria-disabled={page >= totalPages - 1}
