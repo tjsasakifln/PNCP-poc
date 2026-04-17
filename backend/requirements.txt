@@ -7,7 +7,7 @@
 # Until a requirements.in is maintained, run `pip-audit -r requirements.txt`
 # in CI to catch known CVEs (see .github/workflows/backend-tests.yml CI-002).
 # =============================================================================
-fastapi==0.129.0
+fastapi==0.136.0
 # CRIT-SIGSEGV-v2: uvicorn WITHOUT [standard] extras. uvloop causes intermittent
 # SIGSEGV in production (chardet/hiredis/cryptography C extension interaction).
 # Performance diff is negligible for single-worker uvicorn standalone mode.
