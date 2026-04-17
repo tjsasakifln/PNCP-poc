@@ -113,3 +113,4 @@ FAIL __tests__/components/LicitacaoCard-ux401.test.tsx
 - **2026-04-17** — @dev: Hipótese confirmada (CRLF/LF + JSX multi-line). Fix unificado com FE-05 e FE-14 em um commit: `frontend/app/components/LicitacaoCard.tsx` (L686+L696 single-line) + `.gitattributes`. Snapshot regenerado (2 snapshots desta suite). Suite local: 13 tests / 2 snapshots / 0 failed. AC1+AC3+AC5+AC6 OK.
 - **2026-04-17** — @dev: Coverage AC4 — full suite: 6221 passed / 32 failed (pré-existentes de outras stories do epic) / 33 snapshots passing. Zero regressão.
 - **2026-04-17** — @dev: Status Ready → InReview. Aguarda push/PR via @devops + CI verde para AC2.
+- **2026-04-17** — @devops: branch `fix/cig-fe-05-14-15-licitacao-card-snapshot-drift` pushed; PR **#378** aberto (https://github.com/tjsasakifln/PNCP-poc/pull/378) unificando FE-05 + FE-14 + FE-15. Aguardando CI verde para AC2.
