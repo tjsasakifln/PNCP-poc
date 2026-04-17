@@ -108,6 +108,7 @@ async def _try_fetch(url: str, params: dict, timeout: float = 10.0) -> Optional[
 
 
 @pytest.mark.integration
+@pytest.mark.external
 @pytest.mark.timeout(30)
 class TestPncpApiContractLive:
     """Live PNCP API contract tests. Skipped if API is unreachable."""
@@ -344,6 +345,7 @@ class TestPncpApiContractLive:
 
 
 @pytest.mark.integration
+@pytest.mark.external
 @pytest.mark.timeout(30)
 class TestPcpApiContractLive:
     """Live PCP v2 API contract tests. Skipped if API is unreachable."""
