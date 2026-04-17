@@ -11,16 +11,35 @@
 
 ## Contexto
 
-Suíte `__tests__/components/LicitacaoCard-ux400.test.tsx` roda em `frontend-tests.yml` e falha com os erros abaixo, capturados localmente em 2026-04-16 com `.npmrc` legacy-peer-deps aplicado (cherry-pick de PR #372):
+Suíte `__tests__/components/LicitacaoCard-ux400.test.tsx` roda em `frontend-tests.yml` e falha com diff de snapshot. Erro real capturado do CI run `24539387474` (job `71741727431`, PR #372, 2026-04-16):
 
 ```
-[Local em 2026-04-16: suíte PASSOU com .npmrc legacy-peer-deps.]
-[CI run 24539387474 em PR #372: suíte apareceu vermelha.]
+FAIL __tests__/components/LicitacaoCard-ux400.test.tsx
 
-Investigação necessária: reproduzir em ambiente CI (Node 20, Ubuntu, jsdom). Verificar snapshot files commitados vs gerados em CI.
+  UX-400: Card snapshots
+    ✕ card with valid link matches snapshot (14 ms)
+    ✕ card without link matches snapshot (11 ms)
+
+● UX-400: Card snapshots › card with valid link matches snapshot
+
+  expect(received).toMatchSnapshot()
+  Snapshot name: `UX-400: Card snapshots card with valid link matches snapshot 1`
+
+  - Snapshot  - 1
+  + Received  + 1
+  @@ -128,11 +128,11 @@
+         <a
+-          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button   hover:bg-brand-blue-hover transition-colors"
++          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
+           href="https://pncp.gov.br/app/editais/12345678000190/2026/1"
+
+    at Object.toMatchSnapshot (__tests__/components/LicitacaoCard-ux400.test.tsx:155:34)
+    at Object.toMatchSnapshot (__tests__/components/LicitacaoCard-ux400.test.tsx:169:34)
 ```
 
-**Hipótese inicial de causa raiz (a confirmar em Implement):** Snapshot drift entre Windows local e Ubuntu CI (LF vs CRLF, font rendering, CSS resolution). OU componente LicitacaoCard sofreu refactor visual mergeado e snapshot não foi atualizado em PR origem. **Não regenerar sem análise.**
+13 sub-testes (link display, badges, CNPJ, edital number) **passam**. Apenas os 2 testes de snapshot (`card with valid link`, `card without link`) falham — mesmo diff whitespace-only em ambos.
+
+**Hipótese inicial de causa raiz (a confirmar em Implement):** Template literal de `className` do `<a>` link-CTA no `LicitacaoCard.tsx` teve whitespace normalizado (espaço triplo → simples). Snapshots commitados ficaram desatualizados. **Mesma causa raiz que FE-05 e FE-15** — um único fix em `app/buscar/components/LicitacaoCard.tsx` (ou onde a classe do CTA é definida) + regeneração coordenada dos 3 snapshot sets resolve todos. Antes de `-u`: confirmar via `git log -p` que o whitespace cleanup foi intencional (provavelmente Prettier/formatação). Se sim, regenerar é legítimo e documentado. Se não, restaurar o whitespace no source.
 
 ---
 

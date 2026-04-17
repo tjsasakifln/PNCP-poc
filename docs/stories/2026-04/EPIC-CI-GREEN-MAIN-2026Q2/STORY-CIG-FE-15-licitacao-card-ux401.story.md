@@ -11,16 +11,35 @@
 
 ## Contexto
 
-Suíte `__tests__/components/LicitacaoCard-ux401.test.tsx` roda em `frontend-tests.yml` e falha com os erros abaixo, capturados localmente em 2026-04-16 com `.npmrc` legacy-peer-deps aplicado (cherry-pick de PR #372):
+Suíte `__tests__/components/LicitacaoCard-ux401.test.tsx` roda em `frontend-tests.yml` e falha com diff de snapshot. Erro real capturado do CI run `24539387474` (job `71741727431`, PR #372, 2026-04-16):
 
 ```
-[Local em 2026-04-16: suíte PASSOU com .npmrc legacy-peer-deps.]
-[CI run 24539387474 em PR #372: suíte apareceu vermelha.]
+FAIL __tests__/components/LicitacaoCard-ux401.test.tsx
 
-Investigar em conjunto com FE-14 (mesmo componente LicitacaoCard, variant ux401).
+  UX-401: Visual snapshot comparison
+    ✕ card with valor=null renders correctly (20 ms)
+    ✕ card with positive valor renders correctly (23 ms)
+
+● UX-401: Visual snapshot comparison › card with valor=null renders correctly
+
+  expect(received).toMatchSnapshot()
+  Snapshot name: `UX-401: Visual snapshot comparison card with valor=null renders correctly 1`
+
+  - Snapshot  - 1
+  + Received  + 1
+  @@ -123,11 +123,11 @@
+         <a
+-          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button   hover:bg-brand-blue-hover transition-colors"
++          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
+           href="https://pncp.gov.br/app/editais/12345678000190/2026/1"
+
+    at Object.toMatchSnapshot (__tests__/components/LicitacaoCard-ux401.test.tsx:140:34)
+    at Object.toMatchSnapshot (__tests__/components/LicitacaoCard-ux401.test.tsx:147:34)
 ```
 
-**Hipótese inicial de causa raiz (a confirmar em Implement):** Mesma causa que FE-14. Stories devem ser implementadas juntas para evitar rework — uma descoberta de root cause resolve ambas.
+12 sub-testes (valor=null display, currency formatting, valor=0 guards) **passam**. Apenas os 2 snapshots (`card with valor=null`, `card with positive valor`) falham — mesmo diff whitespace-only que FE-05 e FE-14.
+
+**Hipótese inicial de causa raiz (a confirmar em Implement):** Idêntica a FE-05 e FE-14 — whitespace drift em template literal de `className` do link-CTA no `LicitacaoCard.tsx`. Stories devem ser implementadas juntas: um fix no componente + regeneração coordenada dos 3 snapshot sets resolve todas. Antes de `-u`, validar via `git log -p app/buscar/components/LicitacaoCard.tsx` que o refactor que introduziu o drift foi intencional (Prettier cleanup mais provável).
 
 ---
 
