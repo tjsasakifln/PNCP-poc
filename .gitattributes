@@ -1,0 +1,24 @@
+# Enforce LF for text files across platforms (prevents CRLF-vs-LF snapshot drift
+# between Windows dev environments and Linux CI — see STORY-CIG-FE-05/14/15).
+* text=auto eol=lf
+
+# Explicitly enforce LF on sources and Jest snapshots that are whitespace-sensitive
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.md   text eol=lf
+*.snap text eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.zip binary
