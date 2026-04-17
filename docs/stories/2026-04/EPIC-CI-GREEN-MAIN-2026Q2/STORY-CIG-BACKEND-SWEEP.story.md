@@ -80,3 +80,4 @@ _(preenchido por @dev em Implement após confirmar causa)_
 ## Change Log
 
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
+- **2026-04-16** — @po: *validate-story-draft GO (7/10) — Draft → Ready. Meta-story de triage; Investigation Checklist contém artefatos de template (N/A) — @dev deve seguir ACs diretamente, não o checklist padrão de test suite.

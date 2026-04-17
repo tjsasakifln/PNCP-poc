@@ -70,3 +70,4 @@ _(preenchido por @dev em Implement após confirmar causa)_
 ## Change Log
 
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
+- **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. AC testáveis, escopo claro, dependências mapeadas. Causa raiz a confirmar em Implement conforme política zero-quarentena do epic.
