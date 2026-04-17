@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P1 — Gate Blocker (bloqueia verificação de a11y em outras suítes)
 **Effort:** XS (<1h) para adicionar dep + S (1-3h) se a suíte revelar issues de a11y reais
 **Agents:** @dev, @qa, @devops
