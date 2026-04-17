@@ -160,8 +160,9 @@ describe("CRIT-027 AC7: Live fetch banner lifecycle", () => {
     );
     const combined = source + bannerSource;
 
-    // The "Atualizando dados em tempo real" banner should be guarded by loading
-    const bannerIndex = combined.indexOf("Atualizando dados em tempo real");
+    // DEBT-FE-004: Live-fetch banner copy evolved — now "Buscando atualizações em segundo plano".
+    // The banner should still be guarded by !loading so it never overlaps the loading state.
+    const bannerIndex = combined.indexOf("Buscando atualizações em segundo plano");
     expect(bannerIndex).toBeGreaterThan(-1);
 
     // The banner section should have a loading guard somewhere before it
