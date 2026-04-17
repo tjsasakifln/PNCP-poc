@@ -17,6 +17,7 @@ jobs:
   chromatic:
     name: "Chromatic — Visual Regression (10 screens)"
     runs-on: ubuntu-latest
+    if: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
 
     steps:
       - name: Checkout code
