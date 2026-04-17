@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate Blocker
 **Effort:** XS (<1h)
 **Agents:** @dev, @qa, @devops
@@ -67,3 +67,4 @@ _(preenchido por @dev em Implement após confirmar causa)_
 ## Change Log
 
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
+- **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. XS effort — módulo ausente. AC testáveis, escopo claro, dependências mapeadas.

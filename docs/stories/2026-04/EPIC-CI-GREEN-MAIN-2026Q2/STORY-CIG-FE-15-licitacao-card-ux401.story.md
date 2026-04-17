@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate Blocker
 **Effort:** M (3-6h — investigação CI)
 **Agents:** @dev, @qa, @devops
@@ -95,3 +95,4 @@ _(preenchido por @dev em Implement apenas se AC6 aplicável)_
 ## Change Log
 
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
+- **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. Coordenar snapshot regen com FE-05 e FE-14 (mesma causa raiz em LicitacaoCard.tsx). AC testáveis, escopo claro.

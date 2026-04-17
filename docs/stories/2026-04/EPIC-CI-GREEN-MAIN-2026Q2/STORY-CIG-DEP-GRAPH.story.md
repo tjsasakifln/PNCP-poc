@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — Gate red, não bloqueia merge se removido com justificativa
 **Effort:** XS (<30min)
 **Agents:** @dev, @qa, @devops

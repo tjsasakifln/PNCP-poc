@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Meta-story
 **Effort:** L (1-2 dias — triage completo dos 292)
 **Agents:** @dev, @qa, @devops
@@ -11,28 +11,40 @@
 
 ## Contexto
 
-Suíte `N/A (meta-story de triage)` roda em `backend-tests.yml + tests.yml matrix` e falha com os erros abaixo, capturados localmente em 2026-04-16 com `.npmrc` legacy-peer-deps aplicado (cherry-pick de PR #372):
+Meta-story de triage — não tem suíte única. O insumo bruto foi gerado via `python scripts/run_tests_safe.py --parallel 4` em 2026-04-16 (exit 1):
 
 ```
-[memory/MEMORY.md 2026-03-22: "Backend 7656 pass / 292 pre-existing fail / 0 timeout
-(352 files via run_tests_safe.py, updated 2026-03-22)"]
+Running 435 test files (timeout=120s, parallel=4)
 
-Estas 292 falhas foram aceitas historicamente como "pre-existing" — esta story
-ANULA essa aceitação. Cada uma deve ser: (a) consertada inline, (b) gerar story filha,
-(c) mover para integration-external.yml com justificativa técnica. Sem skip.
+FAILED files (133):
+- 424 falhas individuais contadas nos arquivos cujo sumário reporta N failures
+- 133 arquivos com pelo menos 1 falha
+- Drift de +132 vs. baseline historica de memory/MEMORY.md (292 pre-existing em 2026-03-22)
+
+Top arquivos por N failures:
+  18 tests\test_sse_last_event_id.py
+  17 tests\test_story364_excel_resilience.py
+  13 tests\test_alerts.py
+  13 tests\test_timeout_chain.py
+  11 tests\test_crit052_canary_false_positive.py
+  11 tests\test_debt017_database_optimization.py
+   9 tests\test_debt110_backend_resilience.py
+  ...
 ```
 
-**Hipótese inicial de causa raiz (a confirmar em Implement):** Mix esperado (a triar): (a) testes que exigem Supabase live / Redis real (movem para integration-external.yml); (b) drift de mock após refactor de produção (fix inline); (c) flakiness (investigar race conditions / timeout); (d) bugs reais de produção que ninguém notou (prioridade P0, abrir issue).
+**Enumeração bruta completa** (133 arquivos, 424 falhas): ver `docs/stories/2026-04/EPIC-CI-GREEN-MAIN-2026Q2/backend-failure-triage-raw.md` (gerado pelo @sm em 2026-04-16). Este arquivo é **insumo** — a triage taxonômica é trabalho do @dev em Implement.
+
+**Hipótese inicial de causa raiz (a confirmar em Implement):** Mix esperado dos 424 (drift acima da baseline 292 sugere múltiplas regressões recentes não atribuídas): (a) testes que exigem Supabase live / Redis real (movem para integration-external.yml); (b) drift de mock após refactor de produção (fix inline); (c) flakiness em testes SSE/async (investigar timing); (d) bugs reais de produção escondidos atrás de "pre-existing". Top 5 (SSE last-event-id, Excel resilience, alerts, timeout chain, canary false positive) sugerem forte contribuição de (b) + (c) — investigar primeiro.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] AC1: Doc `docs/stories/2026-04/EPIC-CI-GREEN-MAIN-2026Q2/backend-failure-triage.md` criado. Lista completa dos 292 testes com, para cada um: (path do teste, mensagem de erro principal, categoria, verdict).
+- [ ] AC1: Doc `docs/stories/2026-04/EPIC-CI-GREEN-MAIN-2026Q2/backend-failure-triage.md` criado. Lista completa dos **424 testes** (corrigido — memory estava desatualizada em 292) com, para cada um: (path do teste, mensagem de erro principal, categoria, verdict). Usar `backend-failure-triage-raw.md` como ponto de partida.
 - [ ] AC2: Cada teste tem verdict em uma das 4 categorias: `fix-inline` | `story-filha` | `move-to-integration-external` | `reopened-bug` (bug real de produção).
 - [ ] AC3: Para cada teste com verdict `move-to-integration-external`, justificativa técnica documentada (ex.: "requer Supabase live schema; não mockável sem copiar migrations completas"). Verdict sem justificativa é inaceitável.
 - [ ] AC4: Stories filhas `STORY-CIG-BE-NN-<slug>.story.md` criadas no próximo ciclo de `@sm` (não nesta sessão — esta é meta-story de triage). Cada story filha segue template padrão AC1-5.
-- [ ] AC5 (NEGATIVO): Nenhum `@pytest.mark.skip` ou `pytest.skip()` introduzido durante o triage. `pytest --collect-only` no final do epic conta o mesmo número de testes da baseline (292 + 7656 = 7948), provando que nada foi silenciosamente pulado.
+- [ ] AC5 (NEGATIVO): Nenhum `@pytest.mark.skip` ou `pytest.skip()` introduzido durante o triage. `pytest --collect-only` no final do epic conta o mesmo número de testes da baseline (7656 pass + 424 fail ≈ 8080 executáveis, a validar com contagem real da baseline atual), provando que nada foi silenciosamente pulado.
 - [ ] AC6: Workflow `integration-external.yml` criado (se algum teste receber `move-to-integration-external`), rodando com infra provisionada (Supabase preview / Redis local via docker-compose) em schedule não-PR.
 
 ---

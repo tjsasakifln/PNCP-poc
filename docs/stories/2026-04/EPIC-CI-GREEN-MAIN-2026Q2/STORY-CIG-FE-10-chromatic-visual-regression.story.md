@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — decisão de gate
 **Effort:** S (1-3h) — inclui decisão arquitetural
 **Agents:** @dev, @qa, @devops
@@ -28,7 +28,7 @@ Cannot find module '@chromatic-com/playwright' from 'tests/chromatic/visual-regr
 
 ## Acceptance Criteria
 
-- [ ] AC1: `npm test -- tests/chromatic/visual-regression.spec.ts` retorna exit code 0 localmente com `.npmrc` legacy-peer-deps aplicado.
+- [ ] AC1: `tests/chromatic/visual-regression.spec.ts` **deixa de ser coletado por Jest** — `npx jest --listTests | grep chromatic` retorna vazio; `npm test` passa sem tentar executar este arquivo. Se a dep `@chromatic-com/playwright` for instalada, execução real deve rodar em `chromatic.yml` via Playwright, não em Jest. Evidência: `npm test` local sem failures ou skips relacionados a esta suíte.
 - [ ] AC2: Última run do workflow `frontend-tests.yml + chromatic.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log.
 - [ ] AC3: Causa raiz descrita e corrigida em "Root Cause Analysis" (mock errado / import drift / snapshot justificado / bug real de produção / outro). Sintoma isolado **não é suficiente**.
 - [ ] AC4: Cobertura da suíte **não caiu** vs. último run verde conhecido. Se caiu, novo teste adicionado para compensar. Evidência: diff de `coverage-summary.json` colado no Change Log.
@@ -69,3 +69,4 @@ _(preenchido por @dev em Implement após confirmar causa)_
 ## Change Log
 
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
+- **2026-04-16** — @po: *validate-story-draft GO (8/10) condicional — AC1 reescrito por @po: critério original contraditório (npm test com --passWithNoTests banido pela política do epic). Novo AC1: arquivo deve deixar de ser coletado por Jest; execução real via Playwright no chromatic.yml. Draft → Ready.

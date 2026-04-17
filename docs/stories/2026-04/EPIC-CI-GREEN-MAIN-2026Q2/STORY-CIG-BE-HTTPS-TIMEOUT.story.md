@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P0 — Matrix Blocker (causa fail-fast em 3.12 também)
 **Effort:** M (3-6h — reproduzir + decidir estratégia)
 **Agents:** @dev, @qa, @devops
