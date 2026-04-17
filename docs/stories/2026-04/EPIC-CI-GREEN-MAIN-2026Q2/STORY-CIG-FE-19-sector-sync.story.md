@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -30,7 +30,7 @@ Error: Could not find SETORES_FALLBACK in D:\pncp-poc\frontend\app\buscar\hooks\
 ## Acceptance Criteria
 
 - [x] AC1: `npm test -- __tests__/sector-sync.test.ts` retorna exit code 0 localmente com `.npmrc` legacy-peer-deps aplicado. **Evidência:** 5/5 PASS (2026-04-17).
-- [ ] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log. *(pendente run CI pós-push)*
+- [x] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log. **Evidência:** PR #379, run CI [24589958389](https://github.com/tjsasakifln/PNCP-poc/actions/runs/24589958389/job/71908401742) — `PASS __tests__/sector-sync.test.ts` (5/5, 0 failed / 0 errored).
 - [x] AC3: Causa raiz descrita e corrigida em "Root Cause Analysis" (mock errado / import drift / snapshot justificado / bug real de produção / outro). Sintoma isolado **não é suficiente**. **Causa real: (a) import/path drift + (e) content drift em descrições** (sintoma primário era path errado; após consertar, test detectou 4 descrições dessincronizadas vs. YAML backend — sync real executado).
 - [x] AC4: Cobertura da suíte **não caiu** vs. último run verde conhecido. Se caiu, novo teste adicionado para compensar. Evidência: diff de `coverage-summary.json` colado no Change Log. **Evidência:** 5 tests PASS vs. 0 PASS (todas falhavam em `beforeAll`). Cobertura aumentou de fato — sync entre frontend fallback e backend YAML agora é validado por teste executável.
 - [x] AC5 (NEGATIVO — política conserto real): `grep -nE "\.(skip|only)\(|@pytest\.mark\.skip|xit\b|xdescribe\b" __tests__/sector-sync.test.ts` vazio. Nenhum teste desta suíte foi marcado como skip, only, xit, xdescribe ou movido para workflow não-gateado. **Evidência:** grep local 2026-04-17 = vazio.
@@ -90,3 +90,4 @@ Estes drifts só impactam usuário **quando o backend `/api/setores` falha e o f
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
 - **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. Investigar fix conjunto com FE-07 e FE-08 (mesmo drift de SETORES_FALLBACK). AC testáveis, escopo claro.
 - **2026-04-17** — @dev: Implement concluído. Fix conjunto com FE-07 + FE-08 em PR único. Ready → InReview. RCA (a) path drift + (e) content drift em 4 descrições (sync real com YAML). 5/5 PASS local. AC1/AC3/AC4/AC5 atendidos; AC2 pendente run CI.
+- **2026-04-17** — @devops: PR #379 aberta, push via devops. Run CI 24589958389 confirma `sector-sync.test.ts` PASS 5/5. AC2 fechado. InReview → Done. PR gate job overall falha por 10 suítes pré-existentes mapeadas 1:1 a stories CIG-FE-01/02/04/06/09/11/12/16/17/18 (pendentes separadamente).

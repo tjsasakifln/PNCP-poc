@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -32,7 +32,7 @@ Received length: 20
 ## Acceptance Criteria
 
 - [x] AC1: `npm test -- __tests__/hooks/useSearchFilters-isolated.test.tsx` retorna exit code 0 localmente com `.npmrc` legacy-peer-deps aplicado. **Evidência:** 15/15 PASS (2026-04-17).
-- [ ] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log. *(pendente run CI pós-push)*
+- [x] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log. **Evidência:** PR #379, run CI [24589958389](https://github.com/tjsasakifln/PNCP-poc/actions/runs/24589958389/job/71908401742) — `PASS __tests__/hooks/useSearchFilters-isolated.test.tsx` (15/15, 0 failed / 0 errored).
 - [x] AC3: Causa raiz descrita e corrigida em "Root Cause Analysis" (mock errado / import drift / snapshot justificado / bug real de produção / outro). Sintoma isolado **não é suficiente**. **Causa real: (d) drift de assertion** (hardcode 16 obsoleto vs. 20 sectors atuais + cache key `v2` → `v3`).
 - [x] AC4: Cobertura da suíte **não caiu** vs. último run verde conhecido. Se caiu, novo teste adicionado para compensar. Evidência: diff de `coverage-summary.json` colado no Change Log. **Evidência:** 15 tests locais (antes: 13 PASS + 2 FAIL; depois: 15 PASS). Test count não regrediu.
 - [x] AC5 (NEGATIVO — política conserto real): `grep -nE "\.(skip|only)\(|@pytest\.mark\.skip|xit\b|xdescribe\b" __tests__/hooks/useSearchFilters-isolated.test.tsx` vazio. Nenhum teste desta suíte foi marcado como skip, only, xit, xdescribe ou movido para workflow não-gateado. **Evidência:** grep local 2026-04-17 = vazio.
@@ -85,3 +85,4 @@ Zero mudança em código de produção nesta story (fixes em `sectorData.ts` de 
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
 - **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. Investigar fix conjunto com FE-08 e FE-19 (mesmo hook, mesmo drift). SETORES_FALLBACK: usar `.length` dinâmico, não hardcode.
 - **2026-04-17** — @dev: Implement concluído. Fix conjunto com FE-08 + FE-19 em PR único. Ready → InReview. RCA (d) drift de assertion. 15/15 PASS local. AC1/AC3/AC4/AC5 atendidos; AC2 pendente run CI.
+- **2026-04-17** — @devops: PR #379 aberta, push via devops (commit `1abbeea1` + validator-fix commits). Run CI 24589958389 confirma `useSearchFilters-isolated.test.tsx` PASS 15/15. AC2 fechado. InReview → Done. PR gate job overall falha por 10 suítes pré-existentes mapeadas 1:1 a stories CIG-FE-01/02/04/06/09/11/12/16/17/18 (pendentes separadamente).
