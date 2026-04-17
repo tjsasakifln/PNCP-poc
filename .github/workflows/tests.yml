@@ -49,6 +49,7 @@ jobs:
           cd backend
           if [ -d tests ]; then
             pytest tests/ \
+              -m "not external" \
               --cov=. \
               --cov-report=xml \
               --cov-report=term-missing \
@@ -235,7 +236,7 @@ jobs:
       - name: Run integration tests
         run: |
           cd backend
-          python -m pytest tests/integration/ -v -m integration --tb=short 2>&1 || true
+          python -m pytest tests/integration/ -v -m "integration and not external" --tb=short 2>&1 || true
         timeout-minutes: 10
 
       - name: Upload integration test results

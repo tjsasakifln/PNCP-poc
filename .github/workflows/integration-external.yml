@@ -1,0 +1,54 @@
+# STORY-CIG-BE-HTTPS-TIMEOUT: Non-gated workflow for live external API contract tests.
+# These tests make real HTTPS calls to pncp.gov.br and portaldecompraspublicas.com.br.
+# They are excluded from the main CI gate (backend-tests.yml) via -m "not external".
+# continue-on-error: true — external APIs may be temporarily unavailable.
+name: "Integration External (Live API Contracts)"
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'   # Mondays 05:00 UTC
+  workflow_dispatch:
+
+jobs:
+  live-api-contracts:
+    name: Live API Contracts
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://test.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+      OPENAI_API_KEY: sk-test-key
+      ENCRYPTION_KEY: bzc732A921Puw9JN4lrzMo1nw0EjlcUdAyR6Z6N7Sqc=
+      ENVIRONMENT: test
+      SENTRY_DSN: ""
+      REDIS_URL: ""
+      LOG_LEVEL: WARNING
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx pytest-timeout
+
+      - name: Run live API contract tests
+        run: |
+          cd backend
+          python -m pytest tests/integration/ -v -m "external" --tb=short --timeout=60
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-external-results
+          path: backend/
+          retention-days: 7

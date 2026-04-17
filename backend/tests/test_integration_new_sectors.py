@@ -19,6 +19,8 @@ import pytest
 
 sys.path.insert(0, ".")
 
+pytestmark = [pytest.mark.integration, pytest.mark.external]
+
 from filter import match_keywords, normalize_text
 from pncp_client import PNCPClient
 from sectors import get_sector
