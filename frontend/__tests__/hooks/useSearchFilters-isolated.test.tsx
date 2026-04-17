@@ -145,7 +145,7 @@ describe("useSearchFilters (isolated)", () => {
       data: [{ id: "cached", name: "Cached Sector", description: "From cache" }],
       timestamp: Date.now(), // fresh
     };
-    localStorage.setItem("smartlic-sectors-cache-v2", JSON.stringify(cached));
+    localStorage.setItem("smartlic-sectors-cache-v3", JSON.stringify(cached));
 
     const clearResult = jest.fn();
     const { result } = renderHook(() => useSearchFilters(clearResult));
@@ -397,9 +397,14 @@ describe("useSearchFilters (isolated)", () => {
     expect(DEFAULT_SEARCH_DAYS).toBe(10);
   });
 
-  // 15. SETORES_FALLBACK has correct count
-  test("SETORES_FALLBACK contains 16 sectors", () => {
-    expect(SETORES_FALLBACK).toHaveLength(16);
+  // 15. SETORES_FALLBACK structure is valid (exact count validated against backend YAML by sector-sync.test.ts)
+  test("SETORES_FALLBACK contains valid sector entries", () => {
+    expect(Array.isArray(SETORES_FALLBACK)).toBe(true);
+    expect(SETORES_FALLBACK.length).toBeGreaterThan(0);
     expect(SETORES_FALLBACK[0].id).toBe("vestuario");
+    SETORES_FALLBACK.forEach((s) => {
+      expect(s).toHaveProperty("id");
+      expect(s).toHaveProperty("name");
+    });
   });
 });

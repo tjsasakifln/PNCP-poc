@@ -64,7 +64,7 @@ describe('Sector Sync (STORY-249)', () => {
     }));
 
     // Parse frontend fallback from source
-    const filtersPath = path.join(__dirname, '../app/buscar/hooks/useSearchFilters.ts');
+    const filtersPath = path.join(__dirname, '../app/buscar/hooks/filters/sectorData.ts');
     fallbackSectors = parseSectorsFromFile(filtersPath, 'SETORES_FALLBACK');
   });
 

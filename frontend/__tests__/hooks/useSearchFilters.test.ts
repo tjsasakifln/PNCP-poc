@@ -53,7 +53,9 @@ describe('useSearchFilters hook', () => {
     it('should initialize with default values', () => {
       const { result } = renderHook(() => useSearchFilters(mockClearResult));
 
-      expect(result.current.ufsSelecionadas.size).toBeGreaterThan(0); // Default SC, PR, RS
+      // Default UFs: empty Set — user must explicitly select (profile context fills via
+      // smartlic-profile-context when present; absent in this test). See useSearchFormState.ts:75-89.
+      expect(result.current.ufsSelecionadas.size).toBe(0);
       expect(result.current.searchMode).toBe('setor');
       expect(result.current.setorId).toBe('vestuario');
       expect(result.current.termosArray).toEqual([]);
@@ -127,16 +129,22 @@ describe('useSearchFilters hook', () => {
     it('should toggle UF', () => {
       const { result } = renderHook(() => useSearchFilters(mockClearResult));
 
-      // Default state initialises with SP selected (Set(['SP']))
-      expect(result.current.ufsSelecionadas.has('SP')).toBe(true);
+      // Default empty; toggleUf('SP') adds SP
+      expect(result.current.ufsSelecionadas.has('SP')).toBe(false);
 
       act(() => {
         result.current.toggleUf('SP');
       });
 
-      // After toggle, SP should be removed
-      expect(result.current.ufsSelecionadas.has('SP')).toBe(false);
+      // After first toggle, SP is added
+      expect(result.current.ufsSelecionadas.has('SP')).toBe(true);
       expect(mockClearResult).toHaveBeenCalled();
+
+      // Second toggle removes
+      act(() => {
+        result.current.toggleUf('SP');
+      });
+      expect(result.current.ufsSelecionadas.has('SP')).toBe(false);
     });
 
     it('should select all UFs', () => {
@@ -285,6 +293,11 @@ describe('useSearchFilters hook', () => {
 
     it('should allow search when valid', async () => {
       const { result } = renderHook(() => useSearchFilters(mockClearResult));
+
+      // Select a UF — required for canSearch (default UFs is empty Set)
+      act(() => {
+        result.current.toggleUf('SP');
+      });
 
       await waitFor(() => {
         expect(result.current.canSearch).toBe(true);
