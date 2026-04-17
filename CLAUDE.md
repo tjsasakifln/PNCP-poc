@@ -546,11 +546,20 @@ Supabase Auth with RLS on all tables. Input validation via Pydantic (backend) an
 
 **Before Committing:** Run tests (pytest / npm test), check linting, update docs.
 
+### Migration Policy (STORY-6.3 EPIC-TD-2026Q2)
+
+| Directory | Role | Policy |
+|-----------|------|--------|
+| `supabase/migrations/` | **Source of truth** for all SQL schema (tables, indexes, RLS, pg_cron schedules) | New migrations go here. Applied via `npx supabase db push` and CI auto-apply (CRIT-050). Every new `.sql` must have a paired `.down.sql` rollback script (STORY-6.2). |
+| `backend/migrations/` | **Legacy** Python/Alembic scripts | Historical audit trail only. Do NOT add new migrations here. Kept for reference; not executed by CI. |
+
+**Rule for devs:** All schema changes → `supabase/migrations/YYYYMMDDHHMMSS_description.sql` + paired `YYYYMMDDHHMMSS_description.down.sql`. See `supabase/migrations/README.md` for templates and conventions.
+
 ### Migration CI Flow (CRIT-050)
 
 Three-layer defense against unapplied migrations (prevents CRIT-039/CRIT-045 recurrence):
 
-1. **PR Warning** (`migration-gate.yml`) — Runs on PRs touching `supabase/migrations/`. Lists pending migrations and posts a WARNING comment. Does NOT block merge.
+1. **PR Warning** (`migration-gate.yml`) — Runs on PRs touching `supabase/migrations/`. Lists pending migrations and posts a WARNING comment. Also enforces down.sql pairing (STORY-6.2 — blocks if missing). Does NOT block merge for pending-migration warnings.
 2. **Push Alert** (`migration-check.yml`) — Runs on push to main + daily schedule. Blocks (exit 1) if unapplied migrations detected.
 3. **Auto-Apply on Deploy** (`deploy.yml`) — After backend deploys, runs `supabase db push --include-all` automatically. Sends `NOTIFY pgrst, 'reload schema'` for immediate PostgREST cache refresh. Verifies no PGRST205 errors via smoke test. If push fails, marks deploy as DEGRADED (does not rollback).
 

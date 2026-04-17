@@ -1,5 +1,3 @@
-"use client";
-
 interface LlmSourceBadgeProps {
   llmSource: "ai" | "fallback" | "processing" | null | undefined;
 }

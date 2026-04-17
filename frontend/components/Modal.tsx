@@ -1,14 +1,46 @@
 "use client";
 
 /**
- * STORY-2.6: Componente Modal canônico com ARIA correto.
+ * Canonical accessible Modal component (STORY-2.6, WCAG 2.1 AA).
  *
- * Garante: role="dialog" (ou "alertdialog"), aria-modal, aria-labelledby,
- * aria-describedby, focus trap (focus-trap-react), ESC fecha, click overlay
- * fecha (configurável), body scroll lock, render via Portal.
+ * Features: role="dialog"|"alertdialog", aria-modal, aria-labelledby, aria-describedby,
+ * focus trap (focus-trap-react), ESC closes, overlay click closes (configurable),
+ * body scroll lock, rendered via React Portal.
  *
- * Use este componente para novos modais. Modais existentes (CancelSubscription,
- * PaymentRecovery, DeepAnalysis) recebem patches ARIA cirúrgicos preservando layout.
+ * Use this component for all new modals. Existing modals (CancelSubscription,
+ * PaymentRecovery, DeepAnalysis) received surgical ARIA patches preserving layout.
+ *
+ * @param isOpen - Controls visibility of the modal
+ * @param onClose - Called when ESC key pressed, overlay clicked, or close button clicked
+ * @param title - Modal heading (rendered as h2, linked via aria-labelledby)
+ * @param description - Optional subtitle (linked via aria-describedby)
+ * @param children - Modal body content
+ * @param size - Width constraint: "sm" | "md" | "lg" | "xl" (default: "md")
+ * @param closeOnOverlayClick - Close when backdrop clicked (default: true)
+ * @param closeOnEsc - Close on ESC key (default: true)
+ * @param hideCloseButton - Hides the × button (default: false)
+ * @param role - ARIA role: "dialog" | "alertdialog" (default: "dialog")
+ * @param className - Extra classes for the inner card container
+ * @param id - Custom ID (default: auto-generated via useId)
+ *
+ * @example
+ * // Basic modal
+ * <Modal isOpen={open} onClose={() => setOpen(false)} title="Confirmar exclusão">
+ *   <p>Tem certeza?</p>
+ *   <Button onClick={() => setOpen(false)}>Cancelar</Button>
+ * </Modal>
+ *
+ * @example
+ * // Alert dialog (for destructive actions)
+ * <Modal
+ *   isOpen={open}
+ *   onClose={onClose}
+ *   title="Excluir oportunidade"
+ *   role="alertdialog"
+ *   size="sm"
+ * >
+ *   <Button variant="destructive" onClick={handleDelete}>Excluir</Button>
+ * </Modal>
  */
 
 import { useEffect, useId, useRef, useState } from "react";
