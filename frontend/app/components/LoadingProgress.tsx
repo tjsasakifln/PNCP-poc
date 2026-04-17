@@ -228,7 +228,12 @@ export function LoadingProgress({
       : "Finalizando...";
 
   return (
-    <div className="mt-8 p-6 bg-surface-1 rounded-card border animate-fade-in-up">
+    <div
+      className="mt-8 p-6 bg-surface-1 rounded-card border animate-fade-in-up"
+      role="status"
+      aria-busy={true}
+      aria-label="Analisando oportunidades"
+    >
       {/* Progress Header */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
