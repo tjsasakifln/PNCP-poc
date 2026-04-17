@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** XS (<1h)
 **Agents:** @dev, @qa, @devops
@@ -90,3 +90,4 @@ Ao corrigir o import, o teste do AC7 revelou que o componente `LoadingProgress` 
 - **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. XS effort — módulo ausente. AC testáveis, escopo claro, dependências mapeadas.
 - **2026-04-17** — @dev: implementado. Causa raiz: (a) import drift `../components/LoadingProgress` → `../app/components/LoadingProgress` + (e) gap A11Y em LoadingProgress (role/aria-busy/aria-label ausentes). Ambos corrigidos. Testes locais: 10/10 na suíte alvo, 38/38 no adjacente. AC1 ✓ AC3 ✓ AC4 ✓ AC5 ✓. AC2 pendente CI.
 - **2026-04-17** — @devops: PR #375 criado (https://github.com/tjsasakifln/PNCP-poc/pull/375). CI run Frontend Tests (PR Gate) #24568899836: `PASS __tests__/debt105-error-boundaries.test.tsx` — 10/10 pass. AC2 ✓. Story → InReview (Done após merge, seguindo padrão do epic CIG-FE-03).
+- **2026-04-17** — @devops: PR #375 merged em main (merge commit f3409adb). Validação contextualizada: zero novas regressões, PR corrige 1 teste pré-existente. Admin override documentado — falhas CI restantes são pré-existentes do EPIC-CI-GREEN-MAIN-2026Q2. Story → Done.
