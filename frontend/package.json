@@ -66,6 +66,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
+    "@chromatic-com/playwright": "^0.13.1",
     "@lhci/cli": "^0.15.0",
     "@next/bundle-analyzer": "^16.2.4",
     "@playwright/test": "^1.58.2",

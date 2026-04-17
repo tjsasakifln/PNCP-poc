@@ -84,6 +84,7 @@ const customJestConfig = {
     '/__tests__/e2e/', // E2E tests run via Playwright, not Jest
     '/e2e-tests/', // Playwright E2E tests directory
     '/__tests__/utils/',      // Shared test utilities (not test files) — STORY-368
+    '/tests/chromatic/', // Playwright spec — roda via chromatic.yml, não Jest (CIG-FE-10)
   ],
 
   // Transform node_modules that use ES modules (uuid, etc.)
