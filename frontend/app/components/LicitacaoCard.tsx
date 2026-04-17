@@ -683,8 +683,7 @@ export function LicitacaoCard({
             href={licitacao.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button
-                       hover:bg-brand-blue-hover transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
           >
             <DocumentIcon className="w-4 h-4" />
             Ver Edital
@@ -693,8 +692,7 @@ export function LicitacaoCard({
         ) : (
           <InfoTooltip content="Link indisponível na fonte">
             <span
-              className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button
-                         opacity-50 cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button opacity-50 cursor-not-allowed"
               aria-disabled="true"
               role="button"
             >
