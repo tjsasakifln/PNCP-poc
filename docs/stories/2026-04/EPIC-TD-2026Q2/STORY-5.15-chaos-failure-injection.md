@@ -1,6 +1,6 @@
 # STORY-5.15: Chaos/Failure Injection toxiproxy (TD-QA-061)
 
-**Priority:** P2 | **Effort:** M (16-24h) | **Squad:** @qa + @devops + @architect | **Status:** Draft
+**Priority:** P2 | **Effort:** M (16-24h) | **Squad:** @qa + @devops + @architect | **Status:** Blocked
 **Epic:** EPIC-TD-2026Q2 | **Sprint:** 4-6
 
 ## Story

@@ -1,6 +1,6 @@
 # STORY-5.8: Visual Regression Percy Setup (TD-FE-008)
 
-**Priority:** P2 | **Effort:** S (8-16h) | **Squad:** @qa + @ux-design-expert + @dev | **Status:** Draft
+**Priority:** P2 | **Effort:** S (8-16h) | **Squad:** @qa + @ux-design-expert + @dev | **Status:** Blocked
 **Epic:** EPIC-TD-2026Q2 | **Sprint:** 4-6
 
 ## Story

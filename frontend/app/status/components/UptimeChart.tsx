@@ -49,6 +49,7 @@ export default function UptimeChart({ history }: UptimeChartProps) {
       {/* Bar chart */}
       <div className="flex gap-[2px] items-end h-10" role="img" aria-label="Gráfico de uptime dos últimos 90 dias">
         {days.map((day) => (
+          // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: height from uptime percentage
           <div
             key={day.date}
             className={`flex-1 min-w-[2px] rounded-sm ${getBarColor(day.uptime_pct)} transition-opacity hover:opacity-80 cursor-default`}

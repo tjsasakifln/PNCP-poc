@@ -158,6 +158,7 @@ export default function SearchResults(props: SearchResultsProps) {
     <>
       {/* UF Progress Grid */}
       {showGrid && ufStatuses && ufStatuses.size > 0 && (
+        // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: minHeight conditional for fade-out
         <div className={`transition-all duration-400 ${gridFading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`} style={{ minHeight: gridFading ? 0 : undefined }}>
           <UfProgressGrid ufStatuses={ufStatuses} totalFound={ufTotalFound} />
         </div>

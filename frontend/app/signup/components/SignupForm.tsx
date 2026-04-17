@@ -186,13 +186,13 @@ export function SignupForm({ form, loading, error, onSubmit, isFormValid }: Sign
           </div>
           {/* SAB-007 AC2: Format error */}
           {errors.email && !emailCheckError && (
-            <p className="mt-1 text-xs text-error" data-testid="email-error">
+            <p className="mt-1 text-xs text-error" role="alert" aria-live="assertive" data-testid="email-error">
               {errors.email.message}
             </p>
           )}
           {/* STORY-258: Disposable email error */}
           {emailCheckError && (
-            <p className="mt-1 text-xs text-error" data-testid="email-disposable-error">
+            <p className="mt-1 text-xs text-error" role="alert" aria-live="assertive" data-testid="email-disposable-error">
               {emailCheckError}
             </p>
           )}

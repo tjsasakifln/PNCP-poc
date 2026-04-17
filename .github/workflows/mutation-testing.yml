@@ -1,0 +1,74 @@
+# STORY-6.6: Weekly mutation testing for core backend modules
+# Runs mutmut on filter/, llm_arbiter/, consolidation/, quota/
+# Results uploaded as artifact; non-blocking (|| true) so CI stays green
+# while teams review surviving mutants and improve test coverage.
+name: Mutation Testing (Weekly)
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'  # Sunday 6am UTC
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  mutmut:
+    name: Mutation Tests (mutmut)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      SUPABASE_URL: https://test.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+      OPENAI_API_KEY: sk-test-key
+      ENCRYPTION_KEY: bzc732A921Puw9JN4lrzMo1nw0EjlcUdAyR6Z6N7Sqc=
+      ENVIRONMENT: test
+      SENTRY_DSN: ""
+      REDIS_URL: ""
+      LOG_LEVEL: WARNING
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run mutation tests
+        run: |
+          cd backend
+          echo "🧬 Starting mutmut on core modules..."
+          mutmut run --no-progress || true
+          echo ""
+          echo "=== Mutation Test Results ==="
+          mutmut results || true
+          echo ""
+          echo "=== Surviving mutants (sample) ==="
+          # Show first 20 surviving mutant IDs for review
+          mutmut results --survived 2>/dev/null | head -20 || true
+        continue-on-error: true  # Non-blocking: review results in artifact
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report-${{ github.run_number }}
+          path: |
+            backend/.mutmut-cache
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: |
+          cd backend
+          echo "### Mutation Testing Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Modules tested: \`filter/\`, \`llm_arbiter/\`, \`consolidation/\`, \`quota/\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          mutmut results 2>/dev/null >> $GITHUB_STEP_SUMMARY || echo "No results available" >> $GITHUB_STEP_SUMMARY

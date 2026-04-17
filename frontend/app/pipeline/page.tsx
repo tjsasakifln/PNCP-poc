@@ -251,6 +251,7 @@ export default function PipelinePage() {
                 </div>
                 <div className="p-2 space-y-2">
                   {[1, 2].map((i) => (
+                    // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: animationDelay computed from index
                     <div key={i} className="h-24 bg-[var(--surface-1)] rounded-lg animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
                   ))}
                 </div>

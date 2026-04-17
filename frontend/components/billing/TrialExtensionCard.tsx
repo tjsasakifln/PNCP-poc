@@ -102,6 +102,7 @@ export function TrialExtensionCard() {
 
       {/* Progress bar */}
       <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mb-1">
+        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width computed from total_extended/max_extension ratio at runtime */}
         <div
           className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
           style={{ width: `${progressPct}%` }}

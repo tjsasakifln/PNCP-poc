@@ -212,6 +212,7 @@ export default function PerfilPage() {
                 <span className={`text-xs font-medium ${pct <= 33 ? "text-red-600 dark:text-red-400" : pct <= 66 ? "text-yellow-600 dark:text-yellow-400" : "text-green-600 dark:text-green-400"}`}>{pct}%</span>
               </div>
               <div className="w-full h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
+                {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from profile completeness percentage */}
                 <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
               </div>
             </div>

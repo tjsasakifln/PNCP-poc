@@ -253,6 +253,7 @@ export default async function AnalisePage({
                   <span className="text-sm font-semibold text-ink">{f.score ?? '—'}/100</span>
                 </div>
                 <div className="w-full h-2 bg-surface-2 rounded-full overflow-hidden">
+                  {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from viability factor score */}
                   <div
                     className={`h-full rounded-full transition-all ${
                       (f.score ?? 0) >= 70

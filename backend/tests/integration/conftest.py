@@ -1,4 +1,6 @@
-"""CRIT-007 AC1-AC2: Shared fixtures for integration tests.
+"""Integration test suite for SmartLic backend.
+
+CRIT-007 AC1-AC2: Shared fixtures for integration tests.
 
 Provides:
 - FastAPI TestClient with mocked external dependencies
@@ -9,6 +11,24 @@ Provides:
 - Sample licitacao data
 
 All integration tests use @pytest.mark.integration marker (AC5).
+
+TD-SYS-023: State Isolation Strategy
+--------------------------------------
+These tests use mocked dependencies (no real DB).
+Global singleton state (circuit breakers, rate limiters, Redis) is reset
+between tests via autouse fixtures defined in this file.
+
+Supported execution modes:
+- Windows default: python scripts/run_tests_safe.py --parallel 4
+  (subprocess isolation per file, avoids Windows event loop issues)
+- Linux CI: pytest tests/integration/ --timeout=30 --timeout-method=signal
+- xdist (all platforms): pytest tests/integration/ --dist loadfile -n 4 --timeout=30 -p no:benchmark
+  (--dist loadfile groups tests by file, preventing cross-file state leakage)
+  NOTE: -p no:benchmark is required because pytest-benchmark is incompatible
+  with pytest-xdist and raises an INTERNALERROR on configure when both are active.
+
+IMPORTANT: Do NOT use --dist no (xdist parallel without file grouping) as it
+may expose inter-test state pollution within the same file.
 """
 
 import os

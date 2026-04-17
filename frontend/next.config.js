@@ -1,6 +1,13 @@
 const path = require("path");
 const { withSentryConfig } = require("@sentry/nextjs");
 
+// STORY-5.10 (TD-FE-012): Opt-in bundle analyzer. Run via `npm run analyze`,
+// which sets ANALYZE=true. Reports are written under .next/analyze/*.html.
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+  openAnalyzer: false,
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -23,6 +30,21 @@ const nextConfig = {
         hostname: 'static.wixstatic.com',
         pathname: '/media/**',
       },
+    ],
+  },
+
+  // STORY-5.10 (TD-FE-012): Tree-shake heavy UI/interaction packages.
+  // Next's optimizePackageImports rewrites `import { X } from 'pkg'` to
+  // `import X from 'pkg/dist/X'`, eliminating transitively pulled symbols.
+  // Validated targets: all framer-motion callsites use named imports
+  // (motion, AnimatePresence, useInView); all @dnd-kit callsites use
+  // named imports (useSortable, useDroppable, SortableContext, CSS, ...).
+  experimental: {
+    optimizePackageImports: [
+      'framer-motion',
+      '@dnd-kit/core',
+      '@dnd-kit/sortable',
+      '@dnd-kit/utilities',
     ],
   },
   // STORY-311 AC5: Security headers unified in middleware.ts (removed duplication).
@@ -86,8 +108,9 @@ const nextConfig = {
   },
 }
 
-// STORY-211: Wrap with Sentry for error tracking and source map upload (AC8)
-module.exports = withSentryConfig(nextConfig, {
+// STORY-211: Wrap with Sentry for error tracking and source map upload (AC8).
+// STORY-5.10 (TD-FE-012): Wrap with Bundle Analyzer (opt-in via ANALYZE=true).
+module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,

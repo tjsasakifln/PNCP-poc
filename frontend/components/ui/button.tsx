@@ -37,7 +37,33 @@ const buttonVariants = cva(
 );
 
 /**
- * Base props shared by all button variants.
+ * Reusable Button component with variants, sizes, loading state, and accessibility built-in.
+ * Supports icon-only mode (enforces aria-label at type level), asChild pattern via Radix Slot,
+ * and disabled/loading states with WCAG AA contrast tokens.
+ *
+ * @param variant - Visual style: "primary" | "secondary" | "destructive" | "ghost" | "outline" | "link"
+ * @param size - Button size: "sm" | "default" | "lg" | "icon"
+ * @param loading - Shows animated spinner and disables interaction when true
+ * @param disabled - Disables the button (also triggered by loading)
+ * @param asChild - Renders as the child element via Radix Slot (useful for Link wrappers)
+ * @param children - Button label or content
+ * @param aria-label - Required when size="icon" (enforced by TypeScript)
+ *
+ * @example
+ * // Primary button
+ * <Button variant="primary">Buscar Licitações</Button>
+ *
+ * @example
+ * // Loading state
+ * <Button loading>Salvando...</Button>
+ *
+ * @example
+ * // Icon-only (aria-label required)
+ * <Button size="icon" aria-label="Fechar"><X className="h-4 w-4" /></Button>
+ *
+ * @example
+ * // As link (asChild)
+ * <Button asChild variant="outline"><Link href="/planos">Ver planos</Link></Button>
  */
 interface BaseButtonProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label">,

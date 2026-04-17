@@ -5,6 +5,13 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 
+// LoadingProgress uses useAnalytics internally — mock to avoid Mixpanel in jsdom
+jest.mock('../hooks/useAnalytics', () => ({
+  useAnalytics: () => ({
+    trackEvent: jest.fn(),
+  }),
+}));
+
 // ─── ErrorBoundary Tests (AC1-AC5) ──────────────────────────────────────────
 
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -153,7 +160,7 @@ describe("ErrorBoundary (DEBT-105 AC1-AC5)", () => {
 describe("Loading spinners A11Y (DEBT-105 AC7)", () => {
   it("LoadingProgress has role='status' and aria-busy", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { LoadingProgress } = require("../components/LoadingProgress");
+    const { LoadingProgress } = require("../app/components/LoadingProgress");
     render(
       <LoadingProgress currentStep={1} estimatedTime={30} stateCount={5} />
     );

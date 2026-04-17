@@ -181,7 +181,9 @@ describe('ContextualTutorialTooltip', () => {
 
     const tooltip = container.querySelector('.fixed.z-50') as HTMLElement;
     expect(tooltip).toBeInTheDocument();
-    expect(tooltip.style.transform).toContain('translate(-50%, -100%)');
+    // STORY-5.14: transform migrated to Tailwind classes
+    expect(tooltip.className).toContain('-translate-x-1/2');
+    expect(tooltip.className).toContain('-translate-y-full');
   });
 
   it('renders backdrop with correct classes', () => {

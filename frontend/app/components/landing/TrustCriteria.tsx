@@ -90,6 +90,7 @@ export default function TrustCriteria({ className = '' }: TrustCriteriaProps) {
           {evaluationCriteria.map((criterion, index) => {
             const Icon = criterion.icon;
             return (
+              // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: transitionDelay computed from index
               <div
                 key={index}
                 className="bg-surface-1 border border-[var(--border)] rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"

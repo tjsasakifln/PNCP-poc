@@ -44,6 +44,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
       `}
     >
       {/* Background gradient mesh */}
+      {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: radial-gradient uses CSS custom properties (--brand-blue-subtle) not expressible in Tailwind */}
       <div
         className="absolute inset-0 -z-10 opacity-40"
         style={{

@@ -13,677 +13,11 @@ export interface paths {
         };
         /**
          * Root
-         * @description API root endpoint - provides navigation to documentation.
-         *
-         *     SYS-M08: Informs clients about API versioning.
+         * @description API root — navigation and version info.
          */
         get: operations["root__get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Users
-         * @description List all users with profiles and subscription info.
-         */
-        get: operations["list_users_admin_users_get"];
-        put?: never;
-        /**
-         * Create User
-         * @description Create a new user with optional plan assignment.
-         */
-        post: operations["create_user_admin_users_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/users/{user_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update User
-         * @description Update user profile or plan.
-         */
-        put: operations["update_user_admin_users__user_id__put"];
-        post?: never;
-        /**
-         * Delete User
-         * @description Delete a user and all their data.
-         */
-        delete: operations["delete_user_admin_users__user_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/users/{user_id}/assign-plan": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Assign Plan
-         * @description Manually assign a plan to a user (bypasses payment).
-         */
-        post: operations["assign_plan_admin_users__user_id__assign_plan_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/users/{user_id}/credits": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update User Credits
-         * @description Manually adjust a user's credits (admin only).
-         *
-         *     Sets the credits_remaining value directly on the user's active subscription.
-         *     If no active subscription exists, creates one based on user's current plan.
-         *
-         *     Args:
-         *         user_id: UUID of the user
-         *         req.credits: New credit value (must be >= 0)
-         *
-         *     Returns:
-         *         Updated user info with new credit value
-         */
-        put: operations["update_user_credits_admin_users__user_id__credits_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/users/{user_id}/reset-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reset User Password
-         * @description Reset a user's password (admin only).
-         */
-        post: operations["reset_user_password_admin_users__user_id__reset_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/analytics/searches-over-time": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Searches Over Time
-         * @description Get time-series search data grouped by period.
-         */
-        get: operations["get_searches_over_time_analytics_searches_over_time_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/analytics/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Analytics Summary
-         * @description Get overall user analytics summary.
-         */
-        get: operations["get_analytics_summary_analytics_summary_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/analytics/top-dimensions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Top Dimensions
-         * @description Get top UFs and sectors by search count.
-         */
-        get: operations["get_top_dimensions_analytics_top_dimensions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/google": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Google Oauth Initiate
-         * @description Initiate Google OAuth 2.0 flow.
-         *
-         *     Redirects user to Google consent screen to authorize Google Sheets access.
-         *
-         *     Query Parameters:
-         *         redirect: Frontend path to return to after authorization
-         *
-         *     Returns:
-         *         302 Redirect to Google OAuth consent screen
-         *
-         *     Security:
-         *         - CSRF protection via state parameter
-         *         - State encodes user_id + redirect path
-         *         - Validates state on callback
-         *
-         *     Example:
-         *         GET /api/auth/google?redirect=/buscar
-         *         → Redirects to https://accounts.google.com/o/oauth2/auth?...
-         */
-        get: operations["google_oauth_initiate_api_auth_google_get"];
-        put?: never;
-        post?: never;
-        /**
-         * Google Oauth Revoke
-         * @description Revoke Google OAuth access and delete tokens.
-         *
-         *     Deletes user's OAuth tokens from database and revokes access with Google.
-         *
-         *     Returns:
-         *         {
-         *             "success": true,
-         *             "message": "Google Sheets access revoked successfully"
-         *         }
-         *
-         *     Security:
-         *         - Requires authentication
-         *         - Only deletes tokens for authenticated user
-         *         - Revokes with Google API (best effort)
-         *
-         *     Note:
-         *         Revoking access does NOT delete existing spreadsheets.
-         *         Spreadsheets remain in user's Google Drive.
-         */
-        delete: operations["google_oauth_revoke_api_auth_google_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/google/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Google Oauth Callback
-         * @description Handle OAuth callback from Google.
-         *
-         *     This endpoint is called by Google after user authorizes access.
-         *
-         *     Query Parameters:
-         *         code: Authorization code (exchanged for tokens), absent on error
-         *         state: CSRF state token (contains user_id + redirect path)
-         *         error: OAuth error code (if authorization failed)
-         *
-         *     Returns:
-         *         302 Redirect to frontend with success/error status
-         *
-         *     Flow:
-         *         1. Decode state param to get user_id and redirect path
-         *         2. Exchange code for tokens (access + refresh)
-         *         3. Encrypt and save tokens to database
-         *         4. Redirect to frontend with success flag
-         *
-         *     Error Handling:
-         *         - Invalid state → Redirect with error=invalid_state
-         *         - Code exchange failed → Redirect with error=oauth_failed
-         *         - Database error → Redirect with error=storage_failed
-         */
-        get: operations["google_oauth_callback_api_auth_google_callback_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/export/google-sheets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Export To Google Sheets
-         * @description Export search results to Google Sheets.
-         *
-         *     Creates a new Google Sheets spreadsheet or updates an existing one
-         *     with search results. Applies professional formatting (green header,
-         *     currency symbols, hyperlinks).
-         *
-         *     Request Body:
-         *         {
-         *             "licitacoes": [...],
-         *             "title": "SmartLic - Uniformes - 09/02/2026",
-         *             "mode": "create" | "update",
-         *             "spreadsheet_id": "optional for update mode"
-         *         }
-         *
-         *     Returns:
-         *         {
-         *             "success": true,
-         *             "spreadsheet_id": "...",
-         *             "spreadsheet_url": "https://docs.google.com/spreadsheets/d/...",
-         *             "total_rows": 142,
-         *             "updated_at": "2026-02-09T15:30:00Z"  // only for update mode
-         *         }
-         *
-         *     Errors:
-         *         401 Unauthorized: User hasn't authorized Google Sheets
-         *         403 Forbidden: Token revoked or insufficient permissions
-         *         429 Too Many Requests: Google API quota exceeded
-         *         500 Internal Server Error: Google API error
-         *
-         *     Example:
-         *         POST /api/export/google-sheets
-         *         {
-         *             "licitacoes": [...],
-         *             "title": "SmartLic - Uniformes - SP, RJ",
-         *             "mode": "create"
-         *         }
-         */
-        post: operations["export_to_google_sheets_api_export_google_sheets_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/export/google-sheets/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Export History
-         * @description Get user's Google Sheets export history.
-         *
-         *     Returns list of all exports with spreadsheet URLs and search parameters.
-         *     Useful for "re-open last export" and usage analytics.
-         *
-         *     Query Parameters:
-         *         limit: Maximum number of exports to return (default: 50, max: 100)
-         *
-         *     Returns:
-         *         {
-         *             "exports": [
-         *                 {
-         *                     "id": "uuid",
-         *                     "spreadsheet_id": "...",
-         *                     "spreadsheet_url": "https://docs.google.com/...",
-         *                     "search_params": {"ufs": ["SP"], "setor": "Uniformes"},
-         *                     "total_rows": 142,
-         *                     "created_at": "2026-02-09T15:30:00Z",
-         *                     "updated_at": "2026-02-09T15:30:00Z"
-         *                 }
-         *             ],
-         *             "total": 1
-         *         }
-         *
-         *     Example:
-         *         GET /api/export/google-sheets/history?limit=20
-         */
-        get: operations["get_export_history_api_export_google_sheets_history_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/features/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get My Features
-         * @description Get current user's enabled features.
-         *
-         *     CACHING STRATEGY (STORY-217: unified pool):
-         *     - Redis cache with 5-minute TTL via shared pool
-         *     - Cache key: ``features:{user_id}``
-         *     - Cache miss: Fetch from Supabase (JOIN user_subscriptions + plan_features)
-         *     - Graceful degradation via InMemoryCache fallback
-         */
-        get: operations["get_my_features_api_features_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/messages/conversations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Conversations */
-        get: operations["list_conversations_api_messages_conversations_get"];
-        put?: never;
-        /** Create Conversation */
-        post: operations["create_conversation_api_messages_conversations_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/messages/conversations/{conversation_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Conversation */
-        get: operations["get_conversation_api_messages_conversations__conversation_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/messages/conversations/{conversation_id}/reply": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reply To Conversation */
-        post: operations["reply_to_conversation_api_messages_conversations__conversation_id__reply_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/messages/conversations/{conversation_id}/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Conversation Status */
-        patch: operations["update_conversation_status_api_messages_conversations__conversation_id__status_patch"];
-        trace?: never;
-    };
-    "/api/messages/unread-count": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Unread Count */
-        get: operations["get_unread_count_api_messages_unread_count_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/plans": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Plans With Capabilities
-         * @description Get all active plans with capabilities and pricing.
-         *
-         *     STORY-203 CROSS-M01: Combines plan metadata from database with
-         *     capabilities from SYS-M04 infrastructure. This provides a single
-         *     endpoint for frontend to fetch all plan-related data.
-         *
-         *     Returns:
-         *         PlansResponse: List of plans with full details
-         *
-         *     Raises:
-         *         HTTPException 500: If database query fails
-         */
-        get: operations["get_plans_with_capabilities_api_plans_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/subscriptions/update-billing-period": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Update Billing Period
-         * @description Update subscription billing period (monthly ↔ annual).
-         *
-         *     CRITICAL FLOW:
-         *     1. Fetch current subscription from Supabase
-         *     2. Calculate pro-rata credit (with defer logic if < 7 days to renewal)
-         *     3. Update Stripe subscription
-         *     4. Update Supabase (billing_period, updated_at)
-         *     5. Invalidate Redis feature cache
-         *     6. Return next billing date and credit info
-         *
-         *     EDGE CASES:
-         *     - Defer if < 7 days to renewal (avoid complex pro-rata + Stripe edge cases)
-         *     - Prevent downgrade (annual → monthly) via UX validation
-         *     - Handle timezone-aware date calculations
-         *
-         *     Args:
-         *         request: UpdateBillingPeriodRequest with new billing period
-         *         user: Authenticated user from require_auth dependency
-         *
-         *     Returns:
-         *         UpdateBillingPeriodResponse with billing details
-         *
-         *     Raises:
-         *         HTTPException 404: No active subscription found
-         *         HTTPException 400: Invalid billing period or downgrade attempt
-         *         HTTPException 500: Database or Stripe API error
-         */
-        post: operations["update_billing_period_api_subscriptions_update_billing_period_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/buscar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Buscar Licitacoes
-         * @description Main search endpoint — thin wrapper that delegates to SearchPipeline.
-         *
-         *     STORY-216 AC5: buscar_licitacoes() is a thin wrapper that creates
-         *     SearchPipeline and runs stages. All business logic lives in search_pipeline.py.
-         *
-         *     The wrapper handles:
-         *     - SSE tracker lifecycle (create, cleanup on error)
-         *     - Exception mapping (PNCPRateLimitError → 503, PNCPAPIError → 502, etc.)
-         *     - Dependency injection (passing module-level names for test mock compatibility)
-         */
-        post: operations["buscar_licitacoes_buscar_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/buscar-progress/{search_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Buscar Progress Stream
-         * @description SSE endpoint for real-time search progress updates.
-         *
-         *     The client opens this connection simultaneously with POST /buscar,
-         *     using the same search_id to correlate progress events.
-         *
-         *     Events:
-         *         - connecting (5%): Initial setup
-         *         - fetching (10-55%): Per-UF progress with uf_index/uf_total
-         *         - filtering (60-70%): Filter application
-         *         - llm (75-90%): LLM summary generation
-         *         - excel (92-98%): Excel report generation
-         *         - complete (100%): Search finished
-         *         - error: Search failed
-         */
-        get: operations["buscar_progress_stream_buscar_progress__search_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/change-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Change Password
-         * @description Change current user's password.
-         */
-        post: operations["change_password_change_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/checkout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Checkout
-         * @description Create Stripe Checkout session for a plan purchase.
-         */
-        post: operations["create_checkout_checkout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -719,10 +53,7 @@ export interface paths {
         };
         /**
          * Health
-         * @description Health check endpoint for monitoring and load balancers.
-         *
-         *     Provides lightweight service health verification including dependency
-         *     checks for Supabase, OpenAI, and Redis connectivity.
+         * @description Comprehensive health check with dependency status, circuit breakers, bulkheads.
          */
         get: operations["health_health_get"];
         put?: never;
@@ -733,7 +64,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/me": {
+    "/health/live": {
         parameters: {
             query?: never;
             header?: never;
@@ -741,107 +72,32 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Profile
-         * @description Get current user profile with plan capabilities and quota status.
+         * Health Live
+         * @description HARDEN-016 AC1: Pure liveness probe — ALWAYS returns 200.
          */
-        get: operations["get_profile_me_get"];
+        get: operations["health_live_health_live_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
-         * Delete Account
-         * @description Delete entire user account and all associated data (LGPD Art. 18 VI).
+         * Health Ready
+         * @description HARDEN-016 AC2: Readiness probe — checks Redis + Supabase.
          *
-         *     Cascade order:
-         *     1. Cancel active Stripe subscription (if any)
-         *     2. Delete from: search_sessions, monthly_quota, user_subscriptions,
-         *        user_oauth_tokens, messages, profiles
-         *     3. Delete auth user via Supabase admin API
-         *     4. Log anonymized audit entry
+         *     DEBT-124 AC6: Returns 503 during graceful shutdown drain phase.
          */
-        delete: operations["delete_account_me_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/me/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Export User Data
-         * @description Export all user data as JSON file (LGPD Art. 18 V — data portability).
-         *
-         *     Returns a downloadable JSON file containing:
-         *     - Profile information
-         *     - Search history (sessions)
-         *     - Subscription history
-         *     - Messages
-         */
-        get: operations["export_user_data_me_export_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/plans": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Plans
-         * @description Get available subscription plans.
-         */
-        get: operations["get_plans_plans_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Sessions
-         * @description Get user's search session history.
-         */
-        get: operations["get_sessions_sessions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/setores": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Listar Setores
-         * @description Return available procurement sectors for frontend dropdown.
-         */
-        get: operations["listar_setores_setores_get"];
+        get: operations["health_ready_health_ready_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -860,12 +116,763 @@ export interface paths {
         /**
          * Sources Health
          * @description Health check for all configured procurement data sources.
-         *
-         *     Returns status, response time, and priority for each source.
          */
         get: operations["sources_health_sources_health_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/admin/filter-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Filter Stats
+         * @description STORY-248 AC10: Filter rejection statistics.
+         *
+         *     Returns counts of each rejection reason code for the specified period.
+         *     Admin-only endpoint.
+         *
+         *     Reason codes:
+         *     - keyword_miss: No sector keyword found in procurement description
+         *     - exclusion_hit: Exclusion keyword matched (false-positive prevention)
+         *     - llm_reject: LLM arbiter rejected the contract
+         *     - density_low: Term density below minimum threshold
+         *     - value_exceed: Contract value exceeds sector maximum
+         *     - uf_mismatch: State (UF) not in selected set
+         *     - status_mismatch: Procurement status does not match filter
+         */
+        get: operations["get_filter_stats_v1_admin_admin_filter_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/at-risk-trials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get At Risk Trials
+         * @description Paginated list of trial users with risk categorization.
+         */
+        get: operations["get_at_risk_trials_v1_admin_at_risk_trials_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/cache": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete All Cache Endpoint
+         * @description B-05 AC6: Invalidate ALL cache entries (nuclear option).
+         *
+         *     Requires X-Confirm: delete-all header for safety.
+         *     Without header, returns 400 Bad Request.
+         */
+        delete: operations["delete_all_cache_endpoint_v1_admin_cache_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/cache/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cache Metrics Endpoint
+         * @description B-05 AC3: Return aggregated cache metrics for admin dashboard.
+         *
+         *     Response includes hit_rate_24h, miss_rate_24h, stale_served_24h,
+         *     total_entries, priority_distribution, age_distribution, degraded_keys,
+         *     avg_fetch_duration_ms, and top_keys.
+         */
+        get: operations["get_cache_metrics_endpoint_v1_admin_cache_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/cache/{params_hash}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inspect Cache Entry Endpoint
+         * @description B-05 AC7: Return full details of a specific cache entry.
+         *
+         *     Response includes search_params, results_count, sources, fetched_at,
+         *     priority, fail_streak, degraded_until, coverage, access_count,
+         *     last_accessed_at, age_hours, cache_status.
+         */
+        get: operations["inspect_cache_entry_endpoint_v1_admin_cache__params_hash__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Cache Entry Endpoint
+         * @description B-05 AC5: Invalidate a specific cache entry across all levels.
+         *
+         *     Deletes from Supabase, Redis/InMemory, and local file.
+         *     Returns {"deleted_levels": ["supabase", "redis", "local"]}.
+         */
+        delete: operations["delete_cache_entry_endpoint_v1_admin_cache__params_hash__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/cb/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Circuit Breakers
+         * @description STORY-416 AC5: Reset all segregated Supabase CBs to CLOSED.
+         *
+         *     Intended for on-call use after an upstream incident has been mitigated
+         *     and the CBs are still in OPEN/HALF_OPEN due to the cooldown. Returns
+         *     the previous state per category so the action is auditable in logs.
+         *     Admin only — never expose this without authentication.
+         */
+        post: operations["reset_circuit_breakers_v1_admin_cb_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/clear-contracts-checkpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clear Contracts Checkpoints
+         * @description Clear all Redis checkpoints for contracts crawler.
+         *
+         *     Use before re-triggering a full crawl when stale checkpoints
+         *     cause windows to be incorrectly skipped.
+         */
+        post: operations["clear_contracts_checkpoints_v1_admin_clear_contracts_checkpoints_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/cron-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cron Status
+         * @description Return the pg_cron health snapshot.
+         *
+         *     Calls ``public.get_cron_health()`` (SECURITY DEFINER) via the backend's
+         *     service-role Supabase client. Response shape::
+         *
+         *         {
+         *             "queried_at": "2026-04-14T12:00:00+00:00",
+         *             "jobs": [
+         *                 {
+         *                     "jobname": "purge-old-bids",
+         *                     "schedule": "0 7 * * *",
+         *                     "active": true,
+         *                     "last_status": "succeeded",
+         *                     "last_run_at": "2026-04-14T07:00:04+00:00",
+         *                     "runs_24h": 1,
+         *                     "failures_24h": 0,
+         *                     "latency_avg_ms": 120,
+         *                     "last_return_message": null
+         *                 },
+         *                 ...
+         *             ],
+         *             "count": 6
+         *         }
+         *
+         *     On transient failure (Supabase CB open, RPC error) returns ``status=error``
+         *     with ``jobs=[]`` so that dashboards degrade gracefully instead of 500-ing.
+         */
+        get: operations["get_cron_status_v1_admin_cron_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/feature-flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Feature Flags
+         * @description List all registered feature flags with current values and sources.
+         *
+         *     Returns each flag's effective value, where it comes from (redis override,
+         *     env var, or default), its description, and registry metadata.
+         *
+         *     Admin only.
+         */
+        get: operations["list_feature_flags_v1_admin_feature_flags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/feature-flags/reload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reload Flags Endpoint
+         * @description Reload all feature flags from environment variables (admin only).
+         *
+         *     This clears:
+         *     1. All Redis overrides (smartlic:ff:* keys)
+         *     2. All in-memory overrides
+         *     3. The feature flag TTL cache
+         *
+         *     After reload, flags return to their env var or registry default values.
+         *     Useful after updating env vars via Railway dashboard without restarting.
+         */
+        post: operations["reload_flags_endpoint_v1_admin_feature_flags_reload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/feature-flags/{flag_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Feature Flag
+         * @description Update a feature flag value at runtime (admin only).
+         *
+         *     The new value is persisted to Redis (if available) and stored in-memory.
+         *     Takes effect immediately -- no container restart required.
+         *
+         *     The change persists across process restarts as long as Redis is available.
+         *     Use POST /admin/feature-flags/reload to clear all overrides.
+         */
+        patch: operations["update_feature_flag_v1_admin_feature_flags__flag_name__patch"];
+        trace?: never;
+    };
+    "/v1/admin/feedback/patterns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Feedback Patterns
+         * @description AC6: Admin endpoint for feedback pattern analysis.
+         *
+         *     Requires admin role (via require_admin dependency).
+         */
+        get: operations["feedback_patterns_v1_admin_feedback_patterns_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/llm-cost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Llm Cost
+         * @description Return LLM cost snapshot para o mês corrente (admin-only).
+         *
+         *     Response shape::
+         *
+         *         {
+         *             "month_to_date_usd": 42.1234,
+         *             "budget_usd": 100.0,
+         *             "pct_used": 42.12,
+         *             "projected_end_of_month_usd": 78.55,
+         *             "month": "llm_cost_month_2026_04",
+         *             "exceeded": false
+         *         }
+         *
+         *     Em caso de Redis indisponível, retorna zeros (graceful degradation).
+         */
+        get: operations["admin_llm_cost_v1_admin_llm_cost_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Partners Endpoint
+         * @description AC10: List all partners. Admin only.
+         */
+        get: operations["list_partners_endpoint_v1_admin_partners_get"];
+        put?: never;
+        /**
+         * Create Partner Endpoint
+         * @description AC11: Create a new partner. Admin only.
+         */
+        post: operations["create_partner_endpoint_v1_admin_partners_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/partners/{partner_id}/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Partner Referrals Endpoint
+         * @description AC12: Get referrals for a specific partner. Admin only.
+         */
+        get: operations["get_partner_referrals_endpoint_v1_admin_partners__partner_id__referrals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/partners/{partner_id}/revenue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Partner Revenue Endpoint
+         * @description AC13: Get revenue share for a partner in a given month. Admin only.
+         */
+        get: operations["get_partner_revenue_endpoint_v1_admin_partners__partner_id__revenue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/reconciliation/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Reconciliation History
+         * @description AC10: Get last N reconciliation runs.
+         *
+         *     Returns list of reconciliation_log entries, most recent first.
+         */
+        get: operations["get_reconciliation_history_v1_admin_reconciliation_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/reconciliation/trigger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Reconciliation
+         * @description AC13: Manually trigger a reconciliation run.
+         *
+         *     Executes immediately (bypasses cron schedule) but respects Redis lock.
+         */
+        post: operations["trigger_reconciliation_v1_admin_reconciliation_trigger_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/schema-contract-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Schema Contract Status
+         * @description STORY-414 AC4: Expose the last schema-contract validation result.
+         *
+         *     Returns the cached result from the startup check plus a ``stale``
+         *     flag that tells callers whether a fresh run is advisable (the cache
+         *     lives for ``schemas.contract.STATUS_CACHE_TTL`` seconds — 5 min by
+         *     default). Forcing a re-validation is out of scope here because it
+         *     would defeat the point of the cache on a polled dashboard.
+         */
+        get: operations["get_schema_contract_status_v1_admin_schema_contract_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/search-trace/{search_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Search Trace
+         * @description Reconstruct complete search journey from search_id.
+         *
+         *     Aggregates:
+         *     - Progress tracker state (if still active)
+         *     - Cache entries matching this search
+         *     - Job queue results (if ARQ available)
+         */
+        get: operations["get_search_trace_v1_admin_search_trace__search_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/seo-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Seo Metrics
+         * @description Return SEO metrics for the last N days. Admin-only.
+         */
+        get: operations["get_seo_metrics_v1_admin_seo_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/sitemap-cache/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Force-refresh sitemap combos cache (admin only)
+         * @description Clears the 24h in-memory sitemap cache and recomputes indexable combos immediately.
+         */
+        post: operations["refresh_sitemap_cache_v1_admin_sitemap_cache_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/slo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Slo Dashboard
+         * @description AC7-AC9: SLO compliance data for admin dashboard.
+         *
+         *     Returns all SLO statuses, alert evaluations, and metadata.
+         */
+        get: operations["get_slo_dashboard_v1_admin_slo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/slo/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Slo Alerts
+         * @description Return current alert evaluation results.
+         */
+        get: operations["get_slo_alerts_v1_admin_slo_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/support-sla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Support Sla
+         * @description STORY-353 AC6: Return support SLA metrics.
+         *
+         *     Returns:
+         *         avg_response_hours: Average first-response time in business hours
+         *         pending_count: Number of unanswered conversations
+         *         breached_count: Number of conversations exceeding 20 business hours
+         */
+        get: operations["get_support_sla_v1_admin_support_sla_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/trial-emails/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Trial Emails
+         * @description AC15: Preview all 6 trial email templates.
+         */
+        get: operations["preview_trial_emails_v1_admin_trial_emails_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/trial-emails/test-send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Send Trial Email
+         * @description AC14: Send a test trial email to the admin's own email.
+         */
+        post: operations["test_send_trial_email_v1_admin_trial_emails_test_send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/trial-exit-surveys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Exit Surveys Admin
+         * @description STORY-369 AC6: Admin endpoint — exit survey counts grouped by reason.
+         */
+        get: operations["get_exit_surveys_admin_v1_admin_trial_exit_surveys_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/trial-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Trial Metrics
+         * @description Trial conversion metrics dashboard.
+         *
+         *     Returns active trial count, 30-day conversion rate, risk distribution,
+         *     and email funnel stats from trial_email_log.
+         */
+        get: operations["get_trial_metrics_v1_admin_trial_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/trigger-bids-backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Bids Backfill
+         * @description Enqueue ingestion_backfill_job to ARQ Worker.
+         *
+         *     One-time historical crawl: fetches up to 365 days of PNCP bids
+         *     to capture all currently open opportunities.
+         *     Expected runtime: 4-8h. Safe to call multiple times (ARQ dedup).
+         */
+        post: operations["trigger_bids_backfill_v1_admin_trigger_bids_backfill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/trigger-contracts-backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Contracts Backfill
+         * @description Enqueue contracts_full_crawl_job to ARQ Worker.
+         *
+         *     Runs on Railway Worker (better network for PNCP).
+         *     Safe to call multiple times — ARQ deduplicates by job name.
+         */
+        post: operations["trigger_contracts_backfill_v1_admin_trigger_contracts_backfill_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -990,6 +997,180 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/alertas/{setor_id}/uf/{uf}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Alertas
+         * @description Return latest 20 bids for sector × UF from datalake (public, no auth).
+         */
+        get: operations["get_alertas_v1_alertas__setor_id__uf__uf__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Alerts
+         * @description List all alerts for the authenticated user, ordered by created_at desc.
+         *
+         *     AC2: Includes sent_count (number of items sent for each alert).
+         */
+        get: operations["list_alerts_v1_alerts_get"];
+        put?: never;
+        /**
+         * Create Alert
+         * @description Create a new email alert for the authenticated user.
+         *
+         *     AC1: Persists alert definition with filter criteria.
+         *     Enforces a per-user limit to prevent abuse.
+         */
+        post: operations["create_alert_v1_alerts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts/{alert_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Alert
+         * @description Delete an alert and its sent-item history.
+         *
+         *     AC4: Cascading delete removes associated alert_sent_items.
+         *     Validates that the alert belongs to the authenticated user.
+         */
+        delete: operations["delete_alert_v1_alerts__alert_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Alert
+         * @description Update an existing alert (partial update).
+         *
+         *     AC3: Only name, filters, and active status can be updated.
+         *     Validates that the alert belongs to the authenticated user.
+         */
+        patch: operations["update_alert_v1_alerts__alert_id__patch"];
+        trace?: never;
+    };
+    "/v1/alerts/{alert_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alert History
+         * @description Paginated history of items sent for this alert.
+         *
+         *     AC13: Returns alert_sent_items ordered by sent_at desc.
+         *     Only accessible if the alert belongs to the authenticated user.
+         */
+        get: operations["alert_history_v1_alerts__alert_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts/{alert_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Alert
+         * @description Preview what opportunities an alert would match (dry-run).
+         *
+         *     STORY-315 AC12: Executes matching without sending email.
+         *     Returns opportunities that would be sent, useful for validating filters.
+         */
+        get: operations["preview_alert_v1_alerts__alert_id__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/alerts/{alert_id}/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unsubscribe Alert
+         * @description One-click unsubscribe from an email alert (RFC 8058).
+         *
+         *     AC9: No authentication required — uses HMAC token verification.
+         *     Sets the alert's active flag to false.
+         *     Returns an HTML confirmation page.
+         */
+        get: operations["unsubscribe_alert_v1_alerts__alert_id__unsubscribe_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/new-opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get New Opportunities
+         * @description Get count of opportunities from user's most recent search.
+         *
+         *     DEBT-127 AC6-AC9: Drives users back to /buscar by showing how many
+         *     opportunities were found in their latest search and how long ago it was.
+         *     If no previous search exists, returns has_previous_search=False for
+         *     onboarding prompt (AC9).
+         */
+        get: operations["get_new_opportunities_v1_analytics_new_opportunities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/analytics/searches-over-time": {
         parameters: {
             query?: never;
@@ -1042,6 +1223,52 @@ export interface paths {
          * @description Get top UFs and sectors by search count.
          */
         get: operations["get_top_dimensions_v1_analytics_top_dimensions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/track-cta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Track Cta Event
+         * @description Track CTA conversion events for admin dashboard (STORY-312 AC11).
+         *
+         *     Increments Prometheus counters for shown/clicked/dismissed by variant.
+         *     Fire-and-forget — always returns 204.
+         */
+        post: operations["track_cta_event_v1_analytics_track_cta_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/trial-value": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Trial Value
+         * @description Get value generated during trial period (GTM-010 AC1).
+         *
+         *     Returns aggregated statistics of opportunities analyzed during the user's trial.
+         *     Used by TrialConversionScreen to show personalized conversion messaging.
+         */
+        get: operations["get_trial_value_v1_analytics_trial_value_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1391,6 +1618,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/api/subscriptions/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Subscription
+         * @description Cancel subscription at period end.
+         *
+         *     GTM-FIX-006: User-initiated cancellation flow.
+         *     UX-308: Accepts optional cancellation reason for retention analytics.
+         *     Sets cancel_at_period_end=True in Stripe, updates status to 'canceling'.
+         */
+        post: operations["cancel_subscription_v1_api_subscriptions_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/api/subscriptions/cancel-feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Cancel Feedback
+         * @description Submit post-cancellation feedback (UX-308 AC6).
+         *
+         *     Logs feedback as a user action for analytics. Fire-and-forget — never blocks UX.
+         */
+        post: operations["submit_cancel_feedback_v1_api_subscriptions_cancel_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/api/subscriptions/update-billing-period": {
         parameters: {
             query?: never;
@@ -1402,34 +1675,448 @@ export interface paths {
         put?: never;
         /**
          * Update Billing Period
-         * @description Update subscription billing period (monthly ↔ annual).
+         * @description Update subscription billing period (monthly / semiannual / annual).
          *
-         *     CRITICAL FLOW:
-         *     1. Fetch current subscription from Supabase
-         *     2. Calculate pro-rata credit (with defer logic if < 7 days to renewal)
-         *     3. Update Stripe subscription
-         *     4. Update Supabase (billing_period, updated_at)
-         *     5. Invalidate Redis feature cache
-         *     6. Return next billing date and credit info
-         *
-         *     EDGE CASES:
-         *     - Defer if < 7 days to renewal (avoid complex pro-rata + Stripe edge cases)
-         *     - Prevent downgrade (annual → monthly) via UX validation
-         *     - Handle timezone-aware date calculations
-         *
-         *     Args:
-         *         request: UpdateBillingPeriodRequest with new billing period
-         *         user: Authenticated user from require_auth dependency
-         *
-         *     Returns:
-         *         UpdateBillingPeriodResponse with billing details
-         *
-         *     Raises:
-         *         HTTPException 404: No active subscription found
-         *         HTTPException 400: Invalid billing period or downgrade attempt
-         *         HTTPException 500: Database or Stripe API error
+         *     GTM-002: Simplified flow — Stripe handles proration automatically.
+         *     No deferral logic, no manual credit calculations.
          */
         post: operations["update_billing_period_v1_api_subscriptions_update_billing_period_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/check-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check Email
+         * @description AC15: Pre-signup email validation.
+         *
+         *     Returns { available: bool, disposable: bool, corporate: bool }.
+         *
+         *     Security:
+         *     - Does NOT reveal if email already exists (always available=true for disposable).
+         *     - MED-SEC-001: Rate limited 3 req/10min per IP (Redis + fallback).
+         */
+        get: operations["check_email_v1_auth_check_email_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/check-phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check Phone
+         * @description AC11-AC12: Pre-signup phone uniqueness check.
+         *
+         *     Returns { available: bool } only — no data leakage.
+         *     AC13: Optional company param triggers fingerprint abuse detection (non-blocking).
+         *     MED-SEC-001: Rate limited 3 req/10min per IP (Redis + fallback).
+         */
+        get: operations["check_phone_v1_auth_check_phone_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/resend-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend Confirmation
+         * @description Resend signup confirmation email with 60s rate limiting.
+         *
+         *     MED-SEC-001: Rate limited to 3 req/10min per IP to prevent trial multi-account abuse.
+         *     AC4: Calls Supabase auth.resend({ type: 'signup', email }).
+         *     AC1-AC6: Frontend uses this with countdown timer.
+         */
+        post: operations["resend_confirmation_v1_auth_resend_confirmation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Auth Status
+         * @description Check if a signup email has been confirmed.
+         *
+         *     AC8: Returns { confirmed: boolean, user_id?: string }.
+         *     AC7/AC9: Frontend polls this every 5s for auto-redirect.
+         */
+        get: operations["auth_status_v1_auth_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/validate-signup-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Signup Email
+         * @description STORY-258 AC3: Backend disposable email validation (defense-in-depth).
+         *
+         *     MED-SEC-001: Rate limited to 3 req/10min per IP to prevent trial multi-account abuse.
+         *     Returns 422 if email domain is disposable.
+         */
+        post: operations["validate_signup_email_v1_auth_validate_signup_email_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bid-analysis/{bid_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Bid
+         * @description AC7: Deep on-demand analysis for a single bid.
+         *
+         *     Checks cache first (AC11), then calls LLM.
+         *     Rate limited: 20/hour/user (AC10).
+         */
+        post: operations["analyze_bid_v1_bid_analysis__bid_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing-portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Billing Portal Session
+         * @description Create Stripe Billing Portal session (GTM-FIX-007 AC6-AC7).
+         *
+         *     Allows users to update payment methods, view invoices, and manage subscriptions.
+         *
+         *     Returns:
+         *         dict: {"url": "https://billing.stripe.com/..."}
+         */
+        post: operations["create_billing_portal_session_v1_billing_portal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/daily/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Digest diario atual (publico) */
+        get: operations["daily_digest_latest_v1_blog_daily_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/daily/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Digest diario para uma data especifica (publico) */
+        get: operations["daily_digest_by_date_v1_blog_daily__date__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/cidade/{cidade}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cidade Stats
+         * @description City stats: count, frequent buying orgs, avg values.
+         *
+         *     Public (no auth). Cached 6h.
+         *     Uses the first sector with results to get city data.
+         */
+        get: operations["get_cidade_stats_v1_blog_stats_cidade__cidade__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/cidade/{cidade}/setor/{setor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cidade Sector Stats
+         * @description City × Sector stats: cross-reference city with sector keywords.
+         *
+         *     Public (no auth). Cached 6h.
+         */
+        get: operations["get_cidade_sector_stats_v1_blog_stats_cidade__cidade__setor__setor_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/contratos/cidade/{cidade}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Contratos Cidade Stats
+         * @description City-level contract stats (all sectors) — fallback for blog cidade pages.
+         *
+         *     Public (no auth). Cached 6h.
+         */
+        get: operations["get_contratos_cidade_stats_v1_blog_stats_contratos_cidade__cidade__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/contratos/cidade/{cidade}/setor/{setor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Contratos Cidade Setor Stats
+         * @description City × Sector contract stats — fallback for blog cidade×setor pages.
+         *
+         *     Public (no auth). Cached 6h.
+         */
+        get: operations["get_contratos_cidade_setor_stats_v1_blog_stats_contratos_cidade__cidade__setor__setor_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/contratos/{setor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Contratos Setor Stats
+         * @description National contract stats by sector from pncp_supplier_contracts.
+         *
+         *     Public (no auth). Cached 6h.
+         */
+        get: operations["get_contratos_setor_stats_v1_blog_stats_contratos__setor_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/contratos/{setor_id}/uf/{uf}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Contratos Setor Uf Stats
+         * @description Sector × UF contract stats — fallback for blog pages with zero open editais.
+         *
+         *     Queries pncp_supplier_contracts filtered by uf (idx_psc_uf_data) and sector
+         *     keywords. Public (no auth). Cached 6h.
+         */
+        get: operations["get_contratos_setor_uf_stats_v1_blog_stats_contratos__setor_id__uf__uf__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/panorama/{setor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Panorama Stats
+         * @description National panorama: totals, seasonality, estimated YoY growth.
+         *
+         *     Public (no auth). Cached 6h.
+         */
+        get: operations["get_panorama_stats_v1_blog_stats_panorama__setor_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/setor/{setor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sector Blog Stats
+         * @description Sector overview: count, value range, top modalities, top UFs, 90d trend.
+         *
+         *     Public (no auth). Cached 6h.
+         */
+        get: operations["get_sector_blog_stats_v1_blog_stats_setor__setor_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/stats/setor/{setor_id}/uf/{uf}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sector Uf Stats
+         * @description Sector × UF detail: count, avg value, top 5 recent opportunities.
+         *
+         *     Public (no auth). Cached 6h.
+         */
+        get: operations["get_sector_uf_stats_v1_blog_stats_setor__setor_id__uf__uf__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/weekly/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Digest semanal atual (público) */
+        get: operations["weekly_digest_latest_v1_blog_weekly_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blog/weekly/{year}/{week}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Digest semanal para um período específico (público) */
+        get: operations["weekly_digest_by_week_v1_blog_weekly__year___week__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1449,13 +2136,21 @@ export interface paths {
          * Buscar Licitacoes
          * @description Main search endpoint — thin wrapper that delegates to SearchPipeline.
          *
-         *     STORY-216 AC5: buscar_licitacoes() is a thin wrapper that creates
-         *     SearchPipeline and runs stages. All business logic lives in search_pipeline.py.
+         *     GTM-RESILIENCE-A04: Cache-first progressive delivery.
+         *     When cache exists for this search, returns cached data immediately with
+         *     `live_fetch_in_progress=True` and dispatches background live fetch.
+         *     When no cache, runs synchronous pipeline as before (AC10).
          *
          *     The wrapper handles:
+         *     - Cache-first check and immediate response (A-04 AC1)
+         *     - Background task dispatch (A-04 AC2)
          *     - SSE tracker lifecycle (create, cleanup on error)
          *     - Exception mapping (PNCPRateLimitError → 503, PNCPAPIError → 502, etc.)
          *     - Dependency injection (passing module-level names for test mock compatibility)
+         *
+         *     STORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker
+         *     creation. Previously, when it failed the frontend was left in limbo — POST
+         *     failed but SSE was waiting for a tracker that never existed.
          */
         post: operations["buscar_licitacoes_v1_buscar_post"];
         delete?: never;
@@ -1478,6 +2173,8 @@ export interface paths {
          *     The client opens this connection simultaneously with POST /buscar,
          *     using the same search_id to correlate progress events.
          *
+         *     GTM-GO-002 AC6: Max 3 simultaneous SSE connections per user.
+         *
          *     Events:
          *         - connecting (5%): Initial setup
          *         - fetching (10-55%): Per-UF progress with uf_index/uf_total
@@ -1485,9 +2182,52 @@ export interface paths {
          *         - llm (75-90%): LLM summary generation
          *         - excel (92-98%): Excel report generation
          *         - complete (100%): Search finished
+         *         - partial_results: Non-terminal — intermediate results during background fetch (A-04)
+         *         - refresh_available (100%): Background fetch complete, new data available (A-04)
          *         - error: Search failed
          */
         get: operations["buscar_progress_stream_v1_buscar_progress__search_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/buscar-results/{search_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Search Results
+         * @description Return results of a background fetch or async search.
+         *
+         *     A-04 AC5: Called by frontend when user clicks "Atualizar resultados" banner.
+         *     GTM-ARCH-001 AC3: Also serves results from ARQ Worker (via Redis).
+         *     Returns 404 if search_id not found or expired.
+         */
+        get: operations["get_search_results_v1_buscar_results__search_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calculadora/dados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dados reais PNCP para a calculadora de oportunidades (público) */
+        get: operations["calculadora_dados_v1_calculadora_dados_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1536,6 +2276,552 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/comparador/bids": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Bids By Ids
+         * @description Fetch specific bids by pncp_id from datalake (public, no auth).
+         */
+        get: operations["get_bids_by_ids_v1_comparador_bids_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/comparador/buscar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Buscar Editais
+         * @description Search bids by text query from datalake (public, no auth).
+         */
+        get: operations["buscar_editais_v1_comparador_buscar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/{cnpj}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Perfil de due diligence B2G: CEIS + CNEP por CNPJ
+         * @description Agrega registros CEIS e CNEP do Portal da Transparencia para um CNPJ.
+         *
+         *     Publico, sem auth. Cache: 24h por CNPJ.
+         *     Em caso de falha do Portal da Transparencia, retorna dados parciais.
+         */
+        get: operations["compliance_profile_v1_compliance__cnpj__profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/contratos/orgao/{cnpj}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Perfil de contratos de um orgao publico (por CNPJ) */
+        get: operations["orgao_contratos_stats_v1_contratos_orgao__cnpj__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/contratos/{setor}/{uf}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estatisticas de contratos publicos por setor e UF */
+        get: operations["contratos_stats_v1_contratos__setor___uf__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/dados/agregados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dados agregados do PNCP para o painel público (sem autenticação) */
+        get: operations["dados_agregados_v1_dados_agregados_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/emails/send-welcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Welcome Email
+         * @description Send welcome email to authenticated user (idempotent).
+         *
+         *     AC7: Triggered after successful signup (both email and Google OAuth).
+         *     Frontend calls this after signup confirmation.
+         *     Idempotent: checks profiles.welcome_email_sent_at before sending.
+         */
+        post: operations["send_welcome_email_v1_emails_send_welcome_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/emails/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unsubscribe Email
+         * @description Unsubscribe from marketing emails.
+         *
+         *     AC15: Unsubscribe mechanism in all marketing emails (LGPD + CAN-SPAM).
+         *     AC16: Updates user preference in database.
+         *     AC17: Transactional emails exempt (payment, security).
+         */
+        get: operations["unsubscribe_email_v1_emails_unsubscribe_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/empresa/{cnpj}/perfil-b2g": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Perfil B2G público de uma empresa por CNPJ */
+        get: operations["perfil_b2g_v1_empresa__cnpj__perfil_b2g_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/export/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Edital Pdf
+         * @description Generate and return a 1-page A4 PDF for a single bid.
+         *
+         *     Trial users get a watermark footer.
+         *     Synchronous generation wrapped in asyncio.to_thread with 10s timeout.
+         */
+        post: operations["export_edital_pdf_v1_export_pdf_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/feature-flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Public Feature Flags
+         * @description List all feature flags with current values (authenticated users).
+         *
+         *     DEBT-205 / DEBT-SYS-009: Public endpoint consumed by frontend via SWR.
+         *     Returns flag name, value, description, and category — no admin metadata.
+         */
+        get: operations["list_public_feature_flags_v1_feature_flags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/feature-flags/experiments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Experiments
+         * @description Return active experiment variants for the authenticated user.
+         */
+        get: operations["get_experiments_v1_feature_flags_experiments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Feedback
+         * @description AC1: Submit classification feedback for a search result.
+         *
+         *     AC5: Upserts — if user already gave feedback for this search_id + bid_id, update it.
+         *     AC3: Captures context fields (setor_id, bid_objeto, etc.) from the request body.
+         */
+        post: operations["submit_feedback_v1_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/feedback/{feedback_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Feedback
+         * @description AC9: Delete own feedback for LGPD compliance.
+         */
+        delete: operations["delete_feedback_v1_feedback__feedback_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/first-analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * First Analysis
+         * @description Execute first automatic analysis based on onboarding profile.
+         *
+         *     STORY-265 AC5: Trial expired cannot initiate analysis.
+         *     GTM-004 AC1-4: Maps CNAE to sector, builds BuscaRequest automatically,
+         *     executes search in background, and returns search_id for SSE tracking.
+         */
+        post: operations["first_analysis_v1_first_analysis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/fornecedores/{cnpj}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Perfil completo de um fornecedor do governo (por CNPJ)
+         * @description Agrega historico de contratos do PNCP + dados cadastrais (BrasilAPI via
+         *     enriched_entities) para a pagina /fornecedores/{cnpj}.
+         *
+         *     Publico, sem auth. Cache: 24h TTL em memoria.
+         */
+        get: operations["fornecedor_profile_v1_fornecedores__cnpj__profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/fornecedores/{setor}/{uf}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ranking de fornecedores do governo por setor e UF */
+        get: operations["fornecedores_stats_v1_fornecedores__setor___uf__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * System Health
+         * @description GTM-STAB-008 AC3: Comprehensive system health endpoint (AC4: internal, detailed).
+         *
+         *     Returns component-level statuses (Redis, Supabase, ARQ Worker, PNCP)
+         *     and overall health classification (healthy / degraded / unhealthy).
+         */
+        get: operations["system_health_v1_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/health/cache": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cache Health
+         * @description AC7: Health check for all cache levels.
+         *
+         *     Returns status of Supabase, Redis/InMemory, and Local file caches
+         *     with latency measurements and error details.
+         *     B-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.
+         *     CRIT-081 AC10: Includes warmup_coverage with total_combos, cached, stale, missing.
+         */
+        get: operations["cache_health_v1_health_cache_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/health/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sources Health
+         * @description UX-428 AC5: Health status for all configured procurement sources.
+         *
+         *     Returns enabled/disabled state and availability for each source.
+         *     Read-only — no side effects.
+         */
+        get: operations["sources_health_v1_health_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/health/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Background Tasks Health
+         * @description DEBT-014 SYS-006: Background task health via TaskRegistry.
+         */
+        get: operations["background_tasks_health_v1_health_tasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/indice-municipal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ranking de transparência municipal em compras públicas (público)
+         * @description Ranking nacional ou por UF de transparência municipal. Dados do PNCP.
+         */
+        get: operations["get_ranking_v1_indice_municipal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/indice-municipal/periodos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Períodos disponíveis no Índice Municipal (público)
+         * @description Lista trimestres com dados calculados no índice.
+         */
+        get: operations["get_periodos_v1_indice_municipal_periodos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/indice-municipal/{municipio_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Índice de transparência de um município (público)
+         * @description Retorna índice de transparência de um município (slug: sao-paulo-sp).
+         */
+        get: operations["get_municipio_v1_indice_municipal__municipio_slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/itens/{catmat}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Benchmark de precos governamentais por codigo CATMAT
+         * @description Calcula P10/P50/P90 de contratos do PNCP datalake para um item CATMAT.
+         *
+         *     Publico, sem auth. Cache: 24h. Substitui o Painel de Precos do ComprasGov
+         *     (descontinuado jul/2025).
+         */
+        get: operations["item_profile_v1_itens__catmat__profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/lead-capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Capture Lead
+         * @description Store a lead capture (public, no auth, rate-limited by global middleware).
+         */
+        post: operations["capture_lead_v1_lead_capture_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -1546,6 +2832,9 @@ export interface paths {
         /**
          * Get Profile
          * @description Get current user profile with plan capabilities and quota status.
+         *
+         *     Uses admin client (get_db) because it needs db.auth.admin.get_user_by_id()
+         *     to fetch the user's email from auth.users — an admin-only operation.
          */
         get: operations["get_profile_v1_me_get"];
         put?: never;
@@ -1554,12 +2843,19 @@ export interface paths {
          * Delete Account
          * @description Delete entire user account and all associated data (LGPD Art. 18 VI).
          *
-         *     Cascade order:
-         *     1. Cancel active Stripe subscription (if any)
-         *     2. Delete from: search_sessions, monthly_quota, user_subscriptions,
-         *        user_oauth_tokens, messages, profiles
-         *     3. Delete auth user via Supabase admin API
-         *     4. Log anonymized audit entry
+         *     Uses admin client (get_db) because it needs db.auth.admin.delete_user()
+         *     and must delete across multiple tables regardless of RLS.
+         *
+         *     Strategy:
+         *     1. Cancel active Stripe subscription (external side-effect, must be first)
+         *     2. Delete from profiles (CASCADE propagates to most child tables)
+         *     3. Delete from remaining tables that reference auth.users directly
+         *     4. Delete auth user via Supabase admin API
+         *     5. Log anonymized audit entry
+         *
+         *     If auth user deletion fails (step 4), we do NOT roll back the profile
+         *     deletion — the user's data is already gone and a dangling auth entry
+         *     is preferable to leaving personal data behind (LGPD Art. 18 VI).
          */
         delete: operations["delete_account_v1_me_delete"];
         options?: never;
@@ -1578,6 +2874,9 @@ export interface paths {
          * Export User Data
          * @description Export all user data as JSON file (LGPD Art. 18 V — data portability).
          *
+         *     Uses admin client (get_db) because it queries across multiple tables
+         *     and needs unrestricted access to gather all user data for export.
+         *
          *     Returns a downloadable JSON file containing:
          *     - Profile information
          *     - Search history (sessions)
@@ -1593,6 +2892,574 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/metrics/daily-volume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Daily Volume
+         * @description STORY-358 AC3: Return average bids processed per day.
+         *
+         *     Public endpoint (no authentication required). Used by InstitutionalSidebar
+         *     to display a verified bids/day count instead of a hardcoded number.
+         *
+         *     Queries search_sessions for the specified window and computes daily average
+         *     from total_raw (bids fetched before filtering).
+         */
+        get: operations["get_daily_volume_v1_metrics_daily_volume_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/metrics/discard-rate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Discard Rate
+         * @description Return the moving-average filter discard rate.
+         *
+         *     Public endpoint (no authentication required). Used by the landing page
+         *     to display a verified discard rate instead of a hardcoded number.
+         */
+        get: operations["get_discard_rate_v1_metrics_discard_rate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/metrics/sse-fallback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Sse Fallback
+         * @description STORY-359 AC4: Frontend reports SSE fallback to simulated progress.
+         *
+         *     Lightweight fire-and-forget endpoint — no auth, no body, just increments counter.
+         */
+        post: operations["report_sse_fallback_v1_metrics_sse_fallback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mfa/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Recovery Codes
+         * @description AC5: Generate 10 recovery codes after MFA enrollment.
+         *
+         *     This should be called immediately after successful MFA enrollment.
+         *     Stores bcrypt-hashed codes in the database, returns plaintext once.
+         */
+        post: operations["generate_recovery_codes_v1_mfa_recovery_codes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mfa/regenerate-recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Recovery Codes
+         * @description AC8: Regenerate recovery codes (requires aal2).
+         *
+         *     Invalidates all existing codes and generates a fresh set.
+         */
+        post: operations["regenerate_recovery_codes_v1_mfa_regenerate_recovery_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mfa/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mfa Status
+         * @description AC4: Get MFA status for the current user.
+         *
+         *     Returns whether MFA is enabled, enrolled factors, current AAL level,
+         *     and whether MFA is required for this user's role.
+         */
+        get: operations["get_mfa_status_v1_mfa_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mfa/verify-recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Recovery Code
+         * @description AC7: Verify a recovery code for MFA bypass.
+         *
+         *     Brute force protection: max 3 failed attempts per hour.
+         *     On success: marks code as used, returns remaining count.
+         */
+        post: operations["verify_recovery_code_v1_mfa_verify_recovery_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/municipios/{slug}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Perfil de municipio com licitacoes abertas (por slug)
+         * @description Agrega licitacoes abertas do PNCP datalake + dados IBGE para a pagina
+         *     /municipios/{slug}. Publico, sem auth. Cache: 24h TTL em memoria.
+         */
+        get: operations["municipio_profile_v1_municipios__slug__profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/new-bids-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get New Bids Count
+         * @description Return count of new bids available for the user since last check.
+         *
+         *     Returns 0 when no Redis key exists (cron not yet run, or badge was cleared).
+         */
+        get: operations["get_new_bids_count_v1_notifications_new_bids_count_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Clear New Bids Count
+         * @description Clear the new-bids badge for the user (called after they run a search).
+         *
+         *     Idempotent — safe to call even if the key does not exist.
+         */
+        delete: operations["clear_new_bids_count_v1_notifications_new_bids_count_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/observatorio/relatorio/{mes}/{ano}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Relatório mensal do Observatório de Licitações (público) */
+        get: operations["get_relatorio_mensal_v1_observatorio_relatorio__mes___ano__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/observatorio/relatorio/{mes}/{ano}/csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download CSV do relatório mensal (público) */
+        get: operations["get_relatorio_csv_v1_observatorio_relatorio__mes___ano__csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/tour-event": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Track Tour Event
+         * @description Persist onboarding tour completion/skip events (STORY-313 AC18).
+         *
+         *     Fire-and-forget tracking — always returns 204 regardless of metric state.
+         */
+        post: operations["track_tour_event_v1_onboarding_tour_event_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Org
+         * @description Create organization (owner = current user).
+         */
+        post: operations["create_org_v1_organizations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Org
+         * @description Get the organization the current user belongs to.
+         */
+        get: operations["get_my_org_v1_organizations_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{org_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Org
+         * @description Get organization details (must be a member).
+         */
+        get: operations["get_org_v1_organizations__org_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{org_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Org Invite
+         * @description Accept a pending organization invite.
+         */
+        post: operations["accept_org_invite_v1_organizations__org_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{org_id}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Org Dashboard Endpoint
+         * @description Get consolidated dashboard for organization (owner/admin only).
+         */
+        get: operations["get_org_dashboard_endpoint_v1_organizations__org_id__dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{org_id}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite Org Member
+         * @description Invite a member to the organization (owner/admin only).
+         */
+        post: operations["invite_org_member_v1_organizations__org_id__invite_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{org_id}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload Org Logo
+         * @description Update organization logo URL (owner/admin only).
+         *
+         *     Note: Actual file upload to Supabase Storage is handled client-side.
+         *     This endpoint receives the public storage URL after the client-side upload.
+         */
+        put: operations["upload_org_logo_v1_organizations__org_id__logo_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{org_id}/members/{target_user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Org Member
+         * @description Remove a member from the organization (owner/admin only).
+         */
+        delete: operations["remove_org_member_v1_organizations__org_id__members__target_user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orgao/{cnpj}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estatísticas públicas de um órgão comprador por CNPJ */
+        get: operations["orgao_stats_v1_orgao__cnpj__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/partner/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Partner Dashboard
+         * @description AC14: Dashboard for the logged-in partner.
+         *
+         *     Partner is identified by matching their auth email to partners.contact_email.
+         */
+        get: operations["partner_dashboard_v1_partner_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pipeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Pipeline Items
+         * @description List pipeline items for the authenticated user (AC3).
+         *
+         *     ISSUE-021 fix: Switched to admin client (get_supabase) — user-scoped client
+         *     (get_user_db) had fragile JWT header mutation that silently failed, causing
+         *     PostgREST to evaluate RLS as anonymous user and return 0 rows.
+         *     Defense-in-depth: .eq("user_id", user_id) prevents cross-user access,
+         *     consistent with POST/PATCH/DELETE handlers.
+         *
+         *     STORY-265 AC3: Trial expired can VIEW pipeline (read-only).
+         *     Supports filtering by stage and pagination via limit/offset.
+         */
+        get: operations["list_pipeline_items_v1_pipeline_get"];
+        put?: never;
+        /**
+         * Create Pipeline Item
+         * @description Add a procurement opportunity to the user's pipeline (AC2).
+         *
+         *     ISSUE-021 fix: Reverted to admin client (get_supabase) — user-scoped client
+         *     caused HTTP 500 due to fragile session header mutation in get_user_db.
+         *     Defense-in-depth: .eq("user_id", user_id) prevents cross-user access.
+         *     STORY-265 AC2: Trial expired cannot add items.
+         *     STORY-356: Enforce pipeline item limit (trial: 5 items max).
+         *     Returns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).
+         */
+        post: operations["create_pipeline_item_v1_pipeline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pipeline/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Pipeline Alerts
+         * @description Get pipeline items with deadlines within 7 days (DEBT-127 AC1).
+         *
+         *     STORY-265 AC3: Trial expired can view alerts (read-only).
+         *     Returns items where data_encerramento < now() + 7 days
+         *     and stage is NOT in ('enviada', 'resultado').
+         */
+        get: operations["get_pipeline_alerts_v1_pipeline_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pipeline/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Pipeline Item
+         * @description Remove an item from the pipeline (AC5).
+         *
+         *     ISSUE-021 fix: Reverted to admin client — user-scoped client caused HTTP 500.
+         *     Defense-in-depth: .eq("user_id", user_id) prevents cross-user access.
+         *     STORY-265 AC2: Trial expired cannot delete items.
+         *     Returns 404 if item doesn't exist or doesn't belong to user.
+         */
+        delete: operations["delete_pipeline_item_v1_pipeline__item_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Pipeline Item
+         * @description Update stage and/or notes of a pipeline item (AC4).
+         *
+         *     ISSUE-021 fix: Reverted to admin client — user-scoped client caused HTTP 500.
+         *     Defense-in-depth: .eq("user_id", user_id) prevents cross-user access.
+         *     STORY-265 AC2: Trial expired cannot modify items.
+         *     Validates that stage is a valid enum value.
+         *     Returns 404 if item doesn't exist or doesn't belong to user.
+         */
+        patch: operations["update_pipeline_item_v1_pipeline__item_id__patch"];
+        trace?: never;
+    };
     "/v1/plans": {
         parameters: {
             query?: never;
@@ -1602,9 +3469,449 @@ export interface paths {
         };
         /**
          * Get Plans
-         * @description Get available subscription plans.
+         * @description Get available subscription plans with billing period pricing.
+         *
+         *     STORY-360 AC1: Single source of truth — DB (synced from Stripe) is master.
+         *     Returns per-period pricing from plan_billing_periods table.
+         *     Stripe price IDs stripped from response (STORY-210 AC11).
          */
         get: operations["get_plans_v1_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/profile/alert-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Alert Preferences
+         * @description Get user's alert preferences (STORY-278 AC6).
+         *
+         *     SYS-023: Uses user-scoped Supabase client. RLS on alert_preferences
+         *     ensures users can only read their own preferences.
+         */
+        get: operations["get_alert_preferences_v1_profile_alert_preferences_get"];
+        /**
+         * Update Alert Preferences
+         * @description Update user's alert preferences (STORY-278 AC6).
+         *
+         *     SYS-023: Uses user-scoped Supabase client. RLS on alert_preferences
+         *     ensures users can only modify their own preferences.
+         */
+        put: operations["update_alert_preferences_v1_profile_alert_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/profile/completeness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Profile Completeness
+         * @description STORY-260 AC3: Calculate profile completeness and suggest next question.
+         *
+         *     SYS-023: Uses user-scoped Supabase client. RLS ensures user can only
+         *     read their own profile.
+         */
+        get: operations["get_profile_completeness_v1_profile_completeness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/profile/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Profile Context
+         * @description Get business context from profile (STORY-247 AC3).
+         *
+         *     SYS-023: Uses user-scoped Supabase client. RLS policy on profiles
+         *     ensures users can only read their own profile row.
+         */
+        get: operations["get_profile_context_v1_profile_context_get"];
+        /**
+         * Save Profile Context
+         * @description Save business context from onboarding wizard (STORY-247 AC2).
+         *
+         *     SYS-023: Uses user-scoped Supabase client. RLS policy on profiles
+         *     ensures users can only update their own profile row.
+         *     Stores context_data as JSONB in profiles table.
+         */
+        put: operations["save_profile_context_v1_profile_context_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/referral/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Referral Code
+         * @description Return the authenticated user's referral code (create if missing).
+         */
+        get: operations["get_referral_code_v1_referral_code_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/referral/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem Referral
+         * @description Register a referral redemption during signup.
+         *
+         *     The authenticated user is the *referred* user. We look up the row
+         *     owned by the referrer (matched by code) and link the referred_user_id
+         *     while promoting status to 'signed_up'. If no such row exists we
+         *     silently succeed to avoid leaking code existence.
+         */
+        post: operations["redeem_referral_v1_referral_redeem_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/referral/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Referral Stats
+         * @description Aggregate stats for the authenticated user's referrals.
+         */
+        get: operations["get_referral_stats_v1_referral_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/relatorio-2026-t1/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Relatorio
+         * @description Capture a report lead and dispatch the delivery email.
+         *
+         *     Flow:
+         *       1. Upsert row into `report_leads` on (email, source).
+         *       2. Attempt to send the delivery email via Resend (best-effort).
+         *       3. Return the download URL + email_queued flag.
+         *
+         *     Persistence failure -> 500. Email failure -> 200 with email_queued=False.
+         */
+        post: operations["request_relatorio_v1_relatorio_2026_t1_request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reports/diagnostico": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Diagnostico
+         * @description Generate a PDF diagnostico report for a completed search.
+         *
+         *     Fetches the results from a previous search (by search_id), applies
+         *     viability scoring if not already present, selects the top N opportunities,
+         *     and streams a styled PDF back to the caller as a file download.
+         *
+         *     Request Body:
+         *         {
+         *             "search_id": "uuid-of-completed-search",
+         *             "client_name": "Empresa ABC Ltda",  // optional
+         *             "max_items": 20                       // 1-50
+         *         }
+         *
+         *     Returns:
+         *         PDF file as a streaming attachment:
+         *         Content-Disposition: attachment; filename="diagnostico-<setor>-<date>.pdf"
+         *
+         *     Errors:
+         *         400 Bad Request: search_id is not a valid UUID
+         *         404 Not Found: search not found or expired
+         *         500 Internal Server Error: PDF generation failed
+         */
+        post: operations["generate_diagnostico_v1_reports_diagnostico_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/{search_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Search
+         * @description CRIT-006 AC16-17: Cancel an in-progress search.
+         */
+        post: operations["cancel_search_v1_search__search_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/{search_id}/regenerate-excel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Excel Endpoint
+         * @description STORY-364 AC7-AC8: Regenerate Excel from stored results without re-running search.
+         *
+         *     - 202: Excel generation job enqueued
+         *     - 404: Results not found or expired
+         */
+        post: operations["regenerate_excel_endpoint_v1_search__search_id__regenerate_excel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/{search_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Search Results V1
+         * @description GTM-STAB-009 AC4: Return results of async search.
+         *
+         *     - 200 with BuscaResponse when results are ready
+         *     - 202 with status when still processing
+         *     - 404 when search_id not found or expired
+         */
+        get: operations["get_search_results_v1_v1_search__search_id__results_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/{search_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Search
+         * @description CRIT-006 AC4-5: Retry search with only missing/failed UFs.
+         */
+        post: operations["retry_search_v1_search__search_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/{search_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Status Endpoint
+         * @description GTM-STAB-009 AC3: Enriched status response for polling.
+         *
+         *     LIGHTWEIGHT (<50ms): Reads from in-memory progress tracker + state machine.
+         *     Falls back to DB-based get_search_status only if in-memory state is unavailable.
+         *
+         *     Called by frontend when SSE disconnects (AC12) or for async polling.
+         */
+        get: operations["search_status_endpoint_v1_search__search_id__status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/{search_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Timeline Endpoint
+         * @description AC7: Return all state transitions for audit trail.
+         */
+        get: operations["search_timeline_endpoint_v1_search__search_id__timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search/{search_id}/zero-match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Zero Match Results Endpoint
+         * @description Return items approved by background zero-match LLM classification.
+         *
+         *     - 200: Results ready (may be empty list if none approved)
+         *     - 404: Job not yet completed or results expired
+         */
+        get: operations["get_zero_match_results_endpoint_v1_search__search_id__zero_match_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List All Sectors
+         * @description List all sectors with slug mapping (public, no auth).
+         */
+        get: operations["list_all_sectors_v1_sectors_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sectors/trending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Trending Sectors
+         * @description Top 5 sectors by bid count in the last 7 days (public, no auth).
+         *
+         *     Used by homepage TrendingEditais component to inject fresh internal links.
+         *     Declared BEFORE /sectors/{slug}/stats to avoid FastAPI path parameter shadowing.
+         */
+        get: operations["get_trending_sectors_v1_sectors_trending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sectors/{slug}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sector Stats
+         * @description Public sector stats for SEO landing pages (AC1).
+         *
+         *     No auth required. Returns cached stats (6h TTL).
+         */
+        get: operations["get_sector_stats_v1_sectors__slug__stats_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1633,7 +3940,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/webhooks/stripe": {
+    "/v1/sessions/{search_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Session Excel
+         * @description Download Excel for a previously completed search session.
+         *
+         *     Zero-Churn P2 §2.2: Allows downloads within DATA_RETENTION_DAYS even
+         *     after trial/subscription expires. Bypasses quota checks — only previously
+         *     generated data can be downloaded.
+         */
+        get: operations["download_session_excel_v1_sessions__search_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/setores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar Setores
+         * @description Return available procurement sectors for frontend dropdown.
+         */
+        get: operations["listar_setores_v1_setores_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/share/analise": {
         parameters: {
             query?: never;
             header?: never;
@@ -1643,35 +3994,401 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Stripe Webhook
-         * @description Handle Stripe webhook events with idempotency and signature validation.
-         *
-         *     Security:
-         *     - Verifies Stripe signature to prevent fake webhooks
-         *     - Rejects unsigned/invalid requests with HTTP 400
-         *
-         *     Idempotency:
-         *     - Checks stripe_webhook_events table for duplicate event IDs
-         *     - Returns "already_processed" for duplicate webhooks
-         *
-         *     Processing:
-         *     - Determines billing_period from Stripe subscription interval
-         *     - Updates user_subscriptions table via Supabase client
-         *     - Syncs profiles.plan_type for fallback reliability
-         *     - Invalidates Redis cache for affected user
-         *     - Stores event in stripe_webhook_events for audit trail
-         *
-         *     Args:
-         *         request: FastAPI Request object with Stripe event payload
-         *
-         *     Returns:
-         *         dict: {"status": "success"} or {"status": "already_processed"}
-         *
-         *     Raises:
-         *         HTTPException 400: Invalid payload or signature verification failed
-         *         HTTPException 500: Database error during processing
+         * Create Shared Analysis
+         * @description Create a shareable analysis link for a bid's viability assessment.
          */
-        post: operations["stripe_webhook_v1_webhooks_stripe_post"];
+        post: operations["create_shared_analysis_v1_share_analise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/share/analise/{hash}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Shared Analysis
+         * @description Public endpoint: retrieve a shared viability analysis by hash.
+         */
+        get: operations["get_shared_analysis_v1_share_analise__hash__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sitemap/cnpjs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** CNPJs com ≥1 licitação no datalake (para sitemap) */
+        get: operations["sitemap_cnpjs_v1_sitemap_cnpjs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sitemap/contratos-orgao-indexable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Órgãos compradores com contratos em pncp_supplier_contracts (para sitemap /contratos/orgao/)
+         * @description Retorna CNPJs de órgãos com ≥1 contrato ativo em pncp_supplier_contracts.
+         *
+         *     Diferente de /sitemap/orgaos (que usa pncp_raw_bids/licitações), este
+         *     endpoint consulta pncp_supplier_contracts — a tabela que alimenta
+         *     /contratos/orgao/{cnpj}/stats. Garante que o sitemap só inclui URLs
+         *     que retornam 200, eliminando os 794 404s reportados no GSC.
+         *     Cache: 24h em memória.
+         */
+        get: operations["sitemap_contratos_orgao_indexable_v1_sitemap_contratos_orgao_indexable_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sitemap/fornecedores-cnpj": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Top CNPJs de fornecedores com contratos no datalake (para sitemap)
+         * @description Retorna os CNPJs de fornecedores com mais contratos em pncp_supplier_contracts.
+         *
+         *     Usado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.
+         *     Limite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).
+         *     Cache: 24h em memoria.
+         */
+        get: operations["sitemap_fornecedores_cnpj_v1_sitemap_fornecedores_cnpj_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sitemap/itens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista de codigos CATMAT para sitemap.xml */
+        get: operations["sitemap_itens_v1_sitemap_itens_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sitemap/licitacoes-indexable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Combos setor×UF indexáveis (público — sitemap)
+         * @description Retorna combos setor×UF com bids OR contracts suficientes.
+         */
+        get: operations["get_licitacoes_indexable_v1_sitemap_licitacoes_indexable_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sitemap/municipios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista de slugs de municipios para sitemap.xml
+         * @description Retorna slugs dos municipios pre-cadastrados para o sitemap.xml.
+         *     Cache: 24h em memoria.
+         */
+        get: operations["sitemap_municipios_v1_sitemap_municipios_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sitemap/orgaos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Órgãos compradores com ≥1 licitação no datalake (para sitemap) */
+        get: operations["sitemap_orgaos_v1_sitemap_orgaos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stats/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Estatísticas públicas agregadas do PNCP (sem auth) */
+        get: operations["stats_public_v1_stats_public_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public Status
+         * @description STORY-316 AC3: Public status endpoint (no auth required).
+         *
+         *     Returns per-source status, component health, uptime percentages,
+         *     and last incident timestamp.
+         */
+        get: operations["public_status_v1_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/status/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent Incidents
+         * @description STORY-316 AC13: Recent incidents for status page.
+         */
+        get: operations["recent_incidents_v1_status_incidents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/status/uptime-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Uptime History
+         * @description STORY-316 AC12: Daily uptime data for status page chart.
+         */
+        get: operations["uptime_history_v1_status_uptime_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscription/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Subscription Status
+         * @description Check subscription activation status (GTM-FIX-016).
+         *
+         *     Used by obrigado page to poll for webhook completion.
+         *     Returns current subscription state from DB, with Stripe API fallback.
+         */
+        get: operations["get_subscription_status_v1_subscription_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/trial-emails/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unsubscribe Trial Emails
+         * @description AC2/AC5: One-click unsubscribe from trial marketing emails.
+         *     Zero-churn P2 §1.2: Only disables marketing/promotional emails.
+         *     Critical conversion emails (Day 7/10/13/16) remain active unless
+         *     user explicitly opts out of those too.
+         */
+        get: operations["unsubscribe_trial_emails_v1_trial_emails_unsubscribe_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/trial-emails/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend Webhook
+         * @description AC11: Handle Resend webhook events for email tracking.
+         */
+        post: operations["resend_webhook_v1_trial_emails_webhook_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/trial-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Trial Status
+         * @description Get detailed trial status for conversion flow (GTM-010 AC3).
+         *
+         *     Returns days remaining, usage stats, and expiration info.
+         */
+        get: operations["get_trial_status_v1_trial_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/trial/exit-survey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Exit Survey
+         * @description STORY-369 AC2: Submit exit survey when trial expires.
+         *     Returns 409 if user already submitted a survey.
+         */
+        post: operations["submit_exit_survey_v1_trial_exit_survey_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/trial/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extend Trial Endpoint
+         * @description Extend trial by completing a condition.
+         */
+        post: operations["extend_trial_endpoint_v1_trial_extend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/trial/extensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Extensions Status
+         * @description Get trial extension checklist status.
+         */
+        get: operations["get_extensions_status_v1_trial_extensions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1700,11 +4417,9 @@ export interface paths {
          *     - Returns "already_processed" for duplicate webhooks
          *
          *     Processing:
-         *     - Determines billing_period from Stripe subscription interval
-         *     - Updates user_subscriptions table via Supabase client
-         *     - Syncs profiles.plan_type for fallback reliability
-         *     - Invalidates Redis cache for affected user
-         *     - Stores event in stripe_webhook_events for audit trail
+         *     - Routes to handler in webhooks/handlers/ based on event.type
+         *     - Wraps in asyncio.wait_for() with 30s timeout (SYS-024)
+         *     - Marks event status in stripe_webhook_events for audit trail
          *
          *     Args:
          *         request: FastAPI Request object with Stripe event payload
@@ -1814,6 +4529,213 @@ export interface components {
             }[];
         };
         /**
+         * AlertFilters
+         * @description Filter criteria that define which bids match this alert.
+         */
+        AlertFilters: {
+            /**
+             * Keywords
+             * @description Extra keyword filters
+             */
+            keywords?: string[] | null;
+            /**
+             * Setor
+             * @description Sector ID from sectors_data.yaml
+             */
+            setor?: string | null;
+            /**
+             * Ufs
+             * @description UF codes (e.g. ['SP', 'RJ'])
+             */
+            ufs?: string[] | null;
+            /**
+             * Valor Max
+             * @description Maximum estimated value
+             */
+            valor_max?: number | null;
+            /**
+             * Valor Min
+             * @description Minimum estimated value
+             */
+            valor_min?: number | null;
+        };
+        /** AlertHistoryItem */
+        AlertHistoryItem: {
+            /** Alert Id */
+            alert_id: string;
+            /** Id */
+            id: string;
+            /** Item Id */
+            item_id: string;
+            /** Sent At */
+            sent_at: string;
+        };
+        /** AlertHistoryResponse */
+        AlertHistoryResponse: {
+            /** Items */
+            items: components["schemas"]["AlertHistoryItem"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /** AlertListResponse */
+        AlertListResponse: {
+            /** Alerts */
+            alerts: components["schemas"]["AlertResponse"][];
+            /** Total */
+            total: number;
+        };
+        /** AlertPreferencesRequest */
+        AlertPreferencesRequest: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Frequency
+             * @default daily
+             */
+            frequency: string;
+        };
+        /** AlertPreferencesResponse */
+        AlertPreferencesResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Frequency */
+            frequency: string;
+            /** Last Digest Sent At */
+            last_digest_sent_at?: string | null;
+        };
+        /** AlertPreviewItem */
+        AlertPreviewItem: {
+            /** Id */
+            id: string;
+            /**
+             * Link Pncp
+             * @default
+             */
+            link_pncp: string;
+            /**
+             * Modalidade
+             * @default
+             */
+            modalidade: string;
+            /** Orgao */
+            orgao: string;
+            /** Titulo */
+            titulo: string;
+            /**
+             * Uf
+             * @default
+             */
+            uf: string;
+            /**
+             * Valor Estimado
+             * @default 0
+             */
+            valor_estimado: number;
+            /** Viability Score */
+            viability_score?: number | null;
+        };
+        /** AlertPreviewResponse */
+        AlertPreviewResponse: {
+            /** Alert Id */
+            alert_id: string;
+            /** Alert Name */
+            alert_name: string;
+            /** Items */
+            items: components["schemas"]["AlertPreviewItem"][];
+            /** Message */
+            message: string;
+            /** Total */
+            total: number;
+        };
+        /** AlertResponse */
+        AlertResponse: {
+            /** Active */
+            active: boolean;
+            /** Created At */
+            created_at: string;
+            /** Filters */
+            filters: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Sent Count
+             * @default 0
+             */
+            sent_count: number;
+            /** Updated At */
+            updated_at: string;
+            /** User Id */
+            user_id: string;
+        };
+        /** AlertaBid */
+        AlertaBid: {
+            /** Data Abertura */
+            data_abertura?: string | null;
+            /** Data Publicacao */
+            data_publicacao: string;
+            /**
+             * Link Pncp
+             * @default
+             */
+            link_pncp: string;
+            /**
+             * Modalidade
+             * @default
+             */
+            modalidade: string;
+            /**
+             * Municipio
+             * @default
+             */
+            municipio: string;
+            /** Orgao */
+            orgao: string;
+            /**
+             * Pncp Id
+             * @default
+             */
+            pncp_id: string;
+            /** Titulo */
+            titulo: string;
+            /** Uf */
+            uf: string;
+            /** Valor */
+            valor?: number | null;
+        };
+        /** AlertasResponse */
+        AlertasResponse: {
+            /** Bids */
+            bids: components["schemas"]["AlertaBid"][];
+            /** Last Updated */
+            last_updated: string;
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Total */
+            total: number;
+            /** Uf */
+            uf: string;
+        };
+        /** AuthStatusResponse */
+        AuthStatusResponse: {
+            /** Confirmed */
+            confirmed: boolean;
+            /** User Id */
+            user_id?: string | null;
+        };
+        /**
          * BillingPlansResponse
          * @description Response for GET /plans (billing.py).
          */
@@ -1862,9 +4784,10 @@ export interface components {
          *         "M"
          *       ],
          *       "modalidades": [
-         *         1,
-         *         2,
-         *         6
+         *         4,
+         *         5,
+         *         6,
+         *         7
          *       ],
          *       "ordenacao": "data_desc",
          *       "status": "recebendo_proposta",
@@ -1877,6 +4800,12 @@ export interface components {
          *     }
          */
         BuscaRequest: {
+            /**
+             * Check Sanctions
+             * @description When true, verify supplier CNPJs against CEIS/CNEP sanctions databases. Adds supplier_sanctions field to each result. Performance impact: ~1s per unique CNPJ.
+             * @default false
+             */
+            check_sanctions: boolean;
             /**
              * Data Final
              * @description End date in YYYY-MM-DD format
@@ -1904,6 +4833,12 @@ export interface components {
              */
             exclusion_terms?: string[] | null;
             /**
+             * Force Fresh
+             * @description When true, bypass result cache and always query primary sources. Cache write-through still happens on successful results.
+             * @default false
+             */
+            force_fresh: boolean;
+            /**
              * Itens Por Pagina
              * @description Quantidade de itens por página. Valores permitidos: 10, 20, 50, 100. Padrão: 20.
              * @default 20
@@ -1915,14 +4850,23 @@ export interface components {
             itens_por_pagina: number;
             /**
              * Modalidades
-             * @description Lista de códigos de modalidade conforme Lei 14.133/2021. Códigos válidos: 1 (Pregão Eletrônico), 2 (Pregão Presencial), 3 (Concorrência), 6 (Dispensa), 7 (Inexigibilidade), 9 (Leilão), 10 (Diálogo Competitivo), 11 (Concurso). None = todas as modalidades. NOTA: Códigos 4 (Tomada de Preços) e 5 (Convite) foram removidos por serem da Lei 8.666/93 (revogada).
+             * @description Lista de códigos de modalidade conforme API PNCP. Códigos válidos: 1 (Leilão Eletrônico), 2 (Diálogo Competitivo), 3 (Concurso), 4 (Concorrência Eletrônica), 5 (Concorrência Presencial), 6 (Pregão Eletrônico), 7 (Pregão Presencial), 8 (Dispensa), 10 (Manifestação de Interesse), 11 (Pré-qualificação), 12 (Credenciamento), 13 (Leilão Presencial), 15 (Chamada Pública). None = modalidades padrão [4, 5, 6, 7]. EXCLUÍDOS: 9 (Inexigibilidade) e 14 (Inaplicabilidade) — vencedor pré-definido.
              * @example [
-             *       1,
-             *       2,
-             *       6
+             *       4,
+             *       5,
+             *       6,
+             *       7
              *     ]
              */
             modalidades?: number[] | null;
+            /**
+             * Modo Busca
+             * @description Modo de busca: 'abertas' (padrão) busca licitações com prazo aberto nos últimos 180 dias; 'publicacao' usa datas enviadas pelo frontend.
+             * @default abertas
+             * @example abertas
+             * @example publicacao
+             */
+            modo_busca: string | null;
             /**
              * Municipios
              * @description Lista de códigos IBGE de municípios para filtrar. None = todos os municípios das UFs selecionadas.
@@ -1966,11 +4910,11 @@ export interface components {
             search_id?: string | null;
             /**
              * Setor Id
-             * @description Sector ID for keyword filtering (e.g., 'vestuario', 'alimentos', 'informatica')
-             * @default vestuario
+             * @description Sector ID for keyword filtering (e.g., 'vestuario', 'alimentos', 'informatica'). None when searching by 'Termos Específicos' (custom keywords only).
              * @example vestuario
+             * @example null
              */
-            setor_id: string;
+            setor_id?: string | null;
             /**
              * Show All Matches
              * @description When True, bypasses minimum match floor and returns all results with at least 1 keyword match (for 'show hidden results' feature).
@@ -2004,7 +4948,7 @@ export interface components {
             ufs: string[];
             /**
              * Valor Maximo
-             * @description Valor máximo estimado da licitação em BRL. None = sem limite superior.
+             * @description Valor máximo estimado da licitação em BRL. None = sem limite superior. Ceiling: 1e15 (R$ 1 quatrilhão) — STORY-419 incident guard to match NUMERIC(18,2) on search_sessions.valor_total.
              * @example 5000000
              */
             valor_maximo?: number | null;
@@ -2046,6 +4990,66 @@ export interface components {
          */
         BuscaResponse: {
             /**
+             * Cache Date Range
+             * @description STORY-306 AC5: Date of the cached data when cache_fallback=True (e.g. '2026-02-20')
+             */
+            cache_date_range?: string | null;
+            /**
+             * Cache Fallback
+             * @description STORY-306 AC5: True when serving cached data from a different date range than requested
+             * @default false
+             */
+            cache_fallback: boolean;
+            /**
+             * Cache Level
+             * @description UX-303 AC2: Which cache level served the data — 'supabase', 'redis', or 'local'
+             */
+            cache_level?: string | null;
+            /**
+             * Cache Status
+             * @description UX-303 AC5: Cache freshness status — 'fresh' (0-6h) or 'stale' (6-24h)
+             */
+            cache_status?: string | null;
+            /**
+             * Cached
+             * @description True when results are served from cache (STORY-257A AC9)
+             * @default false
+             */
+            cached: boolean;
+            /**
+             * Cached At
+             * @description ISO timestamp of when cached results were generated
+             */
+            cached_at?: string | null;
+            /**
+             * Cached Sources
+             * @description GTM-FIX-010 AC5r: Source codes that contributed to cached data (e.g. ['PNCP','PORTAL_COMPRAS'])
+             */
+            cached_sources?: string[] | null;
+            /** @description GTM-RESILIENCE-C03: Consolidated coverage metadata for frontend display */
+            coverage_metadata?: components["schemas"]["CoverageMetadata"] | null;
+            /**
+             * Coverage Pct
+             * @description GTM-RESILIENCE-A05 AC1: Coverage percentage (succeeded_ufs / total_ufs_requested * 100)
+             * @default 100
+             */
+            coverage_pct: number;
+            /**
+             * Data Sources
+             * @description Detailed status breakdown of each data source (None for backward compatibility)
+             */
+            data_sources?: components["schemas"]["DataSourceStatus"][] | null;
+            /**
+             * Degradation Guidance
+             * @description GTM-RESILIENCE-A01: User-facing guidance when response_state is 'empty_failure' or 'degraded'
+             */
+            degradation_guidance?: string | null;
+            /**
+             * Degradation Reason
+             * @description Human-readable explanation of partial results (e.g., 'PNCP indisponível, resultados de fontes alternativas')
+             */
+            degradation_reason?: string | null;
+            /**
              * Download Url
              * @description Signed URL for direct Excel download (60min TTL, preferred over base64)
              */
@@ -2061,6 +5065,16 @@ export interface components {
              */
             excel_base64?: string | null;
             /**
+             * Excel Status
+             * @description Excel generation status: 'ready' (inline), 'processing' (background job running), 'skipped' (plan does not allow), 'failed' (job failed), None (legacy)
+             */
+            excel_status?: string | null;
+            /**
+             * Failed Ufs
+             * @description List of UF codes that failed during fetch (timeout or error)
+             */
+            failed_ufs?: string[] | null;
+            /**
              * Filter Relaxed
              * @description True if the minimum match filter was relaxed from strict to 1 due to zero results
              */
@@ -2068,15 +5082,78 @@ export interface components {
             /** @description Breakdown of filter rejection reasons */
             filter_stats?: components["schemas"]["FilterStats"] | null;
             /**
+             * Filter Summary
+             * @description GTM-STAB-005 AC3: Human-readable filter summary (e.g. '3 rejeitadas por UF, 12 por keyword')
+             */
+            filter_summary?: string | null;
+            /**
+             * From Cache
+             * @description GTM-INFRA-003 AC6: True when response came 100% from cache (quota was NOT consumed)
+             * @default false
+             */
+            from_cache: boolean;
+            /**
              * Hidden By Min Match
              * @description Number of bids that matched at least 1 term but were below the minimum match floor
              */
             hidden_by_min_match?: number | null;
             /**
+             * Is Partial
+             * @description True when not all configured data sources responded successfully (some timed out/failed)
+             * @default false
+             */
+            is_partial: boolean;
+            /**
+             * Is Simplified
+             * @description GTM-STAB-003 AC4: True when time budget forced simplified (LLM/viability skipped)
+             * @default false
+             */
+            is_simplified: boolean;
+            /**
+             * Is Truncated
+             * @description True when at least one UF hit the max_pages limit (data may be incomplete)
+             * @default false
+             */
+            is_truncated: boolean;
+            /**
              * Licitacoes
              * @description List of individual bids for display. FREE tier shows 5-10 fully, rest blurred.
              */
             licitacoes?: components["schemas"]["LicitacaoItem"][];
+            /**
+             * Live Fetch In Progress
+             * @description A-04 AC1: True when cache-first response returned and live fetch is running in background
+             * @default false
+             */
+            live_fetch_in_progress: boolean;
+            /**
+             * Llm Source
+             * @description CRIT-005 AC13: Source of the summary — 'ai' (GPT-generated), 'fallback' (heuristic), 'processing' (in progress)
+             */
+            llm_source?: ("ai" | "fallback" | "processing") | null;
+            /**
+             * Llm Status
+             * @description LLM summary status: 'ready' (inline), 'processing' (background job running), None (legacy)
+             */
+            llm_status?: string | null;
+            /**
+             * Match Relaxed
+             * @description STORY-267 AC15: True when min_match_floor was relaxed, enabling 'expanded matching' badge in frontend
+             * @default false
+             */
+            match_relaxed: boolean;
+            /**
+             * Paywall Applied
+             * @description STORY-320 AC3: True when results were truncated due to trial paywall
+             * @default false
+             */
+            paywall_applied: boolean;
+            /**
+             * Pending Review Count
+             * @description STORY-354 AC2: Number of bids awaiting AI reclassification (LLM was temporarily unavailable)
+             * @default 0
+             */
+            pending_review_count: number;
             /**
              * Quota Remaining
              * @description Monthly searches remaining
@@ -2087,8 +5164,23 @@ export interface components {
              * @description Monthly searches used after this request
              */
             quota_used: number;
-            /** @description Strategic executive summary with actionable recommendations (AI-generated or fallback) */
-            resumo: components["schemas"]["ResumoEstrategico"];
+            /**
+             * Relaxation Level
+             * @description GTM-STAB-005 AC4: 0=normal, 1=no floor, 2=no density, 3=top by value
+             */
+            relaxation_level?: number | null;
+            /**
+             * Response State
+             * @description Semantic state of the response: 'live' (fresh data), 'cached' (stale cache served), 'degraded' (partial data), 'empty_failure' (all sources failed, no cache), 'degraded_expired' (all sources failed, expired cache >24h served as last resort)
+             * @default live
+             * @enum {string}
+             */
+            response_state: "live" | "cached" | "degraded" | "empty_failure" | "degraded_expired";
+            /**
+             * Resumo
+             * @description Strategic executive summary with actionable recommendations (AI-generated or fallback)
+             */
+            resumo: components["schemas"]["ResumoEstrategico"] | components["schemas"]["ResumoLicitacoes"];
             /**
              * Source Stats
              * @description Per-source fetch metrics when multi-source is active
@@ -2097,15 +5189,35 @@ export interface components {
                 [key: string]: unknown;
             }[] | null;
             /**
+             * Sources Degraded
+             * @description CRIT-053: Source codes that are degraded (e.g., canary timeout). Not counted as succeeded.
+             */
+            sources_degraded?: string[] | null;
+            /**
+             * Sources Used
+             * @description List of source codes that returned data (e.g., ['PNCP', 'PORTAL_COMPRAS'])
+             */
+            sources_used?: string[] | null;
+            /**
              * Stopwords Removidas
              * @description Stopwords stripped from user input (for transparency)
              */
             stopwords_removidas?: string[] | null;
             /**
+             * Succeeded Ufs
+             * @description List of UF codes that returned data successfully
+             */
+            succeeded_ufs?: string[] | null;
+            /**
              * Termos Utilizados
              * @description Keywords effectively used for filtering (after stopword removal)
              */
             termos_utilizados?: string[] | null;
+            /**
+             * Total Before Paywall
+             * @description STORY-320 AC3: Total results before paywall truncation (shown as 'See all N results')
+             */
+            total_before_paywall?: number | null;
             /**
              * Total Filtrado
              * @description Records after applying filters (UF, value, keywords, deadline)
@@ -2117,6 +5229,28 @@ export interface components {
              */
             total_raw: number;
             /**
+             * Total Ufs Requested
+             * @description Total number of UFs in the original request
+             */
+            total_ufs_requested?: number | null;
+            /**
+             * Truncated Ufs
+             * @description UF codes where results were truncated due to max_pages limit
+             */
+            truncated_ufs?: string[] | null;
+            /**
+             * Truncation Details
+             * @description Per-source truncation flags, e.g. {'pncp': true, 'portal_compras': false}. None when no truncation occurred (backward compatible).
+             */
+            truncation_details?: {
+                [key: string]: boolean;
+            } | null;
+            /**
+             * Ufs Status Detail
+             * @description GTM-RESILIENCE-A05 AC2: Per-UF status breakdown with results count
+             */
+            ufs_status_detail?: components["schemas"]["UfStatusDetail"][] | null;
+            /**
              * Ultima Atualizacao
              * @description ISO timestamp of when search results were generated
              */
@@ -2126,6 +5260,83 @@ export interface components {
              * @description Message shown when Excel is blocked, encouraging upgrade
              */
             upgrade_message?: string | null;
+            /**
+             * Zero Match Candidates Count
+             * @description CRIT-059 AC6: Number of zero-match candidates pending background classification
+             * @default 0
+             */
+            zero_match_candidates_count: number;
+            /**
+             * Zero Match Job Id
+             * @description CRIT-059 AC6: Job ID for background zero-match classification (None when sync or disabled)
+             */
+            zero_match_job_id?: string | null;
+        };
+        /** CTAEventRequest */
+        CTAEventRequest: {
+            /** Action */
+            action: string;
+            /** Variant */
+            variant: string;
+        };
+        /** CalculadoraDadosResponse */
+        CalculadoraDadosResponse: {
+            /** Avg Value */
+            avg_value: number;
+            /** P25 Value */
+            p25_value: number;
+            /** P75 Value */
+            p75_value: number;
+            /** Setor Name */
+            setor_name: string;
+            /** Total Editais Mes */
+            total_editais_mes: number;
+            /** Uf */
+            uf: string;
+        };
+        /**
+         * CancelFeedbackRequest
+         * @description Post-cancellation feedback (UX-308 AC6).
+         */
+        CancelFeedbackRequest: {
+            /**
+             * Feedback
+             * @description Free-text cancellation feedback
+             */
+            feedback: string;
+        };
+        /**
+         * CancelFeedbackResponse
+         * @description Response for cancellation feedback.
+         */
+        CancelFeedbackResponse: {
+            /** Message */
+            message: string;
+            /** Success */
+            success: boolean;
+        };
+        /**
+         * CancelSubscriptionRequest
+         * @description Request body for subscription cancellation (UX-308).
+         */
+        CancelSubscriptionRequest: {
+            /**
+             * Reason
+             * @description Cancellation reason: too_expensive, not_using, missing_features, found_alternative, other
+             */
+            reason?: string | null;
+        };
+        /**
+         * CancelSubscriptionResponse
+         * @description Response for subscription cancellation.
+         */
+        CancelSubscriptionResponse: {
+            /** Ends At */
+            ends_at: string;
+            /** Message */
+            message: string;
+            /** Success */
+            success: boolean;
         };
         /**
          * CheckoutResponse
@@ -2134,6 +5345,386 @@ export interface components {
         CheckoutResponse: {
             /** Checkout Url */
             checkout_url: string;
+        };
+        /** CidadeSectorStats */
+        CidadeSectorStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** Cidade */
+            cidade: string;
+            /**
+             * Has Sufficient Data
+             * @default false
+             */
+            has_sufficient_data: boolean;
+            /** Last Updated */
+            last_updated: string;
+            /**
+             * Orgaos Frequentes
+             * @default []
+             */
+            orgaos_frequentes: components["schemas"]["TopEntry"][];
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /**
+             * Top Modalidades
+             * @default []
+             */
+            top_modalidades: components["schemas"]["TopEntry"][];
+            /**
+             * Top Oportunidades
+             * @default []
+             */
+            top_oportunidades: components["schemas"]["routes__blog_stats__SampleItem"][];
+            /** Total Editais */
+            total_editais: number;
+            /** Uf */
+            uf: string;
+            /**
+             * Value Range Max
+             * @default 0
+             */
+            value_range_max: number;
+            /**
+             * Value Range Min
+             * @default 0
+             */
+            value_range_min: number;
+        };
+        /** CidadeStats */
+        CidadeStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** Cidade */
+            cidade: string;
+            /** Last Updated */
+            last_updated: string;
+            /** Orgaos Frequentes */
+            orgaos_frequentes: components["schemas"]["TopEntry"][];
+            /** Total Editais */
+            total_editais: number;
+            /** Uf */
+            uf: string;
+        };
+        /** ComparadorBid */
+        ComparadorBid: {
+            /** Data Abertura */
+            data_abertura?: string | null;
+            /** Data Publicacao */
+            data_publicacao: string;
+            /**
+             * Link Pncp
+             * @default
+             */
+            link_pncp: string;
+            /**
+             * Modalidade
+             * @default
+             */
+            modalidade: string;
+            /**
+             * Municipio
+             * @default
+             */
+            municipio: string;
+            /** Orgao */
+            orgao: string;
+            /** Pncp Id */
+            pncp_id: string;
+            /** Titulo */
+            titulo: string;
+            /** Uf */
+            uf: string;
+            /** Valor */
+            valor?: number | null;
+        };
+        /** ComparadorBidsResponse */
+        ComparadorBidsResponse: {
+            /** Bids */
+            bids: components["schemas"]["ComparadorBid"][];
+            /** Total */
+            total: number;
+        };
+        /** ComparadorSearchResponse */
+        ComparadorSearchResponse: {
+            /** Bids */
+            bids: components["schemas"]["ComparadorBid"][];
+            /** Query */
+            query: string;
+            /** Total */
+            total: number;
+            /** Uf */
+            uf: string | null;
+        };
+        /** ComplianceProfileResponse */
+        ComplianceProfileResponse: {
+            /** Aviso Legal */
+            aviso_legal: string;
+            /** Cnpj */
+            cnpj: string;
+            /** Fonte Dados */
+            fonte_dados: string;
+            /** Last Updated */
+            last_updated: string;
+            /** Razao Social */
+            razao_social: string;
+            /** Sancoes */
+            sancoes: components["schemas"]["SancaoEntry"][];
+            /** Situacao Geral */
+            situacao_geral: string;
+            /** Total Sancoes Ceis */
+            total_sancoes_ceis: number;
+            /** Total Sancoes Cnep */
+            total_sancoes_cnep: number;
+        };
+        /** ContratoPublico */
+        ContratoPublico: {
+            /** Data Inicio */
+            data_inicio?: string | null;
+            /** Descricao */
+            descricao: string;
+            /** Esfera */
+            esfera?: string | null;
+            /** Orgao */
+            orgao: string;
+            /** Orgao Cnpj */
+            orgao_cnpj?: string | null;
+            /** Uf */
+            uf?: string | null;
+            /** Valor */
+            valor?: number | null;
+        };
+        /** ContratoReferencia */
+        ContratoReferencia: {
+            /** Data Assinatura */
+            data_assinatura: string;
+            /** Objeto */
+            objeto: string;
+            /** Orgao */
+            orgao: string;
+            /** Uf */
+            uf: string;
+            /** Valor */
+            valor: number;
+        };
+        /**
+         * ContratosCidadeSetorStats
+         * @description City × Sector filtered contract stats for zero-editais cidade×setor pages.
+         */
+        ContratosCidadeSetorStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** Cidade */
+            cidade: string;
+            /** Last Updated */
+            last_updated: string;
+            /** Monthly Trend */
+            monthly_trend: components["schemas"]["ContratosSetorTrend"][];
+            /**
+             * N Unique Fornecedores
+             * @default 0
+             */
+            n_unique_fornecedores: number;
+            /**
+             * N Unique Orgaos
+             * @default 0
+             */
+            n_unique_orgaos: number;
+            /**
+             * Sample Contracts
+             * @default []
+             */
+            sample_contracts: components["schemas"]["routes__blog_stats__SampleContract"][];
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Top Fornecedores */
+            top_fornecedores: components["schemas"]["ContratosSetorTopEntry"][];
+            /** Top Orgaos */
+            top_orgaos: components["schemas"]["ContratosSetorTopEntry"][];
+            /** Total Contracts */
+            total_contracts: number;
+            /** Total Value */
+            total_value: number;
+            /** Uf */
+            uf: string;
+        };
+        /**
+         * ContratosCidadeStats
+         * @description City-level contract stats (all sectors) for zero-editais cidade blog pages.
+         */
+        ContratosCidadeStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** Cidade */
+            cidade: string;
+            /** Last Updated */
+            last_updated: string;
+            /** Monthly Trend */
+            monthly_trend: components["schemas"]["ContratosSetorTrend"][];
+            /**
+             * N Unique Fornecedores
+             * @default 0
+             */
+            n_unique_fornecedores: number;
+            /**
+             * N Unique Orgaos
+             * @default 0
+             */
+            n_unique_orgaos: number;
+            /**
+             * Sample Contracts
+             * @default []
+             */
+            sample_contracts: components["schemas"]["routes__blog_stats__SampleContract"][];
+            /** Top Fornecedores */
+            top_fornecedores: components["schemas"]["ContratosSetorTopEntry"][];
+            /** Top Orgaos */
+            top_orgaos: components["schemas"]["ContratosSetorTopEntry"][];
+            /** Total Contracts */
+            total_contracts: number;
+            /** Total Value */
+            total_value: number;
+            /** Uf */
+            uf: string;
+        };
+        /** ContratosSetorStats */
+        ContratosSetorStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** By Uf */
+            by_uf: components["schemas"]["ContratosSetorUfEntry"][];
+            /** Last Updated */
+            last_updated: string;
+            /** Monthly Trend */
+            monthly_trend: components["schemas"]["ContratosSetorTrend"][];
+            /**
+             * N Unique Fornecedores
+             * @default 0
+             */
+            n_unique_fornecedores: number;
+            /**
+             * N Unique Orgaos
+             * @default 0
+             */
+            n_unique_orgaos: number;
+            /**
+             * Sample Contracts
+             * @default []
+             */
+            sample_contracts: components["schemas"]["routes__blog_stats__SampleContract"][];
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Top Fornecedores */
+            top_fornecedores: components["schemas"]["ContratosSetorTopEntry"][];
+            /** Top Orgaos */
+            top_orgaos: components["schemas"]["ContratosSetorTopEntry"][];
+            /** Total Contracts */
+            total_contracts: number;
+            /** Total Value */
+            total_value: number;
+        };
+        /** ContratosSetorTopEntry */
+        ContratosSetorTopEntry: {
+            /** Cnpj */
+            cnpj: string;
+            /** Nome */
+            nome: string;
+            /** Total Contratos */
+            total_contratos: number;
+            /** Valor Total */
+            valor_total: number;
+        };
+        /** ContratosSetorTrend */
+        ContratosSetorTrend: {
+            /** Count */
+            count: number;
+            /** Month */
+            month: string;
+            /** Value */
+            value: number;
+        };
+        /** ContratosSetorUfEntry */
+        ContratosSetorUfEntry: {
+            /** Total Contratos */
+            total_contratos: number;
+            /** Uf */
+            uf: string;
+            /** Valor Total */
+            valor_total: number;
+        };
+        /**
+         * ContratosSetorUfStats
+         * @description Sector × UF filtered contract stats (fallback for zero-editais blog pages).
+         */
+        ContratosSetorUfStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** Last Updated */
+            last_updated: string;
+            /** Monthly Trend */
+            monthly_trend: components["schemas"]["ContratosSetorTrend"][];
+            /**
+             * N Unique Fornecedores
+             * @default 0
+             */
+            n_unique_fornecedores: number;
+            /**
+             * N Unique Orgaos
+             * @default 0
+             */
+            n_unique_orgaos: number;
+            /**
+             * Sample Contracts
+             * @default []
+             */
+            sample_contracts: components["schemas"]["routes__blog_stats__SampleContract"][];
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Top Fornecedores */
+            top_fornecedores: components["schemas"]["ContratosSetorTopEntry"][];
+            /** Top Orgaos */
+            top_orgaos: components["schemas"]["ContratosSetorTopEntry"][];
+            /** Total Contracts */
+            total_contracts: number;
+            /** Total Value */
+            total_value: number;
+            /** Uf */
+            uf: string;
+        };
+        /** ContratosStatsResponse */
+        ContratosStatsResponse: {
+            /** Avg Value */
+            avg_value: number;
+            /** Aviso Legal */
+            aviso_legal: string;
+            /** Last Updated */
+            last_updated: string;
+            /** Monthly Trend */
+            monthly_trend: components["schemas"]["routes__contratos_publicos__MonthlyTrend"][];
+            /** Sample Contracts */
+            sample_contracts: components["schemas"]["routes__contratos_publicos__SampleContract"][];
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Top Fornecedores */
+            top_fornecedores: components["schemas"]["FornecedorRank"][];
+            /** Top Orgaos */
+            top_orgaos: components["schemas"]["OrgaoRank"][];
+            /** Total Contracts */
+            total_contracts: number;
+            /** Total Value */
+            total_value: number;
+            /** Uf */
+            uf: string;
         };
         /**
          * ConversationCategory
@@ -2212,6 +5803,64 @@ export interface components {
             total: number;
         };
         /**
+         * CoverageMetadata
+         * @description GTM-RESILIENCE-C03 AC1: Consolidated coverage metadata.
+         */
+        CoverageMetadata: {
+            /**
+             * Coverage Pct
+             * @description Porcentagem de cobertura (1 decimal)
+             */
+            coverage_pct: number;
+            /**
+             * Data Timestamp
+             * @description ISO timestamp de quando dados foram obtidos
+             */
+            data_timestamp: string;
+            /**
+             * Freshness
+             * @description Indicador de freshness
+             * @enum {string}
+             */
+            freshness: "live" | "cached_fresh" | "cached_stale";
+            /**
+             * Uf Result Counts
+             * @description ISSUE-073: contagem de resultados por UF
+             */
+            uf_result_counts?: {
+                [key: string]: number;
+            };
+            /**
+             * Ufs Empty
+             * @description ISSUE-073: UFs processadas com 0 resultados pos-filtragem
+             */
+            ufs_empty?: string[];
+            /**
+             * Ufs Failed
+             * @description UFs que falharam (timeout/erro)
+             */
+            ufs_failed?: string[];
+            /**
+             * Ufs Processed
+             * @description UFs que retornaram dados com sucesso
+             */
+            ufs_processed: string[];
+            /**
+             * Ufs Requested
+             * @description UFs solicitadas pelo usuario
+             */
+            ufs_requested: string[];
+        };
+        /** CreateAlertRequest */
+        CreateAlertRequest: {
+            filters: components["schemas"]["AlertFilters"];
+            /**
+             * Name
+             * @description Alert display name
+             */
+            name: string;
+        };
+        /**
          * CreateConversationRequest
          * @description Request to create a new conversation with first message.
          */
@@ -2232,6 +5881,29 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** CreateOrgRequest */
+        CreateOrgRequest: {
+            /** Name */
+            name: string;
+        };
+        /** CreatePartnerRequest */
+        CreatePartnerRequest: {
+            /** Contact Email */
+            contact_email: string;
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Revenue Share Pct
+             * @default 25
+             */
+            revenue_share_pct: number;
+            /** Slug */
+            slug: string;
+            /** Stripe Coupon Id */
+            stripe_coupon_id?: string | null;
+        };
         /** CreateUserRequest */
         CreateUserRequest: {
             /** Company */
@@ -2245,15 +5917,147 @@ export interface components {
             full_name?: string | null;
             /**
              * Password
-             * @description User password
+             * @description User password (min 8 chars, 1 uppercase, 1 digit)
              */
             password: string;
             /**
              * Plan Id
              * @description Initial plan
-             * @default free
+             * @default free_trial
              */
             plan_id: string | null;
+        };
+        /** DadosAgregadosResponse */
+        DadosAgregadosResponse: {
+            /** Avg Value */
+            avg_value: number;
+            /** By Modalidade */
+            by_modalidade: components["schemas"]["ModalidadeAggregate"][];
+            /** By Sector */
+            by_sector: components["schemas"]["SectorAggregate"][];
+            /** By Uf */
+            by_uf: components["schemas"]["UfAggregate"][];
+            /** Period */
+            period: string;
+            /** Period End */
+            period_end: string;
+            /** Period Start */
+            period_start: string;
+            /** Total Bids */
+            total_bids: number;
+            /** Total Value */
+            total_value: number;
+            /** Trend 30D */
+            trend_30d: components["schemas"]["routes__dados_publicos__TrendPoint"][];
+            /** Updated At */
+            updated_at: string;
+        };
+        /** DailyDigestResponse */
+        DailyDigestResponse: {
+            /** Avg Value */
+            avg_value: number;
+            /** By Modalidade */
+            by_modalidade: components["schemas"]["DailyModalidade"][];
+            /** By Sector */
+            by_sector: components["schemas"]["DailySector"][];
+            /** By Uf */
+            by_uf: components["schemas"]["DailyUf"][];
+            /** Date */
+            date: string;
+            /** Highlights */
+            highlights: components["schemas"]["DailyHighlight"][];
+            /** Title */
+            title: string;
+            /** Top Sector */
+            top_sector: string;
+            /** Top Uf */
+            top_uf: string;
+            /** Total Bids */
+            total_bids: number;
+            /** Total Value */
+            total_value: number;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** DailyHighlight */
+        DailyHighlight: {
+            /** Orgao */
+            orgao: string;
+            /** Setor */
+            setor: string;
+            /** Titulo */
+            titulo: string;
+            /** Uf */
+            uf: string;
+            /** Valor */
+            valor?: number | null;
+        };
+        /** DailyModalidade */
+        DailyModalidade: {
+            /** Count */
+            count: number;
+            /** Modalidade */
+            modalidade: string;
+            /** Pct */
+            pct: number;
+        };
+        /** DailySector */
+        DailySector: {
+            /** Avg Value */
+            avg_value: number;
+            /** Count */
+            count: number;
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+        };
+        /** DailyUf */
+        DailyUf: {
+            /** Count */
+            count: number;
+            /** Total Value */
+            total_value: number;
+            /** Uf */
+            uf: string;
+        };
+        /** DailyVolumeResponse */
+        DailyVolumeResponse: {
+            /** Avg Bids Per Day */
+            avg_bids_per_day: number;
+            /** Days With Data */
+            days_with_data: number;
+            /** Display Value */
+            display_value: string;
+            /** Total Bids 30D */
+            total_bids_30d: number;
+            /** Total Sessions 30D */
+            total_sessions_30d: number;
+        };
+        /**
+         * DataSourceStatus
+         * @description Status information for a single data source in multi-source fetching.
+         *
+         *     Used to provide transparency about which sources contributed to results
+         *     and which failed/timed out during the search operation.
+         */
+        DataSourceStatus: {
+            /**
+             * Records
+             * @description Number of records successfully returned by this source
+             * @default 0
+             */
+            records: number;
+            /**
+             * Source
+             * @description Data source identifier (e.g., 'pncp', 'compras_gov', 'portal')
+             */
+            source: string;
+            /**
+             * Status
+             * @description Source status: 'ok' (success), 'timeout' (timed out), 'error' (failed), 'skipped' (not attempted)
+             */
+            status: string;
         };
         /**
          * DebugPNCPResponse
@@ -2274,6 +6078,64 @@ export interface components {
             total_registros?: number | null;
         };
         /**
+         * DeepAnalysisRequest
+         * @description Request body for deep analysis.
+         */
+        DeepAnalysisRequest: {
+            /** Bid Data */
+            bid_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Search Id */
+            search_id: string;
+        };
+        /**
+         * DeepBidAnalysis
+         * @description Level 2: Deep on-demand analysis (STORY-259 AC8).
+         */
+        DeepBidAnalysis: {
+            /**
+             * Analise Competitividade
+             * @default
+             */
+            analise_competitividade: string;
+            /**
+             * Analise Prazo
+             * @default
+             */
+            analise_prazo: string;
+            /** Analise Requisitos */
+            analise_requisitos?: string[];
+            /** Bid Id */
+            bid_id: string;
+            /**
+             * Compatibilidade Pct
+             * @default 50
+             */
+            compatibilidade_pct: number;
+            /**
+             * Decisao Sugerida
+             * @default AVALIAR COM CAUTELA
+             */
+            decisao_sugerida: string;
+            /** Justificativas Contra */
+            justificativas_contra?: string[];
+            /** Justificativas Favoraveis */
+            justificativas_favoraveis?: string[];
+            /**
+             * Recomendacao Final
+             * @default
+             */
+            recomendacao_final: string;
+            /** Riscos */
+            riscos?: string[];
+            /**
+             * Score
+             * @default 5
+             */
+            score: number;
+        };
+        /**
          * DeleteAccountResponse
          * @description Response for DELETE /me.
          */
@@ -2283,6 +6145,21 @@ export interface components {
             /** Success */
             success: boolean;
         };
+        /**
+         * DiagnosticoRequest
+         * @description Request body for PDF diagnostico report generation.
+         */
+        DiagnosticoRequest: {
+            /** Client Name */
+            client_name?: string | null;
+            /**
+             * Max Items
+             * @default 20
+             */
+            max_items: number;
+            /** Search Id */
+            search_id: string;
+        };
         /** DimensionItem */
         DimensionItem: {
             /** Count */
@@ -2291,6 +6168,36 @@ export interface components {
             name: string;
             /** Value */
             value: number;
+        };
+        /** EditaisAmostra */
+        EditaisAmostra: {
+            /** Data Encerramento */
+            data_encerramento?: string | null;
+            /** Descricao */
+            descricao: string;
+            /** Modalidade */
+            modalidade?: string | null;
+            /** Orgao */
+            orgao: string;
+            /** Uf */
+            uf?: string | null;
+            /** Valor Estimado */
+            valor_estimado?: number | null;
+        };
+        /** EmpresaInfo */
+        EmpresaInfo: {
+            /** Cnae Principal */
+            cnae_principal: string;
+            /** Cnpj */
+            cnpj: string;
+            /** Porte */
+            porte: string;
+            /** Razao Social */
+            razao_social: string;
+            /** Situacao */
+            situacao: string;
+            /** Uf */
+            uf: string;
         };
         /**
          * EsferaGovernamental
@@ -2303,6 +6210,204 @@ export interface components {
          * @enum {string}
          */
         EsferaGovernamental: "F" | "E" | "M";
+        /** ExitSurveyRequest */
+        ExitSurveyRequest: {
+            /** Reason */
+            reason: string;
+            /** Reason Text */
+            reason_text?: string | null;
+        };
+        /** ExitSurveyResponse */
+        ExitSurveyResponse: {
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+        };
+        /**
+         * ExperienciaLicitacoes
+         * @description Procurement experience level (STORY-260: added INTERMEDIARIO).
+         * @enum {string}
+         */
+        ExperienciaLicitacoes: "PRIMEIRA_VEZ" | "INICIANTE" | "INTERMEDIARIO" | "EXPERIENTE";
+        /** ExtendRequest */
+        ExtendRequest: {
+            /**
+             * Condition
+             * @description Extension condition: profile_complete, feedback_given, or referral_signup
+             */
+            condition: string;
+        };
+        /** ExtendResponse */
+        ExtendResponse: {
+            /** Days Added */
+            days_added: number;
+            /** New Expires At */
+            new_expires_at?: string | null;
+            /** Total Extended */
+            total_extended: number;
+        };
+        /** ExtensionItem */
+        ExtensionItem: {
+            /** Claimed */
+            claimed: boolean;
+            /** Condition */
+            condition: string;
+            /** Days */
+            days: number;
+            /** Eligible */
+            eligible: boolean;
+            /** Label */
+            label: string;
+        };
+        /** ExtensionsStatusResponse */
+        ExtensionsStatusResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Extensions */
+            extensions: components["schemas"]["ExtensionItem"][];
+            /** Max Extension */
+            max_extension: number;
+            /**
+             * Remaining
+             * @default 0
+             */
+            remaining: number;
+            /** Total Extended */
+            total_extended: number;
+        };
+        /**
+         * FPKeywordSuggestion
+         * @description Keyword appearing frequently in false positives.
+         */
+        FPKeywordSuggestion: {
+            /** Count */
+            count: number;
+            /** Keyword */
+            keyword: string;
+            /** Suggestion */
+            suggestion: string;
+        };
+        /** FaqItem */
+        FaqItem: {
+            /** Answer */
+            answer: string;
+            /** Question */
+            question: string;
+        };
+        /** FeatureFlagItem */
+        FeatureFlagItem: {
+            /**
+             * Default
+             * @description Registry default value
+             * @default
+             */
+            default: string;
+            /**
+             * Description
+             * @description Human-readable description
+             * @default
+             */
+            description: string;
+            /**
+             * Env Var
+             * @description Environment variable name
+             * @default
+             */
+            env_var: string;
+            /** @description Flag lifecycle metadata */
+            lifecycle?: components["schemas"]["FeatureFlagLifecycle"] | null;
+            /**
+             * Name
+             * @description Flag name (e.g. LLM_ARBITER_ENABLED)
+             */
+            name: string;
+            /**
+             * Source
+             * @description Value source: redis, memory, env, or default
+             */
+            source: string;
+            /**
+             * Value
+             * @description Current effective value
+             */
+            value: boolean;
+        };
+        /** FeatureFlagLifecycle */
+        FeatureFlagLifecycle: {
+            /**
+             * Category
+             * @description Flag category (llm, filter, source, cache, etc.)
+             * @default
+             */
+            category: string;
+            /**
+             * Created
+             * @description Month created (YYYY-MM)
+             * @default
+             */
+            created: string;
+            /**
+             * Lifecycle
+             * @description permanent | experimental | ops-toggle | gate | deprecating
+             * @default
+             */
+            lifecycle: string;
+            /**
+             * Owner
+             * @description Team/domain that owns this flag
+             * @default
+             */
+            owner: string;
+            /**
+             * Remove After
+             * @description Planned removal date (YYYY-MM) if deprecating
+             */
+            remove_after?: string | null;
+        };
+        /** FeatureFlagListResponse */
+        FeatureFlagListResponse: {
+            /** Flags */
+            flags: components["schemas"]["FeatureFlagItem"][];
+            /** Redis Available */
+            redis_available: boolean;
+            /** Total */
+            total: number;
+        };
+        /** FeatureFlagReloadResponse */
+        FeatureFlagReloadResponse: {
+            /** Flags */
+            flags: {
+                [key: string]: boolean;
+            };
+            /** Message */
+            message: string;
+            /** Overrides Cleared */
+            overrides_cleared: number;
+            /** Success */
+            success: boolean;
+        };
+        /** FeatureFlagUpdateRequest */
+        FeatureFlagUpdateRequest: {
+            /**
+             * Value
+             * @description New flag value (true/false)
+             */
+            value: boolean;
+        };
+        /** FeatureFlagUpdateResponse */
+        FeatureFlagUpdateResponse: {
+            /** Name */
+            name: string;
+            /** Previous Source */
+            previous_source: string;
+            /** Previous Value */
+            previous_value: boolean;
+            /** Source */
+            source: string;
+            /** Value */
+            value: boolean;
+        };
         /**
          * FeatureInfo
          * @description Single feature flag information.
@@ -2318,10 +6423,147 @@ export interface components {
             } | null;
         };
         /**
+         * FeedbackCategory
+         * @description Category for false positive / false negative feedback.
+         * @enum {string}
+         */
+        FeedbackCategory: "wrong_sector" | "irrelevant_modality" | "too_small" | "too_large" | "closed" | "other";
+        /**
+         * FeedbackDeleteResponse
+         * @description DELETE /v1/feedback/{id} response body.
+         */
+        FeedbackDeleteResponse: {
+            /**
+             * Deleted
+             * @default true
+             */
+            deleted: boolean;
+        };
+        /**
+         * FeedbackPatternBreakdown
+         * @description Breakdown of feedback verdicts.
+         */
+        FeedbackPatternBreakdown: {
+            /**
+             * Correct
+             * @default 0
+             */
+            correct: number;
+            /**
+             * False Negative
+             * @default 0
+             */
+            false_negative: number;
+            /**
+             * False Positive
+             * @default 0
+             */
+            false_positive: number;
+        };
+        /**
+         * FeedbackPatternsResponse
+         * @description GET /v1/admin/feedback/patterns response body.
+         */
+        FeedbackPatternsResponse: {
+            breakdown: components["schemas"]["FeedbackPatternBreakdown"];
+            /** Fp Categories */
+            fp_categories?: {
+                [key: string]: number;
+            };
+            /** Precision Estimate */
+            precision_estimate?: number | null;
+            /** Suggested Exclusions */
+            suggested_exclusions?: string[];
+            /** Top Fp Keywords */
+            top_fp_keywords?: components["schemas"]["FPKeywordSuggestion"][];
+            /** Total Feedbacks */
+            total_feedbacks: number;
+        };
+        /**
+         * FeedbackRequest
+         * @description POST /v1/feedback request body.
+         */
+        FeedbackRequest: {
+            /**
+             * Bid Id
+             * @description ID of the bid being rated
+             */
+            bid_id: string;
+            /** Bid Objeto */
+            bid_objeto?: string | null;
+            /** Bid Uf */
+            bid_uf?: string | null;
+            /** Bid Valor */
+            bid_valor?: number | null;
+            category?: components["schemas"]["FeedbackCategory"] | null;
+            /** Confidence Score */
+            confidence_score?: number | null;
+            /**
+             * Reason
+             * @description Free-text reason (optional)
+             */
+            reason?: string | null;
+            /** Relevance Source */
+            relevance_source?: string | null;
+            /**
+             * Search Id
+             * @description UUID of the search session
+             */
+            search_id: string;
+            /** Setor Id */
+            setor_id?: string | null;
+            user_verdict: components["schemas"]["FeedbackVerdict"];
+        };
+        /**
+         * FeedbackResponse
+         * @description POST /v1/feedback response body.
+         */
+        FeedbackResponse: {
+            /** Id */
+            id: string;
+            /** Received At */
+            received_at: string;
+            /**
+             * Updated
+             * @default false
+             */
+            updated: boolean;
+        };
+        /**
+         * FeedbackVerdict
+         * @description User verdict on classification quality.
+         * @enum {string}
+         */
+        FeedbackVerdict: "false_positive" | "false_negative" | "correct";
+        /**
          * FilterStats
          * @description Statistics about filter rejection reasons.
          */
         FilterStats: {
+            /**
+             * Llm Zero Match Aprovadas
+             * @description Zero-match bids approved by LLM
+             * @default 0
+             */
+            llm_zero_match_aprovadas: number;
+            /**
+             * Llm Zero Match Calls
+             * @description Number of LLM calls for zero-keyword-match bids
+             * @default 0
+             */
+            llm_zero_match_calls: number;
+            /**
+             * Llm Zero Match Rejeitadas
+             * @description Zero-match bids rejected by LLM
+             * @default 0
+             */
+            llm_zero_match_rejeitadas: number;
+            /**
+             * Llm Zero Match Skipped Short
+             * @description Zero-match bids skipped due to objeto < 20 chars
+             * @default 0
+             */
+            llm_zero_match_skipped_short: number;
             /**
              * Rejeitadas Keyword
              * @description Rejected by keyword match (zero matches)
@@ -2358,6 +6600,161 @@ export interface components {
              * @default 0
              */
             rejeitadas_valor: number;
+            /**
+             * Zero Match Budget Exceeded
+             * @description Zero-match bids deferred due to time budget
+             * @default 0
+             */
+            zero_match_budget_exceeded: number;
+            /**
+             * Zero Match Cap Value
+             * @description Cap value applied to zero-match pool
+             * @default 200
+             */
+            zero_match_cap_value: number;
+            /**
+             * Zero Match Capped
+             * @description Whether zero-match pool was capped
+             * @default false
+             */
+            zero_match_capped: boolean;
+        };
+        /**
+         * FirstAnalysisRequest
+         * @description Request for automatic first analysis after onboarding (GTM-004 AC1).
+         */
+        FirstAnalysisRequest: {
+            /**
+             * Cnae
+             * @description CNAE code or business segment text
+             */
+            cnae: string;
+            /**
+             * Faixa Valor Max
+             * @description Max contract value in BRL (not cents)
+             */
+            faixa_valor_max?: number | null;
+            /**
+             * Faixa Valor Min
+             * @description Min contract value in BRL (not cents)
+             */
+            faixa_valor_min?: number | null;
+            /**
+             * Objetivo Principal
+             * @description User's primary objective
+             * @default
+             */
+            objetivo_principal: string;
+            /**
+             * Ufs
+             * @description States of operation
+             */
+            ufs: string[];
+        };
+        /**
+         * FirstAnalysisResponse
+         * @description Response from first analysis endpoint (GTM-004 AC3).
+         */
+        FirstAnalysisResponse: {
+            /**
+             * Message
+             * @description User-facing status message
+             * @default
+             */
+            message: string;
+            /**
+             * Search Id
+             * @description UUID for tracking search progress via SSE
+             */
+            search_id: string;
+            /**
+             * Setor Id
+             * @description Resolved sector ID from CNAE mapping
+             * @default vestuario
+             */
+            setor_id: string;
+            /**
+             * Status
+             * @description Search status
+             * @default in_progress
+             */
+            status: string;
+        };
+        /** FornecedorProfileResponse */
+        FornecedorProfileResponse: {
+            /** Anos Atividade */
+            anos_atividade: number[];
+            /** Aviso Legal */
+            aviso_legal: string;
+            /** Cnae Descricao */
+            cnae_descricao: string;
+            /** Cnpj */
+            cnpj: string;
+            /** Contratos Recentes */
+            contratos_recentes: components["schemas"]["RecentContract"][];
+            /** Faq Items */
+            faq_items: components["schemas"]["FaqItem"][];
+            /** Last Updated */
+            last_updated: string;
+            /** Mei */
+            mei: boolean;
+            /** Municipio */
+            municipio: string;
+            /** Razao Social */
+            razao_social: string;
+            /** Simples Nacional */
+            simples_nacional: boolean;
+            /** Top Compradores */
+            top_compradores: components["schemas"]["OrgaoRank"][];
+            /** Total Contratos */
+            total_contratos: number;
+            /** Uf Sede */
+            uf_sede: string;
+            /** Ufs Atuantes */
+            ufs_atuantes: string[];
+            /** Valor Total */
+            valor_total: number;
+        };
+        /** FornecedorRank */
+        FornecedorRank: {
+            /** Cnpj */
+            cnpj: string;
+            /** Nome */
+            nome: string;
+            /** Total Contratos */
+            total_contratos: number;
+            /** Valor Total */
+            valor_total: number;
+        };
+        /** FornecedorTop */
+        FornecedorTop: {
+            /** Cnpj */
+            cnpj: string;
+            /** Nome */
+            nome: string;
+            /** Total Contratos */
+            total_contratos: number;
+            /** Valor Total */
+            valor_total: number;
+        };
+        /** FornecedoresStatsResponse */
+        FornecedoresStatsResponse: {
+            /** Aviso Legal */
+            aviso_legal: string;
+            /** Last Updated */
+            last_updated: string;
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Supplier Ranking */
+            supplier_ranking: components["schemas"]["SupplierEntry"][];
+            /** Top Orgaos Compradores */
+            top_orgaos_compradores: components["schemas"]["OrgaoRank"][];
+            /** Total Suppliers */
+            total_suppliers: number;
+            /** Uf */
+            uf: string;
         };
         /**
          * GoogleSheetsExportHistory
@@ -2374,11 +6771,6 @@ export interface components {
              * @description Export record UUID
              */
             id: string;
-            /**
-             * Last Updated At
-             * @description Last update timestamp (ISO 8601)
-             */
-            updated_at: string;
             /**
              * Search Params
              * @description Search parameters snapshot
@@ -2401,6 +6793,11 @@ export interface components {
              * @description Number of rows exported
              */
             total_rows: number;
+            /**
+             * Updated At
+             * @description Last update timestamp (ISO 8601)
+             */
+            updated_at: string;
         };
         /**
          * GoogleSheetsExportHistoryResponse
@@ -2486,30 +6883,94 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /**
-         * HealthDependencies
-         * @description Health check dependency statuses.
-         */
-        HealthDependencies: {
-            /** Openai */
-            openai: string;
-            /** Redis */
-            redis: string;
-            /** Supabase */
-            supabase: string;
+        /** IndiceResult */
+        IndiceResult: {
+            /** Calculado Em */
+            calculado_em: string;
+            /** Municipio Nome */
+            municipio_nome: string;
+            /** Municipio Slug */
+            municipio_slug: string;
+            /** Percentil */
+            percentil?: number | null;
+            /** Periodo */
+            periodo: string;
+            /** Ranking Nacional */
+            ranking_nacional?: number | null;
+            /** Ranking Uf */
+            ranking_uf?: number | null;
+            /** Score Consistencia */
+            score_consistencia: number;
+            /** Score Diversidade Mercado */
+            score_diversidade_mercado: number;
+            /** Score Eficiencia Temporal */
+            score_eficiencia_temporal: number;
+            /** Score Total */
+            score_total: number;
+            /** Score Transparencia Digital */
+            score_transparencia_digital: number;
+            /** Score Volume Publicacao */
+            score_volume_publicacao: number;
+            /** Total Editais */
+            total_editais: number;
+            /** Uf */
+            uf: string;
+            /** Uf Nome */
+            uf_nome: string;
         };
-        /**
-         * HealthResponse
-         * @description Response for GET /health endpoint.
-         */
-        HealthResponse: {
-            dependencies: components["schemas"]["HealthDependencies"];
-            /** Status */
-            status: string;
-            /** Timestamp */
-            timestamp: string;
-            /** Version */
-            version: string;
+        /** InviteMemberRequest */
+        InviteMemberRequest: {
+            /** Email */
+            email: string;
+        };
+        /** ItemProfileResponse */
+        ItemProfileResponse: {
+            /** Aviso Legal */
+            aviso_legal: string;
+            /** Categoria */
+            categoria: string;
+            /** Catmat */
+            catmat: string;
+            /** Contratos Referencia */
+            contratos_referencia: components["schemas"]["ContratoReferencia"][];
+            /** Faq Items */
+            faq_items: components["schemas"]["FaqItem"][];
+            /** Last Updated */
+            last_updated: string;
+            /** Nome Item */
+            nome_item: string;
+            /** Periodo Referencia */
+            periodo_referencia: string;
+            /** Total Contratos */
+            total_contratos: number;
+            /** Unidade Referencia */
+            unidade_referencia: string;
+            /** Valor Medio */
+            valor_medio?: number | null;
+            /** Valor P10 */
+            valor_p10?: number | null;
+            /** Valor P50 */
+            valor_p50?: number | null;
+            /** Valor P90 */
+            valor_p90?: number | null;
+        };
+        /** LeadCaptureRequest */
+        LeadCaptureRequest: {
+            /** Captured At */
+            captured_at?: string | null;
+            /** Email */
+            email: string;
+            /** Setor */
+            setor?: string | null;
+            /** Source */
+            source: string;
+            /** Uf */
+            uf?: string | null;
+        };
+        /** LeadCaptureResponse */
+        LeadCaptureResponse: {
+            /** Success */
+            success: boolean;
         };
         /**
          * LicitacaoItem
@@ -2537,6 +6998,26 @@ export interface components {
              */
             _source?: string | null;
             /**
+             * Value Source
+             * @description Whether the bid's estimated value was reported ('estimated') or missing ('missing')
+             */
+            _value_source?: ("estimated" | "missing") | null;
+            /**
+             * Cnpj Orgao
+             * @description CNPJ of the issuing government agency. UX-400 AC6.
+             */
+            cnpj_orgao?: string | null;
+            /**
+             * Confidence
+             * @description Confidence level derived from relevance_source: keyword=high, llm_standard=medium, llm_conservative/llm_zero_match=low
+             */
+            confidence?: ("high" | "medium" | "low") | null;
+            /**
+             * Confidence Score
+             * @description Classification confidence 0-100%. keyword=95, llm=varies, item_inspection=85, zero_match<=70
+             */
+            confidence_score?: number | null;
+            /**
              * Data Abertura
              * @description Proposal opening date
              */
@@ -2558,9 +7039,14 @@ export interface components {
             dias_restantes?: number | null;
             /**
              * Link
-             * @description Direct link to PNCP portal
+             * @description Direct link to bid source (priority: linkSistemaOrigem > constructed PNCP URL). Null when no link available (UX-400 AC2).
              */
-            link: string;
+            link?: string | null;
+            /**
+             * Llm Evidence
+             * @description Literal text excerpts from procurement description that support the classification (max 3)
+             */
+            llm_evidence?: string[] | null;
             /**
              * Matched Terms
              * @description List of search terms that matched this bid
@@ -2576,6 +7062,11 @@ export interface components {
              * @description Municipality name
              */
             municipio?: string | null;
+            /**
+             * Numero Compra
+             * @description Procurement number (e.g., edital number). UX-400 AC5.
+             */
+            numero_compra?: string | null;
             /**
              * Objeto
              * @description Procurement object description
@@ -2597,6 +7088,13 @@ export interface components {
              */
             relevance_score?: number | null;
             /**
+             * Relevance Source
+             * @description How relevance was determined: 'keyword' (density >5%), 'llm_standard' (2-5%), 'llm_conservative' (1-2%), 'llm_zero_match' (0% keyword match, LLM classified)
+             */
+            relevance_source?: string | null;
+            /** @description Sanctions check result (only when check_sanctions=true in request) */
+            supplier_sanctions?: components["schemas"]["SanctionsSummarySchema"] | null;
+            /**
              * Uf
              * @description State code (e.g., 'SP')
              */
@@ -2611,6 +7109,36 @@ export interface components {
              * @description Estimated total value in BRL. Null when source does not provide value data (e.g., PCP v2).
              */
             valor?: number | null;
+            /**
+             * Viability Factors
+             * @description Breakdown of viability factors: modalidade, timeline, value_fit, geography (each 0-100 with label)
+             */
+            viability_factors?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Viability Level
+             * @description Viability level: alta (>70), media (40-70), baixa (<40)
+             */
+            viability_level?: ("alta" | "media" | "baixa") | null;
+            /**
+             * Viability Score
+             * @description Viability score 0-100 based on modalidade, timeline, value fit, and geography
+             */
+            viability_score?: number | null;
+        };
+        /** LicitacoesIndexableResponse */
+        LicitacoesIndexableResponse: {
+            /** Combos */
+            combos: {
+                [key: string]: unknown;
+            }[];
+            /** Threshold */
+            threshold: number;
+            /** Total */
+            total: number;
+            /** Updated At */
+            updated_at: string;
         };
         /**
          * MessageResponse
@@ -2633,6 +7161,500 @@ export interface components {
             sender_email?: string | null;
             /** Sender Id */
             sender_id: string;
+        };
+        /** MfaStatusResponse */
+        MfaStatusResponse: {
+            /**
+             * Aal Level
+             * @default aal1
+             */
+            aal_level: string;
+            /** Factors */
+            factors?: {
+                [key: string]: unknown;
+            }[];
+            /** Mfa Enabled */
+            mfa_enabled: boolean;
+            /**
+             * Mfa Required
+             * @default false
+             */
+            mfa_required: boolean;
+        };
+        /** ModalidadeAggregate */
+        ModalidadeAggregate: {
+            /** Code */
+            code: number;
+            /** Count */
+            count: number;
+            /** Name */
+            name: string;
+            /** Pct */
+            pct: number;
+        };
+        /** MunicipioProfileResponse */
+        MunicipioProfileResponse: {
+            /** Aviso Legal */
+            aviso_legal: string;
+            /** Faq Items */
+            faq_items: components["schemas"]["FaqItem"][];
+            /** Ibge Code */
+            ibge_code: string;
+            /** Last Updated */
+            last_updated: string;
+            /** Licitacoes Recentes */
+            licitacoes_recentes: components["schemas"]["routes__municipios_publicos__LicitacaoRecente"][];
+            /** Nome */
+            nome: string;
+            /** Pib Per Capita */
+            pib_per_capita?: number | null;
+            /** Populacao */
+            populacao: number;
+            /** Slug */
+            slug: string;
+            /** Total Licitacoes Abertas */
+            total_licitacoes_abertas: number;
+            /** Uf */
+            uf: string;
+            /** Valor Total Licitacoes */
+            valor_total_licitacoes: number;
+        };
+        /** NewBidsCountResponse */
+        NewBidsCountResponse: {
+            /** Count */
+            count: number;
+        };
+        /**
+         * NewOpportunitiesResponse
+         * @description DEBT-127 AC6-AC9: New opportunities since last search.
+         */
+        NewOpportunitiesResponse: {
+            /** Count */
+            count: number;
+            /** Days Since Last Search */
+            days_since_last_search?: number | null;
+            /** Has Previous Search */
+            has_previous_search: boolean;
+            /** Label */
+            label?: string | null;
+            /** Last Search At */
+            last_search_at?: string | null;
+        };
+        /** OrgaoContratosStatsResponse */
+        OrgaoContratosStatsResponse: {
+            /** Avg Value */
+            avg_value: number;
+            /** Aviso Legal */
+            aviso_legal: string;
+            /** Last Updated */
+            last_updated: string;
+            /** Monthly Trend */
+            monthly_trend: components["schemas"]["routes__contratos_publicos__MonthlyTrend"][];
+            /** Orgao Cnpj */
+            orgao_cnpj: string;
+            /** Orgao Nome */
+            orgao_nome: string;
+            /** Sample Contracts */
+            sample_contracts: components["schemas"]["routes__contratos_publicos__SampleContract"][];
+            /** Top Fornecedores */
+            top_fornecedores: components["schemas"]["FornecedorRank"][];
+            /** Total Contracts */
+            total_contracts: number;
+            /** Total Value */
+            total_value: number;
+        };
+        /** OrgaoRank */
+        OrgaoRank: {
+            /** Cnpj */
+            cnpj: string;
+            /** Nome */
+            nome: string;
+            /** Total Contratos */
+            total_contratos: number;
+            /** Valor Total */
+            valor_total: number;
+        };
+        /** OrgaoStatsResponse */
+        OrgaoStatsResponse: {
+            /** Aviso Legal */
+            aviso_legal: string;
+            /** Cnpj */
+            cnpj: string;
+            /** Esfera */
+            esfera: string;
+            /** Licitacoes 30D */
+            licitacoes_30d: number;
+            /** Licitacoes 365D */
+            licitacoes_365d: number;
+            /** Licitacoes 90D */
+            licitacoes_90d: number;
+            /** Municipio */
+            municipio: string;
+            /** Nome */
+            nome: string;
+            /**
+             * Top Fornecedores
+             * @default []
+             */
+            top_fornecedores: components["schemas"]["FornecedorTop"][];
+            /** Top Modalidades */
+            top_modalidades: components["schemas"]["routes__orgao_publico__ModalidadeCount"][];
+            /** Top Setores */
+            top_setores: string[];
+            /**
+             * Total Contratos 24M
+             * @default 0
+             */
+            total_contratos_24m: number;
+            /** Total Licitacoes */
+            total_licitacoes: number;
+            /** Uf */
+            uf: string;
+            /** Ultimas Licitacoes */
+            ultimas_licitacoes: components["schemas"]["routes__orgao_publico__LicitacaoRecente"][];
+            /** Valor Medio Estimado */
+            valor_medio_estimado: number;
+            /**
+             * Valor Total Contratos 24M
+             * @default 0
+             */
+            valor_total_contratos_24m: number;
+            /** Valor Total Estimado */
+            valor_total_estimado: number;
+        };
+        /** PanoramaStats */
+        PanoramaStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** Crescimento Estimado Pct */
+            crescimento_estimado_pct: number;
+            /** Last Updated */
+            last_updated: string;
+            /** Sazonalidade */
+            sazonalidade: components["schemas"]["routes__blog_stats__TrendPoint"][];
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Top Modalidades */
+            top_modalidades: components["schemas"]["TopEntry"][];
+            /** Top Ufs */
+            top_ufs: components["schemas"]["TopEntry"][];
+            /** Total Nacional */
+            total_nacional: number;
+            /** Total Value */
+            total_value: number;
+        };
+        /** PdfEditalRequest */
+        PdfEditalRequest: {
+            /** Data Encerramento */
+            data_encerramento?: string | null;
+            /** Data Publicacao */
+            data_publicacao?: string | null;
+            /** Link */
+            link?: string | null;
+            /** Modalidade */
+            modalidade?: string | null;
+            /** Municipio */
+            municipio?: string | null;
+            /** Numero Compra */
+            numero_compra?: string | null;
+            /** Objeto */
+            objeto: string;
+            /** Orgao */
+            orgao: string;
+            /** Pncp Id */
+            pncp_id?: string | null;
+            /** Recomendacao */
+            recomendacao?: string | null;
+            /** Resumo Executivo */
+            resumo_executivo?: string | null;
+            /** Uf */
+            uf: string;
+            /** Valor */
+            valor?: number | null;
+            /** Viability Factors */
+            viability_factors?: {
+                [key: string]: unknown;
+            } | null;
+            /** Viability Level */
+            viability_level?: string | null;
+            /** Viability Score */
+            viability_score?: number | null;
+        };
+        /** PerfilB2GResponse */
+        PerfilB2GResponse: {
+            /** Aviso Legal */
+            aviso_legal: string;
+            /**
+             * Brasilapi Status
+             * @default ok
+             */
+            brasilapi_status: string;
+            /** Contratos */
+            contratos: components["schemas"]["ContratoPublico"][];
+            /** Editais Abertos Setor */
+            editais_abertos_setor: number;
+            /**
+             * Editais Amostra
+             * @default []
+             */
+            editais_amostra: components["schemas"]["EditaisAmostra"][];
+            empresa: components["schemas"]["EmpresaInfo"];
+            /**
+             * Partial
+             * @default false
+             */
+            partial: boolean;
+            /** Score */
+            score: string;
+            /** Setor Detectado */
+            setor_detectado: string;
+            /** Setor Nome */
+            setor_nome: string;
+            /** Total Contratos 24M */
+            total_contratos_24m: number;
+            /** Ufs Atuacao */
+            ufs_atuacao: string[];
+            /** Valor Total 24M */
+            valor_total_24m: number;
+        };
+        /**
+         * PerfilContexto
+         * @description Business context profile collected during onboarding wizard.
+         *
+         *     Used to personalize search defaults and LLM recommendations.
+         *     Stored as JSONB in profiles.context_data.
+         */
+        PerfilContexto: {
+            /**
+             * Atestados
+             * @description Certifications held (e.g., ['crea', 'iso_9001'])
+             */
+            atestados?: string[] | null;
+            /**
+             * Capacidade Funcionarios
+             * @description Number of employees
+             */
+            capacidade_funcionarios?: number | null;
+            /**
+             * Cnae
+             * @description CNAE code or business segment (e.g., '4781-4/00')
+             */
+            cnae?: string | null;
+            /** @description Procurement experience level */
+            experiencia_licitacoes: components["schemas"]["ExperienciaLicitacoes"];
+            /**
+             * Faixa Valor Max
+             * @description Maximum contract value of interest (BRL)
+             */
+            faixa_valor_max?: number | null;
+            /**
+             * Faixa Valor Min
+             * @description Minimum contract value of interest (BRL)
+             */
+            faixa_valor_min?: number | null;
+            /**
+             * Faturamento Anual
+             * @description Annual revenue in BRL
+             */
+            faturamento_anual?: number | null;
+            /**
+             * Modalidades Interesse
+             * @description Preferred procurement modality codes (PNCP API codes)
+             */
+            modalidades_interesse?: number[] | null;
+            /**
+             * Objetivo Principal
+             * @description User's primary objective in free text
+             */
+            objetivo_principal?: string | null;
+            /**
+             * Palavras Chave
+             * @description Business-specific keywords for relevance boosting
+             */
+            palavras_chave?: string[] | null;
+            /** @description Company size: ME, EPP, MEDIO, GRANDE */
+            porte_empresa: components["schemas"]["PorteEmpresa"];
+            /**
+             * Ticket Medio Desejado
+             * @description Desired average ticket in BRL cents
+             */
+            ticket_medio_desejado?: number | null;
+            /**
+             * Ufs Atuacao
+             * @description States where the company operates (e.g., ['SP', 'RJ', 'MG'])
+             * @example [
+             *       "SP",
+             *       "RJ"
+             *     ]
+             */
+            ufs_atuacao: string[];
+        };
+        /**
+         * PerfilContextoResponse
+         * @description Response for GET /v1/profile/context.
+         */
+        PerfilContextoResponse: {
+            /**
+             * Completed
+             * @description Whether onboarding wizard has been completed
+             * @default false
+             */
+            completed: boolean;
+            /**
+             * Context Data
+             * @description Business context data from onboarding
+             */
+            context_data?: {
+                [key: string]: unknown;
+            };
+        };
+        /** PeriodosResponse */
+        PeriodosResponse: {
+            /** Periodos */
+            periodos: string[];
+        };
+        /**
+         * PipelineAlertsResponse
+         * @description Pipeline items with approaching deadlines.
+         */
+        PipelineAlertsResponse: {
+            /** Items */
+            items: components["schemas"]["PipelineItemResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * PipelineItemCreate
+         * @description Request to add an item to the pipeline.
+         */
+        PipelineItemCreate: {
+            /**
+             * Data Encerramento
+             * @description Deadline ISO timestamp
+             */
+            data_encerramento?: string | null;
+            /**
+             * Link Pncp
+             * @description Direct PNCP link
+             */
+            link_pncp?: string | null;
+            /**
+             * Notes
+             * @description User notes
+             */
+            notes?: string | null;
+            /**
+             * Objeto
+             * @description Procurement object description
+             */
+            objeto: string;
+            /**
+             * Orgao
+             * @description Government agency name
+             */
+            orgao?: string | null;
+            /**
+             * Pncp Id
+             * @description PNCP unique identifier
+             */
+            pncp_id: string;
+            /**
+             * Search Id
+             * @description Search session that discovered this item (DEBT-120)
+             */
+            search_id?: string | null;
+            /**
+             * Stage
+             * @description Initial pipeline stage
+             * @default descoberta
+             */
+            stage: string | null;
+            /**
+             * Uf
+             * @description State code
+             */
+            uf?: string | null;
+            /**
+             * Valor Estimado
+             * @description Estimated value in BRL
+             */
+            valor_estimado?: number | null;
+        };
+        /**
+         * PipelineItemResponse
+         * @description Single pipeline item response.
+         */
+        PipelineItemResponse: {
+            /** Created At */
+            created_at: string;
+            /** Data Encerramento */
+            data_encerramento?: string | null;
+            /** Id */
+            id: string;
+            /** Link Pncp */
+            link_pncp?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Objeto */
+            objeto: string;
+            /** Orgao */
+            orgao?: string | null;
+            /** Pncp Id */
+            pncp_id: string;
+            /** Search Id */
+            search_id?: string | null;
+            /** Stage */
+            stage: string;
+            /** Uf */
+            uf?: string | null;
+            /** Updated At */
+            updated_at: string;
+            /** User Id */
+            user_id: string;
+            /** Valor Estimado */
+            valor_estimado?: number | null;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /**
+         * PipelineItemUpdate
+         * @description Request to update a pipeline item (stage and/or notes).
+         */
+        PipelineItemUpdate: {
+            /**
+             * Notes
+             * @description Updated notes
+             */
+            notes?: string | null;
+            /**
+             * Stage
+             * @description New pipeline stage
+             */
+            stage?: string | null;
+            /**
+             * Version
+             * @description Current version for optimistic locking (STORY-307)
+             */
+            version?: number | null;
+        };
+        /**
+         * PipelineListResponse
+         * @description Paginated list of pipeline items.
+         */
+        PipelineListResponse: {
+            /** Items */
+            items: components["schemas"]["PipelineItemResponse"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
         };
         /**
          * PlanDetails
@@ -2672,6 +7694,254 @@ export interface components {
             total: number;
         };
         /**
+         * PorteEmpresa
+         * @description Company size classification (STORY-260: added MEI).
+         * @enum {string}
+         */
+        PorteEmpresa: "MEI" | "ME" | "EPP" | "MEDIO" | "GRANDE";
+        /**
+         * ProfileCompletenessResponse
+         * @description STORY-260 AC3: Response for GET /v1/profile/completeness.
+         */
+        ProfileCompletenessResponse: {
+            /** Completeness Pct */
+            completeness_pct: number;
+            /** Filled Fields */
+            filled_fields: number;
+            /**
+             * Is Complete
+             * @default false
+             */
+            is_complete: boolean;
+            /** Missing Fields */
+            missing_fields?: string[];
+            /** Next Question */
+            next_question?: string | null;
+            /** Total Fields */
+            total_fields: number;
+        };
+        /** PublicFeatureFlagItem */
+        PublicFeatureFlagItem: {
+            /**
+             * Category
+             * @description Flag category
+             * @default
+             */
+            category: string;
+            /**
+             * Description
+             * @description Human-readable description
+             * @default
+             */
+            description: string;
+            /**
+             * Name
+             * @description Flag name
+             */
+            name: string;
+            /**
+             * Value
+             * @description Current effective value
+             */
+            value: boolean;
+        };
+        /** PublicFeatureFlagListResponse */
+        PublicFeatureFlagListResponse: {
+            /** Flags */
+            flags: components["schemas"]["PublicFeatureFlagItem"][];
+            /** Total */
+            total: number;
+        };
+        /** RankingResponse */
+        RankingResponse: {
+            /** Fonte */
+            fonte: string;
+            /** License */
+            license: string;
+            /** Periodo */
+            periodo: string;
+            /** Resultados */
+            resultados: components["schemas"]["IndiceResult"][];
+            /** Total */
+            total: number;
+        };
+        /** RecentContract */
+        RecentContract: {
+            /** Data Assinatura */
+            data_assinatura: string;
+            /** Objeto */
+            objeto: string;
+            /** Orgao */
+            orgao: string;
+            /** Uf */
+            uf: string;
+            /** Valor */
+            valor?: number | null;
+        };
+        /**
+         * Recomendacao
+         * @description Actionable recommendation for a specific procurement opportunity.
+         *
+         *     Generated by the LLM consultant or heuristic fallback.
+         *     Each recommendation includes a concrete action and justification.
+         */
+        Recomendacao: {
+            /**
+             * Acao Sugerida
+             * @description Concrete suggested action
+             * @example Prepare documentação até 17/02. Prazo final para propostas em 3 dias.
+             */
+            acao_sugerida: string;
+            /**
+             * Justificativa
+             * @description Why this opportunity is relevant
+             * @example Valor compatível com seu porte, órgão federal com bom histórico de pagamento.
+             */
+            justificativa: string;
+            /**
+             * Oportunidade
+             * @description Opportunity name (agency/object)
+             * @example Prefeitura de Porto Alegre - Uniformes Escolares
+             */
+            oportunidade: string;
+            /**
+             * Urgencia
+             * @description Urgency level: alta (<3 days), media (3-7 days), baixa (>7 days)
+             * @enum {string}
+             */
+            urgencia: "alta" | "media" | "baixa";
+            /**
+             * Valor
+             * @description Estimated value in BRL
+             */
+            valor: number;
+        };
+        /** RecoveryCodesResponse */
+        RecoveryCodesResponse: {
+            /** Codes */
+            codes: string[];
+            /**
+             * Message
+             * @default Salve estes códigos em local seguro. Cada código só pode ser usado uma vez.
+             */
+            message: string;
+        };
+        /** ReferralCodeResponse */
+        ReferralCodeResponse: {
+            /**
+             * Code
+             * @description 8-char alphanumeric referral code
+             */
+            code: string;
+            /**
+             * Share Url
+             * @description Full signup URL with ?ref= param
+             */
+            share_url: string;
+        };
+        /** ReferralRedeemRequest */
+        ReferralRedeemRequest: {
+            /** Code */
+            code: string;
+            /** Referred User Id */
+            referred_user_id: string;
+        };
+        /** ReferralRedeemResponse */
+        ReferralRedeemResponse: {
+            /** Code */
+            code?: string | null;
+            /** Status */
+            status: string;
+        };
+        /** ReferralStatsResponse */
+        ReferralStatsResponse: {
+            /** Code */
+            code: string;
+            /**
+             * Credits Earned Months
+             * @default 0
+             */
+            credits_earned_months: number;
+            /**
+             * Total Converted
+             * @default 0
+             */
+            total_converted: number;
+            /**
+             * Total Signups
+             * @default 0
+             */
+            total_signups: number;
+        };
+        /** RegenerateRecoveryResponse */
+        RegenerateRecoveryResponse: {
+            /** Codes */
+            codes: string[];
+            /**
+             * Message
+             * @default Novos códigos gerados. Os códigos anteriores foram invalidados.
+             */
+            message: string;
+        };
+        /** RelatorioMensal */
+        RelatorioMensal: {
+            /** Ano */
+            ano: number;
+            /** Fonte */
+            fonte: string;
+            /** Gerado Em */
+            gerado_em: string;
+            /** License */
+            license: string;
+            /** Mes */
+            mes: number;
+            /** Mes Nome */
+            mes_nome: string;
+            /** Modalidades */
+            modalidades: components["schemas"]["routes__observatorio__ModalidadeCount"][];
+            /** Periodo */
+            periodo: string;
+            /** Setores Em Alta */
+            setores_em_alta: components["schemas"]["SetorHighlight"][];
+            /** Tendencia Semanal */
+            tendencia_semanal: components["schemas"]["routes__observatorio__MonthlyTrend"][];
+            /** Top Ufs */
+            top_ufs: components["schemas"]["UfCount"][];
+            /** Total Editais */
+            total_editais: number;
+            /** Valor Medio */
+            valor_medio: number;
+            /** Valor Total */
+            valor_total: number;
+        };
+        /** RelatorioRequest */
+        RelatorioRequest: {
+            /**
+             * Cargo
+             * @enum {string}
+             */
+            cargo: "diretor" | "gerente" | "analista" | "consultor" | "outro";
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Empresa */
+            empresa: string;
+            /**
+             * Newsletter Opt In
+             * @default false
+             */
+            newsletter_opt_in: boolean;
+        };
+        /** RelatorioResponse */
+        RelatorioResponse: {
+            /** Download Url */
+            download_url: string;
+            /** Email Queued */
+            email_queued: boolean;
+        };
+        /**
          * ReplyRequest
          * @description Request to reply to a conversation.
          */
@@ -2686,6 +7956,124 @@ export interface components {
         ReplyStatusResponse: {
             /** Status */
             status: string;
+        };
+        /** ResendRequest */
+        ResendRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /** ResendResponse */
+        ResendResponse: {
+            /** Message */
+            message: string;
+            /** Success */
+            success: boolean;
+        };
+        /**
+         * ResumoEstrategico
+         * @description Strategic executive summary with actionable recommendations.
+         *
+         *     Extends ResumoLicitacoes for backward compatibility — all original fields
+         *     (resumo_executivo, total_oportunidades, valor_total, destaques, alerta_urgencia)
+         *     remain present. New fields provide actionable intelligence.
+         *
+         *     Fields:
+         *         recomendacoes: Prioritized list of recommended opportunities with actions
+         *         alertas_urgencia: Multiple urgency alerts (replaces single alerta_urgencia)
+         *         insight_setorial: Sector-level market context and trends
+         * @example {
+         *       "alerta_urgencia": "⚠️ 5 licitações encerram em 24 horas",
+         *       "alertas_urgencia": [
+         *         "⚠️ 2 licitações encerram em 48h — ação imediata necessária",
+         *         "📋 Edital de SP exige certidão FGTS atualizada (verificar validade)"
+         *       ],
+         *       "destaques": [
+         *         "3 licitações encerram em menos de 72h",
+         *         "Maior valor: R$ 500k em SP"
+         *       ],
+         *       "insight_setorial": "O setor de vestuário apresenta 15 oportunidades esta semana, 25% acima da média mensal. Concentração em SP e RJ sugere demanda sazonal por uniformes escolares.",
+         *       "recomendacoes": [
+         *         {
+         *           "acao_sugerida": "Prepare documentação até 16/02. Exige certidão negativa atualizada.",
+         *           "justificativa": "Maior valor do lote, órgão municipal com bom histórico de pagamento.",
+         *           "oportunidade": "Prefeitura de São Paulo - Uniformes Escolares",
+         *           "urgencia": "alta",
+         *           "valor": 500000
+         *         }
+         *       ],
+         *       "resumo_executivo": "Encontradas 15 licitações de vestuário em SP e RJ, totalizando R$ 2.3M. Recomendamos atenção imediata a 3 oportunidades com prazo curto.",
+         *       "total_oportunidades": 15,
+         *       "valor_total": 2300000
+         *     }
+         */
+        ResumoEstrategico: {
+            /**
+             * Alerta Urgencia
+             * @description Optional urgency alert for time-sensitive opportunities
+             * @example ⚠️ 5 licitações encerram em 24 horas
+             */
+            alerta_urgencia?: string | null;
+            /**
+             * Alertas Urgencia
+             * @description Multiple urgency alerts for time-sensitive opportunities
+             * @example [
+             *       "⚠️ 2 licitações encerram em 48h",
+             *       "📋 3 editais exigem certidão atualizada"
+             *     ]
+             */
+            alertas_urgencia?: string[];
+            /**
+             * Destaques
+             * @description Key highlights (2-5 bullet points)
+             * @example [
+             *       "3 licitações com prazo até 48h",
+             *       "Maior valor: R$ 500k em SP"
+             *     ]
+             */
+            destaques?: string[];
+            /**
+             * Insight Setorial
+             * @description Sector-level market context and trend insight
+             * @default
+             * @example Este mês há 20% mais oportunidades de vestuário que o mês anterior no RS.
+             */
+            insight_setorial: string;
+            /**
+             * Outlier Count
+             * @description Number of outlier values excluded from valor_total computation
+             * @default 0
+             */
+            outlier_count: number;
+            /**
+             * Recomendacoes
+             * @description Prioritized list of recommended opportunities with concrete actions
+             */
+            recomendacoes?: components["schemas"]["Recomendacao"][];
+            /**
+             * Resumo Executivo
+             * @description 1-2 sentence executive summary
+             * @example Encontradas 15 licitações de uniformes em SP e RJ, totalizando R$ 2.3M.
+             */
+            resumo_executivo: string;
+            /**
+             * Total Oportunidades
+             * @description Number of procurement opportunities found
+             */
+            total_oportunidades: number;
+            /**
+             * Valor Sanitizado
+             * @description Whether outlier-robust sanitization was applied to valor_total
+             * @default false
+             */
+            valor_sanitizado: boolean;
+            /**
+             * Valor Total
+             * @description Total value of all opportunities in BRL
+             */
+            valor_total: number;
         };
         /**
          * ResumoLicitacoes
@@ -2707,8 +8095,10 @@ export interface components {
          *         "3 licitações com prazo até 48h",
          *         "Maior valor: R$ 500k em SP"
          *       ],
+         *       "outlier_count": 0,
          *       "resumo_executivo": "Encontradas 15 licitações de uniformes em SP e RJ.",
          *       "total_oportunidades": 15,
+         *       "valor_sanitizado": false,
          *       "valor_total": 2300000
          *     }
          */
@@ -2729,6 +8119,12 @@ export interface components {
              */
             destaques?: string[];
             /**
+             * Outlier Count
+             * @description Number of outlier values excluded from valor_total computation
+             * @default 0
+             */
+            outlier_count: number;
+            /**
              * Resumo Executivo
              * @description 1-2 sentence executive summary
              * @example Encontradas 15 licitações de uniformes em SP e RJ, totalizando R$ 2.3M.
@@ -2740,49 +8136,16 @@ export interface components {
              */
             total_oportunidades: number;
             /**
+             * Valor Sanitizado
+             * @description Whether outlier-robust sanitization was applied to valor_total
+             * @default false
+             */
+            valor_sanitizado: boolean;
+            /**
              * Valor Total
              * @description Total value of all opportunities in BRL
              */
             valor_total: number;
-        };
-        /**
-         * Recomendacao
-         * @description Actionable recommendation for a specific procurement opportunity.
-         */
-        Recomendacao: {
-            /** @description Opportunity name (agency/object) */
-            oportunidade: string;
-            /** @description Estimated value in BRL */
-            valor: number;
-            /** @description Urgency level: alta (<3 days), media (3-7 days), baixa (>7 days) */
-            urgencia: "alta" | "media" | "baixa";
-            /** @description Concrete suggested action */
-            acao_sugerida: string;
-            /** @description Why this opportunity is relevant */
-            justificativa: string;
-        };
-        /**
-         * ResumoEstrategico
-         * @description Strategic executive summary with actionable recommendations.
-         *     Extends ResumoLicitacoes for backward compatibility.
-         */
-        ResumoEstrategico: {
-            /** @description Optional urgency alert for time-sensitive opportunities (legacy) */
-            alerta_urgencia?: string | null;
-            /** @description Key highlights (2-5 bullet points) */
-            destaques?: string[];
-            /** @description 1-2 sentence executive summary with consultive tone */
-            resumo_executivo: string;
-            /** @description Number of procurement opportunities found */
-            total_oportunidades: number;
-            /** @description Total value of all opportunities in BRL */
-            valor_total: number;
-            /** @description Prioritized list of recommended opportunities with concrete actions */
-            recomendacoes?: components["schemas"]["Recomendacao"][];
-            /** @description Multiple urgency alerts for time-sensitive opportunities */
-            alertas_urgencia?: string[];
-            /** @description Sector-level market context and trend insight */
-            insight_setorial?: string;
         };
         /**
          * RevokeResponse
@@ -2818,12 +8181,276 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** SEOMetricRow */
+        SEOMetricRow: {
+            /** Avg Position */
+            avg_position: number;
+            /** Clicks */
+            clicks: number;
+            /** Ctr */
+            ctr: number;
+            /** Date */
+            date: string;
+            /** Impressions */
+            impressions: number;
+            /** Pages Indexed */
+            pages_indexed: number;
+            /** Top Pages */
+            top_pages: unknown[];
+            /** Top Queries */
+            top_queries: unknown[];
+        };
+        /** SEOMetricsResponse */
+        SEOMetricsResponse: {
+            /** Latest Date */
+            latest_date?: string | null;
+            /** Metrics */
+            metrics: components["schemas"]["SEOMetricRow"][];
+            /** Total */
+            total: number;
+        };
+        /** SancaoEntry */
+        SancaoEntry: {
+            /** Data Fim */
+            data_fim?: string | null;
+            /** Data Inicio */
+            data_inicio: string;
+            /** Motivo */
+            motivo: string;
+            /** Orgao Sancionador */
+            orgao_sancionador: string;
+            /** Tipo */
+            tipo: string;
+            /** Valor Multa */
+            valor_multa?: number | null;
+        };
+        /**
+         * SanctionsSummarySchema
+         * @description Lightweight sanctions summary for search result enrichment (STORY-256 AC11).
+         *
+         *     Shown as a badge on each search result when check_sanctions=true.
+         */
+        SanctionsSummarySchema: {
+            /**
+             * Active Sanctions Count
+             * @description Number of active sanctions
+             * @default 0
+             */
+            active_sanctions_count: number;
+            /**
+             * Checked At
+             * @description ISO timestamp of check
+             */
+            checked_at?: string | null;
+            /**
+             * Is Clean
+             * @description True if no active sanctions found
+             */
+            is_clean: boolean;
+            /**
+             * Sanction Types
+             * @description e.g. ['CEIS: Impedimento', 'CNEP: Multa']
+             */
+            sanction_types?: string[];
+        };
+        /**
+         * SearchStatusResponse
+         * @description GTM-STAB-009 AC3: Enriched status response for /v1/search/{id}/status.
+         *
+         *     Populated from in-memory progress tracker + state machine (lightweight, <50ms).
+         *     No database queries — reads only from in-memory state.
+         *
+         *     STORY-364 AC1: Includes excel_url and excel_status for polling fallback.
+         */
+        SearchStatusResponse: {
+            /**
+             * Created At
+             * @description ISO timestamp when search was created
+             */
+            created_at?: string | null;
+            /**
+             * Elapsed S
+             * @description Seconds since search started
+             * @default 0
+             */
+            elapsed_s: number;
+            /**
+             * Excel Status
+             * @description Excel generation status: processing, ready, failed, skipped
+             */
+            excel_status?: string | null;
+            /**
+             * Excel Url
+             * @description Signed URL for Excel download (set when ready)
+             */
+            excel_url?: string | null;
+            /**
+             * Progress Pct
+             * @description Overall progress 0-100
+             * @default 0
+             */
+            progress_pct: number;
+            /**
+             * Results Count
+             * @description Number of filtered results so far
+             * @default 0
+             */
+            results_count: number;
+            /**
+             * Results Url
+             * @description URL to fetch full results (set when completed)
+             */
+            results_url?: string | null;
+            /**
+             * Search Id
+             * @description UUID of the search
+             */
+            search_id: string;
+            /**
+             * Status
+             * @description running, completed, failed, or timeout
+             */
+            status: string;
+            /**
+             * Ufs Completed
+             * @description UFs that finished fetching
+             */
+            ufs_completed?: string[];
+            /**
+             * Ufs Pending
+             * @description UFs still being fetched
+             */
+            ufs_pending?: string[];
+        };
         /** SearchesOverTimeResponse */
         SearchesOverTimeResponse: {
             /** Data */
             data: components["schemas"]["TimeSeriesDataPoint"][];
             /** Period */
             period: string;
+        };
+        /** SectorAggregate */
+        SectorAggregate: {
+            /** Avg Value */
+            avg_value: number;
+            /** Count */
+            count: number;
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Total Value */
+            total_value: number;
+        };
+        /** SectorBlogStats */
+        SectorBlogStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** Last Updated */
+            last_updated: string;
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Top Modalidades */
+            top_modalidades: components["schemas"]["TopEntry"][];
+            /** Top Ufs */
+            top_ufs: components["schemas"]["TopEntry"][];
+            /** Total Editais */
+            total_editais: number;
+            /** Trend 90D */
+            trend_90d: components["schemas"]["routes__blog_stats__TrendPoint"][];
+            /** Value Range Max */
+            value_range_max: number;
+            /** Value Range Min */
+            value_range_min: number;
+        };
+        /** SectorListItem */
+        SectorListItem: {
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** SectorStatsResponse */
+        SectorStatsResponse: {
+            /** Avg Value */
+            avg_value: number;
+            /** Last Updated */
+            last_updated: string;
+            /** Sample Items */
+            sample_items: components["schemas"]["routes__sectors_public__SampleItem"][];
+            /** Sector Description */
+            sector_description: string;
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Slug */
+            slug: string;
+            /** Top Modalidades */
+            top_modalidades: components["schemas"]["TopEntry"][];
+            /** Top Ufs */
+            top_ufs: components["schemas"]["TopEntry"][];
+            /** Total Open */
+            total_open: number;
+            /** Total Value */
+            total_value: number;
+        };
+        /** SectorUfStats */
+        SectorUfStats: {
+            /** Avg Value */
+            avg_value: number;
+            /** Last Updated */
+            last_updated: string;
+            /** Most Recent Bid Date */
+            most_recent_bid_date?: string | null;
+            /**
+             * Municipios Ativos
+             * @default 0
+             */
+            municipios_ativos: number;
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /**
+             * Top Compradores
+             * @default []
+             */
+            top_compradores: components["schemas"]["TopComprador"][];
+            /**
+             * Top Modalidades
+             * @default []
+             */
+            top_modalidades: components["schemas"]["TopEntry"][];
+            /** Top Oportunidades */
+            top_oportunidades: components["schemas"]["routes__blog_stats__SampleItem"][];
+            /** Total Editais */
+            total_editais: number;
+            /**
+             * Trend 90D
+             * @default []
+             */
+            trend_90d: components["schemas"]["routes__blog_stats__TrendPoint"][];
+            /** Uf */
+            uf: string;
+            /**
+             * Value Range Max
+             * @default 0
+             */
+            value_range_max: number;
+            /**
+             * Value Range Min
+             * @default 0
+             */
+            value_range_min: number;
+            /** Vs Media Nacional Pct */
+            vs_media_nacional_pct?: number | null;
         };
         /**
          * SessionsListResponse
@@ -2841,6 +8468,19 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** SetorHighlight */
+        SetorHighlight: {
+            /** Setor Id */
+            setor_id: string;
+            /** Setor Name */
+            setor_name: string;
+            /** Total Anterior */
+            total_anterior: number;
+            /** Total Atual */
+            total_atual: number;
+            /** Variacao Pct */
+            variacao_pct: number;
+        };
         /**
          * SetoresResponse
          * @description Response for GET /setores endpoint.
@@ -2852,38 +8492,129 @@ export interface components {
             }[];
         };
         /**
-         * SourceInfo
-         * @description Individual data source health info.
+         * ShareAnaliseRequest
+         * @description Request to create a shareable analysis link.
          */
-        SourceInfo: {
-            /** Code */
-            code: string;
-            /** Enabled */
-            enabled: boolean;
-            /** Name */
-            name: string;
-            /** Priority */
-            priority: number;
-            /** Response Ms */
-            response_ms?: number | null;
-            /** Status */
-            status?: string | null;
+        ShareAnaliseRequest: {
+            /** Bid Id */
+            bid_id: string;
+            /** Bid Modalidade */
+            bid_modalidade?: string | null;
+            /** Bid Orgao */
+            bid_orgao?: string | null;
+            /** Bid Title */
+            bid_title: string;
+            /** Bid Uf */
+            bid_uf?: string | null;
+            /** Bid Valor */
+            bid_valor?: number | null;
+            /** Viability Factors */
+            viability_factors?: {
+                [key: string]: unknown;
+            };
+            /** Viability Level */
+            viability_level: string;
+            /** Viability Score */
+            viability_score: number;
         };
         /**
-         * SourcesHealthResponse
-         * @description Response for GET /sources/health endpoint.
+         * ShareAnaliseResponse
+         * @description Response with the shareable URL.
          */
-        SourcesHealthResponse: {
-            /** Checked At */
-            checked_at: string;
-            /** Multi Source Enabled */
-            multi_source_enabled: boolean;
-            /** Sources */
-            sources: components["schemas"]["SourceInfo"][];
-            /** Total Available */
-            total_available: number;
-            /** Total Enabled */
-            total_enabled: number;
+        ShareAnaliseResponse: {
+            /** Hash */
+            hash: string;
+            /** Url */
+            url: string;
+        };
+        /**
+         * SharedAnalisePublic
+         * @description Public view of a shared analysis (no user_id exposed).
+         */
+        SharedAnalisePublic: {
+            /** Bid Id */
+            bid_id: string;
+            /** Bid Modalidade */
+            bid_modalidade?: string | null;
+            /** Bid Orgao */
+            bid_orgao?: string | null;
+            /** Bid Title */
+            bid_title: string;
+            /** Bid Uf */
+            bid_uf?: string | null;
+            /** Bid Valor */
+            bid_valor?: number | null;
+            /** Created At */
+            created_at: string;
+            /** Hash */
+            hash: string;
+            /** Viability Factors */
+            viability_factors: {
+                [key: string]: unknown;
+            };
+            /** Viability Level */
+            viability_level: string;
+            /** Viability Score */
+            viability_score: number;
+            /**
+             * View Count
+             * @default 0
+             */
+            view_count: number;
+        };
+        /** SitemapCnpjsResponse */
+        SitemapCnpjsResponse: {
+            /** Cnpjs */
+            cnpjs: string[];
+            /** Total */
+            total: number;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** SitemapContratosOrgaoResponse */
+        SitemapContratosOrgaoResponse: {
+            /** Orgaos */
+            orgaos: string[];
+            /** Total */
+            total: number;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** SitemapFornecedoresCnpjResponse */
+        SitemapFornecedoresCnpjResponse: {
+            /** Cnpjs */
+            cnpjs: string[];
+            /** Total */
+            total: number;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** SitemapItensResponse */
+        SitemapItensResponse: {
+            /** Catmats */
+            catmats: string[];
+            /** Total */
+            total: number;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** SitemapMunicipiosResponse */
+        SitemapMunicipiosResponse: {
+            /** Slugs */
+            slugs: string[];
+            /** Total */
+            total: number;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** SitemapOrgaosResponse */
+        SitemapOrgaosResponse: {
+            /** Orgaos */
+            orgaos: string[];
+            /** Total */
+            total: number;
+            /** Updated At */
+            updated_at: string;
         };
         /**
          * StatusLicitacao
@@ -2932,6 +8663,17 @@ export interface components {
             /** Total Value Discovered */
             total_value_discovered: number;
         };
+        /** SupplierEntry */
+        SupplierEntry: {
+            /** Cnpj */
+            cnpj: string;
+            /** Nome */
+            nome: string;
+            /** Total Contratos */
+            total_contratos: number;
+            /** Valor Total */
+            valor_total: number;
+        };
         /** TimeSeriesDataPoint */
         TimeSeriesDataPoint: {
             /** Label */
@@ -2943,12 +8685,166 @@ export interface components {
             /** Value */
             value: number;
         };
+        /** TopComprador */
+        TopComprador: {
+            /** Cnpj */
+            cnpj: string;
+            /** Nome */
+            nome: string;
+            /** Total Contratos */
+            total_contratos: number;
+            /** Valor Total */
+            valor_total: number;
+        };
         /** TopDimensionsResponse */
         TopDimensionsResponse: {
             /** Top Sectors */
             top_sectors: components["schemas"]["DimensionItem"][];
             /** Top Ufs */
             top_ufs: components["schemas"]["DimensionItem"][];
+        };
+        /** TopEntry */
+        TopEntry: {
+            /** Count */
+            count: number;
+            /** Name */
+            name: string;
+        };
+        /** TopOpportunity */
+        TopOpportunity: {
+            /** Data Encerramento */
+            data_encerramento?: string | null;
+            /** Dias Ate Encerramento */
+            dias_ate_encerramento?: number | null;
+            /** Modalidade */
+            modalidade?: string | null;
+            /** Numero Controle */
+            numero_controle?: string | null;
+            /** Objeto */
+            objeto?: string | null;
+            /** Orgao Nome */
+            orgao_nome?: string | null;
+            /** Setor */
+            setor?: string | null;
+            /** Title */
+            title: string;
+            /** Value */
+            value: number;
+        };
+        /**
+         * TourEventRequest
+         * @description Request for onboarding tour event tracking (STORY-313 AC18).
+         */
+        TourEventRequest: {
+            /**
+             * Event
+             * @description Event type: completed or skipped
+             */
+            event: string;
+            /**
+             * Steps Seen
+             * @description Number of steps the user saw before event
+             */
+            steps_seen: number;
+            /**
+             * Tour Id
+             * @description Tour identifier (search, results, pipeline)
+             */
+            tour_id: string;
+        };
+        /** TrendingSector */
+        TrendingSector: {
+            /** Count This Week */
+            count_this_week: number;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** TrialStatusResponse */
+        TrialStatusResponse: {
+            /** Days Remaining */
+            days_remaining: number;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Is Expired */
+            is_expired: boolean;
+            /** Plan */
+            plan: string;
+            /**
+             * Plan Features
+             * @default []
+             */
+            plan_features: string[];
+            /** Searches Limit */
+            searches_limit: number;
+            /** Searches Used */
+            searches_used: number;
+            /**
+             * Trial Day
+             * @default 0
+             */
+            trial_day: number;
+            /**
+             * Trial Phase
+             * @default full_access
+             */
+            trial_phase: string;
+        };
+        /** TrialValueResponse */
+        TrialValueResponse: {
+            /** Avg Opportunity Value */
+            avg_opportunity_value: number;
+            /** Searches Executed */
+            searches_executed: number;
+            top_opportunity?: components["schemas"]["TopOpportunity"] | null;
+            /** Total Opportunities */
+            total_opportunities: number;
+            /** Total Value */
+            total_value: number;
+        };
+        /** UfAggregate */
+        UfAggregate: {
+            /** Count */
+            count: number;
+            /** Total Value */
+            total_value: number;
+            /** Uf */
+            uf: string;
+        };
+        /** UfCount */
+        UfCount: {
+            /** Pct */
+            pct: number;
+            /** Total */
+            total: number;
+            /** Uf */
+            uf: string;
+            /** Uf Name */
+            uf_name: string;
+        };
+        /**
+         * UfStatusDetail
+         * @description Per-UF status detail for coverage indicators (GTM-RESILIENCE-A05 AC2).
+         */
+        UfStatusDetail: {
+            /**
+             * Results Count
+             * @description Number of results from this UF
+             * @default 0
+             */
+            results_count: number;
+            /**
+             * Status
+             * @description UF fetch status
+             * @enum {string}
+             */
+            status: "ok" | "timeout" | "error" | "skipped";
+            /**
+             * Uf
+             * @description State code (e.g., 'SP')
+             */
+            uf: string;
         };
         /**
          * UnreadCountResponse
@@ -2957,6 +8853,17 @@ export interface components {
         UnreadCountResponse: {
             /** Unread Count */
             unread_count: number;
+        };
+        /**
+         * UpdateAlertRequest
+         * @description Partial update — all fields optional.
+         */
+        UpdateAlertRequest: {
+            /** Active */
+            active?: boolean | null;
+            filters?: components["schemas"]["AlertFilters"] | null;
+            /** Name */
+            name?: string | null;
         };
         /**
          * UpdateBillingPeriodRequest
@@ -2968,29 +8875,19 @@ export interface components {
              * @description Target billing period
              * @enum {string}
              */
-            new_billing_period: "monthly" | "annual";
-            /**
-             * User Timezone
-             * @description User's timezone for accurate pro-rata calculations
-             * @default America/Sao_Paulo
-             */
-            user_timezone: string;
+            new_billing_period: "monthly" | "semiannual" | "annual";
         };
         /**
          * UpdateBillingPeriodResponse
          * @description Response for billing period update.
          */
         UpdateBillingPeriodResponse: {
-            /** Deferred */
-            deferred: boolean;
             /** Message */
             message: string;
             /** New Billing Period */
             new_billing_period: string;
             /** Next Billing Date */
             next_billing_date: string;
-            /** Prorated Credit */
-            prorated_credit: string;
             /** Success */
             success: boolean;
         };
@@ -3011,6 +8908,11 @@ export interface components {
              * @description New credit value (must be >= 0)
              */
             credits: number;
+        };
+        /** UpdateLogoRequest */
+        UpdateLogoRequest: {
+            /** Logo Url */
+            logo_url: string;
         };
         /** UpdateUserRequest */
         UpdateUserRequest: {
@@ -3050,6 +8952,17 @@ export interface components {
             capabilities: {
                 [key: string]: unknown;
             };
+            /**
+             * Days Since Failure
+             * @description STORY-309: Days since first payment failure (null if no failure)
+             */
+            days_since_failure?: number | null;
+            /**
+             * Dunning Phase
+             * @description STORY-309: Dunning phase — healthy, active_retries, grace_period, blocked
+             * @default healthy
+             */
+            dunning_phase: string;
             /** Email */
             email: string;
             /**
@@ -3084,8 +8997,13 @@ export interface components {
              */
             quota_used: number;
             /**
+             * Subscription End Date
+             * @description ISO 8601 — data real de renovação Stripe (current_period_end), null para trial/admin
+             */
+            subscription_end_date?: string | null;
+            /**
              * Subscription Status
-             * @description Status: 'trial', 'active', or 'expired'
+             * @description Status: 'trial', 'active', 'expired', or 'past_due'
              */
             subscription_status: string;
             /**
@@ -3098,12 +9016,239 @@ export interface components {
         };
         /** ValidationError */
         ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** VerifyRecoveryRequest */
+        VerifyRecoveryRequest: {
+            /** Code */
+            code: string;
+        };
+        /** VerifyRecoveryResponse */
+        VerifyRecoveryResponse: {
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /**
+             * Remaining Codes
+             * @default 0
+             */
+            remaining_codes: number;
+            /** Success */
+            success: boolean;
+        };
+        /** WeeklyDigestResponse */
+        WeeklyDigestResponse: {
+            /** Avg Value */
+            avg_value: number;
+            /** By Modalidade */
+            by_modalidade: components["schemas"]["WeeklyModalidadeStat"][];
+            /** By Sector */
+            by_sector: components["schemas"]["WeeklyHighlight"][];
+            /** By Uf */
+            by_uf: components["schemas"]["WeeklyUfStat"][];
+            /** Period End */
+            period_end: string;
+            /** Period Start */
+            period_start: string;
+            /** Slug */
+            slug: string;
+            /** Title */
+            title: string;
+            /** Top Sector */
+            top_sector: string;
+            /** Top Uf */
+            top_uf: string;
+            /** Total Bids */
+            total_bids: number;
+            /** Total Value */
+            total_value: number;
+            /** Updated At */
+            updated_at: string;
+            /** Week */
+            week: number;
+            /** Year */
+            year: number;
+        };
+        /** WeeklyHighlight */
+        WeeklyHighlight: {
+            /** Avg Value */
+            avg_value: number;
+            /** Count */
+            count: number;
+            /** Sector Id */
+            sector_id: string;
+            /** Sector Name */
+            sector_name: string;
+            /** Trend */
+            trend: string;
+        };
+        /** WeeklyModalidadeStat */
+        WeeklyModalidadeStat: {
+            /** Count */
+            count: number;
+            /** Modalidade */
+            modalidade: string;
+            /** Pct */
+            pct: number;
+        };
+        /** WeeklyUfStat */
+        WeeklyUfStat: {
+            /** Count */
+            count: number;
+            /** Total Value */
+            total_value: number;
+            /** Uf */
+            uf: string;
+        };
+        /** WelcomeEmailResponse */
+        WelcomeEmailResponse: {
+            /** Message */
+            message: string;
+            /** Sent */
+            sent: boolean;
+        };
+        /** SampleContract */
+        routes__blog_stats__SampleContract: {
+            /** Data Assinatura */
+            data_assinatura: string;
+            /** Fornecedor */
+            fornecedor: string;
+            /** Objeto */
+            objeto: string;
+            /** Orgao */
+            orgao: string;
+            /** Valor */
+            valor: number | null;
+        };
+        /** SampleItem */
+        routes__blog_stats__SampleItem: {
+            /** Data */
+            data: string;
+            /** Orgao */
+            orgao: string;
+            /** Orgao Cnpj */
+            orgao_cnpj?: string | null;
+            /** Titulo */
+            titulo: string;
+            /** Uf */
+            uf: string;
+            /** Valor */
+            valor?: number | null;
+        };
+        /** TrendPoint */
+        routes__blog_stats__TrendPoint: {
+            /** Avg Value */
+            avg_value: number;
+            /** Count */
+            count: number;
+            /** Period */
+            period: string;
+        };
+        /** MonthlyTrend */
+        routes__contratos_publicos__MonthlyTrend: {
+            /** Count */
+            count: number;
+            /** Month */
+            month: string;
+            /** Value */
+            value: number;
+        };
+        /** SampleContract */
+        routes__contratos_publicos__SampleContract: {
+            /** Data Assinatura */
+            data_assinatura: string;
+            /** Fornecedor */
+            fornecedor: string;
+            /** Objeto */
+            objeto: string;
+            /** Orgao */
+            orgao: string;
+            /** Valor */
+            valor?: number | null;
+        };
+        /** TrendPoint */
+        routes__dados_publicos__TrendPoint: {
+            /** Count */
+            count: number;
+            /** Date */
+            date: string;
+            /** Value */
+            value: number;
+        };
+        /** LicitacaoRecente */
+        routes__municipios_publicos__LicitacaoRecente: {
+            /** Data Publicacao */
+            data_publicacao: string;
+            /** Modalidade */
+            modalidade: string;
+            /** Objeto */
+            objeto: string;
+            /** Orgao */
+            orgao: string;
+            /** Valor */
+            valor?: number | null;
+        };
+        /** ModalidadeCount */
+        routes__observatorio__ModalidadeCount: {
+            /** Modalidade Id */
+            modalidade_id: number;
+            /** Modalidade Name */
+            modalidade_name: string;
+            /** Pct */
+            pct: number;
+            /** Total */
+            total: number;
+        };
+        /** MonthlyTrend */
+        routes__observatorio__MonthlyTrend: {
+            /** Semana */
+            semana: string;
+            /** Total */
+            total: number;
+        };
+        /** LicitacaoRecente */
+        routes__orgao_publico__LicitacaoRecente: {
+            /** Data Publicacao */
+            data_publicacao: string;
+            /** Modalidade Nome */
+            modalidade_nome: string;
+            /** Objeto Compra */
+            objeto_compra: string;
+            /** Uf */
+            uf: string;
+            /** Valor Total Estimado */
+            valor_total_estimado?: number | null;
+        };
+        /** ModalidadeCount */
+        routes__orgao_publico__ModalidadeCount: {
+            /** Count */
+            count: number;
+            /** Nome */
+            nome: string;
+        };
+        /** SampleItem */
+        routes__sectors_public__SampleItem: {
+            /** Data */
+            data: string;
+            /** Orgao */
+            orgao: string;
+            /** Titulo */
+            titulo: string;
+            /** Uf */
+            uf: string;
+            /** Valor */
+            valor?: number | null;
         };
     };
     responses: never;
@@ -3130,854 +9275,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RootResponse"];
-                };
-            };
-        };
-    };
-    list_users_admin_users_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-                search?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminUsersListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_user_admin_users_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateUserRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCreateUserResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_user_admin_users__user_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description User UUID to update */
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateUserRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminUpdateUserResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_user_admin_users__user_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description User UUID to delete */
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminDeleteUserResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    assign_plan_admin_users__user_id__assign_plan_post: {
-        parameters: {
-            query: {
-                /** @description Plan ID to assign */
-                plan_id: string;
-            };
-            header?: never;
-            path: {
-                /** @description User UUID to assign plan to */
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminAssignPlanResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_user_credits_admin_users__user_id__credits_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description User UUID to update credits for */
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCreditsRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminUpdateCreditsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reset_user_password_admin_users__user_id__reset_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description User UUID to reset password for */
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminResetPasswordResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_searches_over_time_analytics_searches_over_time_get: {
-        parameters: {
-            query?: {
-                period?: string;
-                range_days?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SearchesOverTimeResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_analytics_summary_analytics_summary_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SummaryResponse"];
-                };
-            };
-        };
-    };
-    get_top_dimensions_analytics_top_dimensions_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TopDimensionsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    google_oauth_initiate_api_auth_google_get: {
-        parameters: {
-            query?: {
-                /** @description Page to return to after auth */
-                redirect?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    google_oauth_revoke_api_auth_google_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RevokeResponse"];
-                };
-            };
-        };
-    };
-    google_oauth_callback_api_auth_google_callback_get: {
-        parameters: {
-            query: {
-                /** @description Authorization code from Google */
-                code?: string | null;
-                /** @description CSRF state token */
-                state: string;
-                /** @description OAuth error (if any) */
-                error?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    export_to_google_sheets_api_export_google_sheets_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GoogleSheetsExportRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GoogleSheetsExportResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_export_history_api_export_google_sheets_history_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GoogleSheetsExportHistoryResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_my_features_api_features_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserFeaturesResponse"];
-                };
-            };
-        };
-    };
-    list_conversations_api_messages_conversations_get: {
-        parameters: {
-            query?: {
-                status?: string | null;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationsListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_conversation_api_messages_conversations_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateConversationRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreateConversationResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_conversation_api_messages_conversations__conversation_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reply_to_conversation_api_messages_conversations__conversation_id__reply_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReplyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReplyStatusResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_conversation_status_api_messages_conversations__conversation_id__status_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateConversationStatusRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StatusResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_unread_count_api_messages_unread_count_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UnreadCountResponse"];
-                };
-            };
-        };
-    };
-    get_plans_with_capabilities_api_plans_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlansResponse"];
-                };
-            };
-        };
-    };
-    update_billing_period_api_subscriptions_update_billing_period_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateBillingPeriodRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UpdateBillingPeriodResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    buscar_licitacoes_buscar_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BuscaRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BuscaResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    buscar_progress_stream_buscar_progress__search_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                search_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    change_password_change_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SuccessResponse"];
-                };
-            };
-        };
-    };
-    create_checkout_checkout_post: {
-        parameters: {
-            query: {
-                plan_id: string;
-                billing_period?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CheckoutResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4017,52 +9314,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HealthResponse"];
+                    "application/json": unknown;
                 };
             };
         };
     };
-    get_profile_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserProfileResponse"];
-                };
-            };
-        };
-    };
-    delete_account_me_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeleteAccountResponse"];
-                };
-            };
-        };
-    };
-    export_user_data_me_export_get: {
+    health_live_health_live_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4082,7 +9339,7 @@ export interface operations {
             };
         };
     };
-    get_plans_plans_get: {
+    health_ready_health_ready_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4097,59 +9354,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BillingPlansResponse"];
-                };
-            };
-        };
-    };
-    get_sessions_sessions_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionsListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    listar_setores_setores_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SetoresResponse"];
+                    "application/json": unknown;
                 };
             };
         };
@@ -4169,7 +9374,851 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SourcesHealthResponse"];
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_filter_stats_v1_admin_admin_filter_stats_get: {
+        parameters: {
+            query?: {
+                /** @description Number of days to look back */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_at_risk_trials_v1_admin_at_risk_trials_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                risk_category?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_all_cache_endpoint_v1_admin_cache_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_cache_metrics_endpoint_v1_admin_cache_metrics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    inspect_cache_entry_endpoint_v1_admin_cache__params_hash__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Cache entry hash */
+                params_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_cache_entry_endpoint_v1_admin_cache__params_hash__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Cache entry hash */
+                params_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_circuit_breakers_v1_admin_cb_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    clear_contracts_checkpoints_v1_admin_clear_contracts_checkpoints_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_cron_status_v1_admin_cron_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    list_feature_flags_v1_admin_feature_flags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureFlagListResponse"];
+                };
+            };
+        };
+    };
+    reload_flags_endpoint_v1_admin_feature_flags_reload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureFlagReloadResponse"];
+                };
+            };
+        };
+    };
+    update_feature_flag_v1_admin_feature_flags__flag_name__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feature flag name from the registry */
+                flag_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeatureFlagUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureFlagUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feedback_patterns_v1_admin_feedback_patterns_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by sector ID */
+                setor_id?: string | null;
+                /** @description Look-back period in days */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackPatternsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_llm_cost_v1_admin_llm_cost_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    list_partners_endpoint_v1_admin_partners_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by status: active, inactive, pending */
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_partner_endpoint_v1_admin_partners_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePartnerRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_partner_referrals_endpoint_v1_admin_partners__partner_id__referrals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                partner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_partner_revenue_endpoint_v1_admin_partners__partner_id__revenue_get: {
+        parameters: {
+            query?: {
+                /** @description Year (default: current) */
+                year?: number;
+                /** @description Month 1-12 (default: current) */
+                month?: number;
+            };
+            header?: never;
+            path: {
+                partner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reconciliation_history_v1_admin_reconciliation_history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_reconciliation_v1_admin_reconciliation_trigger_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_schema_contract_status_v1_admin_schema_contract_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_search_trace_v1_admin_search_trace__search_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_seo_metrics_v1_admin_seo_metrics_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SEOMetricsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_sitemap_cache_v1_admin_sitemap_cache_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_slo_dashboard_v1_admin_slo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_slo_alerts_v1_admin_slo_alerts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_support_sla_v1_admin_support_sla_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    preview_trial_emails_v1_admin_trial_emails_preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    test_send_trial_email_v1_admin_trial_emails_test_send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_exit_surveys_admin_v1_admin_trial_exit_surveys_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_trial_metrics_v1_admin_trial_metrics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    trigger_bids_backfill_v1_admin_trigger_bids_backfill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    trigger_contracts_backfill_v1_admin_trigger_contracts_backfill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -4411,6 +10460,278 @@ export interface operations {
             };
         };
     };
+    get_alertas_v1_alertas__setor_id__uf__uf__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setor_id: string;
+                uf: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertasResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_alerts_v1_alerts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertListResponse"];
+                };
+            };
+        };
+    };
+    create_alert_v1_alerts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAlertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_alert_v1_alerts__alert_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_alert_v1_alerts__alert_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAlertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    alert_history_v1_alerts__alert_id__history_get: {
+        parameters: {
+            query?: {
+                /** @description Items per page */
+                limit?: number;
+                /** @description Offset for pagination */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_alert_v1_alerts__alert_id__preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_alert_v1_alerts__alert_id__unsubscribe_get: {
+        parameters: {
+            query: {
+                /** @description HMAC verification token */
+                token: string;
+            };
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_new_opportunities_v1_analytics_new_opportunities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewOpportunitiesResponse"];
+                };
+            };
+        };
+    };
     get_searches_over_time_v1_analytics_searches_over_time_get: {
         parameters: {
             query?: {
@@ -4490,6 +10811,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    track_cta_event_v1_analytics_track_cta_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CTAEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_trial_value_v1_analytics_trial_value_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialValueResponse"];
                 };
             };
         };
@@ -4873,6 +11245,72 @@ export interface operations {
             };
         };
     };
+    cancel_subscription_v1_api_subscriptions_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelSubscriptionRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancelSubscriptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_cancel_feedback_v1_api_subscriptions_cancel_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancelFeedbackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_billing_period_v1_api_subscriptions_update_billing_period_post: {
         parameters: {
             query?: never;
@@ -4893,6 +11331,608 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateBillingPeriodResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_email_v1_auth_check_email_get: {
+        parameters: {
+            query: {
+                email: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_phone_v1_auth_check_phone_get: {
+        parameters: {
+            query: {
+                phone: string;
+                company?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resend_confirmation_v1_auth_resend_confirmation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResendResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_status_v1_auth_status_get: {
+        parameters: {
+            query: {
+                /** @description Email to check */
+                email: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_signup_email_v1_auth_validate_signup_email_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_bid_v1_bid_analysis__bid_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bid_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeepAnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeepBidAnalysis"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_billing_portal_session_v1_billing_portal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    daily_digest_latest_v1_blog_daily_latest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyDigestResponse"];
+                };
+            };
+        };
+    };
+    daily_digest_by_date_v1_blog_daily__date__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyDigestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cidade_stats_v1_blog_stats_cidade__cidade__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cidade: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CidadeStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cidade_sector_stats_v1_blog_stats_cidade__cidade__setor__setor_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cidade: string;
+                setor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CidadeSectorStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_contratos_cidade_stats_v1_blog_stats_contratos_cidade__cidade__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cidade: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContratosCidadeStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_contratos_cidade_setor_stats_v1_blog_stats_contratos_cidade__cidade__setor__setor_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cidade: string;
+                setor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContratosCidadeSetorStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_contratos_setor_stats_v1_blog_stats_contratos__setor_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContratosSetorStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_contratos_setor_uf_stats_v1_blog_stats_contratos__setor_id__uf__uf__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setor_id: string;
+                uf: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContratosSetorUfStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_panorama_stats_v1_blog_stats_panorama__setor_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanoramaStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sector_blog_stats_v1_blog_stats_setor__setor_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectorBlogStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sector_uf_stats_v1_blog_stats_setor__setor_id__uf__uf__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setor_id: string;
+                uf: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectorUfStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    weekly_digest_latest_v1_blog_weekly_latest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyDigestResponse"];
+                };
+            };
+        };
+    };
+    weekly_digest_by_week_v1_blog_weekly__year___week__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                year: number;
+                week: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyDigestResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4970,6 +12010,71 @@ export interface operations {
             };
         };
     };
+    get_search_results_v1_buscar_results__search_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calculadora_dados_v1_calculadora_dados_get: {
+        parameters: {
+            query: {
+                /** @description Sector ID (e.g. 'saude') */
+                setor: string;
+                /** @description UF sigla (e.g. 'SP') */
+                uf: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalculadoraDadosResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     change_password_v1_change_password_post: {
         parameters: {
             query?: never;
@@ -4995,6 +12100,7 @@ export interface operations {
             query: {
                 plan_id: string;
                 billing_period?: string;
+                coupon?: string | null;
             };
             header?: never;
             path?: never;
@@ -5009,6 +12115,738 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_bids_by_ids_v1_comparador_bids_get: {
+        parameters: {
+            query: {
+                /** @description Comma-separated pncp_ids (max 5) */
+                ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparadorBidsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    buscar_editais_v1_comparador_buscar_get: {
+        parameters: {
+            query: {
+                /** @description Termo de busca (mínimo 3 caracteres) */
+                q: string;
+                /** @description Filtrar por UF (ex: SP, RJ) */
+                uf?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparadorSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compliance_profile_v1_compliance__cnpj__profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cnpj: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgao_contratos_stats_v1_contratos_orgao__cnpj__stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cnpj: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgaoContratosStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contratos_stats_v1_contratos__setor___uf__stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setor: string;
+                uf: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContratosStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dados_agregados_v1_dados_agregados_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DadosAgregadosResponse"];
+                };
+            };
+        };
+    };
+    send_welcome_email_v1_emails_send_welcome_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WelcomeEmailResponse"];
+                };
+            };
+        };
+    };
+    unsubscribe_email_v1_emails_unsubscribe_get: {
+        parameters: {
+            query: {
+                /** @description User ID */
+                user_id: string;
+                /** @description Verification token */
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    perfil_b2g_v1_empresa__cnpj__perfil_b2g_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cnpj: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilB2GResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_edital_pdf_v1_export_pdf_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PdfEditalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_feature_flags_v1_feature_flags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicFeatureFlagListResponse"];
+                };
+            };
+        };
+    };
+    get_experiments_v1_feature_flags_experiments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    submit_feedback_v1_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_feedback_v1_feedback__feedback_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    first_analysis_v1_first_analysis_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FirstAnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FirstAnalysisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fornecedor_profile_v1_fornecedores__cnpj__profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cnpj: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FornecedorProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fornecedores_stats_v1_fornecedores__setor___uf__stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setor: string;
+                uf: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FornecedoresStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    system_health_v1_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    cache_health_v1_health_cache_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    sources_health_v1_health_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    background_tasks_health_v1_health_tasks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_ranking_v1_indice_municipal_get: {
+        parameters: {
+            query?: {
+                /** @description Período trimestral (ex: 2026-Q1) */
+                periodo?: string;
+                /** @description Filtrar por UF */
+                uf?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_periodos_v1_indice_municipal_periodos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodosResponse"];
+                };
+            };
+        };
+    };
+    get_municipio_v1_indice_municipal__municipio_slug__get: {
+        parameters: {
+            query?: {
+                /** @description Período trimestral (ex: 2026-Q1) */
+                periodo?: string;
+            };
+            header?: never;
+            path: {
+                municipio_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndiceResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    item_profile_v1_itens__catmat__profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catmat: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capture_lead_v1_lead_capture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadCaptureRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadCaptureResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5082,6 +12920,803 @@ export interface operations {
             };
         };
     };
+    get_daily_volume_v1_metrics_daily_volume_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyVolumeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_discard_rate_v1_metrics_discard_rate_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_sse_fallback_v1_metrics_sse_fallback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    generate_recovery_codes_v1_mfa_recovery_codes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodesResponse"];
+                };
+            };
+        };
+    };
+    regenerate_recovery_codes_v1_mfa_regenerate_recovery_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegenerateRecoveryResponse"];
+                };
+            };
+        };
+    };
+    get_mfa_status_v1_mfa_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaStatusResponse"];
+                };
+            };
+        };
+    };
+    verify_recovery_code_v1_mfa_verify_recovery_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyRecoveryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyRecoveryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    municipio_profile_v1_municipios__slug__profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MunicipioProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_new_bids_count_v1_notifications_new_bids_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewBidsCountResponse"];
+                };
+            };
+        };
+    };
+    clear_new_bids_count_v1_notifications_new_bids_count_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    get_relatorio_mensal_v1_observatorio_relatorio__mes___ano__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Mês (1-12) */
+                mes: number;
+                /** @description Ano */
+                ano: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelatorioMensal"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_relatorio_csv_v1_observatorio_relatorio__mes___ano__csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mes: number;
+                ano: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    track_tour_event_v1_onboarding_tour_event_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TourEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_org_v1_organizations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrgRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_org_v1_organizations_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_org_v1_organizations__org_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_org_invite_v1_organizations__org_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_org_dashboard_endpoint_v1_organizations__org_id__dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invite_org_member_v1_organizations__org_id__invite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_org_logo_v1_organizations__org_id__logo_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLogoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_org_member_v1_organizations__org_id__members__target_user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+                target_user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgao_stats_v1_orgao__cnpj__stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cnpj: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgaoStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    partner_dashboard_v1_partner_dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_pipeline_items_v1_pipeline_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by stage */
+                stage?: string | null;
+                /** @description Items per page */
+                limit?: number;
+                /** @description Offset for pagination */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_pipeline_item_v1_pipeline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PipelineItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pipeline_alerts_v1_pipeline_alerts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineAlertsResponse"];
+                };
+            };
+        };
+    };
+    delete_pipeline_item_v1_pipeline__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_pipeline_item_v1_pipeline__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PipelineItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_plans_v1_plans_get: {
         parameters: {
             query?: never;
@@ -5102,11 +13737,568 @@ export interface operations {
             };
         };
     };
+    get_alert_preferences_v1_profile_alert_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertPreferencesResponse"];
+                };
+            };
+        };
+    };
+    update_alert_preferences_v1_profile_alert_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertPreferencesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_profile_completeness_v1_profile_completeness_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileCompletenessResponse"];
+                };
+            };
+        };
+    };
+    get_profile_context_v1_profile_context_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilContextoResponse"];
+                };
+            };
+        };
+    };
+    save_profile_context_v1_profile_context_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PerfilContexto"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilContextoResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_referral_code_v1_referral_code_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralCodeResponse"];
+                };
+            };
+        };
+    };
+    redeem_referral_v1_referral_redeem_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferralRedeemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralRedeemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_referral_stats_v1_referral_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralStatsResponse"];
+                };
+            };
+        };
+    };
+    request_relatorio_v1_relatorio_2026_t1_request_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelatorioRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelatorioResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_diagnostico_v1_reports_diagnostico_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosticoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_search_v1_search__search_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regenerate_excel_endpoint_v1_search__search_id__regenerate_excel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_search_results_v1_v1_search__search_id__results_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_search_v1_search__search_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_status_endpoint_v1_search__search_id__status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_timeline_endpoint_v1_search__search_id__timeline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_zero_match_results_endpoint_v1_search__search_id__zero_match_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_all_sectors_v1_sectors_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectorListItem"][];
+                };
+            };
+        };
+    };
+    get_trending_sectors_v1_sectors_trending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendingSector"][];
+                };
+            };
+        };
+    };
+    get_sector_stats_v1_sectors__slug__stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectorStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_sessions_v1_sessions_get: {
         parameters: {
             query?: {
                 limit?: number;
                 offset?: number;
+                /** @description Filter by session status (completed, failed, timed_out) */
+                status?: string | null;
+                /** @description UX-433 AC3: hide failed/timed_out entries older than 7 days from default listing */
+                hide_old_failures?: boolean;
             };
             header?: never;
             path?: never;
@@ -5134,7 +14326,294 @@ export interface operations {
             };
         };
     };
-    stripe_webhook_v1_webhooks_stripe_post: {
+    download_session_excel_v1_sessions__search_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listar_setores_v1_setores_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetoresResponse"];
+                };
+            };
+        };
+    };
+    create_shared_analysis_v1_share_analise_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareAnaliseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareAnaliseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_shared_analysis_v1_share_analise__hash__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedAnalisePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sitemap_cnpjs_v1_sitemap_cnpjs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapCnpjsResponse"];
+                };
+            };
+        };
+    };
+    sitemap_contratos_orgao_indexable_v1_sitemap_contratos_orgao_indexable_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapContratosOrgaoResponse"];
+                };
+            };
+        };
+    };
+    sitemap_fornecedores_cnpj_v1_sitemap_fornecedores_cnpj_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapFornecedoresCnpjResponse"];
+                };
+            };
+        };
+    };
+    sitemap_itens_v1_sitemap_itens_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapItensResponse"];
+                };
+            };
+        };
+    };
+    get_licitacoes_indexable_v1_sitemap_licitacoes_indexable_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicitacoesIndexableResponse"];
+                };
+            };
+        };
+    };
+    sitemap_municipios_v1_sitemap_municipios_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapMunicipiosResponse"];
+                };
+            };
+        };
+    };
+    sitemap_orgaos_v1_sitemap_orgaos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapOrgaosResponse"];
+                };
+            };
+        };
+    };
+    stats_public_v1_stats_public_get: {
+        parameters: {
+            query?: {
+                /** @description json | embed | badge */
+                format?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_status_v1_status_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5150,6 +14629,226 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    recent_incidents_v1_status_incidents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    uptime_history_v1_status_uptime_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_subscription_status_v1_subscription_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    unsubscribe_trial_emails_v1_trial_emails_unsubscribe_get: {
+        parameters: {
+            query: {
+                /** @description User ID */
+                user_id: string;
+                /** @description HMAC unsubscribe token */
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resend_webhook_v1_trial_emails_webhook_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_trial_status_v1_trial_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialStatusResponse"];
+                };
+            };
+        };
+    };
+    submit_exit_survey_v1_trial_exit_survey_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExitSurveyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExitSurveyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extend_trial_endpoint_v1_trial_extend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtendResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_extensions_status_v1_trial_extensions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtensionsStatusResponse"];
                 };
             };
         };

@@ -72,6 +72,35 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      # STORY-6.2 AC3: Enforce down.sql pairing — BLOCKS merge if missing
+      - name: Check down.sql pairing
+        id: down_sql
+        run: |
+          echo "=== Checking down.sql pairing for new migrations ==="
+          MISSING=()
+          for up in $(git diff --name-only --diff-filter=A origin/main...HEAD \
+                | grep '^supabase/migrations/.*\.sql$' \
+                | grep -v '\.down\.sql$' \
+                | grep -v 'supabase/migrations/README\.md'); do
+            base="${up%.sql}"
+            if [ ! -f "${base}.down.sql" ]; then
+              echo "::error file=${up}::Migration ${up} is missing ${base}.down.sql"
+              MISSING+=("${up}")
+            fi
+          done
+
+          if [ "${#MISSING[@]}" -gt 0 ]; then
+            echo "down_sql_missing=true" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "${MISSING[@]}" > /tmp/missing_down_sql.txt
+            echo ""
+            echo "Missing down.sql files:"
+            printf '  - %s\n' "${MISSING[@]}"
+            exit 1
+          else
+            echo "down_sql_missing=false" >> "$GITHUB_OUTPUT"
+            echo "All new migrations have paired down.sql files."
+          fi
+
       # STORY-414 AC3: Validate schema contract on every PR (warns, does not block merge)
       - name: Set up Python 3.12
         uses: actions/setup-python@v5

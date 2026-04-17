@@ -184,8 +184,7 @@ export default async function LicitacoesCidadeSetorPage({
             <BreadcrumbNav items={breadcrumbs} className="mb-6" suppressSchema />
 
             <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4 font-serif"
             >
               Licitações de {sector.name} em {city.name}/{city.uf}
             </h1>
@@ -250,6 +249,7 @@ export default async function LicitacoesCidadeSetorPage({
                         {mod.name}
                       </span>
                       <div className="flex-1 h-3 bg-surface-2 rounded-full overflow-hidden">
+                        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: percentage width computed from mod.count/total at runtime */}
                         <div
                           className="h-full bg-[var(--accent)] rounded-full transition-all"
                           style={{ width: `${Math.max(pct, 2)}%` }}

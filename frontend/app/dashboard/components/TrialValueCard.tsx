@@ -139,6 +139,7 @@ export function TrialValueCard() {
         aria-valuemax={TRIAL_DURATION_DAYS}
         aria-label={`Dia ${trialDay} de ${TRIAL_DURATION_DAYS} do trial`}
       >
+        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from trial day progress percentage */}
         <div
           className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
           style={{ width: `${progressPct}%` }}

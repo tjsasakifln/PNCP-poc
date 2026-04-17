@@ -293,6 +293,7 @@ export default function AdminMetricsPage() {
                             {source}
                           </span>
                           <div className="flex-1 h-4 bg-[var(--surface-2)] rounded overflow-hidden">
+                            {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from average fetch duration relative to 120s max */}
                             <div
                               className="h-full bg-[var(--brand-navy)] rounded transition-all"
                               style={{

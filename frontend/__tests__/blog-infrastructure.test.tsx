@@ -275,8 +275,8 @@ describe('BlogArticleLayout', () => {
 
     const heading = screen.getByRole('heading', { level: 1 });
     expect(heading).toHaveTextContent('Test Article Title');
-    // Verify serif font is applied via inline style attribute
-    expect(heading.getAttribute('style')).toContain('Georgia');
+    // Verify serif font is applied via Tailwind class (STORY-5.14: migrated from inline style)
+    expect(heading.className).toContain('font-serif');
   });
 
   it('renders BlogPosting JSON-LD schema', () => {

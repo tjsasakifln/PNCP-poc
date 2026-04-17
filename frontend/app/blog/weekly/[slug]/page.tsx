@@ -66,7 +66,7 @@ async function fetchWeeklyData(slug: string): Promise<WeeklyData | null> {
       { next: { revalidate: 3600 }, signal: AbortSignal.timeout(10000) }
     );
     if (!res.ok) return null;
-    return res.json();
+    return await res.json();
   } catch {
     return null;
   }
@@ -392,6 +392,7 @@ export default async function WeeklyDigestPage({
                           </span>
                         </div>
                         <div className="w-full bg-surface-2 rounded-full h-1.5">
+                          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: percentage width computed from m.pct at runtime */}
                           <div
                             className="bg-brand-blue h-1.5 rounded-full"
                             style={{ width: `${Math.min(m.pct, 100)}%` }}

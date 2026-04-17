@@ -107,6 +107,7 @@ export default async function ObservatorioEmbedPage({
             <div key={u.uf} className="flex items-center gap-2 mb-1">
               <span className="text-xs text-gray-500 w-6 shrink-0">{u.uf}</span>
               <div className="flex-1 bg-gray-100 rounded-full h-3">
+                {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width is computed from UF total relative to max count */}
                 <div
                   className="bg-blue-500 h-3 rounded-full"
                   style={{ width: `${(u.total / maxCount) * 100}%` }}

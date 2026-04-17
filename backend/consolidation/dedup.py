@@ -11,7 +11,8 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 
 from clients.base import UnifiedProcurement
-from metrics import DEDUP_FIELDS_MERGED
+from config import DEDUP_FUZZY_ENABLED, DEDUP_FUZZY_THRESHOLD
+from metrics import DEDUP_FIELDS_MERGED, DEDUP_FUZZY_HITS
 
 logger = logging.getLogger(__name__)
 
@@ -47,21 +48,39 @@ class DeduplicationEngine:
     # "{cnpj}-{seq}-{edital_number}/{year}" e.g. "12345678000195-2026-000065/2026"
     _PROCESS_NUMBER_PATTERN = re.compile(r"-(\d{4,6})/(\d{4})$")
 
-    def __init__(self, adapters: Dict):
+    def __init__(
+        self,
+        adapters: Dict,
+        fuzzy_enabled: Optional[bool] = None,
+        fuzzy_threshold: Optional[float] = None,
+    ):
         """
         Args:
             adapters: Dict mapping source code to SourceAdapter instance.
                       Used to determine source priority for winner selection.
+            fuzzy_enabled: Override for DEDUP_FUZZY_ENABLED (default from config env).
+                           When False the three fuzzy layers are skipped; only
+                           source_id + dedup_key exact passes run.
+            fuzzy_threshold: Override for DEDUP_FUZZY_THRESHOLD (default from config env).
+                             Jaccard similarity floor applied in the fuzzy + title-prefix
+                             layers. Lower = more aggressive; higher = safer.
         """
         self._adapters = adapters
+        self._fuzzy_enabled = (
+            DEDUP_FUZZY_ENABLED if fuzzy_enabled is None else fuzzy_enabled
+        )
+        self._fuzzy_threshold = (
+            DEDUP_FUZZY_THRESHOLD if fuzzy_threshold is None else fuzzy_threshold
+        )
 
     def run(self, records: List[UnifiedProcurement]) -> List[UnifiedProcurement]:
         """Run all dedup layers in sequence and return deduplicated records."""
         deduped = self._deduplicate_by_source_id(records)
         deduped = self._deduplicate(deduped)
-        deduped = self._deduplicate_fuzzy(deduped)
-        deduped = self._deduplicate_by_process_number(deduped)
-        deduped = self._deduplicate_by_title_prefix(deduped)
+        if self._fuzzy_enabled:
+            deduped = self._deduplicate_fuzzy(deduped)
+            deduped = self._deduplicate_by_process_number(deduped)
+            deduped = self._deduplicate_by_title_prefix(deduped)
         return deduped
 
     def _get_source_priority(self) -> Dict[str, int]:
@@ -310,7 +329,7 @@ class DeduplicationEngine:
 
                     lot_a = lot_a_diag
                     lot_b = lot_b_diag
-                    if sim >= 0.85 and lot_a is not None and lot_b is not None and lot_a != lot_b:
+                    if sim >= self._fuzzy_threshold and lot_a is not None and lot_b is not None and lot_a != lot_b:
                         continue
 
                     if lot_a is not None:
@@ -328,6 +347,7 @@ class DeduplicationEngine:
                             and sim >= 0.60
                         ):
                             to_remove.add(idx_b)
+                            DEDUP_FUZZY_HITS.labels(layer="fuzzy").inc()
                             removed_count += 1
                             logger.info(
                                 f"[FUZZY-DEDUP] Collapsed sequential lot (Jaccard={sim:.2f}): "
@@ -341,11 +361,11 @@ class DeduplicationEngine:
                     val_b = records[idx_b].valor_estimado or 0
                     if val_a > 0 and val_b > 0:
                         diff = abs(val_a - val_b) / max(val_a, val_b)
-                        value_threshold = 0.20 if sim >= 0.85 else 0.05
+                        value_threshold = 0.20 if sim >= self._fuzzy_threshold else 0.05
                         if diff > value_threshold:
                             continue
 
-                    if sim < 0.85:
+                    if sim < self._fuzzy_threshold:
                         num_a = self._extract_edital_number(records[idx_a].source_id)
                         num_b = self._extract_edital_number(records[idx_b].source_id)
                         if num_a is not None and num_b is not None:
@@ -355,6 +375,7 @@ class DeduplicationEngine:
                             continue
 
                     to_remove.add(idx_b)
+                    DEDUP_FUZZY_HITS.labels(layer="fuzzy").inc()
                     removed_count += 1
                     logger.info(
                         f"[FUZZY-DEDUP] Merged duplicate (Jaccard={sim:.2f}): "
@@ -447,6 +468,7 @@ class DeduplicationEngine:
                     pri_b = source_priority.get(records[idx_b].source_name, 999)
                     if pri_b < pri_a:
                         to_remove.add(idx_a)
+                        DEDUP_FUZZY_HITS.labels(layer="process_number").inc()
                         removed_count += 1
                         logger.info(
                             f"[PROCESS-DEDUP] Merged duplicate (Jaccard={sim:.2f}): "
@@ -456,6 +478,7 @@ class DeduplicationEngine:
                         break
                     else:
                         to_remove.add(idx_b)
+                        DEDUP_FUZZY_HITS.labels(layer="process_number").inc()
                         removed_count += 1
                         logger.info(
                             f"[PROCESS-DEDUP] Merged duplicate (Jaccard={sim:.2f}): "
@@ -515,7 +538,7 @@ class DeduplicationEngine:
                         tokens_cache[idx_b] = self._tokenize_objeto(records[idx_b].objeto)
 
                     sim = self._jaccard(tokens_cache[idx_a], tokens_cache[idx_b])
-                    if sim < 0.85:
+                    if sim < self._fuzzy_threshold:
                         continue
 
                     lot_a = self._extract_lot_number(records[idx_a].objeto)
@@ -534,6 +557,7 @@ class DeduplicationEngine:
                     pb = source_priority.get(records[idx_b].source_name, 999)
                     loser = idx_b if pa <= pb else idx_a
                     to_remove.add(loser)
+                    DEDUP_FUZZY_HITS.labels(layer="title_prefix").inc()
 
         if to_remove:
             logger.info(

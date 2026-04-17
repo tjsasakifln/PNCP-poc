@@ -78,16 +78,16 @@
     ]
   },
   "sample_record": {
-    "codigoLicitacao": 472555,
+    "codigoLicitacao": 469331,
     "numeroLicitacao": null,
-    "identificacao": "001",
-    "numero": "001/2026",
-    "resumo": "CHAMAMENTO DE INTERESSADOS PARA CREDENCIAMENTO, A FIM DE CONTRATAÇÃO DE PESSOAS JURÍDICAS ESPECIALIZADAS NA PRESTAÇÃO DE SERVIÇOS MÉDICOS NA ÁREA DE PSIQUIATRIA DESTINADOS AOS USUÁRIOS DO SISTEMA ÚNICO DE SAÚDE – SUS RESIDENTES NO MUNICÍPIO DE...",
-    "razaoSocial": "Prefeitura Municipal de Corupá",
-    "nomeUnidade": "FUNDO MUNICIPAL DE SAÚDE DE CORUPÁ - FMS",
+    "identificacao": "16/2026",
+    "numero": "23.108/2026",
+    "resumo": "AQUISIÇÃO DE MÁQUINA PARA PERFURAÇÃO DE POÇO ARTESIANO, NO MUNICÍPIO DE BUJARU/PA, PARA ATENDER AS NECESSIDADES DA SECRETARIA MUNICIPAL DE INFRAESTRUTURA-SEINFRA.",
+    "razaoSocial": "Prefeitura Municipal de Bujaru",
+    "nomeUnidade": "Prefeitura Municipal de Bujaru",
     "status": {
-      "codigo": 14,
-      "descricao": "Aguardando Inicio de Recebimento de Propostas"
+      "codigo": 22,
+      "descricao": "Aguardando Início da Sessão Presencial"
     },
     "situacao": {
       "codigo": 0,
@@ -95,39 +95,39 @@
     },
     "tipoLicitacao": {
       "codigoModalidadeLicitacao": 0,
-      "modalidadeLicitacao": "Credenciamento",
-      "codigoTipoLicitacao": 17,
-      "siglaTipoLicitacao": "CRED",
-      "tipoLicitacao": "Credenciamento",
-      "tipoRealizacao": "Eletrônico",
-      "tipoJulgamento": "Simples informação"
+      "modalidadeLicitacao": "Dispensa",
+      "codigoTipoLicitacao": 34,
+      "siglaTipoLicitacao": null,
+      "tipoLicitacao": "Dispensa Presencial",
+      "tipoRealizacao": "Presencial",
+      "tipoJulgamento": "Menor Preço"
     },
     "codigoSituacaoEdital": 5,
     "codigoTratamentoDiferenciado": 1,
     "codigoSituacaoCadastroLicitacao": 2,
-    "dataHoraInicioLances": "2026-04-15T02:59:00Z",
-    "dataHoraInicioPropostas": "2026-04-15T02:59:00Z",
-    "dataHoraFinalPropostas": "2027-04-15T02:59:00Z",
+    "dataHoraInicioLances": "2026-04-15T21:00:00Z",
+    "dataHoraInicioPropostas": "2026-04-08T12:00:00Z",
+    "dataHoraFinalPropostas": "2026-04-15T21:00:00Z",
     "dataHoraFinalLances": null,
-    "dataHoraPublicacao": "2026-04-14T18:22:00Z",
+    "dataHoraPublicacao": "2026-04-01T12:44:00Z",
     "isPublicado": false,
     "unidadeCompradora": {
-      "codigoUnidadeCompradora": 9721,
-      "nomeUnidadeCompradora": "FUNDO MUNICIPAL DE SAÚDE DE CORUPÁ - FMS",
-      "codigoComprador": 1563,
+      "codigoUnidadeCompradora": 1061,
+      "nomeUnidadeCompradora": "Prefeitura Municipal de Bujaru",
+      "codigoComprador": 820,
       "nomeComprador": null,
-      "cidade": "Corupá",
+      "cidade": "Bujaru",
       "codigoMunicipioIbge": null,
-      "uf": "SC"
+      "uf": "PA"
     },
     "comprador": null,
-    "urlReferencia": "/sc/prefeitura-municipal-de-corupa-1563/cred-001-2026-2026-472555",
+    "urlReferencia": "/pa/prefeitura-municipal-de-bujaru-820/dp-23108-2026-2026-469331",
     "statusProcessoPublico": {
-      "codigo": 14,
-      "descricao": "Aguardando Inicio de Recebimento de Propostas"
+      "codigo": 22,
+      "descricao": "Aguardando Início da Sessão Presencial"
     },
     "isExclusivoME": false,
     "isBeneficoLocal": false
   },
-  "captured_at": "2026-04-14T21:42:47.840349+00:00"
+  "captured_at": "2026-04-15T23:31:04.225478+00:00"
 }

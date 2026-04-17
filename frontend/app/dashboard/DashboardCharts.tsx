@@ -39,6 +39,7 @@ const ChartTooltip = React.memo(function ChartTooltip({ active, payload, label }
     <div className="bg-[var(--surface-elevated)] border border-[var(--border)] rounded-card p-3 shadow-lg text-sm">
       <p className="font-medium text-[var(--ink)] mb-1">{label}</p>
       {payload.map((entry, i: number) => (
+        // eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: color from Recharts payload
         <p key={i} style={{ color: entry.color }} className="text-xs">
           {entry.name}: {entry.name === "value" ? formatCurrency(entry.value) : formatNumber(entry.value)}
         </p>

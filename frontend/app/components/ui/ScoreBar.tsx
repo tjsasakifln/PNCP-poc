@@ -46,6 +46,7 @@ export function ScoreBar({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <div ref={ref} className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width animated from 0 to score percentage via IntersectionObserver state */}
         <div
           className={`h-full rounded-full ${bar} transition-all duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]`}
           style={{ width: `${width}%` }}

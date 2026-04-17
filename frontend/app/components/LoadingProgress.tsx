@@ -228,7 +228,12 @@ export function LoadingProgress({
       : "Finalizando...";
 
   return (
-    <div className="mt-8 p-6 bg-surface-1 rounded-card border animate-fade-in-up">
+    <div
+      className="mt-8 p-6 bg-surface-1 rounded-card border animate-fade-in-up"
+      role="status"
+      aria-busy={true}
+      aria-label="Analisando oportunidades"
+    >
       {/* Progress Header */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
@@ -242,6 +247,7 @@ export function LoadingProgress({
 
         {/* Progress Bar */}
         <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+          {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width computed from elapsed/total time ratio at runtime */}
           <div
             className="h-full bg-gradient-to-r from-brand-blue to-brand-navy rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${Math.max(progress, 3)}%` }}

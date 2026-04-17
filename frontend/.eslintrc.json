@@ -1,6 +1,8 @@
 {
   "extends": ["next/core-web-vitals"],
+  "plugins": ["local-rules"],
   "rules": {
+    "local-rules/no-inline-styles": "warn",
     "no-restricted-imports": [
       "error",
       {
@@ -66,10 +68,21 @@
         "tailwind.config.ts",
         "sentry.*.config.ts",
         "next.config.js",
-        "scripts/**/*"
+        "scripts/**/*",
+        "e2e-tests/**/*"
       ],
       "rules": {
-        "no-restricted-syntax": "off"
+        "no-restricted-syntax": "off",
+        "local-rules/no-inline-styles": "off"
+      }
+    },
+    {
+      "files": [
+        "app/global-error.tsx",
+        "app/estatisticas/embed/page.tsx"
+      ],
+      "rules": {
+        "local-rules/no-inline-styles": "off"
       }
     }
   ]

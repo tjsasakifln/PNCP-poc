@@ -99,6 +99,7 @@ export function QuotaCounter({
 
       {/* Progress bar */}
       <div className="w-full bg-surface-0 rounded-full h-2 overflow-hidden mb-3">
+        {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: width computed from quotaUsed/quotaLimit ratio at runtime */}
         <div
           className={`h-full transition-all duration-300 ${progressColor}`}
           style={{ width: `${percentage}%` }}

@@ -58,13 +58,22 @@ jobs:
         run: |
           cd backend
           pytest tests/ \
-            -m "not benchmark" \
+            -m "not benchmark and not external" \
+            --ignore=tests/fuzz \
             --cov=. \
             --cov-report=term-missing \
             --cov-fail-under=70 \
             --junitxml=pytest-report.xml \
             -v
           echo "✅ All backend tests passed with coverage ≥ 70%"
+
+      # STORY-6.7: Property-based fuzz tests (Hypothesis) — separate step to isolate timing
+      - name: Run fuzz tests (Hypothesis)
+        run: |
+          cd backend
+          pip install "hypothesis>=6.92.0" -q
+          pytest tests/fuzz/ -q --timeout=60 -m fuzz
+          echo "✅ Fuzz tests passed"
 
       # DEBT-111 AC5: Per-module coverage thresholds
       - name: Check per-module coverage thresholds

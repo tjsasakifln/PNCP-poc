@@ -25,7 +25,7 @@ async function fetchLatestDigest(): Promise<DailyDigestSummary | null> {
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
-    return res.json();
+    return await res.json();
   } catch {
     return null;
   }
@@ -111,8 +111,7 @@ export default async function LicitacoesDoDiaHubPage() {
               <span className="text-ink">Licitacoes do Dia</span>
             </nav>
             <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4"
-              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink tracking-tight mb-4 font-serif"
             >
               Licitacoes do Dia
             </h1>

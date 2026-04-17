@@ -90,6 +90,7 @@ export function DashboardDimensionsWidget({
               {dimensions.top_ufs.map((uf, i) => (
                 <div key={uf.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line local-rules/no-inline-styles -- DYNAMIC: backgroundColor is computed from chart color palette by index */}
                     <span
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
