@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P2 — Gate red, não bloqueia merge se removido com justificativa
 **Effort:** XS (<30min)
 **Agents:** @dev, @qa, @devops
@@ -94,3 +94,4 @@ see https://github.com/tjsasakifln/PNCP-poc/settings/security_analysis
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
 - **2026-04-16** — @po: *validate-story-draft GO (7/10) — Draft → Ready. Configuração de repositório (não test suite); Investigation Checklist contém N/A de template. @dev deve seguir ACs. XS effort (<30min).
 - **2026-04-17** — @dev: Ready → InProgress → InReview. Diagnóstico via `gh api` + log do run 24539387439. Causa raiz: Dependabot alerts desabilitado → Dependency Review API inacessível. Fix: `gh api --method PUT repos/tjsasakifln/pncp-poc/vulnerability-alerts` (HTTP 204). Todos os ACs marcados. Job `Dependency Review` mostra `pass` no PR #377 (run 71849410702). PR: https://github.com/tjsasakifln/PNCP-poc/pull/377
+- **2026-04-17** — @devops: InReview → Done. PR #377 mergeado em `main` (commit aac8737). Merge administrativo: falhas CI (Backend Tests + Frontend Tests) são baseline pré-existente documentado no EPIC-CI-GREEN-MAIN-2026Q2 — PR não introduz regressões.
