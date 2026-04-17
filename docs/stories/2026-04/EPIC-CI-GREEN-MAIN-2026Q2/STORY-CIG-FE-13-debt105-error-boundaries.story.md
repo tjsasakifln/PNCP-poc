@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InProgress
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** XS (<1h)
 **Agents:** @dev, @qa, @devops
@@ -29,7 +29,7 @@ Cannot find module '../components/LoadingProgress' from '__tests__/debt105-error
 ## Acceptance Criteria
 
 - [x] AC1: `npm test -- __tests__/debt105-error-boundaries.test.tsx` retorna exit code 0 localmente com `.npmrc` legacy-peer-deps aplicado.
-- [ ] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log.
+- [x] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log.
 - [x] AC3: Causa raiz descrita e corrigida em "Root Cause Analysis" (mock errado / import drift / snapshot justificado / bug real de produção / outro). Sintoma isolado **não é suficiente**.
 - [x] AC4: Cobertura da suíte **não caiu** vs. último run verde conhecido. Se caiu, novo teste adicionado para compensar. Evidência: diff de `coverage-summary.json` colado no Change Log.
 - [x] AC5 (NEGATIVO — política conserto real): `grep -nE "\.(skip|only)\(|@pytest\.mark\.skip|xit\b|xdescribe\b" __tests__/debt105-error-boundaries.test.tsx` vazio. Nenhum teste desta suíte foi marcado como skip, only, xit, xdescribe ou movido para workflow não-gateado.
@@ -89,3 +89,4 @@ Ao corrigir o import, o teste do AC7 revelou que o componente `LoadingProgress` 
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
 - **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. XS effort — módulo ausente. AC testáveis, escopo claro, dependências mapeadas.
 - **2026-04-17** — @dev: implementado. Causa raiz: (a) import drift `../components/LoadingProgress` → `../app/components/LoadingProgress` + (e) gap A11Y em LoadingProgress (role/aria-busy/aria-label ausentes). Ambos corrigidos. Testes locais: 10/10 na suíte alvo, 38/38 no adjacente. AC1 ✓ AC3 ✓ AC4 ✓ AC5 ✓. AC2 pendente CI.
+- **2026-04-17** — @devops: PR #375 criado (https://github.com/tjsasakifln/PNCP-poc/pull/375). CI run Frontend Tests (PR Gate) #24568899836: `PASS __tests__/debt105-error-boundaries.test.tsx` — 10/10 pass. AC2 ✓. Story → Done.
