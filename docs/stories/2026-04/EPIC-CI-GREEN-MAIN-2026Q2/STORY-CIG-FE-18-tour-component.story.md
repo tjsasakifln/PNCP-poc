@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -33,7 +33,7 @@ Received: 0 (mas deveria ser 1)
 ## Acceptance Criteria
 
 - [x] AC1: `npm test -- __tests__/components/Tour.test.tsx` retorna exit code 0 localmente com `.npmrc` legacy-peer-deps aplicado. ✅ 11/11 pass em 2026-04-17.
-- [ ] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log.
+- [x] AC2: Run CI `Frontend Tests (PR Gate)` **24591645958** (PR #380) mostra `__tests__/components/Tour.test.tsx` **0 failed / 0 errored**. ✅
 - [x] AC3: Causa raiz descrita e corrigida em "Root Cause Analysis" — categoria (e) bug real de produção: `handleNext`/`handleBack` eram sempre async, criando microtask hop que fazia `fireEvent.click` sync ver o step antigo.
 - [x] AC4: Cobertura da suíte **não caiu** vs. último run verde conhecido. 11/11 tests mantidos. Zero teste removido.
 - [x] AC5 (NEGATIVO — política conserto real): `grep -nE "\.(skip|only)\(|xit\b|xdescribe\b" __tests__/components/Tour.test.tsx` vazio ✅.
@@ -87,3 +87,4 @@ Fix: adicionado fast-path sync em `handleNext`/`handleBack` — quando `beforeSh
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
 - **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. AC testáveis, escopo claro, dependências mapeadas. Causa raiz a confirmar em Implement conforme política zero-quarentena do epic.
 - **2026-04-17** — @dev: hipótese de i18n rejeitada — textos estavam corretos. Causa raiz real: `handleNext`/`handleBack` sempre async fazia microtask hop que desincronizava `fireEvent.click`. Fast-path sync adicionado quando `beforeShow` ausente. Suíte isolada: 11/11 pass. Full suite: zero regressão. TSC limpo. AC1/AC3/AC4/AC5 atendidos; AC2 aguarda CI do PR. Status Ready → InReview.
+- **2026-04-17** — @devops: PR #380 criado. CI run **24591645958** passou a suíte `__tests__/components/Tour.test.tsx`. AC2 fechado. Status InReview → Done.
