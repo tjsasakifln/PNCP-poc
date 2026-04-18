@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** XS (<1h)
 **Agents:** @dev, @qa, @devops
@@ -29,7 +29,7 @@ TypeError: _sonner.toast.info is not a function
 ## Acceptance Criteria
 
 - [x] AC1: `npm test -- __tests__/admin/partners.test.tsx` retorna exit code 0 localmente com `.npmrc` legacy-peer-deps aplicado.
-- [ ] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log.
+- [x] AC2: Última run do workflow `frontend-tests.yml` no PR desta story mostra a suíte com **0 failed / 0 errored**. Link para run ID registrado no Change Log.
 - [x] AC3: Causa raiz descrita e corrigida em "Root Cause Analysis" (mock errado / import drift / snapshot justificado / bug real de produção / outro). Sintoma isolado **não é suficiente**.
 - [x] AC4: Cobertura da suíte **não caiu** vs. último run verde conhecido. Se caiu, novo teste adicionado para compensar. Evidência: diff de `coverage-summary.json` colado no Change Log.
 - [x] AC5 (NEGATIVO — política conserto real): `grep -nE "\.(skip|only)\(|@pytest\.mark\.skip|xit\b|xdescribe\b" __tests__/admin/partners.test.tsx` vazio. Nenhum teste desta suíte foi marcado como skip, only, xit, xdescribe ou movido para workflow não-gateado.
@@ -79,3 +79,5 @@ TypeError: _sonner.toast.info is not a function
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
 - **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. XS effort — mock incompleto do sonner. AC testáveis, escopo claro, dependências mapeadas.
 - **2026-04-17** — @dev: RCA classe (b) confirmada — mock sonner sem `info`. Fix: expandir mock com `info/warning/loading/dismiss` em `__tests__/admin/partners.test.tsx`. Suite local verde: 16 tests / 0 failed. AC5 grep limpo. AC1+AC3+AC4+AC5 confirmados. Status Ready → InReview — aguarda CI verde para AC2.
+- **2026-04-17** — @qa: **AC2 verificado**. Run CI `frontend-tests.yml` https://github.com/tjsasakifln/PNCP-poc/actions/runs/24593002109 (job 71917555547, PR #381) reporta `PASS __tests__/admin/partners.test.tsx` — 0 failed / 0 errored. Job global exit=1 apenas por coverage threshold pré-existente. AC2 closed. Status InReview → Done.
+- **2026-04-17** — @devops: PR #381 pronta para merge. Status → **Done**.
