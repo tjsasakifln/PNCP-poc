@@ -8,7 +8,9 @@ import { useAnalytics, getStoredUTMParams } from "../../hooks/useAnalytics";
 import { translateAuthError } from "../../lib/error-messages";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
+import { buttonVariants } from "../../components/ui/button";
 import { safeSetItem, safeGetItem } from "../../lib/storage";
 import { signupSchema, type SignupFormData } from "../../lib/schemas/forms";
 
@@ -262,6 +264,19 @@ export default function SignupPage() {
           <p className="text-center text-ink-secondary mb-4">
             Veja quais licitações valem a pena para sua empresa — em 2 minutos
           </p>
+
+          {/* Already-authenticated fallback: visible CTA (complements silent redirect in useEffect) */}
+          {!authLoading && authSession && (
+            <div className="mb-4 p-3 bg-brand-blue-subtle rounded-input text-center" data-testid="already-auth-banner">
+              <p className="text-sm text-ink mb-2">Você já tem uma conta ativa.</p>
+              <Link
+                href="/buscar"
+                className={buttonVariants({ variant: "primary", size: "sm" })}
+              >
+                Ir para Buscar
+              </Link>
+            </div>
+          )}
 
           {/* STORY-323 AC16: Partner referral badge */}
           {partnerInfo && (

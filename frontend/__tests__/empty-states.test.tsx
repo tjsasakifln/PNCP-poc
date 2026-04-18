@@ -461,6 +461,7 @@ describe("Conta plan section (AC9-AC13)", () => {
       quota_used: 42,
       quota_remaining: 958,
       quota_reset_date: "2026-03-01",
+      subscription_end_date: "2026-03-01",
       trial_expires_at: null,
       subscription_status: "active",
     };
