@@ -82,8 +82,8 @@ async def test_trial_user_receives_global_cache():
     with (
         patch("supabase_client.get_supabase", return_value=mock_sb),
         patch("redis_pool.get_fallback_cache", return_value=mock_redis_cache),
-        patch("search_cache.METRICS_CACHE_HITS", MagicMock()),
-        patch("search_cache.METRICS_CACHE_MISSES", MagicMock()),
+        patch("cache.manager.METRICS_CACHE_HITS", MagicMock()),
+        patch("cache.manager.METRICS_CACHE_MISSES", MagicMock()),
         patch("middleware.search_id_var", MagicMock(get=lambda x: "-")),
     ):
         result = await get_from_cache(
@@ -213,8 +213,8 @@ async def test_global_cache_does_not_overwrite_personal():
     with (
         patch("supabase_client.get_supabase", return_value=mock_sb),
         patch("redis_pool.get_fallback_cache", return_value=mock_redis_cache),
-        patch("search_cache.METRICS_CACHE_HITS", MagicMock()),
-        patch("search_cache.METRICS_CACHE_MISSES", MagicMock()),
+        patch("cache.manager.METRICS_CACHE_HITS", MagicMock()),
+        patch("cache.manager.METRICS_CACHE_MISSES", MagicMock()),
         patch("middleware.search_id_var", MagicMock(get=lambda x: "-")),
     ):
         result = await get_from_cache(
@@ -484,8 +484,8 @@ async def test_get_from_cache_cascade_uses_global_fallback():
     with (
         patch("supabase_client.get_supabase", return_value=mock_sb),
         patch("redis_pool.get_fallback_cache", return_value=mock_redis_cache),
-        patch("search_cache.METRICS_CACHE_HITS", MagicMock()),
-        patch("search_cache.METRICS_CACHE_MISSES", MagicMock()),
+        patch("cache.cascade.METRICS_CACHE_HITS", MagicMock()),
+        patch("cache.cascade.METRICS_CACHE_MISSES", MagicMock()),
         patch("middleware.search_id_var", MagicMock(get=lambda x: "-")),
     ):
         result = await get_from_cache_cascade(
@@ -536,7 +536,7 @@ async def test_save_to_cache_stores_params_hash_global():
 
     with (
         patch("supabase_client.get_supabase", return_value=mock_sb),
-        patch("search_cache._track_cache_operation"),
+        patch("cache.manager._track_cache_operation"),
     ):
         result = await save_to_cache(
             user_id="test-user",

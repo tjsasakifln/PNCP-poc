@@ -102,7 +102,7 @@ class TestLocalLevel:
 
     def test_save_and_read_local(self, tmp_path):
         """Round-trip: save then read from local file."""
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             cache_key = compute_search_hash({"setor_id": 1, "ufs": ["RJ"]})
             _save_to_local(cache_key, [{"id": 2}], ["PORTAL_COMPRAS"])
             data = _get_from_local(cache_key)
@@ -112,12 +112,12 @@ class TestLocalLevel:
         assert data["sources_json"] == ["PORTAL_COMPRAS"]
 
     def test_read_missing_file_returns_none(self, tmp_path):
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             data = _get_from_local("nonexistent_key")
         assert data is None
 
     def test_read_corrupted_file_returns_none(self, tmp_path):
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             # Write a corrupted file
             cache_file = tmp_path / "corrupted_key_12345678901.json"
             cache_file.write_text("not json", encoding="utf-8")
@@ -142,7 +142,7 @@ class TestMultiLevelSave:
         mock_sb.execute.return_value = Mock(data=[{"id": "ok"}])
 
         with patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             result = await save_to_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -158,7 +158,7 @@ class TestMultiLevelSave:
         """L1 fails → L2 succeeds."""
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
              patch("utils.error_reporting.sentry_sdk") as mock_sentry, \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             result = await save_to_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -175,10 +175,10 @@ class TestMultiLevelSave:
     async def test_save_falls_back_to_local_on_all_volatile_failure(self, tmp_path):
         """L1 + L2 fail → L3 succeeds."""
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
-             patch("search_cache._save_to_redis", side_effect=Exception("Redis down")), \
-             patch("search_cache.LOCAL_CACHE_DIR", tmp_path), \
+             patch("cache.redis._save_to_redis", side_effect=Exception("Redis down")), \
+             patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path), \
              patch("utils.error_reporting.sentry_sdk"), \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             result = await save_to_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -193,10 +193,10 @@ class TestMultiLevelSave:
     async def test_save_returns_miss_when_all_levels_fail(self, tmp_path):
         """All 3 levels fail — returns miss without crashing."""
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
-             patch("search_cache._save_to_redis", side_effect=Exception("Redis down")), \
-             patch("search_cache._save_to_local", side_effect=Exception("FS error")), \
+             patch("cache.redis._save_to_redis", side_effect=Exception("Redis down")), \
+             patch("cache.local_file._save_to_local", side_effect=Exception("FS error")), \
              patch("utils.error_reporting.sentry_sdk"), \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             result = await save_to_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -237,7 +237,7 @@ class TestMultiLevelRead:
         }])
 
         with patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             result = await get_from_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -256,7 +256,7 @@ class TestMultiLevelRead:
 
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
              patch("utils.error_reporting.sentry_sdk"), \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             result = await get_from_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -271,14 +271,14 @@ class TestMultiLevelRead:
         """L1 + L2 fail → L3 has data."""
         cache_key = compute_search_hash({"setor_id": 1, "ufs": ["MG"]})
         # Pre-seed local file
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             _save_to_local(cache_key, [{"id": 3}], ["PORTAL_COMPRAS"])
 
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
-             patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache.LOCAL_CACHE_DIR", tmp_path), \
+             patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path), \
              patch("utils.error_reporting.sentry_sdk"), \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             result = await get_from_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["MG"]},
@@ -292,10 +292,10 @@ class TestMultiLevelRead:
     async def test_read_returns_none_when_all_miss(self):
         """All levels miss → returns None."""
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
-             patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache._get_from_local", return_value=None), \
+             patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None), \
              patch("utils.error_reporting.sentry_sdk"), \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             result = await get_from_cache(
                 user_id="user-1",
                 params={"setor_id": 99, "ufs": ["XX"]},
@@ -324,9 +324,9 @@ class TestMultiLevelRead:
         }])
 
         with patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache._get_from_local", return_value=None), \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None), \
+             patch("cache.manager._track_cache_operation"):
             result = await get_from_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -403,7 +403,7 @@ class TestLocalCacheCleanup:
         old_mtime = (datetime.now(timezone.utc) - timedelta(hours=25)).timestamp()
         os.utime(old_file, (old_mtime, old_mtime))
 
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             deleted = cleanup_local_cache()
 
         assert deleted == 1
@@ -414,14 +414,14 @@ class TestLocalCacheCleanup:
         young_file = tmp_path / "fresh.json"
         young_file.write_text("{}", encoding="utf-8")
 
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             deleted = cleanup_local_cache()
 
         assert deleted == 0
 
     def test_cleanup_handles_nonexistent_dir(self, tmp_path):
         nonexistent = tmp_path / "does_not_exist"
-        with patch("search_cache.LOCAL_CACHE_DIR", nonexistent):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", nonexistent):
             deleted = cleanup_local_cache()
         assert deleted == 0
 
@@ -438,14 +438,14 @@ class TestLocalCacheStats:
         (tmp_path / "a.json").write_text('{"x":1}', encoding="utf-8")
         (tmp_path / "b.json").write_text('{"y":2}', encoding="utf-8")
 
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             stats = get_local_cache_stats()
 
         assert stats["files_count"] == 2
         assert stats["total_size_mb"] >= 0
 
     def test_stats_empty_dir(self, tmp_path):
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             stats = get_local_cache_stats()
 
         assert stats["files_count"] == 0
@@ -508,7 +508,7 @@ class TestSentryAlerting:
     async def test_sentry_called_on_supabase_save_failure(self):
         with patch("supabase_client.get_supabase", side_effect=Exception("test error")), \
              patch("utils.error_reporting.sentry_sdk") as mock_sentry, \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             await save_to_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -526,10 +526,10 @@ class TestSentryAlerting:
         # STORY-306: dual-read may call Supabase twice (exact key + legacy key),
         # so capture_exception may be called 1-2 times depending on key divergence
         with patch("supabase_client.get_supabase", side_effect=Exception("read error")), \
-             patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache._get_from_local", return_value=None), \
+             patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None), \
              patch("utils.error_reporting.sentry_sdk") as mock_sentry, \
-             patch("search_cache._track_cache_operation"):
+             patch("cache.manager._track_cache_operation"):
             await get_from_cache(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
