@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** M (3-6h, investigação de ambiente CI)
 **Agents:** @dev, @qa, @devops
@@ -133,3 +133,4 @@ Auditoria dos diffs antes do `npm test -- -u`:
 - **2026-04-17** — @dev: Status Ready → InReview. Aguarda push/PR via @devops + green CI run para AC2 final.
 - **2026-04-17** — @devops: branch `fix/cig-fe-05-14-15-licitacao-card-snapshot-drift` pushed; PR **#378** aberto (https://github.com/tjsasakifln/PNCP-poc/pull/378) cobrindo FE-05 + FE-14 + FE-15.
 - **2026-04-17** — @qa: **AC2 verificado**. Run CI `frontend-tests.yml` em https://github.com/tjsasakifln/PNCP-poc/actions/runs/24588459117 (job 71903782849) reporta `PASS __tests__/components/ThemeProvider-ux410-wcag.test.tsx` — 0 failed / 0 errored **nesta suíte**. 33 snapshots globalmente passam. O job como um todo sai com exit 1 porque **outras 13 suites** (correspondentes a CIG-FE-01/02/04/06/07/08/09/11/12/16/17/18/19, ainda em `Ready`) falham com suas próprias causas raiz — pré-existentes a este PR e fora de escopo desta story. AC2 closed para FE-05. Aguarda merge @devops para transição InReview → Done.
+- **2026-04-17** — @devops: PR #378 mergeada em `main` (mergeCommit `705b3784edee861d7dfb694af63f766774b8abbd`, mergedAt `2026-04-17T22:28:23Z`). Status InReview → **Done**.
