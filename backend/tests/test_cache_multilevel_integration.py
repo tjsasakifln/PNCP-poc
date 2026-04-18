@@ -4,7 +4,7 @@ Architecture: L1=Supabase (checked first), L2=Redis/InMemory, L3=Local file.
 """
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 
 @pytest.mark.asyncio
@@ -21,7 +21,7 @@ async def test_l1_miss_l2_hit_returns_result():
     stale_entry = {
         "results": [{"id": "test-1", "objeto": "obra pública"}],
         "sources_json": ["PNCP"],
-        "fetched_at": "2026-03-31T00:00:00+00:00",  # ~8h ago → stale
+        "fetched_at": (datetime.now(timezone.utc) - timedelta(hours=10)).isoformat(),  # stale but not expired
         "user_id": "user-test",
         "params_hash": "abc123",
         "params": {"setor_id": "engenharia", "ufs": ["SP"]},
