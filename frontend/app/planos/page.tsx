@@ -21,6 +21,7 @@ import { PlanStatusBanners } from "./components/PlanStatusBanners";
 import { PlanProCard } from "./components/PlanProCard";
 import { PlanConsultoriaCard } from "./components/PlanConsultoriaCard";
 import { PlanFAQ } from "./components/PlanFAQ";
+import { buttonVariants } from "../../components/ui/button";
 import { trackViewItem, trackBeginCheckout } from "../components/GoogleAnalytics";
 import type { components } from "../api-types.generated";
 
@@ -440,9 +441,12 @@ export default function PlanosPage() {
           <div className="border-t border-gray-200 dark:border-gray-700" />
         </div>
 
-        {/* Bottom CTA */}
+        {/* Bottom CTA — uses shared buttonVariants for consistent styling (DEBT-006 AC4) */}
         <div className="mt-12 text-center">
-          <Link href="/buscar" className="text-sm text-[var(--ink-muted)] hover:underline">
+          <Link
+            href="/buscar"
+            className={buttonVariants({ variant: "link", size: "sm", className: "text-[var(--ink-muted)]" })}
+          >
             {hasFullAccess ? "Voltar para análises" : "Continuar com período de avaliação"}
           </Link>
         </div>
