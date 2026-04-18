@@ -14,13 +14,18 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def reset_cost_tracker():
-    """Reset the hourly cost tracker between tests."""
-    import llm_arbiter
-    llm_arbiter._hourly_cost_usd.clear()
-    llm_arbiter._cost_alert_fired = False
+    """Reset the hourly cost tracker between tests.
+
+    STORY-CIG-BE-llm-arbiter-internals: `_hourly_cost_usd` and
+    `_cost_alert_fired` moved to `llm_arbiter.classification` submodule
+    after package refactor (TD-009).
+    """
+    from llm_arbiter import classification
+    classification._hourly_cost_usd.clear()
+    classification._cost_alert_fired = False
     yield
-    llm_arbiter._hourly_cost_usd.clear()
-    llm_arbiter._cost_alert_fired = False
+    classification._hourly_cost_usd.clear()
+    classification._cost_alert_fired = False
 
 
 class TestLLMCostCounters:
@@ -88,7 +93,7 @@ class TestLLMCostAlert:
              patch("metrics.LLM_COST_USD", mock_cost_usd), \
              patch("metrics.LLM_TOKENS_DETAILED", mock_tokens), \
              patch("config.features.LLM_COST_ALERT_THRESHOLD", 0.001), \
-             patch("llm_arbiter.logger") as mock_logger:
+             patch("llm_arbiter.classification.logger") as mock_logger:
             # Generate enough calls to exceed $0.001 threshold
             # Each call: 10000 input * 0.10/1M + 1000 output * 0.40/1M = 0.001 + 0.0004 = 0.0014
             _log_token_usage("test-alert-001", input_tokens=10000, output_tokens=1000, call_type="arbiter")
@@ -110,7 +115,7 @@ class TestLLMCostAlert:
              patch("metrics.LLM_COST_USD", mock_cost_usd), \
              patch("metrics.LLM_TOKENS_DETAILED", mock_tokens), \
              patch("config.features.LLM_COST_ALERT_THRESHOLD", 100.0), \
-             patch("llm_arbiter.logger") as mock_logger:
+             patch("llm_arbiter.classification.logger") as mock_logger:
             _log_token_usage("test-alert-002", input_tokens=100, output_tokens=10, call_type="arbiter")
 
         # No warning should be logged (only debug/info calls)
@@ -129,7 +134,7 @@ class TestLLMCostAlert:
              patch("metrics.LLM_COST_USD", mock_cost_usd), \
              patch("metrics.LLM_TOKENS_DETAILED", mock_tokens), \
              patch("config.features.LLM_COST_ALERT_THRESHOLD", 0.0001), \
-             patch("llm_arbiter.logger") as mock_logger:
+             patch("llm_arbiter.classification.logger") as mock_logger:
             # Two calls that both exceed threshold
             _log_token_usage("test-alert-003a", input_tokens=10000, output_tokens=1000, call_type="arbiter")
             _log_token_usage("test-alert-003b", input_tokens=10000, output_tokens=1000, call_type="arbiter")

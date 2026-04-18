@@ -79,7 +79,7 @@ class TestCacheMetricsEndpoint:
             "top_keys": [],
         }
 
-        with patch("search_cache.get_cache_metrics", new_callable=AsyncMock, return_value=mock_metrics):
+        with patch("cache.admin.get_cache_metrics", new_callable=AsyncMock, return_value=mock_metrics):
             response = client_as_admin.get("/v1/admin/cache/metrics")
 
         assert response.status_code == 200
@@ -164,7 +164,7 @@ class TestCacheInvalidation:
     def test_invalidate_specific_entry(self, client_as_admin):
         mock_result = {"deleted_levels": ["supabase", "redis", "local"]}
 
-        with patch("search_cache.invalidate_cache_entry", new_callable=AsyncMock, return_value=mock_result):
+        with patch("cache.admin.invalidate_cache_entry", new_callable=AsyncMock, return_value=mock_result):
             response = client_as_admin.delete("/v1/admin/cache/abcdef1234567890")
 
         assert response.status_code == 200
@@ -215,7 +215,7 @@ class TestCacheBulkInvalidation:
     def test_with_confirm_header_succeeds(self, client_as_admin):
         mock_result = {"deleted_counts": {"supabase": 10, "redis": 5, "local": 3}}
 
-        with patch("search_cache.invalidate_all_cache", new_callable=AsyncMock, return_value=mock_result):
+        with patch("cache.admin.invalidate_all_cache", new_callable=AsyncMock, return_value=mock_result):
             response = client_as_admin.delete(
                 "/v1/admin/cache",
                 headers={"X-Confirm": "delete-all"},
@@ -254,7 +254,7 @@ class TestCacheInspection:
             "cache_status": "fresh",
         }
 
-        with patch("search_cache.inspect_cache_entry", new_callable=AsyncMock, return_value=mock_entry):
+        with patch("cache.admin.inspect_cache_entry", new_callable=AsyncMock, return_value=mock_entry):
             response = client_as_admin.get("/v1/admin/cache/abc123def456")
 
         assert response.status_code == 200
@@ -268,7 +268,7 @@ class TestCacheInspection:
         assert data["coverage"] is not None
 
     def test_inspect_nonexistent_returns_404(self, client_as_admin):
-        with patch("search_cache.inspect_cache_entry", new_callable=AsyncMock, return_value=None):
+        with patch("cache.admin.inspect_cache_entry", new_callable=AsyncMock, return_value=None):
             response = client_as_admin.get("/v1/admin/cache/0000000000000000")
 
         assert response.status_code == 404
