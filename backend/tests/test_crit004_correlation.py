@@ -252,7 +252,11 @@ class TestJobQueueCorrelation:
         mock_resumo = MagicMock()
         mock_resumo.total_oportunidades = 0
         mock_resumo.valor_total = 0
-        mock_resumo.model_dump.return_value = {"resumo_executivo": "Test"}
+        # Empty string → _ground_truth_summary early-returns (avoids regex on MagicMock)
+        mock_resumo.resumo_executivo = ""
+        # Empty list → recompute_temporal_alerts skips list filter / re.search
+        mock_resumo.destaques = []
+        mock_resumo.model_dump.return_value = {"resumo_executivo": ""}
 
         with patch("llm.gerar_resumo", return_value=mock_resumo), \
              patch("redis_pool.get_redis_pool", new_callable=AsyncMock) as mock_redis, \
@@ -308,18 +312,22 @@ class TestAdminTraceEndpoint:
     """AC21: GET /v1/admin/search-trace/{search_id} aggregates journey data."""
 
     def setup_method(self):
+        # The route depends on `require_admin` (admin.py), which itself depends
+        # on `require_auth`.  Overriding `require_admin` directly bypasses both.
         from main import app
-        from auth import require_auth
-        app.dependency_overrides[require_auth] = lambda: {
-            "sub": "test-user-id",
-            "email": "test@example.com",
+        from admin import require_admin
+        app.dependency_overrides[require_admin] = lambda: {
+            "id": "test-admin-id",
+            "sub": "test-admin-id",
+            "email": "admin@example.com",
+            "is_admin": True,
         }
         self.client = TestClient(app)
 
     def teardown_method(self):
         from main import app
-        from auth import require_auth
-        app.dependency_overrides.pop(require_auth, None)
+        from admin import require_admin
+        app.dependency_overrides.pop(require_admin, None)
 
     @patch("redis_pool.get_redis_pool", new_callable=AsyncMock, return_value=None)
     @patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None)
@@ -368,11 +376,12 @@ class TestAdminTraceEndpoint:
 
     def test_trace_endpoint_requires_auth(self):
         from main import app
-        from auth import require_auth
-        app.dependency_overrides.pop(require_auth, None)
+        from admin import require_admin
+        # Remove admin override so the real admin dependency runs and rejects.
+        app.dependency_overrides.pop(require_admin, None)
 
         resp = self.client.get("/v1/admin/search-trace/no-auth")
-        # Without auth override, should fail
+        # Without admin override, should fail (401/403 from require_auth or require_admin)
         assert resp.status_code in (401, 403, 422)
 
 
@@ -403,15 +412,24 @@ class TestLogFormatConfiguration:
     """AC9-AC10: Log format includes search_id and correlation_id placeholders."""
 
     def test_log_format_has_search_id(self):
-        """Verify config.py log format string includes search_id."""
+        """Verify config log format string includes search_id.
+
+        DEBT-015 SYS-012: the ``config`` package is a thin re-export shim; the
+        actual ``setup_logging`` + format strings live in ``config.base``.
+        ``inspect.getsource(config)`` now returns only the ``__init__.py``
+        re-export, so we introspect the submodule that owns the format.
+        """
         import inspect
-        import config
-        source = inspect.getsource(config)
+        from config import base
+        source = inspect.getsource(base)
         assert "search_id" in source
 
     def test_log_format_has_correlation_id(self):
-        """Verify config.py log format string includes correlation_id."""
+        """Verify config log format string includes correlation_id.
+
+        See ``test_log_format_has_search_id`` — format lives in ``config.base``.
+        """
         import inspect
-        import config
-        source = inspect.getsource(config)
+        from config import base
+        source = inspect.getsource(base)
         assert "correlation_id" in source

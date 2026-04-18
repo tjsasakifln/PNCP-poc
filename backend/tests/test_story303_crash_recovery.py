@@ -77,22 +77,78 @@ class TestRequirementsCryptographyPin:
     """AC10-AC11: cryptography must be pinned to an exact version."""
 
     def test_ac10_cryptography_pinned_exact(self):
-        """requirements.txt pins cryptography==X.Y.Z (not >=)."""
+        """requirements.txt pins cryptography to a safe range.
+
+        STORY-303 originally required `cryptography==46.0.5` (exact pin) for
+        fork-safety. CVE-2026-26007 + CVE-2026-34073 forced a bump to
+        `>=46.0.6,<47.0.0` (STORY-CIG-BE-story-drift-cryptography-pin):
+        - lower bound `>=46.0.6` picks up the CVE fixes;
+        - upper bound `<47.0.0` keeps the fork-safety guarantee (47.x is
+          unreleased and untested with Gunicorn --preload).
+
+        We now validate the upper bound is present (fork-safety invariant)
+        and that the lower bound is at least 46.0.6 (CVE floor), rather than
+        asserting a single exact string.
+        """
         import os
+        import re
 
         req_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "requirements.txt"
         )
         with open(req_path) as f:
-            content = f.read()
+            lines = f.readlines()
 
-        # Must have exact pin
-        assert "cryptography==46.0.5" in content, (
-            "requirements.txt must pin cryptography==46.0.5 exactly (STORY-303 AC10)"
+        cryptography_specs: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("cryptography") and not stripped.startswith("#"):
+                # Drop inline comments / trailing whitespace before parsing.
+                spec = stripped.split("#", 1)[0].strip()
+                cryptography_specs.append(spec)
+
+        assert cryptography_specs, (
+            "requirements.txt must declare a cryptography dependency (STORY-303 AC10)"
+        )
+
+        spec = cryptography_specs[0]
+
+        # Fork-safety invariant: upper bound <47.0.0 MUST be present.
+        assert "<47.0.0" in spec or "<47" in spec, (
+            f"cryptography must be capped below 47.0.0 for fork-safety "
+            f"(found: {spec}). STORY-303 AC10 + DEBT-SYS-002."
+        )
+
+        # CVE floor: lower bound must be >= 46.0.6 (CVE-2026-26007 + CVE-2026-34073 fix).
+        m = re.search(r">=?\s*(\d+)\.(\d+)\.(\d+)|==\s*(\d+)\.(\d+)\.(\d+)", spec)
+        assert m, (
+            f"cryptography spec must declare a lower bound (==X.Y.Z or >=X.Y.Z), "
+            f"found: {spec}"
+        )
+        groups = m.groups()
+        major, minor, patch = (
+            int(groups[0] or groups[3]),
+            int(groups[1] or groups[4]),
+            int(groups[2] or groups[5]),
+        )
+        assert (major, minor, patch) >= (46, 0, 6), (
+            f"cryptography lower bound must be >=46.0.6 to cover "
+            f"CVE-2026-26007 + CVE-2026-34073 (found: {spec}). "
+            "STORY-CIG-BE-story-drift-cryptography-pin."
         )
 
     def test_ac10_no_cryptography_greater_than(self):
-        """requirements.txt must NOT have cryptography>= (unpinned)."""
+        """requirements.txt must cap cryptography below 47.0.0 (fork-safety).
+
+        Original STORY-303 AC10 forbade `>=` entirely (exact pin only).
+        After the CVE-driven bump (STORY-CIG-BE-story-drift-cryptography-pin),
+        the spec is `>=46.0.6,<47.0.0`: a bounded range is now allowed as long
+        as the upper cap `<47.0.0` is present (47.x is unreleased + untested
+        with Gunicorn --preload, so it MUST be excluded).
+
+        This test now asserts the fork-safety invariant rather than forbidding
+        `>=` outright.
+        """
         import os
 
         req_path = os.path.join(
@@ -104,9 +160,11 @@ class TestRequirementsCryptographyPin:
         for line in lines:
             stripped = line.strip()
             if stripped.startswith("cryptography") and not stripped.startswith("#"):
-                assert ">=" not in stripped, (
-                    f"cryptography must not use >= (found: {stripped}). "
-                    "Pin exact version for fork-safety (STORY-303 AC10)"
+                spec = stripped.split("#", 1)[0].strip()
+                assert "<47.0.0" in spec or "<47" in spec, (
+                    f"cryptography must be capped <47.0.0 for fork-safety "
+                    f"(found: {spec}). 47.x is unreleased and untested with "
+                    "Gunicorn --preload (STORY-303 AC10 + DEBT-SYS-002)."
                 )
 
     def test_ac11_cryptography_has_fork_safety_comment(self):

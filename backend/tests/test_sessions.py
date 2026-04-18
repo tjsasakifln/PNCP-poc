@@ -153,7 +153,7 @@ class TestSaveSearchSessionSuccess:
 class TestSaveSearchSessionProfileCreation:
     """AC13: Test session save when profile doesn't exist."""
 
-    @patch("quota._ensure_profile_exists")
+    @patch("quota.plan_enforcement._ensure_profile_exists")
     async def test_save_session_creates_profile_when_missing(self, mock_ensure_profile):
         """save_search_session() triggers _ensure_profile_exists when profile missing."""
         mock_supabase = Mock()
@@ -188,7 +188,7 @@ class TestSaveSearchSessionProfileCreation:
         mock_ensure_profile.assert_called_once_with("new-user-999", mock_supabase)
         assert result == "session-after-profile"
 
-    @patch("quota._ensure_profile_exists")
+    @patch("quota.plan_enforcement._ensure_profile_exists")
     async def test_save_session_fails_gracefully_when_profile_creation_fails(self, mock_ensure_profile):
         """save_search_session() returns None when _ensure_profile_exists fails."""
         mock_supabase = Mock()
@@ -219,7 +219,7 @@ class TestSaveSearchSessionProfileCreation:
 class TestSaveSearchSessionDBFailure:
     """AC14: Test graceful failure on DB errors."""
 
-    @patch("quota._ensure_profile_exists")
+    @patch("quota.plan_enforcement._ensure_profile_exists")
     async def test_save_session_returns_none_on_db_failure(self, mock_ensure_profile, caplog):
         """DB failure is logged but doesn't raise exception — returns None."""
         mock_supabase = Mock()
@@ -255,7 +255,7 @@ class TestSaveSearchSessionDBFailure:
         assert any("Transient error saving session" in record.message for record in caplog.records)
         assert any("Failed to save search session after retry" in record.message for record in caplog.records)
 
-    @patch("quota._ensure_profile_exists")
+    @patch("quota.plan_enforcement._ensure_profile_exists")
     async def test_save_session_empty_result_returns_none(self, mock_ensure_profile, caplog):
         """Insert returning empty result is handled gracefully — returns None."""
         mock_supabase = Mock()
@@ -340,7 +340,7 @@ class TestSaveSearchSessionZeroResults:
 class TestSaveSearchSessionRetryLogic:
     """AC16: Test retry logic for transient DB errors (uses asyncio.sleep)."""
 
-    @patch("quota._ensure_profile_exists")
+    @patch("quota.plan_enforcement._ensure_profile_exists")
     @patch("asyncio.sleep", new_callable=AsyncMock)
     async def test_save_session_succeeds_on_retry(self, mock_sleep, mock_ensure_profile, caplog):
         """Transient error on first attempt, success on retry."""
@@ -385,7 +385,7 @@ class TestSaveSearchSessionRetryLogic:
         # Should have called asyncio.sleep once (0.3s delay)
         mock_sleep.assert_awaited_once_with(0.3)
 
-    @patch("quota._ensure_profile_exists")
+    @patch("quota.plan_enforcement._ensure_profile_exists")
     @patch("asyncio.sleep", new_callable=AsyncMock)
     async def test_save_session_fails_after_max_retries(self, mock_sleep, mock_ensure_profile, caplog):
         """Both attempts fail → returns None."""
@@ -425,7 +425,7 @@ class TestSaveSearchSessionRetryLogic:
         # Should have attempted retry once (0.3s delay)
         mock_sleep.assert_awaited_once_with(0.3)
 
-    @patch("quota._ensure_profile_exists")
+    @patch("quota.plan_enforcement._ensure_profile_exists")
     @patch("asyncio.sleep", new_callable=AsyncMock)
     async def test_save_session_retry_delay_is_300ms(self, mock_sleep, mock_ensure_profile):
         """Retry delay is exactly 0.3 seconds (300ms)."""

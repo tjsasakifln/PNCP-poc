@@ -836,10 +836,20 @@ class TestOrgLevelQuotaIsolation:
     """Additional AC26 tests: quota is tracked per-org, not per-user."""
 
     def test_check_and_increment_org_quota_delegates_to_atomic(self):
-        """check_and_increment_org_quota_atomic delegates with org_id as quota subject."""
+        """check_and_increment_org_quota_atomic delegates with org_id as quota subject.
+
+        TD-007 ``quota.py`` was split into submodules.  The delegation lives in
+        ``quota.quota_atomic`` — ``check_and_increment_org_quota_atomic`` calls
+        ``check_and_increment_quota_atomic`` via the module-local name *inside
+        quota_atomic*, so patching the facade (``quota.check_and_…``) does not
+        intercept the call.  We must patch the submodule attribute instead.
+        """
         from quota import check_and_increment_org_quota_atomic
 
-        with patch("quota.check_and_increment_quota_atomic", return_value=(True, 1, 4999)) as mock_fn:
+        with patch(
+            "quota.quota_atomic.check_and_increment_quota_atomic",
+            return_value=(True, 1, 4999),
+        ) as mock_fn:
             result = check_and_increment_org_quota_atomic(
                 org_id="org-abc",
                 user_id="user-001",
