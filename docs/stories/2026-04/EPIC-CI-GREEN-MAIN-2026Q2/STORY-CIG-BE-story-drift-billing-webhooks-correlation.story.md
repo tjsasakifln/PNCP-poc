@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate (auth/webhook = superfície crítica)
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -60,3 +60,4 @@ Duas suítes `test_crit004_correlation.py` e `test_organizations.py` rodam em `b
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #29/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. Dois sub-drifts (webhook auth 403 + quota delegation) — RCA deve separá-los; coordenar com #18 se overlap em `test_organizations.py`.

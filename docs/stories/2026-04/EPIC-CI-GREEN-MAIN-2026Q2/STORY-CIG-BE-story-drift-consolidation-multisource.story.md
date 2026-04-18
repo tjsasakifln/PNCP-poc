@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — Gate (pequeno, depende de story foundation)
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -60,3 +60,4 @@ Esta story **depende de STORY-CIG-BE-consolidation-helpers-private (#10/30)**: a
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #23/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. Dep de #10 explicitamente documentada — @po deve validar esta por último na Wave 1+2.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready (Wave 2). Blocker de #10 corretamente declarado em "Bloqueada por"; @dev deve aguardar #10 Done/InReview antes de iniciar Implement. Especificar flags `DATALAKE_QUERY_ENABLED` em AC3 é boa disciplina.

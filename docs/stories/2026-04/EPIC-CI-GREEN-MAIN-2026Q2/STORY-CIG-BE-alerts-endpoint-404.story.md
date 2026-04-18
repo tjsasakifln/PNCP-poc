@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate Blocker
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -57,3 +57,4 @@ Suítes `test_alerts.py` e `test_alert_matcher.py` rodam em `backend-tests.yml` 
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #5/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. Route-drift 13 testes; mesmo padrão de #6 — @dev pode coordenar fix conjunto se grep indicar.

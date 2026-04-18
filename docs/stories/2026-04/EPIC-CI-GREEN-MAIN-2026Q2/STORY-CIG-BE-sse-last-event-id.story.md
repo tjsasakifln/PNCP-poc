@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate Blocker
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -57,3 +57,4 @@ Suíte `backend/tests/test_sse_last_event_id.py` roda em `backend-tests.yml` e f
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #3/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. Pode ser no-op se fix de #6 (buscar-route-404) já cobrir — @dev valida no Investigation e, se sim, fecha como "resolved by #6".

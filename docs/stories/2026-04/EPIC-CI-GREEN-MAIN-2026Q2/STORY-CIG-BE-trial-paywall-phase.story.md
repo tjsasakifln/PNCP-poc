@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate Blocker (possível regressão de revenue)
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops, @po (se confirmado bug real de paywall)
@@ -70,3 +70,4 @@ Decisão entre (1) e (2) só é possível após leitura do módulo real + diff h
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #11/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. **Atenção @po:** triagem anotou "lógica revertida" — validar prod-bug vs assertion-drift é obrigatório antes de GO.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO com ressalva (7/10)** — Draft → Ready (**Wave 1 foundation**). Ambiguidade (1) assertion-drift vs (2) prod-bug real é estruturalmente aceitável em Draft — Investigation Checklist tem escalation path documentado. **Se @dev confirmar (2) prod-bug em Implement**, Status volta a `Blocked` e @po escala para **P0 bugfix** (regressão de revenue/paywall tem impacto direto em MRR). Bloqueia #24.

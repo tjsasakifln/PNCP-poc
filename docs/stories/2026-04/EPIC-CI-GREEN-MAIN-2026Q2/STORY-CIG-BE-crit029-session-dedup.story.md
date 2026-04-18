@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate (possível regressão de dedup)
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -57,3 +57,4 @@ CRIT-029 é fix histórico de duplicação; regressão aqui tem impacto direto e
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #13/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. **Atenção @po:** investigar prod-bug (regressão CRIT-029) vs assertion-drift.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. Prod-bug hipótese documentada com escalation path (`Status: Blocked` se confirmado). Se @dev classificar (b) regressão CRIT-029, abrir issue P1 e escalar para @po.

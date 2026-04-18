@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate (regressão SSE UX)
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -59,3 +59,4 @@ STORY-295 (progressive results) e CRIT-071 (partial data SSE) são garantias de 
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #16/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. **Atenção @po:** investigar prod-bug (regressão CRIT-071/STORY-295) vs drift benigna.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (8/10)** — Draft → Ready. Se @dev confirmar (b) prod-bug, coordenar com frontend (`EnhancedLoadingProgress`, `LoadingProgress`) antes de merge; UX visível.

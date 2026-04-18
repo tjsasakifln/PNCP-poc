@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate (regressão do contrato PGRST205/503)
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -58,3 +58,4 @@ CLAUDE.md CRIT-050 documenta o fluxo PGRST205: ao deploy de nova migration, back
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #18/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (8/10)** — Draft → Ready. Distinguir (a) route-drift vs (b) middleware guard removido — se (b), é prod-bug e afeta contrato CRIT-050; escalar para @architect.

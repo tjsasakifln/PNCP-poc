@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate Blocker
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -63,3 +63,4 @@ Essa story é **gate blocker**: 23 testes da suíte mais importante do backend e
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #6/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. **Wave 1 foundation** — gate blocker 23 testes. @dev Investigation Checklist com 3 hipóteses (a/b/c) é acionável; priorizar early.

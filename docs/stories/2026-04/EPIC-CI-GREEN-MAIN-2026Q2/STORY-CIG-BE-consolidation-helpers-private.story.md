@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate Blocker (maior impacto de 30 stories)
 **Effort:** L (8h+)
 **Agents:** @dev, @qa, @devops, @architect (para revisar se API pública nova é suficiente)
@@ -78,3 +78,4 @@ Os testes fazem `patch.object(ConsolidationService, "_deduplicate")` etc., o que
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #10/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. Nota: maior volume do epic (30 testes) — considerar split em sub-stories se @po identificar RCA heterogênea após Investigation.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. **Wave 1 foundation** — maior volume (30 testes). **Pair @architect obrigatório** se decisão (a) restaurar helpers privados vs (b) reescrever testes para API pública. Bloqueia #23.

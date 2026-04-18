@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -59,3 +59,4 @@ Duas suítes que cobrem filter budget e prazo filtering rodam em `backend-tests.
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #19/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. **Atenção @po:** possível prod-bug duplo — investigação obrigatória.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (8/10)** — Draft → Ready. Se @dev confirmar prod-bug duplo (CRIT-057 regressão + prazo mode), abrir 2 issues P1 e adicionar testes de regressão em cada; escalar para @po antes de fix-forward.

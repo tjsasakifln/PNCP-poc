@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -58,3 +58,4 @@ Suíte `backend/tests/test_crit052_canary_false_positive.py` roda em `backend-te
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #7/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. STORY-4.5 refactor source claramente referenciado; canary contract preservation em AC5 bem definida.

@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -59,3 +59,4 @@ CLAUDE.md anota: *"Fallback = PENDING_REVIEW on LLM failure when `LLM_FALLBACK_P
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #22/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (8/10)** — Draft → Ready. Story mais sólida do lote; se rename afetar `frontend/app/api-types.generated.ts`, regenerar via `npm --prefix frontend run generate:api-types` no mesmo PR.

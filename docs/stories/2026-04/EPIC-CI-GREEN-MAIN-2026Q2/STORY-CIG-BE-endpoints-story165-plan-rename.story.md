@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -58,3 +58,4 @@ STORY-277/360 introduziu os planos; fonte da verdade é a tabela `plan_billing_p
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #20/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. GTM-002 rename trivial; preferir importar de `plan_billing_periods` vs rehardcode (reduz dupla-manutenção).

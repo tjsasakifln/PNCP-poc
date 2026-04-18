@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — Gate (perf hotspot, exige investigação)
 **Effort:** M (3-8h, pode escalar L se refactor de regex necessário)
 **Agents:** @dev, @qa, @devops, @architect (review de performance)
@@ -59,3 +59,4 @@ Perf hotspot em filtro de produção tem impacto direto em SLA de busca (pipelin
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #17/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. **Nota para @po:** @architect é obrigatório no review por ser perf hotspot de produção.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. **@architect review obrigatório** antes de @dev iniciar Implement — perf hotspot em `filter.keywords.match_keywords` + SLA 85%/70% precision/recall não podem regredir. Incluir benchmark antes/depois em AC3.

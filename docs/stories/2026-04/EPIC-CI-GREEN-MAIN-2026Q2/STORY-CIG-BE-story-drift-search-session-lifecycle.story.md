@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — Gate (depende de story foundation)
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -61,3 +61,4 @@ Esta story **depende de STORY-CIG-BE-sessions-ensure-profile (#12/30)**: o fix d
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #26/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. Dep de #12 explicitamente documentada.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready (Wave 2). Blocker de #12 corretamente declarado; @dev deve aguardar #12 Done/InReview. Três fluxos (register/update + dedup + ARQ persist) — RCA deve tratar heterogeneidade se encontrada.

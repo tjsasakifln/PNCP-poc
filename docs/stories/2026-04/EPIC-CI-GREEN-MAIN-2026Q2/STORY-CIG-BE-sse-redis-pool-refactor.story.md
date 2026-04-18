@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate Blocker
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -60,3 +60,4 @@ O SSE é crítico para UX (progress chain: bodyTimeout(0) + heartbeat(15s), Rail
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #1/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (8/10)** — Draft → Ready. 17 testes mock-drift; preferir decisão (b) atualizar mocks (menor acoplamento) vs (a) reexpor backward-compat — consumers externos improváveis em rota interna.

@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — Gate (depende de story foundation)
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -59,3 +59,4 @@ Esta story **depende de STORY-CIG-BE-trial-paywall-phase (#11/30)**: se aquela s
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #24/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`. Dep de #11 explicitamente documentada.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready (Wave 2). Blocker de #11 corretamente declarado; @dev deve aguardar #11 Done/InReview. Se #11 for prod-bug, cascata aqui pode revelar segundo bug na pipeline de emails — documentar separadamente.

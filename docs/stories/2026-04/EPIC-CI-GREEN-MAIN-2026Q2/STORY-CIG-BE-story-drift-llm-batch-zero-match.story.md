@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — Gate
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -57,3 +57,4 @@ CLAUDE.md documenta `ThreadPoolExecutor(max_workers=10)` para parallel LLM calls
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #30/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. Assertion-drift trivial; preferir tolerante a range em vez de valor exato se config for configurável via env var.

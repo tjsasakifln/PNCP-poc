@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P2 — Gate
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -56,3 +56,4 @@ Suíte `backend/tests/test_admin_cache.py` roda em `backend-tests.yml` e falha e
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #15/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. Template FE-07 aplicado consistentemente; mock-drift claro; Investigation Checklist acionável.

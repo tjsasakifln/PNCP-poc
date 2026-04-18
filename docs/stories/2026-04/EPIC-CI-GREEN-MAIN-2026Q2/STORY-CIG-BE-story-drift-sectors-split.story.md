@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Draft
+**Status:** Ready
 **Priority:** P1 — Gate
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -63,3 +63,4 @@ Esta story se relaciona com a sincronização frontend (STORY-CIG-FE-19 `sector-
 ## Change Log
 
 - **2026-04-18** — @sm: story criada a partir da triage row #21/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
+- **2026-04-18** — @po (Pax): *validate-story-draft **GO (8/10)** — Draft → Ready. SLA benchmark 85%/70% explícito em AC4; preferir derivar sector IDs de `sectors_data.yaml` dinamicamente (padrão FE-19) vs hardcode — evita dupla-manutenção.
