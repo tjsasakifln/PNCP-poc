@@ -18,6 +18,7 @@ from routes.search import (
     store_background_results,
     _background_results,
 )
+from routes.search_state import _RESULTS_TTL
 from schemas import BuscaResponse, ResumoEstrategico
 
 
@@ -166,12 +167,19 @@ class TestBackgroundResultsStore:
         assert result is None
 
     def test_ttl_expiry(self):
-        """Results older than TTL should not be served."""
+        """Results older than TTL should not be served.
+
+        STORY-362 AC1 raised the in-memory TTL from 600s to 3600s; this test
+        imports the live ``_RESULTS_TTL`` constant instead of hard-coding an
+        offset so it stays correct if the budget is tuned again.
+        """
         resp = _make_response()
         store_background_results("test-ttl-001", resp)
 
-        # Manually expire entry
-        _background_results["test-ttl-001"]["stored_at"] = time.time() - 700  # > 600s TTL
+        # Manually expire entry (push stored_at past the TTL window with headroom).
+        _background_results["test-ttl-001"]["stored_at"] = (
+            time.time() - (_RESULTS_TTL + 100)
+        )
 
         result = get_background_results("test-ttl-001")
         assert result is None

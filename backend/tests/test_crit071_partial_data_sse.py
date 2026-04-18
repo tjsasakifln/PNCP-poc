@@ -236,10 +236,13 @@ async def test_emit_partial_data_increments_event_counter(_mock_redis):
         )
         assert tracker._event_counter == 2
 
-        # Verify events are in history for replay
-        assert len(tracker._event_history) == 2
-        assert tracker._event_history[0][1]["stage"] == "partial_data"
-        assert tracker._event_history[1][1]["stage"] == "partial_data"
+        # HARDEN-017 AC2/AC3: partial_data events are intentionally EXCLUDED from
+        # ``_event_history`` (the replay ring buffer) because each payload can exceed
+        # 10KB and would blow the replay budget. They are still published via the
+        # realtime SSE queue, just not persisted for Last-Event-ID replay. The
+        # monotonic ``_event_counter`` still increments so downstream stages keep
+        # stable event_id sequencing.
+        assert len(tracker._event_history) == 0
     finally:
         for p in patches:
             p.stop()

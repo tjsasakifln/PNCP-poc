@@ -32,46 +32,51 @@ class TestMeEndpoint:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("quota.get_plan_capabilities")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.check_quota")
     @patch("supabase_client.get_supabase")
     def test_returns_user_profile_with_capabilities(
-        self, mock_get_supabase, mock_get_used, mock_get_plan_caps, mock_check_roles
+        self, mock_get_supabase, mock_check_quota, mock_check_roles
     ):
-        """Should return complete user profile with plan capabilities."""
+        """Should return complete user profile with plan capabilities.
+
+        STORY-CIG-BE-endpoints-story165-plan-rename (TD-007 patch-path drift):
+        After the quota.py → quota_core/quota_atomic/plan_enforcement split,
+        helper-level mocks on quota.get_plan_capabilities / quota.get_monthly_quota_used
+        no longer intercept calls made from inside quota.plan_enforcement
+        (which imports those helpers at module-load time, not via the facade).
+        In addition, when Supabase CB is OPEN (common in the test isolation
+        suite) check_quota short-circuits to free_trial BEFORE reading the
+        helper mocks. Mocking check_quota directly is the correct abstraction
+        for testing routes.user.get_profile, which does
+        `from quota import check_quota` (local import → re-reads quota.check_quota
+        each call so @patch("quota.check_quota") is the right target here).
+        """
         cleanup = setup_auth_override("user-123")
         try:
-            # Mock plan capabilities to use hardcoded values
-            from quota import PLAN_CAPABILITIES
-            mock_get_plan_caps.return_value = PLAN_CAPABILITIES
+            # Mock check_quota directly to return the full expected QuotaInfo.
+            # routes.user.get_profile does `from quota import check_quota`
+            # inside the function, so patching quota.check_quota works.
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="consultor_agil",
+                plan_name="Consultor Ágil (legacy)",
+                capabilities=PLAN_CAPABILITIES["consultor_agil"],
+                quota_used=23,
+                quota_remaining=27,  # 50 - 23
+                quota_reset_date=datetime.now(timezone.utc),
+            )
 
-            # Mock quota
-            mock_get_used.return_value = 23
-
-            # Mock Supabase client (used by both quota.check_quota and user.py)
+            # Mock Supabase client (still needed for email lookup + subscription_end_date)
             mock_sb = MagicMock()
             mock_get_supabase.return_value = mock_sb
-
-            # Mock subscription lookup chain in check_quota():
-            # sb.table("user_subscriptions").select("id, plan_id, expires_at").eq("user_id", ...).eq("is_active", True).order(...).limit(1).execute()
-            mock_subscription_result = MagicMock()
-            mock_subscription_result.data = [
-                {
-                    "id": "sub-123",
-                    "plan_id": "consultor_agil",
-                    "expires_at": None,
-                }
-            ]
 
             # Mock user email lookup in user.py
             mock_user_data = MagicMock()
             mock_user_data.user.email = "test@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
 
-            # Setup table().select()... chain to return subscription data
-            mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = mock_subscription_result
-
-            # Override get_db to return the same mock
+            # Override get_db to return the same mock (needed for admin email API)
             app.dependency_overrides[get_db] = lambda: mock_sb
 
             response = client.get("/v1/me")
@@ -188,9 +193,18 @@ class TestBuscarEndpointQuotaValidation:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     def test_blocks_request_when_quota_exhausted(self, mock_check_quota, mock_rate_limiter):
-        """Should return 403 when monthly quota exhausted."""
+        """Should return 403 when monthly quota exhausted.
+
+        STORY-CIG-BE-endpoints-story165-plan-rename (TD-007 patch-path drift):
+        quota.plan_auth.require_active_plan does
+        `from quota.plan_enforcement import check_quota` — a local import
+        that resolves the name in quota.plan_enforcement's namespace, NOT in
+        the quota facade. So @patch("quota.check_quota") was silently a no-op
+        and the real check_quota ran, returning an empty-message 403.
+        Patching quota.plan_enforcement.check_quota is the correct target.
+        """
         cleanup = setup_auth_override("user-quota-exhausted-story165")
         try:
             # Rate limit passes
@@ -229,9 +243,15 @@ class TestBuscarEndpointQuotaValidation:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     def test_blocks_request_when_trial_expired(self, mock_check_quota, mock_rate_limiter):
-        """Should return 403 when trial expired."""
+        """Should return 403 when trial expired.
+
+        STORY-CIG-BE-endpoints-story165-plan-rename (TD-007 patch-path drift):
+        Same pattern as test_blocks_request_when_quota_exhausted — patching
+        quota.plan_enforcement.check_quota rather than quota.check_quota so
+        the mock actually intercepts the call from require_active_plan.
+        """
         cleanup = setup_auth_override("user-trial-expired-story165")
         try:
             # Rate limit passes
@@ -455,8 +475,15 @@ class TestBuscarEndpointExcelGating:
 
             assert data["excel_available"] is False
             assert data["excel_base64"] is None
-            assert "Máquina" in data["upgrade_message"]
-            assert "R$ 597/mês" in data["upgrade_message"]
+            # STORY-CIG-BE-endpoints-story165-plan-rename (GTM-002 assertion-drift):
+            # Plan "Máquina" was renamed to "SmartLic Pro" and the upgrade
+            # message no longer embeds a price (prod message is now
+            # "Assine o SmartLic Pro para exportar resultados em Excel.").
+            # Asserting on the canonical plan name + the "Excel" feature CTA
+            # keeps the test anchored in prod behaviour without coupling it
+            # to pricing, which changes independently (R$ 597 → R$ 397).
+            assert "SmartLic Pro" in data["upgrade_message"]
+            assert "Excel" in data["upgrade_message"]
         finally:
             cleanup()
 

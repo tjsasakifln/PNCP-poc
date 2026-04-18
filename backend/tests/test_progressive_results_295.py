@@ -17,7 +17,7 @@ from clients.base import (
     SourceStatus,
     UnifiedProcurement,
 )
-from progress import ProgressTracker
+from progress import ProgressTracker, _sanitize_source_error
 
 
 # ============================================================================
@@ -26,8 +26,16 @@ from progress import ProgressTracker
 
 def _make_record(source_name: str, source_id: str, cnpj: str = "12345678000100",
                  numero_edital: str = "001", ano: str = "2026",
-                 objeto: str = "Material de limpeza", uf: str = "SP") -> UnifiedProcurement:
-    """Helper to create a test UnifiedProcurement."""
+                 objeto: str | None = None, uf: str = "SP") -> UnifiedProcurement:
+    """Helper to create a test UnifiedProcurement.
+
+    NOTE: `objeto` defaults to a value that is UNIQUE per (source_name, source_id) so that
+    records do not collide with the title-prefix dedup layer (ISSUE-027), which blocks on
+    the first 60 normalised characters of `objeto` and fuzzy-merges near-duplicates across
+    sources. Tests that care about total_after_dedup must keep objetos distinct.
+    """
+    if objeto is None:
+        objeto = f"Material de limpeza lote {source_name} {source_id}"
     return UnifiedProcurement(
         source_id=source_id,
         source_name=source_name,
@@ -372,21 +380,32 @@ async def test_tracker_emit_source_complete():
 
 @pytest.mark.asyncio
 async def test_tracker_emit_source_error():
-    """Test ProgressTracker.emit_source_error produces correct event."""
+    """Test ProgressTracker.emit_source_error produces correct event.
+
+    UX-428 AC3: raw technical error strings are sanitised via
+    ``_sanitize_source_error`` before being surfaced to clients, so the event
+    detail carries the user-friendly form rather than the raw exception text.
+    """
     tracker = ProgressTracker("test-123", uf_count=5, use_redis=False)
 
+    raw_error = "Connection refused"
+    source = "PORTAL_COMPRAS"
+
     await tracker.emit_source_error(
-        source="PORTAL_COMPRAS",
-        error="Connection refused",
+        source=source,
+        error=raw_error,
         duration_ms=500,
     )
 
     event = tracker.queue.get_nowait()
     assert event.stage == "source_error"
     assert event.progress == -1
-    assert "PORTAL_COMPRAS" in event.message
-    assert event.detail["source"] == "PORTAL_COMPRAS"
-    assert event.detail["error"] == "Connection refused"
+    assert source in event.message
+    assert event.detail["source"] == source
+    # UX-428: error field carries the sanitised form, not the raw exception.
+    expected_error = _sanitize_source_error(raw_error, source)
+    assert event.detail["error"] == expected_error
+    assert source in event.detail["error"]
 
 
 @pytest.mark.asyncio

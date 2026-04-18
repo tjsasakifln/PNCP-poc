@@ -82,7 +82,7 @@ class TestParameterBasedDedup:
     """CRIT-029 AC1+AC3: Parameter-based dedup prevents duplicates."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_no_dedup_match_creates_new_session(self, mock_get_sb, mock_profile, base_args):
         """When no recent session with same params exists, create new one."""
@@ -112,7 +112,7 @@ class TestParameterBasedDedup:
         assert call_count == 3  # search_id check + param check + insert
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_param_dedup_returns_existing_session(self, mock_get_sb, mock_profile, base_args):
         """When session with same params exists within 5min, reuse it."""
@@ -142,7 +142,7 @@ class TestParameterBasedDedup:
         assert call_count == 2  # Only search_id check + param check, no insert
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_param_dedup_failure_falls_through_to_insert(self, mock_get_sb, mock_profile, base_args):
         """If param dedup check fails (DB error), fall through to insert."""
@@ -179,7 +179,7 @@ class TestCacheHitMerge:
     """CRIT-029 AC2: Cache hits (fast responses) update existing session."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_second_search_same_params_reuses_session(self, mock_get_sb, mock_profile, base_args):
         """Simulates: search A (183s) creates session, search B (0.5s cache) reuses it."""
@@ -216,7 +216,7 @@ class TestCacheHitMerge:
         assert call_count == 2  # No insert
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_different_params_creates_new_session(self, mock_get_sb, mock_profile, base_args):
         """Different sector → should NOT match dedup → new session."""
@@ -252,7 +252,7 @@ class TestCompositeKeyDedup:
     """CRIT-029 AC3: Dedup verifies full composite key."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_different_ufs_creates_new_session(self, mock_get_sb, mock_profile, base_args):
         """Different UFs → not a duplicate → new session."""
@@ -280,7 +280,7 @@ class TestCompositeKeyDedup:
         assert result == "new-ufs-session"
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_different_dates_creates_new_session(self, mock_get_sb, mock_profile, base_args):
         """Different date range → not a duplicate → new session."""
@@ -308,7 +308,7 @@ class TestCompositeKeyDedup:
         assert result == "new-dates-session"
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_ufs_sorted_for_consistent_matching(self, mock_get_sb, mock_profile, base_args):
         """UFs should be sorted before comparison to ensure RJ,SP matches SP,RJ."""
@@ -341,7 +341,7 @@ class TestCompositeKeyDedup:
         assert result == "sorted-match-session"
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_no_search_id_still_does_param_dedup(self, mock_get_sb, mock_profile, base_args):
         """Even without search_id, param-based dedup still works."""
@@ -380,7 +380,7 @@ class TestSearchRetryDedup:
     """CRIT-029 AC4: Search + immediate retry produces only 1 history entry."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_search_then_retry_produces_single_session(self, mock_get_sb, mock_profile, base_args):
         """First call creates session, second call (retry) reuses it."""
@@ -438,7 +438,7 @@ class TestPostgresArrayLiteral:
     """CRIT-029 AC5: Verify the dedup query uses correct PG array format."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_filter_called_with_pg_array_format(self, mock_get_sb, mock_profile, base_args):
         """Dedup query must use .filter() with PostgreSQL array literal, not .eq() with Python list."""
@@ -491,7 +491,7 @@ class TestPostgresArrayLiteral:
         assert filter_calls[1] == ("ufs", "eq", "{RJ,SP}")
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_insert_stores_sorted_arrays(self, mock_get_sb, mock_profile, base_args):
         """INSERT must store sorted sectors and ufs for consistent dedup matching."""
