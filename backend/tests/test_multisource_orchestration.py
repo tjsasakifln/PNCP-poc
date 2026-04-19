@@ -260,14 +260,14 @@ class TestAutomaticFailover:
         svc = ConsolidationService(adapters=adapters, timeout_per_source=25)
 
         # Patch _wrap_source to capture the timeout values used
-        original_wrap = svc._wrap_source
+        original_wrap = svc._fetcher.wrap_source
         captured_timeouts = {}
 
         async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None, **kwargs):
             captured_timeouts[code] = timeout
             return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout, **kwargs)
 
-        svc._wrap_source = capturing_wrap
+        svc._fetcher.wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")
 
         # PNCP should keep its original timeout (25)
@@ -291,14 +291,14 @@ class TestAutomaticFailover:
 
         svc = ConsolidationService(adapters=adapters, timeout_per_source=25)
 
-        original_wrap = svc._wrap_source
+        original_wrap = svc._fetcher.wrap_source
         captured_timeouts = {}
 
         async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None, **kwargs):
             captured_timeouts[code] = timeout
             return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout, **kwargs)
 
-        svc._wrap_source = capturing_wrap
+        svc._fetcher.wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")
 
         # Both sources should use default timeout
@@ -498,7 +498,7 @@ class TestComprasGovFallback:
             fallback_adapter=fallback,
         )
 
-        original_wrap = svc._wrap_source
+        original_wrap = svc._fetcher.wrap_source
         fallback_timeout_used = None
 
         async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None, **kwargs):
@@ -507,7 +507,7 @@ class TestComprasGovFallback:
                 fallback_timeout_used = timeout
             return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout, **kwargs)
 
-        svc._wrap_source = capturing_wrap
+        svc._fetcher.wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")
 
         assert fallback_timeout_used == 40

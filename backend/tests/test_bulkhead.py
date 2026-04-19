@@ -131,9 +131,13 @@ class TestConfigurableTimeouts:
     })
     def test_custom_timeouts_from_env(self):
         """Env vars override default timeouts."""
-        # Reload config values
+        # CIG-BE-consolidation-helpers-private (TD-008): config became a package
+        # (config/), so reloading `config` no longer re-evaluates the submodule
+        # where the env-var constants live. Reload `config.pncp` instead.
         import importlib
         import config
+        import config.pncp
+        importlib.reload(config.pncp)
         importlib.reload(config)
         try:
             reset_registry()
@@ -142,6 +146,7 @@ class TestConfigurableTimeouts:
             assert bulkheads["PORTAL_COMPRAS"].timeout == 45.0
             assert bulkheads["COMPRAS_GOV"].timeout == 60.0
         finally:
+            importlib.reload(config.pncp)
             importlib.reload(config)
 
     @patch.dict("os.environ", {
@@ -151,8 +156,12 @@ class TestConfigurableTimeouts:
     })
     def test_custom_concurrency_from_env(self):
         """Env vars override default concurrency."""
+        # CIG-BE-consolidation-helpers-private (TD-008): config became a package;
+        # reload submodule where concurrency constants live.
         import importlib
         import config
+        import config.pncp
+        importlib.reload(config.pncp)
         importlib.reload(config)
         try:
             reset_registry()
@@ -161,6 +170,7 @@ class TestConfigurableTimeouts:
             assert bulkheads["PORTAL_COMPRAS"].max_concurrent == 5
             assert bulkheads["COMPRAS_GOV"].max_concurrent == 7
         finally:
+            importlib.reload(config.pncp)
             importlib.reload(config)
 
 
@@ -794,7 +804,7 @@ class TestBulkheadAcquireTimeout:
         )
 
         import time
-        result = await svc._wrap_source_inner(
+        result = await svc._fetcher._wrap_source_inner(
             "PNCP", mock_adapter, "2026-01-01", "2026-01-10", None,
             10.0, time.time(), [], MagicMock(),
         )

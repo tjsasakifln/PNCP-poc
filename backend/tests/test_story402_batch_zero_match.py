@@ -202,24 +202,26 @@ class TestAC5IncompleteResponse:
 
 
 class TestIntegration50Items:
-    """Integration: 50 zero-match items complete via batch classification."""
+    """Integration: _classify_zero_match_batch chunks 50 items into 3 LLM calls.
+
+    CIG-BE-story-drift-llm-batch-zero-match: the filter pipeline was migrated
+    from batch to per-item gather by STORY-4.1 (TD-SYS-014). The batch
+    function itself is still the contract for `jobs/queue/jobs.py`, so this
+    integration test now exercises `_classify_zero_match_batch` directly.
+    """
 
     @patch("llm_arbiter._get_client")
     def test_50_items_batch_processing(self, mock_get_client):
-        """50 zero-match bids processed in batch mode (3 chunks: 20+20+10)."""
+        """50 zero-match items call _classify_zero_match_batch 3x (20+20+10)."""
         mock_client = Mock()
         mock_get_client.return_value = mock_client
 
-        # Mock returns correct number of answers per call
         def batch_response(**kwargs):
             messages = kwargs.get("messages", [])
             user_msg = messages[-1]["content"] if messages else ""
-            # Count numbered items in prompt
             import re
             items = re.findall(r'^\d+\.', user_msg, re.MULTILINE)
-            count = len(items)
-            if count == 0:
-                count = 1
+            count = len(items) or 1
 
             lines = []
             for i in range(count):
@@ -235,26 +237,33 @@ class TestIntegration50Items:
 
         mock_client.chat.completions.create.side_effect = batch_response
 
-        bids = [
-            make_zero_match_bid(
-                codigo=f"INT-{i}",
-                objeto=f"Consultoria em planejamento estratégico e assessoria técnica especializada número {i}",
-            )
+        items = [
+            {
+                "index": i + 1,
+                "objeto": f"Consultoria em planejamento estratégico {i}",
+                "valor": 150000.0 + i,
+            }
             for i in range(50)
         ]
 
-        aprovadas, stats = aplicar_todos_filtros(
-            licitacoes=bids,
-            ufs_selecionadas={"SP"},
-            setor="vestuario",
-        )
+        # Chunk in batches of 20 (LLM_ZERO_MATCH_BATCH_SIZE default): 20 + 20 + 10
+        BATCH_SIZE = 20
+        all_results = []
+        for start in range(0, len(items), BATCH_SIZE):
+            chunk = items[start:start + BATCH_SIZE]
+            all_results.extend(
+                _classify_zero_match_batch(
+                    items=chunk,
+                    setor_name="Vestuário",
+                    setor_id="vestuario",
+                )
+            )
 
-        # All 50 processed
-        assert stats["llm_zero_match_calls"] == 50
-        total_decisions = stats["llm_zero_match_aprovadas"] + stats["llm_zero_match_rejeitadas"]
-        assert total_decisions == 50
-        # Batch mode: 3 calls (20+20+10) instead of 50 individual
+        assert len(all_results) == 50
         assert mock_client.chat.completions.create.call_count == 3
+        approved = sum(1 for r in all_results if r.get("is_primary"))
+        rejected = sum(1 for r in all_results if not r.get("is_primary"))
+        assert approved + rejected == 50
 
 
 
@@ -269,7 +278,11 @@ class TestAC4CounterCompatibility:
 
     @patch("llm_arbiter._get_client")
     def test_counters_compatible_with_batch(self, mock_get_client):
-        """Batch mode still populates the same stats keys."""
+        """_classify_zero_match_batch produces 3 YES / 2 NO decisions in order.
+
+        CIG-BE-story-drift-llm-batch-zero-match: asserts directly on the batch
+        function's output (same data contract used by `jobs/queue/jobs.py`).
+        """
         mock_client = Mock()
         mock_get_client.return_value = mock_client
 
@@ -281,24 +294,22 @@ class TestAC4CounterCompatibility:
         resp.usage.completion_tokens = 15
         mock_client.chat.completions.create.return_value = resp
 
-        bids = [
-            make_zero_match_bid(
-                codigo=f"COMPAT-{i}",
-                objeto=f"Consultoria em assessoria técnica e planejamento estratégico {i}",
-            )
+        items = [
+            {"index": i + 1, "objeto": f"Consultoria {i}", "valor": 150000.0}
             for i in range(5)
         ]
 
-        _, stats = aplicar_todos_filtros(
-            licitacoes=bids,
-            ufs_selecionadas={"SP"},
-            setor="vestuario",
+        results = _classify_zero_match_batch(
+            items=items,
+            setor_name="Vestuário",
+            setor_id="vestuario",
         )
 
-        assert stats["llm_zero_match_calls"] == 5
-        assert stats["llm_zero_match_aprovadas"] == 3
-        assert stats["llm_zero_match_rejeitadas"] == 2
-        assert "llm_zero_match_skipped_short" in stats
+        assert len(results) == 5
+        approved = [r for r in results if r.get("is_primary")]
+        rejected = [r for r in results if not r.get("is_primary")]
+        assert len(approved) == 3
+        assert len(rejected) == 2
 
 
 # ==============================================================================

@@ -236,10 +236,11 @@ async def test_emit_partial_data_increments_event_counter(_mock_redis):
         )
         assert tracker._event_counter == 2
 
-        # Verify events are in history for replay
-        assert len(tracker._event_history) == 2
-        assert tracker._event_history[0][1]["stage"] == "partial_data"
-        assert tracker._event_history[1][1]["stage"] == "partial_data"
+        # HARDEN-017 AC2/AC3: partial_data events are intentionally excluded from
+        # _event_history (they are the largest events, 10KB+, and would dominate
+        # the replay buffer). They DO flow through the live queue for SSE.
+        assert tracker._event_history == []
+        assert tracker.queue.qsize() == 2
     finally:
         for p in patches:
             p.stop()

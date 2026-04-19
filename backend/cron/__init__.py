@@ -8,11 +8,7 @@ __all__ = [
     "_is_cb_or_connection_error",
     "get_pncp_cron_status", "get_pncp_recovery_epoch", "_update_pncp_cron_status",
     "_pncp_cron_status_lock", "_pncp_cron_status", "_pncp_recovery_epoch",
-    "CLEANUP_INTERVAL_SECONDS", "CACHE_REFRESH_INTERVAL_SECONDS", "COVERAGE_CHECK_INTERVAL",
-    "MANDATORY_WARMUP_COMBOS", "start_cache_cleanup_task", "refresh_stale_cache_entries",
-    "start_cache_refresh_task", "_get_prioritized_ufs", "warmup_specific_combinations",
-    "warmup_top_params", "_warmup_startup_and_periodic", "start_warmup_task",
-    "_get_cache_entry_age", "ensure_minimum_cache_coverage", "start_coverage_check_task",
+    "CLEANUP_INTERVAL_SECONDS", "start_cache_cleanup_task",
     "HEALTH_CANARY_INTERVAL_SECONDS", "run_health_canary", "start_health_canary_task",
     "RECONCILIATION_LOCK_KEY", "RECONCILIATION_LOCK_TTL",
     "REVENUE_SHARE_LOCK_KEY", "REVENUE_SHARE_LOCK_TTL",
@@ -40,12 +36,7 @@ from cron._loop import is_cb_or_connection_error as _is_cb_or_connection_error  
 from cron.pncp_status import (get_pncp_cron_status, get_pncp_recovery_epoch,  # noqa: F401
     update_pncp_cron_status as _update_pncp_cron_status,
     _pncp_cron_status_lock, _pncp_cron_status, _pncp_recovery_epoch)
-from cron.cache import (CLEANUP_INTERVAL_SECONDS, CACHE_REFRESH_INTERVAL_SECONDS,  # noqa: F401
-    COVERAGE_CHECK_INTERVAL, MANDATORY_WARMUP_COMBOS,
-    start_cache_cleanup_task, refresh_stale_cache_entries, start_cache_refresh_task,
-    _get_prioritized_ufs, warmup_specific_combinations, warmup_top_params,
-    _warmup_startup_and_periodic, start_warmup_task,
-    _get_cache_entry_age, ensure_minimum_cache_coverage, start_coverage_check_task)
+from cron.cache import CLEANUP_INTERVAL_SECONDS, start_cache_cleanup_task  # noqa: F401
 from cron.health import (HEALTH_CANARY_INTERVAL_SECONDS, run_health_canary,  # noqa: F401
     start_health_canary_task)
 from cron.billing import (RECONCILIATION_LOCK_KEY, RECONCILIATION_LOCK_TTL,  # noqa: F401

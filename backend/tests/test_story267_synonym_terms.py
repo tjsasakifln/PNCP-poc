@@ -377,22 +377,24 @@ class TestFindTermSynonymCrossSector:
         assert len(matches_saude) >= 1
         assert any(m[0] == "remedio" for m in matches_saude)
 
-    def test_all_15_sectors_are_searchable(self):
+    def test_all_sectors_are_searchable(self):
+        """SECTOR_SYNONYMS contains every sector defined in sectors_data.yaml.
+
+        CIG-BE-story-drift-sectors-split: derive the expected sector set
+        dynamically from the canonical YAML so assertions stay in sync when
+        sectors are split (software → software_desenvolvimento /
+        software_licencas, etc.). Any sector present in the YAML must have
+        a synonym group.
         """
-        SECTOR_SYNONYMS contains all 15 expected sectors.
-        find_term_synonym_matches must search all of them.
-        """
+        import yaml
+        from pathlib import Path
+
         from synonyms import SECTOR_SYNONYMS
 
-        expected_sectors = {
-            "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
-            "engenharia", "software",
-            "servicos_prediais", "produtos_limpeza",
-            "medicamentos", "equipamentos_medicos", "insumos_hospitalares",
-            "vigilancia",
-            "transporte_servicos", "frota_veicular", "manutencao_predial", "engenharia_rodoviaria",
-            "materiais_eletricos", "materiais_hidraulicos",
-        }
+        yaml_path = Path(__file__).resolve().parent.parent / "sectors_data.yaml"
+        data = yaml.safe_load(yaml_path.read_text())
+        expected_sectors = set(data["sectors"].keys())
+
         assert expected_sectors.issubset(set(SECTOR_SYNONYMS.keys())), (
             f"Missing sectors: {expected_sectors - set(SECTOR_SYNONYMS.keys())}"
         )

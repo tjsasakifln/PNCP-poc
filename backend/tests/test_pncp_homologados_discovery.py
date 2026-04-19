@@ -7,9 +7,12 @@ Date: 2026-02-10
 """
 
 import httpx
+import pytest
 from datetime import datetime, timedelta
 import json
 
+
+@pytest.mark.external  # CIG-BE: discovery test hits live PNCP API; gated out of CI
 def test_pncp_contratos_endpoint():
     """
     Test PNCP /contratos endpoint to identify homologated contracts.

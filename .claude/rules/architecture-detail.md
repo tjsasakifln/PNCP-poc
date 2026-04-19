@@ -8,14 +8,14 @@
 |----------|---------|---------|
 | **Entry** | `main.py`, `config.py`, `schemas.py` | App setup, env config, Pydantic models |
 | **Search Pipeline** | `search_pipeline.py`, `consolidation.py`, `search_context.py`, `search_state_manager.py` | Multi-source orchestration, state machine |
-| **Ingestion/DataLake** | `ingestion/` (config, crawler, transformer, loader, checkpoint, scheduler), `datalake_query.py` | ETL pipeline: periodic PNCP crawl → `pncp_raw_bids` table, `search_datalake` RPC query |
+| **Ingestion/DataLake** | `ingestion/` (config, crawler, transformer, loader, checkpoint, scheduler), `datalake_query.py` | ETL pipeline: periodic PNCP crawl → `pncp_raw_bids` (~50K rows open bids), `supplier_contracts` (~2M+ rows historical, feeds SEO inbound), `search_datalake` RPC query |
 | **Data Sources (legacy fallback)** | `pncp_client.py`, `portal_compras_client.py`, `compras_gov_client.py` + 4 others in `clients/` | PNCP, PCP v2, ComprasGov v3 — only used when datalake returns 0 |
 | **Filtering** | `filter.py`, `filter_stats.py`, `term_parser.py`, `synonyms.py`, `status_inference.py` | Keyword matching, density scoring |
 | **AI/LLM** | `llm.py`, `llm_arbiter.py`, `relevance.py`, `viability.py` | Classification, summaries, viability |
-| **Cache** | `search_cache.py`, `cache.py`, `redis_client.py`, `redis_pool.py` | Two-level cache (InMemory + Supabase), SWR |
+| **Cache** | `search_cache.py`, `cache/` (manager, swr, admin, local_file, redis, supabase), `redis_client.py`, `redis_pool.py` | Passive cache L1 (InMemory) + L2 (Redis/Supabase) + L3 (local file). SWR per-request reactive (not proactive — warming deprecated 2026-04-18) |
 | **Auth** | `auth.py`, `authorization.py`, `oauth.py`, `quota.py` | Supabase auth, RLS, plan quotas |
 | **Billing** | `services/billing.py`, `webhooks/stripe.py` | Stripe subscriptions, webhooks |
-| **Jobs** | `job_queue.py`, `cron_jobs.py` | ARQ background processing |
+| **Jobs** | `job_queue.py`, `cron_jobs.py`, `cron/cache.py` (cleanup only) | ARQ background processing. Cache warming/refresh proactive jobs deprecated 2026-04-18 |
 | **Monitoring** | `metrics.py`, `telemetry.py`, `health.py`, `audit.py` | Prometheus, OpenTelemetry, Sentry |
 | **Output** | `excel.py`, `google_sheets.py`, `report_generator.py` | Excel, Google Sheets export |
 | **Feedback** | `feedback_analyzer.py` | User feedback patterns, bi-gram analysis |

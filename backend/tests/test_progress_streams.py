@@ -326,7 +326,7 @@ class TestCrossWorkerE2E:
 
         try:
             with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+                 patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
                  patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
                  patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock), \
                  patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
@@ -394,7 +394,7 @@ class TestCrossWorkerE2E:
 
         try:
             with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+                 patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
                  patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
                  patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock), \
                  patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
@@ -462,7 +462,7 @@ class TestCrossWorkerE2E:
 
         try:
             with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+                 patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
                  patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
                  patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock), \
                  patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
@@ -496,7 +496,7 @@ class TestCrossWorkerE2E:
 
         try:
             with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+                 patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
                  patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
                  patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
                 transport = ASGITransport(app=app)
@@ -547,7 +547,7 @@ class TestCrossWorkerE2E:
 
         try:
             with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-                 patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+                 patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
                  patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
                  patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock), \
                  patch("routes.search_sse._SSE_POLLS_PER_HEARTBEAT", 1), \

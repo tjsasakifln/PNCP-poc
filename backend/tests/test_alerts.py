@@ -111,6 +111,22 @@ def setup_auth():
     app.dependency_overrides.pop(require_auth, None)
 
 
+@pytest.fixture(autouse=True)
+def _alerts_system_enabled():
+    """The alerts router is feature-gated by ``ALERTS_SYSTEM_ENABLED`` (default
+    false in production). Without the gate the handlers short-circuit to 404,
+    hiding the real CRUD/validation contract. Force the flag on at both the
+    import site (``routes.alerts``) and the config module.
+
+    CIG-BE-alerts-endpoint-404: previous suite assumed the flag was on by
+    default; it is now gated, so every endpoint returned 404 before any
+    validation could run.
+    """
+    with patch("routes.alerts.ALERTS_SYSTEM_ENABLED", True), \
+         patch("config.ALERTS_SYSTEM_ENABLED", True):
+        yield
+
+
 @pytest.fixture
 def client():
     return TestClient(app)

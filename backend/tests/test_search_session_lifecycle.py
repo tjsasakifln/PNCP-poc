@@ -67,7 +67,7 @@ class TestRegisterSearchSession:
     """T1: register_search_session inserts with status='created', returns session_id."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_t1_session_created_before_quota(self, mock_get_sb, mock_profile, mock_sb, base_session_args):
         """T1: register_search_session inserts with status='created' and returns session_id."""
@@ -98,7 +98,7 @@ class TestRegisterSearchSession:
         assert inserted_data["valor_total"] == 0.0
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_t1_session_without_search_id(self, mock_get_sb, mock_profile, mock_sb):
         """T1b: register_search_session works without search_id."""
@@ -124,7 +124,7 @@ class TestRegisterSearchSession:
         assert inserted_data["custom_keywords"] is None
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=False)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=False)
     @patch("supabase_client.get_supabase")
     async def test_t1_returns_none_if_profile_missing(self, mock_get_sb, mock_profile, mock_sb):
         """register_search_session returns None when profile doesn't exist."""
@@ -259,7 +259,7 @@ class TestSessionRegistrationFailure:
     """T6: When registration fails, search should still continue."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_t6_returns_none_on_db_error(self, mock_get_sb, mock_profile, mock_sb):
         """T6: register_search_session returns None on persistent DB errors."""
@@ -284,7 +284,7 @@ class TestSessionRegistrationFailure:
         assert mock_sb.table.return_value.insert.return_value.execute.call_count == 2
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_t6_returns_none_on_empty_result(self, mock_get_sb, mock_profile, mock_sb):
         """T6b: register_search_session returns None when insert returns empty data."""
@@ -524,7 +524,7 @@ class TestPrometheusCounter:
     """T13: SESSION_STATUS Prometheus counter is incremented on status changes."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_t13_prometheus_counter_on_register(self, mock_get_sb, mock_profile, mock_sb):
         """T13a: SESSION_STATUS.labels(status='created').inc() called on register."""
@@ -584,7 +584,7 @@ class TestStructuredLog:
     """T14: Structured JSON log emitted with event='search_session_status_change'."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_t14_structured_log_on_register(self, mock_get_sb, mock_profile, mock_sb, caplog):
         """T14a: JSON log with event='search_session_status_change' on register."""

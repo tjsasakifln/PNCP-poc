@@ -59,8 +59,7 @@ from cache.swr import (
 # Admin operations
 from cache.admin import (
     get_cache_metrics, invalidate_cache_entry, invalidate_all_cache,
-    inspect_cache_entry, get_stale_entries_for_refresh,
-    get_top_popular_params, get_popular_ufs_from_sessions,
+    inspect_cache_entry,
 )
 
 # Local file operations (includes private functions for backward compat)
@@ -105,8 +104,7 @@ __all__ = [
     "_mark_revalidating", "_clear_revalidating", "_is_revalidating", "_get_revalidation_lock",
     # Admin
     "get_cache_metrics", "invalidate_cache_entry", "invalidate_all_cache",
-    "inspect_cache_entry", "get_stale_entries_for_refresh",
-    "get_top_popular_params", "get_popular_ufs_from_sessions",
+    "inspect_cache_entry",
     # Local file
     "cleanup_local_cache", "get_local_cache_stats",
     "_check_cache_dir_size", "_save_to_local", "_get_from_local",

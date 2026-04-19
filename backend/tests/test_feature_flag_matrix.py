@@ -57,7 +57,7 @@ _CRITICAL_FLAGS = [
     "LLM_ZERO_MATCH_ENABLED",
     "DATALAKE_ENABLED",
     "DATALAKE_QUERY_ENABLED",
-    "CACHE_WARMING_ENABLED",
+    # CACHE_WARMING_ENABLED removed 2026-04-18 (STORY-CIG-BE-cache-warming-deprecate)
     "COMPRASGOV_ENABLED",
     "TRIAL_PAYWALL_ENABLED",
     "SEARCH_ASYNC_ENABLED",
@@ -138,18 +138,17 @@ class TestCriticalCombinations:
             assert get_feature_flag("DATALAKE_QUERY_ENABLED") is False
             assert get_feature_flag("LLM_ZERO_MATCH_ENABLED") is True
 
-    def test_combo2_cache_warming_on_search_async_on(self):
-        """CACHE_WARMING_ENABLED=true + SEARCH_ASYNC_ENABLED=true.
+    def test_combo2_search_async_on(self):
+        """SEARCH_ASYNC_ENABLED=true — background processing validated.
 
-        Both background processes active. Should not conflict.
+        Previously combined with CACHE_WARMING_ENABLED which was removed
+        2026-04-18 (STORY-CIG-BE-cache-warming-deprecate).
         """
         _feature_flag_cache.clear()
         with patch.dict("os.environ", {
-            "CACHE_WARMING_ENABLED": "true",
             "SEARCH_ASYNC_ENABLED": "true",
         }):
             _feature_flag_cache.clear()
-            assert get_feature_flag("CACHE_WARMING_ENABLED") is True
             assert get_feature_flag("SEARCH_ASYNC_ENABLED") is True
 
     def test_combo3_trial_paywall_on_rate_limiting_on(self):

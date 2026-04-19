@@ -361,22 +361,13 @@ TRIAL_EMAILS_SENT = _create_counter(
     labelnames=["type"],  # welcome, engagement_early, engagement, tips, urgency, expiring, last_day, expired
 )
 
-CACHE_REFRESH_TOTAL = _create_counter(
-    "smartlic_cache_refresh_total",
-    "Cache refresh job outcomes",
-    labelnames=["result"],  # success, skipped, failed, empty_retry
-)
+# Note: CACHE_REFRESH_TOTAL + CACHE_REFRESH_DURATION removed 2026-04-18
+# (STORY-CIG-BE-cache-warming-deprecate) — cache_refresh_job obsoleto.
 
 # GTM-INFRA-003 AC9: Quota skipped due to cache hit
 CACHE_QUOTA_SKIPPED = _create_counter(
     "smartlic_cache_quota_skipped_total",
     "Times quota was skipped because response came from cache",
-)
-
-CACHE_REFRESH_DURATION = _create_histogram(
-    "smartlic_cache_refresh_duration_seconds",
-    "Cache refresh cycle duration",
-    buckets=[10, 30, 60, 120, 300, 600],
 )
 
 # GTM-ARCH-001 AC18: Async search job duration histogram
@@ -473,17 +464,8 @@ ACTIVE_SEARCHES = _create_gauge(
     "Number of currently running search pipelines",
 )
 
-# STAB-007 AC4: Cache warming non-interference metrics
-WARMING_COMBINATIONS_TOTAL = _create_counter(
-    "smartlic_warming_combinations_total",
-    "Cache warming outcomes per combination",
-    labelnames=["result"],  # warmed, skipped_active, skipped_cb_open, skipped_rate_limit, failed, skipped_budget
-)
-
-WARMING_PAUSES_TOTAL = _create_counter(
-    "smartlic_warming_pauses_total",
-    "Times cache warming paused for active user searches",
-)
+# Note: WARMING_COMBINATIONS_TOTAL + WARMING_PAUSES_TOTAL removed 2026-04-18
+# (STORY-CIG-BE-cache-warming-deprecate) — cache_warming_job obsoleto.
 
 # STORY-278 AC7: Daily digest email metrics
 DIGEST_EMAILS_SENT = _create_counter(
@@ -911,17 +893,8 @@ CACHE_COMPOSITION_COVERAGE = _create_histogram(
     buckets=[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
 )
 
-# CRIT-055 AC5: Warmup coverage ratio (UFs cached / total UFs)
-WARMUP_COVERAGE_RATIO = _create_gauge(
-    "smartlic_warmup_coverage_ratio",
-    "CRIT-055: Warmup UF coverage ratio (cached UFs / total UFs)",
-)
-
-# CRIT-081 AC8: Coverage deficit gauge (number of sector×UF combos without fresh cache < 12h)
-CACHE_COVERAGE_DEFICIT = _create_gauge(
-    "smartlic_cache_coverage_deficit",
-    "CRIT-081: Number of sector×UF combos without cache data < 12h",
-)
+# Note: WARMUP_COVERAGE_RATIO + CACHE_COVERAGE_DEFICIT removed 2026-04-18
+# (STORY-CIG-BE-cache-warming-deprecate) — proactive coverage-check job obsoleto.
 
 # CRIT-056 AC5: Cache quality score metrics
 CACHE_QUALITY_WRITE_TOTAL = _create_counter(
@@ -1155,6 +1128,19 @@ LLM_TOKENS_DETAILED = _create_counter(
     "smartlic_llm_tokens_by_operation_total",
     "LLM token usage by model, operation, and direction",
     labelnames=["model", "operation", "direction"],  # direction: input, output
+)
+
+# CIG-BE-asyncio-run-production-scan Phase 2 Option C:
+# When track_llm_cost() runs in a thread pool worker without an active event
+# loop, the previous branch spun up a throwaway loop via asyncio.run(). That is
+# an antipattern (event-loop thrash, stale get_event_loop() in 3.12+). Phase 2
+# Option C skips the tracking and increments this counter so the trade-off is
+# observable. Option A (run_coroutine_threadsafe to main loop) is the long-term
+# fix — tracked as dívida.
+LLM_BUDGET_TRACK_SKIPPED = _create_counter(
+    "smartlic_llm_budget_track_skipped_total",
+    "LLM cost tracking fire-and-forget skipped (no running event loop)",
+    labelnames=["reason"],
 )
 
 LLM_SUMMARY_CACHE_HITS = _create_counter(

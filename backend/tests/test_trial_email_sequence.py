@@ -249,7 +249,11 @@ class TestProcessTrialEmails:
             "days_remaining": 14,
         }
 
+        # CIG-BE-story-drift-trial-email-sequence: Zero-Churn P2 §1.2 added a
+        # business-hours gate (_is_in_send_window). Tests must neutralise it
+        # to avoid skipping every user when the run-time falls outside 8-11am.
         with patch("config.TRIAL_EMAILS_ENABLED", True), \
+             patch("services.trial_email_sequence._is_in_send_window", return_value=True), \
              patch("supabase_client.get_supabase", return_value=mock_sb), \
              patch("supabase_client.sb_execute", side_effect=_sb_execute_side_effect), \
              patch("services.trial_email_sequence.get_trial_user_stats", return_value=mock_stats), \
@@ -290,6 +294,7 @@ class TestProcessTrialEmails:
         mock_sb.table.side_effect = table_side_effect
 
         with patch("config.TRIAL_EMAILS_ENABLED", True), \
+             patch("services.trial_email_sequence._is_in_send_window", return_value=True), \
              patch("supabase_client.get_supabase", return_value=mock_sb), \
              patch("supabase_client.sb_execute", side_effect=_sb_execute_side_effect), \
              patch("email_service.send_email_async") as mock_send, \
@@ -331,6 +336,7 @@ class TestProcessTrialEmails:
         mock_sb.table.side_effect = table_side_effect
 
         with patch("config.TRIAL_EMAILS_ENABLED", True), \
+             patch("services.trial_email_sequence._is_in_send_window", return_value=True), \
              patch("supabase_client.get_supabase", return_value=mock_sb), \
              patch("supabase_client.sb_execute", side_effect=_sb_execute_side_effect), \
              patch("email_service.send_email_async") as mock_send, \
@@ -381,6 +387,7 @@ class TestProcessTrialEmails:
         mock_sb.table.side_effect = table_side_effect
 
         with patch("config.TRIAL_EMAILS_ENABLED", True), \
+             patch("services.trial_email_sequence._is_in_send_window", return_value=True), \
              patch("supabase_client.get_supabase", return_value=mock_sb), \
              patch("supabase_client.sb_execute", side_effect=_sb_execute_side_effect), \
              patch("email_service.send_email_async") as mock_send, \
@@ -432,6 +439,7 @@ class TestProcessTrialEmails:
         mock_sb.table.side_effect = table_side_effect
 
         with patch("config.TRIAL_EMAILS_ENABLED", True), \
+             patch("services.trial_email_sequence._is_in_send_window", return_value=True), \
              patch("supabase_client.get_supabase", return_value=mock_sb), \
              patch("supabase_client.sb_execute", side_effect=_sb_execute_side_effect), \
              patch("email_service.send_email_async") as mock_send, \

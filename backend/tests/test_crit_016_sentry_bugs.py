@@ -36,12 +36,16 @@ class TestConsolidationNullCheck:
     """Test that consolidation handles edge cases in adapter access."""
 
     def test_deduplicate_normal_adapters(self):
-        """AC3: Normal dedup with valid adapters still works."""
-        from consolidation import ConsolidationService
+        """AC3: Normal dedup with valid adapters still works.
+
+        CIG-BE-consolidation-helpers-private (TD-008): _deduplicate moved from
+        ConsolidationService into DeduplicationEngine.
+        """
+        from consolidation.dedup import DeduplicationEngine
 
         adapter = _make_adapter("PNCP", 1)
-        service = ConsolidationService(adapters={"PNCP": adapter})
-        result = service._deduplicate([])
+        engine = DeduplicationEngine(adapters={"PNCP": adapter})
+        result = engine._deduplicate([])
         assert result == []
 
     def test_deduplicate_getattr_fallback_pattern(self):
@@ -82,13 +86,17 @@ class TestConsolidationNullCheck:
         assert meta.priority == 1
 
     def test_deduplicate_with_two_valid_adapters(self):
-        """AC3: Dedup source_priority uses adapter.code when present."""
-        from consolidation import ConsolidationService
+        """AC3: Dedup source_priority uses adapter.code when present.
+
+        CIG-BE-consolidation-helpers-private (TD-008): _deduplicate moved from
+        ConsolidationService into DeduplicationEngine.
+        """
+        from consolidation.dedup import DeduplicationEngine
 
         a1 = _make_adapter("PNCP", 1)
         a2 = _make_adapter("Portal", 2)
-        service = ConsolidationService(adapters={"PNCP": a1, "Portal": a2})
-        result = service._deduplicate([])
+        engine = DeduplicationEngine(adapters={"PNCP": a1, "Portal": a2})
+        result = engine._deduplicate([])
         assert result == []
 
 

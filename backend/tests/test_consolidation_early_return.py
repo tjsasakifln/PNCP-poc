@@ -110,7 +110,10 @@ def _patch_middleware():
 @pytest.fixture(autouse=True)
 def _patch_health_registry():
     """Patch source_health_registry to avoid side effects."""
-    with patch("consolidation.source_health_registry") as mock_registry:
+    # CIG-BE-consolidation-helpers-private (TD-008): source_health_registry is now
+    # imported by consolidation.source_merger from source_config.sources, not exposed
+    # at the consolidation package root.
+    with patch("consolidation.source_merger.source_health_registry") as mock_registry:
         mock_registry.get_status.return_value = "available"
         yield mock_registry
 

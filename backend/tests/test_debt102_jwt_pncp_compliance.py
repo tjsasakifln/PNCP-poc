@@ -216,6 +216,7 @@ class TestDebt102JwtEs256:
 # SYS-003: PNCP Page Size Compliance Tests
 # ============================================================================
 
+@pytest.mark.external  # CIG-BE: page-size 51 reject test hits live PNCP API; gated out of CI
 class TestDebt102PncpPageSize:
     """DEBT-102 SYS-003: PNCP page size compliance tests."""
 

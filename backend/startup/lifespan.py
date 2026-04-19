@@ -214,16 +214,17 @@ async def lifespan(app_instance: FastAPI):
     await get_arq_pool()
 
     # DEBT-014 SYS-006: Register background tasks
+    # NOTE: cache_refresh/warmup/coverage_check deprecated 2026-04-18
+    # (STORY-CIG-BE-cache-warming-deprecate). DataLake is primary query path.
     from task_registry import task_registry
     from cron_jobs import (
         start_cache_cleanup_task, start_session_cleanup_task,
-        start_cache_refresh_task, warmup_top_params, start_warmup_task,
         start_trial_sequence_task, start_reconciliation_task,
         start_health_canary_task, start_revenue_share_task,
         start_sector_stats_task, start_support_sla_task,
         start_daily_volume_task, start_results_cleanup_task,
         start_stripe_events_purge_task, start_plan_reconciliation_task,
-        start_coverage_check_task, start_trial_risk_task,
+        start_trial_risk_task,
         start_indice_municipal_task,  # STORY-435 AC7
         start_new_bids_notifier_task,  # STORY-445
     )
@@ -231,7 +232,6 @@ async def lifespan(app_instance: FastAPI):
 
     task_registry.register("cache_cleanup", start_cache_cleanup_task)
     task_registry.register("session_cleanup", start_session_cleanup_task)
-    task_registry.register("cache_refresh", start_cache_refresh_task)
     task_registry.register("trial_sequence", start_trial_sequence_task)
     task_registry.register("reconciliation", start_reconciliation_task)
     task_registry.register("health_canary", start_health_canary_task)
@@ -244,8 +244,6 @@ async def lifespan(app_instance: FastAPI):
     task_registry.register("plan_reconciliation", start_plan_reconciliation_task)
     task_registry.register("tracker_cleanup", _periodic_tracker_cleanup, is_coroutine=True)
     task_registry.register("saturation_metrics", _periodic_saturation_metrics, is_coroutine=True)
-    task_registry.register("warmup", start_warmup_task)
-    task_registry.register("coverage_check", start_coverage_check_task)
     task_registry.register("trial_risk", start_trial_risk_task)
     task_registry.register("indice_municipal_quarterly", start_indice_municipal_task)
     task_registry.register("new_bids_notifier", start_new_bids_notifier_task)  # STORY-445
@@ -326,12 +324,6 @@ async def lifespan(app_instance: FastAPI):
     logger.info("STARTUP GATE: Redis %s — setting ready=true", _redis_status)
 
     _state.startup_time = time.monotonic()
-
-    try:
-        warmup_result = await warmup_top_params()
-        logger.info(f"GTM-ARCH-002: Post-deploy warmup complete: {warmup_result}")
-    except Exception as e:
-        logger.warning(f"GTM-ARCH-002: Post-deploy warmup failed (non-fatal): {e}")
 
     logger.info("APPLICATION READY — all routes registered, accepting traffic")
 

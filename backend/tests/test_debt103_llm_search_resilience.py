@@ -31,10 +31,10 @@ class TestAC1OpenAITimeout:
     def _reset_client(self):
         """Reset the lazily-initialized OpenAI client between tests."""
         import llm_arbiter
-        original = llm_arbiter._client
-        llm_arbiter._client = None
+        original = llm_arbiter.classification._client
+        llm_arbiter.classification._client = None
         yield
-        llm_arbiter._client = original
+        llm_arbiter.classification._client = original
 
     def test_default_timeout_5s(self):
         """Default timeout must be 5s (DEBT-103 AC1)."""

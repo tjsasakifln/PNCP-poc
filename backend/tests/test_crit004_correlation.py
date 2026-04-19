@@ -403,15 +403,20 @@ class TestLogFormatConfiguration:
     """AC9-AC10: Log format includes search_id and correlation_id placeholders."""
 
     def test_log_format_has_search_id(self):
-        """Verify config.py log format string includes search_id."""
+        """Verify config base log format string includes search_id.
+
+        CIG-BE-story-drift-billing-webhooks-correlation: config became a
+        package; the log-format string lives in ``config.base``, not in the
+        re-export-only ``__init__.py``.
+        """
         import inspect
-        import config
-        source = inspect.getsource(config)
+        import config.base
+        source = inspect.getsource(config.base)
         assert "search_id" in source
 
     def test_log_format_has_correlation_id(self):
-        """Verify config.py log format string includes correlation_id."""
+        """Verify config base log format string includes correlation_id."""
         import inspect
-        import config
-        source = inspect.getsource(config)
+        import config.base
+        source = inspect.getsource(config.base)
         assert "correlation_id" in source

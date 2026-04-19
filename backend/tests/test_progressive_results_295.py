@@ -386,7 +386,11 @@ async def test_tracker_emit_source_error():
     assert event.progress == -1
     assert "PORTAL_COMPRAS" in event.message
     assert event.detail["source"] == "PORTAL_COMPRAS"
-    assert event.detail["error"] == "Connection refused"
+    # CIG-BE-progressive-partial: UX-428 AC3 added _sanitize_source_error which
+    # maps raw error strings to user-friendly messages prefixed with the source
+    # code. "Connection refused" doesn't match any keyword (auth/rate limit/
+    # timeout/...) so it falls through to the default "<source>: erro temporário".
+    assert event.detail["error"] == "PORTAL_COMPRAS: erro temporário"
 
 
 @pytest.mark.asyncio

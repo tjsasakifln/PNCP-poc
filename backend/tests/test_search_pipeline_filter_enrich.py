@@ -115,8 +115,24 @@ class TestStageFilter:
 
     @pytest.mark.asyncio
     async def test_empty_results(self):
-        """aplicar_todos_filtros returns 0 items; ctx.licitacoes_filtradas is empty."""
-        raw = _make_raw_licitacoes(10)
+        """aplicar_todos_filtros returns 0 items; ctx.licitacoes_filtradas is empty.
+
+        CIG-BE-story-drift-sectors-split: the filter stage now includes an
+        S2-FIX post-step that substring-matches active keywords against raw
+        bids to recover sector searches that would otherwise return empty.
+        Supply raw bids whose ``objetoCompra`` has no keyword substring to
+        bypass that recovery path — the intent of this test is to verify the
+        plain empty-output contract.
+        """
+        raw = [
+            {
+                "objetoCompra": f"Aquisicao de item nao relacionado {i}",
+                "valorTotalEstimado": 1000.0 * (i + 1),
+                "uf": "SC",
+                "_matched_terms": [],
+            }
+            for i in range(10)
+        ]
         stats = {"aprovadas": 0, "total": 10}
 
         deps = make_deps(

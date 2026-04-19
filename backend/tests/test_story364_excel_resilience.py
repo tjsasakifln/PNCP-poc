@@ -49,6 +49,22 @@ def mock_auth():
     app.dependency_overrides.pop(require_auth, None)
 
 
+@pytest.fixture(autouse=True)
+def _bypass_search_ownership():
+    """CIG-BE-story364-excel-lifecycle: the regenerate/status endpoints call
+    ``_verify_search_ownership`` which hits Supabase + tracker and returns 404
+    when neither is available (no DB / no tracker for the random uuid). All
+    tests in this module mock the downstream logic assuming ownership already
+    passed, so short-circuit the guard to a no-op here.
+    """
+    with patch(
+        "routes.search_status._verify_search_ownership",
+        new_callable=AsyncMock,
+        return_value=None,
+    ):
+        yield
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
