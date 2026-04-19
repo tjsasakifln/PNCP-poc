@@ -307,24 +307,26 @@ git add frontend/app/api-types.generated.ts
 
 ### Data Architecture (3 Layers)
 
-**Layer 1: Periodic Ingestion (ETL → pncp_raw_bids)**
+**Layer 1: Periodic Ingestion (ETL → Supabase)**
 - ARQ cron jobs: full daily (2am BRT), incremental 3x/day (8am/2pm/8pm BRT), purge daily (4am BRT)
-- Table `pncp_raw_bids` (~40K+ rows): content_hash dedup, GIN full-text index (Portuguese), 12-day retention
+- Table `pncp_raw_bids` (~50K+ rows): open bids — content_hash dedup, GIN full-text index (Portuguese), 12-day retention
+- Table `supplier_contracts` (~2M+ rows): historical contracts feeding SEO organic inbound — 3x/week full crawl, incremental same days
 - Config: `backend/ingestion/` (config, crawler, transformer, loader, checkpoint, scheduler)
 - Checkpoint tracking: `ingestion_checkpoints` + `ingestion_runs` tables for resumable crawls
 - Feature flag: `DATALAKE_ENABLED` (default true)
 
 **Layer 2: Search Pipeline (queries local DB, NOT live APIs)**
 - `DATALAKE_QUERY_ENABLED=true` (default): `execute.py` → `query_datalake()` → `search_datalake` RPC
-- PostgreSQL full-text search (tsquery Portuguese) with UF/date/modality/value/esfera filters
+- PostgreSQL full-text search (tsquery Portuguese) with UF/date/modality/value/esfera filters, returns <100ms at p95
 - Fallback: if datalake returns 0 results, falls through to live multi-source API fetch
 - Async-first (CRIT-072): POST /buscar → 202 in <2s, results via SSE + polling
 - SSE chain: bodyTimeout(0) + heartbeat(15s) > Railway idle(60s) | SSE inactivity timeout(120s)
 
-**Layer 3: Search Results Cache (SWR)**
+**Layer 3: Search Results Cache (passive, per-request)**
 - L1: InMemoryCache (4h, hot/warm/cold priority)
 - L2: Supabase `search_results_cache` (24h, persistent)
-- SWR: serve stale, revalidate in background (max 3 concurrent, 180s timeout)
+- SWR (per-request reactive): when a request touches a stale entry (6-24h), serve stale + trigger background revalidation in `cache/swr.py::trigger_background_revalidation` (max 3 concurrent, 180s timeout)
+- **No proactive warming.** Cache warming jobs (startup/cron/coverage-check) were deprecated 2026-04-18 (STORY-CIG-BE-cache-warming-deprecate). DataLake query latency <100ms made pre-population overhead pure waste. Cache populates on-demand from real user requests.
 
 **Legacy Fallback: Live API Fetch (only when datalake returns 0 or DATALAKE_QUERY_ENABLED=false)**
 - `pncp_client.py` (PNCP), `portal_compras_client.py` (PCP v2), `compras_gov_client.py` (ComprasGov v3)

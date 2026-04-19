@@ -186,17 +186,13 @@ _FLAG_DESCRIPTIONS: dict[str, str] = {
     "PCP_V2_ENABLED": "Portal de Compras Publicas v2 data source",
     "DATALAKE_ENABLED": "ETL ingestion pipeline (pncp_raw_bids)",
     "DATALAKE_QUERY_ENABLED": "Query local datalake instead of live APIs",
-    # Cache & Warming
-    "CACHE_WARMING_ENABLED": "Proactive cache warming on schedule",
-    "CACHE_REFRESH_ENABLED": "Background cache refresh for stale entries",
+    # Cache
     "CACHE_LEGACY_KEY_FALLBACK": "Fallback to legacy cache key format",
-    "CACHE_WARMING_POST_DEPLOY_ENABLED": "Cache warming after deploy (top-N queries)",
     "SHOW_CACHE_FALLBACK_BANNER": "Show cache fallback banner in frontend",
     "SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE": "Serve expired cache during total outage",
     # Search Pipeline
     "SEARCH_ASYNC_ENABLED": "Async search via ARQ job queue",
     "PARTIAL_DATA_SSE_ENABLED": "Partial data delivery via SSE events",
-    "WARMUP_ENABLED": "Startup cache warm-up on boot",
     # Cron & Operations
     "HEALTH_CANARY_ENABLED": "PNCP health canary checks (5-min interval)",
     "DIGEST_ENABLED": "Email digest cron job",
@@ -248,17 +244,13 @@ _FLAG_LIFECYCLE: dict[str, dict] = {
     "PCP_V2_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2025-10"},
     "DATALAKE_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2026-01"},
     "DATALAKE_QUERY_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2026-01"},
-    # Cache & Warming
-    "CACHE_WARMING_ENABLED": {"owner": "infra", "category": "cache", "lifecycle": "permanent", "created": "2025-12"},
-    "CACHE_REFRESH_ENABLED": {"owner": "infra", "category": "cache", "lifecycle": "permanent", "created": "2025-11"},
+    # Cache
     "CACHE_LEGACY_KEY_FALLBACK": {"owner": "infra", "category": "cache", "lifecycle": "deprecating", "created": "2026-02", "remove_after": "2026-06"},
-    "CACHE_WARMING_POST_DEPLOY_ENABLED": {"owner": "infra", "category": "cache", "lifecycle": "permanent", "created": "2026-02"},
     "SHOW_CACHE_FALLBACK_BANNER": {"owner": "frontend", "category": "cache", "lifecycle": "ops-toggle", "created": "2026-02"},
     "SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE": {"owner": "infra", "category": "cache", "lifecycle": "permanent", "created": "2026-01"},
     # Search Pipeline
     "SEARCH_ASYNC_ENABLED": {"owner": "search", "category": "pipeline", "lifecycle": "experimental", "created": "2025-12"},
     "PARTIAL_DATA_SSE_ENABLED": {"owner": "search", "category": "pipeline", "lifecycle": "permanent", "created": "2025-12"},
-    "WARMUP_ENABLED": {"owner": "infra", "category": "pipeline", "lifecycle": "permanent", "created": "2025-11"},
     # Cron & Operations
     "HEALTH_CANARY_ENABLED": {"owner": "infra", "category": "ops", "lifecycle": "permanent", "created": "2025-11"},
     "DIGEST_ENABLED": {"owner": "email", "category": "ops", "lifecycle": "experimental", "created": "2025-12"},

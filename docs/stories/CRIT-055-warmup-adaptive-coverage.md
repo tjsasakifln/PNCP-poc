@@ -1,5 +1,8 @@
 # CRIT-055: Warmup Adaptativo Baseado em Buscas Reais
 
+> **⚠️ SUPERSEDED 2026-04-18** — Layer 3 cache warming proativo removido. DataLake Supabase (~50K bids + 2M+ contratos) é fonte de consulta primária com latência <100ms; pré-população virou overhead puro. Ver `STORY-CIG-BE-cache-warming-deprecate` em `docs/stories/2026-04/EPIC-CI-GREEN-MAIN-2026Q2/`. Código/testes/flags removidos no branch `fix/cig-be-wave2-tier1-plus-tier2`. Cache passivo + SWR por-request permanecem.
+
+**Status:** SUPERSEDED
 **Prioridade:** HIGH
 **Componente:** Backend — cron_jobs.py, search_cache.py
 **Origem:** Incidente 2026-03-05 — Warmup cacheia 5 UFs hardcoded, usuario busca 7-27 UFs

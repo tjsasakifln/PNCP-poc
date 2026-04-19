@@ -5,6 +5,26 @@ All notable changes to SmartLic will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2026-04-18 - CACHE WARMING DEPRECATION
+
+### Removed — BREAKING
+- **Cache warming proativo (Layer 3 jobs)** — startup warmup + cron 4h + coverage check removidos. DataLake Supabase (~50K bids + 2M+ contratos) é fonte primária com latência <100ms; pré-população de `search_results_cache` virou overhead puro. STORY-CIG-BE-cache-warming-deprecate.
+- **Feature flags removidas (env vars):** `WARMUP_ENABLED`, `CACHE_WARMING_ENABLED`, `CACHE_REFRESH_ENABLED`, `CACHE_WARMING_POST_DEPLOY_ENABLED` + constantes associadas (`WARMUP_*`, `WARMING_*`, `CACHE_REFRESH_*`, `CACHE_WARMING_POST_DEPLOY_*`). Setar essas vars em Railway agora é no-op.
+- **Módulos deletados:** `backend/jobs/cron/cache_ops.py` (duplicado de `cron/cache.py` herdado do DEBT-v3-S3), `backend/jobs/cron/cache_cleanup.py` (shim), `backend/jobs/cache_jobs.py` (shim).
+- **Funções removidas:** `cache_warming_job`, `cache_refresh_job`, `warmup_specific_combinations`, `warmup_top_params`, `ensure_minimum_cache_coverage`, `start_warmup_task`, `start_coverage_check_task`, `_get_prioritized_ufs`, `_get_cache_entry_age`, `get_stale_entries_for_refresh`, `get_top_popular_params`, `get_popular_ufs_from_sessions`, `_warming_wait_for_idle`.
+- **Métricas Prometheus deletadas:** `smartlic_cache_refresh_total`, `smartlic_cache_refresh_duration_seconds`, `smartlic_warming_combinations_total`, `smartlic_warming_pauses_total`, `smartlic_warmup_coverage_ratio`, `smartlic_cache_coverage_deficit`.
+- **Testes deletados** (~40 testes): `test_cache_warming_noninterference.py`, `test_cache_refresh.py`, `test_crit055_warmup_adaptive.py`, `test_cache_global_warmup.py`, `test_cache_refresh_enabled.py`, `test_ensure_minimum_coverage.py`.
+- **Stories marcadas Superseded:** GTM-STAB-007, CRIT-081, CRIT-055, GTM-ARCH-002.
+
+### Preserved
+- Cache passivo por-request (L1 InMemoryCache + L2 Redis + `search_results_cache` Supabase).
+- SWR reativo em `cache/swr.py::trigger_background_revalidation` — serve stale + revalida em background quando request toca entrada 6-24h.
+- `cron/cache.py::start_cache_cleanup_task` — L3 local file cache cleanup a cada 6h continua.
+- Migration `20260308330000_debt009_ban_cache_warmer.sql` — conta `system-cache-warmer@internal.smartlic.tech` permanece banida.
+- Constante `WARMING_USER_ID` (nil UUID) — mantida como guard defensivo em `cache/manager.py` (STORY-271 / DEBT-009).
+
+---
+
 ## [0.5.3] - 2026-04-09 - CONTRACTS BACKFILL + SEO EXPANSION
 
 ### Added — Ingestão de Contratos

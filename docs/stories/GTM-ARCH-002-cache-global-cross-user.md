@@ -1,5 +1,7 @@
 # GTM-ARCH-002: Cache Global Cross-User + Warmup Cron
 
+> **⚠️ SUPERSEDED 2026-04-18 (parcialmente)** — O componente **Warmup Cron** desta story foi removido: Layer 3 cache warming proativo eliminado pois DataLake Supabase (~50K bids + 2M+ contratos) é fonte de consulta primária com latência <100ms. O componente **Cache Global Cross-User** (fallback de trial users via `compute_global_hash` / `_get_global_fallback_from_supabase`) **permanece ativo**. Ver `STORY-CIG-BE-cache-warming-deprecate` em `docs/stories/2026-04/EPIC-CI-GREEN-MAIN-2026Q2/`.
+
 ## Epic
 Root Cause — Arquitetura (EPIC-GTM-ROOT)
 

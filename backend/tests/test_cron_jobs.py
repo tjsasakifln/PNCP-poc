@@ -1,8 +1,12 @@
-"""Tests for cron_jobs.py — periodic cache, session cleanup, warmup, and canary tasks.
+"""Tests for cron_jobs.py — periodic cache cleanup, session cleanup, and canary tasks.
 
 Wave 0 Safety Net: Covers get_pncp_cron_status, _update_pncp_cron_status,
-_is_cb_or_connection_error, cleanup_stale_sessions, refresh_stale_cache_entries,
-warmup_top_params, warmup_specific_combinations, _get_prioritized_ufs.
+_is_cb_or_connection_error, cleanup_stale_sessions, and config constants.
+
+Note: Tests for refresh_stale_cache_entries, warmup_top_params, and
+_get_prioritized_ufs were removed on 2026-04-18 along with the underlying
+code (STORY-CIG-BE-cache-warming-deprecate — cache warming proativo
+substituido pelo DataLake Supabase).
 """
 
 import pytest
@@ -19,9 +23,6 @@ from cron_jobs import (
     _update_pncp_cron_status,
     _is_cb_or_connection_error,
     cleanup_stale_sessions,
-    refresh_stale_cache_entries,
-    warmup_top_params,
-    _get_prioritized_ufs,
     CLEANUP_INTERVAL_SECONDS,
     SESSION_STALE_HOURS,
     SESSION_OLD_DAYS,
@@ -192,105 +193,6 @@ class TestCleanupStaleSessions:
 
         result = await cleanup_stale_sessions()
         assert "deleted_old" in result
-
-
-# ──────────────────────────────────────────────────────────────────────
-# refresh_stale_cache_entries
-# ──────────────────────────────────────────────────────────────────────
-
-class TestRefreshStaleCacheEntries:
-    """Tests for stale cache refresh task."""
-
-    @pytest.mark.timeout(30)
-    @pytest.mark.asyncio
-    @patch("search_cache.get_stale_entries_for_refresh", new_callable=AsyncMock)
-    @patch("search_cache.trigger_background_revalidation", new_callable=AsyncMock)
-    async def test_no_stale_entries(self, mock_trigger, mock_get_stale):
-        mock_get_stale.return_value = []
-        result = await refresh_stale_cache_entries()
-        assert result["status"] == "no_stale_entries"
-
-    @pytest.mark.timeout(30)
-    @pytest.mark.asyncio
-    @patch("search_cache.get_stale_entries_for_refresh", new_callable=AsyncMock)
-    @patch("search_cache.trigger_background_revalidation", new_callable=AsyncMock)
-    async def test_entries_refreshed(self, mock_trigger, mock_get_stale):
-        mock_get_stale.return_value = [
-            {"user_id": "u1", "search_params": {"ufs": ["SP"]}, "params_hash": "abc"},
-        ]
-        mock_trigger.return_value = True
-        result = await refresh_stale_cache_entries()
-        assert result["refreshed"] == 1
-
-    @pytest.mark.timeout(30)
-    @pytest.mark.asyncio
-    @patch("search_cache.get_stale_entries_for_refresh", new_callable=AsyncMock)
-    async def test_error_handling(self, mock_get_stale):
-        mock_get_stale.side_effect = Exception("cache error")
-        result = await refresh_stale_cache_entries()
-        assert result["status"] == "error"
-
-
-# ──────────────────────────────────────────────────────────────────────
-# warmup_top_params
-# ──────────────────────────────────────────────────────────────────────
-
-class TestWarmupTopParams:
-    """Tests for top-params warmup task."""
-
-    @pytest.mark.timeout(30)
-    @pytest.mark.asyncio
-    @patch("search_cache.get_top_popular_params", new_callable=AsyncMock)
-    @patch("search_cache.trigger_background_revalidation", new_callable=AsyncMock)
-    async def test_no_popular_params(self, mock_trigger, mock_popular):
-        mock_popular.return_value = []
-        result = await warmup_top_params()
-        assert result["status"] == "no_params"
-
-    @pytest.mark.timeout(30)
-    @pytest.mark.asyncio
-    @patch("search_cache.get_top_popular_params", new_callable=AsyncMock)
-    @patch("search_cache.trigger_background_revalidation", new_callable=AsyncMock)
-    async def test_warmup_success(self, mock_trigger, mock_popular):
-        mock_popular.return_value = [{"ufs": ["SP"], "modalidades": None}]
-        mock_trigger.return_value = True
-        result = await warmup_top_params()
-        assert result["warmed"] == 1
-
-    @pytest.mark.timeout(30)
-    @pytest.mark.asyncio
-    @patch("search_cache.get_top_popular_params", new_callable=AsyncMock)
-    async def test_error_handling(self, mock_popular):
-        mock_popular.side_effect = Exception("db error")
-        result = await warmup_top_params()
-        assert result["status"] == "error"
-
-
-# ──────────────────────────────────────────────────────────────────────
-# _get_prioritized_ufs
-# ──────────────────────────────────────────────────────────────────────
-
-class TestGetPrioritizedUfs:
-    """Tests for UF priority ordering."""
-
-    @pytest.mark.timeout(30)
-    @pytest.mark.asyncio
-    @patch("search_cache.get_popular_ufs_from_sessions", new_callable=AsyncMock)
-    @patch("config.DEFAULT_UF_PRIORITY", ["SP", "RJ", "MG"])
-    async def test_no_history_uses_default(self, mock_popular):
-        mock_popular.return_value = []
-        result = await _get_prioritized_ufs(["SP", "RJ", "MG", "BA"])
-        assert result[0] == "SP"
-        assert "BA" in result
-
-    @pytest.mark.timeout(30)
-    @pytest.mark.asyncio
-    @patch("search_cache.get_popular_ufs_from_sessions", new_callable=AsyncMock)
-    async def test_popular_ufs_first(self, mock_popular):
-        mock_popular.return_value = ["BA", "CE"]
-        result = await _get_prioritized_ufs(["SP", "RJ", "BA", "CE"])
-        assert result[0] == "BA"
-        assert result[1] == "CE"
 
 
 # ──────────────────────────────────────────────────────────────────────
