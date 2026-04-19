@@ -5,8 +5,8 @@ SYS-023: GET /pipeline uses user-scoped client (get_user_db).
 """
 
 from unittest.mock import Mock, patch
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
-from fastapi import FastAPI
 
 from auth import require_auth
 from database import get_user_db
@@ -26,6 +26,24 @@ async def _noop_check_pipeline_write_access(user):
 async def _noop_check_pipeline_limit(user):
     """Async no-op mock for _check_pipeline_limit (STORY-356)."""
     return None
+
+
+async def _raise_trial_expired(user):
+    """Mock for quota.require_active_plan that simulates an expired-trial block.
+
+    Post-TD-007 `require_active_plan` lives in quota.plan_auth and internally
+    calls quota.plan_enforcement.check_quota (not the facade attribute) — that
+    path fetches Supabase on test runners, so tests for capability gating must
+    stub the dependency at the quota facade level and raise the same 403
+    payload the real function would emit on allowed=False.
+    """
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "message": "Seu trial expirou.",
+            "error_code": "trial_expired",
+        },
+    )
 
 
 MOCK_USER = {"id": "user-pipeline-uuid", "email": "pipeline@test.com", "role": "authenticated"}
@@ -589,10 +607,17 @@ class TestPipelineAccessControl:
 
         assert resp.status_code == 200
 
+    @patch("quota.require_active_plan", new=_raise_trial_expired)
     @patch("quota.check_quota")
     @patch("authorization.has_master_access")
     def test_create_access_denied_403(self, mock_has_master, mock_check_quota):
-        """STORY-265 AC2: Expired free trial cannot POST /pipeline."""
+        """STORY-265 AC2: Expired free trial cannot POST /pipeline.
+
+        Post-TD-007: quota facade re-exports require_active_plan from plan_auth.
+        Route's `from quota import require_active_plan, check_quota` picks up
+        patched attribute via late-binding import — both must be mocked so the
+        403 path (capability gate) runs instead of hitting Supabase.
+        """
         mock_has_master.return_value = False
         mock_check_quota.return_value = Mock(
             plan_id="free_trial",
@@ -613,6 +638,7 @@ class TestPipelineAccessControl:
 
         assert resp.status_code == 403
 
+    @patch("quota.require_active_plan", new=_raise_trial_expired)
     @patch("quota.check_quota")
     @patch("authorization.has_master_access")
     def test_update_access_denied_403(self, mock_has_master, mock_check_quota):
@@ -633,6 +659,7 @@ class TestPipelineAccessControl:
 
         assert resp.status_code == 403
 
+    @patch("quota.require_active_plan", new=_raise_trial_expired)
     @patch("quota.check_quota")
     @patch("authorization.has_master_access")
     def test_delete_access_denied_403(self, mock_has_master, mock_check_quota):
