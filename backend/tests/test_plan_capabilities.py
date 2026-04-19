@@ -94,8 +94,15 @@ class TestPlanCapabilities:
         assert set(PLAN_NAMES.keys()) == set(PLAN_CAPABILITIES.keys())
 
     def test_plan_prices_exist_for_paid_plans(self):
-        """PLAN_PRICES should have prices for all paid plans."""
-        paid_plans = {"consultor_agil", "maquina", "sala_guerra", "smartlic_pro"}
+        """PLAN_PRICES should have prices for all paid plans (including BIZ-001 founding + BIZ-002 consultoria)."""
+        paid_plans = {
+            "consultor_agil",
+            "maquina",
+            "sala_guerra",
+            "smartlic_pro",
+            "founding_member",  # STORY-BIZ-001
+            "consultoria",  # STORY-BIZ-002
+        }
         assert set(PLAN_PRICES.keys()) == paid_plans
 
     def test_upgrade_suggestions_valid(self):
@@ -138,9 +145,10 @@ class TestMonthlyQuotaHelpers:
 
     def test_get_quota_reset_date_handles_december(self):
         """Reset date should roll over to next year if current month is December."""
-        with patch("quota.datetime") as mock_datetime:
+        # TD-007 split: get_quota_reset_date lives in quota.quota_atomic after the
+        # package refactor — patch the datetime symbol bound in that submodule.
+        with patch("quota.quota_atomic.datetime") as mock_datetime:
             # Mock current date as December 15, 2025
-            # get_quota_reset_date() uses datetime.now(timezone.utc)
             mock_datetime.now.return_value = datetime(2025, 12, 15, tzinfo=timezone.utc)
             # Allow datetime(...) constructor calls to work normally
             mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
@@ -226,24 +234,29 @@ class TestIncrementMonthlyQuota:
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_fallback_increments_existing_quota(self, mock_get_used, mock_get_supabase):
-        """Should increment quota via fallback when RPC unavailable.
-        STORY-307: Updated — fallback now tries atomic RPC first, then upsert.
-        get_monthly_quota_used is called once (after upsert), not twice.
+        """When both atomic RPCs are unavailable the function fails open.
+
+        Evolution:
+          - STORY-307 (historical): legacy manual upsert served as 3rd fallback.
+          - Post-TD-007: upsert path was removed; the function now returns the
+            current monthly count (via facade lookup) so a missing RPC never
+            blocks a user. This mirrors the behaviour in quota_atomic.py
+            lines 120-127 ("fail-open" branch).
         """
         # Both RPCs fail (functions not available)
         mock_sb = MagicMock()
         mock_get_supabase.return_value = mock_sb
         mock_sb.rpc.return_value.execute.side_effect = Exception("function does not exist")
 
-        # Fallback: get_monthly_quota_used called once after upsert
+        # Fail-open path: get_monthly_quota_used is consulted via the quota
+        # facade to report the current (unmodified) count back to the caller.
         mock_get_used.return_value = 24
 
         result = increment_monthly_quota("user-123")
 
         assert result == 24
-
-        # Verify upsert was called as last-resort fallback
-        mock_sb.table.return_value.upsert.assert_called_once()
+        # Legacy upsert was removed — verify it is NOT invoked anymore.
+        mock_sb.table.return_value.upsert.assert_not_called()
 
     @patch("supabase_client.get_supabase")
     def test_creates_new_record_via_rpc(self, mock_get_supabase):
@@ -265,7 +278,7 @@ class TestCheckQuota:
     """Test check_quota function."""
 
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     def test_free_trial_user_within_trial_period(self, mock_get_used, mock_get_supabase):
         """FREE trial user within trial period and under quota should be allowed."""
         mock_get_used.return_value = 1  # Under 1000-search limit (STORY-264)
@@ -291,15 +304,21 @@ class TestCheckQuota:
         assert result.trial_expires_at is not None
 
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     def test_trial_expired_blocks_user(self, mock_get_used, mock_get_supabase):
-        """Expired trial should block user."""
+        """Expired trial beyond the 48h grace window should block the user.
+
+        Note: production added a 48h trial grace period (TRIAL_GRACE_HOURS=48,
+        TRIAL_GRACE_MAX_SEARCHES=3). To assert the hard-block path we push the
+        expiration well beyond that window (3 days ago) — inside the grace
+        window the user would instead see the "usou suas 3 buscas" message.
+        """
         mock_get_used.return_value = 5
         mock_sb = MagicMock()
         mock_get_supabase.return_value = mock_sb
 
-        # Mock expired trial
-        past_date = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        # Mock trial expired more than 48h ago (hard block, not grace)
+        past_date = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
         mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
             {
                 "id": "sub-123",
@@ -313,9 +332,9 @@ class TestCheckQuota:
         assert result.allowed is False
         assert "trial expirou" in result.error_message.lower()
 
-    @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
+    @patch("quota.plan_enforcement.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     def test_consultor_agil_within_quota(self, mock_get_used, mock_get_supabase, mock_get_caps):
         """Consultor Ágil user within quota should be allowed."""
         mock_get_used.return_value = 23  # Under 50 limit
@@ -337,9 +356,9 @@ class TestCheckQuota:
         assert result.quota_used == 23
         assert result.quota_remaining == 27  # 50 - 23
 
-    @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
+    @patch("quota.plan_enforcement.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     def test_quota_exhausted_blocks_user(self, mock_get_used, mock_get_supabase, mock_get_caps):
         """User who exhausted monthly quota should be blocked."""
         mock_get_used.return_value = 50  # At limit
@@ -360,9 +379,9 @@ class TestCheckQuota:
         assert "50 análises este mês" in result.error_message
         assert result.quota_remaining == 0
 
-    @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
+    @patch("quota.plan_enforcement.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     def test_maquina_plan_has_excel_enabled(self, mock_get_used, mock_get_supabase, mock_get_caps):
         """Máquina plan should have allow_excel=True."""
         mock_get_used.return_value = 100
@@ -383,9 +402,9 @@ class TestCheckQuota:
         assert result.capabilities["allow_excel"] is True
         assert result.capabilities["max_history_days"] == 365
 
-    @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
+    @patch("quota.plan_enforcement.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     def test_sala_guerra_highest_limits(self, mock_get_used, mock_get_supabase, mock_get_caps):
         """Sala de Guerra should have highest limits."""
         mock_get_used.return_value = 500
@@ -501,8 +520,15 @@ class TestPlanPricing:
         assert "free_trial" not in PLAN_PRICES
 
     def test_all_paid_plans_have_prices(self):
-        """All paid plans must have prices."""
-        paid_plans = {"consultor_agil", "maquina", "sala_guerra", "smartlic_pro"}
+        """All paid plans must have prices (including BIZ-001 founding + BIZ-002 consultoria)."""
+        paid_plans = {
+            "consultor_agil",
+            "maquina",
+            "sala_guerra",
+            "smartlic_pro",
+            "founding_member",  # STORY-BIZ-001
+            "consultoria",  # STORY-BIZ-002
+        }
         assert set(PLAN_PRICES.keys()) == paid_plans
 
     def test_prices_contain_currency_symbol(self):
