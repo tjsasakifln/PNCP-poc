@@ -99,7 +99,7 @@ class TestRequireActivePlanDecorator:
         expired_quota = _make_expired_trial_quota()
         user = {"id": "test-trial-user", "email": "trial@example.com"}
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             from fastapi import HTTPException
             with pytest.raises(HTTPException) as exc_info:
@@ -129,7 +129,7 @@ class TestRequireActivePlanDecorator:
         )
         user = {"id": "test-paid-user", "email": "paid@example.com"}
 
-        with patch("quota.check_quota", return_value=expired_paid), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_paid), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             from fastapi import HTTPException
             with pytest.raises(HTTPException) as exc_info:
@@ -147,7 +147,7 @@ class TestRequireActivePlanDecorator:
         active_quota = _make_active_trial_quota()
         user = {"id": "test-active-user", "email": "active@example.com"}
 
-        with patch("quota.check_quota", return_value=active_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=active_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             result = await require_active_plan(user)
             assert result == user
@@ -160,7 +160,7 @@ class TestRequireActivePlanDecorator:
         paid_quota = _make_paid_plan_quota()
         user = {"id": "test-pro-user", "email": "pro@example.com"}
 
-        with patch("quota.check_quota", return_value=paid_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=paid_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             result = await require_active_plan(user)
             assert result == user
@@ -184,9 +184,9 @@ class TestRequireActivePlanDecorator:
         expired_quota = _make_expired_trial_quota()
         user = {"id": "test-log-user", "email": "log@example.com"}
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False), \
-             patch("quota.logger") as mock_logger:
+             patch("quota.plan_auth.logger") as mock_logger:
             from fastapi import HTTPException
             with pytest.raises(HTTPException):
                 await require_active_plan(user)
@@ -211,7 +211,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
         """AC1+AC17: POST /buscar returns 403 for expired trial."""
         expired_quota = _make_expired_trial_quota()
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             response = client.post(
                 "/v1/buscar",
@@ -232,7 +232,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
         """AC2+AC17: POST /pipeline returns 403 for expired trial."""
         expired_quota = _make_expired_trial_quota()
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             response = client.post(
                 "/v1/pipeline",
@@ -253,7 +253,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
         """AC2+AC17: PATCH /pipeline/{id} returns 403 for expired trial."""
         expired_quota = _make_expired_trial_quota()
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             response = client.patch(
                 "/v1/pipeline/some-item-id",
@@ -268,7 +268,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
         """AC2+AC17: DELETE /pipeline/{id} returns 403 for expired trial."""
         expired_quota = _make_expired_trial_quota()
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             response = client.delete("/v1/pipeline/some-item-id")
 
@@ -280,7 +280,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
         """AC5+AC17: POST /v1/first-analysis returns 403 for expired trial."""
         expired_quota = _make_expired_trial_quota()
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             response = client.post(
                 "/v1/first-analysis",
@@ -313,7 +313,7 @@ class TestExpiredTrialReadOnlyEndpoints:
         mock_result = MagicMock()
         mock_result.data = []
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False), \
              patch("routes.pipeline.get_supabase") as mock_supa:
             mock_supa.return_value.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = mock_result
@@ -328,7 +328,7 @@ class TestExpiredTrialReadOnlyEndpoints:
         mock_result = MagicMock()
         mock_result.data = []
 
-        with patch("quota.check_quota", return_value=expired_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False), \
              patch("routes.pipeline.get_supabase") as mock_supa:
             mock_supa.return_value.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_result
@@ -353,7 +353,7 @@ class TestExpiredTrialReadOnlyEndpoints:
         app.dependency_overrides[get_db] = lambda: mock_db
 
         try:
-            with patch("quota.check_quota", return_value=expired_quota), \
+            with patch("quota.plan_enforcement.check_quota", return_value=expired_quota), \
                  patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
                 response = client.get("/v1/sessions")
 
@@ -383,7 +383,7 @@ class TestPaidPlanBypass:
         paid_quota = _make_paid_plan_quota()
         user = {"id": "test-trial-user", "email": "trial@example.com"}
 
-        with patch("quota.check_quota", return_value=paid_quota), \
+        with patch("quota.plan_enforcement.check_quota", return_value=paid_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
             result = await require_active_plan(user)
 
@@ -409,7 +409,10 @@ class TestPaidPlanBypass:
             "updated_at": "2026-02-20T10:00:00+00:00",
         }
 
-        with patch("quota.check_quota", return_value=paid_quota), \
+        # Pipeline.create_pipeline_item does `from quota import check_quota` dynamically
+        # for _check_pipeline_limit, so we also need to mock at the facade level.
+        with patch("quota.plan_enforcement.check_quota", return_value=paid_quota), \
+             patch("quota.check_quota", return_value=paid_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False), \
              patch("routes.pipeline.get_supabase") as mock_supa:
             mock_supa.return_value.table.return_value.insert.return_value.execute.return_value = mock_result

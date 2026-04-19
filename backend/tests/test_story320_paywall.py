@@ -127,7 +127,7 @@ class TestGetTrialPhase:
         expires_at = datetime.now(timezone.utc) + timedelta(days=13, hours=12)
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=expires_at)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             result = get_trial_phase("test-user-day1")
 
         assert result["phase"] == "full_access"
@@ -141,7 +141,7 @@ class TestGetTrialPhase:
         expires_at = datetime.now(timezone.utc) + timedelta(days=7, hours=12)
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=expires_at)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             result = get_trial_phase("test-user-day7")
 
         assert result["phase"] == "full_access"
@@ -155,7 +155,7 @@ class TestGetTrialPhase:
         expires_at = datetime.now(timezone.utc) + timedelta(days=6, hours=12)
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=expires_at)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             result = get_trial_phase("test-user-day8")
 
         assert result["phase"] == "limited_access"
@@ -169,7 +169,7 @@ class TestGetTrialPhase:
         expires_at = datetime.now(timezone.utc) + timedelta(hours=12)
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=expires_at)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             result = get_trial_phase("test-user-day14")
 
         assert result["phase"] == "limited_access"
@@ -179,7 +179,7 @@ class TestGetTrialPhase:
         """Paid user (plan_id != free_trial): phase=not_trial."""
         mock_quota = _make_quota_info(plan_id="smartlic_pro", trial_expires_at=None)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             result = get_trial_phase("test-user-paid")
 
         assert result["phase"] == "not_trial"
@@ -191,7 +191,7 @@ class TestGetTrialPhase:
         expires_at = datetime.now(timezone.utc) + timedelta(days=2)
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=expires_at)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             with patch("config.TRIAL_PAYWALL_ENABLED", False):
                 result = get_trial_phase("test-user-flag-off")
 
@@ -203,7 +203,7 @@ class TestGetTrialPhase:
         """Trial user with trial_expires_at=None: phase=full_access (no data → fail-open)."""
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=None)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             result = get_trial_phase("test-user-no-expiry")
 
         assert result["phase"] == "full_access"
@@ -211,7 +211,7 @@ class TestGetTrialPhase:
 
     def test_quota_error_graceful(self):
         """When check_quota raises an exception, fail-open → full_access."""
-        with patch("quota.check_quota", side_effect=Exception("DB unavailable")):
+        with patch("quota.plan_enforcement.check_quota", side_effect=Exception("DB unavailable")):
             result = get_trial_phase("test-user-quota-error")
 
         assert result["phase"] == "full_access"
@@ -237,6 +237,8 @@ class TestApplyTrialPaywall:
         from routes.search import _apply_trial_paywall
 
         phase_info = TrialPhaseInfo(phase=phase, day=8, days_remaining=6)
+        # _apply_trial_paywall does `from quota import get_trial_phase` dynamically,
+        # so patch the facade name (where `from quota import` will resolve from).
         with patch("quota.get_trial_phase", return_value=phase_info):
             with patch("config.get_feature_flag", return_value=True):
                 return _apply_trial_paywall(response, user)
@@ -351,7 +353,7 @@ class TestTrialStatusEndpoint:
         expires_at = datetime.now(timezone.utc) + timedelta(days=6, hours=12)
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=expires_at)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             response = client.get("/v1/trial-status")
 
         assert response.status_code == 200
@@ -370,7 +372,7 @@ class TestTrialStatusEndpoint:
         expires_at = datetime.now(timezone.utc) + timedelta(days=12, hours=12)
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=expires_at)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             response = client.get("/v1/trial-status")
 
         assert response.status_code == 200
@@ -383,7 +385,7 @@ class TestTrialStatusEndpoint:
         """GET /v1/trial-status for paid user returns trial_phase='not_trial' and trial_day=0."""
         mock_quota = _make_quota_info(plan_id="smartlic_pro", trial_expires_at=None)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             response = client.get("/v1/trial-status")
 
         assert response.status_code == 200
@@ -396,7 +398,7 @@ class TestTrialStatusEndpoint:
         """trial_phase and trial_day fields are always present in the response schema."""
         mock_quota = _make_quota_info(plan_id="free_trial", trial_expires_at=None)
 
-        with patch("quota.check_quota", return_value=mock_quota):
+        with patch("quota.plan_enforcement.check_quota", return_value=mock_quota):
             response = client.get("/v1/trial-status")
 
         assert response.status_code == 200
