@@ -3,7 +3,7 @@
 **Priority:** P1 — ARPU lift 2.5x sobre Pro, zero fricção adicional
 **Effort:** S (1-2 dias)
 **Squad:** @dev + @data-engineer (detecção CNAE)
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Sprint:** Wave Receita D+8 a D+21
 
@@ -161,3 +161,4 @@ SAMPLE_NAO_CONSULTORIAS = ["62.01-5/01", "41.20-4/00", "47.71-7/01"]  # TI, cons
 |------|--------|---------|
 | 2026-04-19 | @sm (River) | Story criada Ready. Subsídios do plano Board v1.0. |
 | 2026-04-19 | @dev | Implementação code-side. 39 testes backend + 8 testes frontend passando. Resolvido gap vs story original: `profiles.cnae_primary` não existia — adicionado via migration nullable. Endpoint retorna `default` até onboarding persistir CNAE (story futura). Visual polish do `/planos` (badge/border) reduzido a scroll-to-highlight; banner é o surface primário do upsell. Status → InReview. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. PR #389 merged to main. Código, testes e docs em produção. Status-sync post-merge. |

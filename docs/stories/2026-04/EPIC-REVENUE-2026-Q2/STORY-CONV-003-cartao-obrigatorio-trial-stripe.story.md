@@ -3,9 +3,17 @@
 **Priority:** P0 — Maior lift single-shot documentado (+170% conversão)
 **Effort:** M (5-7 dias)
 **Squad:** @dev + @qa + @data-engineer (migration)
-**Status:** Ready
+**Status:** Superseded
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Sprint:** Wave Receita D+1 a D+14
+
+> **⚠️ SUPERSEDED 2026-04-19** — Esta story foi decomposta em 3 sub-stories executáveis independentemente:
+>
+> 1. [STORY-CONV-003a — Backend Stripe signup](STORY-CONV-003a-backend-stripe-signup.story.md) (Ready, M, 1-2 dias)
+> 2. [STORY-CONV-003b — Frontend 2-step PaymentElement + A/B](STORY-CONV-003b-frontend-2step-payment-element.story.md) (Ready, M, 1-2 dias, depends on 003a)
+> 3. [STORY-CONV-003c — Webhooks + cron D-1 email + cancel + observability + rollback docs](STORY-CONV-003c-webhooks-email-cancel-observability.story.md) (Ready, L, 2-3 dias, depends on 003a)
+>
+> Esta story original permanece como referência de contexto (+170% lift, mercado benchmark, riscos, ACs consolidados). NÃO executar daqui — seguir as sub-stories a/b/c em ordem.
 
 ---
 
@@ -193,3 +201,4 @@ _(populado pelo @dev durante execução)_
 | Data | Agente | Mudança |
 |------|--------|---------|
 | 2026-04-19 | @sm (River) | Story criada Ready. Subsídios do plano Board v1.0 (2026-04-19). |
+| 2026-04-19 | @sm (River) | Status Ready → Superseded. Story decomposta em 3 sub-stories (003a backend, 003b frontend, 003c lifecycle) para viabilizar execução em sprints de 1-3 dias cada, conforme plano Board v2.0 e session handoff 2026-04-19-stabilization-sync. Contexto e benchmarks preservados aqui para referência. |

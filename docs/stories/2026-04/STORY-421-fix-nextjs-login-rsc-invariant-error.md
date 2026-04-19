@@ -3,7 +3,7 @@
 **Priority:** P2 — Medium (baixa frequência, UX degradada)
 **Effort:** M (1-2 days)
 **Squad:** @dev + @ux-design-expert
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7397346898/ (6 eventos)
 **Sprint:** Sprint rotina (1w-2w)
@@ -125,3 +125,4 @@ A referência a `handleSlug` + `sorted-routes` sugere que o erro acontece durant
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (8.5/10). Status Draft → Ready. |
 | 2026-04-11 | @dev (YOLO P2 sprint) | Implementada a mitigação defensiva: `frontend/app/login/error.tsx` novo (client component, detecta InvariantError/RSC e aciona hard reload quando apropriado; reporta a Sentry com `tags.page=login` + `tags.error_type=rsc_invariant`). Unit test `frontend/__tests__/app/login-error-boundary.test.tsx` (6 casos) + E2E regression `frontend/e2e-tests/login-rsc.spec.ts` (2 casos: cold-load + reload cycle). Middleware auditado — não retorna text/plain (já estava correto). Status Ready → InReview; aguarda observação Sentry 48h.<br>**File List:** `frontend/app/login/error.tsx`, `frontend/__tests__/app/login-error-boundary.test.tsx`, `frontend/e2e-tests/login-rsc.spec.ts` |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-421. |

@@ -3,7 +3,7 @@
 **Priority:** P0 — Caminho mais previsível para primeiro pagante em runway curto
 **Effort:** S (tooling 2 dias) + Ongoing (12h/semana × 6 semanas)
 **Squad:** @analyst (qualificação) + @dev (tooling inicial) + Founder (execução de contatos)
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Sprint:** Wave Receita D+1 a D+45
 
@@ -231,3 +231,4 @@ smartlic.tech
 | 2026-04-19 | @sm (River) | Story criada Ready. Subsídios do plano Board v1.0. |
 | 2026-04-19 | @dev | Implementação code-side completa. 17/17 testes pytest passando. 3 scripts validados end-to-end com dados Supabase reais (7 leads qualificados em dry-run). AC5/AC6 (execução operacional) e linha W1 do AC2-AC4/AC7 ficam post-merge por natureza (founder-driven). Status → InReview. |
 | 2026-04-19 | @devops (Gage) | PR #387 merged in 78eddd3c via admin override (213 pre-existing failures on main documented). Status InReview maintained (operational 6w ongoing). |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. PR #387 merged to main. Código, testes e docs em produção. Status-sync post-merge. |

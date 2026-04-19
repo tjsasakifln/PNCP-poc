@@ -3,7 +3,7 @@
 **Priority:** P1 — High (slow_requests aproximando limite Railway)
 **Effort:** M (1-2 days)
 **Squad:** @dev + @architect
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7398756337/ (42 eventos perfil-b2g ReadTimeout)
@@ -158,3 +158,4 @@ O endpoint `GET /v1/empresa/{cnpj}/perfil-b2g` em `backend/routes/empresa_public
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. |
 | 2026-04-10 | @pm (Morgan) | Decisão AC4: **abordagem faseada A+C** (Redis quick-win → Materialized View proper fix → índice backup). Rationale: `orgao_stats` é read-heavy + slow-changing = textbook fit para MV. Redis L2 cobre hot CNPJs. Efeito combinado elimina timeouts. |
 | 2026-04-10 | @dev | Implementation (Fase 1). `routes/empresa_publica.py`: `_BRASILAPI_TIMEOUT` 15→8s; nova `BrasilAPIUnavailable` exception; per-host CB com 3 consecutive failures + 60s cooldown; `_fetch_brasilapi` distingue 404 (business) de 5xx/timeout (transport/trip); `_build_perfil` fallback gracioso — retorna `brasilapi_status="unavailable"` no response model (campo novo). `routes/orgao_publico.py` ganha Redis cache Fase 1 (15min TTL, key `orgao_stats:v1:{cnpj}`) além do in-memory cache existente; carga cross-worker compartilhada. Fase 2 (Materialized View) + Fase 3 (índice backup) deferidas como follow-up. 8 tests em `tests/test_story417_brasilapi_cb.py` passam (sem respx — stubs httpx.AsyncClient via monkeypatch). Status Ready → InReview. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-417. |

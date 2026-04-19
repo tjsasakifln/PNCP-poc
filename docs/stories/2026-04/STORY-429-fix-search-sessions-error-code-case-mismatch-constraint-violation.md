@@ -3,7 +3,7 @@
 **Priority:** P2
 **Effort:** S (0.5 day)
 **Squad:** @dev + @data-engineer
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sprint:** Sprint Rotina (1w-2w)
 
@@ -119,3 +119,4 @@ _(a preencher pelo @dev durante implementação)_
 |------|-------|---------|
 | 2026-04-11 | @sm (River) | Story criada — constraint violation confirmada: código escreve lowercase, constraint exige uppercase. 7 call sites identificados. |
 | 2026-04-11 | @po (Sarah) | Validação `*validate-story-draft`. Score: 9/10. GO. Root cause clara, fix objetivo. Status: Draft → Ready. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-429. |

@@ -3,7 +3,7 @@
 **Priority:** P1
 **Effort:** S (0.5-1 day)
 **Squad:** @dev + @architect
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** (novo — identificado pós-EPIC-INCIDENT-2026-04-10)
 **Sprint:** Sprint Seguinte (48h-1w)
@@ -123,3 +123,4 @@ _(a preencher pelo @dev durante implementação)_
 |------|-------|---------|
 | 2026-04-11 | @sm (River) | Story criada — RuntimeError identificado em varredura Sentry, possível regressão de STORY-416 |
 | 2026-04-11 | @po (Sarah) | Validação `*validate-story-draft`. Score: 8.5/10. GO. Status: Draft → Ready. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-427. |

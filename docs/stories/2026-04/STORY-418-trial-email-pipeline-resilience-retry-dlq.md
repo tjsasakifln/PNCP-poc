@@ -3,7 +3,7 @@
 **Priority:** P1 — High (emails de trial perdidos silenciosamente)
 **Effort:** M (1-2 days)
 **Squad:** @dev
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7298651577/ (trial email #4 day=10 — 19 eventos)
@@ -150,3 +150,4 @@
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (10/10). Status Draft → Ready. |
 | 2026-04-10 | @dev | Implementation. Nova migration `20260410132000_story418_trial_email_dlq.sql` — tabela `trial_email_dlq` com RLS `service_role` only, índice parcial sobre `(reprocessed_at IS NULL AND abandoned_at IS NULL)`. Novo módulo `backend/services/trial_email_dlq.py` — `enqueue()` best-effort (nunca raise), `reprocess_pending()` com backoff [30,60,120]s + MAX_ATTEMPTS=5 + `abandoned_at`, `reason_from_error()` para labels estáveis. `trial_email_sequence.py` chama `_dlq_enqueue` no bloco except do send (linhas ~442+). Cron `_trial_sequence_loop` em `jobs/cron/notifications.py` dreina DLQ após cada batch forward. Métricas `TRIAL_EMAIL_DLQ_ENQUEUED{email_type,reason}`, `TRIAL_EMAIL_DLQ_REPROCESSED{email_type}`, `TRIAL_EMAIL_DLQ_SIZE{state}`. Runbook `docs/runbook/trial-email-pipeline.md`. 8 tests em `tests/test_story418_trial_email_dlq.py` passam. AC8 backfill script deferido (não crítico). Status Ready → InReview. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-418. |

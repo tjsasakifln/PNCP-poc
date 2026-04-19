@@ -3,7 +3,7 @@
 **Priority:** P0 — Dispositivo de fechamento low-risk, alto ROI
 **Effort:** XS (4 horas)
 **Squad:** @dev
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Sprint:** Wave Receita D+1 a D+7
 
@@ -241,3 +241,4 @@ Não é gimmick de escassez. É disciplina: founding partners exigem atenção i
 |------|--------|---------|
 | 2026-04-19 | @sm (River) | Story criada Ready. Subsídios do plano Board v1.0. |
 | 2026-04-19 | @dev | Implementação code-side completa. 21/21 testes backend + 7/7 testes frontend passando. 114/114 testes stripe webhook zero regressão. AC1 (coupon Dashboard) e emails de boas-vindas/abandono ficam post-merge (requerem setup externo ou story futura). Status → InReview. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. PR #388 merged to main. Código, testes e docs em produção. Status-sync post-merge. |
