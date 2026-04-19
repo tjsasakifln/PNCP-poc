@@ -3,7 +3,11 @@
 **Priority:** P0 — Caminho mais previsível para primeiro pagante em runway curto
 **Effort:** S (tooling 2 dias) + Ongoing (12h/semana × 6 semanas)
 **Squad:** @analyst (qualificação) + @dev (tooling inicial) + Founder (execução de contatos)
+<<<<<<< HEAD
 **Status:** Ready
+=======
+**Status:** InReview
+>>>>>>> 19c54392 (feat(sales-ops): STORY-B2G-001 — outreach B2G tooling + templates + playbook)
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Sprint:** Wave Receita D+1 a D+45
 
@@ -28,6 +32,7 @@ Esta story **não é primariamente técnica** — é operacional. A parte técni
 ## Acceptance Criteria
 
 ### AC1: Script de geração de lista qualificada
+<<<<<<< HEAD
 - [ ] `scripts/b2g_outreach_query.py` executa query Supabase e gera CSV timestamped `data/outreach/leads-2026-W{XX}.csv`
 - [ ] Query selecionar top 50 CNPJs (fornecedores) que:
   - Participaram de ≥3 contratos nos últimos 90 dias em `supplier_contracts`
@@ -83,6 +88,55 @@ Esta story **não é primariamente técnica** — é operacional. A parte técni
 - [ ] Emails incluem footer: "Você recebeu este email porque identificamos fit comercial. Para não receber mais, responda UNSUBSCRIBE." + link opt-out
 - [ ] Lista de opt-outs persistida em `data/outreach/opt-outs.txt` (gitignored)
 - [ ] Script AC1 filtra opt-outs automaticamente em runs futuros
+=======
+- [x] `scripts/b2g_outreach_query.py` executa query Supabase e gera CSV timestamped `data/outreach/leads-2026-W{XX}.csv`
+- [x] Query seleciona top 50 CNPJs ativos (ajuste vs story original: tabela real = `pncp_supplier_contracts`, campos `ni_fornecedor`/`valor_global`):
+  - Participaram de ≥3 contratos nos últimos 90 dias
+  - Volume contratual somado ≥ R$ 100k (filtro de qualificação)
+  - Filtro opt-out via `data/outreach/opt-outs.txt`
+  - **Limitação documentada:** filtro "não possuem conta no SmartLic" não aplicado — `profiles` não tem coluna `cnpj`. Registrado como bloqueador em `docs/sales/playbook.md`.
+  - Classificação setorial via matching em `objeto_contrato` (contracts não têm campo `setor` nativo) — mantido como `top_3_objetos` bruto para personalização manual.
+- [x] CSV com colunas: `cnpj`, `razao_social`, `participacoes_90d`, `volume_total_90d`, `top_3_objetos`, `email_provavel`, `email_source`, `cidade_uf`
+- [x] `email_provavel` derivado via heurística `slugify_company` (stripping corporate stopwords + diacritics) + `contato@slug.com.br` — `email_source=HEURISTIC_DOMAIN` ou `UNKNOWN`
+- [x] Tempo de execução validado em run real (`--dry-run`): retorna 7 leads qualificados em <3s usando `idx_psc_fornecedor_data`
+
+### AC2: Template de abordagem multi-canal
+- [x] `docs/sales/templates/outreach-email-v1.md` com placeholders `{nome}`, `{razao_social}`, `{X_contratos}`, `{Y_valor}`, `{Z_dias_desde_ultimo}`, `{setor_principal}`, `{N_editais}`, `{cidade_uf}`
+- [x] `docs/sales/templates/outreach-linkedin-v1.md` versão curta (280 chars)
+- [x] Template v1 segue modelo POV (Perspective of Value) com dado proprietário
+- [x] Variante A/B: `outreach-email-v2.md` (consultivo/educacional) para pivot se response rate < 10% W3
+
+### AC3: CRM lightweight para tracking
+- [x] `docs/sales/crm-pipeline.md` documenta estrutura e 7 estágios (Prospectado → Contactado → Respondeu → Trial → Proposta → Fechado → Churn)
+- [x] Campos mínimos por lead especificados (CNPJ, nome_contato, email, canal, data_contato, status, trial_start_ts, deal_size_estimado, ultima_atividade, next_action, notes)
+- [x] Ritual semanal (sexta 17h) documentado com 7 passos executáveis + integração ao `b2g_weekly_report.py`
+
+### AC4: Script de pré-processamento de lead (personalization at scale)
+- [x] `scripts/b2g_lead_brief.py --cnpj <14digits>` gera brief markdown em `data/outreach/briefs/{cnpj}.md`
+- [x] Brief contém: resumo fornecedor (razão social, volume, UFs, municípios), top-5 contratos, editais abertos relevantes (ranked por keyword overlap), hook sugerido
+- Ajuste vs story: "CNAE principal" não disponível em `pncp_supplier_contracts` — substituído por padrão de `objeto_contrato` (mais informativo para personalização)
+- [x] Brief cobre caso "CNPJ sem contratos 90d" com mensagem clara de saída
+
+### AC5: Meta operacional clara (documentada em playbook, execução pós-merge)
+- [x] Cadência 15 contatos/semana × 6 semanas = 90 contatos documentada em `docs/sales/playbook.md`
+- [x] Split 10 email + 5 LinkedIn documentado
+- [x] Response/trial-start/trial-to-paid rate alvos documentados
+- [ ] **(post-merge)** Founder executa primeira rodada W1 e atualiza CRM
+
+### AC6: Case study post-primeiro-fechamento
+- [x] Template pronto em `docs/sales/case-studies/_template.md` com estrutura (problema, solução, resultado quantificado, quote)
+- [ ] **(post-merge)** Case study real criado após primeiro fechamento
+
+### AC7: Relatório semanal automatizado
+- [x] `scripts/b2g_weekly_report.py` agrega leads-{week}.csv + opcional crm.csv em `docs/sales/reports/weekly-{YYYY-WXX}.md`
+- [x] Output inclui: leads da semana, volume agregado, top UFs, contatos por canal, response rate, trial-start rate, pipeline por estágio, bloqueadores, próxima semana
+- [x] Validado end-to-end com `--week 2026-W17`
+
+### AC8: Compliance LGPD
+- [x] Templates email v1/v2 incluem footer UNSUBSCRIBE
+- [x] `data/outreach/opt-outs.txt` criado (gitignored via `.gitignore`) com instruções de formato
+- [x] `b2g_outreach_query.py::load_opt_outs` + filter aplicado em `build_rows` automaticamente
+>>>>>>> 19c54392 (feat(sales-ops): STORY-B2G-001 — outreach B2G tooling + templates + playbook)
 
 ---
 
@@ -203,7 +257,36 @@ smartlic.tech
 
 ## File List
 
+<<<<<<< HEAD
 _(populado pelo @dev durante execução)_
+=======
+**Novos scripts:**
+- `scripts/b2g_outreach_query.py`
+- `scripts/b2g_lead_brief.py`
+- `scripts/b2g_weekly_report.py`
+
+**Testes unitários (pytest-ready):**
+- `scripts/tests/test_b2g_outreach_query.py` (11 casos)
+- `scripts/tests/test_b2g_weekly_report.py` (6 casos)
+
+**Documentação operacional:**
+- `docs/sales/templates/outreach-email-v1.md`
+- `docs/sales/templates/outreach-email-v2.md`
+- `docs/sales/templates/outreach-linkedin-v1.md`
+- `docs/sales/crm-pipeline.md`
+- `docs/sales/playbook.md`
+- `docs/sales/case-studies/_template.md`
+- `docs/sales/case-studies/.gitkeep`
+- `docs/sales/reports/.gitkeep`
+
+**Estrutura de dados (gitignored):**
+- `data/outreach/.gitkeep`
+- `data/outreach/briefs/.gitkeep`
+- `data/outreach/opt-outs.txt`
+
+**Modificados:**
+- `.gitignore` — exclui `data/outreach/leads-*.csv`, `data/outreach/briefs/*.md`, `data/outreach/crm.csv`
+>>>>>>> 19c54392 (feat(sales-ops): STORY-B2G-001 — outreach B2G tooling + templates + playbook)
 
 ---
 
@@ -212,3 +295,7 @@ _(populado pelo @dev durante execução)_
 | Data | Agente | Mudança |
 |------|--------|---------|
 | 2026-04-19 | @sm (River) | Story criada Ready. Subsídios do plano Board v1.0. |
+<<<<<<< HEAD
+=======
+| 2026-04-19 | @dev | Implementação code-side completa. 17/17 testes pytest passando. 3 scripts validados end-to-end com dados Supabase reais (7 leads qualificados em dry-run). AC5/AC6 (execução operacional) e linha W1 do AC2-AC4/AC7 ficam post-merge por natureza (founder-driven). Status → InReview. |
+>>>>>>> 19c54392 (feat(sales-ops): STORY-B2G-001 — outreach B2G tooling + templates + playbook)
