@@ -55,11 +55,15 @@ jobs:
         continue-on-error: true  # CI-002: intentional — advisory scan, blocking scan follows after tests
 
       - name: Run tests (exit code 0 required)
+        # STORY-BTS-007 (2026-04-19, @po direction (a)): tests/integration/ moved to
+        # backend-tests-external.yml (non-blocking) to preserve zero-failure policy
+        # on the PR gate without depending on external infra availability.
         run: |
           cd backend
           pytest tests/ \
             -m "not benchmark and not external" \
             --ignore=tests/fuzz \
+            --ignore=tests/integration \
             --cov=. \
             --cov-report=term-missing \
             --cov-fail-under=70 \

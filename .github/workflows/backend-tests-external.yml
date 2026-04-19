@@ -1,0 +1,82 @@
+# STORY-BTS-007 (EPIC-BTS-2026Q2) — External integration tests
+#
+# Non-blocking workflow that executes tests/integration/ — isolated from the
+# PR gate (backend-tests.yml) so external infra availability does not block
+# merges. Preserves zero-failure policy on the gate.
+#
+# @po direction (a) approved 2026-04-19.
+#
+# Execution:
+#   - On PRs: runs for visibility but does NOT block merge (continue-on-error)
+#   - Scheduled: runs daily at 09:00 UTC (06:00 BRT) to detect integration drift
+name: "Backend Tests External (Integration, non-blocking)"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests-external.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/tests/integration/**'
+  schedule:
+    - cron: '0 9 * * *'  # 09:00 UTC daily
+
+permissions:
+  contents: read
+
+jobs:
+  integration-tests:
+    name: Integration Tests (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # STORY-BTS-007 AC3: non-blocking
+
+    env:
+      SUPABASE_URL: https://test.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+      OPENAI_API_KEY: sk-test-key
+      ENCRYPTION_KEY: bzc732A921Puw9JN4lrzMo1nw0EjlcUdAyR6Z6N7Sqc=
+      ENVIRONMENT: test
+      SENTRY_DSN: ""
+      REDIS_URL: ""
+      LOG_LEVEL: WARNING
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio httpx pytest-timeout fakeredis
+
+      - name: Run integration tests
+        run: |
+          cd backend
+          pytest tests/integration/ \
+            -m "not benchmark" \
+            --timeout=60 \
+            --junitxml=pytest-integration-report.xml \
+            -v || echo "⚠️ Integration tests failed (advisory) — gate NOT blocked"
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-report
+          path: backend/pytest-integration-report.xml
+          retention-days: 7
+
+      - name: Alert on scheduled failure
+        if: github.event_name == 'schedule' && failure()
+        run: |
+          echo "::warning::Scheduled integration tests failed. Check report artifact."
