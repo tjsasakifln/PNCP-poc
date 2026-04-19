@@ -31,9 +31,15 @@ def mock_auth():
 
 @pytest.fixture
 def mock_sse_deps():
-    """Mock SSE connection limiter."""
-    with patch("routes.search.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
-         patch("routes.search.release_sse_connection", new_callable=AsyncMock):
+    """Mock SSE connection limiter.
+
+    CIG-BE-sse-reconnect-api: the SSE route was extracted from `routes/search.py`
+    into `routes/search_sse.py` (a standalone module, not the package
+    `routes/search/`). Patch where the symbol is *used*, not where it is
+    defined in `rate_limiter`.
+    """
+    with patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
+         patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
         yield
 
 
@@ -129,7 +135,7 @@ class TestSSEReconnectRateLimit:
 
         _exhaust_sse_limit(_flexible_limiter, "test-user-rl", 10)
 
-        with caplog.at_level(logging.WARNING, logger="routes.search"):
+        with caplog.at_level(logging.WARNING, logger="routes.search_sse"):
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 await client.get("/v1/buscar-progress/log-test")
 
