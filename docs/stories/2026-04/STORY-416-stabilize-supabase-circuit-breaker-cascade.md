@@ -3,7 +3,7 @@
 **Priority:** P1 — High
 **Effort:** L (2-3 days)
 **Squad:** @architect + @dev
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7362741373/ (pipeline)
@@ -153,3 +153,4 @@ _CB_COOLDOWN_S = 60.0               # mantido
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9.5/10). Status Draft → Ready. |
 | 2026-04-10 | @pm (Morgan) | Decisão AC2: **modo híbrido AND/OR** — abre CB se `(consecutive_failures >= 5) OR (failure_rate > 0.7 AND window >= 10)`. Threshold elevado de 0.5 → 0.7 para reduzir flakiness. `trial_calls` reduzido 3 → 2 para fechar mais rápido. Todos configuráveis via env var. |
 | 2026-04-10 | @dev | Implementation YOLO. `backend/supabase_client.py`: `SupabaseCircuitBreaker.__init__` ganha `name` + `consecutive_failures_threshold`; lógica híbrida OR em `_record_failure`. Novas instâncias segregadas `read_cb`, `write_cb`, `rpc_cb` (streaks 5/3/4) + legacy `supabase_cb` (`name="app"`, backward-compat). `sb_execute(..., category="read")` routeia pelo CB da categoria mas também propaga success/failure para legacy CB via `_record_failure_all` para dashboards existentes. Nova métrica `smartlic_supabase_cb_state_by_category{category}`. Novo endpoint `POST /v1/admin/cb/reset`. Conftest `_reset_supabase_circuit_breaker` agora reseta read/write/rpc também. Runbook `docs/runbook/supabase-circuit-breaker.md`. 9 tests em `tests/test_story416_segregated_circuit_breakers.py` + 60 existentes em `test_supabase_circuit_breaker.py` passam. 2 tests legacy (AC11, default_values) atualizados para refletir novo comportamento. Status Ready → InReview. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-416. |

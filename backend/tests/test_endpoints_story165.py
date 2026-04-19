@@ -407,7 +407,7 @@ class TestBuscarEndpointExcelGating:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.plan_enforcement.check_quota")
+    @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("routes.search.PNCPClient")
     def test_skips_excel_for_consultor_plan(
