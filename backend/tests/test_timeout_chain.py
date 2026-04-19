@@ -62,7 +62,7 @@ class TestTimeoutChainInvariant:
         """AC2: STORY-4.4 TD-SYS-003 — In degraded mode, abort per-UF FASTER (12s) than normal (25s).
         Rationale: degraded mode = PNCP is struggling; cut losses quickly, don't wait as long.
         """
-        from pncp_client import PNCP_TIMEOUT_PER_UF, PNCP_TIMEOUT_PER_UF_DEGRADED
+        from config.pncp import PNCP_TIMEOUT_PER_UF, PNCP_TIMEOUT_PER_UF_DEGRADED
 
         # STORY-4.4 TD-SYS-003: tightened from 30/15 to 25/12 per Time Budget Waterfall
         assert PNCP_TIMEOUT_PER_UF == 25, (
@@ -100,7 +100,7 @@ class TestPerUfTimeout:
 
     def test_degraded_mode_default_120s(self):
         """AC2: Degraded mode PER_UF_TIMEOUT = 12s (STORY-4.4 TD-SYS-003: tightened from 15s — abort faster under degraded conditions)."""
-        from pncp_client import PNCP_TIMEOUT_PER_UF_DEGRADED
+        from config.pncp import PNCP_TIMEOUT_PER_UF_DEGRADED
         assert PNCP_TIMEOUT_PER_UF_DEGRADED == 12.0
 
     def test_env_var_override(self):
