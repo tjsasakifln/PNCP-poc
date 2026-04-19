@@ -696,7 +696,7 @@ class TestPerUFTimeout:
 
     @pytest.mark.asyncio
     async def test_per_uf_timeout_is_90s(self):
-        """Verify the per-UF timeout value in buscar_todas_ufs_paralelo is 30s (STAB-003: reduced from 90s to abort faster)."""
+        """Verify the per-UF timeout value in buscar_todas_ufs_paralelo is 25s (STORY-4.4 TD-SYS-003: tightened from 30s to 25s per Time Budget Waterfall)."""
         # We verify by checking the timeout passed to asyncio.wait_for
         async with AsyncPNCPClient(max_concurrent=10) as client:
             timeout_seen = None
@@ -723,8 +723,8 @@ class TestPerUFTimeout:
                     data_final="2026-01-31",
                 )
 
-            # STAB-003: PER_UF_TIMEOUT reduced from 90s to 30s to abort stale UFs faster
-            assert timeout_seen == 30
+            # STORY-4.4 TD-SYS-003: PER_UF_TIMEOUT tightened from 30s to 25s per Time Budget Waterfall
+            assert timeout_seen == 25
 
 
 # ---------------------------------------------------------------------------
