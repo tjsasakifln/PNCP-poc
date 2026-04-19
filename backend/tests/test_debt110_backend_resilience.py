@@ -278,8 +278,10 @@ class TestFilterDecomposition:
         a separate standalone module. They are different objects but both are callable
         and produce the same results (same algorithm, different code paths).
         """
+        # Post-DEBT-201: filter was split into a package (filter.keywords etc).
+        # The legacy top-level filter_keywords module no longer exists.
         import filter as filter_facade
-        import filter_keywords
+        from filter import keywords as filter_keywords
 
         # Both must be callable
         assert callable(filter_facade.normalize_text)
@@ -289,13 +291,13 @@ class TestFilterDecomposition:
         assert filter_facade.normalize_text(text) == filter_keywords.normalize_text(text)
 
     def test_match_keywords_is_same_object_in_both_modules(self):
-        """filter.match_keywords and filter_keywords.match_keywords are callable.
+        """filter.match_keywords and filter.keywords.match_keywords are callable.
 
-        NOTE: filter package re-exports from filter.core, while filter_keywords is
-        a separate standalone module. Both are callable with compatible signatures.
+        Post-DEBT-201: filter package re-exports from filter.keywords; both
+        paths resolve to the same callable.
         """
         import filter as filter_facade
-        import filter_keywords
+        from filter import keywords as filter_keywords
 
         # Both must be callable
         assert callable(filter_facade.match_keywords)
@@ -323,21 +325,21 @@ class TestFilterDecomposition:
         assert result[0]["valorTotalEstimado"] == 150_000.0
 
     def test_filter_density_imports_normalize_from_keywords(self):
-        """filter_density imports normalize_text from filter_keywords (no circular dep)."""
-        import filter_density
+        """filter.density imports normalize_text from filter.keywords (no circular dep)."""
+        from filter import density as filter_density
 
         # If there were circular imports this would fail at import time
         assert hasattr(filter_density, "check_proximity_context")
 
     def test_filter_status_imports_normalize_from_keywords(self):
-        """filter_status imports normalize_text from filter_keywords (no circular dep)."""
-        import filter_status
+        """filter.status imports normalize_text from filter.keywords (no circular dep)."""
+        from filter import status as filter_status
 
         assert hasattr(filter_status, "filtrar_por_status")
 
     def test_filter_uf_imports_from_keywords(self):
-        """filter_uf imports match_keywords and normalize_text from filter_keywords."""
-        import filter_uf
+        """filter.uf imports match_keywords and normalize_text from filter.keywords."""
+        from filter import uf as filter_uf
 
         assert hasattr(filter_uf, "filter_licitacao")
 
@@ -430,7 +432,10 @@ class TestLLMCostTracking:
 
     def test_log_token_usage_accumulates_stats(self):
         """_log_token_usage accumulates per-search stats correctly."""
-        from llm_arbiter import _log_token_usage, get_search_cost_stats, _search_token_stats
+        # Post-TD-009: _search_token_stats is a module-level dict inside
+        # llm_arbiter.classification (not re-exported by the package facade).
+        from llm_arbiter import _log_token_usage, get_search_cost_stats
+        from llm_arbiter.classification import _search_token_stats
 
         search_id = "debt110-test-accumulate-999"
         # Ensure clean state
@@ -447,7 +452,10 @@ class TestLLMCostTracking:
 
     def test_log_token_usage_computes_brl_cost(self):
         """_log_token_usage produces a positive BRL cost estimate."""
-        from llm_arbiter import _log_token_usage, get_search_cost_stats, _search_token_stats
+        # Post-TD-009: _search_token_stats is a module-level dict inside
+        # llm_arbiter.classification (not re-exported by the package facade).
+        from llm_arbiter import _log_token_usage, get_search_cost_stats
+        from llm_arbiter.classification import _search_token_stats
 
         search_id = "debt110-test-cost-888"
         _search_token_stats.pop(search_id, None)
@@ -461,7 +469,8 @@ class TestLLMCostTracking:
 
     def test_log_token_usage_different_call_types(self):
         """_log_token_usage accepts all documented call_type values."""
-        from llm_arbiter import _log_token_usage, _search_token_stats
+        from llm_arbiter import _log_token_usage
+        from llm_arbiter.classification import _search_token_stats
 
         for call_type in ("arbiter", "summary", "zero_match"):
             sid = f"debt110-test-calltype-{call_type}"
@@ -491,7 +500,10 @@ class TestLLMCostTracking:
 
     def test_get_search_cost_stats_pops_entry(self):
         """get_search_cost_stats removes the entry after returning it (avoid memory leak)."""
-        from llm_arbiter import _log_token_usage, get_search_cost_stats, _search_token_stats
+        # Post-TD-009: _search_token_stats is a module-level dict inside
+        # llm_arbiter.classification (not re-exported by the package facade).
+        from llm_arbiter import _log_token_usage, get_search_cost_stats
+        from llm_arbiter.classification import _search_token_stats
 
         search_id = "debt110-test-pop-777"
         _search_token_stats.pop(search_id, None)
