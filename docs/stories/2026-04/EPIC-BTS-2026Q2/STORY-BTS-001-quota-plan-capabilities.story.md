@@ -53,3 +53,4 @@
 ## Change Log
 
 - **2026-04-19** — @sm (River): Story criada do triage EPIC-BTS. Status Ready.
+- **2026-04-19** — @po (Pax): Validação GO — 8/10. Gaps: P4 escopo implícito, P8 sem seção de riscos. Ambos sistêmicos no template; não bloqueiam. Story confirmada Ready.

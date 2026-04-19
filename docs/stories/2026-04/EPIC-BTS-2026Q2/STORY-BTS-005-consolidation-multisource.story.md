@@ -58,3 +58,4 @@ Padrão: `ConsolidationService._tokenize_objeto`, `_jaccard`, `_deduplicate`, `_
 ## Change Log
 
 - **2026-04-19** — @sm (River): Story criada. Status Ready.
+- **2026-04-19** — @po (Pax): Validação GO — 7/10. Gaps: P4 escopo, P7 valor, P8 riscos. Story confirmada Ready. Atenção @dev: coordenar com owner de STORY-CIG-BE-consolidation-helpers-private antes de implementar.

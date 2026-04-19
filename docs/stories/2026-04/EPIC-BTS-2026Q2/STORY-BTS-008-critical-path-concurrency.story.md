@@ -58,3 +58,4 @@
 ## Change Log
 
 - **2026-04-19** — @sm (River): Story criada. Status Ready. Prod-bug risk flagged.
+- **2026-04-19** — @po (Pax): Validação GO — 8/10. Gaps: P4 escopo, P8 sem seção formal de riscos. Story confirmada Ready. Lembrete @dev: escalation procedure pré-acordada com @architect para prod bugs reais.

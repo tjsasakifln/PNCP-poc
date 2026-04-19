@@ -54,3 +54,4 @@ Padrão observado: STORY-4.4 tightened defaults (`pipeline(100) > consolidation(
 ## Change Log
 
 - **2026-04-19** — @sm (River): Story criada. Status Ready.
+- **2026-04-19** — @po (Pax): Validação GO — 8/10. Gaps: P4 escopo implícito, P8 sem seção de riscos. Story confirmada Ready.

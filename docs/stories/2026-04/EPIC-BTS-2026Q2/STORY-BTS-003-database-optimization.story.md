@@ -49,3 +49,4 @@
 ## Change Log
 
 - **2026-04-19** — @sm (River): Story criada. Status Ready.
+- **2026-04-19** — @po (Pax): Validação GO — 7/10. Gaps: P4 escopo, P7 valor não enunciado, P8 riscos. Story confirmada Ready. Recomendação: adicionar valor ao campo Priority.

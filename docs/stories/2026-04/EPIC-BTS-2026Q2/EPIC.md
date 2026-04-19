@@ -36,31 +36,33 @@ Com base em inspeção de amostras representativas, as 208 falhas se distribuem 
 
 ---
 
-## Stories (10)
+## Stories (11 após split @po 2026-04-19)
 
-| ID | Escopo | Testes | Effort | Prioridade |
-|----|--------|--------|--------|------------|
-| STORY-BTS-001 | Quota & Plan Capabilities | 35 failures | M (3-5h) | P0 |
-| STORY-BTS-002 | Pipeline Resilience Layer | 30 failures | M (3-5h) | P0 |
-| STORY-BTS-003 | Database Optimization & Reconciliation | 15 failures | S (2-3h) | P1 |
-| STORY-BTS-004 | LLM Zero-Match & Filter Pipeline | 16 failures | S (2-3h) | P1 |
-| STORY-BTS-005 | Consolidation & Multi-Source | 19 failures | M (3-5h) | P1 |
-| STORY-BTS-006 | Search Pipeline & Async Flow | 13 failures | S (2-3h) | P1 |
-| STORY-BTS-007 | Integration Tests (real external services) | 5 failures | S (2-3h) | P2 |
-| STORY-BTS-008 | Critical Path & Concurrency | 18 failures | M (3-5h) | P1 |
-| STORY-BTS-009 | Observability & Infra Drift | 20 failures | S (2-3h) | P2 |
-| STORY-BTS-010 | Billing, Partners, Feature Flags | 15 failures | S (2-3h) | P1 |
+| ID | Escopo | Testes | Effort | Prioridade | @po Status |
+|----|--------|--------|--------|------------|------------|
+| STORY-BTS-001 | Quota & Plan Capabilities | 35 failures | M (3-5h) | P0 | ✅ GO 8/10 |
+| STORY-BTS-002 | Pipeline Resilience Layer | 30 failures | M (3-5h) | P0 | ✅ GO 8/10 |
+| STORY-BTS-003 | Database Optimization & Reconciliation | 15 failures | S (2-3h) | P1 | ✅ GO 7/10 |
+| STORY-BTS-004 | LLM Zero-Match & Filter Pipeline | 16 failures | S (2-3h) | P1 | ✅ GO 7/10 |
+| STORY-BTS-005 | Consolidation & Multi-Source | 19 failures | M (3-5h) | P1 | ✅ GO 7/10 |
+| STORY-BTS-006 | Search Pipeline & Async Flow | 13 failures | S (2-3h) | P1 | ✅ GO 7/10 |
+| STORY-BTS-007 | Integration Tests → External Workflow | 5 failures | S (2-3h) | P2 | Ready (re-valida após correção 2026-04-19) |
+| STORY-BTS-008 | Critical Path & Concurrency | 18 failures | M (3-5h) | P1 | ✅ GO 8/10 |
+| STORY-BTS-009 | Observability & Infra Drift | 20 failures | S (2-3h) | P2 | ✅ GO 7/10 |
+| ~~STORY-BTS-010~~ | ~~Billing, Partners, Feature Flags + Misc~~ | — | — | — | ❌ Superseded (split) |
+| STORY-BTS-010a | Billing, Partners & Feature Flags | 14 failures | M (3-5h) | P1 | Ready (criada 2026-04-19 pós-split) |
+| STORY-BTS-010b | PNCP, Security & Infra Misc | 13 failures | M (3-5h) | P1 | Ready (criada 2026-04-19 pós-split) |
 
-**Mapeamento total:** 186 failures nas 10 stories + ~22 misc (re-triagem feita em STORY-BTS-003/005/009 conforme RCA confirmar).
+**Mapeamento total:** 198 failures cobertas nas 11 stories ativas + ~10 misc (a confirmar via RCA).
 
 ---
 
 ## Ordem de Execução Recomendada
 
 ```
-Wave 1 (P0): BTS-001 + BTS-002 (desbloqueiam 65 testes, 31% do total, foundation quota+pipeline)
-Wave 2 (P1): BTS-003 + BTS-004 + BTS-005 + BTS-006 + BTS-008 + BTS-010 (98 testes, 47%)
-Wave 3 (P2): BTS-007 + BTS-009 (25 testes, 12%)
+Wave 1 (P0): BTS-001 + BTS-002 (65 testes, foundation quota+pipeline)
+Wave 2 (P1): BTS-003 + BTS-004 + BTS-005 + BTS-006 + BTS-008 + BTS-010a + BTS-010b (112 testes)
+Wave 3 (P2): BTS-007 + BTS-009 (25 testes)
 ```
 
 Stories podem ir em paralelo por @dev distintos — dependências documentadas por story.
@@ -88,3 +90,5 @@ Stories podem ir em paralelo por @dev distintos — dependências documentadas p
 ## Change Log
 
 - **2026-04-19** — @sm (River) + @pm (Morgan): Epic criado. 208 failures triagiadas em 10 stories. Status Ready.
+- **2026-04-19** — @po (Pax): Validação completa. 8 stories GO (BTS-001/002/003/004/005/006/008/009). 2 NO-GO corrigidas no mesmo dia: BTS-007 (AC bifurcado — direção (a) emitida), BTS-010 (DoD impreciso — split em 010a+010b aprovado). Matriz + análise individual em `po-validation-report.md`.
+- **2026-04-19** — @sm (River): Correções aplicadas. BTS-007 reescrita (path (a) único, +Valor/Riscos). BTS-010 marcada Superseded, criadas BTS-010a (billing 14 testes, M) e BTS-010b (PNCP/security 13 testes, M). Epic stories: 10 → 11 ativas. Todas Ready.

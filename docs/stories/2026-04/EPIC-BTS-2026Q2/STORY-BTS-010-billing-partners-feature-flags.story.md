@@ -1,10 +1,19 @@
-# STORY-BTS-010 — Billing, Partners, Feature Flags + Misc (15+ testes)
+# STORY-BTS-010 — Billing, Partners, Feature Flags + Misc (15+ testes) — SUPERSEDED
 
 **Epic:** [EPIC-BTS-2026Q2](EPIC.md)
 **Priority:** P1
 **Effort:** S (2-3h)
 **Agents:** @dev + @qa
-**Status:** Ready
+**Status:** Superseded
+
+> **⚠️ SUPERSEDED 2026-04-19** — Esta story foi **dividida em 2 sub-stories** conforme Opção A da validação @po (2026-04-19):
+>
+> 1. [STORY-BTS-010a — Billing, Partners & Feature Flags (14 testes)](STORY-BTS-010a-billing-partners-feature-flags.story.md) (Ready, M)
+> 2. [STORY-BTS-010b — PNCP, Security & Infra Misc (13 testes)](STORY-BTS-010b-pncp-security-misc.story.md) (Ready, M)
+>
+> Split motivado por: contagem "~25 tests" imprecisa, escopo heterogêneo (6 domínios) incompatível com Effort S, DoD incompleto. Cada sub-story agora tem contagem exata, Effort M, seção Escopo/Valor/Riscos, conforme @po feedback.
+>
+> Esta story original fica como referência do triagem original. NÃO executar daqui — usar BTS-010a e BTS-010b.
 
 ---
 
@@ -70,3 +79,5 @@
 ## Change Log
 
 - **2026-04-19** — @sm (River): Story criada. Status Ready. Story é larga e heterogênea — split em implement se RCA revelar >2 causas não triviais.
+- **2026-04-19** — @po (Pax): Validação NO-GO — 6/10. DoD incompleto (P9 ✗ — "~25 tests" impreciso + split pendente), P7 valor ausente, P8 riscos ausentes, P4 escopo indefinido. Status revertido para Draft. @sm: optar entre (A) split em BTS-010a (billing/partners/feature-flags) + BTS-010b (PNCP/security/misc) ou (B) corrigir contagem exata, atualizar Effort para M, adicionar valor em Priority, remover "pode precisar dividir" e commitar escopo.
+- **2026-04-19** — @sm (River): Opção A aplicada. Story marcada Superseded. Criadas BTS-010a (14 testes billing) e BTS-010b (13 testes PNCP/security/misc), ambas Ready com Escopo/Valor/Riscos/DoD exatos.
