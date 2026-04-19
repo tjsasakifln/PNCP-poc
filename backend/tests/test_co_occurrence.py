@@ -394,18 +394,30 @@ class TestCoOccurrenceSectorsLoading:
             )
 
     def test_rule_structure_valid(self):
-        """AC1: All rules have required fields."""
+        """AC1: All rules have required fields.
+
+        CIG-BE-story-drift-sectors-split: post-split sectors introduced rules
+        that rely exclusively on ``positive_signals`` (e.g. ``insumos_hospitalares``
+        uses positive signals to rescue UBS/hospital context). Either
+        ``negative_contexts`` OR ``positive_signals`` must be non-empty; neither
+        being empty is the invariant — both being empty would make the rule
+        unable to discriminate.
+        """
         from sectors import SECTORS
         for sector_id, config in SECTORS.items():
             for i, rule in enumerate(config.co_occurrence_rules):
                 assert isinstance(rule.trigger, str) and rule.trigger, (
                     f"Sector '{sector_id}' rule {i}: trigger must be non-empty string"
                 )
-                assert isinstance(rule.negative_contexts, list) and rule.negative_contexts, (
-                    f"Sector '{sector_id}' rule {i}: negative_contexts must be non-empty list"
+                assert isinstance(rule.negative_contexts, list), (
+                    f"Sector '{sector_id}' rule {i}: negative_contexts must be a list"
                 )
                 assert isinstance(rule.positive_signals, list), (
                     f"Sector '{sector_id}' rule {i}: positive_signals must be a list"
+                )
+                assert rule.negative_contexts or rule.positive_signals, (
+                    f"Sector '{sector_id}' rule {i}: at least one of "
+                    f"negative_contexts/positive_signals must be non-empty"
                 )
 
 
