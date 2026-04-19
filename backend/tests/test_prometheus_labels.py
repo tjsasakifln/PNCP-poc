@@ -338,6 +338,7 @@ class TestPostgREST1000RowTruncationWarning:
                 f"Each RPC call should pass a single UF; got p_ufs={p_ufs}"
             )
 
+    @pytest.mark.external  # STORY-CIG-BACKEND-SWEEP triage row #105: real DNS call a Supabase, httpx.ConnectError em sandbox; mock fixture não intercepta RPC internal path.
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
     @patch("supabase_client.get_supabase")
@@ -366,6 +367,7 @@ class TestPostgREST1000RowTruncationWarning:
         # SC failed, PR returned 3 rows — should still return PR's rows
         assert len(result) == 3
 
+    @pytest.mark.external  # STORY-CIG-BACKEND-SWEEP triage row #106: real DNS call a Supabase, httpx.ConnectError em sandbox; mock fixture não intercepta RPC internal path.
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
     @patch("supabase_client.get_supabase")
