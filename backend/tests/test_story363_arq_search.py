@@ -202,9 +202,9 @@ class TestAC16WorkerPersistsResults:
              patch("progress.remove_tracker", new_callable=AsyncMock), \
              patch("job_queue.check_cancel_flag", new_callable=AsyncMock, return_value=False), \
              patch("job_queue.clear_cancel_flag", new_callable=AsyncMock), \
-             patch("job_queue.persist_job_result", new_callable=AsyncMock) as mock_persist_arq, \
-             patch("job_queue._persist_search_results_to_redis", new_callable=AsyncMock) as mock_persist_redis, \
-             patch("job_queue._persist_search_results_to_supabase", new_callable=AsyncMock) as mock_persist_supa, \
+             patch("jobs.queue.result_store.persist_job_result", new_callable=AsyncMock) as mock_persist_arq, \
+             patch("jobs.queue.search._persist_search_results_to_redis", new_callable=AsyncMock) as mock_persist_redis, \
+             patch("jobs.queue.search._persist_search_results_to_supabase", new_callable=AsyncMock) as mock_persist_supa, \
              patch("job_queue._update_search_session", new_callable=AsyncMock), \
              patch("job_queue.release_search_slot", new_callable=AsyncMock), \
              patch("config.get_feature_flag", return_value=False):
@@ -439,9 +439,9 @@ class TestAC18PipelineCompletesIndependently:
              patch("progress.remove_tracker", new_callable=AsyncMock), \
              patch("job_queue.check_cancel_flag", new_callable=AsyncMock, return_value=False), \
              patch("job_queue.clear_cancel_flag", new_callable=AsyncMock), \
-             patch("job_queue.persist_job_result", new_callable=AsyncMock) as mock_persist, \
-             patch("job_queue._persist_search_results_to_redis", new_callable=AsyncMock) as mock_redis, \
-             patch("job_queue._persist_search_results_to_supabase", new_callable=AsyncMock) as mock_supa, \
+             patch("jobs.queue.result_store.persist_job_result", new_callable=AsyncMock) as mock_persist, \
+             patch("jobs.queue.search._persist_search_results_to_redis", new_callable=AsyncMock) as mock_redis, \
+             patch("jobs.queue.search._persist_search_results_to_supabase", new_callable=AsyncMock) as mock_supa, \
              patch("job_queue._update_search_session", new_callable=AsyncMock), \
              patch("job_queue.release_search_slot", new_callable=AsyncMock), \
              patch("config.get_feature_flag", return_value=False):
