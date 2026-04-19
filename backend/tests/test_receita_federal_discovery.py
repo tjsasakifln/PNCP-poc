@@ -9,7 +9,10 @@ Date: 2026-02-10
 import httpx
 import json
 import time
+import pytest
 
+
+@pytest.mark.external  # CIG-BE: discovery test hits live ReceitaWS + sleeps 21s
 def test_receita_federal_api():
     """
     Test Receita Federal API (ReceitaWS) for company data enrichment.
