@@ -332,14 +332,14 @@ class TestFailoverTimeoutIncrease:
         )
 
         # Capture the effective timeout used
-        original_wrap = svc._wrap_source
+        original_wrap = svc._fetcher.wrap_source
         captured_timeouts = {}
 
         async def patched_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None, **kwargs):
             captured_timeouts[code] = timeout
             return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout, **kwargs)
 
-        with patch.object(svc, "_wrap_source", side_effect=patched_wrap):
+        with patch.object(svc._fetcher, "wrap_source", side_effect=patched_wrap):
             await svc.fetch_all("2026-01-01", "2026-01-15")
 
         # COMPRAS_GOV should have gotten the failover timeout (40s)
