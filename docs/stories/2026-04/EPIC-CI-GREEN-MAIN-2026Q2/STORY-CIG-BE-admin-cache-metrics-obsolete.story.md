@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Ready
+**Status:** Done
 **Priority:** P2 — Gate
 **Effort:** S (1-3h)
 **Agents:** @dev, @qa, @devops
@@ -69,3 +69,4 @@ E **componentes frontend** em `/admin/cache` que exibem essas métricas.
 - **2026-04-18** — @sm: story criada a partir da triage row #15/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
 - **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. Template FE-07 aplicado consistentemente; mock-drift claro; Investigation Checklist acionável.
 - **2026-04-18** — @dev + usuário: **pivot arquitetural**. Story renomeada de `STORY-CIG-BE-admin-cache-metrics` → `STORY-CIG-BE-admin-cache-metrics-obsolete`. Escopo ajustado: o endpoint permanece (cobre cache passivo); o obsoleto são métricas Prometheus específicas de warming jobs + componentes frontend dependentes. Pré-requisito: `STORY-CIG-BE-cache-warming-deprecate` aplicada primeiro. Plano em `/home/tjsasakifln/.claude/plans/cache-warming-uma-nifty-boot.md`.
+- **2026-04-19** — @sm: Status `Ready` → `Done`. Métricas Prometheus de warming removidas no commit `184109f0` (2026-04-18) juntamente com jobs obsoletos; componentes frontend dependentes já ausentes. Sync de status executado em 2026-04-19 como parte de TIER 0 do plano Board v1.0.

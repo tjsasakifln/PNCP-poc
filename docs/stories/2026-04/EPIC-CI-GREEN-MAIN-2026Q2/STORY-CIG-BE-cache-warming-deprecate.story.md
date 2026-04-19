@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Ready
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** L (8-16h)
 **Agents:** @dev, @qa, @devops
@@ -108,3 +108,4 @@ Consertar mocks dos testes de warming seria **trabalho inútil**. O trabalho fru
 - **2026-04-18** — @sm: story criada a partir da triage row #9/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
 - **2026-04-18** — @po (Pax): *validate-story-draft **GO (7/10)** — Draft → Ready. 15 testes mock-drift; validar `_isolate_arq_module` conforme CLAUDE.md.
 - **2026-04-18** — @dev + usuário: **pivot arquitetural**. Premissa "mock-drift fix" invalidada após reavaliação. DataLake Supabase (50k bids + 2M contratos) é fonte primária; cache warming proativo obsoleto. Story renomeada de `STORY-CIG-BE-cache-warming-dispatch` → `STORY-CIG-BE-cache-warming-deprecate`. Escopo pivotado de "fix mocks" para "deprecar código + deletar testes + alinhar docs". Plano aprovado em `/home/tjsasakifln/.claude/plans/cache-warming-uma-nifty-boot.md`.
+- **2026-04-19** — @sm: Status `Ready` → `Done`. Trabalho implementado e mergeado no commit `184109f0` (2026-04-18): jobs removidos, testes deletados, flags eliminadas, docs alinhados (CLAUDE.md, ROADMAP.md, CHANGELOG.md v0.5.4, architecture-detail.md). Sync de status executado em 2026-04-19 como parte de TIER 0 do plano Board v1.0.
