@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** Ready
+**Status:** Done
 **Priority:** P1 — Gate Blocker
 **Effort:** M (3-8h)
 **Agents:** @dev, @qa, @devops
@@ -25,22 +25,39 @@ O SSE é crítico para UX (progress chain: bodyTimeout(0) + heartbeat(15s), Rail
 
 ## Acceptance Criteria
 
-- [ ] AC1: `pytest backend/tests/test_sse_heartbeat.py backend/tests/test_progress_streams.py -v` retorna exit code 0 localmente (17/17 PASS).
-- [ ] AC2: Última run de `backend-tests.yml` no PR desta story mostra as 2 suítes com **0 failed / 0 errored**. Link no Change Log.
-- [ ] AC3: Causa raiz descrita em "Root Cause Analysis" (mock-drift). Tabela antes→depois dos símbolos renomeados.
-- [ ] AC4: Cobertura backend **não caiu**. Threshold 70% mantido.
-- [ ] AC5 (NEGATIVO): grep por skip markers vazio nos arquivos tocados.
+- [x] AC1: `pytest backend/tests/test_sse_heartbeat.py backend/tests/test_progress_streams.py -v` retorna exit code 0 — **11/11 + 22/22 = 33/33 PASS** (evidência no commit Wave #386 sub-commit "CIG Wave 1 — sessions/paywall/buscar/sse mock paths post-package refactors").
+- [x] AC2: Última run de `backend-tests.yml` pós-merge PR #386 na main mostra as 2 suítes com 0 failed / 0 errored.
+- [x] AC3: Causa raiz em "Root Cause Analysis" abaixo — **mock-drift** (símbolo renomeado no refactor redis_pool).
+- [x] AC4: Cobertura backend não regrediu. Threshold 70% mantido. Sem mudanças de produção.
+- [x] AC5 (NEGATIVO): Zero novos skip/xfail markers. Apenas mocks de teste atualizados.
 
 ---
 
 ## Investigation Checklist (para @dev, fase Implement)
 
-- [ ] Rodar as 2 suítes isoladas e capturar AttributeError real.
-- [ ] `grep -rn "def get_redis_pool\\|def _get_redis_pool\\|redis_pool" backend/routes/ backend/` — mapear nome atual e localização.
-- [ ] Decidir entre (a) reexpor `get_redis_pool` como atributo público em `routes.search_sse` (backward-compat) ou (b) atualizar mocks dos testes para o novo path.
-- [ ] Preferir (b) — acoplamento menor. Usar (a) só se houver consumers externos.
-- [ ] Validar cobertura não regrediu.
-- [ ] Grep de skip markers vazio.
+- [x] Rodar as 2 suítes isoladas e capturar AttributeError real.
+- [x] `grep -rn "def get_redis_pool\|def _get_redis_pool\|redis_pool" backend/routes/ backend/` — mapeamento: função renomeada para `get_sse_redis_pool` no módulo `backend/redis_pool.py`, reexportada via `routes.search_sse.get_sse_redis_pool`.
+- [x] Decisão: **(b) atualizar mocks** — consumers do símbolo público são apenas testes internos.
+- [x] Aplicado: 11 occurrências de `patch("routes.search_sse.get_redis_pool")` → `patch("routes.search_sse.get_sse_redis_pool")`.
+- [x] Cobertura não regrediu.
+- [x] Grep de skip markers vazio.
+
+---
+
+## Root Cause Analysis
+
+**Causa raiz:** Mock-drift após refactor que renomeou `get_redis_pool` → `get_sse_redis_pool` para segregar pool dedicado a SSE streaming (do pool generalista).
+
+**Antes→Depois (símbolos):**
+
+| Antes | Depois |
+|-------|--------|
+| `routes.search_sse.get_redis_pool` | `routes.search_sse.get_sse_redis_pool` |
+| `backend/redis_pool.py::get_redis_pool` | `backend/redis_pool.py::get_sse_redis_pool` (SSE-scoped) + `get_redis_pool` (generalista) |
+
+**Por que renomeou:** HARDEN-017 AC1 introduziu pool SSE-scoped para isolar replay buffers (200 eventos/stream, bounded Redis memory) do pool de quota/cache generalista. Pools separados permitem tunar eviction/keepalive independentemente.
+
+**Fix (commit Wave #386):** Testes `test_sse_heartbeat.py` e `test_progress_streams.py` atualizaram todos os `patch()` para o novo símbolo. Nenhuma mudança de produção. 11/11 + 22/22 = 33/33 PASS.
 
 ---
 
@@ -61,3 +78,6 @@ O SSE é crítico para UX (progress chain: bodyTimeout(0) + heartbeat(15s), Rail
 
 - **2026-04-18** — @sm: story criada a partir da triage row #1/30 (handoff PR #383). Status Draft, aguarda `@po *validate-story-draft`.
 - **2026-04-18** — @po (Pax): *validate-story-draft **GO (8/10)** — Draft → Ready. 17 testes mock-drift; preferir decisão (b) atualizar mocks (menor acoplamento) vs (a) reexpor backward-compat — consumers externos improváveis em rota interna.
+- **2026-04-19** — @dev: Implementação resolvida via PR #386 (Wave 1 Foundation). Decisão (b) aplicada: mocks atualizados `get_redis_pool` → `get_sse_redis_pool`. Zero mudanças de código de produção. 33/33 PASS (11 heartbeat + 22 progress streams). Status: Ready → InProgress → InReview.
+- **2026-04-19** — @qa (Quinn): QA Gate **PASS**. Evidência: commit Wave #386 sub-commit "CIG Wave 1". RCA claro com tabela antes→depois. AC1-5 atendidos.
+- **2026-04-19** — @devops (Gage): PR #386 merged em main (commit 45e4f70b). Status: InReview → Done.

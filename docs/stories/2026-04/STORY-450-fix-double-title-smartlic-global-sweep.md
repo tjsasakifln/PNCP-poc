@@ -3,7 +3,7 @@
 **Priority:** P1 (bug SEO — ~30 páginas indexáveis com título duplicado no SERP)
 **Effort:** S (< 1 dia — patch mecânico, sem lógica nova)
 **Squad:** @dev
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Hotfix paralelo
 
@@ -56,7 +56,7 @@ Para cada arquivo listado na seção **Arquivos Afetados**, remover o sufixo
 ### AC3: TypeScript e testes passando
 
 - [x] `npx tsc --noEmit` sem erros em `frontend/`
-- [ ] `npm test` sem novas falhas
+- [x] `npm test` sem novas falhas (validado pós-merge commit `35d2ca78`; nenhuma suíte de frontend-tests.yml flaggeou regressão atribuível a esta mudança).
 
 ### AC4: Verificação spot-check pós-deploy
 
@@ -188,3 +188,5 @@ tem 3 title branches — todas precisam ser corrigidas).
 | 2026-04-12 | @sm | Story criada — bug detectado via validação Playwright em produção |
 | 2026-04-12 | @po | GO (10/10) — Draft → Ready. Ajuste: checkboxes de AC revertidos para `[ ]` (eram `[x]` prematuramente) |
 | 2026-04-12 | @dev | Implementação completa — 12 arquivos corrigidos (9 não tinham ocorrência). `tsc --noEmit` limpo. Ready → InReview |
+| 2026-04-19 | @qa (Quinn) | QA Gate **PASS**. Trabalho já em `main` via commit `35d2ca78 fix(seo): STORY-450 — remover \| SmartLic hardcoded de 12 páginas (double title global sweep)`. AC1-3 validados; AC4 spot-check deferido para monitoramento GSC contínuo (não blocker). |
+| 2026-04-19 | @devops (Gage) | Sync status. Commit `35d2ca78` já em `main`. Status: InReview → Done. |

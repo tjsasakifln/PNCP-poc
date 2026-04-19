@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P1 — Meta-story
 **Effort:** L (1-2 dias — triage completo dos 292)
 **Agents:** @dev, @qa, @devops
@@ -96,3 +96,6 @@ Groups menores: `import` (18 rows — módulos virando packages), `collection` (
 - **2026-04-18** — @dev: **AC4 fora de escopo desta sessão por design da meta-story** (texto explícito da AC: "não nesta sessão — esta é meta-story de triage"). Handoff para @sm no próximo ciclo via lista de stories-filhas propostas no triage doc. **AC6 já satisfeito** via workflow `.github/workflows/integration-external.yml` existente (criado por STORY-CIG-BE-HTTPS-TIMEOUT 2026-04-16). Validação de invariantes: skip markers pós-triage = 51 (= baseline, zero delta); `git diff backend/tests/` = vazio; `git diff .github/workflows/` = vazio. Status: InProgress → InReview.
 - **2026-04-18** — @po: *validate-story-draft GO (9/10). Concern cosmética: File List mencionava "471 rows" (pré-expansão) — deveria ser "490 rows" para consistência com Change Log e ACs. Aprovado sob ótica de @po, aguardando @qa gate.
 - **2026-04-18** — @dev: apply-qa-fixes — File List linha 78 corrigida de "471 rows" para "490 rows" (consistente com Change Log + ACs). Zero impacto em código ou testes; edit puramente doc.
+- **2026-04-19** — @sm (River): 30 stories-filhas criadas em `main` via commits `bea25c1d docs(story): 30 stories-filhas CIG-BE-* from triage PR #383` + `a17ae498 docs(story): 30 stories-filhas CIG-BE-* from triage PR #383`. Handoff desta meta-story completo — AC4 (criação formal de stories) foi executado via PR #383 ao invés de ser diferido. Wave 0+1+2+3+4 (PR #386) já absorveu ~24 delas.
+- **2026-04-19** — @qa (Quinn): QA Gate **PASS**. Validação: triage doc `backend-failure-triage.md` existe em main; 30 stories-filhas `STORY-CIG-BE-*.story.md` presentes no diretório do epic (validado via `ls docs/stories/2026-04/EPIC-CI-GREEN-MAIN-2026Q2/`); `integration-external.yml` existe. AC1-3, AC5, AC6 atendidos. AC4 executado por @sm fora da sessão original (commit bea25c1d + a17ae498). Meta-story pode ser encerrada.
+- **2026-04-19** — @devops (Gage): Sync status. Triage + stories-filhas já em `main`. Status: InReview → Done.
