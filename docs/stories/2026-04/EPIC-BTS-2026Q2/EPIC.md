@@ -51,9 +51,9 @@ Com base em inspeção de amostras representativas, as 208 falhas se distribuem 
 | STORY-BTS-009 | Observability & Infra Drift | 20 failures | S (2-3h) | P2 | ✅ GO 7/10 |
 | ~~STORY-BTS-010~~ | ~~Billing, Partners, Feature Flags + Misc~~ | — | — | — | ❌ Superseded (split) |
 | STORY-BTS-010a | Billing, Partners & Feature Flags | 14 failures | M (3-5h) | P1 | Ready (criada 2026-04-19 pós-split) |
-| STORY-BTS-010b | PNCP, Security & Infra Misc | 13 failures | M (3-5h) | P1 | Ready (criada 2026-04-19 pós-split) |
+| STORY-BTS-010b | PNCP, Security & Infra Misc | 16 failures | M (3-5h) | P1 | Ready (criada 2026-04-19 pós-split; `test_digest_job` reatribuído de BTS-010a) |
 
-**Mapeamento total:** 198 failures cobertas nas 11 stories ativas + ~10 misc (a confirmar via RCA).
+**Mapeamento total:** 201 failures cobertas nas 11 stories ativas (35+30+15+16+19+13+5+18+20+14+16) + ~7 misc (a confirmar via RCA). Após re-validação @po 2026-04-19, BTS-010a=14 e BTS-010b=16 (total 30 = original BTS-010, contagens reconciliadas).
 
 ---
 
@@ -92,3 +92,4 @@ Stories podem ir em paralelo por @dev distintos — dependências documentadas p
 - **2026-04-19** — @sm (River) + @pm (Morgan): Epic criado. 208 failures triagiadas em 10 stories. Status Ready.
 - **2026-04-19** — @po (Pax): Validação completa. 8 stories GO (BTS-001/002/003/004/005/006/008/009). 2 NO-GO corrigidas no mesmo dia: BTS-007 (AC bifurcado — direção (a) emitida), BTS-010 (DoD impreciso — split em 010a+010b aprovado). Matriz + análise individual em `po-validation-report.md`.
 - **2026-04-19** — @sm (River): Correções aplicadas. BTS-007 reescrita (path (a) único, +Valor/Riscos). BTS-010 marcada Superseded, criadas BTS-010a (billing 14 testes, M) e BTS-010b (PNCP/security 13 testes, M). Epic stories: 10 → 11 ativas. Todas Ready.
+- **2026-04-19** — @po (Pax): Re-validação 11/11 GO. Reconciliação BTS-010a/010b: `test_digest_job.py` movido de 010a para 010b (afinidade jobs/cron); contagens corrigidas → BTS-010a=14 (5 arquivos), BTS-010b=16 (12 arquivos), soma=30 = original BTS-010. EPIC **APROVADO** para implementação. Detalhes em `po-validation-report.md` seção "Re-validação 2026-04-19 (pós-correções)".

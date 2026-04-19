@@ -50,16 +50,15 @@ Esta sub-story agrupa **14 testes** em 1 domínio coerente: **revenue infra** (b
 - `backend/tests/test_harden028_stripe_events_purge.py` (1 failure)
 - `backend/tests/test_feature_flag_matrix.py` (4 failures)
 - `backend/tests/test_feature_flags_admin.py` (2 failures)
-- `backend/tests/test_digest_job.py` (1 failure — pode ser absorvido em BTS-010b se RCA apontar misc)
 
-**Total: 15 failures em 6 arquivos** (incluindo digest_job provisoriamente aqui por afinidade de cron/admin).
+**Total: 14 failures em 5 arquivos.** (`test_digest_job.py` movido para BTS-010b por afinidade com infra/jobs misc, conforme decisão @po na re-validação 2026-04-19.)
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] AC1: `pytest backend/tests/test_partners.py backend/tests/test_dunning.py backend/tests/test_harden028_stripe_events_purge.py backend/tests/test_feature_flag_matrix.py backend/tests/test_feature_flags_admin.py backend/tests/test_digest_job.py -v --timeout=30` retorna exit code 0 (15/15 PASS).
-- [ ] AC2: `backend-tests.yml` run mostra 6 arquivos com **0 failed**. Link no Change Log.
+- [ ] AC1: `pytest backend/tests/test_partners.py backend/tests/test_dunning.py backend/tests/test_harden028_stripe_events_purge.py backend/tests/test_feature_flag_matrix.py backend/tests/test_feature_flags_admin.py -v --timeout=30` retorna exit code 0 (14/14 PASS).
+- [ ] AC2: `backend-tests.yml` run mostra 5 arquivos com **0 failed**. Link no Change Log.
 - [ ] AC3: RCA distinguindo (a) mock-drift stripe, (b) feature flag default change, (c) partner route path drift.
 - [ ] AC4: Cobertura backend não caiu (threshold 70%).
 - [ ] AC5 (NEGATIVO): zero quarantine novas.
@@ -84,3 +83,4 @@ Esta sub-story agrupa **14 testes** em 1 domínio coerente: **revenue infra** (b
 ## Change Log
 
 - **2026-04-19** — @sm (River): Story criada do split BTS-010 (Opção A do @po review). Status Ready.
+- **2026-04-19** — @po (Pax): Re-validação **GO 9/10**. Ajuste aplicado: `test_digest_job.py` removido do escopo (movido para BTS-010b por afinidade com infra/jobs misc); contagens reconciliadas (14 testes em 5 arquivos). Pontos atendidos: P1 título, P2 contexto + split rationale, P3 ACs testáveis, P4 Escopo IN/OUT formal, P5 deps (BTS-001+003), P6 Effort M, P7 Valor (3 bullets), P8 Riscos com mitigação, P10 alinhado ao EPIC. P9 DoD coberto pelos ACs (sem seção dedicada, mas verificável). Story confirmada **Ready**.

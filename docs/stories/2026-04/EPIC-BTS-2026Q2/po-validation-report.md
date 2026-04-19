@@ -9,8 +9,9 @@
 
 ## Veredicto Agregado do EPIC
 
-> **BLOQUEADO** — 2 stories em NO-GO. 8 stories aprovadas para desenvolvimento imediato.
-> O EPIC só inicia quando BTS-007 e BTS-010 forem corrigidas.
+> **HISTÓRICO (validação inicial 2026-04-19):** **BLOQUEADO** — 2 stories em NO-GO. 8 stories aprovadas para desenvolvimento imediato. O EPIC só inicia quando BTS-007 e BTS-010 forem corrigidas.
+>
+> **ATUAL (re-validação 2026-04-19 pós-correções):** ✅ **APROVADO — 11/11 stories ativas Ready.** Ver seção "Re-validação 2026-04-19 (pós-correções)" no final deste relatório para detalhes.
 
 ---
 
@@ -261,3 +262,77 @@ As lacunas sistemáticas em P4 (Escopo) e P8 (Riscos) devem ser endereçadas no 
 ---
 
 *Relatório gerado em 2026-04-19 por @po (Pax) via validação manual das 10 stories EPIC-BTS-2026Q2.*
+
+---
+
+## Re-validação 2026-04-19 (pós-correções)
+
+**Validador:** @po (Pax)
+**Trigger:** Usuário solicitou validação completa para que todas as stories estejam Ready para implementação.
+**Escopo:** Re-avaliar BTS-007 (corrigida pelo @sm) e BTS-010 (split em 010a + 010b pelo @sm via Opção A); confirmar 8 stories já-Ready preservadas.
+
+### Veredicto Agregado Atualizado
+
+> ✅ **APROVADO — 11/11 stories ativas Ready.** EPIC **liberado** para implementação iniciando em **BTS-001**.
+> A story original BTS-010 fica como `Status: Superseded` (audit trail).
+
+### Matriz de Pontuação Final
+
+| Story | Status Pré | Ação Aplicada | Score Atual | Veredicto |
+|-------|------------|---------------|-------------|-----------|
+| BTS-001 | Ready (8/10) | Nenhuma | 8/10 | ✅ GO |
+| BTS-002 | Ready (8/10) | Nenhuma | 8/10 | ✅ GO |
+| BTS-003 | Ready (7/10) | Nenhuma | 7/10 | ✅ GO |
+| BTS-004 | Ready (7/10) | Nenhuma | 7/10 | ✅ GO |
+| BTS-005 | Ready (7/10) | Nenhuma | 7/10 | ✅ GO |
+| BTS-006 | Ready (7/10) | Nenhuma | 7/10 | ✅ GO |
+| BTS-007 | Draft (4/10) | @sm reescreveu: path (a) único, removido AC bifurcado, +Escopo/Valor/Riscos/DoD | **10/10** | ✅ GO |
+| BTS-008 | Ready (8/10) | Nenhuma | 8/10 | ✅ GO |
+| BTS-009 | Ready (7/10) | Nenhuma | 7/10 | ✅ GO |
+| ~~BTS-010~~ | ~~Draft (6/10)~~ | Marcada **Superseded** (split via Opção A) | — | ⛔ Substituída |
+| BTS-010a (novo) | — | @sm criou (14 testes, M); @po removeu `test_digest_job` (afinidade infra→010b) | **9/10** | ✅ GO |
+| BTS-010b (novo) | — | @sm criou (originalmente 13 testes); @po incorporou `test_digest_job` e reconciliou contagem para **16 testes em 12 arquivos** | **9/10** | ✅ GO |
+
+**Soma de testes BTS-010a + BTS-010b = 14 + 16 = 30 = total original BTS-010** ✓ (reconciliação aritmética validada).
+
+### Mudanças Aplicadas pelo @po nesta Re-validação
+
+1. **BTS-010a:** Removido `backend/tests/test_digest_job.py` do escopo (era "provisório aqui"); contagens ajustadas no título, AC1, AC2 e seção Total. Resultado: 14 testes exatos em 5 arquivos.
+2. **BTS-010b:** Adicionado `backend/tests/test_digest_job.py` ao grupo "Infra & Jobs Misc"; título atualizado de "13 testes" → "16 testes"; AC1 expandido com o arquivo; total interno 13 → 16. Resultado: 16 testes exatos em 12 arquivos.
+3. **EPIC.md:** Tabela atualizada com BTS-010b=16 failures; mapeamento total recalculado para 201 failures cobertas; Change Log com entrada da re-validação.
+4. **Change Logs (BTS-007, BTS-010a, BTS-010b):** Entrada do @po documentando re-validação GO + score + 10 pontos atendidos.
+
+### Pontuação por Ponto (stories revalidadas)
+
+| Ponto | BTS-007 | BTS-010a | BTS-010b |
+|-------|---------|----------|----------|
+| P1 Título claro | ✓ | ✓ | ✓ |
+| P2 Descrição completa | ✓ (decisão emitida) | ✓ (split rationale) | ✓ (split + security flag) |
+| P3 ACs testáveis | ✓ (5 ACs + grep neg) | ✓ (5 ACs + pytest exato) | ✓ (5 ACs + pytest exato) |
+| P4 Escopo IN/OUT | ✓ (seção formal) | ✓ (seção formal) | ✓ (seção formal) |
+| P5 Dependências | ✓ (nenhum) | ✓ (BTS-001+003) | ✓ (BTS-001+003 + cross-ref STORY-4.5) |
+| P6 Estimativa | ✓ (S 2-3h) | ✓ (M 3-5h) | ✓ (M 3-5h) |
+| P7 Valor | ✓ (3 bullets) | ✓ (3 bullets) | ✓ (3 bullets) |
+| P8 Riscos | ✓ (2 itens + mitig) | ✓ (2 itens + mitig) | ✓ (2 itens + mitig) |
+| P9 DoD | ✓ (seção dedicada) | △ (coberto pelos ACs) | △ (coberto pelos ACs) |
+| P10 Alinhamento Epic | ✓ | ✓ | ✓ |
+| **Total** | **10/10** | **9/10** | **9/10** |
+
+Todas acima do threshold ≥ 7/10 → **GO**.
+
+### Próximos Passos Atualizados
+
+1. **@dev** pode iniciar **BTS-001** imediatamente (sem pré-requisitos; bloqueia BTS-002/006/008/010a).
+2. **Coordenação @dev BTS-005** ↔ owner de `STORY-CIG-BE-consolidation-helpers-private` antes de implementar (risco real de trabalho duplicado).
+3. **Escalation procedure pré-acordada @dev BTS-008** ↔ @architect: se qualquer teste revelar prod bug real (não mock-drift), PAUSAR e escalar antes de mergear.
+4. **Escalation procedure pré-acordada @dev BTS-010b** ↔ @architect: `test_debt101_security_critical` é P0 — se fail é exploit-shaped (path traversal, SQL injection, auth bypass), abrir issue P0 + Sentry alert; não mergear com vuln aberta.
+5. **Cross-ref BTS-010b** ↔ STORY-4.5 (PNCP canary): consultar `smartlic_pncp_max_page_size_changed_total` antes de tocar `test_pncp_*` — se canary triggered, falha é correta e indica drift real da API.
+6. **@devops** pode preparar branch `fix/bts-007-integration-external-workflow` (já iniciado em sessão anterior) com workflow `backend-tests-external.yml` e exclusão de `tests/integration/` no gate principal.
+
+### Observação Operacional
+
+Durante esta re-validação, foi detectada perda de 2 arquivos untracked do trabalho @dev (`backend/tests/test_pipeline_cascade_unit.py` e `backend/tests/test_queue_worker_inline_unit.py`) e do workflow `backend-tests-external.yml` em consequência de operação cruzada de checkout entre branches. Esses arquivos haviam sido criados no branch `fix/bts-007-integration-external-workflow` mas não estavam stageados — o @dev precisará recriá-los ao retomar a implementação BTS-007 (a story BTS-007 já documenta exatamente o que precisa ser criado, portanto a perda é recuperável).
+
+---
+
+*Re-validação concluída em 2026-04-19 por @po (Pax). Veredicto agregado: **EPIC-BTS-2026Q2 APROVADO** — 11/11 stories ativas Ready, soma de testes consistente (30 = original BTS-010), todos os Change Logs atualizados.*
