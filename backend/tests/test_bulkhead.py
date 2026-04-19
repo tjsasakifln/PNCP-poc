@@ -133,25 +133,21 @@ class TestConfigurableTimeouts:
         """Env vars override default timeouts."""
         # CIG-BE-consolidation-helpers-private (TD-008): config became a package
         # (config/), so reloading `config` no longer re-evaluates the submodule
-        # where the env-var constants live. Reload `config.pncp` + `bulkhead`
-        # (which imports the constants at module load time).
+        # where the env-var constants live. Reload `config.pncp` instead.
         import importlib
         import config
         import config.pncp
-        import bulkhead as _bulkhead_mod
         importlib.reload(config.pncp)
         importlib.reload(config)
-        importlib.reload(_bulkhead_mod)
         try:
-            _bulkhead_mod.reset_registry()
-            bulkheads = _bulkhead_mod.initialize_bulkheads()
+            reset_registry()
+            bulkheads = initialize_bulkheads()
             assert bulkheads["PNCP"].timeout == 120.0
             assert bulkheads["PORTAL_COMPRAS"].timeout == 45.0
             assert bulkheads["COMPRAS_GOV"].timeout == 60.0
         finally:
             importlib.reload(config.pncp)
             importlib.reload(config)
-            importlib.reload(_bulkhead_mod)
 
     @patch.dict("os.environ", {
         "PNCP_BULKHEAD_CONCURRENCY": "10",
