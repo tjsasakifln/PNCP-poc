@@ -839,7 +839,10 @@ class TestOrgLevelQuotaIsolation:
         """check_and_increment_org_quota_atomic delegates with org_id as quota subject."""
         from quota import check_and_increment_org_quota_atomic
 
-        with patch("quota.check_and_increment_quota_atomic", return_value=(True, 1, 4999)) as mock_fn:
+        # CIG-BE-story-drift-billing-webhooks-correlation: check_and_increment_org_quota_atomic
+        # lives in quota.quota_atomic and calls check_and_increment_quota_atomic in the
+        # same module — patch the source module so the local reference is replaced.
+        with patch("quota.quota_atomic.check_and_increment_quota_atomic", return_value=(True, 1, 4999)) as mock_fn:
             result = check_and_increment_org_quota_atomic(
                 org_id="org-abc",
                 user_id="user-001",

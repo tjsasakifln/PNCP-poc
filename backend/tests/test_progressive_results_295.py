@@ -386,7 +386,11 @@ async def test_tracker_emit_source_error():
     assert event.progress == -1
     assert "PORTAL_COMPRAS" in event.message
     assert event.detail["source"] == "PORTAL_COMPRAS"
-    assert event.detail["error"] == "Connection refused"
+    # CIG-BE-progressive-partial: emit_source_error now prefixes the error
+    # message with the source code so SSE consumers can render contextual
+    # toasts without relying on the separate "source" field.
+    assert "Connection refused" in event.detail["error"]
+    assert event.detail["error"].startswith("PORTAL_COMPRAS:")
 
 
 @pytest.mark.asyncio

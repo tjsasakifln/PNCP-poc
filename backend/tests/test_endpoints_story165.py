@@ -32,8 +32,8 @@ class TestMeEndpoint:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("quota.get_plan_capabilities")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_plan_capabilities")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     @patch("supabase_client.get_supabase")
     def test_returns_user_profile_with_capabilities(
         self, mock_get_supabase, mock_get_used, mock_get_plan_caps, mock_check_roles
@@ -94,7 +94,7 @@ class TestMeEndpoint:
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     def test_returns_trial_info_for_free_users(
         self, mock_get_used, mock_get_supabase, mock_check_roles
     ):
@@ -138,7 +138,7 @@ class TestMeEndpoint:
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("quota.create_fallback_quota_info")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(
         self, mock_get_supabase, mock_check_quota, mock_create_fallback, mock_check_roles
@@ -188,7 +188,7 @@ class TestBuscarEndpointQuotaValidation:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     def test_blocks_request_when_quota_exhausted(self, mock_check_quota, mock_rate_limiter):
         """Should return 403 when monthly quota exhausted."""
         cleanup = setup_auth_override("user-quota-exhausted-story165")
@@ -229,7 +229,7 @@ class TestBuscarEndpointQuotaValidation:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     def test_blocks_request_when_trial_expired(self, mock_check_quota, mock_rate_limiter):
         """Should return 403 when trial expired."""
         cleanup = setup_auth_override("user-trial-expired-story165")
@@ -271,7 +271,7 @@ class TestBuscarEndpointQuotaValidation:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
     @patch("quota.check_and_increment_quota_atomic")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("routes.search.PNCPClient")
     def test_increments_quota_on_successful_search(
@@ -334,7 +334,7 @@ class TestBuscarEndpointExcelGating:
     @patch("pipeline.stages.generate.upload_excel")
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_and_increment_quota_atomic")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("routes.search.PNCPClient")
     @patch("routes.search.create_excel")
@@ -407,7 +407,7 @@ class TestBuscarEndpointExcelGating:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("routes.search.PNCPClient")
     def test_skips_excel_for_consultor_plan(
@@ -455,8 +455,10 @@ class TestBuscarEndpointExcelGating:
 
             assert data["excel_available"] is False
             assert data["excel_base64"] is None
-            assert "Máquina" in data["upgrade_message"]
-            assert "R$ 597/mês" in data["upgrade_message"]
+            # GTM-002: "Máquina" plan was renamed to "SmartLic Pro" (CLAUDE.md
+            # Pricing); upgrade copy was updated accordingly. Story-165 originally
+            # expected the old branding.
+            assert "SmartLic Pro" in data["upgrade_message"]
         finally:
             cleanup()
 
@@ -466,7 +468,7 @@ class TestBuscarEndpointFallbackBehavior:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("routes.search.PNCPClient")
     def test_continues_on_quota_increment_failure(
