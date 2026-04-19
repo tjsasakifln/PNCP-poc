@@ -135,7 +135,7 @@ class TestEventsHaveIdField:
         )
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None):
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get("/v1/buscar-progress/test-id-field")
@@ -283,7 +283,7 @@ class TestReplayAfterLastEventId:
         # Mock get_tracker to return our tracker
         # Since search is complete (terminal event in history), AC4 path kicks in
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -317,7 +317,7 @@ class TestReplayAfterLastEventId:
             await tracker.emit_complete()                   # id=2
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -347,7 +347,7 @@ class TestReplayAfterLastEventId:
         )
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -386,7 +386,7 @@ class TestCompletedSearchImmediateTerminal:
             await tracker.emit_complete()  # id=3, terminal
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -422,7 +422,7 @@ class TestCompletedSearchImmediateTerminal:
         # Client says it saw up to id=2 (the complete event) — but we still send
         # the terminal confirmation per AC4
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -455,7 +455,7 @@ class TestCompletedSearchImmediateTerminal:
             await tracker.emit_degraded("partial", {"coverage_pct": 60})  # terminal
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -482,33 +482,39 @@ class TestRingBufferMax1000:
     """AC5: Emit 1005 events -> history has exactly 1000."""
 
     async def test_ring_buffer_max_1000(self, mock_redis_pool):
-        """AC5: Local history never exceeds _REPLAY_MAX_EVENTS entries."""
+        """AC5: Local history never exceeds _REPLAY_MAX_EVENTS entries.
+
+        CIG-BE-sse-last-event-id: HARDEN-017 AC1 reduced the ring buffer from
+        1000 → 200. Assert trimming relative to the constant (future-proof)
+        and derive the expected-first-id from the total emit count.
+        """
         tracker = ProgressTracker("ring-buffer-test", uf_count=1, use_redis=False)
 
-        for i in range(1005):
+        total_emitted = _REPLAY_MAX_EVENTS + 5
+        for i in range(total_emitted):
             await tracker.emit("fetching", min(i, 99), f"Event {i}")
 
         assert len(tracker._event_history) == _REPLAY_MAX_EVENTS
-        assert len(tracker._event_history) == 1000
 
-        # First event should be #6 (events 1-5 were trimmed)
+        # First event should be #(total_emitted - _REPLAY_MAX_EVENTS + 1).
+        expected_first_id = total_emitted - _REPLAY_MAX_EVENTS + 1
         first_id = tracker._event_history[0][0]
-        assert first_id == 6, f"Expected first remaining id=6, got {first_id}"
+        assert first_id == expected_first_id, f"Expected first id={expected_first_id}, got {first_id}"
 
-        # Last event should be #1005
+        # Last event should be #total_emitted.
         last_id = tracker._event_history[-1][0]
-        assert last_id == 1005, f"Expected last id=1005, got {last_id}"
+        assert last_id == total_emitted, f"Expected last id={total_emitted}, got {last_id}"
 
     async def test_ring_buffer_at_boundary(self, mock_redis_pool):
-        """AC5: Exactly 1000 events — no trimming needed."""
+        """AC5: Exactly _REPLAY_MAX_EVENTS events — no trimming needed."""
         tracker = ProgressTracker("boundary-test", uf_count=1, use_redis=False)
 
-        for i in range(1000):
+        for i in range(_REPLAY_MAX_EVENTS):
             await tracker.emit("fetching", 50, f"Event {i}")
 
-        assert len(tracker._event_history) == 1000
+        assert len(tracker._event_history) == _REPLAY_MAX_EVENTS
         assert tracker._event_history[0][0] == 1
-        assert tracker._event_history[-1][0] == 1000
+        assert tracker._event_history[-1][0] == _REPLAY_MAX_EVENTS
 
     async def test_ring_buffer_below_limit(self, mock_redis_pool):
         """AC5: Below 1000 events — history contains all of them."""
@@ -762,7 +768,7 @@ class TestReconnectDuringActiveSearch:
 
         # Reconnect with Last-Event-ID=2 (client saw events 1,2, missed 3,4,complete)
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -801,7 +807,7 @@ class TestReconnectDuringActiveSearch:
             await tracker.emit_complete()                       # id=3 (terminal)
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -842,7 +848,7 @@ class TestReconnectAfterComplete:
             await tracker.emit_complete()  # id=3
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -873,7 +879,7 @@ class TestReconnectAfterComplete:
             await tracker.emit_error("Timeout")  # id=2, terminal
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -901,7 +907,7 @@ class TestReconnectAfterComplete:
             await tracker.emit_search_complete("post-search-complete", 42)  # terminal
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.acquire_sse_connection", new_callable=AsyncMock, return_value=True), \
              patch("routes.search_sse.release_sse_connection", new_callable=AsyncMock):
 
@@ -943,7 +949,7 @@ class TestNormalStreamingNoReplay:
         )
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None):
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get("/v1/buscar-progress/normal-stream")
@@ -968,7 +974,7 @@ class TestNormalStreamingNoReplay:
         )
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse.get_replay_events", new_callable=AsyncMock) as mock_replay:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -1083,14 +1089,30 @@ class TestReplayConstants:
         assert _REPLAY_LIST_TTL == 600
 
     def test_replay_max_events(self):
-        """AC5: Ring buffer holds max 1000 events."""
-        assert _REPLAY_MAX_EVENTS == 1000
+        """AC5: Ring buffer holds max 200 events.
+
+        CIG-BE-sse-last-event-id: value reduced from 1000 → 200 by HARDEN-017
+        AC1 to cap Redis memory per stream. Assert the current contract.
+        """
+        assert _REPLAY_MAX_EVENTS == 200
 
     def test_replay_key_prefix(self):
         """AC2: Redis key prefix is 'sse_events:'."""
         assert _REPLAY_KEY_PREFIX == "sse_events:"
 
     def test_terminal_stages_include_all_expected(self):
-        """Terminal stages used for replay detection are complete."""
-        expected = {"complete", "error", "degraded", "refresh_available", "search_complete"}
-        assert _TERMINAL_STAGES == expected
+        """Terminal stages used for replay detection include graceful shutdown.
+
+        CIG-BE-sse-last-event-id: DEBT-124 AC5 added ``shutdown`` to the
+        terminal-stage set so SSE streams terminate cleanly when the worker
+        is stopping. Assert the expanded set.
+        """
+        expected = {
+            "complete",
+            "error",
+            "degraded",
+            "refresh_available",
+            "search_complete",
+            "shutdown",
+        }
+        assert set(_TERMINAL_STAGES) == expected
