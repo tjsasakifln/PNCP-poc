@@ -4,7 +4,7 @@
 **Priority:** P2 — Preserva zero-failure policy no gate sem depender de infra externa
 **Effort:** S (2-3h)
 **Agents:** @dev + @devops
-**Status:** InReview
+**Status:** Done
 
 ---
 
@@ -103,3 +103,4 @@
 - **2026-04-19** — @sm (River): Correções aplicadas. ACs atualizados para refletir somente path (a). Removido AC2b. Adicionadas seções Escopo, Valor, Riscos. Status Draft → Ready. Aguarda re-validação @po.
 - **2026-04-19** — @po (Pax): Re-validação **GO 10/10**. Todos os 10 pontos atendidos. Story confirmada **Ready** para implementação.
 - **2026-04-19** — @dev: Implementação AC1-AC5 completa em PR #395 (commit `7c031b53`). `backend-tests.yml` agora ignora `tests/integration/`; novo workflow `backend-tests-external.yml` executa integration não-blocante (PR + schedule diário 09:00 UTC). 6 unit tests equivalentes criados (`test_pipeline_cascade_unit.py` + `test_queue_worker_inline_unit.py`) passam 6/6 localmente. Grep de skip/xfail markers vazio. Status Ready → InReview. DoD itens de CI (run live, coverage report) ficam gated na merge de PR #395.
+- **2026-04-19** — @devops: PR #395 merged to main. Commit `52720b57`. Integration tests now live in `backend-tests-external.yml` (non-blocking). Status InReview → Done.

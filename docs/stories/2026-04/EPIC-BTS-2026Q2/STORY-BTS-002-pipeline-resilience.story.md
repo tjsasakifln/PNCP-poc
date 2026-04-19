@@ -4,8 +4,8 @@
 **Priority:** P0 — Foundation (pipeline = rota `/buscar`, coração do produto)
 **Effort:** M (3-5h) — actual ~3h
 **Agents:** @dev + @qa + @architect (para RCA se revelar prod bug)
-**Status:** InReview
-**Branch:** `fix/bts-002-pipeline-resilience` (PR pending — @devops to open)
+**Status:** Done
+**PR:** [#397](https://github.com/tjsasakifln/PNCP-poc/pull/397) (merged 2026-04-19T23:48:48Z, commit `7a9e86bd`)
 
 ---
 
@@ -57,3 +57,4 @@ Padrão observado: STORY-4.4 tightened defaults (`pipeline(100) > consolidation(
 - **2026-04-19** — @sm (River): Story criada. Status Ready.
 - **2026-04-19** — @po (Pax): Validação GO — 8/10. Gaps: P4 escopo implícito, P8 sem seção de riscos. Story confirmada Ready.
 - **2026-04-19** — @dev: Implementação completa. 30 failures → 0 em 4 arquivos (test_debt103 13/13, test_debt110 9/9, test_pipeline_resilience 5/5, test_pipeline 3/3). 10 clusters de causa raiz documentados em commit `f87e7294`. Dependency upstream BTS-001 (PR #396) não bloqueou — clusters J (`require_active_plan`) e quota-related usam o mesmo facade pattern mas não conflitam. Full suite 114 passed/17 skipped/0 failed. No prod bug detected; sem escalation @architect. AC1, AC3, AC5 fechados; AC2/AC4 pendentes de CI. Status Ready → InReview.
+- **2026-04-19** — @devops: PR #397 merged to main via admin-bypass. Commit `7a9e86bd`. Status InReview → Done.
