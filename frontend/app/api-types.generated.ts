@@ -4395,6 +4395,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/recommended-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Recommended Plan
+         * @description STORY-BIZ-002 AC2: return the upsell-eligible plan for the current user.
+         *
+         *     Detects consultancy profiles by CNAE primário (divisions 70.2 / 74.9 / 82.9)
+         *     and recommends the higher-ARPU Consultoria plan. Non-consultancies see the
+         *     default Pro recommendation. Cached in Redis for 24h keyed by user_id.
+         */
+        get: operations["get_recommended_plan_v1_user_recommended_plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks/stripe": {
         parameters: {
             query?: never;
@@ -7815,6 +7839,13 @@ export interface components {
              * @description Estimated value in BRL
              */
             valor: number;
+        };
+        /** RecommendedPlanResponse */
+        RecommendedPlanResponse: {
+            /** Plan Key */
+            plan_key: string;
+            /** Reason */
+            reason: string;
         };
         /** RecoveryCodesResponse */
         RecoveryCodesResponse: {
@@ -14849,6 +14880,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExtensionsStatusResponse"];
+                };
+            };
+        };
+    };
+    get_recommended_plan_v1_user_recommended_plan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendedPlanResponse"];
                 };
             };
         };
