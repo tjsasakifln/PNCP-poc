@@ -4,7 +4,7 @@
 **Priority:** P2 — Preserva zero-failure policy no gate sem depender de infra externa
 **Effort:** S (2-3h)
 **Agents:** @dev + @devops
-**Status:** Ready
+**Status:** InReview
 
 ---
 
@@ -64,20 +64,20 @@
 
 ## Acceptance Criteria
 
-- [ ] AC1: Decisão documentada: **direção (a) aprovada pelo @po em 2026-04-19**. Mover `tests/integration/` para workflow `backend-tests-external.yml` não-bloqueante.
-- [ ] AC2: `.github/workflows/backend-tests.yml` exclui `tests/integration/` do gate (adicionar `--ignore=tests/integration/` ao pytest command).
-- [ ] AC3: `.github/workflows/backend-tests-external.yml` criado, executa `pytest tests/integration/` com Redis+Supabase service containers (ou mocks fortes), roda em PR + schedule diário; **não bloqueia merge** (`continue-on-error: true` ou job `if: github.event_name == 'schedule'`).
-- [ ] AC4: Cobertura backend **não caiu** (threshold 70% mantido). Novos unit tests equivalentes adicionados conforme File List.
-- [ ] AC5 (NEGATIVO): grep `@pytest.mark.skip|pytest.skip\\(|@pytest.mark.xfail` vazio nos arquivos tocados — Zero Quarentena policy.
+- [x] AC1: Decisão documentada: **direção (a) aprovada pelo @po em 2026-04-19**. Mover `tests/integration/` para workflow `backend-tests-external.yml` não-bloqueante. Implementado em PR #395.
+- [x] AC2: `.github/workflows/backend-tests.yml` exclui `tests/integration/` do gate (adicionado `--ignore=tests/integration/` ao pytest command). Commit `7c031b53`.
+- [x] AC3: `.github/workflows/backend-tests-external.yml` criado. `continue-on-error: true` (non-blocking), triggers PR + push + schedule diário 09:00 UTC, upload JUnit artifact 7d retention, warning em scheduled failure. Commit `7c031b53`.
+- [x] AC4: 6 unit tests equivalentes criados (`test_pipeline_cascade_unit.py` 3 tests + `test_queue_worker_inline_unit.py` 3 tests) passam localmente 6/6. Cobertura ≥ 70% a validar pós-merge via CI report.
+- [x] AC5 (NEGATIVO): grep `@pytest.mark.skip|pytest.skip\\(|@pytest.mark.xfail|\\.only\\(` retornou vazio nos 4 arquivos tocados. Zero Quarentena preservada.
 
 ---
 
 ## Definition of Done
 
-- [ ] AC1-AC5 todos marcados `[x]`
-- [ ] `backend-tests.yml` CI run mostra que `tests/integration/` não é mais executado no gate
-- [ ] `backend-tests-external.yml` executa em PR + schedule diário; última run tem status visível
-- [ ] Coverage report ≥ 70% mantido pós-mudança (evidência: link run ID no Change Log)
+- [x] AC1-AC5 todos marcados `[x]`
+- [ ] `backend-tests.yml` CI run mostra que `tests/integration/` não é mais executado no gate (validar pós-merge PR #395)
+- [ ] `backend-tests-external.yml` executa em PR + schedule diário; última run tem status visível (validar pós-merge PR #395)
+- [ ] Coverage report ≥ 70% mantido pós-mudança (evidência: link run ID no Change Log pós-merge PR #395)
 
 ---
 
@@ -101,3 +101,5 @@
 - **2026-04-19** — @sm (River): Story criada. Status Ready. @po precisa aprovar direção (a) vs (b) antes de implement.
 - **2026-04-19** — @po (Pax): Validação NO-GO — 4/10. ACs bifurcados sem direção decidida (P3 ✗), DoD incompleto (P9 ✗). Status revertido para Draft. DECISÃO EMITIDA: Direção (a) aprovada.
 - **2026-04-19** — @sm (River): Correções aplicadas. ACs atualizados para refletir somente path (a). Removido AC2b. Adicionadas seções Escopo, Valor, Riscos. Status Draft → Ready. Aguarda re-validação @po.
+- **2026-04-19** — @po (Pax): Re-validação **GO 10/10**. Todos os 10 pontos atendidos. Story confirmada **Ready** para implementação.
+- **2026-04-19** — @dev: Implementação AC1-AC5 completa em PR #395 (commit `7c031b53`). `backend-tests.yml` agora ignora `tests/integration/`; novo workflow `backend-tests-external.yml` executa integration não-blocante (PR + schedule diário 09:00 UTC). 6 unit tests equivalentes criados (`test_pipeline_cascade_unit.py` + `test_queue_worker_inline_unit.py`) passam 6/6 localmente. Grep de skip/xfail markers vazio. Status Ready → InReview. DoD itens de CI (run live, coverage report) ficam gated na merge de PR #395.
