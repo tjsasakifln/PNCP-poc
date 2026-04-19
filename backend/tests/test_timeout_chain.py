@@ -59,21 +59,21 @@ class TestTimeoutChainInvariant:
         )
 
     def test_degraded_timeout_greater_than_normal(self):
-        """AC2: STAB-003 — In degraded mode, abort per-UF FASTER (15s) than normal (30s).
+        """AC2: STORY-4.4 TD-SYS-003 — In degraded mode, abort per-UF FASTER (12s) than normal (25s).
         Rationale: degraded mode = PNCP is struggling; cut losses quickly, don't wait as long.
         """
-        from pncp_client import PNCP_TIMEOUT_PER_UF, PNCP_TIMEOUT_PER_UF_DEGRADED
+        from config.pncp import PNCP_TIMEOUT_PER_UF, PNCP_TIMEOUT_PER_UF_DEGRADED
 
-        # STAB-003: degraded(15) < normal(30) — abort stale UFs faster under degraded conditions
-        assert PNCP_TIMEOUT_PER_UF == 30, (
-            f"Normal per-UF timeout expected 30s, got {PNCP_TIMEOUT_PER_UF}"
+        # STORY-4.4 TD-SYS-003: tightened from 30/15 to 25/12 per Time Budget Waterfall
+        assert PNCP_TIMEOUT_PER_UF == 25, (
+            f"Normal per-UF timeout expected 25s, got {PNCP_TIMEOUT_PER_UF}"
         )
-        assert PNCP_TIMEOUT_PER_UF_DEGRADED == 15, (
-            f"Degraded per-UF timeout expected 15s, got {PNCP_TIMEOUT_PER_UF_DEGRADED}"
+        assert PNCP_TIMEOUT_PER_UF_DEGRADED == 12, (
+            f"Degraded per-UF timeout expected 12s, got {PNCP_TIMEOUT_PER_UF_DEGRADED}"
         )
         assert PNCP_TIMEOUT_PER_UF_DEGRADED < PNCP_TIMEOUT_PER_UF, (
             f"Degraded ({PNCP_TIMEOUT_PER_UF_DEGRADED}) must be < normal ({PNCP_TIMEOUT_PER_UF}) — "
-            f"cut losses faster in degraded mode (STAB-003)"
+            f"cut losses faster in degraded mode (STORY-4.4)"
         )
 
     def test_per_modality_fits_within_per_uf(self):
@@ -94,14 +94,14 @@ class TestPerUfTimeout:
     """AC1, AC2, AC5: PER_UF_TIMEOUT values and env var configurability."""
 
     def test_normal_mode_default_90s(self):
-        """AC1: Normal mode PER_UF_TIMEOUT = 30s (STAB-003: reduced from 90s)."""
+        """AC1: Normal mode PER_UF_TIMEOUT = 25s (STORY-4.4 TD-SYS-003: tightened from 30s per Time Budget Waterfall)."""
         from pncp_client import PNCP_TIMEOUT_PER_UF
-        assert PNCP_TIMEOUT_PER_UF == 30.0
+        assert PNCP_TIMEOUT_PER_UF == 25.0
 
     def test_degraded_mode_default_120s(self):
-        """AC2: Degraded mode PER_UF_TIMEOUT = 15s (STAB-003: reduced from 120s, abort faster under degraded conditions)."""
-        from pncp_client import PNCP_TIMEOUT_PER_UF_DEGRADED
-        assert PNCP_TIMEOUT_PER_UF_DEGRADED == 15.0
+        """AC2: Degraded mode PER_UF_TIMEOUT = 12s (STORY-4.4 TD-SYS-003: tightened from 15s — abort faster under degraded conditions)."""
+        from config.pncp import PNCP_TIMEOUT_PER_UF_DEGRADED
+        assert PNCP_TIMEOUT_PER_UF_DEGRADED == 12.0
 
     def test_env_var_override(self):
         """AC5: PNCP_TIMEOUT_PER_UF env var overrides default.
@@ -121,16 +121,16 @@ class TestConsolidationTimeouts:
     """AC6-AC9: Consolidation timeout values after recalibration."""
 
     def test_env_default_per_source_180(self):
-        """AC6: Default timeout_per_source from env = 180s."""
+        """AC6: Default timeout_per_source from env = 70s (STORY-4.4 TD-SYS-003: synced with config/pncp.py PNCP_TIMEOUT_PER_SOURCE)."""
         from source_config.sources import ConsolidationConfig
         config = ConsolidationConfig.from_env()
-        assert config.timeout_per_source == 180
+        assert config.timeout_per_source == 70
 
     def test_env_default_global_300(self):
-        """AC7: Default timeout_global from env = 300s."""
+        """AC7: Default timeout_global from env = 90s (STORY-4.4 TD-SYS-003: synced with CONSOLIDATION_TIMEOUT default)."""
         from source_config.sources import ConsolidationConfig
         config = ConsolidationConfig.from_env()
-        assert config.timeout_global == 300
+        assert config.timeout_global == 90
 
     def test_degraded_global_timeout_100(self):
         """AC8: DEGRADED_GLOBAL_TIMEOUT = 100s (STORY-271 AC2: reduced from 110s, 15s buffer before GUNICORN_TIMEOUT=115s)."""

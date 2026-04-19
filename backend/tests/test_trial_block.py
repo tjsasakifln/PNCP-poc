@@ -228,6 +228,7 @@ class TestExpiredTrialBlocksMutableEndpoints:
         assert data["detail"]["error"] == "trial_expired"
         assert data["detail"]["upgrade_url"] == "/planos"
 
+    @pytest.mark.external  # STORY-CIG-BACKEND-SWEEP triage row #358: real Supabase UUID + FK constraint validation em Pipeline POST; mock não cobre DB-side validation.
     def test_post_pipeline_blocked(self, client):
         """AC2+AC17: POST /pipeline returns 403 for expired trial."""
         expired_quota = _make_expired_trial_quota()
