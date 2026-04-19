@@ -44,21 +44,29 @@ class TestOpenAIClientTimeout:
         import importlib
 
         import config.features as _features
+        import llm_arbiter
         from llm_arbiter import classification
 
         with patch.dict("os.environ", {"LLM_TIMEOUT_S": "30", "OPENAI_API_KEY": "test-key"}):
             # Reload config.features so LLM_TIMEOUT_S picks up env change,
-            # then reload classification so its cached `_LLM_TIMEOUT` uses the new value.
+            # reload classification so its cached `_LLM_TIMEOUT` uses the new value,
+            # then reload the llm_arbiter facade so its re-exported bindings
+            # (_arbiter_cache, _ARBITER_CACHE_MAX, _client, etc.) stay in sync
+            # with the freshly-reloaded classification module. Without this,
+            # downstream tests that access `llm_arbiter._arbiter_cache` would
+            # operate on a stale OrderedDict detached from classification.
             importlib.reload(_features)
             importlib.reload(classification)
+            importlib.reload(llm_arbiter)
             classification._client = None
             with patch("llm_arbiter.classification.OpenAI") as mock_openai_cls:
                 classification._get_client()
                 kwargs = mock_openai_cls.call_args[1]
                 assert kwargs["timeout"] == 30.0
-        # Restore modules to defaults
+        # Restore modules to defaults (order matters: features → classification → facade)
         importlib.reload(_features)
         importlib.reload(classification)
+        importlib.reload(llm_arbiter)
 
     @patch("llm_arbiter.classification.OpenAI")
     def test_client_lazy_singleton(self, mock_openai_cls):
