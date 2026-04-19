@@ -195,31 +195,73 @@ def test_validate_env_vars_warns_in_dev_without_required():
 
 
 def test_no_asyncio_run_in_production_code():
-    """Ensure no asyncio.run() calls in production code."""
+    """Ensure no asyncio.run() calls in production code.
+
+    STORY-CIG-BE-asyncio-run-production-scan Phase 1: use AST-based detection
+    (ignores docstrings/comments/strings automatically) and skip (a) files
+    under backend/scripts/ (CLI tools) and (b) AST nodes inside
+    ``if __name__ == "__main__":`` blocks (module-level CLI entry points).
+    """
+    import ast as _ast
+
     backend_dir = pathlib.Path(__file__).parent.parent
     violations = []
 
+    def _is_asyncio_run_call(node):
+        if not isinstance(node, _ast.Call):
+            return False
+        func = node.func
+        if isinstance(func, _ast.Attribute) and func.attr == "run":
+            value = func.value
+            if isinstance(value, _ast.Name) and value.id in {"asyncio", "_asyncio"}:
+                return True
+        return False
+
+    def _is_main_guard(node):
+        if not isinstance(node, _ast.If):
+            return False
+        test = node.test
+        if not isinstance(test, _ast.Compare):
+            return False
+        left = test.left
+        if not (isinstance(left, _ast.Name) and left.id == "__name__"):
+            return False
+        for comp in test.comparators:
+            value = getattr(comp, "value", None)
+            if value == "__main__":
+                return True
+        return False
+
     for py_file in backend_dir.glob("**/*.py"):
-        # Skip test files
         if "tests" in py_file.parts or py_file.name.startswith("test_"):
             continue
-
-        # Skip __pycache__ and virtual environments
         if "__pycache__" in str(py_file) or "venv" in str(py_file):
+            continue
+
+        # Phase 1 (a): CLI scripts are legitimate asyncio.run() hosts.
+        relative = py_file.relative_to(backend_dir)
+        if relative.parts and relative.parts[0] == "scripts":
             continue
 
         try:
             content = py_file.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+            tree = _ast.parse(content, filename=str(py_file))
+        except (OSError, SyntaxError):
             continue
 
-        for i, line in enumerate(content.split("\n"), 1):
-            # Skip comments
-            if line.strip().startswith("#"):
-                continue
-            # Check for asyncio.run() calls
-            if "asyncio.run(" in line:
-                violations.append(f"{py_file.name}:{i}: {line.strip()}")
+        # Phase 1 (b): collect line ranges of ``if __name__ == "__main__":`` blocks.
+        main_ranges = []
+        for node in _ast.walk(tree):
+            if _is_main_guard(node):
+                end_line = getattr(node, "end_lineno", node.lineno)
+                main_ranges.append((node.lineno, end_line))
+
+        def _in_main_block(lineno, ranges=main_ranges):
+            return any(start <= lineno <= end for start, end in ranges)
+
+        for node in _ast.walk(tree):
+            if _is_asyncio_run_call(node) and not _in_main_block(node.lineno):
+                violations.append(f"{py_file.name}:{node.lineno}: asyncio.run(...)")
 
     assert not violations, (
         "Found asyncio.run() in production code:\n" + "\n".join(violations)

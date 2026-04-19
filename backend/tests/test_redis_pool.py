@@ -445,29 +445,72 @@ class TestNoAsyncioRunInProduction:
     """Ensure production code never calls asyncio.run() (AC15)."""
 
     def test_no_asyncio_run_in_production(self):
-        """Scan all .py files in backend/ (excluding tests/) for asyncio.run() calls."""
+        """Scan all .py files in backend/ (excluding tests/) for asyncio.run() calls.
+
+        STORY-CIG-BE-asyncio-run-production-scan Phase 1: use AST-based
+        detection (ignores docstrings, comments, and strings automatically)
+        and skip (a) files under backend/scripts/ (CLI tools) and
+        (b) AST nodes inside ``if __name__ == "__main__":`` blocks.
+        Remaining matches are real antipatterns.
+        """
+        import ast as _ast
+
         backend_dir = Path(__file__).resolve().parent.parent
+
+        def _is_asyncio_run_call(node):
+            if not isinstance(node, _ast.Call):
+                return False
+            func = node.func
+            if isinstance(func, _ast.Attribute) and func.attr == "run":
+                value = func.value
+                if isinstance(value, _ast.Name) and value.id in {"asyncio", "_asyncio"}:
+                    return True
+            return False
+
+        def _is_main_guard(node):
+            if not isinstance(node, _ast.If):
+                return False
+            test = node.test
+            if not isinstance(test, _ast.Compare):
+                return False
+            left = test.test if False else test.left
+            if not (isinstance(left, _ast.Name) and left.id == "__name__"):
+                return False
+            for comp in test.comparators:
+                value = getattr(comp, "value", None)
+                if value == "__main__":
+                    return True
+            return False
 
         violations = []
         for py_file in backend_dir.rglob("*.py"):
-            # Skip test files and virtual environments
             relative = py_file.relative_to(backend_dir)
             parts = relative.parts
             if any(skip in parts for skip in ("tests", ".venv", "venv", "__pycache__", "node_modules")):
                 continue
+            # Phase 1 (a): CLI scripts are legitimate asyncio.run() hosts.
+            if parts and parts[0] == "scripts":
+                continue
 
             try:
                 content = py_file.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
+                tree = _ast.parse(content, filename=str(py_file))
+            except (OSError, SyntaxError):
                 continue
 
-            for line_num, line in enumerate(content.splitlines(), start=1):
-                stripped = line.strip()
-                # Skip comments
-                if stripped.startswith("#"):
-                    continue
-                if "asyncio.run(" in line:
-                    violations.append(f"{relative}:{line_num}: {stripped}")
+            # Phase 1 (b): collect line ranges of ``if __name__ == "__main__":`` blocks.
+            main_ranges = []
+            for node in _ast.walk(tree):
+                if _is_main_guard(node):
+                    end_line = getattr(node, "end_lineno", node.lineno)
+                    main_ranges.append((node.lineno, end_line))
+
+            def _in_main_block(lineno):
+                return any(start <= lineno <= end for start, end in main_ranges)
+
+            for node in _ast.walk(tree):
+                if _is_asyncio_run_call(node) and not _in_main_block(node.lineno):
+                    violations.append(f"{relative}:{node.lineno}: asyncio.run(...)")
 
         assert violations == [], (
             "Found asyncio.run() in production code (AC15 violation):\n"

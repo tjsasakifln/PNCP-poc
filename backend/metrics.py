@@ -1157,6 +1157,19 @@ LLM_TOKENS_DETAILED = _create_counter(
     labelnames=["model", "operation", "direction"],  # direction: input, output
 )
 
+# CIG-BE-asyncio-run-production-scan Phase 2 Option C:
+# When track_llm_cost() runs in a thread pool worker without an active event
+# loop, the previous branch spun up a throwaway loop via asyncio.run(). That is
+# an antipattern (event-loop thrash, stale get_event_loop() in 3.12+). Phase 2
+# Option C skips the tracking and increments this counter so the trade-off is
+# observable. Option A (run_coroutine_threadsafe to main loop) is the long-term
+# fix — tracked as dívida.
+LLM_BUDGET_TRACK_SKIPPED = _create_counter(
+    "smartlic_llm_budget_track_skipped_total",
+    "LLM cost tracking fire-and-forget skipped (no running event loop)",
+    labelnames=["reason"],
+)
+
 LLM_SUMMARY_CACHE_HITS = _create_counter(
     "smartlic_llm_summary_cache_hits_total",
     "LLM summary Redis cache hits (cross-worker sharing)",

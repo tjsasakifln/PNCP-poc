@@ -204,7 +204,10 @@ def _log_token_usage(
 
     # STORY-2.11 (EPIC-TD-2026Q2 P0): Track monthly cumulative cost for budget cap.
     # classify_contract_primary_match roda em ``asyncio.to_thread``; disparamos o
-    # async track via ensure_future se houver loop rodando, senão via sync.
+    # async track via ensure_future se houver loop rodando, senão contamos skip.
+    # CIG-BE-asyncio-run-production-scan Phase 2 Option C:
+    # thread pool worker without running loop — skip and count, not spin a new
+    # loop (long-term Option A = run_coroutine_threadsafe on main app loop).
     try:
         import asyncio as _asyncio
         from llm_budget import track_llm_cost as _track
@@ -213,8 +216,9 @@ def _log_token_usage(
             _loop = _asyncio.get_running_loop()
             _asyncio.ensure_future(_track(cost_usd))
         except RuntimeError:
-            # Sem loop rodando (thread pool worker) — executa inline
-            _asyncio.run(_track(cost_usd))
+            from metrics import LLM_BUDGET_TRACK_SKIPPED as _skipped
+
+            _skipped.labels(reason="no_running_loop").inc()
     except Exception:
         pass
 
