@@ -300,6 +300,11 @@ data/distance_cache.json
 *.sql
 !**/migrations/**/*.sql
 
+# STORY-B2G-001: outreach lead data is LGPD-sensitive — keep local only
+data/outreach/leads-*.csv
+data/outreach/briefs/*.md
+data/outreach/crm.csv
+
 # =============================================================================
 # Testing & Quality Assurance
 # =============================================================================

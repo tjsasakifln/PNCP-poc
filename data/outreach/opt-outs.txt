@@ -1,0 +1,5 @@
+# LGPD opt-out list — one CNPJ (14 digits, no punctuation) per line.
+# Script scripts/b2g_outreach_query.py reads this file and excludes these CNPJs
+# from future lead lists.
+#
+# Lines starting with # are comments. Blank lines are ignored.
