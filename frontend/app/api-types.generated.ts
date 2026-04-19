@@ -2665,7 +2665,7 @@ export interface paths {
          *     Returns status of Supabase, Redis/InMemory, and Local file caches
          *     with latency measurements and error details.
          *     B-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.
-         *     CRIT-081 AC10: Includes warmup_coverage with total_combos, cached, stale, missing.
+         *     Note: warmup_coverage removed 2026-04-18 (STORY-CIG-BE-cache-warming-deprecate).
          */
         get: operations["cache_health_v1_health_cache_get"];
         put?: never;
