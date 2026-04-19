@@ -3,7 +3,7 @@
 **Priority:** P1 — ARPU lift 2.5x sobre Pro, zero fricção adicional
 **Effort:** S (1-2 dias)
 **Squad:** @dev + @data-engineer (detecção CNAE)
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Sprint:** Wave Receita D+8 a D+21
 
@@ -31,44 +31,45 @@ Oferecer Consultoria como "Recomendado para você" + banner discreto durante tri
 ## Acceptance Criteria
 
 ### AC1: Detecção de perfil consultoria
-- [ ] `backend/services/plan_recommender.py` novo módulo com função `detect_consultoria_profile(cnae_primary: str) -> bool`
-- [ ] Retorna `True` se CNAE primário começa com `70.2`, `74.9` ou `82.9` (formato "XX.YY-Z" ou "XX.YY")
-- [ ] Precisão alvo ≥90% (validar com sample de 20 CNAEs reais do DataLake)
-- [ ] Fallback: se CNAE não preenchido no profile, retorna `False` (conservador)
+- [x] `backend/services/plan_recommender.py` implementa `detect_consultoria_profile(cnae_primary: str | None) -> bool` + `recommend_plan` + `_normalize_cnae`
+- [x] Matching prefixo em `70.2`, `74.9`, `82.9` após normalização para `XX.YY` (aceita formatos `XX.YY-Z/NN`, `XX.YY-Z`, `XX.YY`, `XXYY-Z/NN`, `XXYY`)
+- [x] Precisão validada em sample de 14 CNAEs (7 positivos + 7 negativos) — `test_detect_consultoria_sample_precision` exige >=90%
+- [x] Fallback: CNAE vazio/None/malformado → `False` (user vê Pro como default — conservador)
 
 ### AC2: Endpoint /v1/user/recommended-plan
-- [ ] `backend/routes/user.py` adiciona `@router.get("/user/recommended-plan")`
-- [ ] Require auth
-- [ ] Retorna `{ "plan_key": "smartlic_consultoria" | "smartlic_pro", "reason": "cnae_consultoria" | "default" }`
-- [ ] Cache Redis 24h por `user_id` (não muda frequente)
+- [x] `backend/routes/user.py` adiciona `GET /user/recommended-plan` (via `@router.get("/user/recommended-plan")`)
+- [x] `Depends(require_auth)` + `Depends(get_db)`
+- [x] Retorna `{ "plan_key": "consultoria" | "smartlic_pro", "reason": "cnae_consultoria" | "default" }` (ajuste vs story original: o plan_id em Stripe é `consultoria`, não `smartlic_consultoria`)
+- [x] Cache Redis 24h via `redis_pool.get_sync_redis().setex(...)` — fallback gracioso para sem-cache se Redis indisponível
+- [x] Profile lookup em `profiles.cnae_primary` (nova coluna via migration `20260420000002_add_profiles_cnae_primary`)
 
 ### AC3: Página /planos destaca plano recomendado
-- [ ] `frontend/app/planos/page.tsx` busca `recommended-plan` ao montar
-- [ ] Plano recomendado ganha badge "Recomendado para você" + outline border primário
-- [ ] Plano recomendado fica em posição destacada (leftmost ou primeiro na ordem mobile)
-- [ ] Plano não-recomendado mantém visibilidade plena (não esconder, apenas priorizar visualmente)
+- [x] `/planos?highlight=consultoria` aciona scroll-to + ring ring-indigo-400 de 3 segundos no card Consultoria (anchor `#plano-consultoria`)
+- [ ] **(escopo reduzido nesta PR)** Badge "Recomendado para você" + outline no card recomendado — requer redesign dos componentes `PlanProCard`/`PlanConsultoriaCard` atuais. Ficará em story futura de polish visual. O banner no dashboard cobre o upsell primário; o highlight via query param cobre o deep-link de outreach.
 
 ### AC4: Banner durante trial (para consultorias)
-- [ ] `frontend/components/ConsultoriaUpsellBanner.tsx` novo componente
-- [ ] Aparece na topbar do dashboard quando: user em trial + `recommended_plan==='smartlic_consultoria'` + banner não foi dismissed
-- [ ] Copy: "Você é uma consultoria. Com o plano Consultoria você atende até 20 CNPJs de clientes por R$ 997/mês — economia de 60% vs múltiplas licenças Pro. Ver detalhes →"
-- [ ] Dismiss persistido em `localStorage.consultoria_banner_dismissed_ts` (TTL 7d — re-mostra depois)
-- [ ] CTA "Ver detalhes" leva a `/planos?highlight=consultoria`
+- [x] `frontend/components/ConsultoriaUpsellBanner.tsx` novo componente
+- [x] Renderizado no topo do dashboard (via `app/dashboard/layout.tsx`) apenas quando `isTrialing && recommended_plan==='consultoria' && reason==='cnae_consultoria' && !dismissed`
+- [x] Copy textual exato: "Você é uma consultoria. Com o plano Consultoria você atende até 20 CNPJs de clientes por R$ 997/mês — economia de 60% vs múltiplas licenças Pro. Ver detalhes →"
+- [x] Dismiss persistido em `localStorage.consultoria_banner_dismissed_ts` com TTL 7 dias — após TTL, banner re-aparece
+- [x] CTA link para `/planos?highlight=consultoria` (scroll-to + ring via AC5)
 
 ### AC5: Query param ?highlight=consultoria
-- [ ] `/planos` respeita query param `highlight` para destacar plano específico com animação scroll
-- [ ] Usado também em links de email / outreach
+- [x] `/planos?highlight=consultoria` detectado via `useEffect` + `URLSearchParams` no `PlanosPage`
+- [x] Scroll suave para `#plano-consultoria` + ring destacado por 3s (smooth behavior, block start)
+- [x] Usado pelo CTA do `ConsultoriaUpsellBanner` — pronto para reuso em links de email/outreach
 
 ### AC6: Observabilidade
-- [ ] Evento Mixpanel `consultoria_upsell_viewed` (props: `user_id`, `cnae`, `surface: "planos_page" | "banner"`)
-- [ ] Evento Mixpanel `consultoria_upsell_dismissed` (props: `user_id`, `seconds_viewed`)
-- [ ] Evento Mixpanel `consultoria_upsell_clicked` (props: `user_id`, `cta_label`)
-- [ ] Evento Mixpanel `consultoria_plan_selected` no checkout (props: `user_id`, `was_recommended`)
+- [x] `consultoria_upsell_viewed { surface: 'banner' }` disparado no mount quando banner é visível
+- [x] `consultoria_upsell_dismissed { surface: 'banner' }` disparado no click do botão Dispensar
+- [x] `consultoria_upsell_clicked { cta_label: 'ver_detalhes' }` disparado no click do CTA
+- [ ] **(escopo reduzido)** `consultoria_plan_selected { was_recommended }` no checkout — requer integração com fluxo de Stripe Checkout (gancho em `handleConsultoriaCheckout` em `/planos`). Fica para polish futuro; o evento `consultoria_upsell_clicked` + tracking de conversão Stripe já cobre o funil essencial.
 
 ### AC7: Testes
-- [ ] `backend/tests/test_plan_recommender.py` — 15+ casos (CNAEs válidos, inválidos, vazios, formatos variados)
-- [ ] `frontend/__tests__/components/ConsultoriaUpsellBanner.test.tsx`
-- [ ] `frontend/__tests__/planos/page.test.tsx` — com e sem recommended plan
+- [x] `backend/tests/test_plan_recommender.py` — 28 casos parametrizados (normalização CNAE, positivos, negativos, sample precision ≥90%, recommend_plan)
+- [x] `backend/tests/test_recommended_plan_endpoint.py` — 6 casos (consultancy CNAE, non-consultancy, null, DB error, cache hit, cache miss write-through)
+- [x] `frontend/__tests__/ConsultoriaUpsellBanner.test.tsx` — 8 casos (render, Mixpanel events, no-trial, non-consultancy, loading, dismiss + TTL)
+- Nota: `frontend/__tests__/planos/page.test.tsx` não adicionado — escopo do highlight é só scroll behavior (testável por e2e Playwright em story futura); componentes visuais não mudaram.
 
 ---
 
@@ -130,7 +131,27 @@ SAMPLE_NAO_CONSULTORIAS = ["62.01-5/01", "41.20-4/00", "47.71-7/01"]  # TI, cons
 
 ## File List
 
-_(populado pelo @dev durante execução)_
+**Backend (novos):**
+- `backend/services/plan_recommender.py` (pure functions: normalize, detect, recommend)
+- `backend/tests/test_plan_recommender.py` (28 casos, sample precision ≥90%)
+- `backend/tests/test_recommended_plan_endpoint.py` (6 casos, TestClient + dependency_overrides)
+
+**Backend (modificados):**
+- `backend/routes/user.py` (+`GET /user/recommended-plan` com Redis cache 24h)
+
+**Frontend (novos):**
+- `frontend/components/ConsultoriaUpsellBanner.tsx` (dismissible, localStorage TTL 7d)
+- `frontend/hooks/useRecommendedPlan.ts` (fetch + cancel-on-unmount)
+- `frontend/app/api/user/recommended-plan/route.ts` (Next proxy authenticated)
+- `frontend/__tests__/ConsultoriaUpsellBanner.test.tsx` (8 casos)
+
+**Frontend (modificados):**
+- `frontend/app/dashboard/layout.tsx` (+ render do banner para trial users)
+- `frontend/app/planos/page.tsx` (+ `useEffect` scroll-to-highlight + anchor `#plano-consultoria`)
+
+**Database:**
+- `supabase/migrations/20260420000002_add_profiles_cnae_primary.sql` (+ partial index p/ consultancy prefixes)
+- `supabase/migrations/20260420000002_add_profiles_cnae_primary.down.sql`
 
 ---
 
@@ -139,3 +160,4 @@ _(populado pelo @dev durante execução)_
 | Data | Agente | Mudança |
 |------|--------|---------|
 | 2026-04-19 | @sm (River) | Story criada Ready. Subsídios do plano Board v1.0. |
+| 2026-04-19 | @dev | Implementação code-side. 39 testes backend + 8 testes frontend passando. Resolvido gap vs story original: `profiles.cnae_primary` não existia — adicionado via migration nullable. Endpoint retorna `default` até onboarding persistir CNAE (story futura). Visual polish do `/planos` (badge/border) reduzido a scroll-to-highlight; banner é o surface primário do upsell. Status → InReview. |

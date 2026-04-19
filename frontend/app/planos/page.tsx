@@ -91,6 +91,25 @@ export default function PlanosPage() {
   const [partnerName, setPartnerName] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
 
+  // STORY-BIZ-002: scroll to consultoria card when landing with ?highlight=consultoria
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("highlight") !== "consultoria") return;
+    // Defer until the card is mounted
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById("plano-consultoria");
+      if (el && typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.classList.add("ring-2", "ring-indigo-400", "ring-offset-2");
+        window.setTimeout(() => {
+          el.classList.remove("ring-2", "ring-indigo-400", "ring-offset-2");
+        }, 3000);
+      }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // TD-008 AC4: SWR-based dynamic pricing with static fallback
   type PricingMap = Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }>;
   const { plans: plansData } = usePlans();
@@ -370,14 +389,17 @@ export default function PlanosPage() {
           </div>
         </div>
 
-        <PlanConsultoriaCard
-          pricing={consultoriaPricing}
-          billingPeriod={billingPeriod}
-          features={CONSULTORIA_FEATURES}
-          isConsultoriaLead={isConsultoriaLead}
-          checkoutLoading={checkoutLoading}
-          onCheckout={() => { if (!session) { window.location.href = "/login"; return; } handleConsultoriaCheckout(); }}
-        />
+        {/* STORY-BIZ-002: anchor for ?highlight=consultoria scroll-to. */}
+        <div id="plano-consultoria" data-plan-key="consultoria">
+          <PlanConsultoriaCard
+            pricing={consultoriaPricing}
+            billingPeriod={billingPeriod}
+            features={CONSULTORIA_FEATURES}
+            isConsultoriaLead={isConsultoriaLead}
+            checkoutLoading={checkoutLoading}
+            onCheckout={() => { if (!session) { window.location.href = "/login"; return; } handleConsultoriaCheckout(); }}
+          />
+        </div>
 
         {/* Testimonials */}
         <div className="mt-16" data-testid="pricing-testimonials">
