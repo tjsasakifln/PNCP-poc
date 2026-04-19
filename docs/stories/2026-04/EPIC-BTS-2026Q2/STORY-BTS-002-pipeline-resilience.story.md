@@ -2,9 +2,10 @@
 
 **Epic:** [EPIC-BTS-2026Q2](EPIC.md)
 **Priority:** P0 — Foundation (pipeline = rota `/buscar`, coração do produto)
-**Effort:** M (3-5h)
+**Effort:** M (3-5h) — actual ~3h
 **Agents:** @dev + @qa + @architect (para RCA se revelar prod bug)
-**Status:** Ready
+**Status:** InReview
+**Branch:** `fix/bts-002-pipeline-resilience` (PR pending — @devops to open)
 
 ---
 
@@ -27,11 +28,11 @@ Padrão observado: STORY-4.4 tightened defaults (`pipeline(100) > consolidation(
 
 ## Acceptance Criteria
 
-- [ ] AC1: `pytest backend/tests/test_debt103_llm_search_resilience.py backend/tests/test_debt110_backend_resilience.py backend/tests/test_pipeline_resilience.py backend/tests/test_pipeline.py -v --timeout=30` retorna exit code 0 (30/30 PASS).
-- [ ] AC2: `backend-tests.yml` run no PR desta story mostra 4 arquivos com **0 failed**. Link no Change Log.
-- [ ] AC3: Causa raiz RCA distinguindo (a) assertion-drift de timeout vs (b) mock-drift de module path vs (c) prod bug de resilience. Se (c), escalar para @architect antes de mergear.
-- [ ] AC4: Cobertura backend não caiu.
-- [ ] AC5 (NEGATIVO): zero `@pytest.mark.skip` ou `xfail` novos.
+- [x] AC1: `pytest backend/tests/test_debt103_llm_search_resilience.py backend/tests/test_debt110_backend_resilience.py backend/tests/test_pipeline_resilience.py backend/tests/test_pipeline.py -v --timeout=30` returns exit code 0 — **114 passed, 17 skipped (all pre-existing), 0 failed in 23.42s**.
+- [ ] AC2: `backend-tests.yml` run in BTS-002 PR shows 4 files with 0 failed. Pending CI run once PR opened.
+- [x] AC3: 10 root cause clusters documented in commit body of `f87e7294` — (A) llm_arbiter TD-009 package split, (B) .env.example drift, (C) reload-breaks-identity, (D) HARDEN-014 source grep refactored, (E) STORY-4.4 timeout tightening, (F) consolidation TD-008 split, (G) filter DEBT-201 package decomposition, (H) `_search_token_stats` namespace, (I) cache_manager Supabase save refactor, (J) `require_active_plan` eager-import. **No (c) prod bug** detected — all fixes in tests; no @architect escalation needed.
+- [ ] AC4: Backend coverage preserved — pending CI report.
+- [x] AC5 (NEGATIVE): No new `@pytest.mark.skip` or `xfail` markers added. 17 pre-existing skips in `test_debt110` (`_summary_cache_*` removed from llm.py) left untouched.
 
 ---
 
@@ -55,3 +56,4 @@ Padrão observado: STORY-4.4 tightened defaults (`pipeline(100) > consolidation(
 
 - **2026-04-19** — @sm (River): Story criada. Status Ready.
 - **2026-04-19** — @po (Pax): Validação GO — 8/10. Gaps: P4 escopo implícito, P8 sem seção de riscos. Story confirmada Ready.
+- **2026-04-19** — @dev: Implementação completa. 30 failures → 0 em 4 arquivos (test_debt103 13/13, test_debt110 9/9, test_pipeline_resilience 5/5, test_pipeline 3/3). 10 clusters de causa raiz documentados em commit `f87e7294`. Dependency upstream BTS-001 (PR #396) não bloqueou — clusters J (`require_active_plan`) e quota-related usam o mesmo facade pattern mas não conflitam. Full suite 114 passed/17 skipped/0 failed. No prod bug detected; sem escalation @architect. AC1, AC3, AC5 fechados; AC2/AC4 pendentes de CI. Status Ready → InReview.

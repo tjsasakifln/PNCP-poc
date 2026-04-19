@@ -2,9 +2,10 @@
 
 **Epic:** [EPIC-BTS-2026Q2](EPIC.md)
 **Priority:** P0 — Foundation (quota toca praticamente todas as rotas autenticadas)
-**Effort:** M (3-5h)
+**Effort:** M (3-5h) — actual ~1.5h
 **Agents:** @dev + @qa
-**Status:** Ready
+**Status:** InReview
+**PR:** [#396](https://github.com/tjsasakifln/PNCP-poc/pull/396)
 
 ---
 
@@ -18,19 +19,23 @@
 
 ## Arquivos (tests)
 
-- `backend/tests/test_quota.py` (22 failures)
-- `backend/tests/test_plan_capabilities.py` (8 failures)
-- `backend/tests/test_quota_race_condition.py` (5 failures)
+**Scope reconciliation 2026-04-19 (pós-implementação):** Triage indicated 35 failures across 3 files. Empirical baseline on main showed only 9 failing (all in `test_plan_capabilities.py`). The other 26 had been fixed ambient to earlier CIG waves.
+
+- `backend/tests/test_quota.py` — baseline: **41/41 PASS** (triage claimed 22 fails, no longer accurate)
+- `backend/tests/test_plan_capabilities.py` — **9 fails fixed** (claimed 8, delta: +1 — `test_trial_expired_blocks_user` wasn't in original triage)
+- `backend/tests/test_quota_race_condition.py` — baseline: **14/14 PASS** (triage claimed 5 fails, no longer accurate)
+
+Actual test debt addressed: **9 failures → 0**. Story scope aligned with this reality; AC1 adjusted accordingly.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] AC1: `pytest backend/tests/test_quota.py backend/tests/test_plan_capabilities.py backend/tests/test_quota_race_condition.py -v --timeout=30` retorna exit code 0 localmente (35/35 PASS).
-- [ ] AC2: Última run de `backend-tests.yml` no PR desta story mostra os 3 arquivos com **0 failed / 0 errored**. Link no Change Log.
-- [ ] AC3: Causa raiz documentada por sub-grupo (quota core, plan_enforcement, race-condition). Tabela antes→depois dos patch targets se aplicável.
-- [ ] AC4: Cobertura backend **não caiu** (threshold 70% mantido).
-- [ ] AC5 (NEGATIVO): `grep -nE "@pytest\\.mark\\.skip|pytest\\.skip\\(|@pytest\\.mark\\.xfail" backend/tests/test_quota*.py backend/tests/test_plan_capabilities.py` vazio (Zero Quarentena policy).
+- [x] AC1: `pytest backend/tests/test_quota.py backend/tests/test_plan_capabilities.py backend/tests/test_quota_race_condition.py -v --timeout=30` returns exit code 0 locally — **99/99 PASS in 8.37s**.
+- [ ] AC2: `backend-tests.yml` run on PR #396 shows 3 files with 0 failed/0 errored. Link pending CI run.
+- [x] AC3: Root cause documented by sub-group in PR #396 commit body (Category A: new plans; Category B: patch target drift post TD-007; Category C: production behavior change). Before→after table of patch targets embedded.
+- [ ] AC4: Backend coverage preserved (threshold 70%) — pending CI report.
+- [x] AC5 (NEGATIVE): `grep -nE "@pytest\\.mark\\.(skip|xfail)|pytest\\.skip\\(" backend/tests/test_quota*.py backend/tests/test_plan_capabilities.py` empty (Zero Quarentena preserved).
 
 ---
 
@@ -54,3 +59,4 @@
 
 - **2026-04-19** — @sm (River): Story criada do triage EPIC-BTS. Status Ready.
 - **2026-04-19** — @po (Pax): Validação GO — 8/10. Gaps: P4 escopo implícito, P8 sem seção de riscos. Ambos sistêmicos no template; não bloqueiam. Story confirmada Ready.
+- **2026-04-19** — @dev: Implementação completa. Baseline reconciliado (35 claimed → 9 actual). 9 failures em `test_plan_capabilities.py` endereçadas via 3 causas raiz: (A) novos planos `founding_member`/`consultoria`, (B) patch target drift post TD-007 (`quota.X` → `quota.plan_enforcement.X`, `quota.datetime` → `quota.quota_atomic.datetime`), (C) mudanças de comportamento em produção (upsert fallback removido; trial grace period 48h). 99/99 tests PASS local. AC1, AC3, AC5 fechados; AC2/AC4 pendentes de CI run em PR #396. Status Ready → InReview.
