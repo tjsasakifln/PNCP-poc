@@ -2,7 +2,7 @@
 
 **Epic:** EPIC-CI-GREEN-MAIN-2026Q2
 **Sprint:** 2026-Q2-S4
-**Status:** InReview
+**Status:** Done
 **Priority:** P0 — Matrix Blocker (causa fail-fast em 3.12 também)
 **Effort:** M (3-6h — reproduzir + decidir estratégia)
 **Agents:** @dev, @qa, @devops
@@ -91,3 +91,5 @@ Evidência no log do matrix run: "+++ Timeout +++" do plugin pytest-timeout
 - **2026-04-16** — @sm: story criada em `docs/epic-ci-green-stories` com erro real capturado via `npm test` local (jest-results.json). Hipótese inicial atribuída; causa raiz a validar em Implement.
 - **2026-04-16** — @po: *validate-story-draft GO (8/10) — Draft → Ready. P0 — Matrix Blocker. Execução prioritária na fase 0 do epic, antes das stories frontend. AC testáveis, escopo claro.
 - **2026-04-16** — @dev: implementação concluída. Root cause confirmado: `TestPncpApiContractLive` + `TestPcpApiContractLive` em `test_api_contracts.py` sem `@pytest.mark.external`. Fix: marker aplicado + 3 workflows atualizados + `integration-external.yml` criado. Collect counts: `not external` = **8163** (baseline = 8163, zero delta). Skip markers: **51** (baseline = 51, zero delta). Snapshot tests (15): 15 passed, 9 deselected. Status: Ready → InProgress → InReview.
+- **2026-04-19** — @qa (Quinn): QA Gate **PASS**. Verificação empírica: (a) `integration-external.yml` existe em `.github/workflows/` (confirmado); (b) markers `@pytest.mark.external` aplicados em `test_api_contracts.py::TestPncpApiContractLive` + `TestPcpApiContractLive`; (c) `backend-tests.yml` PR Gate contém `-m "not benchmark and not external"`. AC1-5 todos atendidos. Matrix 3.11 e 3.12 rodando sem fail-fast desde 2026-04-16 (commit 5b3c5358). Zero regressão de cobertura, zero novos skip markers.
+- **2026-04-19** — @devops (Gage): Trabalho já em `main` (commit 5b3c5358). Status: InReview → Done.

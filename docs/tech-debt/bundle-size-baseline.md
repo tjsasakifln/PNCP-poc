@@ -25,18 +25,48 @@ artifacts yet; the repo relies on the `size-limit` check (already wired via
 `npm run size-limit` and the `@size-limit/file` devDep) to fail PRs that
 blow the budget.
 
-## Baseline (origin/main, 2026-04-15 pre-STORY-5.10)
+## Baseline (origin/main, 2026-04-19 pós-Wave #386)
 
-> TODO: Capture via `npm run analyze` on the commit that precedes this story
-> and paste the "Parsed size" totals here. We can do this opportunistically
-> on the next PR that ships a frontend build — the numbers aren't load-bearing
-> for merge, only for verifying the expected reduction.
+Medido pelo CI `frontend-tests.yml` job `Check bundle size budget` em 2026-04-19:
 
-| Metric | Baseline | Target | Post-5.10 |
-|--------|----------|--------|-----------|
-| Shared JS (First Load)       | TBD | ≤ baseline - 50 KB | TBD |
-| `framer-motion` chunk size   | TBD | ≤ baseline - 30% | TBD |
-| `@dnd-kit/*` chunk size      | TBD | ≤ baseline - 20% | TBD |
+| Metric | Valor medido |
+|--------|-------------|
+| First Load JS agregado (`.next/static/chunks/**/*.js`, gzipped) | **1.64 MB** |
+| Limite anterior (DEBT-108 AC10/AC11) | 250 KB — **irreal** |
+| Novo limite (STORY-5.14, hold-the-line) | **1.75 MB** (baseline + 7% head-room) |
+| Alvo de redução em 90 dias (STORY-5.14) | ≤ 600 KB |
+
+### Decomposição estimada (a confirmar via `npm run analyze`)
+
+| Pacote | Estimativa gzipped |
+|--------|-------------------|
+| Next.js 16 runtime + React 18       | ~200 KB |
+| Sentry `@sentry/nextjs`             | ~100 KB |
+| Framer Motion                        | ~80 KB |
+| Recharts                             | ~150 KB |
+| @dnd-kit/core + sortable + utilities | ~40 KB |
+| Supabase SSR client                  | ~60 KB |
+| Stripe Elements (PaymentElement)     | ~90 KB |
+| Shepherd.js (onboarding tour)        | ~40 KB |
+| App code (pages + components)        | ~300 KB |
+| Outros (lodash helpers, toasts, etc) | ~600 KB |
+| **Total**                            | **~1.66 MB** |
+
+### Alvo de redução (STORY-5.14, 90 dias)
+
+| Frente | Ganho esperado |
+|--------|---------------|
+| Dynamic import rotas autenticadas (`/dashboard`, `/pipeline`, `/admin`) | -250 KB |
+| Migração Framer → CSS transitions em landing | -50 KB |
+| Tree-shake Recharts (importar só charts usados) | -80 KB |
+| Lazy-load Shepherd apenas no first signup | -30 KB |
+| Lazy-load Stripe só em `/planos` + `/signup` 2-step | -60 KB |
+| Remoção de lodash em favor de nativos | -40 KB |
+| Sentry source-map upload off em prod build | -80 KB |
+| **Total esperado** | **-590 KB → ~1.05 MB** |
+
+Próxima revisão de alvo em 60 dias: se 1.05 MB atingido, fixar cap em 1.1 MB
+e abrir STORY-5.15 para atingir 600 KB.
 
 ## Why tree-shaking works here
 
