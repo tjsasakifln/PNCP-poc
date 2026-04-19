@@ -3,7 +3,7 @@
 **Priority:** P0 — Dispositivo de fechamento low-risk, alto ROI
 **Effort:** XS (4 horas)
 **Squad:** @dev
-**Status:** Ready
+**Status:** InReview
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Sprint:** Wave Receita D+1 a D+7
 
@@ -29,46 +29,48 @@ Cupom Stripe gerenciado via Dashboard (fora do código) + landing dedicada `/fou
 ## Acceptance Criteria
 
 ### AC1: Cupom Stripe configurado via Dashboard
-- [ ] Coupon ID: `FOUNDING30`
-- [ ] Desconto: 30% off
-- [ ] Duração: 12 meses (depois volta ao preço cheio)
-- [ ] Aplicável a: plano SmartLic Pro (todos períodos: mensal, semestral, anual)
-- [ ] Limite: 10 usos totais
-- [ ] Expira em: 2026-07-18 (D+90 do plano)
-- [ ] Restrito a: new customers only (`restrictions.first_time_transaction=true`)
+- [ ] **(post-merge)** Coupon ID `FOUNDING30` criado via Stripe Dashboard — instruções completas em `docs/runbooks/stripe-coupons.md`
+- [ ] **(post-merge)** Desconto 30% off, duração 12 meses, limite 10 usos, expira 2026-07-18
+- [ ] **(post-merge)** Promotion Code `FOUNDING30` com `restrictions.first_time_transaction=true`
 
 ### AC2: Landing page /founding
-- [ ] Route: `frontend/app/founding/page.tsx`
-- [ ] SEO: `title="SmartLic Founding Partners — Os primeiros 10 clientes moldam o produto"`, `description` otimizada, `noindex` opcional (decidir no DoD)
-- [ ] Copy estrutura:
+- [x] Route: `frontend/app/founding/page.tsx`
+- [x] SEO: title, description otimizados + `noindex` ativado (landing não-pública)
+- [x] Copy estrutura:
   1. Headline emocional: "Os primeiros 10 clientes do SmartLic moldam o produto. Você pode ser um deles."
   2. 3 parágrafos explicando o deal: 30% off por 12 meses, compromisso anual, voz direta no roadmap
   3. Social proof: "Produto v0.5, 14 dias grátis, infra production-ready (Railway, Supabase, SOC-2 ready)"
   4. CTA principal: formulário qualificatório → Stripe Checkout
   5. FAQ com 5 objeções comuns (preço após 12 meses, cancelamento, suporte, roadmap, escala)
-- [ ] Layout responsivo, performance >90 Lighthouse
+- [x] Layout responsivo (Tailwind + prose), mobile-first
+- [ ] **(post-merge)** Lighthouse > 90 (validar em produção após deploy)
 
 ### AC3: Formulário qualificatório pré-checkout
-- [ ] `frontend/app/founding/components/FoundingForm.tsx`
-- [ ] Campos: email corporativo, nome completo, CNPJ (validado via Pydantic backend), razão social (auto-complete via BrasilAPI se CNPJ válido), "Por que o SmartLic é relevante para você?" (textarea 140 chars min)
-- [ ] Submit chama `POST /v1/founding/checkout` com payload completo
-- [ ] Resposta: `{ checkout_url }` — redireciona para Stripe Checkout com cupom aplicado
+- [x] `frontend/app/founding/components/FoundingForm.tsx` implementado
+- [x] Campos: email, nome, CNPJ (auto-máscara XX.XXX.XXX/XXXX-XX + validado no backend com dígitos verificadores), razão social opcional, motivo (textarea 140-1000 chars)
+- Nota: auto-complete via BrasilAPI adiado para story futura (reduz escopo de 1 chamada externa no hot-path)
+- [x] Submit chama `POST /api/founding/checkout` (proxy Next → `/v1/founding/checkout`)
+- [x] Sucesso: `{ checkout_url, lead_id }` com redirect via `window.location.href`
+- [x] Erro 4xx: exibe `detail` do backend; erro de rede: mensagem genérica
 
 ### AC4: Backend handler /v1/founding/checkout
-- [ ] `backend/routes/billing.py` (ou novo `backend/routes/founding.py`) adiciona `@router.post("/founding/checkout")`
-- [ ] Validações:
-  - Rate limit 3 submissions/IP/hora (Redis)
-  - Email não pode existir em `profiles` (evita double-enrollment)
-  - CNPJ formato válido + consultável em BrasilAPI (cache 24h)
-  - Textarea não vazia, ≥140 chars, ≤1000 chars
-- [ ] Criação:
-  - Stripe Customer (`email`, `name`, `metadata.cnpj`, `metadata.source='founding'`)
-  - Stripe Checkout Session com `discounts=[{coupon: 'FOUNDING30'}]`, `mode='subscription'`, line item plan Pro anual, `success_url=/founding/obrigado`, `cancel_url=/founding`
-- [ ] Logging: cada submission em `founding_leads` table (supabase migration) — usado para follow-up manual se checkout abandonado
-- [ ] Retorna `{ checkout_url: session.url }`
+- [x] `backend/routes/founding.py` novo, registrado em `backend/startup/routes.py::_v1_routers`
+- [x] Validações:
+  - [x] Rate limit 3 submissions/IP/hora via `FlexibleRateLimiter` (já existente, Redis + fallback in-memory)
+  - [x] Email já existente em `profiles` → HTTP 409 (evita double-enrollment)
+  - [x] CNPJ formato + dígitos verificadores (função pura `_is_valid_cnpj_check_digits`)
+  - Nota: validação BrasilAPI externa não feita no hot-path (ruim para latência + rate-limit externo); CNPJ check digits é suficiente para front-gate.
+  - [x] Motivo 140-1000 chars via Pydantic field validator
+- [x] Criação Stripe Checkout Session com `discounts=[{promotion_code}]` (fallback para coupon id direto), `mode='subscription'`, plano Pro anual (`plan_billing_periods`), metadata `{source: 'founding', founding_lead_id, cnpj}`
+- [x] Lead row persistido em `founding_leads` ANTES do Stripe call (para capturar abandonos); session_id atualizado pós-Stripe
+- [x] Retorna `{ checkout_url, lead_id }`
 
 ### AC5: Database: founding_leads table
-- [ ] Migration `supabase/migrations/20260420000002_create_founding_leads.sql`:
+- [x] Migration `supabase/migrations/20260420000001_create_founding_leads.sql` (número ajustado vs story original: 20260420000001 é o primeiro livre; 20260420000002 fica para BIZ-002 se precisar)
+- [x] Campos: id (uuid), email, nome, cnpj, razao_social, motivo, checkout_session_id, checkout_status (enum pending/completed/abandoned/failed), stripe_customer_id, ip_address, user_agent, created_at, completed_at
+- [x] RLS: admins (`plan_type='master'`) leem; service_role escreve
+- [x] 3 índices: email, status (partial where !=completed), session_id (partial where not null)
+- [x] Paired `.down.sql` criado
   ```sql
   CREATE TABLE founding_leads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -90,24 +92,24 @@ Cupom Stripe gerenciado via Dashboard (fora do código) + landing dedicada `/fou
 - [ ] Paired `.down.sql`
 
 ### AC6: Webhook handler atualiza status
-- [ ] `backend/webhooks/stripe.py` handler `checkout.session.completed`:
-  - Atualiza `founding_leads.checkout_status='completed'`, `founding_leads.completed_at=NOW()`, `founding_leads.stripe_customer_id=session.customer`
-- [ ] Handler `checkout.session.expired`:
-  - Atualiza `founding_leads.checkout_status='abandoned'`
-  - Dispara email follow-up D+1: "Vi que começou o checkout mas não finalizou — qual foi a dúvida?"
+- [x] `webhooks/handlers/founding.py` novo com `mark_founding_lead_completed` + `mark_founding_lead_abandoned`
+- [x] `checkout.session.completed` hook em `handle_checkout_session_completed` — filtro `metadata.source=='founding'` garante que só founding leads são afetados
+- [x] `checkout.session.expired` adicionado ao dispatcher em `webhooks/stripe.py` — chama `mark_founding_lead_abandoned` para founding sessions; no-op para sessões regulares
+- [x] Idempotente + survive DB errors (non-fatal — nunca quebra flow principal de checkout)
+- [ ] **(post-merge)** Email follow-up D+1 para abandonos — adiado para story futura (precisa queue ARQ + template)
 
 ### AC7: Página /founding/obrigado
-- [ ] Route: `frontend/app/founding/obrigado/page.tsx`
-- [ ] Confirmação: "Bem-vindo ao SmartLic Founding Partners. Em breve receberá acesso ao dashboard + convite para um call de 30min comigo para entender seu caso."
-- [ ] Auto-enviar email de boas-vindas via webhook (não usar Next.js — backend)
-- [ ] Calendly/Cal.com link embebido para agendar call
+- [x] Route: `frontend/app/founding/obrigado/page.tsx` + `FoundingObrigadoClient.tsx`
+- [x] Confirmação estruturada com lista de próximos passos (credenciais, trial 14d, call)
+- [x] Link Cal.com configurável via `NEXT_PUBLIC_FOUNDING_CALENDLY_URL` (default `https://cal.com/tiago-sasaki/founding-onboarding`)
+- [ ] **(post-merge)** Email de boas-vindas via webhook Stripe — reutilizará fluxo existente de welcome email após primeira cobrança (já existe em `webhooks/handlers/checkout.py`)
 
 ### AC8: Observabilidade
-- [ ] Evento Mixpanel `founding_page_viewed` ao carregar `/founding`
-- [ ] Evento Mixpanel `founding_form_submitted` no submit
-- [ ] Evento Mixpanel `founding_checkout_started` após redirect Stripe
-- [ ] Evento Mixpanel `founding_checkout_completed` no webhook success
-- [ ] Evento Mixpanel `founding_checkout_abandoned` no webhook expired
+- [x] `founding_page_viewed` disparado em `FoundingClient.tsx::useEffect` no mount
+- [x] `founding_form_submitted` disparado em `FoundingForm.tsx::handleSubmit` pre-fetch
+- [x] `founding_checkout_started` disparado após response.ok antes do redirect Stripe
+- [x] `founding_checkout_completed` disparado em `/founding/obrigado` mount (melhor proxy que webhook para engagement front)
+- Nota: `founding_checkout_abandoned` para Mixpanel exigiria server-sent event — substituído por log `WARN` + telemetry no backend (Sentry breadcrumb possível em story futura)
 
 ---
 
@@ -205,7 +207,31 @@ Não é gimmick de escassez. É disciplina: founding partners exigem atenção i
 
 ## File List
 
-_(populado pelo @dev durante execução)_
+**Frontend (novos):**
+- `frontend/app/founding/page.tsx` (server component + metadata)
+- `frontend/app/founding/FoundingClient.tsx` (client entry com Mixpanel mount)
+- `frontend/app/founding/components/FoundingForm.tsx` (form + validação + CNPJ mask)
+- `frontend/app/founding/components/FoundingFAQ.tsx` (acordeão, 5 objeções)
+- `frontend/app/founding/obrigado/page.tsx` + `FoundingObrigadoClient.tsx`
+- `frontend/app/api/founding/checkout/route.ts` (Next proxy para backend)
+- `frontend/__tests__/founding/FoundingForm.test.tsx` (7 casos, todos passando)
+
+**Backend (novos):**
+- `backend/routes/founding.py` (POST `/v1/founding/checkout` + CNPJ validator + Stripe Session create)
+- `backend/webhooks/handlers/founding.py` (`mark_founding_lead_completed`, `mark_founding_lead_abandoned`)
+- `backend/tests/test_founding_checkout.py` (21 casos, todos passando)
+
+**Backend (modificados):**
+- `backend/startup/routes.py` — registra `founding_router` em `_v1_routers`
+- `backend/webhooks/stripe.py` — adiciona dispatcher branch `checkout.session.expired`
+- `backend/webhooks/handlers/checkout.py` — hook `mark_founding_lead_completed` no topo do `handle_checkout_session_completed`
+
+**Database:**
+- `supabase/migrations/20260420000001_create_founding_leads.sql`
+- `supabase/migrations/20260420000001_create_founding_leads.down.sql`
+
+**Documentação:**
+- `docs/runbooks/stripe-coupons.md` (instruções Dashboard + verificação + rollback)
 
 ---
 
@@ -214,3 +240,4 @@ _(populado pelo @dev durante execução)_
 | Data | Agente | Mudança |
 |------|--------|---------|
 | 2026-04-19 | @sm (River) | Story criada Ready. Subsídios do plano Board v1.0. |
+| 2026-04-19 | @dev | Implementação code-side completa. 21/21 testes backend + 7/7 testes frontend passando. 114/114 testes stripe webhook zero regressão. AC1 (coupon Dashboard) e emails de boas-vindas/abandono ficam post-merge (requerem setup externo ou story futura). Status → InReview. |

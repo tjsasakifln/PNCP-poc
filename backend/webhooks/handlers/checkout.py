@@ -34,6 +34,13 @@ async def handle_checkout_session_completed(sb, event: stripe.Event) -> None:
     stripe_customer_id = session_data.get("customer")
     payment_status = session_data.get("payment_status", "paid")
 
+    # STORY-BIZ-001: keep founding_leads in sync regardless of regular-checkout path.
+    try:
+        from webhooks.handlers.founding import mark_founding_lead_completed
+        mark_founding_lead_completed(sb, session_data)
+    except Exception as e:
+        logger.debug(f"Founding lead update skipped (non-fatal): {e}")
+
     if not user_id or not plan_id:
         logger.warning(
             f"Checkout session missing user_id or plan_id: "

@@ -58,6 +58,9 @@ from webhooks.handlers.invoice import (  # noqa: F401
     _send_payment_failed_email,
 )
 from webhooks.handlers._shared import resolve_user_id as _resolve_user_id  # noqa: F401
+from webhooks.handlers.founding import (  # noqa: F401
+    mark_founding_lead_abandoned as _handle_founding_checkout_expired_raw,
+)
 
 logger = get_sanitized_logger(__name__)
 router = APIRouter()
@@ -183,6 +186,11 @@ async def stripe_webhook(request: Request):
                 await _handle_async_payment_succeeded(sb, event)
             elif event.type == "checkout.session.async_payment_failed":
                 await _handle_async_payment_failed(sb, event)
+            elif event.type == "checkout.session.expired":
+                # STORY-BIZ-001: mark founding lead as abandoned when Stripe
+                # session times out (Stripe default is 24h). No-op for non-
+                # founding sessions (metadata filter inside the handler).
+                _handle_founding_checkout_expired_raw(sb, event.data.object)
             elif event.type == "customer.subscription.created":
                 await _handle_subscription_created(sb, event)
             elif event.type == "customer.subscription.updated":
