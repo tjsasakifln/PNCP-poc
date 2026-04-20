@@ -4,7 +4,7 @@
 **Priority:** P1
 **Effort:** S (2-3h)
 **Agents:** @dev + @qa + @data-engineer
-**Status:** Ready
+**Status:** Done (PR #399 merged `c75f3a81` — 2026-04-19)
 
 ---
 
