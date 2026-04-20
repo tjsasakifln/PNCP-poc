@@ -4,7 +4,7 @@
 **Priority:** P1 (critical-path = alta severidade, bugs aqui são P0 em produção)
 **Effort:** M (3-5h)
 **Agents:** @dev + @qa + @architect (race conditions podem revelar prod bugs)
-**Status:** Ready
+**Status:** Done (PR #403 merged `55a013a7` — 2026-04-19; 18/18 fixed, no production bugs detected)
 
 ---
 

@@ -4,7 +4,7 @@
 **Priority:** P1
 **Effort:** S (2-3h)
 **Agents:** @dev + @qa
-**Status:** Ready
+**Status:** Done partial (PR #402 merged `5cc22dc5` — 2026-04-19; 13/15 fixed, 2 precision/recall deferred to data-engineer — ISSUE-029 ground truth regen)
 
 ---
 

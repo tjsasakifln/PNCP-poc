@@ -4,7 +4,7 @@
 **Priority:** P1 — Billing integrity = revenue accuracy; feature flags guardam rollouts pagos
 **Effort:** M (3-5h)
 **Agents:** @dev + @qa
-**Status:** Ready
+**Status:** Done (PR #404 merged `bce60289` — 2026-04-19; 8 real failures fixed — triage overscoped 14→8)
 
 ---
 

@@ -4,7 +4,7 @@
 **Priority:** P1
 **Effort:** S (2-3h)
 **Agents:** @dev + @qa
-**Status:** Ready
+**Status:** Done (PR #400 merged `8190f24f` — 2026-04-19)
 
 ---
 

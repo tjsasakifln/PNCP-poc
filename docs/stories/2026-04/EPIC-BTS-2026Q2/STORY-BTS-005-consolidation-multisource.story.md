@@ -4,7 +4,7 @@
 **Priority:** P1
 **Effort:** M (3-5h)
 **Agents:** @dev + @qa + @architect (overlap com STORY-CIG-BE-consolidation-helpers-private L-effort)
-**Status:** Ready
+**Status:** Done partial (PR #401 merged `658a592b` — 2026-04-19; 16/19 fixed, 3 CRIT-054 tests deferred to CRIT-054-filter-passthrough-regression story — production regression)
 
 ---
 

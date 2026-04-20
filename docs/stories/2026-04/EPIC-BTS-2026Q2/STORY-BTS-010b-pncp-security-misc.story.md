@@ -4,7 +4,7 @@
 **Priority:** P1 — Security critical path + PNCP ingestion (data source core)
 **Effort:** M (3-5h)
 **Agents:** @dev + @qa + @architect (se security tests revelarem prod vuln)
-**Status:** Ready
+**Status:** Done (PR #405 merged `6f4a7524` — 2026-04-19; 20/20 fixed + 3 security findings documented)
 
 ---
 
