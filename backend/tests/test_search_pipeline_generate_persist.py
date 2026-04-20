@@ -270,7 +270,12 @@ class TestConvertToLicitacaoItems:
         assert item.link == "https://pncp.gov.br/app/editais/123"
 
     def test_missing_optional_fields(self):
-        """Handles missing optional fields with graceful defaults."""
+        """Handles missing optional fields with graceful defaults.
+
+        LicitacaoItem.valor is Optional[float] so a missing
+        ``valorTotalEstimado`` maps to ``None`` (not 0.0) — the frontend
+        treats None as "value unknown" rather than "value zero".
+        """
         lic = {
             "objetoCompra": "Servicos gerais",
             "nomeOrgao": "Orgao Teste",
@@ -279,7 +284,7 @@ class TestConvertToLicitacaoItems:
         result = _convert_to_licitacao_items([lic])
         assert len(result) == 1
         item = result[0]
-        assert item.valor == 0.0
+        assert item.valor is None
         assert item.municipio is None
         assert item.modalidade is None
         assert item.data_publicacao is None
@@ -345,7 +350,12 @@ class TestStageGenerate:
              patch("pipeline.stages.generate.upload_excel"):
             await pipeline.stage_generate(ctx)
 
-        mock_resumo.assert_called_once_with(lics, sector_name="Vestuario")
+        mock_resumo.assert_called_once_with(
+            lics,
+            sector_name="Vestuario",
+            termos_busca=None,
+            setor_id="vestuario",
+        )
         assert ctx.response is not None
         assert ctx.response.resumo.resumo_executivo == resumo.resumo_executivo
         # Actual totals override LLM values
