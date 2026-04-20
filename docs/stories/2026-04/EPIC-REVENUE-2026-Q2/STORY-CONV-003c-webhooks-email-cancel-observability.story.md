@@ -54,9 +54,9 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
   - Email `render_payment_confirmation_email` (STORY-225 AC12)
   - `send_recovery_email` se was_past_due (STORY-309 AC11)
 - [x] Idempotência via `stripe_webhook_events` table (dispatcher em `webhooks/stripe.py` — upsert on_conflict + claim com timeout 5min). Redis dedup alternativa equivalente.
-- [ ] **PENDENTE: email `welcome_to_pro.html` específico para primeiro charge pós-trial** (current `render_payment_confirmation_email` é genérico de renewal)
-- [ ] **PENDENTE: Mixpanel event `trial_converted_auto`** — detectar via `was_past_due=False` + invoice é primeiro `amount_paid>0` para este subscription
-- [ ] **PENDENTE: handler para `invoice.payment_action_required` (3DS/SCA)** — já existe em `handle_payment_action_required` via STORY-309 AC10; verificar se dispatcher roteia
+- [ ] **PENDENTE: email `welcome_to_pro.html` específico para primeiro charge pós-trial** (current `render_payment_confirmation_email` é genérico de renewal; próxima sessão)
+- [x] **Mixpanel event `trial_converted_auto`** — `backend/webhooks/handlers/invoice.py::handle_invoice_payment_succeeded` detecta `prior_status == "trialing"` e emite structured log `analytics.trial_converted_auto` com event + user_id + plan_id + amount_brl + stripe_subscription_id (pipeado para Mixpanel via log-sink)
+- [x] **Handler para `invoice.payment_action_required` (3DS/SCA)** — já existe via STORY-309 AC10 em `handle_payment_action_required` + dispatcher routea em `webhooks/stripe.py` linha 208
 
 ### AC4: Observability end-to-end
 - [ ] Mixpanel events:
