@@ -281,8 +281,14 @@ class TestBuscarEndpointQuotaValidation:
         mock_check_quota,
         mock_atomic_increment,
         mock_rate_limiter,
+        monkeypatch,
     ):
         """Should increment quota after successful search."""
+        # POST /v1/buscar's pipeline.stages.execute defaults ENABLE_MULTI_SOURCE=true;
+        # this test only mocks routes.search.PNCPClient (legacy single-source). Force
+        # the legacy path to keep the mocked client in control and avoid CI flake
+        # where buscar_todas_ufs_paralelo hangs on real network.
+        monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
         cleanup = setup_auth_override("user-increment-quota-story165")
         try:
             # Rate limit passes
@@ -346,12 +352,15 @@ class TestBuscarEndpointExcelGating:
         mock_check_quota,
         mock_atomic_increment,
         mock_upload_excel,
+        monkeypatch,
     ):
         """Should generate Excel for Máquina plan (allow_excel=True).
 
         Pipeline now uploads Excel to storage (not base64 inline), so
         excel_base64 is always None. We verify excel_available=True instead.
         """
+        # Force legacy single-source path (see test_increments_quota_on_successful_search).
+        monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
         cleanup = setup_auth_override("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
@@ -416,8 +425,11 @@ class TestBuscarEndpointExcelGating:
         mock_increment_quota,
         mock_check_quota,
         mock_rate_limiter,
+        monkeypatch,
     ):
         """Should skip Excel for Consultor Ágil plan (allow_excel=False)."""
+        # Force legacy single-source path (see test_increments_quota_on_successful_search).
+        monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
         # Mock rate limiter to allow requests
         mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
@@ -477,8 +489,11 @@ class TestBuscarEndpointFallbackBehavior:
         mock_increment_quota,
         mock_check_quota,
         mock_rate_limiter,
+        monkeypatch,
     ):
         """Should continue search even if quota increment fails."""
+        # Force legacy single-source path (see test_increments_quota_on_successful_search).
+        monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
         # Mock rate limiter to allow requests
         mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
