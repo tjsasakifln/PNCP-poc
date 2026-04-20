@@ -183,15 +183,19 @@ class TestValorBrazilianStringFormat:
         result = filtrar_por_valor(bids, valor_min=100000, valor_max=250000)
         assert len(result) == 2
 
-    def test_valor_invalid_string_treated_as_zero(self):
-        """Invalid string values should be treated as 0."""
+    def test_valor_invalid_string_passes_through(self):
+        """UX-401: Invalid string values pass through value filters (value unavailable, not zero)."""
         bids = [
             {"valorTotalEstimado": "invalid"},
             {"valorTotalEstimado": 150000},
         ]
         result = filtrar_por_valor(bids, valor_min=100000)
-        assert len(result) == 1
-        assert result[0]["valorTotalEstimado"] == 150000
+        # UX-401 AC: invalid/unparseable strings are treated as "data unavailable"
+        # and pass through instead of being rejected. This prevents losing legitimate
+        # bids whose value data hasn't been populated yet.
+        assert len(result) == 2
+        assert {"valorTotalEstimado": "invalid"} in result
+        assert {"valorTotalEstimado": 150000} in result
 
 
 class TestValorAlternativeFieldNames:
@@ -234,24 +238,25 @@ class TestValorEdgeCases:
         result = filtrar_por_valor([], valor_min=100000, valor_max=200000)
         assert result == []
 
-    def test_valor_none_in_bid(self):
-        """Bid with None valor should be treated as 0."""
+    def test_valor_none_in_bid_passes_through(self):
+        """UX-401: Bid with None valor passes through (value unavailable, not zero)."""
         bids = [
             {"valorTotalEstimado": None},
             {"valorTotalEstimado": 150000},
         ]
         result = filtrar_por_valor(bids, valor_min=100000)
-        assert len(result) == 1
-        assert result[0]["valorTotalEstimado"] == 150000
+        # UX-401 AC: None indicates missing data, not zero — pass through.
+        assert len(result) == 2
 
-    def test_valor_missing_field(self):
-        """Bid with no valor field should be treated as 0."""
+    def test_valor_missing_field_passes_through(self):
+        """UX-401: Bid without valor field passes through (value unavailable, not zero)."""
         bids = [
             {"objeto": "Something without value"},
             {"valorTotalEstimado": 150000},
         ]
         result = filtrar_por_valor(bids, valor_min=100000)
-        assert len(result) == 1
+        # UX-401 AC: missing field indicates data not yet populated — pass through.
+        assert len(result) == 2
 
     def test_valor_integer_conversion(self):
         """Should handle integer values."""
