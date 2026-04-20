@@ -111,12 +111,17 @@ class TestAC2WorkerTimeout:
         )
 
     def test_gunicorn_default_in_start_sh(self):
-        """start.sh should have GUNICORN_TIMEOUT default of 120."""
+        """start.sh should have GUNICORN_TIMEOUT default of 110.
+
+        DEBT-04 AC1: changed 120 → 110 so Gunicorn aborts before Railway's
+        120s proxy timeout, leaving ~10s headroom for response serialization.
+        See start.sh comment block for the time-budget waterfall invariant.
+        """
         start_sh = os.path.join(os.path.dirname(__file__), "..", "start.sh")
         if os.path.isfile(start_sh):
             with open(start_sh) as f:
                 content = f.read()
-            assert "GUNICORN_TIMEOUT:-120" in content
+            assert "GUNICORN_TIMEOUT:-110" in content
 
     def test_early_return_config_defined(self):
         """EARLY_RETURN_TIME_S and EARLY_RETURN_THRESHOLD_PCT must be in config."""
@@ -250,10 +255,19 @@ class TestAC4PNCPHealthCanary:
 
     @pytest.mark.asyncio
     async def test_pncp_canary_uses_realistic_page_size(self):
-        """PNCP canary should use tamanhoPagina=50 (STORY-316: realistic canary detects page size bug)."""
+        """PNCP canary should use tamanhoPagina=50 (STORY-316: realistic canary detects page size bug).
+
+        BTS-011 cluster 6 fix: STORY-4.5 added a second probe call via
+        `pncp_canary.validate_page_size_limit(client, expected_limit=50)`
+        that sends `tamanhoPagina=51`. With a single `captured_params` dict
+        the later probe overwrites the canary value and the assertion reads
+        51 instead of 50. Switched to collecting all call params in a list
+        and asserting the canary (first) call used 50, while also allowing
+        the follow-up probe (tamanhoPagina=51) without breaking the test.
+        """
         from health import check_source_health
 
-        captured_params = {}
+        calls: list[dict] = []
 
         class FakeResponse:
             status_code = 200
@@ -266,13 +280,19 @@ class TestAC4PNCPHealthCanary:
                 pass
 
             async def get(self, url, params=None):
-                captured_params.update(params or {})
+                calls.append(dict(params or {}))
                 return FakeResponse()
 
         with patch("health.httpx.AsyncClient", return_value=FakeClient()):
             await check_source_health("PNCP")
 
-        assert captured_params.get("tamanhoPagina") == 50
+        # First call is the realistic canary — must be tamanhoPagina=50.
+        assert calls, "check_source_health should have issued at least one GET"
+        assert calls[0].get("tamanhoPagina") == 50
+        # Any follow-up probe (STORY-4.5 validate_page_size_limit) must be
+        # exactly 51 — the canary-next check that detects a silent limit bump.
+        if len(calls) > 1:
+            assert calls[1].get("tamanhoPagina") == 51
 
 
 # ---------------------------------------------------------------------------
