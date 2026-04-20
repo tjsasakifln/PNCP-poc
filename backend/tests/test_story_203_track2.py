@@ -27,25 +27,12 @@ def test_sys_m02_hash_mechanism():
 
     test_token = "abcd1234efgh5678"
 
-    # Test determinism
     hash1 = hashlib.sha256(test_token[:16].encode('utf-8')).hexdigest()
     hash2 = hashlib.sha256(test_token[:16].encode('utf-8')).hexdigest()
 
-    if hash1 == hash2:
-        print("[PASS] SHA-256 hash is deterministic")
-        print(f"       Hash: {hash1[:16]}...")
-    else:
-        print("[FAIL] Hash not deterministic")
-        return False
-
-    # Verify it's a string (not int)
-    if isinstance(hash1, str):
-        print("[PASS] Hash is string type (compatible with dict keys)")
-    else:
-        print("[FAIL] Hash is not string")
-        return False
-
-    return True
+    assert hash1 == hash2, "SHA-256 hash must be deterministic"
+    assert isinstance(hash1, str), "Hash must be string type (compatible with dict keys)"
+    print(f"[PASS] SHA-256 hash is deterministic (hash: {hash1[:16]}...)")
 
 
 def test_sys_m03_rate_limiter_max_size():
