@@ -166,12 +166,17 @@ class TestBackgroundResultsStore:
         assert result is None
 
     def test_ttl_expiry(self):
-        """Results older than TTL should not be served."""
+        """Results older than TTL should not be served.
+
+        STORY-362 AC1 raised in-memory _RESULTS_TTL from 600s to 3600s.
+        Import the current value so this test tracks the source of truth.
+        """
+        from routes.search_state import _RESULTS_TTL
         resp = _make_response()
         store_background_results("test-ttl-001", resp)
 
-        # Manually expire entry
-        _background_results["test-ttl-001"]["stored_at"] = time.time() - 700  # > 600s TTL
+        # Manually expire entry (any offset > _RESULTS_TTL)
+        _background_results["test-ttl-001"]["stored_at"] = time.time() - (_RESULTS_TTL + 100)
 
         result = get_background_results("test-ttl-001")
         assert result is None
