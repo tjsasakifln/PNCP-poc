@@ -1,0 +1,130 @@
+# Workflow: Parallel UF Batch (SmartLic)
+#
+# Pattern canônico para execuções paralelas por UF.
+# Usado por: ingestion crawl, search multi-UF live fallback, bulk analytics.
+
+name: "parallel-uf-batch"
+version: "1.0.0"
+owner: "aiox-dispatch"
+tags: ["smartlic", "uf-parallel", "b2g"]
+
+description: |
+  Processa N UFs em waves de 5 (PNCP_BATCH_SIZE), respeitando:
+  - Rate limit PNCP (2s delay entre waves)
+  - Timeout waterfall (per_uf 25s máximo por task)
+  - ARQ job queue (se background)
+
+inputs:
+  - name: "ufs"
+    required: true
+    type: "list[string]"
+    description: "UFs a processar (ex: ['SC', 'PR', 'RS'])"
+    validation: "subset of [AC, AL, AP, AM, BA, CE, DF, ES, GO, MA, MT, MS, MG, PA, PB, PR, PE, PI, RJ, RN, RS, RO, RR, SC, SP, SE, TO]"
+
+  - name: "task_per_uf"
+    required: true
+    type: "string"
+    description: "Nome da função ou script a executar por UF (deve ter assinatura process_uf(uf: str) -> Result)"
+
+  - name: "mode"
+    required: false
+    type: "enum"
+    values: ["foreground", "background-arq"]
+    default: "foreground"
+
+outputs:
+  - name: "results"
+    type: "list[Result]"
+    ordering: "preserves input order"
+
+  - name: "errors"
+    type: "list[{uf, error, timestamp}]"
+
+phases:
+  - phase_id: "PHASE-01-validate"
+    name: "Input validation"
+    agent: "dispatch-chief"
+    type: "sequential"
+    timeout_seconds: 5
+    actions:
+      - "Validate all UFs are valid"
+      - "Check task_per_uf exists and is callable"
+      - "Verify timeout budget (per_uf * ceil(n/5) * 1.2 < pipeline_budget)"
+    gates:
+      - gate_id: "QG-INPUTS"
+        blocker: true
+
+  - phase_id: "PHASE-02-waves"
+    name: "Execute in waves of 5"
+    agent: "task-router"
+    type: "waves"
+    wave_size: 5
+    inter_wave_delay_seconds: 2.0
+    per_task_timeout_seconds: 25
+    executor: "worker"  # pure Python, não LLM
+    actions:
+      - "chunked(ufs, 5)"
+      - "for each wave: asyncio.gather(*[task_per_uf(uf) for uf in wave])"
+      - "await asyncio.sleep(2.0)"
+      - "if wave fails > 2/5: circuit-break, escalate to @dispatch-chief"
+
+  - phase_id: "PHASE-03-consolidate"
+    name: "Aggregate and report"
+    agent: "dispatch-chief"
+    type: "sequential"
+    timeout_seconds: 10
+    actions:
+      - "Flatten results preserving input order"
+      - "Collect errors with timestamps"
+      - "Emit Prometheus metric smartlic_pipeline_budget_exceeded_total{phase='uf-batch'} if any timeout"
+      - "Return {results, errors, stats}"
+
+# Error handling
+error_handling:
+  per_task_timeout:
+    action: "Log error with UF; continue other UFs in wave"
+    metric_increment: "smartlic_pipeline_budget_exceeded_total{phase='uf-batch', source='per_uf'}"
+  wave_majority_fail:
+    threshold: "3 of 5 tasks fail in a wave"
+    action: "Circuit-break remaining waves; return partial results + error"
+  total_budget_exceeded:
+    action: "Cancel remaining waves, return partial results marked stale"
+
+# Persistence (se mode=background-arq)
+persistence:
+  storage_path: ".aios/dispatch-uf-batch/"
+  state_schema:
+    - "workflow_id"
+    - "ufs_total"
+    - "ufs_completed"
+    - "ufs_errored"
+    - "wave_index"
+    - "started_at"
+    - "updated_at"
+  enqueue_via: "arq job_queue.enqueue('parallel_uf_batch', ...)"
+
+# Observability
+metrics:
+  - "smartlic_dispatch_uf_batch_duration_seconds"
+  - "smartlic_dispatch_uf_batch_errors_total"
+  - "smartlic_pipeline_budget_exceeded_total"
+
+# Example invocations
+examples:
+  ingestion_crawl:
+    inputs:
+      ufs: ["SP", "RJ", "MG", "BA", "PR", "SC", "RS", "GO", "PE", "CE"]
+      task_per_uf: "crawler.crawl_uf"
+      mode: "background-arq"
+
+  live_search_fallback:
+    inputs:
+      ufs: ["SC", "PR", "RS"]
+      task_per_uf: "pncp_client.search_uf"
+      mode: "foreground"
+
+  bulk_analytics:
+    inputs:
+      ufs: ["SP", "RJ", "MG"]
+      task_per_uf: "analytics.compute_uf_stats"
+      mode: "foreground"

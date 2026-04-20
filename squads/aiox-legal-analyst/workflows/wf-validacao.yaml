@@ -1,0 +1,44 @@
+workflow:
+  id: wf-validacao
+  name: "Validacao de Analise Processual"
+  version: "1.0"
+  squad: legal-analyst
+  description: "Auditoria de qualidade: fundamentacao + precedentes + CNJ + DATAJUD"
+  orchestrator: legal-chief
+  estimated_duration: "10-20 min"
+
+phases:
+  - id: phase_0_audit
+    name: "Auditoria"
+    agents: [theodoro-validator, marinoni-quality, cnj-compliance, datajud-formatter]
+    tasks:
+      - id: validar-fundamentacao
+        description: "CPC Art. 489 + coerencia logica"
+        outputs: [score_fundamentacao]
+      - id: validar-precedentes
+        description: "Vigencia + ratio + stare decisis"
+        outputs: [score_precedentes]
+      - id: validar-cnj
+        description: "Conformidade com Resolucoes CNJ"
+        dependencies: [validar-fundamentacao, validar-precedentes]
+        outputs: [score_cnj]
+      - id: validar-datajud
+        description: "DATAJUD schema compliance"
+        dependencies: [validar-cnj]
+        outputs: [score_datajud]
+
+    checkpoint:
+      gate: "Todos os scores acima do threshold?"
+      checklists:
+        - fundamentacao-quality-check.md
+        - precedente-quality-check.md
+        - cnj-resolucoes-check.md
+      veto_conditions:
+        - condition: "Qualquer checklist REPROVADO"
+          action: "BLOQUEAR, retornar a fase apropriada"
+
+success_criteria:
+  - "Fundamentacao: 8/10+"
+  - "Precedentes: 6/8+"
+  - "CNJ: 5/6+"
+  - "DATAJUD: schema valido"

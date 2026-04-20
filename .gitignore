@@ -354,11 +354,16 @@ docker-compose.*.override.yml
 !.claude/
 !.aios-core/
 
-# .claude/ — whitelist commands, rules, and CLAUDE.md only
+# .claude/ — whitelist commands, rules, CLAUDE.md, hooks + settings versioned por feat/squads-integration
 .claude/*
 !.claude/commands/
 !.claude/rules/
 !.claude/CLAUDE.md
+!.claude/settings.json
+!.claude/hooks/
+.claude/hooks/*
+!.claude/hooks/smart-router.cjs
+!.claude/hooks/squads-briefing.cjs
 
 # .aios-core/ — whitelist agent-teams and workflows only
 .aios-core/*
@@ -429,3 +434,6 @@ tests/load/fixtures/jwts.json
 # Billing E2E fixtures (STORY-3.5 EPIC-TD-2026Q2) — never commit Stripe secrets
 frontend/e2e-tests/billing/fixtures/*.secret.json
 frontend/e2e-tests/billing/fixtures/*.secret.yaml
+
+# Squads aiox-* local downgrade sentinels (feat/squads-integration)
+squads/*/.disabled

@@ -1,0 +1,107 @@
+# Template: Analise Processual Completa
+# Proposito: Estrutura mestra para analise processual seguindo pipeline completo
+
+metadata:
+  processo_id: "{PROCESSO_ID}"  # Numero do processo formato CNJ
+  tema: "{TEMA}"  # Ex: "Dano moral por negativacao indevida"
+  data_analise: "{DATA}"  # YYYY-MM-DD
+  versao: "{VERSAO}"  # Ex: "1.0"
+  area_direito: "{AREA}"  # Ex: "Direito Civil", "Direito do Consumidor"
+  tribunal: "{TRIBUNAL}"  # Ex: "STJ", "TJ-SP"
+
+classificacao:
+  classe_processual:
+    codigo_tpu: "{CODIGO_TPU}"
+    descricao: "{DESCRICAO_CLASSE}"
+  assuntos:
+    - codigo_tpu: "{CODIGO_ASSUNTO}"
+      descricao: "{DESCRICAO_ASSUNTO}"
+      nivel: "{NIVEL}"  # 1, 2 ou 3
+  competencia:
+    material: "{COMPETENCIA_MATERIAL}"
+    territorial: "{COMPETENCIA_TERRITORIAL}"
+    funcional: "{COMPETENCIA_FUNCIONAL}"
+
+partes:
+  autor:
+    nome: "{NOME_AUTOR}"
+    tipo: "{TIPO}"  # Pessoa fisica, juridica, ente publico
+    advogado: "{ADVOGADO}"
+    oab: "{OAB}"
+  reu:
+    nome: "{NOME_REU}"
+    tipo: "{TIPO}"
+    advogado: "{ADVOGADO}"
+    oab: "{OAB}"
+
+fatos_relevantes:
+  - "{FATO_1}"
+  - "{FATO_2}"
+  - "{FATO_3}"
+
+causa_de_pedir:
+  proxima: "{CAUSA_PROXIMA}"  # Fato juridico direto
+  remota: "{CAUSA_REMOTA}"  # Relacao juridica subjacente
+
+pedidos:
+  principal: "{PEDIDO_PRINCIPAL}"
+  subsidiarios:
+    - "{PEDIDO_SUBSIDIARIO_1}"
+  valor_causa: "{VALOR}"
+
+jurisprudencia:
+  sumulas_aplicaveis:
+    - numero: "{SUMULA}"
+      tribunal: "{TRIBUNAL}"
+      enunciado: "{ENUNCIADO}"
+  precedentes_vinculantes:
+    - processo: "{NUMERO}"
+      relator: "{RELATOR}"
+      orgao: "{ORGAO}"
+      tese: "{TESE}"
+      data: "{DATA}"
+  jurisprudencia_dominante:
+    - processo: "{NUMERO}"
+      relator: "{RELATOR}"
+      resultado: "{RESULTADO}"
+      valor_condenacao: "{VALOR}"
+      data: "{DATA}"
+
+relatores:
+  relator_principal:
+    nome: "{NOME}"
+    tribunal: "{TRIBUNAL}"
+    tendencia: "{TENDENCIA}"  # Percentual favoravel
+    votos_analisados: "{N}"
+
+jurimetria:
+  total_acordaos: "{N}"
+  taxa_procedencia: "{PERCENTUAL}"
+  valor_medio: "{VALOR}"
+  valor_mediano: "{VALOR}"
+  tendencia_temporal: "{TENDENCIA}"
+
+fundamentacao:
+  tese_principal: "{TESE}"
+  tese_subsidiaria: "{TESE_SUB}"
+  argumentos_hierarquizados:
+    - ordem: 1
+      tipo: "{TIPO}"  # Constitucional, legal, jurisprudencial, doutrinario
+      argumento: "{ARGUMENTO}"
+      fundamento: "{FUNDAMENTO}"
+  contra_argumentos:
+    - argumento: "{CONTRA}"
+      resposta: "{RESPOSTA}"
+
+validacao:
+  art_489_score: "{SCORE}/6"
+  qualidade_precedentes: "{SCORE}/8"
+  cnj_compliance: "{SCORE}/6"
+  parecer_final: "{APROVADO|REPROVADO|REVISAO}"
+
+conformidade_cnj:
+  datajud_schema: "{CONFORME|NAO_CONFORME}"
+  tpu_classificacao: "{CONFORME|NAO_CONFORME}"
+  resolucoes_aplicadas:
+    - resolucao: "{NUMERO}"
+      status: "{CONFORME|NAO_CONFORME}"

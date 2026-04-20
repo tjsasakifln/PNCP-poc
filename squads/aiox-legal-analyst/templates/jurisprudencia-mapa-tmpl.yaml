@@ -1,0 +1,64 @@
+# Template: Mapa de Jurisprudencia
+# Proposito: Mapa estruturado de jurisprudencia sobre um tema
+
+metadata:
+  tema: "{TEMA}"
+  data_pesquisa: "{DATA}"
+  tribunais_pesquisados: ["{TRIBUNAL_1}", "{TRIBUNAL_2}"]
+  periodo: "{PERIODO}"
+  total_acordaos: "{N}"
+
+sumulas:
+  vinculantes:
+    - numero: "{N}"
+      enunciado: "{TEXTO}"
+      relevancia: "{ALTA|MEDIA|BAIXA}"
+  stf:
+    - numero: "{N}"
+      enunciado: "{TEXTO}"
+  stj:
+    - numero: "{N}"
+      enunciado: "{TEXTO}"
+
+precedentes_vinculantes:
+  repercussao_geral:
+    - tema: "{NUMERO}"
+      processo: "{PROCESSO}"
+      relator: "{RELATOR}"
+      tese: "{TESE}"
+      data: "{DATA}"
+  repetitivos:
+    - tema: "{NUMERO}"
+      processo: "{PROCESSO}"
+      relator: "{RELATOR}"
+      tese: "{TESE}"
+      data: "{DATA}"
+  irdr:
+    - numero: "{N}"
+      tribunal: "{TRIBUNAL}"
+      tese: "{TESE}"
+      data: "{DATA}"
+
+correntes_jurisprudenciais:
+  majoritaria:
+    tese: "{TESE}"
+    fundamentos: ["{F1}", "{F2}"]
+    acordaos_representativos: ["{PROCESSO_1}", "{PROCESSO_2}"]
+    percentual: "{PERCENTUAL}"
+  minoritaria:
+    tese: "{TESE}"
+    fundamentos: ["{F1}", "{F2}"]
+    acordaos_representativos: ["{PROCESSO_1}"]
+    percentual: "{PERCENTUAL}"
+
+evolucao_temporal:
+  - periodo: "{ANO_INICIO}-{ANO_FIM}"
+    entendimento: "{ENTENDIMENTO}"
+    evento_marcante: "{EVENTO}"
+
+divergencias:
+  - tribunal_1: "{TRIBUNAL}"
+    posicao_1: "{POSICAO}"
+    tribunal_2: "{TRIBUNAL}"
+    posicao_2: "{POSICAO}"
+    status: "{RESOLVIDA|PENDENTE}"

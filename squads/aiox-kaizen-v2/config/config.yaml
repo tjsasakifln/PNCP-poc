@@ -1,0 +1,221 @@
+# Kaizen Squad Configuration
+# Pattern: IN-CF-001
+# Version: 1.0.0
+
+pack:
+  name: kaizen-v2
+  version: 2.0.0
+  short-title: Kaizen Squad v2
+  description: >-
+    Evolução do kaizen v1: sistema nervoso do projeto com sensoriamento diário (Tier 0).
+    Captura contínua de learnings, padrão de esquecimento (forgetting curve), relatórios
+    inteligentes com padrões reinforçados, e briefings proativos de sessão. Extensão fork
+    do kaizen v1 — não modifica v1.3.0, estende capacidades.
+  author: Murillo Alves (OPB)
+  icon: "🧠"
+  slashPrefix: kaizen-v2
+
+# Modos de operação
+operation_modes:
+  proactive:
+    # Git hook: .husky/post-commit → scripts/kaizen-trigger.sh
+    triggers:
+      - id: "planning-phase"
+        description: "Epics, stories, PRDs criados ou modificados"
+        paths: ["docs/stories/", "docs/prd/", "docs/epics/"]
+        actions: ["detect-gaps", "generate-recommendations"]
+        rationale: "Antes de começar trabalho novo, verificar se temos recursos"
+
+      - id: "squad-change"
+        description: "Squad, agente, mind ou workflow criado/modificado"
+        paths: ["squads/*/agents/", "squads/*/config/", "squads/*/minds/"]
+        actions: ["detect-gaps", "update-radar", "update-baseline"]
+        rationale: "Ecossistema mudou — verificar sobreposição, gaps, radar"
+
+      - id: "feature-complete"
+        description: "Commit com prefixo feat("
+        pattern: "^feat\\("
+        actions: ["performance-dashboard", "cost-analysis"]
+        rationale: "Feature entregue — medir impacto e custo"
+
+      - id: "workflow-change"
+        description: "Workflows ou tasks modificados"
+        paths: ["squads/*/workflows/", "squads/*/tasks/"]
+        actions: ["performance-dashboard"]
+        rationale: "Processo mudou — verificar impacto nas métricas"
+
+    # Cadências automáticas
+    schedules:
+      - id: "weekly-health-check"
+        cadence: "semanal (domingo 20:00 BRT)"
+        workflow: "wf-ecosystem-analysis"
+        output: "data/reports/week-{N}-{date}.md"
+        delivery: "WhatsApp via OpenClaw cron"
+
+      - id: "weekly-self-improve"
+        cadence: "semanal (domingo 20:30 BRT, após health check)"
+        workflow: "wf-self-improve"
+        output: "data/reports/self-improve-{date}.md"
+        delivery: "WhatsApp via OpenClaw cron"
+
+  reactive:
+    commands:
+      - "*analyze — Análise completa sob demanda"
+      - "*gaps — Detectar gaps de competência"
+      - "*radar — Atualizar technology radar"
+      - "*performance — Dashboard de performance"
+      - "*cost — Análise de custos"
+      - "*recommend — Gerar recomendações"
+      - "*self-improve — Meta-análise e auto-melhoria do squad"
+      - "*audit-quality {squad} — Auditar qualidade dos outputs de um squad"
+      - "*auto-heal {files} — Rodar auto-healing gate em arquivos"
+
+# Tier Structure
+tier_structure:
+  orchestrator:
+    agent: kaizen-chief
+    role: "Coordena análises, gera relatório semanal, routing"
+
+  tier_0_diagnosis:
+    agents:
+      - topology-analyst    # Skelton & Pais - Team Topologies
+      - performance-tracker # Forsgren/Kim (DORA) + Doerr (OKR) + Kaplan (BSC)
+    role: "Diagnóstico - sempre executam primeiro"
+
+  tier_1_operational:
+    agents:
+      - bottleneck-hunter  # Goldratt (TOC) + Croll (OMTM)
+      - capability-mapper  # Wardley (Maps) + Bersin (4R)
+      - tech-radar         # Fowler (Radar) + Ford (Fitness Functions)
+    role: "Análise operacional e recomendações"
+
+  tier_2_specialist:
+    agents:
+      - cost-analyst       # Storment (FinOps) + Kaplan (financial)
+    role: "Análise especializada de custos"
+
+# Template Configuration
+template_config:
+  engine: handlebars
+  syntax: "{{variable}}, {{#each}}, {{/each}}, {{^if}}"
+  resolver: "Templates resolve to squads/kaizen-v2/templates/"
+  variables_auto_populated:
+    - "{{week_number}} — ISO week number from system date"
+    - "{{year}} — current year from system date"
+    - "{{date}} — YYYY-MM-DD from system date"
+    - "{{mode}} — proactive | reactive (from trigger context)"
+  variables_from_analysis:
+    - "{{executive_summary}} — synthesized by kaizen-chief (phase 4)"
+    - "{{recommendations}} — filtered by RULE-RD-001 (N>=3)"
+
+# Output Templates
+outputs:
+  output_quality_audit:
+    template: "templates/output-quality-audit-tmpl.md"
+    dimensions:
+      - completude (25%)
+      - voice_dna (20%)
+      - qualidade_tecnica (20%)
+      - diferenciacao (15%)
+      - impacto_estimado (20%)
+    thresholds:
+      gold: 8.5
+      good: 7.0
+      needs_work: 5.0
+    gold_examples_path: "docs/gold-examples/"
+
+  auto_healing_gate:
+    max_auto_fix_iterations: 2
+    severity_levels: [trivial, low, medium, high]
+    auto_fixable: [trivial, low]
+    escalate: [medium, high]
+
+  weekly_report:
+    template: "templates/weekly-report-tmpl.md"
+    sections:
+      - competency_gaps
+      - tool_gaps
+      - agent_performance
+      - squad_recommendations
+      - cost_analysis
+
+  technology_radar:
+    template: "templates/tech-radar-tmpl.md"
+    quadrants: [APIs, MCPs, Libraries, Models]
+    rings: [Adopt, Trial, Assess, Hold]
+
+  capability_map:
+    template: "templates/capability-map-tmpl.md"
+    evolution_axis: [Genesis, Custom, Product, Commodity]
+
+  performance_dashboard:
+    template: "templates/performance-dashboard-tmpl.md"
+    frameworks: [DORA, BSC, OKR]
+
+# Pattern Library
+pattern_library:
+  prefix: KZ
+  naming_convention:
+    format: "{PREFIX}-{CATEGORY}-{NUMBER}"
+    example: "KZ-TP-001"
+  categories:
+    - id: TP
+      name: "Task Patterns"
+    - id: AP
+      name: "Analysis Patterns"
+    - id: RP
+      name: "Recommendation Patterns"
+    - id: MP
+      name: "Metric Patterns"
+
+# Task Standards
+task_standards:
+  enforce_anatomy: true
+  validator: "KZ-TP-001"
+  required_fields:
+    - task_name
+    - status
+    - responsible_executor
+    - execution_type
+    - input
+    - output
+    - action_items
+    - acceptance_criteria
+
+# Workflow Configuration
+workflow_config:
+  checkpoint_policy: always_active
+  fail_fast: true
+  allow_manual_override: false
+
+# Quality Gates
+quality_gates:
+  - id: "QG-KZ-001"
+    name: "Data Collection Complete"
+    transition: "Input -> Diagnosis"
+    type: blocking
+    criteria: "All ecosystem data gathered"
+
+  - id: "QG-KZ-002"
+    name: "Diagnosis Validated"
+    transition: "Tier 0 -> Tier 1"
+    type: blocking
+    criteria: "Topology + Performance analysis complete"
+
+  - id: "QG-KZ-003"
+    name: "Recommendations Quality"
+    transition: "Analysis -> Report"
+    type: blocking
+    criteria: "Each recommendation has evidence + action"
+
+# Executor Types
+executor_types:
+  agent:
+    id: "KZ-EP-002"
+    use_for: ["Gap analysis", "Performance tracking", "Cost calculation"]
+  hybrid:
+    id: "KZ-EP-003"
+    use_for: ["Recommendation approval", "Squad creation decisions"]
+  worker:
+    id: "KZ-EP-004"
+    use_for: ["Data collection", "Metric aggregation", "Report generation"]

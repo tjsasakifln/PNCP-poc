@@ -1,0 +1,42 @@
+workflow:
+  id: wf-analise-relator
+  name: "Analise de Relator"
+  version: "1.0"
+  squad: legal-analyst
+  description: "Perfil completo de Relator: tendencias, votos, divergencias, linhas argumentativas"
+  orchestrator: legal-chief
+  estimated_duration: "15-30 min"
+
+phases:
+  - id: phase_0_levantamento
+    name: "Levantamento de Votos"
+    agents: [mendes-researcher, weber-indexer]
+    tasks:
+      - id: levantar-votos
+        description: "Pesquisar todos os votos do Relator no tema"
+        outputs: [lista_votos]
+      - id: indexar-votos
+        description: "Indexar votos por resultado e tema"
+        dependencies: [levantar-votos]
+        outputs: [indice_votos]
+
+  - id: phase_1_analise
+    name: "Analise de Perfil"
+    agents: [carmem-relator, nunes-quantitative, fachin-precedent]
+    parallelizable: true
+    tasks:
+      - id: perfil-tendencia
+        description: "Calcular tendencia e posicionamento"
+        outputs: [perfil_relator]
+      - id: estatisticas
+        description: "Dados quantitativos dos votos"
+        outputs: [stats_relator]
+      - id: votos-chave
+        description: "Analisar votos mais relevantes"
+        outputs: [fichas_votos_chave]
+
+success_criteria:
+  - "Tendencia calculada com percentual"
+  - "Votos-chave analisados"
+  - "Divergencias mapeadas"
+  - "Perfil estruturado gerado"

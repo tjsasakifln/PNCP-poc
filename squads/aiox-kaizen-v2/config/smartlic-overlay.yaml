@@ -1,0 +1,149 @@
+# SmartLic Overlay — aiox-kaizen-v2
+#
+# Customização do squad KAIZEN-V2 (Continuous Intelligence + Memory Decay)
+# para o ecossistema SmartLic.
+
+overlay:
+  squad_name: "aiox-kaizen-v2"
+  target_version: "1.0.0"
+  domain: "smartlic-ecosystem-watch"
+
+project_context:
+  name: "SmartLic"
+  stage: "POC v0.5 — beta com trials"
+  ecosystem_health_areas:
+    - "Backend: FastAPI routes, pipelines, workers"
+    - "Frontend: Next.js pages, components, SSE integrations"
+    - "Data: Supabase schema, RPCs, migrations, RLS policies"
+    - "LLM: GPT-4.1-nano classification quality (precision ≥85%, recall ≥70%)"
+    - "Infra: Railway deploy health, pg_cron, ARQ workers"
+    - "CI/CD: GitHub Actions runs, test stability, deploy success rate"
+
+# Integração com synapse-engine.cjs existente (NÃO duplicar!)
+existing_synapse_integration:
+  engine_path: ".claude/hooks/synapse-engine.cjs"
+  purpose: "Already captures session data in .synapse/ directory"
+  kaizen_adds:
+    - "Weekly cadence (domingo 20:00 BRT) via ARQ cron (não via Stop hook)"
+    - "Ebbinghaus forgetting curve aplicado a padrões capturados"
+    - "Top-5 active patterns injected at SessionStart (<2KB via squads-briefing.cjs)"
+  do_not_duplicate:
+    - "Daily sensing (synapse-engine já faz)"
+    - "Session digest (precompact-session-digest.cjs já faz)"
+
+# Areas de monitoramento prioritárias
+monitoring_areas:
+  ci_drift_sweep:
+    priority: "HIGH (STORY-BTS-011 ativo)"
+    metric: "Número de failures em main por cluster"
+    source: "GitHub Actions API"
+    alert_threshold: "Cluster com >10 failures persiste >7 dias"
+
+  test_stability:
+    priority: "HIGH"
+    metrics:
+      - "Backend: >= 5131 passing, 0 failures (Zero-Failure Policy)"
+      - "Frontend: >= 2681 passing, 0 failures"
+      - "E2E: 60 flows passando"
+    alert: "Qualquer regressão em main"
+
+  llm_classification_slo:
+    priority: "MEDIUM"
+    metrics:
+      - "smartlic_filter_decisions_by_setor_total — precision/recall por setor"
+      - "smartlic_llm_fallback_rejects_total — fallback rate"
+      - "smartlic_feedback_negative_total — user disagreements"
+    slo: "Precision ≥85%, Recall ≥70% (benchmark 15 samples/sector)"
+
+  ingestion_health:
+    priority: "HIGH"
+    metrics:
+      - "pg_cron jobs: purge-old-bids, cleanup-search-*"
+      - "PNCP canary: smartlic_pncp_canary_consecutive_failures"
+      - "DataLake row counts: pncp_raw_bids ~50K, supplier_contracts ~2M"
+    alert_via: "Sentry capture_message(level='error') com fingerprint dedup"
+
+  deploy_success_rate:
+    priority: "HIGH"
+    metric: "Railway deploy success rate 30-day"
+    source: "Railway CLI / GitHub Actions deploy.yml"
+    alert: "3+ failed deploys em 24h (possível CRIT-080-like)"
+
+  bundle_size:
+    priority: "MEDIUM"
+    baseline: "1.64MB gzipped (2026-04-19)"
+    cap: "1.75MB (.size-limit.js)"
+    target: "-600KB em 90d (STORY-5.14)"
+    alert: "Crescimento >5% sem justificativa em commit"
+
+# Padrões já capturados pela memória do projeto — kaizen deve validar persistência
+known_patterns_to_track:
+  - id: "CACHE_WARMING_DEPRECATION_2026_04_18"
+    pattern: "Jobs proativos de cache warming removidos; DataLake <100ms tornou obsoleto"
+    still_relevant: true
+    validate: "Não ressurgirem em novos PRs"
+
+  - id: "CI_DRIFT_POST_407"
+    pattern: "main ~150 failures em 8-10 clusters; NÃO flaky; STORY-BTS-011 sweep em andamento"
+    still_relevant: true
+    validate: "Sweep completa? Clusters resolvidos?"
+
+  - id: "ADVISOR_DISCRIMINATOR_PATTERN"
+    pattern: "advisor pede discriminador empírico barato (<5min) antes de ação especulativa"
+    still_relevant: true
+    validate: "Agentes e usuário seguem este pattern?"
+
+  - id: "BUNDLE_SIZE_RECALIBRATION"
+    pattern: "2026-04-19 cap recalibrado 250KB→1.75MB (baseline real 1.64MB)"
+    still_relevant: true
+    validate: "STORY-5.14 progride para -600KB target?"
+
+  - id: "PR_VALIDATION_REQUIRED_SECTIONS"
+    pattern: "PR body precisa ## Summary/Context + ## Testing Plan + ## Closes"
+    still_relevant: true
+    validate: "Novos PRs seguem o formato?"
+
+# Cadência — weekly (domingo noite) como padrão kaizen
+cadence:
+  primary_tick:
+    schedule: "0 20 * * 0"  # Domingo 20:00 BRT
+    duration: "30-60 min"
+    budget: "$4.50-7.00 (Opus para síntese, Sonnet para coleta)"
+
+  session_triggered:
+    via: "SessionStart hook (squads-briefing.cjs)"
+    payload: "≤2KB header (top-5 active patterns)"
+
+# Learning loop (Ebbinghaus)
+memory_decay:
+  encoding_criteria:
+    - "verified: pattern foi empiricamente validado (não hipótese)"
+    - "non-obvious: surpreende vs código/docs atuais"
+    - "reusable: aplicável em múltiplas stories/sessões"
+    - "actionable: sugere ação concreta, não apenas descrição"
+    - "empirical: baseado em incident/metric, não em teoria"
+
+  reinforcement:
+    mechanism: "Pattern referenced in PR description or reused → +1 strength"
+    max_strength: 10
+
+  decay:
+    curve: "Ebbinghaus R(t) = exp(-t/S) onde S depende da strength"
+    forgetting_threshold: "R(t) < 0.2 → move to cold storage"
+    cold_storage: ".synapse/archive/YYYY-MM/"
+
+# Integração com @sm / @po / @devops (AIOS)
+ecosystem_integration:
+  story_creation_signal:
+    when: "Kaizen detecta gap → criar story via @sm"
+    delegate: "Skill(skill: 'sm') com contexto do gap"
+
+  devops_alerts:
+    when: "Deploy falha 3x ou CI drift cresce"
+    delegate: "Skill(skill: 'devops') com logs + recommendations"
+
+delegates_to:
+  - squad: "aiox-deep-research"
+    when: "Gap detected requires investigation beyond ecosystem data"
+  - squad: "aiox-dispatch"
+    when: "Weekly tick precisa paralelizar coleta (>5 áreas)"

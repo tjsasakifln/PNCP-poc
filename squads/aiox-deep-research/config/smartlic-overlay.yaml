@@ -1,0 +1,112 @@
+# SmartLic Overlay — aiox-deep-research
+#
+# Customização B2G do squad DEEP-RESEARCH para o SmartLic.
+# Pipeline 3-tier (Diagnostic → Execution → QA) aplicado a pesquisa de mercado B2G.
+
+overlay:
+  squad_name: "aiox-deep-research"
+  target_version: "1.0.0"
+  domain: "b2g-licitacoes-research"
+
+project_context:
+  name: "SmartLic"
+  domain_focus: "Licitações públicas brasileiras (B2G)"
+  primary_use_cases:
+    - "Análise de mercado por setor/UF/esfera"
+    - "Perfil competitivo por CNPJ (quem ganha editais do setor X?)"
+    - "Análise de viabilidade estratégica para participação"
+    - "Síntese de evidências para tomada de decisão (entrar em UF nova? atacar modalidade Y?)"
+
+# Fontes de dados canônicas — agentes DEVEM usar nesta prioridade
+canonical_sources:
+  primary:
+    - source: "supplier_contracts"
+      location: "Supabase table (~2M linhas)"
+      use_for: "Histórico de contratos vencidos — análise quantitativa de mercado"
+      access: "Via datalake_query.py ou SQL direto"
+    - source: "pncp_raw_bids"
+      location: "Supabase table (~50K abertos, TTL 12d)"
+      use_for: "Editais em andamento — oportunidades correntes"
+      access: "search_datalake RPC (tsquery Portuguese)"
+
+  secondary:
+    - source: "PNCP API"
+      url: "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao"
+      use_for: "Dados ao vivo quando datalake não tem (janela >12d)"
+      constraints: "tamanhoPagina max=50 (não exceder)"
+    - source: "PCP v2 API"
+      url: "https://compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos"
+      use_for: "Cobertura complementar"
+      constraints: "Pública, pageCount=10 fixo, sem UF server-side"
+    - source: "ComprasGov v3"
+      url: "https://dadosabertos.compras.gov.br"
+      use_for: "Federal tier 3"
+      constraints: "Dual-endpoint (Lei 8.666 + Lei 14.133)"
+
+  tertiary:
+    - source: "Web search (EXA/Perplexity)"
+      use_for: "Contexto regulatório, notícias, concorrentes fora do PNCP"
+      constraints: "Sempre citar fonte. Desconfiar de blogs — preferir .gov.br, imprensa oficial"
+
+# 15 setores B2G — sempre filtrar/contextualizar por setor
+sectors_reference: "squads/_shared/sectors-15.yaml"
+sectors_source_of_truth: "backend/sectors_data.yaml"
+
+# Viés específicos B2G que Ioannidis/Kahneman do squad devem flaggar
+b2g_biases_to_audit:
+  - name: "Survivorship bias"
+    risk: "Analisar apenas contratos vencidos omite editais fracassados/cancelados"
+    mitigation: "Incluir status CANCELADO e DESERTO na análise"
+  - name: "Recency bias"
+    risk: "Super-ponderar editais recentes ignorando sazonalidade (dez-mar é fraco)"
+    mitigation: "Sempre normalizar por trimestre/ano, não só mês"
+  - name: "Geographic bias"
+    risk: "Generalizar padrões SP/RJ para UFs menores"
+    mitigation: "Reportar UF-por-UF, não agregar nacional sem flag"
+  - name: "Modality bias"
+    risk: "Supor Pregão (8) universal — mas modalidades 4/5/7 têm dinâmicas diferentes"
+    mitigation: "Reportar por modalidade, não só total"
+
+# Ferramentas específicas que a Execution Tier pode invocar
+smartlic_tools:
+  datalake_query:
+    path: "backend/datalake_query.py"
+    function: "query_datalake(query, filters)"
+    returns: "List[Licitacao] com <100ms p95"
+
+  search_datalake_rpc:
+    type: "Supabase RPC"
+    signature: "search_datalake(query text, filters jsonb)"
+    use: "Full-text search Portuguese em pncp_raw_bids"
+
+  viability_scorer:
+    path: "backend/viability.py"
+    returns: "Score 0-100 (4 fatores: modalidade 30% + timeline 25% + valor 25% + geo 20%)"
+
+  llm_classification:
+    path: "backend/llm_arbiter.py"
+    model: "GPT-4.1-nano"
+    use: "Classificar setor de edital sem keyword match"
+
+# QA adjustments — squad padrão tem Ioannidis/Kahneman. Adicionar B2G-specific check
+qa_overlay:
+  additional_checks:
+    - "Cross-reference: toda conclusão sobre 'mercado X em UF Y' deve citar N >= 50 contratos em supplier_contracts OU marcar como 'low-sample'"
+    - "Regulatório: verificar se insights violam Lei 14.133 (ex: recomendar prática anti-concorrencial)"
+    - "Timeline: editais têm prazos legais (no mínimo 8 dias úteis para Pregão). Recomendação de ação deve respeitar."
+
+# Output format para SmartLic
+output_format:
+  preferred:
+    - type: "Markdown report"
+      sections: ["Question", "Method", "Findings", "Evidence", "Biases audited", "Recommendations", "Next steps"]
+      audience: "Founders/CEOs de empresas B2G"
+  artifacts:
+    - "docs/research/YYYY-MM-DD-<topic>.md"
+    - "Gráfico Recharts se série temporal (delegar a @apex)"
+
+delegates_to:
+  - squad: "aiox-legal-analyst"
+    when: "Pesquisa envolve interpretação de norma (Lei 14.133, decreto específico)"
+  - squad: "aiox-dispatch"
+    when: "Pesquisa precisa agentes em paralelo (ex: 5 UFs × 3 modalidades)"
