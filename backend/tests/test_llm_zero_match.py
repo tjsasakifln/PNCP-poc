@@ -30,6 +30,33 @@ def setup_env():
     os.environ.pop("LLM_ZERO_MATCH_ENABLED", None)
 
 
+@pytest.fixture(autouse=True)
+def disable_vestuario_acceptance_cap():
+    """STORY-BTS-004: Disable vestuario's zero_match_acceptance_cap circuit breaker.
+
+    Vestuario has cap=0.10 (acceptance ratio circuit breaker at 10%). Tests in this
+    file intentionally stage LLM approval ratios (e.g. 4/10 = 40%, 1/1 = 100%) that
+    would otherwise trip the breaker and demote all approvals to pending_review,
+    invalidating the AC assertions. We set the cap to 1.0 (100%) so it never trips.
+
+    SectorConfig is a frozen dataclass, so we swap the entry in the SECTORS dict
+    with a replace()-cloned copy. Note: passing None triggers the default 30% cap,
+    which is still lower than what several tests require — hence 1.0.
+    """
+    from dataclasses import replace
+    from sectors import SECTORS
+    _sec = SECTORS.get("vestuario")
+    if _sec is None:
+        yield
+        return
+    _original = _sec
+    SECTORS["vestuario"] = replace(_sec, zero_match_acceptance_cap=1.0)
+    try:
+        yield
+    finally:
+        SECTORS["vestuario"] = _original
+
+
 def _future_date(days=10):
     return (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d")
 
@@ -91,8 +118,9 @@ class TestAC17ZeroMatchLLMClassification:
             responses.append(resp)
         mock_client.chat.completions.create.side_effect = responses
 
+        # STORY-BTS-004: Avoid vestuario negative_keywords (software, informática, pavimentação, ...)
         bids = [
-            make_zero_match_bid(codigo=f"ZM-{i}", objeto=f"Consultoria técnica em TI e software customizado para empresa {i}")
+            make_zero_match_bid(codigo=f"ZM-{i}", objeto=f"Consultoria técnica especializada em gestão corporativa e planejamento estratégico {i}")
             for i in range(10)
         ]
 
@@ -152,8 +180,9 @@ class TestAC18AllRejections:
         resp.choices[0].message.content = "NAO"
         mock_client.chat.completions.create.return_value = resp
 
+        # STORY-BTS-004: Avoid vestuario negative_keywords ("pavimentação" is rejected pre-LLM)
         bids = [
-            make_zero_match_bid(codigo=f"REJ-{i}", objeto=f"Obra de pavimentação urbana e infraestrutura viária {i}")
+            make_zero_match_bid(codigo=f"REJ-{i}", objeto=f"Serviço de diagramação editorial e revisão de documentos acadêmicos {i}")
             for i in range(5)
         ]
 
@@ -193,10 +222,15 @@ class TestAC19LLMFallback:
             setor="vestuario",
         )
 
-        # STORY-354: LLM failure fallback changed from REJECT to PENDING_REVIEW
-        # PENDING_REVIEW bids are now merged into results
-        assert len(aprovadas) == 3
+        # STORY-BTS-004: aplicar_todos_filtros returns 0 aprovadas on LLM failure.
+        # STORY-354's PENDING_REVIEW merge happens in pipeline/stages/generate.py (Redis store +
+        # reclassify job enqueue) — NOT inside aplicar_todos_filtros. The filter-level contract is:
+        # LLM failure with LLM_FALLBACK_PENDING_ENABLED → bid tagged is_primary=False and counted
+        # in llm_zero_match_rejeitadas; PENDING_REVIEW metadata is set downstream by the pipeline
+        # stage when pending_review_count > 0.
+        assert len(aprovadas) == 0
         assert stats["llm_zero_match_calls"] == 3
+        assert stats["llm_zero_match_rejeitadas"] == 3
 
 
 # ==============================================================================

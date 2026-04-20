@@ -181,11 +181,15 @@ class TestAC3SetorPassedToFilter:
 class TestAC4ZeroMatchActivated:
     """AC4: Integration test — LLM Zero-Match (Camada 3B) is activated when setor is passed."""
 
-    @pytest.mark.asyncio
     @patch("config.LLM_ZERO_MATCH_ENABLED", True)
     @patch("filter._get_tracker")
-    async def test_zero_match_path_entered_with_setor(self, mock_tracker):
-        """When setor != None and LLM_ZERO_MATCH_ENABLED, zero-match pool is collected."""
+    def test_zero_match_path_entered_with_setor(self, mock_tracker):
+        """When setor != None and LLM_ZERO_MATCH_ENABLED, zero-match pool is collected.
+
+        STORY-BTS-004: Must be sync — aplicar_todos_filtros internally calls
+        asyncio.run() (filter/pipeline.py:913 gather_classifications) which raises
+        RuntimeError if invoked from within pytest-asyncio's running event loop.
+        """
         from filter import aplicar_todos_filtros
 
         mock_tracker.return_value = MagicMock()
