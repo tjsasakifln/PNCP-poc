@@ -173,8 +173,11 @@ export default function SignupPage() {
       rollout_branch: "card",
       ...getStoredUTMParams(),
     });
+    // CONV-003c AC4: capture instrumented funnel event. CNAE is collected
+    // later in onboarding, not at signup — pass only the fields available
+    // at this point so downstream Mixpanel breakdowns stay honest.
     trackEvent('trial_card_captured', {
-      cnae: data.company ?? undefined,
+      method: "email",
     });
   };
 
