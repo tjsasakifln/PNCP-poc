@@ -1,0 +1,54 @@
+# Template: Ficha de Precedente
+# Proposito: Ficha estruturada para analise individual de precedente
+
+identificacao:
+  processo: "{NUMERO}"  # Formato CNJ
+  classe: "{CLASSE}"
+  relator: "{RELATOR}"
+  orgao_julgador: "{ORGAO}"
+  data_julgamento: "{DATA}"
+  data_publicacao: "{DATA}"
+  resultado: "{RESULTADO}"  # Provido, Desprovido, Parcialmente Provido, etc.
+
+classificacao:
+  recurso_repetitivo: "{SIM|NAO}"
+  tema_repetitivo: "{NUMERO_TEMA}"
+  repercussao_geral: "{SIM|NAO}"
+  tema_rg: "{NUMERO_TEMA}"
+  sumula_vinculante: "{SIM|NAO}"
+  irdr: "{SIM|NAO}"
+
+questao_juridica:
+  holding: "{QUESTAO_CENTRAL}"
+  fatos_materiais:
+    - "{FATO_1}"
+    - "{FATO_2}"
+
+ratio_decidendi:
+  tese: "{TESE_FIXADA}"
+  fundamentos_determinantes:
+    - "{FUNDAMENTO_1}"
+    - "{FUNDAMENTO_2}"
+
+obiter_dicta:
+  - "{COMENTARIO_INCIDENTAL_1}"
+  - "{COMENTARIO_INCIDENTAL_2}"
+
+votos:
+  vencedor:
+    relator: "{SIM|NAO}"
+    fundamento_resumido: "{RESUMO}"
+  vencidos:
+    - ministro: "{NOME}"
+      fundamento_resumido: "{RESUMO}"
+
+forca_vinculante: "{VINCULANTE|PERSUASIVO|SUPERADO}"
+
+vulnerabilidades:
+  - "{VULNERABILIDADE_1}"
+
+cadeia_precedentes:
+  citados_no_acordao:
+    - "{PROCESSO_CITADO_1}"
+  que_citam_este:
+    - "{PROCESSO_QUE_CITA_1}"

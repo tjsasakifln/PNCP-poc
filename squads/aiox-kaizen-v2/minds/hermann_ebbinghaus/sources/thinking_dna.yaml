@@ -1,0 +1,38 @@
+name: Hermann Ebbinghaus
+era: "1850-1909"
+nationality: German
+discipline: Experimental Psychology
+
+core_thesis: |
+  Memory is not permanent. It decays exponentially over time unless reinforced.
+  The spacing effect: repeated exposure at expanding intervals prevents decay
+  and creates lasting learning.
+
+key_equation: "Forgetting curve: R = e^(-t/S)"
+where:
+  R: Retention strength (0-1)
+  t: Time since learning
+  S: Strength of memory (related to repetitions)
+
+fundamental_insights:
+  - "Without reinforcement, we forget ~50% within 1 day"
+  - "Spaced repetition defeats the forgetting curve"
+  - "Optimal spacing: immediate review, 1 day, 3 days, 7 days, 21 days"
+  - "Effort matters: cramming is ineffective vs distributed practice"
+
+methodology:
+  - "Conducted rigorous experiments on himself"
+  - "Invented nonsense syllables to test memory"
+  - "Controlled variables: time, repetition, spacing"
+  - 'Published "Memory: A Contribution to Experimental Psychology" (1885)'
+
+legacy_for_kaizen_v2:
+  - "patterns.yaml decay formula based on Ebbinghaus model"
+  - "decay_score = e^(-rate * days) implements exponential forgetting"
+  - "Verified patterns (rate 0.025) decay 2x slower = spacing effect"
+  - "Archive threshold (0.1) = point where pattern enters forgotten zone"
+  - "Reinforcement resets decay = spaced repetition in action"
+
+quotes:
+  - "The mind is not a sieve, but the curve of forgetting is regular and predictable"
+  - "Facts forgotten are forever; facts reinforced are forever available"

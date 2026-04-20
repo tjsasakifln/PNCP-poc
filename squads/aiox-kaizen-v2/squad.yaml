@@ -1,0 +1,171 @@
+name: kaizen-v2
+version: 2.2.0
+status: ACTIVE
+description: >-
+  Evolução do kaizen v1: sistema nervoso do projeto com sensoriamento diário (Tier 0).
+  Captura contínua de learnings, padrão de esquecimento (forgetting curve), relatórios
+  inteligentes com padrões reinforçados, e briefings proativos de sessão. Extensão fork
+  do kaizen v1 — não modifica v1.3.0, estende capacidades.
+slashPrefix: kaizen-v2
+cadence: "daily (capture); overnight (reflect); weekly/monthly (report)"
+
+aios:
+  minVersion: "2.1.0"
+  type: squad
+
+dependencies:
+  squads:
+    - name: kaizen
+      minVersion: "1.3.0"
+      reason: "v2-specific minds only; v1 minds referenced from kaizen v1.3.0+"
+
+automation_boundary:
+  deterministic:
+    - "Stop hook → git log do dia → daily YAML"
+    - "SessionStart hook → patterns.yaml decay → briefing inject"
+    - "Reflect workflow → mine patterns com forgetting curve"
+    - "Report gen → agrega dailies por período + learnings"
+    - "Archive rotate → dailies > 90 dias + patterns decay < 0.1"
+  probabilistic:
+    - "Pattern extraction criteria — non-obvious + verified + reusable"
+    - "Suggestion generation — contexto + heuristics"
+    - "Briefing compression — ≤ 2KB, ≤ 5 padrões chave"
+  autonomy_level: 2
+  autonomy_rationale: "Captura automática, análise de padrões requer LLM, reflexão requer validação humana em crítico."
+
+commands:
+  - name: "*capture"
+    description: "Captura manual daily (fallback se hook falhar)"
+    skill: "kaizen-v2:capture"
+  - name: "*reflect"
+    description: "Reflexão overnight — extrai padrões com forgetting curve"
+    skill: "kaizen-v2:reflect"
+  - name: "*report"
+    description: "Relatório: weekly/monthly/yearly com seção learnings"
+    skill: "kaizen-v2:report"
+  - name: "*health"
+    description: "Health check — hooks, dirs, patterns.yaml, último daily"
+    skill: "kaizen-v2:health"
+  - name: "*install"
+    description: "Instalação auto — merge hooks + init dirs + first briefing"
+    skill: "kaizen-v2:install"
+  - name: "*uninstall"
+    description: "Desinstalação — remove hooks (preserve intelligence data)"
+    skill: "kaizen-v2:uninstall"
+  - name: "*analyze"
+    description: "[v1] Análise completa — 6 dimensões"
+    skill: "kaizen:analyze"
+  - name: "*self-improve"
+    description: "Meta-análise e auto-melhoria do squad"
+    skill: "kaizen-v2:self-improve"
+  - name: "*gaps"
+    description: "[v1] Detecta competências faltando"
+    skill: "kaizen:gaps"
+
+components:
+  agents:
+    # Core v2
+    - kaizen-chief.md
+    - memory-keeper.md
+    # v1 (copiados)
+    - topology-analyst.md
+    - performance-tracker.md
+    - bottleneck-hunter.md
+    - capability-mapper.md
+    - tech-radar.md
+    - cost-analyst.md
+  tasks:
+    # Core v2
+    - capture-daily.md
+    - reflect.md
+    - mine-patterns.md
+    - build-report.md
+    - compact-archive.md
+    - install.md
+    - uninstall.md
+    - health-check.md
+    # v1 (copiados)
+    - detect-gaps.md
+    - performance-dashboard.md
+    - update-radar.md
+    - cost-analysis.md
+    - generate-recommendations.md
+    - self-improve.md
+    - audit-output-quality.md
+    - auto-healing-gate.md
+  workflows:
+    # Core v2
+    - wf-daily-capture.yaml
+    - wf-overnight-reflect.yaml
+    - wf-install.yaml
+    # v1 (copiados)
+    - wf-ecosystem-analysis.yaml
+    - wf-weekly-report.yaml
+    - wf-self-improve.yaml
+  templates:
+    # Core v2
+    - daily-digest-tmpl.yaml
+    - reflection-tmpl.md
+    - monthly-report-tmpl.md
+    # v1 (copiados)
+    - capability-map-tmpl.md
+    - weekly-report-tmpl.md
+    - performance-dashboard-tmpl.md
+    - tech-radar-tmpl.md
+  checklists:
+    # Core v2
+    - daily-capture-checklist.md
+    - reflection-quality-checklist.md
+    - installation-checklist.md
+    # v1 (copiados)
+    - agent-activation-checklist.md
+    - report-quality-checklist.md
+    - analysis-quality-checklist.md
+  rules:
+    # Core v2
+    - forgetting-curve.md
+    - extraction-criteria.md
+    # v1 (copiado)
+    - recommendation-defensibility.md
+  minds:
+    # Core v2 — Tier 0 Sensorial (included in this squad)
+    - hermann_ebbinghaus
+    - lance_martin
+    - chris_argyris
+    # v1 minds — referenced from squads/kaizen/minds/ (not duplicated)
+    # Install kaizen v1 first, then kaizen-v2 extends it
+    # - skelton_pais (Team Topologies)
+    # - eliyahu_goldratt (Theory of Constraints)
+    # - nicole_forsgren (DORA Metrics)
+    # - simon_wardley (Wardley Maps)
+    # - martin_fowler (Technology Radar)
+    # - kaplan_norton (Balanced Scorecard)
+    # - john_doerr (OKRs)
+    # - josh_bersin (4R Model)
+    # - neal_ford (Fitness Functions)
+    # - alistair_croll (Lean Analytics)
+  scripts:
+    # Core v2 — Hooks
+    - stop-capture.cjs
+    - session-briefing.cjs
+    # v1 (copiados)
+    - validate-report.sh
+    - kaizen-trigger.sh
+  data:
+    - data/baselines/ecosystem-baseline.yaml
+    - data/baselines/initial-radar.yaml
+    - data/radar/initial-radar.yaml
+    - data/recommendation-tracker.yaml
+    - data/gap-action-plan.md
+    - data/kill-switch-protocol.md
+  config:
+    - config.yaml
+
+metrics:
+  agents: 8
+  frameworks: 14
+  heuristics: 35
+  minds: 3  # v2-specific (+ 10 inherited from kaizen v1)
+  quality_gates: 6
+  daily_cost: "~$0.30"
+  weekly_cost: "~$4.80"

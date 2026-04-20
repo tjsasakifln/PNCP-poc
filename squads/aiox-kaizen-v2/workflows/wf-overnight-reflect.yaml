@@ -1,0 +1,105 @@
+name: wf-overnight-reflect
+version: 1.0.0
+status: SPEC_DEFINED
+
+description: >-
+  Overnight reflection pipeline. Scheduled cron (default 2am daily).
+  Analyzes recent dailies → extracts patterns with forgetting curve → updates patterns.yaml.
+
+trigger:
+  scheduled:
+    cron: "0 2 * * *"  # 2am daily (configurable in config.yaml)
+    timezone: "America/Sao_Paulo"
+
+phases:
+  - phase: 1
+    name: "Load Context"
+    steps:
+      - step: 1.1
+        name: "Read Recent Dailies"
+        source: "data/intelligence/daily/"
+        output: "7 recent daily YAMLs"
+
+      - step: 1.2
+        name: "Load Extraction Rules"
+        source: "rules/extraction-criteria.md"
+        output: "5-point validation criteria"
+
+      - step: 1.3
+        name: "Load Current Patterns"
+        source: "data/intelligence/knowledge/patterns.yaml"
+        output: "Active patterns + decay metadata"
+
+  - phase: 2
+    name: "Mine Patterns"
+    steps:
+      - step: 2.1
+        name: "Extract Pattern Candidates"
+        task: "tasks/mine-patterns.md"
+        output: "Candidates passing 5 criteria"
+
+      - step: 2.2
+        name: "Check for Duplicates"
+        action: "Compare candidates against patterns.yaml"
+        output: "New patterns + reinforcement list"
+
+      - step: 2.3
+        name: "Apply Forgetting Curve"
+        task: "tasks/reflect.md"
+        rules: "rules/forgetting-curve.md"
+        output: "Recalculated decay_scores"
+
+  - phase: 3
+    name: "Reflect & Report"
+    steps:
+      - step: 3.1
+        name: "Generate Reflection"
+        template: "templates/reflection-tmpl.md"
+        output: "data/intelligence/reflections/YYYY-MM-DD-reflection.md"
+
+      - step: 3.2
+        name: "Update patterns.yaml"
+        action: "Merge new patterns, update decay scores"
+        output: "Updated data/intelligence/knowledge/patterns.yaml"
+
+      - step: 3.3
+        name: "Flag Patterns for Archive"
+        condition: "decay_score < 0.1"
+        action: "Flag patterns with archive_candidate: true for next compact-archive run (do NOT archive immediately)"
+
+quality_gates:
+  - gate: "patterns_valid"
+    description: "All extracted patterns have decay_score calculated"
+    pass: "PASS"
+    fail: "Retry decay calculation"
+
+  - gate: "reflection_complete"
+    description: "Reflection markdown generated with all sections"
+    pass: "PASS"
+    fail: "Generate minimal reflection (headers only)"
+
+  - gate: "checklist_pass"
+    description: "Reflection quality checklist validated"
+    pass: "PASS"
+    fail: "Address checklist failures"
+
+outputs:
+  - "data/intelligence/knowledge/patterns.yaml (updated)"
+  - "data/intelligence/reflections/YYYY-MM-DD-reflection.md"
+  - "Reflection report"
+
+error_handling:
+  no_dailies: "Skip (normal if < 1 day old)"
+  invalid_patterns.yaml: "Restore from backup or reinit"
+  decay_calc_error: "Use fallback formula"
+  reflection_gen_fails: "Create minimal reflection (timestamp + summary)"
+
+scheduling:
+  frequency: "Daily at 2am (default)"
+  recurrence: "Every 24 hours"
+  skip_condition: "If no new daily files since last reflect"
+  next_run: "Shown in CLI output"
+
+next_workflow:
+  - "Manual: *report weekly (user-triggered)"
+  - "Quarterly: compact-archive task (tasks/compact-archive.md)"

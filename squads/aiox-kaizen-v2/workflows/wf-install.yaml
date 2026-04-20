@@ -1,0 +1,148 @@
+name: wf-install
+version: 1.0.0
+status: SPEC_DEFINED
+
+description: >-
+  Installation workflow. Auto-detects AIOS/AIOX project, merges hooks into
+  .claude/settings.json, initializes directories, and verifies setup.
+
+trigger:
+  manual:
+    command: "*install"
+    description: "User initiates installation"
+
+phases:
+  - phase: 1
+    name: "Pre-flight Checks"
+    steps:
+      - step: 1.1
+        name: "Detect Project Type"
+        check: "test -d .aios-core/ || test -d .aiox/"
+        output: "PROJECT_TYPE = aios | aiox"
+        fail_action: "ERROR: Not an AIOS or AIOX project"
+
+      - step: 1.2
+        name: "Verify kaizen-v2 Directory"
+        check: "test -d squads/kaizen-v2/"
+        output: "kaizen-v2 squad verified"
+        fail_action: "ERROR: squads/kaizen-v2/ not found"
+
+  - phase: 2
+    name: "Hook Registration"
+    steps:
+      - step: 2.1
+        name: "Check .claude/settings.json"
+        action: "If missing, create minimal settings.json"
+        output: ".claude/settings.json exists"
+
+      - step: 2.1b
+        name: "Backup .claude/settings.json"
+        action: "cp .claude/settings.json .claude/settings.json.bak.$(date +%Y%m%d%H%M%S)"
+        output: "Backup created for rollback"
+
+      - step: 2.2
+        name: "Merge Stop Hook"
+        source: "squads/kaizen-v2/config/config.yaml"
+        hook: "kaizen-v2-stop-capture"
+        action: "Append to hooks.Stop"
+        output: "Hook registered"
+
+      - step: 2.3
+        name: "Merge SessionStart Hook"
+        source: "squads/kaizen-v2/config/config.yaml"
+        hook: "kaizen-v2-session-briefing"
+        action: "Append to hooks.SessionStart"
+        output: "Hook registered"
+
+  - phase: 3
+    name: "Initialize Directories"
+    steps:
+      - step: 3.1
+        name: "Create Intelligence Dirs"
+        action: "mkdir -p squads/kaizen-v2/data/intelligence/daily squads/kaizen-v2/data/intelligence/reflections squads/kaizen-v2/data/intelligence/knowledge squads/kaizen-v2/data/intelligence/archive"
+        output: "All directories created"
+
+      - step: 3.2
+        name: "Initialize patterns.yaml"
+        action: "test -f squads/kaizen-v2/data/intelligence/knowledge/patterns.yaml || cp squads/kaizen-v2/config/templates/patterns-template.yaml squads/kaizen-v2/data/intelligence/knowledge/patterns.yaml"
+        output: "patterns.yaml initialized (created from template if missing, preserved if exists)"
+
+      - step: 3.3
+        name: "Create .gitkeep Files"
+        action: "touch squads/kaizen-v2/data/intelligence/daily/.gitkeep squads/kaizen-v2/data/intelligence/reflections/.gitkeep squads/kaizen-v2/data/intelligence/knowledge/.gitkeep squads/kaizen-v2/data/intelligence/archive/.gitkeep"
+        output: "Directories tracked in git"
+
+  - phase: 4
+    name: "First Capture"
+    steps:
+      - step: 4.1
+        name: "Capture First Daily"
+        task: "tasks/capture-daily.md"
+        output: "squads/kaizen-v2/data/intelligence/daily/YYYY-MM-DD.yaml"
+
+      - step: 4.2
+        name: "Generate First Briefing"
+        task: "tasks/health-check.md (status output)"
+        output: "SessionStart briefing ready"
+
+  - phase: 5
+    name: "Validation"
+    steps:
+      - step: 5.1
+        name: "Run Health Check"
+        task: "tasks/health-check.md"
+        checklist: "checklists/installation-checklist.md"
+        output: "12-point validation report"
+
+      - step: 5.2
+        name: "Generate Installation Report"
+        template: "Task install.md — report section"
+        output: "Installation summary"
+
+quality_gates:
+  - gate: "hooks_registered"
+    description: "Both hooks found in .claude/settings.json"
+    pass: "PROCEED"
+    fail: "ABORT — hook merge failed"
+
+  - gate: "dirs_initialized"
+    description: "All intelligence directories created"
+    pass: "PROCEED"
+    fail: "WARN — directory creation failed, continue with fallback (user manual creation)"
+
+  - gate: "patterns_yaml_valid"
+    description: "patterns.yaml exists and is valid YAML"
+    pass: "PROCEED"
+    fail: "ABORT — invalid patterns.yaml"
+
+  - gate: "health_check_pass"
+    description: "All 12/12 health checks pass"
+    minimum_checks_passed: 12
+    pass: "INSTALLATION SUCCESS"
+    fail: "WARN — some checks failing, remediation provided"
+
+outputs:
+  - ".claude/settings.json (updated with hooks)"
+  - "squads/kaizen-v2/data/intelligence/ (initialized)"
+  - "squads/kaizen-v2/data/intelligence/daily/YYYY-MM-DD.yaml (first capture)"
+  - "Installation report"
+
+error_handling:
+  settings_json_parse_error: "ABORT, ask user to fix syntax"
+  hook_merge_failure: "ABORT, revert settings.json from backup"
+  dir_creation_failure: "Continue with fallback (user manual creation)"
+  first_capture_failure: "Continue (non-critical, can retry manually)"
+  health_check_fails: "Provide remediation steps, don't fail installation"
+
+success_criteria:
+  - Overall status: SUCCESS (< 5 minutes total time)
+  - Hooks registered in .claude/settings.json
+  - All intelligence directories exist
+  - All 12/12 health checks pass
+  - User can run `/kaizen-v2:*health` immediately
+
+rollback_plan:
+  - If hooks_registered fails: Restore settings.json from backup (step 2.1b)
+  - If dirs fail: Dirs can be manually created
+  - If patterns.yaml fails: Restore from squads/kaizen-v2/config/templates/patterns-template.yaml
+  - If any fatal error: User can re-run *install (idempotent)

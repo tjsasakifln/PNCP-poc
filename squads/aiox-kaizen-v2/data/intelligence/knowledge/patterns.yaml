@@ -1,0 +1,69 @@
+# Kaizen v2 — Patterns Database
+# Schema: Master database of verified patterns with forgetting curve decay scores
+# Updated: (auto-managed by memory-keeper agent)
+# Owner: memory-keeper agent
+
+# PATTERN LIFECYCLE
+# ================
+# 1. OBSERVED    — Sighting in daily, candidate for extraction
+# 2. EXTRACTED   — Pattern meets all 5 extraction criteria, decay_score=1.0
+# 3. REINFORCED  — Pattern sighted again, days_since_observed reset to 0
+# 4. FADING      — decay_score 0.1-0.5, archive warning appears in briefing
+# 5. ARCHIVED    — decay_score < 0.1, moved to archive/ (moved on compact-archive)
+# 6. DELETED     — decay_score < 0.05, removed from system (deleted on compact-archive)
+
+# DECAY FORMULA
+# =============
+# decay_score(t) = e^(-rate × days_since_observed)
+#
+# rate = 0.05 (general patterns, forget in ~60 days to score 0.05)
+# rate = 0.025 (verified patterns, forget in ~120 days to score 0.05)
+
+# FIELDS (required per pattern)
+# =============================
+# pattern_id:              Unique identifier (p001, p002, ...)
+# name:                    Human-readable pattern name
+# first_observed:          ISO date when first sighting occurred
+# last_reinforced:         ISO date when last re-observed (reset decay)
+# days_since_observed:     days = today - last_reinforced
+# decay_score:             1.0 = fresh, 0.0 = dead. e^(-rate × days)
+# verified:                true/false — observed 2+ times or in trusted sources
+# verification_count:      Number of independent sightings
+# heuristic:               The pattern itself (what to remember)
+# context:                 Where/when pattern applies (trigger conditions)
+# suggested_trigger:       When to apply this pattern (if X, then Y)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PATTERNS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+patterns: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+metadata:
+  version: "1.0"
+  schema: "kaizen-v2-patterns"
+  created_at: null
+  last_updated: null
+  total_patterns: 0
+  verified_patterns: 0
+  archived_patterns: 0
+  deleted_patterns: 0
+
+  decay_config:
+    rate_general: 0.05      # general patterns: ~60 days to decay to 0.05
+    rate_verified: 0.025    # verified patterns: ~120 days to decay to 0.05
+    archive_threshold: 0.1  # decay < 0.1 → move to archive/
+    delete_threshold: 0.05  # decay < 0.05 → delete
+
+  extraction_criteria:
+    - "VERIFIED: 2+ independent sightings OR documented in sources"
+    - "NON_OBVIOUS: Not already in docs/ OR contradicts belief"
+    - "REUSABLE: Applicable to >1 scenario in project"
+    - "ACTIONABLE: Has trigger condition + action (when→then)"
+    - "EMPIRICAL: Based on observation, not speculation"
+
+  next_compact_archive: null  # Run compact-archive every 90 days

@@ -1,0 +1,70 @@
+name: wf-daily-capture
+version: 1.0.0
+status: SPEC_DEFINED
+
+description: >-
+  Daily capture pipeline. Triggered by Stop hook (automatic) or manual *capture command.
+  Captures git activity + learnings → daily YAML file.
+
+trigger:
+  automatic:
+    event: "Stop"
+    timeout_ms: 3000
+    fail_silent: true
+  manual:
+    command: "*capture"
+
+phases:
+  - phase: 1
+    name: "Capture"
+    steps:
+      - step: 1.1
+        name: "Load Daily Template"
+        task: "templates/daily-digest-tmpl.yaml"
+        output: "Daily YAML structure"
+
+      - step: 1.2
+        name: "Collect Git Activity"
+        command: "git log --since=today"
+        output: "Commits + activity from today"
+
+      - step: 1.3
+        name: "Extract Learnings"
+        task: "tasks/capture-daily.md"
+        output: "data/intelligence/daily/YYYY-MM-DD.yaml"
+
+  - phase: 2
+    name: "Validate"
+    steps:
+      - step: 2.1
+        name: "Check Schema"
+        checklist: "checklists/daily-capture-checklist.md"
+        output: "Validation report"
+
+      - step: 2.2
+        name: "File Size Check"
+        condition: "file_size <= 3KB"
+        action: "WARN if > 3KB (over-capture)"
+
+quality_gates:
+  - gate: "schema_valid"
+    description: "All mandatory fields populated"
+    pass: "PASS"
+    fail: "Rerun capture"
+
+  - gate: "checklist_pass"
+    description: "7-point checklist validated"
+    pass: "PASS"
+    fail: "Address checklist failures"
+
+outputs:
+  - "data/intelligence/daily/YYYY-MM-DD.yaml"
+  - "Capture report (if manual)"
+
+error_handling:
+  timeout: "Fail-silent for 3s (Stop hook never blocks session)"
+  missing_git: "Use prompt context fallback"
+  invalid_yaml: "Retry with minimal fields"
+
+next_workflow:
+  - "wf-overnight-reflect.yaml (overnight trigger)"

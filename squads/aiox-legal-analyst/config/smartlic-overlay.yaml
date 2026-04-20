@@ -1,0 +1,158 @@
+# SmartLic Overlay — aiox-legal-analyst
+#
+# Customização do squad LEGAL-ANALYST para Lei 14.133 + jurisprudência licitatória B2G.
+# COMPLEMENTA (não substitui) o squad interno existente `lei-14133-modalidades-squad`.
+
+overlay:
+  squad_name: "aiox-legal-analyst"
+  target_version: "1.0.0"
+  domain: "b2g-licitacoes-legal"
+
+project_context:
+  name: "SmartLic"
+  legal_focus:
+    - "Lei 14.133/2021 (Nova Lei de Licitações — substituiu 8.666 em abril/2023)"
+    - "Lei 8.666/1993 (legacy — contratos antigos ainda vigentes)"
+    - "Lei 10.520/2002 (Pregão — revogada mas deixou legado)"
+    - "Lei 13.303/2016 (Estatais — regime paralelo)"
+    - "Regulamentos infralegais (decretos, INs federais/estaduais)"
+
+# Distinção com squad interno lei-14133-modalidades-squad
+distinction_with_existing:
+  internal_squad: "squads/lei-14133-modalidades-squad/"
+  internal_purpose: "Classificação operacional de modalidade em edital (4/5/6/7/8/12) — tactical"
+  aiox_purpose: "Análise jurídica profunda — jurisprudência, habilitação, impugnação, edital construction — strategic"
+  coexistence:
+    - "Internal squad chama este quando encontra ambiguidade jurídica"
+    - "Este squad consulta classificação do internal para casos operacionais"
+
+# Domínio jurídico focado em B2G (não judicial processual)
+legal_scope:
+  primary_areas:
+    - "Interpretação de dispositivos da Lei 14.133"
+    - "Análise de editais (viabilidade participação, riscos habilitação)"
+    - "Preparação de impugnações e pedidos de esclarecimento"
+    - "Parecer sobre modalidade adequada (valor × objeto)"
+    - "Análise de decisões TCU/TCE relevantes"
+    - "Requisitos de habilitação (jurídica, técnica, econômico-financeira, fiscal, trabalhista)"
+
+  secondary_areas:
+    - "LGPD aplicada a licitações (dados de fornecedores)"
+    - "Sustentabilidade em licitações (Art. 11 da 14.133)"
+    - "Margem de preferência para ME/EPP (LC 123)"
+
+  NOT_scope:
+    - "Processo judicial (cível, trabalhista, penal) — ver legal-analyst v1 do registry sem overlay"
+    - "Direito empresarial genérico (societário, contratual privado)"
+
+# Fontes autoritativas
+authoritative_sources:
+  primary:
+    - source: "Lei 14.133/2021"
+      access: "planalto.gov.br + data/lei-14133-articles.md (este squad)"
+    - source: "Decretos regulamentadores federais"
+      list:
+        - "Decreto 11.462/2023 (Pregão eletrônico)"
+        - "Decreto 11.246/2022 (ME/EPP)"
+        - "Decreto 10.024/2019 (Pregão anterior, ainda referenciado)"
+    - source: "IN SEGES/ME específicas"
+      example: "IN SEGES/ME 73/2022 (contratações de TI)"
+
+  secondary:
+    - source: "Jurisprudência TCU"
+      access: "Pesquisa direta em pesquisa.apps.tcu.gov.br — NÃO usar intermediário"
+      cite_as: "TCU — Acórdão NNNNN/YYYY-Plenário, Rel. Min. XXX"
+    - source: "Jurisprudência TCE estaduais"
+      access: "Portais TCE de cada estado (não consolidado — pesquisar por UF)"
+    - source: "Comentadores doutrinários"
+      examples:
+        - "Ronny Charles Torres - 'Licitações e Contratos'"
+        - "Marçal Justen Filho - 'Comentários à Lei de Licitações'"
+        - "Rafael Carvalho Rezende Oliveira - 'Licitações e Contratos Administrativos'"
+      use: "Para contextualizar, NUNCA como fonte única"
+
+  NOT_sources:
+    - "Blogs e portais não oficiais (JusBrasil, Migalhas para afirmação factual)"
+    - "LLM output sem verificação em fonte primária"
+    - "ChatGPT/Perplexity output direto — use como discovery, cite primária"
+
+# Modalidades — referência rápida (detalhe em lei-14133-modalidades-squad)
+modalidades_14133:
+  4: "Concorrência — obras/serviços grande porte (sem teto)"
+  5: "Concurso — trabalho técnico/artístico/científico (premiação)"
+  6: "Leilão — alienação de bens (imóveis, móveis, semoventes)"
+  7: "Diálogo Competitivo — inovação tecnológica (casos específicos do Art. 28)"
+  8: "Pregão — bens/serviços comuns (mais usada, ~80% do volume)"
+  12: "Dispensa/Inexigibilidade — valor baixo, fornecedor único, emergência"
+
+# Limites para contratação direta (Dispensa)
+dispensa_limits_2026:
+  obras_servicos_engenharia: "R$ 110.800 (2x do limite original IN/2021, ajustado IPCA)"
+  outros_servicos_compras: "R$ 55.400"
+  note: "Valores são atualizados periodicamente — verificar IN SEGES vigente antes de citar"
+
+# Hierarquia decisória B2G
+decision_hierarchy:
+  1: "Texto legal (Lei 14.133 + decretos regulamentadores)"
+  2: "Jurisprudência TCU (vinculante em controle externo)"
+  3: "Jurisprudência TCE (vinculante em esfera estadual)"
+  4: "STJ/STF decisões (quando houver sobre licitações)"
+  5: "Doutrina consolidada (3+ comentadores concordam)"
+  6: "Parecer AGU/PGFN (se publicado em DOU)"
+
+# Patterns de análise comum B2G
+analysis_patterns:
+  habilitacao_review:
+    checklist:
+      - "Jurídica: CNPJ, contrato social, qualificação sócios"
+      - "Técnica: atestados, acervo, equipe-chave"
+      - "Econômico-financeira: balanço, índices, garantias"
+      - "Fiscal: CND federal, estadual, municipal, trabalhista, INSS, FGTS"
+      - "Declarações: cumprimento 7º CF, não-parentesco, reserva de vagas"
+    output: "Go/No-Go + gap list + mitigations"
+
+  edital_risk_analysis:
+    check_points:
+      - "Modalidade adequada ao objeto/valor?"
+      - "Critério de julgamento claro (menor preço, técnica e preço, ...)?"
+      - "Requisitos de habilitação proporcionais?"
+      - "Prazos legais respeitados (Art. 55 da 14.133)?"
+      - "Anexos suficientes (termo de referência, planilha custos)?"
+    output: "Risco Baixo/Médio/Alto + pontos de impugnação"
+
+  impugnacao_draft:
+    structure:
+      - "1. Qualificação do impugnante + identificação edital"
+      - "2. Tempestividade (prazo Art. 164)"
+      - "3. Fundamento de fato (trecho literal do edital)"
+      - "4. Fundamento de direito (artigo + jurisprudência TCU/TCE)"
+      - "5. Pedido (alteração ou anulação)"
+
+# Quality gates
+quality_gates:
+  QG-LEGAL-1:
+    name: "Fonte primária citada"
+    check: "Toda afirmação de direito tem citação a lei/decreto/acórdão específico"
+    blocker: true
+
+  QG-LEGAL-2:
+    name: "Disclaimer"
+    check: "Output marca-se como 'parecer técnico, não substitui aconselhamento jurídico'"
+    blocker: true
+
+  QG-LEGAL-3:
+    name: "Staleness"
+    check: "Citação de jurisprudência ≤ 5 anos OU justificativa para uso de anterior"
+    blocker: false
+    severity: "CONCERNS"
+
+  QG-LEGAL-4:
+    name: "LGPD aware"
+    check: "Output não expõe CPF, endereço residencial, ou dado pessoal de sócio/preposto"
+    blocker: true
+
+delegates_to:
+  - squad: "aiox-deep-research"
+    when: "Análise precisa quantificação de jurisprudência (ex: quantos acórdãos TCU tratam de X?)"
+  - squad: "lei-14133-modalidades-squad"
+    when: "Caso é operacional (qual modalidade aplicar?) e não jurídico-analítico"

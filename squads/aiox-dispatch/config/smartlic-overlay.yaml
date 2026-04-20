@@ -1,0 +1,134 @@
+# SmartLic Overlay — aiox-dispatch
+#
+# Customização B2G do squad DISPATCH (Parallel Execution Engine) para o SmartLic.
+# Respeita timeout waterfall e ARQ job queue existentes.
+
+overlay:
+  squad_name: "aiox-dispatch"
+  target_version: "3.2"
+  domain: "b2g-parallel-execution"
+
+project_context:
+  name: "SmartLic"
+  story_driven: true
+  story_location: "docs/stories/YYYY-MM/story-X.X-<nome>.md"
+  backlog_location: "docs/stories/BACKLOG-*.md"
+
+# Invariantes críticas que DISPATCH deve respeitar
+critical_invariants:
+  timeout_waterfall:
+    railway_proxy: 120
+    gunicorn: 110
+    pipeline: 100
+    consolidation: 90
+    per_source: 70
+    per_uf: 25
+    per_modality: 20
+    httpx: 15
+    rule: "pipeline(100) > consolidation(90) > per_source(70) > per_uf(25) > (per_modality 20 + httpx 15)"
+    enforced_by: "backend/tests/test_timeout_invariants.py"
+    budget_module: "backend/pipeline/budget.py::_run_with_budget"
+
+  zero_failure:
+    backend: "5131+ passing, 0 failures"
+    frontend: "2681+ passing, 0 failures"
+    policy: "NEVER label as 'pre-existing failure' — fix or don't merge"
+
+  anti_hang:
+    pytest_timeout: "30s per test"
+    forbidden:
+      - "asyncio.get_event_loop().run_until_complete() in tests"
+      - "sys.modules['arq'] = MagicMock() without conftest fixture"
+    required:
+      - "subprocess with timeout= parameter"
+      - "@pytest.mark.asyncio for async tests"
+
+# Job queue existente — DISPATCH deve usar, não substituir
+existing_job_queue:
+  framework: "ARQ (Async Redis Queue)"
+  worker_module: "backend/job_queue.py"
+  cron_module: "backend/cron_jobs.py"
+  worker_start: "PROCESS_TYPE=worker → arq job_queue.WorkerSettings"
+  existing_jobs:
+    - "LLM summaries (background, immediate fallback response)"
+    - "Excel generation (background)"
+    - "Ingestion crawl (full daily 2am BRT + incremental 3x/day)"
+    - "Purge old bids (4am BRT)"
+    - "pg_cron health monitor (hourly)"
+    - "PNCP canary (every 10min)"
+
+# Parallelization patterns específicos SmartLic
+parallel_patterns:
+  uf_batching:
+    description: "Processar 27 UFs em paralelo com batching respeitando rate limits"
+    config: "PNCP_BATCH_SIZE=5, PNCP_BATCH_DELAY_S=2.0"
+    pattern: |
+      from asyncio import gather
+      results = []
+      for batch in chunked(ufs, 5):
+          batch_results = await gather(*[process_uf(uf) for uf in batch])
+          results.extend(batch_results)
+          await asyncio.sleep(2.0)
+
+  llm_parallel:
+    description: "Classificar batch de editais via ThreadPoolExecutor"
+    config: "max_workers=10"
+    module: "backend/llm.py"
+    caveat: "Respeitar rate limit OpenAI (tier atual limita)"
+
+  test_parallel:
+    description: "Full suite backend em paralelo"
+    safe_mode: "python scripts/run_tests_safe.py --parallel 4"
+    direct_mode: "pytest --timeout=30 -n 4"
+
+# Model routing para economia (DISPATCH core feature)
+model_routing:
+  haiku:
+    cost_per_task: "$0.007"
+    use_for:
+      - "Deduplicação por content_hash"
+      - "Parsing JSON/YAML"
+      - "Extração de campos estruturados"
+      - "Classificação binária com keywords claras"
+  sonnet:
+    cost_per_task: "$0.025"
+    use_for:
+      - "Classificação zero-match (gray zone)"
+      - "Geração de resumos executivos"
+      - "Análise de viabilidade (4 fatores)"
+  opus:
+    cost_per_task: "$0.15"
+    use_for:
+      - "Decisão arquitetural crítica"
+      - "Review de PR adversarial"
+      - "Síntese cross-setor (deep-research)"
+  worker_scripts:
+    cost: "$0"
+    use_for:
+      - "Filtering pipeline (backend/filter.py)"
+      - "Viability scoring (backend/viability.py)"
+      - "CSV/Excel generation"
+      - "Sitemap generation"
+
+# Immutable laws (DISPATCH core — não alterar)
+immutable_laws:
+  1: "NEVER contaminate main context with execution"
+  2: "CODE > LLM (use scripts for deterministic logic)"
+  3: "Right model for right task (routing table)"
+  4: "Story-driven (no story = no execution) — veto hard"
+  5: "Respect timeout waterfall — NEVER exceed per_source 70s"
+  6: "Wave-optimized DAGs — topological order"
+  7: "Commit before next task (CLAUDE.md rule)"
+
+# Quality gates
+quality_gates:
+  QG-SUFF: "Story exists + has AC + no blockers"
+  QG-PRE: "Timeout budget not exceeded in design; dependencies resolved"
+  QG-POST: "Tests pass, lint pass, type check pass"
+  QG-ROUTE: "Each sub-task routed to correct model (not over/under-provisioned)"
+
+delegates_to:
+  - squad: "aiox-deep-research"
+    when: "Sub-task é pesquisa, não execução"
+  - squad: "aiox-kaizen-v2"
+    when: "Ao concluir wave, capturar aprendizado se surpreendente"
