@@ -2397,6 +2397,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conta/cancelar-trial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cancel Trial Info
+         * @description Return trial metadata for the confirmation UI.
+         *
+         *     Does NOT mutate state. Intended to be called by the frontend confirmation
+         *     page (STORY-CONV-003c frontend).
+         */
+        get: operations["cancel_trial_info_v1_conta_cancelar_trial_get"];
+        put?: never;
+        /**
+         * Cancel Trial Execute
+         * @description Cancel the user's active trial subscription.
+         *
+         *     Idempotent: if already cancelled, returns ``cancelled=true`` + ``already_cancelled=true``.
+         *     Fail-safe: Stripe errors are swallowed but profile is marked ``canceled_trial``
+         *     so the downgrade still happens if the Stripe-side cancel retries succeed out-of-band
+         *     via billing reconciliation (STORY-314).
+         */
+        post: operations["cancel_trial_execute_v1_conta_cancelar_trial_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/contratos/orgao/{cnpj}/stats": {
         parameters: {
             query?: never;
@@ -5443,6 +5475,51 @@ export interface components {
             message: string;
             /** Success */
             success: boolean;
+        };
+        /**
+         * CancelTrialInfoResponse
+         * @description Returned by GET /cancelar-trial to populate the confirmation UI.
+         */
+        CancelTrialInfoResponse: {
+            /**
+             * Already Cancelled
+             * @default false
+             */
+            already_cancelled: boolean;
+            /** Email */
+            email: string;
+            /** Plan Name */
+            plan_name: string;
+            /**
+             * Trial End Ts
+             * @description Unix epoch seconds when trial ends
+             */
+            trial_end_ts?: number | null;
+            /** User Id */
+            user_id: string;
+        };
+        /** CancelTrialRequest */
+        CancelTrialRequest: {
+            /**
+             * Token
+             * @description Signed cancel-trial JWT
+             */
+            token: string;
+        };
+        /** CancelTrialResponse */
+        CancelTrialResponse: {
+            /**
+             * Access Until
+             * @description Unix epoch seconds — trial access remains until this timestamp
+             */
+            access_until?: number | null;
+            /**
+             * Already Cancelled
+             * @default false
+             */
+            already_cancelled: boolean;
+            /** Cancelled */
+            cancelled: boolean;
         };
         /**
          * CheckoutResponse
@@ -12494,6 +12571,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ComplianceProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_trial_info_v1_conta_cancelar_trial_get: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancelTrialInfoResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_trial_execute_v1_conta_cancelar_trial_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelTrialRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancelTrialResponse"];
                 };
             };
             /** @description Validation Error */
