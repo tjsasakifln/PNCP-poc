@@ -175,7 +175,6 @@ _FLAG_DESCRIPTIONS: dict[str, str] = {
     "SECTOR_RED_FLAGS_ENABLED": "Sector-specific red flag detection",
     "PROXIMITY_CONTEXT_ENABLED": "Proximity context window for keyword matching",
     "ITEM_INSPECTION_ENABLED": "Item-level inspection for gray-zone contracts",
-    "FILTER_DEBUG_MODE": "Verbose filter debug logging (dev only)",
     # Term Search Quality
     "TERM_SEARCH_LLM_AWARE": "LLM-aware term search quality parity",
     "TERM_SEARCH_SYNONYMS": "Synonym expansion for term search",
@@ -212,6 +211,13 @@ _FLAG_DESCRIPTIONS: dict[str, str] = {
     "USER_FEEDBACK_ENABLED": "User feedback collection on search results",
     "USE_REDIS_CIRCUIT_BREAKER": "Redis-backed circuit breaker (vs in-memory)",
     "COMPRASGOV_CB_ENABLED": "ComprasGov circuit breaker enabled",
+    # A/B Testing
+    "ab_experiments_enabled": "A/B experiments framework (STORY-A/B)",
+    # Schema Contract (STORY-414)
+    "SCHEMA_CONTRACT_STRICT": "Strict schema contract validation for external responses (STORY-414)",
+    # Datalake Search Improvements
+    "TRIGRAM_FALLBACK_ENABLED": "Trigram fallback for datalake search (STORY-437)",
+    "EMBEDDING_ENABLED": "Semantic embedding search for datalake (STORY-438)",
 }
 
 
@@ -233,7 +239,6 @@ _FLAG_LIFECYCLE: dict[str, dict] = {
     "SECTOR_RED_FLAGS_ENABLED": {"owner": "search", "category": "filter", "lifecycle": "permanent", "created": "2025-12"},
     "PROXIMITY_CONTEXT_ENABLED": {"owner": "search", "category": "filter", "lifecycle": "permanent", "created": "2025-12"},
     "ITEM_INSPECTION_ENABLED": {"owner": "search", "category": "filter", "lifecycle": "permanent", "created": "2025-12"},
-    "FILTER_DEBUG_MODE": {"owner": "search", "category": "debug", "lifecycle": "ops-toggle", "created": "2025-10"},
     # Term Search Quality — experimental, remove when graduated
     "TERM_SEARCH_LLM_AWARE": {"owner": "search", "category": "experimental", "lifecycle": "experimental", "created": "2026-01"},
     "TERM_SEARCH_SYNONYMS": {"owner": "search", "category": "experimental", "lifecycle": "experimental", "created": "2026-01"},
@@ -270,6 +275,14 @@ _FLAG_LIFECYCLE: dict[str, dict] = {
     "USER_FEEDBACK_ENABLED": {"owner": "product", "category": "infra", "lifecycle": "permanent", "created": "2025-12"},
     "USE_REDIS_CIRCUIT_BREAKER": {"owner": "infra", "category": "infra", "lifecycle": "permanent", "created": "2025-12"},
     "COMPRASGOV_CB_ENABLED": {"owner": "infra", "category": "infra", "lifecycle": "permanent", "created": "2026-02"},
+    # A/B Testing
+    "ab_experiments_enabled": {"owner": "product", "category": "experimental", "lifecycle": "experimental", "created": "2026-03"},
+    # STORY-414: Schema contract gate
+    "SCHEMA_CONTRACT_STRICT": {"owner": "data", "category": "validation", "lifecycle": "experimental", "created": "2026-03"},
+    # STORY-437: Datalake search improvements
+    "TRIGRAM_FALLBACK_ENABLED": {"owner": "search", "category": "search", "lifecycle": "experimental", "created": "2026-03"},
+    # STORY-438: Semantic embeddings
+    "EMBEDDING_ENABLED": {"owner": "search", "category": "search", "lifecycle": "experimental", "created": "2026-03"},
 }
 
 

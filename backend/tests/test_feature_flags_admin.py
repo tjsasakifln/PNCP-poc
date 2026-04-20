@@ -129,8 +129,10 @@ class TestUpdateFeatureFlag:
     @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
     def test_update_flag_redis_unavailable_falls_back_to_memory(self, mock_get, mock_set, client):
         """When Redis is unavailable, should fall back to in-memory storage."""
+        # BTS-010a: FILTER_DEBUG_MODE was removed from _FEATURE_FLAG_REGISTRY;
+        # use DIGEST_ENABLED (ops-toggle, still in registry) as replacement fixture.
         resp = client.patch(
-            "/admin/feature-flags/FILTER_DEBUG_MODE",
+            "/admin/feature-flags/DIGEST_ENABLED",
             json={"value": True},
         )
         assert resp.status_code == 200
@@ -176,14 +178,16 @@ class TestUpdateFeatureFlag:
     @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
     def test_update_flag_stores_in_memory(self, mock_get, mock_set, client):
         """After update, in-memory override should be set."""
+        # BTS-010a: FILTER_DEBUG_MODE was removed from _FEATURE_FLAG_REGISTRY;
+        # use DIGEST_ENABLED (ops-toggle, still in registry) as replacement fixture.
         from routes.feature_flags import _runtime_overrides
 
         resp = client.patch(
-            "/admin/feature-flags/FILTER_DEBUG_MODE",
+            "/admin/feature-flags/DIGEST_ENABLED",
             json={"value": True},
         )
         assert resp.status_code == 200
-        assert _runtime_overrides.get("FILTER_DEBUG_MODE") is True
+        assert _runtime_overrides.get("DIGEST_ENABLED") is True
 
     @patch("routes.feature_flags._redis_set_override", new_callable=AsyncMock, return_value=True)
     @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
