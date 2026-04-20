@@ -153,6 +153,19 @@ class TestPostgREST1000RowTruncationWarning:
     4. Still return all rows collected (not drop them).
     """
 
+    @pytest.fixture(autouse=True)
+    def _clear_datalake_cache(self):
+        """STORY-BTS-009: ``datalake_query`` has a module-level ``_query_cache``
+        that persists across test invocations. Without this fixture the failure/
+        empty-list assertions leak cached results from prior tests in the class
+        ("Cache HIT for N UFs, returning M cached records" visible in captured
+        logs). Clear before each test to guarantee fresh RPC paths.
+        """
+        import datalake_query
+        datalake_query._query_cache.clear()
+        yield
+        datalake_query._query_cache.clear()
+
     def _make_rows(self, n: int) -> list[dict]:
         """Return n minimal rows that _row_to_normalized() can handle."""
         return [
