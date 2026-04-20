@@ -475,15 +475,21 @@ class TestPipelineOptimisticLocking:
 
     @patch("routes.pipeline._check_pipeline_write_access", _noop_check_pipeline_write_access)
     @patch("routes.pipeline._check_pipeline_read_access", _noop_check_pipeline_read_access)
-    def test_ac12_get_pipeline_returns_version(self):
-        """AC12: GET pipeline items includes version field in response."""
+    @patch("routes.pipeline.get_supabase")
+    def test_ac12_get_pipeline_returns_version(self, mock_get_sb):
+        """AC12: GET pipeline items includes version field in response.
+
+        ISSUE-021: list_pipeline uses get_supabase() (admin client) not get_user_db;
+        patch the source the route actually calls.
+        """
         sb = _mock_pipeline_sb()
         sb.execute.return_value = Mock(
             data=[SAMPLE_PIPELINE_ITEM],
             count=1,
         )
+        mock_get_sb.return_value = sb
 
-        client = _create_pipeline_client(mock_user_db=sb)
+        client = _create_pipeline_client()
         resp = client.get("/pipeline")
 
         assert resp.status_code == 200
@@ -552,34 +558,33 @@ class TestQuotaAtomicity:
 
     @patch("supabase_client.get_supabase")
     def test_ac26_fallback_creates_new_row(self, mock_get_sb):
-        """AC26: Quota fallback with nonexistent row creates with count=1."""
+        """AC26: When both atomic RPCs are unavailable, fail open.
+
+        The legacy last-resort upsert path was intentionally removed
+        (STORY-307 + BTS-001 finding). The contract now is fail-open:
+        return the current quota value from get_monthly_quota_used without
+        incrementing, never silently writing via a non-atomic upsert.
+        """
         from quota import increment_monthly_quota
 
         sb = MagicMock()
         mock_get_sb.return_value = sb
 
-        # Primary RPC fails
+        # Both atomic RPCs fail (e.g. fresh deploy before migrations)
         sb.rpc.return_value.execute.side_effect = [
             Exception("function increment_quota_atomic does not exist"),
-            # Fallback RPC also fails (function not deployed yet)
             Exception("function increment_quota_fallback_atomic does not exist"),
         ]
-
-        # Last-resort upsert path
-        sb.table.return_value = sb
-        sb.upsert.return_value = sb
-        sb.execute.return_value = Mock(data=[{"searches_count": 1}])
 
         with patch("quota.get_monthly_quota_used", return_value=1):
             result = increment_monthly_quota("user-new-quota", max_quota=50)
 
+        # Fail-open returns the current count untouched
         assert result == 1
 
-        # Verify upsert was called (creates row if not exists)
-        sb.upsert.assert_called_once()
-        upsert_args = sb.upsert.call_args[0][0]
-        assert upsert_args["searches_count"] == 1
-        assert upsert_args["user_id"] == "user-new-quota"
+        # The removed non-atomic upsert path MUST NOT be called — the whole
+        # point of STORY-307 was to eliminate read-modify-write races.
+        sb.upsert.assert_not_called()
 
     @patch("supabase_client.get_supabase")
     def test_ac15_no_read_modify_write_in_fallback(self, mock_get_sb):

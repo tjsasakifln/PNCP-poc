@@ -316,26 +316,31 @@ class TestT5_RevalidationNoUserQuota:
 
     @pytest.mark.asyncio
     async def test_do_revalidation_never_calls_quota(self):
-        """_do_revalidation does not call any quota functions."""
+        """_do_revalidation does not call any quota functions.
+
+        Patches target `cache.swr` (where _do_revalidation lives) and
+        `cache.manager.save_to_cache` (lazy-imported inside the function).
+        Patching the `search_cache` re-export facade does not reach the
+        call sites inside cache.swr — that was the old drift causing
+        the test to hang on the real asyncio.Lock.
+        """
         mock_results = [{"id": "reval-1"}]
         mock_sources = ["PNCP", "COMPRAS_GOV"]
 
+        import asyncio as _asyncio
+        real_lock = _asyncio.Lock()
+
         with (
             patch(
-                "search_cache._fetch_multi_source_for_revalidation",
+                "cache.swr._fetch_multi_source_for_revalidation",
                 new_callable=AsyncMock,
                 return_value=(mock_results, mock_sources),
             ),
-            patch("search_cache.save_to_cache", new_callable=AsyncMock) as mock_save,
-            patch("search_cache._clear_revalidating", new_callable=AsyncMock),
-            patch("search_cache._get_revalidation_lock") as mock_lock,
+            patch("cache.manager.save_to_cache", new_callable=AsyncMock) as mock_save,
+            patch("cache.swr._clear_revalidating", new_callable=AsyncMock),
+            patch("cache.swr._get_revalidation_lock", return_value=real_lock),
             patch("config.REVALIDATION_TIMEOUT", 60),
         ):
-            lock_instance = AsyncMock()
-            lock_instance.__aenter__ = AsyncMock(return_value=None)
-            lock_instance.__aexit__ = AsyncMock(return_value=None)
-            mock_lock.return_value = lock_instance
-
             import search_cache
             search_cache._active_revalidations = 1
 
