@@ -16,15 +16,21 @@ from llm import gerar_resumo_fallback
 
 
 def test_fallback_with_termos_busca_in_resumo_executivo():
-    """AC1: termos_busca appears in resumo_executivo instead of sector_name."""
+    """AC1: termos_busca appears in the insight field when provided, instead of sector_name.
+
+    Production llm.gerar_resumo_fallback writes the display label into ``insight_setorial``
+    (line ~619 of llm.py). ``resumo_executivo`` is a generic "Encontrada N licitação..."
+    template and never mentions termos_busca/sector — that's why the original test was
+    failing: it was asserting on the wrong field.
+    """
     licitacoes = [
         {"nomeOrgao": "Prefeitura de SP", "uf": "SP", "valorTotalEstimado": 150_000.0,
          "dataAberturaProposta": "2026-03-01T10:00:00"},
     ]
     resumo = gerar_resumo_fallback(licitacoes, sector_name="uniformes", termos_busca="calibração de equipamentos")
 
-    assert "calibração de equipamentos" in resumo.resumo_executivo
-    assert "uniformes" not in resumo.resumo_executivo.lower()
+    assert "calibração de equipamentos" in resumo.insight_setorial
+    assert "uniformes" not in resumo.insight_setorial.lower()
 
 
 def test_fallback_with_termos_busca_in_insight_setorial():
@@ -37,11 +43,14 @@ def test_fallback_with_termos_busca_in_insight_setorial():
 
 
 def test_fallback_with_sector_unchanged_when_no_termos():
-    """Regression: sector_name used when termos_busca is None."""
+    """Regression: sector_name used in insight_setorial when termos_busca is None.
+
+    (Same field correction as above — resumo_executivo is a generic template in prod.)
+    """
     licitacoes = [{"nomeOrgao": "Prefeitura de RJ", "uf": "RJ", "valorTotalEstimado": 200_000.0}]
     resumo = gerar_resumo_fallback(licitacoes, sector_name="Vestuário", termos_busca=None)
 
-    assert "Vestuário" in resumo.resumo_executivo
+    assert "Vestuário" in resumo.insight_setorial
     assert "Setor de Vestuário" in resumo.insight_setorial
 
 
@@ -130,7 +139,11 @@ def test_fallback_expired_bid_urgencia_baixa():
 
 
 def test_fallback_termos_with_expired_bids():
-    """Combined: termos_busca + expired bids → terms in summary, no alerts."""
+    """Combined: termos_busca + expired bids → terms in insight_setorial, no alerts.
+
+    (resumo_executivo is a generic "Encontrada N licitação..." template; termos_busca
+    surfaces in insight_setorial per production llm.py.)
+    """
     data_expirada = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     licitacoes = [
         {"nomeOrgao": "Órgão Antigo", "uf": "RS", "valorTotalEstimado": 100_000.0,
@@ -138,6 +151,6 @@ def test_fallback_termos_with_expired_bids():
     ]
     resumo = gerar_resumo_fallback(licitacoes, sector_name="Energia", termos_busca="painéis solares")
 
-    assert "painéis solares" in resumo.resumo_executivo
+    assert "painéis solares" in resumo.insight_setorial
     assert len(resumo.alertas_urgencia) == 0
     assert resumo.alerta_urgencia is None

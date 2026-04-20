@@ -194,7 +194,11 @@ COMMON_PATCHES = [
     patch("quota.save_search_session", new_callable=AsyncMock, return_value="session-uuid"),
     patch("pipeline.cache_manager._read_cache", return_value=None),
     patch("pipeline.cache_manager._write_cache"),
-    patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock),
+    # BTS-002 cluster I / BTS-009: ``pipeline.cache_manager._supabase_save_cache``
+    # was decomposed; prod now writes via ``cache.manager.save_to_cache_per_uf``
+    # (invoked from ``pipeline/stages/execute.py``). Patch the new location so
+    # the pipeline never touches the real Supabase client.
+    patch("cache.manager.save_to_cache_per_uf", new_callable=AsyncMock),
     patch("pipeline.stages.generate.upload_excel", return_value={
         "signed_url": "https://storage/excel.xlsx",
         "file_path": "search/excel.xlsx",
