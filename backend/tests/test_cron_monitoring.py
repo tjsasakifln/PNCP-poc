@@ -169,16 +169,26 @@ def test_emit_sentry_alert_never_raises():
 
 @pytest.mark.asyncio
 async def test_cron_monitoring_job_reports_problems():
+    """STORY-BTS-009: ``evaluate_jobs`` uses ``datetime.now(timezone.utc)`` to
+    compute staleness; the module-level ``NOW = 2026-04-14`` constant is only
+    valid for unit-level tests that pass ``now=NOW`` explicitly. For the
+    end-to-end ``cron_monitoring_job`` path we need a current timestamp on the
+    healthy fixture, otherwise >25h drift turns it into a false positive on any
+    wall-clock run after 2026-04-15.
+    """
+    current_now = datetime.now(timezone.utc)
     fake_rows = [
         {
             "jobname": "purge-old-bids",
             "last_status": "failed",
-            "last_run_at": "2026-04-14T07:00:00+00:00",
+            # Intentionally old: staleness is irrelevant here because
+            # last_status=failed already trips the problem branch first.
+            "last_run_at": (current_now - timedelta(days=5)).isoformat(),
         },
         {
             "jobname": "healthy",
             "last_status": "succeeded",
-            "last_run_at": NOW.isoformat(),
+            "last_run_at": current_now.isoformat(),
         },
     ]
 
