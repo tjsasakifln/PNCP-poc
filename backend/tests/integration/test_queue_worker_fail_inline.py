@@ -41,6 +41,25 @@ def _mock_rate_limiter():
     return mock
 
 
+def _patched_search_context_factory():
+    """Factory that forces quota_pre_consumed=True on all SearchContext
+    constructions.
+
+    Post-CRIT-072, queue mode requires the async path (worker entry with
+    quota pre-consumed in POST). POST /v1/buscar defaults quota_pre_consumed
+    to False, which short-circuits _use_queue evaluation in
+    pipeline.stages.generate. These tests exercise the queue-mode semantics
+    so they need to opt in to the async-path condition explicitly.
+    """
+    from search_context import SearchContext as _OrigSC
+
+    def _factory(*args, **kwargs):
+        kwargs.setdefault("quota_pre_consumed", True)
+        return _OrigSC(*args, **kwargs)
+
+    return _factory
+
+
 @pytest.mark.integration
 class TestQueueWorkerFailInline:
     """AC12: When queue is available, POST /buscar dispatches background jobs
@@ -65,6 +84,9 @@ class TestQueueWorkerFailInline:
         ), patch(
             "routes.search.rate_limiter",
             _mock_rate_limiter(),
+        ), patch(
+            "routes.search.SearchContext",
+            _patched_search_context_factory(),
         ), patch(
             "job_queue.is_queue_available",
             new_callable=AsyncMock,
@@ -188,6 +210,9 @@ class TestQueueWorkerFailInline:
         ), patch(
             "routes.search.rate_limiter",
             _mock_rate_limiter(),
+        ), patch(
+            "routes.search.SearchContext",
+            _patched_search_context_factory(),
         ), patch(
             "job_queue.is_queue_available",
             new_callable=AsyncMock,

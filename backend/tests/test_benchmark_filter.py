@@ -183,14 +183,21 @@ def test_benchmark_keyword_matching_worst_case(benchmark):
 # ============================================================================
 
 def test_benchmark_empty_objeto(benchmark):
-    """Benchmark: Licitação com objeto vazio (edge case)."""
+    """Benchmark: Licitação com objeto vazio (edge case).
+
+    RC1-FIX: empty keywords set triggers accept-by-default in filter_licitacao
+    (see backend/filter/uf.py:46-47). To exercise the "empty objeto → no
+    keyword match → reject" path, the benchmark must pass a non-empty
+    keywords set so the keyword matcher is actually invoked.
+    """
     licitacao_vazia = {
         "uf": "SP",
         "valorTotalEstimado": 150_000.0,
         "objetoCompra": "",
     }
     ufs = {"SP"}
-    resultado, _ = benchmark(filter_licitacao, licitacao_vazia, ufs)
+    keywords = {"uniformes"}
+    resultado, _ = benchmark(filter_licitacao, licitacao_vazia, ufs, keywords)
     assert resultado is False
 
 
