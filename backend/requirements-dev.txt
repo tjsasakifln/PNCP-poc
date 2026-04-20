@@ -24,7 +24,7 @@ psycopg2-binary==2.9.11
 
 # Code quality
 ruff==0.15.0
-mypy==1.15.0
+mypy==1.20.1
 
 # Property-based / fuzz testing (STORY-6.7)
 hypothesis>=6.92.0
