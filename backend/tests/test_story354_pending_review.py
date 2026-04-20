@@ -139,9 +139,18 @@ class TestAC9LlmArbiterPendingReview:
         assert result["rejection_reason"] == "LLM unavailable"
 
     # Test 3 ----------------------------------------------------------------
-    def test_llm_arbiter_reject_non_zero_match(self, mock_openai_client):
-        """When prompt_level is NOT zero_match, the arbiter still REJECTs even
-        with LLM_FALLBACK_PENDING_ENABLED=true (pending_review only for zero_match)."""
+    def test_llm_arbiter_gray_zone_pending_on_failure(self, mock_openai_client):
+        """Gray-zone (standard/conservative) prompt levels also trigger
+        pending_review when LLM_FALLBACK_PENDING_ENABLED=true.
+
+        Prior contract was "pending_review only for zero_match", but
+        ``classification.py`` expanded the gray zone to include standard and
+        conservative (``_gray_zone_levels = {"zero_match", "standard",
+        "conservative"}``). This test pins the broader contract so the
+        fallback-pending coverage is not silently regressed back to
+        zero-match-only. See CLAUDE.md LLM Classification section:
+        "Fallback = PENDING_REVIEW ... (gray zone + zero-match)".
+        """
         mock_openai_client.chat.completions.create.side_effect = Exception(
             "Rate limit exceeded"
         )
@@ -159,10 +168,13 @@ class TestAC9LlmArbiterPendingReview:
 
             assert isinstance(result, dict)
             assert result["is_primary"] is False
-            assert result.get("pending_review") is not True, (
-                f"pending_review should not be set for prompt_level={prompt_level}"
+            assert result.get("pending_review") is True, (
+                f"pending_review must be set for gray-zone prompt_level={prompt_level} "
+                f"when LLM_FALLBACK_PENDING_ENABLED=true"
             )
-            assert result["confidence"] == 0
+            # Gray-zone gets non-zero confidence (40) so sorting by confidence
+            # keeps these items ahead of hard-rejects (which are 0).
+            assert result["confidence"] == 40
 
     # Test 4 ----------------------------------------------------------------
     def test_filter_pending_review_count(self, mock_openai_client):

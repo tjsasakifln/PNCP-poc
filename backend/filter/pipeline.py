@@ -804,6 +804,8 @@ def aplicar_todos_filtros(
     stats["llm_zero_match_aprovadas"] = 0
     stats["llm_zero_match_rejeitadas"] = 0
     stats["llm_zero_match_skipped_short"] = 0
+    # STORY-354 AC9: count LLM fallbacks that returned pending_review=True
+    stats["pending_review_count"] = 0
 
     # STORY-267 AC2: When custom_terms present + TERM_SEARCH_LLM_AWARE, use term-aware prompt
     _use_term_prompt_zm = False
@@ -984,6 +986,25 @@ def aplicar_todos_filtros(
                             f"objeto={lic_item.get('objetoCompra', '')[:80]}"
                         )
                     else:
+                        # STORY-354 AC9: LLM failure with LLM_FALLBACK_PENDING_ENABLED
+                        # returns {"pending_review": True} — don't drop the bid, forward it
+                        # as pending so the user can re-classify later (reclassify_pending_bids_job).
+                        if isinstance(llm_result, dict) and llm_result.get("pending_review"):
+                            stats["pending_review_count"] += 1
+                            lic_item["_relevance_source"] = "pending_review"
+                            lic_item["_pending_review"] = True
+                            lic_item["_pending_review_reason"] = llm_result.get(
+                                "rejection_reason", "LLM unavailable"
+                            )
+                            lic_item["_confidence_score"] = llm_result.get("confidence", 40)
+                            lic_item["_term_density"] = 0.0
+                            lic_item["_matched_terms"] = []
+                            resultado_llm_zero.append(lic_item)
+                            logger.debug(
+                                f"LLM zero_match: PENDING_REVIEW "
+                                f"objeto={lic_item.get('objetoCompra', '')[:80]}"
+                            )
+                            continue
                         stats["llm_zero_match_rejeitadas"] += 1
                         # STORY-267 AC16: Track term search metrics
                         if custom_terms:

@@ -102,6 +102,31 @@ def mock_active_plan():
         yield
 
 
+@pytest.fixture(autouse=True)
+def mock_verify_search_ownership():
+    """Bypass the IDOR guard added to ``search_status`` and ``search_state``.
+
+    ``_verify_search_ownership`` (routes/search_status.py, routes/search_state.py)
+    queries Supabase for the ``search_sessions`` row to confirm the auth'd
+    user owns the search_id. These tests don't stub Supabase, so the guard
+    would raise 404 before the mocked ``get_tracker`` / ``get_search_status``
+    is ever called. Autouse-patch both to AsyncMock no-op — each test is
+    already bound to a single auth'd mock user.
+    """
+    patches = []
+    for mod in ("routes.search_status", "routes.search_state"):
+        try:
+            p = patch(f"{mod}._verify_search_ownership", new_callable=AsyncMock)
+            p.start()
+            patches.append(p)
+        except (AttributeError, ModuleNotFoundError):
+            # Module may not exist in earlier main checkouts — skip silently.
+            pass
+    yield
+    for p in patches:
+        p.stop()
+
+
 @pytest.fixture
 def mock_quota():
     """Mock quota check to always allow (1000/month, 1 used)."""
