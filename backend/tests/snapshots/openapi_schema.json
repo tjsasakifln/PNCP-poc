@@ -8785,6 +8785,25 @@
         "title": "SetoresResponse",
         "type": "object"
       },
+      "SetupIntentResponse": {
+        "description": "Response for POST /v1/billing/setup-intent (STORY-CONV-003b AC2).\n\nAnonymous pre-signup flow: frontend creates a SetupIntent to collect\nthe user's card via Stripe PaymentElement BEFORE the Supabase user\nexists. After `stripe.confirmSetup()` returns a `payment_method`,\nthat id is sent to POST /v1/auth/signup.",
+        "properties": {
+          "client_secret": {
+            "title": "Client Secret",
+            "type": "string"
+          },
+          "publishable_key": {
+            "title": "Publishable Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "client_secret",
+          "publishable_key"
+        ],
+        "title": "SetupIntentResponse",
+        "type": "object"
+      },
       "ShareAnaliseRequest": {
         "description": "Request to create a shareable analysis link.",
         "properties": {
@@ -14330,6 +14349,28 @@
           }
         ],
         "summary": "Create Billing Portal Session",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/setup-intent": {
+      "post": {
+        "description": "Create a Stripe SetupIntent for pre-signup card capture (CONV-003b AC2).\n\nAnonymous endpoint: called before the Supabase user exists, so we cannot\nattach a customer yet. The returned ``payment_method`` (from\n``stripe.confirmSetup()`` client-side) is forwarded to\n``POST /v1/auth/signup`` which then creates the Customer and attaches\nthe PM server-side via ``services.stripe_signup``.\n\nRate-limited via the same bucket as signup (3 req / 10 min per IP) to\nblock abuse. Returns the publishable key alongside the client secret so\nthe frontend does not need a second round-trip to ``/config`` (keeps\nthe signup flow to 2 network calls: setup-intent \u2192 signup).",
+        "operationId": "create_setup_intent_v1_billing_setup_intent_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupIntentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Create Setup Intent",
         "tags": [
           "billing"
         ]
