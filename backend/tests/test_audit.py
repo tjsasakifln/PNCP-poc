@@ -77,6 +77,9 @@ class TestValidEventTypes:
         "admin.user_create",
         "admin.user_delete",
         "admin.plan_assign",
+        # STORY-BTS-010a feature flag registry: added admin.feature_flag_change
+        # for auditable flag lifecycle changes (2026-04-19).
+        "admin.feature_flag_change",
         "billing.checkout",
         "billing.subscription_change",
         "data.search",
