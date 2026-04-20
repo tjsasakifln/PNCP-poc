@@ -6,10 +6,12 @@ Extracted from main.py as part of STORY-202 monolith decomposition.
 import logging
 import os
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from auth import require_auth
 from database import get_db
+from rate_limiter import require_rate_limit, SIGNUP_RATE_LIMIT_PER_10MIN
 from schemas import BillingPlansResponse, CheckoutResponse
+from schemas.billing import SetupIntentResponse
 from supabase_client import sb_execute
 
 logger = logging.getLogger(__name__)
@@ -330,3 +332,52 @@ async def get_subscription_status(
         "plan_id": None,
         "activated_at": None,
     }
+
+
+@router.post("/billing/setup-intent", response_model=SetupIntentResponse)
+async def create_setup_intent(
+    request: Request,
+    _rl=Depends(require_rate_limit(SIGNUP_RATE_LIMIT_PER_10MIN, 600)),
+):
+    """Create a Stripe SetupIntent for pre-signup card capture (CONV-003b AC2).
+
+    Anonymous endpoint: called before the Supabase user exists, so we cannot
+    attach a customer yet. The returned ``payment_method`` (from
+    ``stripe.confirmSetup()`` client-side) is forwarded to
+    ``POST /v1/auth/signup`` which then creates the Customer and attaches
+    the PM server-side via ``services.stripe_signup``.
+
+    Rate-limited via the same bucket as signup (3 req / 10 min per IP) to
+    block abuse. Returns the publishable key alongside the client secret so
+    the frontend does not need a second round-trip to ``/config`` (keeps
+    the signup flow to 2 network calls: setup-intent → signup).
+    """
+    import stripe as stripe_lib
+
+    stripe_key = os.getenv("STRIPE_SECRET_KEY")
+    publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY")
+    if not stripe_key or not publishable_key:
+        logger.error("Stripe keys not configured for setup-intent")
+        raise HTTPException(
+            status_code=503,
+            detail="Serviço de pagamento temporariamente indisponível.",
+        )
+
+    try:
+        setup_intent = stripe_lib.SetupIntent.create(
+            usage="off_session",
+            payment_method_types=["card"],
+            metadata={"flow": "pre_signup_trial"},
+            api_key=stripe_key,
+        )
+    except stripe_lib.error.StripeError as exc:
+        logger.error("Stripe SetupIntent.create failed: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível preparar a coleta do cartão. Tente novamente em instantes.",
+        ) from exc
+
+    return SetupIntentResponse(
+        client_secret=setup_intent.client_secret,
+        publishable_key=publishable_key,
+    )
