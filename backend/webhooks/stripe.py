@@ -46,6 +46,7 @@ from webhooks.handlers.subscription import (  # noqa: F401
     handle_subscription_created as _handle_subscription_created,
     handle_subscription_updated as _handle_subscription_updated,
     handle_subscription_deleted as _handle_subscription_deleted,
+    handle_subscription_trial_will_end as _handle_subscription_trial_will_end,
     _mark_partner_referral_churned,
     _send_cancellation_email,
 )
@@ -197,6 +198,9 @@ async def stripe_webhook(request: Request):
                 await _handle_subscription_updated(sb, event)
             elif event.type == "customer.subscription.deleted":
                 await _handle_subscription_deleted(sb, event)
+            elif event.type == "customer.subscription.trial_will_end":
+                # STORY-CONV-003a AC4: Stripe fires 3d before trial_end.
+                await _handle_subscription_trial_will_end(sb, event)
             elif event.type == "invoice.payment_succeeded":
                 await _handle_invoice_payment_succeeded(sb, event)
             elif event.type == "invoice.payment_failed":

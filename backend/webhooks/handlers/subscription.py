@@ -294,6 +294,88 @@ async def handle_subscription_deleted(sb, event: stripe.Event) -> None:
     _send_cancellation_email(sb, user_id, local_sub)
 
 
+async def handle_subscription_trial_will_end(sb, event: stripe.Event) -> None:
+    """
+    Handle customer.subscription.trial_will_end event (STORY-CONV-003a AC4).
+
+    Stripe fires this 3 days before trial_end. Used to:
+    - Dedup via Redis (7-day TTL) against duplicate Stripe retries
+    - Emit Sentry breadcrumb for observability
+    - Log a structured event; email/notification is a future story
+
+    Never raises — webhook acks must be idempotent. Non-fatal errors logged.
+    """
+    event_id = getattr(event, "id", None) or event.get("id", "unknown")
+    subscription_data = event.data.object
+    stripe_sub_id = (
+        subscription_data.get("id")
+        if isinstance(subscription_data, dict)
+        else subscription_data.id
+    )
+    stripe_customer_id = (
+        subscription_data.get("customer")
+        if isinstance(subscription_data, dict)
+        else getattr(subscription_data, "customer", None)
+    )
+
+    # Redis dedup (7-day TTL) — best-effort. If Redis is down, proceed anyway:
+    # duplicate handling is safe (log + breadcrumb only, no side effects).
+    try:
+        from redis_pool import get_redis_pool
+
+        redis = await get_redis_pool()
+        dedup_key = f"trial_will_end:{event_id}"
+        existing = await redis.get(dedup_key)
+        if existing:
+            logger.info(
+                f"trial_will_end already processed: event_id={event_id[:16]}***"
+            )
+            return
+        await redis.setex(dedup_key, _TRIAL_WILL_END_DEDUP_TTL_S, "1")
+    except Exception:
+        logger.warning(
+            "Redis dedup check failed for trial_will_end — proceeding", exc_info=True
+        )
+
+    # Resolve local user_id for logs/breadcrumb
+    user_id: str = ""
+    try:
+        sub_result = (
+            sb.table("user_subscriptions")
+            .select("user_id")
+            .eq("stripe_subscription_id", stripe_sub_id)
+            .limit(1)
+            .execute()
+        )
+        if sub_result.data:
+            user_id = sub_result.data[0]["user_id"]
+    except Exception:
+        logger.debug("user_subscriptions lookup failed (non-fatal)", exc_info=True)
+
+    logger.info(
+        "Trial ending in 3 days: subscription_id=%s, customer_id=%s, user_id=%s",
+        (stripe_sub_id or "")[:16] + "***",
+        (stripe_customer_id or "")[:8] + "***" if stripe_customer_id else "unknown",
+        (user_id or "unknown")[:8] + ("***" if user_id else ""),
+    )
+
+    # Sentry breadcrumb — best-effort, never raises.
+    try:
+        import sentry_sdk
+
+        sentry_sdk.add_breadcrumb(
+            category="billing",
+            message="customer.subscription.trial_will_end",
+            level="info",
+            data={
+                "subscription_id": (stripe_sub_id or "")[:16] + "***",
+                "user_id": (user_id or "unknown")[:8] + ("***" if user_id else ""),
+            },
+        )
+    except Exception:
+        pass
+
+
 # ============================================================================
 # Helpers (fire-and-forget)
 # ============================================================================
