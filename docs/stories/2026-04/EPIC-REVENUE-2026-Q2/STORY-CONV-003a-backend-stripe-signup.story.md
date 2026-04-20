@@ -95,3 +95,10 @@ Prerequisite para CONV-003b (frontend 2-step) e CONV-003c (webhooks completos + 
 ## Change Log
 
 - **2026-04-19** — @sm (River): Sub-story criada a partir da decomposição de STORY-CONV-003. Status Ready.
+- **2026-04-20** — @dev (Wave 3 session): **Partial scaffolding shipped** — DB foundation only.
+  - AC2 partial: migration `supabase/migrations/20260420000003_add_profiles_stripe_default_pm_id.sql` + down pareado cria coluna nullable `profiles.stripe_default_pm_id` (TEXT) + índice parcial `idx_profiles_stripe_default_pm_id WHERE NOT NULL`. Column unused até AC1 ligar backend writes.
+  - Colunas `stripe_customer_id` e `stripe_subscription_id` já existiam em `profiles` (migration 001, não precisam novo ADD COLUMN).
+  - Test stubs (AC5) **NÃO criados** — Zero Quarentena policy (EPIC-BTS): stubs `pytest.mark.skip` com rota ainda inexistente geram ruído. Tests reais serão escritos na sessão AC1 junto com o código de produção.
+  - Route/schema (AC1/AC3/AC4) **NÃO iniciados** — endpoint `/v1/auth/signup` ainda não existe (signup atual é Supabase Auth direto do frontend). Criação do endpoint + lógica Stripe + webhook é trabalho de 3-4h próxima sessão com founder hands (advisor guidance: evitar Stripe integration via agente).
+  - Status permanece `Ready` — scaffolding não começa InProgress; AC1 ainda é o trabalho principal.
+  - Decisão estratégica: commit separado da migration permite CI exercitar o `deploy.yml` auto-apply path sem acoplamento a código Stripe pendente.
