@@ -986,25 +986,24 @@ def aplicar_todos_filtros(
                             f"objeto={lic_item.get('objetoCompra', '')[:80]}"
                         )
                     else:
-                        # STORY-354 AC9: LLM failure with LLM_FALLBACK_PENDING_ENABLED
-                        # returns {"pending_review": True} — don't drop the bid, forward it
-                        # as pending so the user can re-classify later (reclassify_pending_bids_job).
+                        # STORY-354 AC9: when LLM fails with LLM_FALLBACK_PENDING_ENABLED
+                        # the arbiter tags ``pending_review=True``. The filter-level contract
+                        # (AC19, pinned in tests/test_llm_zero_match.py) stays REJECT — the
+                        # bid is still counted in llm_zero_match_rejeitadas and NOT forwarded
+                        # to aprovadas. Downstream (pipeline/stages/generate.py) consumes
+                        # ``stats["pending_review_count"]`` to store the bid in Redis and
+                        # enqueue the reclassify job — that's where the PENDING_REVIEW
+                        # response metadata is attached, not here.
                         if isinstance(llm_result, dict) and llm_result.get("pending_review"):
                             stats["pending_review_count"] += 1
-                            lic_item["_relevance_source"] = "pending_review"
                             lic_item["_pending_review"] = True
                             lic_item["_pending_review_reason"] = llm_result.get(
                                 "rejection_reason", "LLM unavailable"
                             )
-                            lic_item["_confidence_score"] = llm_result.get("confidence", 40)
-                            lic_item["_term_density"] = 0.0
-                            lic_item["_matched_terms"] = []
-                            resultado_llm_zero.append(lic_item)
                             logger.debug(
-                                f"LLM zero_match: PENDING_REVIEW "
+                                f"LLM zero_match: PENDING_REVIEW tagged (REJECT) "
                                 f"objeto={lic_item.get('objetoCompra', '')[:80]}"
                             )
-                            continue
                         stats["llm_zero_match_rejeitadas"] += 1
                         # STORY-267 AC16: Track term search metrics
                         if custom_terms:

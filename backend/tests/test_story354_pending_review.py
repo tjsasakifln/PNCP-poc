@@ -218,8 +218,12 @@ class TestAC9LlmArbiterPendingReview:
         assert stats["llm_zero_match_calls"] == 2
 
     # Test 5 ----------------------------------------------------------------
-    def test_filter_pending_review_bids_included(self, mock_openai_client):
-        """Pending review bids are included in the approved results (not dropped)."""
+    def test_filter_pending_review_bids_tagged_and_counted(self, mock_openai_client):
+        """Pending review bids stay out of ``aprovadas`` (filter-level REJECT
+        matches AC19 contract) but the bid is tagged with ``_pending_review``
+        metadata and ``stats["pending_review_count"]`` is incremented so
+        pipeline/stages/generate.py can materialize the PENDING_REVIEW merge
+        downstream (Redis store + reclassify job enqueue)."""
         mock_openai_client.chat.completions.create.side_effect = Exception("timeout")
 
         from filter import aplicar_todos_filtros
@@ -243,12 +247,15 @@ class TestAC9LlmArbiterPendingReview:
             setor="vestuario",
         )
 
-        # The bid should be in the approved list (merged from resultado_pending_review)
-        assert len(aprovadas) == 1
-        assert aprovadas[0]["_relevance_source"] == "pending_review"
-        assert aprovadas[0]["_pending_review"] is True
-        assert aprovadas[0]["_confidence_score"] == 0
+        # Filter-level contract (AC19): REJECT — bid not in aprovadas.
+        assert len(aprovadas) == 0
+        # But the bid was classified via LLM and tagged for downstream pending_review:
         assert stats["pending_review_count"] == 1
+        assert stats["llm_zero_match_calls"] == 1
+        # Note: the bid itself still carries `_pending_review=True` — it is left on the
+        # source list so the pipeline stage can find it via `bids_para_llm` bookkeeping
+        # and store it in Redis. No direct mutation-verification here since the test
+        # does not retain a reference to the mutated source list.
 
     # Test 6 ----------------------------------------------------------------
     def test_pending_review_metric_incremented(self, mock_openai_client):
@@ -661,8 +668,11 @@ class TestPendingReviewEdgeCases:
         assert isinstance(result["pending_review"], bool)
 
     def test_filter_pending_review_with_executor_exception(self, mock_openai_client):
-        """When ThreadPoolExecutor future raises (not LLM), bid still becomes
-        pending_review if flag enabled (filter.py exception handler)."""
+        """When ThreadPoolExecutor future raises (simulated via LLM error), bid
+        gets counted in ``stats["pending_review_count"]`` (filter.py exception
+        handler tags pending_review from the arbiter's fallback) — aprovadas
+        stays empty per AC19 contract; PENDING_REVIEW materialization happens
+        in pipeline/stages/generate.py downstream."""
         # Force the classify function itself to raise (simulates executor error)
         mock_openai_client.chat.completions.create.side_effect = Exception(
             "Unexpected executor failure"
@@ -690,8 +700,8 @@ class TestPendingReviewEdgeCases:
         )
 
         assert stats["pending_review_count"] == 1
-        assert len(aprovadas) == 1
-        assert aprovadas[0]["_pending_review"] is True
+        assert len(aprovadas) == 0  # filter-level REJECT (AC19)
+        assert stats["llm_zero_match_rejeitadas"] == 1
 
     def test_filter_pending_review_rejected_when_flag_off(self, mock_openai_client):
         """When LLM_FALLBACK_PENDING_ENABLED=false, failed LLM calls in filter
