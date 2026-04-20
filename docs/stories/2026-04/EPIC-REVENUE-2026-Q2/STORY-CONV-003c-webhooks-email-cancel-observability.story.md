@@ -3,10 +3,10 @@
 **Priority:** P0 — Fecha o ciclo trial→paid + compliance (cancelamento fácil)
 **Effort:** L (2-3 dias)
 **Squad:** @dev + @qa + @devops (deploy cron)
-**Status:** Ready
+**Status:** InProgress (AC2 Done via PR #431; AC3 ~90% pré-existente via STORY-309; AC1/AC4/AC5/AC7 pendentes)
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Parent:** [STORY-CONV-003](STORY-CONV-003-cartao-obrigatorio-trial-stripe.story.md) (superseded)
-**Depends on:** [STORY-CONV-003a](STORY-CONV-003a-backend-stripe-signup.story.md) (webhooks base + subscription criado)
+**Depends on:** [STORY-CONV-003a](STORY-CONV-003a-backend-stripe-signup.story.md) ✅ Done via PR #408 + #423
 
 ---
 
@@ -29,25 +29,34 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
 - [ ] Template sanitizado (Pydantic para vars + HTML escape)
 - [ ] Idempotência: marca `profiles.trial_charge_warning_sent_at` para não reenviar
 
-### AC2: Endpoint cancel one-click via token JWT
-- [ ] Link email contém token JWT (`payload: {user_id, action: "cancel_trial", exp: now+48h}`, chave via `TRIAL_CANCEL_JWT_SECRET`)
-- [ ] `GET /v1/conta/cancelar-trial?token=<jwt>` renderiza página pública com confirmação
-- [ ] `POST /v1/conta/cancelar-trial` (mesmo token) executa:
-  - Valida JWT (signature + exp + user_id existe)
-  - Chama `stripe.Subscription.cancel(sub_id)` (trials não geram proration)
-  - Atualiza `profiles.subscription_status='canceled_trial'`, `profiles.plan_type='free_trial'`
-  - Retorna JSON: `{ cancelled: true, access_until: <trial_end_ts> }`
-- [ ] Página `/conta/cancelar-trial/confirmado` exibe: "Trial cancelada. Seu acesso continua até {trial_end_ts}. Você pode reativar em /planos."
+### AC2: Endpoint cancel one-click via token JWT ✅ (via PR #431)
+- [x] Token JWT `payload: {user_id, action: "cancel_trial", iat, exp: now+48h}`, chave `TRIAL_CANCEL_JWT_SECRET` (fallback para `SUPABASE_JWT_SECRET` em dev) — `backend/services/trial_cancel_token.py`
+- [x] `GET /v1/conta/cancelar-trial?token=<jwt>` — retorna JSON metadata para UI (user_id, email, plan_name, trial_end_ts, already_cancelled). NÃO muta state.
+- [x] `POST /v1/conta/cancelar-trial` body `{token}` executa:
+  - Valida JWT (signature + exp + action=cancel_trial + user_id)
+  - Chama `stripe.Subscription.cancel(sub_id)` — trials não geram proration
+  - Atualiza `profiles.subscription_status='canceled_trial'`, `profiles.plan_type='free_trial'`, `user_subscriptions.is_active=false`
+  - Retorna JSON `{ cancelled: true, access_until: <trial_end_ts>, already_cancelled: false|true }`
+  - Idempotent: já cancelada → retorna 200 com `already_cancelled=true`
+  - Fail-safe: erros Stripe logados mas cleanup local prossegue (billing recon STORY-314 reconcilia)
+- [x] 19 testes passing local (`tests/test_cancel_trial_token.py`) — 7 service + 5 GET + 7 POST
+- [ ] Frontend `/conta/cancelar-trial` page.tsx (consome GET + POST) — **deferido para CONV-003c frontend companion**
 
-### AC3: Webhooks Stripe completos (trial→paid lifecycle)
-- [ ] `invoice.payment_failed` handler:
-  - Email "Pagamento falhou, atualize seu cartão" (template + link para Stripe Customer Portal)
-  - Mantém `plan_type='pro'` por 3 dias (SUBSCRIPTION_GRACE_DAYS já existente) antes de downgrade
-- [ ] `invoice.payment_succeeded` handler (primeiro pagamento pós-trial):
-  - Atualiza `profiles.plan_type='pro'`, `profiles.subscription_status='active'`
-  - Dispara email `welcome_to_pro.html` via Resend
-  - Dispara Mixpanel `trial_converted_auto`
-- [ ] Idempotência Redis `stripe_event:{event.id}` com TTL 7d
+### AC3: Webhooks Stripe completos (trial→paid lifecycle) — ~90% pré-existente via STORY-309
+- [x] `invoice.payment_failed` handler — `backend/webhooks/handlers/invoice.py::handle_invoice_payment_failed`:
+  - Email dunning via `services/dunning.send_dunning_email` (STORY-309 AC3)
+  - Mantém `plan_type='pro'` + marca `subscription_status='past_due'` (SUBSCRIPTION_GRACE_DAYS ativa)
+  - Sentry capture_message + structured log `payment_failed_event`
+  - Attempt count + decline_type (soft/hard) + decline_code extraídos
+- [x] `invoice.payment_succeeded` handler — `backend/webhooks/handlers/invoice.py::handle_invoice_payment_succeeded`:
+  - Atualiza `profiles.plan_type=<plan>`, `profiles.subscription_status='active'`
+  - `user_subscriptions.expires_at` estendido por duration_days do plan
+  - Email `render_payment_confirmation_email` (STORY-225 AC12)
+  - `send_recovery_email` se was_past_due (STORY-309 AC11)
+- [x] Idempotência via `stripe_webhook_events` table (dispatcher em `webhooks/stripe.py` — upsert on_conflict + claim com timeout 5min). Redis dedup alternativa equivalente.
+- [ ] **PENDENTE: email `welcome_to_pro.html` específico para primeiro charge pós-trial** (current `render_payment_confirmation_email` é genérico de renewal)
+- [ ] **PENDENTE: Mixpanel event `trial_converted_auto`** — detectar via `was_past_due=False` + invoice é primeiro `amount_paid>0` para este subscription
+- [ ] **PENDENTE: handler para `invoice.payment_action_required` (3DS/SCA)** — já existe em `handle_payment_action_required` via STORY-309 AC10; verificar se dispatcher roteia
 
 ### AC4: Observability end-to-end
 - [ ] Mixpanel events:
@@ -119,3 +128,12 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
 ## Change Log
 
 - **2026-04-19** — @sm (River): Sub-story criada a partir da decomposição de STORY-CONV-003. Status Ready. Bloqueia até CONV-003a em main; pode rodar em paralelo com CONV-003b.
+- **2026-04-20** — @dev (bubbly-anchor consultor session, Opus 4.7): **AC2 COMPLETO via PR #431.**
+  - `backend/services/trial_cancel_token.py` (137 linhas) — JWT HMAC-SHA256 sign/verify com action claim + TTL 48h + 5 error codes machine-readable
+  - `backend/routes/conta.py` (239 linhas) — GET + POST `/v1/conta/cancelar-trial`, idempotent, fail-safe, structured log para Mixpanel
+  - `backend/tests/test_cancel_trial_token.py` (294 linhas, 19 testes) — 7 service + 5 GET + 7 POST, incluindo happy path, expiry, invalid sig, wrong action, missing user, already cancelled, Stripe fail-safe
+  - Router registrado em `startup/routes.py` (agora 60 routers total)
+  - **AC3 ~90% pré-existente** — descoberto durante auditoria que `invoice.py::handle_invoice_payment_succeeded/failed` já implementa core lifecycle (STORY-309 AC11+AC3). Faltam apenas: `welcome_to_pro.html` email específico first-charge + Mixpanel `trial_converted_auto` event detection logic.
+  - **AC4 parcial** — Mixpanel hook `analytics.trial_cancelled_before_charge` emitido via structured log; Prometheus counters + admin dashboard pendentes.
+  - **Não incluído nesta sessão:** AC1 (cron email D-1), AC5 (runbook), AC7 (frontend page), AC6 pending (Mixpanel+Prometheus full suite + admin dashboard).
+  - Status atualizado Ready → InProgress. Próxima sessão: AC1 cron + AC3 welcome_to_pro email + frontend page.
