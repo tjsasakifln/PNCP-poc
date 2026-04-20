@@ -219,33 +219,6 @@ def _reset_rate_limiter_state():
 
 
 @pytest.fixture(autouse=True)
-def _reset_startup_shutting_down_state():
-    """STORY-BTS-009 followup: Reset ``startup.state.shutting_down`` before each test.
-
-    ``test_schema_validation.TestStartupSchemaValidation`` (and similar lifespan
-    smoke tests) drive the real lifespan coroutine to completion; the exit half
-    permanently sets ``startup.state.shutting_down = True`` (DEBT-124 graceful
-    drain flag). Every subsequent HTTP test in the same process then hits
-    ``shutdown_drain_middleware`` and gets HTTP 503 before any route runs,
-    failing assertions on 200/403/404.
-
-    A per-file autouse fixture was added for test_error_handler/test_partners
-    patterns in BTS-009, but the pollution is a global-state problem; a global
-    autouse reset here is the durable fix and catches future occurrences.
-
-    Tests that need to exercise ``shutting_down=True`` (e.g. test_harden_022)
-    set the flag themselves and restore it — they run AFTER this fixture.
-    """
-    try:
-        import startup.state as _state
-        _state.shutting_down = False
-    except Exception:
-        pass
-    yield
-    # No restore — explicit True setters manage their own lifecycle.
-
-
-@pytest.fixture(autouse=True)
 def _reset_supabase_circuit_breaker():
     """STORY-291 + STORY-416: Reset Supabase circuit breakers between tests.
 
