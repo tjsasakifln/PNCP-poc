@@ -283,6 +283,7 @@ class TestDatetimeNaiveAwareFix:
             ufs_selecionadas={"SP"},
             status="recebendo_proposta",
             modo_busca="abertas",
+            setor="vestuario",  # STORY-BTS-004: required so keyword density > 0 (bid has "Uniformes")
         )
 
         # Should not crash and should accept the future bid
@@ -310,6 +311,7 @@ class TestDatetimeNaiveAwareFix:
             ufs_selecionadas={"SP"},
             status="recebendo_proposta",
             modo_busca="abertas",
+            setor="vestuario",  # STORY-BTS-004: required so keyword density > 0 (bid has "Uniformes")
         )
 
         # Recent opening, no deadline → should be kept
@@ -344,7 +346,8 @@ class TestModoFiscaIntegration:
         aprovadas, stats = aplicar_todos_filtros(
             licitacoes,
             ufs_selecionadas={"SP"},
-            modo_busca="abertas"
+            modo_busca="abertas",
+            setor="vestuario",  # STORY-BTS-004: required so keyword density > 0 (bid has "Uniformes")
         )
 
         # Only the bid closing tomorrow should pass
@@ -377,7 +380,8 @@ class TestModoFiscaIntegration:
         aprovadas, stats = aplicar_todos_filtros(
             licitacoes,
             ufs_selecionadas={"SP"},
-            modo_busca="publicacao"
+            modo_busca="publicacao",
+            setor="vestuario",  # STORY-BTS-004: required so keyword density > 0 (bid has "Uniformes")
         )
 
         # Both bids should pass (no prazo filter)
@@ -404,7 +408,8 @@ class TestModoFiscaIntegration:
         # Call without modo_busca parameter (should default to "publicacao")
         aprovadas, stats = aplicar_todos_filtros(
             licitacoes,
-            ufs_selecionadas={"SP"}
+            ufs_selecionadas={"SP"},
+            setor="vestuario",  # STORY-BTS-004: required so keyword density > 0 (bid has "Uniformes")
             # modo_busca not specified
         )
 
@@ -453,7 +458,8 @@ class TestModoFiscaIntegration:
             ufs_selecionadas={"SP"},
             valor_min=100000,
             valor_max=200000,
-            modo_busca="abertas"
+            modo_busca="abertas",
+            setor="vestuario",  # STORY-BTS-004: required so keyword density > 0 (bid has "Uniformes")
         )
 
         # Only M002 should pass (SP, open, within value range)

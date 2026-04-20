@@ -123,7 +123,7 @@ class TestArbiterQaAudit:
     """AC2: QA audit sampling works inside parallelism."""
 
     @patch("llm_arbiter.classify_contract_primary_match")
-    @patch("filter.random")
+    @patch("filter.pipeline.random")
     def test_qa_audit_sampling_in_parallel(self, mock_random, mock_classify):
         """AC2: QA audit tags are correctly applied within parallel execution."""
         mock_classify.return_value = _mock_llm_response(True, 75)
