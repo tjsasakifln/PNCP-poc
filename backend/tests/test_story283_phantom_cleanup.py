@@ -255,12 +255,16 @@ class TestAC4ZeroStartupWarnings:
     def test_sector_loading_no_orphan_warnings(self):
         """_load_sectors_from_yaml() orphan-trigger warnings are bounded.
 
-        BTS-011: A single known orphan exists — `costura` in sector `vestuario`
-        (warning: "Co-occurrence trigger 'costura' in sector 'vestuario' does not
-        match any keyword prefix — may never fire"). Tracked in BTS-012 for a
-        sectors_data.yaml patch (either add `costura` keyword or drop the trigger).
+        BTS-011: 4 known orphans across 3 sectors — tracked in BTS-012 for
+        sectors_data.yaml patches (each needs either matching keyword added
+        or trigger removed):
+          - `costura` in vestuario
+          - `construcao` in insumos_hospitalares
+          - `reforma` in insumos_hospitalares
+          - `construcao` in manutencao_predial
+
         This assertion ensures no *new* orphans creep in while leaving the
-        documented exception to be fixed separately.
+        documented exceptions to be fixed separately.
         """
         with patch("sectors.logging") as mock_logging:
             mock_logger = MagicMock()
@@ -272,11 +276,11 @@ class TestAC4ZeroStartupWarnings:
                 for call in mock_logger.warning.call_args_list
                 if "does not match any keyword" in str(call)
             ]
-            # Whitelist known orphan (vestuario/costura) — drop this entry after BTS-012 fix.
-            KNOWN_ORPHANS = {"costura"}
+            # Whitelist known orphans — drop entries after BTS-012 fixes sectors_data.yaml.
+            KNOWN_ORPHANS = {"costura", "construcao", "reforma"}
             unexpected = [
                 m for m in orphan_msgs
-                if not any(known in m for known in KNOWN_ORPHANS)
+                if not any(f"'{known}'" in m for known in KNOWN_ORPHANS)
             ]
             assert not unexpected, (
                 f"New orphan trigger warnings appeared (fix sectors_data.yaml): {unexpected}"

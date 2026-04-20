@@ -125,23 +125,40 @@ def test_cross_m01_plans_endpoint():
 
 
 def test_main_py_integration():
-    """Test that main.py registers the new router.
+    """Test that the app registers the plans router.
 
-    NOTE (STORY-BTS-011): use pathlib + __file__ instead of open("main.py"), since
-    pytest may run from arbitrary CWD in CI.
+    NOTE (STORY-BTS-011): SYS-020 moved registration from main.py to startup/
+    package (app_factory + router_registry). main.py is now thin: just
+    `app = create_app()`. Walk startup/ for the wiring; fall back to main.py
+    for legacy.
     """
     from pathlib import Path
 
-    main_py = Path(__file__).resolve().parent.parent / "main.py"
-    assert main_py.exists(), f"main.py not found at {main_py}"
-    content = main_py.read_text(encoding="utf-8")
+    backend_root = Path(__file__).resolve().parent.parent
+    startup_dir = backend_root / "startup"
+    main_py = backend_root / "main.py"
 
-    assert "from routes.plans import router as plans_router" in content, (
-        "main.py missing import of plans_router"
-    )
-    assert "app.include_router(plans_router)" in content, (
-        "main.py missing app.include_router(plans_router)"
-    )
+    found_import = False
+    found_include = False
+
+    candidates = []
+    if startup_dir.exists():
+        candidates.extend(startup_dir.rglob("*.py"))
+    if main_py.exists():
+        candidates.append(main_py)
+
+    for py_file in candidates:
+        try:
+            content = py_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if "from routes.plans import router as plans_router" in content:
+            found_import = True
+        if "plans_router" in content and "include_router" in content:
+            found_include = True
+
+    assert found_import, "plans_router import not found in main.py or startup/ package"
+    assert found_include, "plans_router not wired via include_router anywhere"
 
 
 def main():
