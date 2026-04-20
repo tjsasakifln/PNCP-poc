@@ -214,6 +214,36 @@ class TestSchemaContract:
 class TestStartupSchemaValidation:
     """AC16b: Test that startup validation logs CRITICAL but does NOT crash (SLA-002)."""
 
+    @pytest.fixture(autouse=True)
+    def _reset_process_state(self):
+        """STORY-BTS-009: ``test_startup_succeeds_with_valid_schema`` drives the
+        real ``lifespan`` coroutine to completion, and the exit half of lifespan
+        sets ``startup.state.shutting_down = True`` permanently (DEBT-124).
+        Any downstream test file that POSTs to the app will then be rejected
+        by ``shutdown_drain_middleware`` with HTTP 503 — which is why
+        ``test_error_handler.py`` starts failing en-bloc after this class runs.
+
+        Reset before and after each test to scope the pollution to this class:
+          - shutting_down flag → False
+          - Supabase circuit breakers → CLOSED
+        """
+        def _reset():
+            try:
+                import startup.state as _state
+                _state.shutting_down = False
+            except Exception:
+                pass
+            try:
+                from supabase_client import _CB_REGISTRY, supabase_cb
+                for cb in list(_CB_REGISTRY.values()) + [supabase_cb]:
+                    cb.reset()
+            except Exception:
+                pass
+
+        _reset()
+        yield
+        _reset()
+
     @pytest.mark.asyncio
     async def test_startup_continues_on_missing_critical_columns(self):
         """SLA-002: Schema contract failure logs CRITICAL but does NOT raise SystemExit."""
@@ -250,7 +280,6 @@ class TestStartupSchemaValidation:
                      patch("job_queue.get_arq_pool", new_callable=lambda: lambda: asyncio.sleep(0)), \
                      patch("cron_jobs.start_cache_cleanup_task", return_value=asyncio.create_task(asyncio.sleep(0))), \
                      patch("cron_jobs.start_session_cleanup_task", return_value=asyncio.create_task(asyncio.sleep(0))), \
-                     patch("cron_jobs.start_cache_refresh_task", return_value=asyncio.create_task(asyncio.sleep(0))), \
                      patch("startup.lifespan._check_cache_schema", new_callable=lambda: lambda: asyncio.sleep(0)), \
                      patch("search_state_manager.recover_stale_searches", new_callable=lambda: lambda max_age_minutes: asyncio.sleep(0)), \
                      patch("startup.lifespan._log_registered_routes"), \

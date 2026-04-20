@@ -33,6 +33,17 @@ def client():
     app.dependency_overrides[require_auth] = mock_auth
     app.dependency_overrides[get_db] = lambda: mock_db
 
+    # STORY-BTS-009: reset the Supabase circuit breakers so we don't pick up
+    # OPEN state left by upstream test files (e.g. test_schema_validation's
+    # lifespan smoke test). Without this, the first request under test returns
+    # 503 before any handler runs.
+    try:
+        from supabase_client import _CB_REGISTRY, supabase_cb
+        for cb in list(_CB_REGISTRY.values()) + [supabase_cb]:
+            cb.reset()
+    except Exception:
+        pass
+
     yield TestClient(app, raise_server_exceptions=False)
 
     app.dependency_overrides.pop(require_auth, None)
@@ -117,9 +128,14 @@ class TestWebhookErrorSanitization:
     """Stripe webhook errors are in PT."""
 
     def test_missing_signature_header_returns_pt(self, client):
-        """Webhook without signature header returns PT error."""
+        """Webhook without signature header returns PT error.
+
+        DEBT-324: Stripe webhook is mounted at /webhooks/stripe (root, no /v1/ prefix).
+        Stripe Dashboard must be configured with this canonical URL — do not revert
+        to /v1/webhooks/stripe here without also restoring the duplicate mount.
+        """
         response = client.post(
-            "/v1/webhooks/stripe",
+            "/webhooks/stripe",
             content=b'{}',
             headers={"content-type": "application/json"},
         )
