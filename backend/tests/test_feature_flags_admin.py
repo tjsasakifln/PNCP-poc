@@ -218,7 +218,9 @@ class TestReloadFeatureFlags:
         """Should clear all overrides and return current values."""
         from routes.feature_flags import _runtime_overrides
         _runtime_overrides["LLM_ARBITER_ENABLED"] = False
-        _runtime_overrides["FILTER_DEBUG_MODE"] = True
+        # FILTER_DEBUG_MODE was removed from _FEATURE_FLAG_REGISTRY (BTS-010a);
+        # use DIGEST_ENABLED as the second override fixture.
+        _runtime_overrides["DIGEST_ENABLED"] = True
 
         resp = client.post("/admin/feature-flags/reload")
         assert resp.status_code == 200
