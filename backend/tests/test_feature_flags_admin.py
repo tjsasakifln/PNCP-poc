@@ -44,11 +44,26 @@ def unauth_client():
 
 @pytest.fixture(autouse=True)
 def clear_overrides():
-    """Clear runtime overrides before each test."""
+    """Clear runtime overrides and TTL cache before each test.
+
+    BTS-011 cluster 7: `_feature_flag_cache` is module-level state in
+    `config.features` that persists across tests. Without explicit
+    teardown, `test_update_flag_clears_ttl_cache` fails in batch because
+    prior tests (or prior runs via `get_feature_flag()`) leave cache
+    entries that the seed line then overwrites, and the endpoint's
+    `del` happens — but a collateral read by `_resolve_flag_value` or
+    a concurrent test may re-populate the entry between PATCH return
+    and the final assertion. Clearing on setup+teardown eliminates the
+    cross-test contamination.
+    """
     from routes.feature_flags import _runtime_overrides
+    from config.features import _feature_flag_cache
+
     _runtime_overrides.clear()
+    _feature_flag_cache.clear()
     yield
     _runtime_overrides.clear()
+    _feature_flag_cache.clear()
 
 
 class TestListFeatureFlags:
