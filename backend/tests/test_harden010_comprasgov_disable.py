@@ -18,16 +18,22 @@ class TestAC1FeatureFlag:
         from config import COMPRASGOV_ENABLED
         assert COMPRASGOV_ENABLED is False
 
-    @patch.dict("os.environ", {"COMPRASGOV_ENABLED": "true"})
     def test_env_var_enables(self):
         """Setting COMPRASGOV_ENABLED=true enables the flag."""
+        # CIG-BE config split (TD-007): COMPRASGOV_ENABLED source of truth is
+        # config.pncp; reload that first, then config package re-exports it.
+        # Cleanup must happen AFTER patch.dict exits, so module state matches real env.
         import importlib
+        import os
+        import config.pncp
         import config
-        importlib.reload(config)
-        try:
-            assert config.COMPRASGOV_ENABLED is True
-        finally:
+        with patch.dict("os.environ", {"COMPRASGOV_ENABLED": "true"}):
+            importlib.reload(config.pncp)
             importlib.reload(config)
+            assert config.COMPRASGOV_ENABLED is True
+        # After patch.dict exits: env restored — reload to match
+        importlib.reload(config.pncp)
+        importlib.reload(config)
 
     def test_registered_in_feature_flag_registry(self):
         """Flag is in _FEATURE_FLAG_REGISTRY for runtime toggles."""
@@ -74,9 +80,12 @@ class TestAC3StartupWarning:
             for msg in caplog.messages
         )
 
-    @patch("config.COMPRASGOV_ENABLED", True)
+    @patch("config.pncp.COMPRASGOV_ENABLED", True)
     def test_no_warning_when_enabled(self, caplog):
         """log_feature_flags() does NOT warn when ComprasGov is enabled."""
+        # log_feature_flags() does `from config.pncp import COMPRASGOV_ENABLED`
+        # fresh at call-time — patch MUST target the source of truth module
+        # (config.pncp), not the re-export (config).
         from config import log_feature_flags
         with caplog.at_level(logging.WARNING, logger="config"):
             log_feature_flags()
@@ -90,19 +99,23 @@ class TestAC3StartupWarning:
 # AC4: Easy to re-enable via env var
 # ---------------------------------------------------------------------------
 class TestAC4ReEnable:
-    @patch.dict("os.environ", {"COMPRASGOV_ENABLED": "true"})
     def test_reenable_via_env_var(self):
         """Setting COMPRASGOV_ENABLED=true re-enables ComprasGov."""
+        # CIG-BE config split (TD-007): reload config.pncp first (source of truth)
+        # Cleanup happens AFTER patch.dict exits so module state matches real env.
         import importlib
+        import config.pncp
         import config
-        importlib.reload(config)
-        try:
+        with patch.dict("os.environ", {"COMPRASGOV_ENABLED": "true"}):
+            importlib.reload(config.pncp)
+            importlib.reload(config)
             assert config.COMPRASGOV_ENABLED is True
             from source_config.sources import SourceConfig
             sc = SourceConfig.from_env()
             assert sc.compras_gov.enabled is True
-        finally:
-            importlib.reload(config)
+        # After patch.dict exits: env restored — reload to match
+        importlib.reload(config.pncp)
+        importlib.reload(config)
 
 
 # ---------------------------------------------------------------------------

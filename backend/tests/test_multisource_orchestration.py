@@ -333,9 +333,16 @@ class TestDegradedMode:
     @pytest.mark.asyncio
     async def test_not_partial_when_all_sources_succeed(self):
         """is_partial=False when all sources return data successfully."""
-        records_a = [_make_record("SOURCE_A", "a1", cnpj="111")]
+        # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
+        records_a = [_make_record(
+            "SOURCE_A", "a1", cnpj="111",
+            objeto="Aquisição de uniformes escolares para rede municipal",
+        )]
         records_b = [
-            _make_record("SOURCE_B", "b1", cnpj="222", numero_edital="002")
+            _make_record(
+                "SOURCE_B", "b1", cnpj="222", numero_edital="002",
+                objeto="Contratação de serviços de pavimentação asfáltica urbana",
+            )
         ]
 
         adapters = {
