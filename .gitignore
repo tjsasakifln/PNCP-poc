@@ -420,6 +420,9 @@ nul
 .aiox/install-log.txt
 scripts/.accent_cache.json
 
+# Synapse knowledge-graph runtime artifacts (agent metrics/sessions)
+.synapse/
+
 # Load test fixtures (STORY-3.3 EPIC-TD-2026Q2) — never commit real JWTs
 tests/load/fixtures/jwts.json
 
