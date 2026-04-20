@@ -83,6 +83,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | banco de dados / schema / migration / RLS / query / supabase estrutura | `data-engineer` |
 | testes / cobertura / QA / suite / validação qualidade | `qa` |
 | arquitetura / impacto da mudança / ADR / design sistema | `architect` |
+| **Squads aiox (SynkraAI/aiox-squads)** | |
+| Lei 14.133 / jurisprudência licitação / impugnação / habilitação edital / acórdão TCU-TCE | `aiox-legal-analyst` |
+| componente frontend buscar / SSE / EventSource / Shepherd onboarding / animação buscar-pipeline | `aiox-apex` |
+| supplier_contracts / SEO orgânico / blog observatório / sitemap / programmatic SEO | `aiox-seo` |
+| pesquisa multi-fonte / deep research / análise setorial B2G / síntese de evidência / PICO | `aiox-deep-research` |
+| paralelizar UF/batch/agentes / dispatch agentes / decompor story / wave execução | `aiox-dispatch` |
+| memória ecossistema/sessão / aprendizado contínuo / daily sensing / kaizen / Ebbinghaus | `aiox-kaizen-v2` |
 | **Meta / Sessão** | |
 | beta / usuários reais / feedback / testar com usuário / sessão beta | `beta-team` |
 | squad / equipe / time / coordenar agentes / orquestrar | `squad-creator` |
