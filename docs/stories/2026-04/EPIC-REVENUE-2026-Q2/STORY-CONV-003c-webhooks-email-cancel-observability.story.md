@@ -3,7 +3,7 @@
 **Priority:** P0 — Fecha o ciclo trial→paid + compliance (cancelamento fácil)
 **Effort:** L (2-3 dias)
 **Squad:** @dev + @qa + @devops (deploy cron)
-**Status:** InProgress (AC2 Done via PR #431; AC3 ~90% pré-existente via STORY-309; AC1/AC4/AC5/AC7 pendentes)
+**Status:** InProgress (AC2 Done via PR #431 merged `0ef5902f`; AC3 + AC5 + AC7 em PR #433 — CI cascade; AC1 cron + AC4 observability dashboard deferidos)
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Parent:** [STORY-CONV-003](STORY-CONV-003-cartao-obrigatorio-trial-stripe.story.md) (superseded)
 **Depends on:** [STORY-CONV-003a](STORY-CONV-003a-backend-stripe-signup.story.md) ✅ Done via PR #408 + #423
@@ -135,5 +135,6 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
   - Router registrado em `startup/routes.py` (agora 60 routers total)
   - **AC3 ~90% pré-existente** — descoberto durante auditoria que `invoice.py::handle_invoice_payment_succeeded/failed` já implementa core lifecycle (STORY-309 AC11+AC3). Faltam apenas: `welcome_to_pro.html` email específico first-charge + Mixpanel `trial_converted_auto` event detection logic.
   - **AC4 parcial** — Mixpanel hook `analytics.trial_cancelled_before_charge` emitido via structured log; Prometheus counters + admin dashboard pendentes.
-  - **Não incluído nesta sessão:** AC1 (cron email D-1), AC5 (runbook), AC7 (frontend page), AC6 pending (Mixpanel+Prometheus full suite + admin dashboard).
-  - Status atualizado Ready → InProgress. Próxima sessão: AC1 cron + AC3 welcome_to_pro email + frontend page.
+  - Status atualizado Ready → InProgress.
+- **2026-04-20 (flickering-llama)** — @dev: AC3 (welcome_to_pro email branching no `invoice.py`) + AC5 (runbook trial-card-rollback) + AC7 (frontend `/conta/cancelar-trial` page + proxy + tests) implementados em PR #433 (10 tests local PASS).
+- **2026-04-20 (temporal-bonbon evening)** — @devops: PR #431 **MERGED** commit `0ef5902f` (post drift-sweep `1270f909` + CONV-003b `c9c29f3f`). PR #433 rebased com conflict em `invoice.py` resolvido (combina #431's analytics event + #433's email branching). CI rerun em progresso devido a 1 test flake (`test_invalid_signature_rejected DID NOT RAISE` — passa local + isoladamente, falha no full suite — suspeita de test pollution `auth.jwt.decode` patch global). AC1 (cron D-1 email) + AC4 (observability dashboard) deferidos para próxima sessão.
