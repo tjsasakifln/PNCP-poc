@@ -23,6 +23,7 @@ from routes.emails import router as emails_router
 from routes.pipeline import router as pipeline_router
 from routes.onboarding import router as onboarding_router
 from routes.auth_email import router as auth_email_router
+from routes.auth_signup import router as auth_signup_router
 from routes.health import router as cache_health_router
 from routes.health_core import router as health_core_router
 from routes.feedback import router as feedback_router
@@ -76,6 +77,7 @@ _v1_routers = [
     analytics_router, oauth_router, export_sheets_router,
     search_router, user_router, billing_router, sessions_router, plans_router,
     emails_router, pipeline_router, onboarding_router, auth_email_router,
+    auth_signup_router,
     cache_health_router, feedback_router, auth_check_router, bid_analysis_router,
     alerts_router, trial_emails_router, mfa_router, org_router, partners_router,
     sectors_public_router, reports_router, blog_stats_router, metrics_api_router,

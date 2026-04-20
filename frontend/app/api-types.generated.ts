@@ -1761,6 +1761,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Signup
+         * @description STORY-CONV-003a AC1+AC2+AC3: Signup with optional Stripe trial.
+         *
+         *     Returns 200 with `SignupResponse`. Error modes:
+         *
+         *     - 400: disposable email domain or weak password.
+         *     - 400: invalid `stripe_payment_method_id` shape (Pydantic regex).
+         *     - 409: email already registered (detected via Supabase error).
+         *     - 500: Supabase auth.create_user failed (NOT Stripe — Stripe fails open).
+         */
+        post: operations["signup_v1_auth_signup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/status": {
         parameters: {
             query?: never;
@@ -2622,6 +2649,30 @@ export interface paths {
         get: operations["fornecedores_stats_v1_fornecedores__setor___uf__stats_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/founding/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Founding Checkout
+         * @description Create a founding-customer Stripe Checkout Session with FOUNDING30 applied.
+         *
+         *     Side effects:
+         *     - Inserts a `founding_leads` row with `checkout_status='pending'`.
+         *     - Later webhook events (`checkout.session.completed` / `expired`) update it.
+         */
+        post: operations["founding_checkout_v1_founding_checkout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6780,6 +6831,26 @@ export interface components {
             /** Uf */
             uf: string;
         };
+        /** FoundingCheckoutRequest */
+        FoundingCheckoutRequest: {
+            /** Cnpj */
+            cnpj: string;
+            /** Email */
+            email: string;
+            /** Motivo */
+            motivo: string;
+            /** Nome */
+            nome: string;
+            /** Razao Social */
+            razao_social?: string | null;
+        };
+        /** FoundingCheckoutResponse */
+        FoundingCheckoutResponse: {
+            /** Checkout Url */
+            checkout_url: string;
+            /** Lead Id */
+            lead_id: string;
+        };
         /**
          * GoogleSheetsExportHistory
          * @description Schema for individual export history entry.
@@ -8592,6 +8663,87 @@ export interface components {
              * @default 0
              */
             view_count: number;
+        };
+        /**
+         * SignupRequest
+         * @description Request body for POST /v1/auth/signup (STORY-CONV-003a AC1).
+         *
+         *     `stripe_payment_method_id` is optional during rollout — when present, the
+         *     backend creates a Stripe Customer + Subscription with 14-day trial and
+         *     attaches the PaymentMethod. When absent, a Supabase user is created and
+         *     the trial is tracked locally (legacy path).
+         */
+        SignupRequest: {
+            /**
+             * Company
+             * @description Optional company name, stored in profiles.company
+             */
+            company?: string | null;
+            /**
+             * Email
+             * Format: email
+             * @description User email (must be valid format, max 320 chars)
+             */
+            email: string;
+            /**
+             * Full Name
+             * @description Optional display name, propagated to profiles.full_name
+             */
+            full_name?: string | null;
+            /**
+             * Password
+             * @description Password (min 8 chars — Supabase enforces complexity)
+             */
+            password: string;
+            /**
+             * Stripe Payment Method Id
+             * @description Stripe PaymentMethod ID (pm_...) from frontend PaymentElement
+             */
+            stripe_payment_method_id?: string | null;
+        };
+        /**
+         * SignupResponse
+         * @description Response body for POST /v1/auth/signup (STORY-CONV-003a AC3).
+         */
+        SignupResponse: {
+            /**
+             * Email
+             * Format: email
+             * @description Confirmed user email
+             */
+            email: string;
+            /**
+             * Requires Email Confirmation
+             * @description Whether Supabase requires email confirmation before login
+             * @default true
+             */
+            requires_email_confirmation: boolean;
+            /**
+             * Stripe Customer Id
+             * @description Stripe Customer ID (cus_...) if card was attached
+             */
+            stripe_customer_id?: string | null;
+            /**
+             * Stripe Subscription Id
+             * @description Stripe Subscription ID (sub_...) if card was attached
+             */
+            stripe_subscription_id?: string | null;
+            /**
+             * Subscription Status
+             * @description Subscription status: trialing | free_trial | payment_failed
+             * @default trialing
+             */
+            subscription_status: string;
+            /**
+             * Trial End Ts
+             * @description Unix epoch seconds when trial ends. Sourced from Stripe when subscription created; otherwise computed locally (now + 14d).
+             */
+            trial_end_ts?: number | null;
+            /**
+             * User Id
+             * @description Supabase auth.users.id UUID
+             */
+            user_id: string;
         };
         /** SitemapCnpjsResponse */
         SitemapCnpjsResponse: {
@@ -11471,6 +11623,39 @@ export interface operations {
             };
         };
     };
+    signup_v1_auth_signup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     auth_status_v1_auth_status_get: {
         parameters: {
             query: {
@@ -12644,6 +12829,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FornecedoresStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    founding_checkout_v1_founding_checkout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoundingCheckoutRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoundingCheckoutResponse"];
                 };
             };
             /** @description Validation Error */

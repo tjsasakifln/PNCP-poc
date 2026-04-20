@@ -8984,6 +8984,141 @@
         "title": "SharedAnalisePublic",
         "type": "object"
       },
+      "SignupRequest": {
+        "description": "Request body for POST /v1/auth/signup (STORY-CONV-003a AC1).\n\n`stripe_payment_method_id` is optional during rollout \u2014 when present, the\nbackend creates a Stripe Customer + Subscription with 14-day trial and\nattaches the PaymentMethod. When absent, a Supabase user is created and\nthe trial is tracked locally (legacy path).",
+        "properties": {
+          "company": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional company name, stored in profiles.company",
+            "title": "Company"
+          },
+          "email": {
+            "description": "User email (must be valid format, max 320 chars)",
+            "format": "email",
+            "maxLength": 320,
+            "title": "Email",
+            "type": "string"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional display name, propagated to profiles.full_name",
+            "title": "Full Name"
+          },
+          "password": {
+            "description": "Password (min 8 chars \u2014 Supabase enforces complexity)",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          },
+          "stripe_payment_method_id": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "pattern": "^pm_[A-Za-z0-9_]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stripe PaymentMethod ID (pm_...) from frontend PaymentElement",
+            "title": "Stripe Payment Method Id"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "SignupRequest",
+        "type": "object"
+      },
+      "SignupResponse": {
+        "description": "Response body for POST /v1/auth/signup (STORY-CONV-003a AC3).",
+        "properties": {
+          "email": {
+            "description": "Confirmed user email",
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "requires_email_confirmation": {
+            "default": true,
+            "description": "Whether Supabase requires email confirmation before login",
+            "title": "Requires Email Confirmation",
+            "type": "boolean"
+          },
+          "stripe_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stripe Customer ID (cus_...) if card was attached",
+            "title": "Stripe Customer Id"
+          },
+          "stripe_subscription_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stripe Subscription ID (sub_...) if card was attached",
+            "title": "Stripe Subscription Id"
+          },
+          "subscription_status": {
+            "default": "trialing",
+            "description": "Subscription status: trialing | free_trial | payment_failed",
+            "title": "Subscription Status",
+            "type": "string"
+          },
+          "trial_end_ts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix epoch seconds when trial ends. Sourced from Stripe when subscription created; otherwise computed locally (now + 14d).",
+            "title": "Trial End Ts"
+          },
+          "user_id": {
+            "description": "Supabase auth.users.id UUID",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email"
+        ],
+        "title": "SignupResponse",
+        "type": "object"
+      },
       "SitemapCnpjsResponse": {
         "properties": {
           "cnpjs": {
@@ -13987,6 +14122,48 @@
         "summary": "Resend Confirmation",
         "tags": [
           "auth-email"
+        ]
+      }
+    },
+    "/v1/auth/signup": {
+      "post": {
+        "description": "STORY-CONV-003a AC1+AC2+AC3: Signup with optional Stripe trial.\n\nReturns 200 with `SignupResponse`. Error modes:\n\n- 400: disposable email domain or weak password.\n- 400: invalid `stripe_payment_method_id` shape (Pydantic regex).\n- 409: email already registered (detected via Supabase error).\n- 500: Supabase auth.create_user failed (NOT Stripe \u2014 Stripe fails open).",
+        "operationId": "signup_v1_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Signup",
+        "tags": [
+          "auth-signup"
         ]
       }
     },
