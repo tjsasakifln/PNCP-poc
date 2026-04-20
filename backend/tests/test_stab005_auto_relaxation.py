@@ -106,61 +106,63 @@ class TestAutoRelaxationReturnsResults:
 
     @pytest.mark.asyncio
     async def test_level2_relaxation_when_normal_returns_zero(self):
-        """Level 2: keyword filter removed → results recovered.
+        """Level 2: inline substring matching recovers results.
 
-        Scenario: custom_terms set, normal filter returns 0, level-2 (no keywords)
-        returns 5 results. Verifies relaxation_level=2 and results populated.
+        BTS-011 cluster 3: ISSUE-017 FIX replaced the old "re-call filter with
+        keywords=None" Level 2 logic with *inline substring matching* in
+        `filter_stage.py` (normalize_text against `custom_terms`). The filter
+        function is NOT re-called — substring match runs directly on
+        `ctx.licitacoes_raw`. Test rewritten to reflect that contract.
+
+        Scenario: custom_terms "material" matches "materiais" (normalized
+        substring) in the raw object texts → Level 2 recovers results.
         """
         raw = _make_raw_licitacoes(20)
-        l2_filtered = raw[:5]
-        l2_stats = {"aprovadas": 5, "total": 20, "rejeitadas_keyword": 0}
 
-        # First call (normal): zero results, all rejected by keyword
+        # Normal call: zero results, some rejected by keyword / valor.
         normal_stats = {
             "aprovadas": 0, "total": 20,
             "rejeitadas_keyword": 15, "rejeitadas_uf": 0,
             "rejeitadas_valor": 5, "rejeitadas_min_match": 0,
             "rejeitadas_prazo": 0, "rejeitadas_outros": 0,
         }
-        # Second call (level 2 relaxation): returns 5
-        mock_filter = MagicMock(
-            side_effect=[
-                ([], normal_stats),       # normal: zero results
-                (l2_filtered, l2_stats),  # level 2: keyword-free
-            ]
-        )
+        mock_filter = MagicMock(return_value=([], normal_stats))
 
         deps = make_deps(aplicar_todos_filtros=mock_filter)
         ctx = make_ctx(
             licitacoes_raw=raw,
-            custom_terms=["material escritorio", "papel A4"],
+            # "material" will substring-match "materiais" in the fake
+            # objectoCompra strings after normalize_text.
+            custom_terms=["material"],
         )
         pipeline = SearchPipeline(deps)
 
         await pipeline.stage_filter(ctx)
 
-        # Should have called filter twice: normal + level 2
-        assert mock_filter.call_count == 2
+        # Production only invokes aplicar_todos_filtros ONCE (normal);
+        # Level 2 is handled inline via substring matching.
+        assert mock_filter.call_count == 1
 
-        # Level 2 call should have keywords=None
-        l2_call = mock_filter.call_args_list[1]
-        assert l2_call.kwargs.get("keywords") is None
-        assert l2_call.kwargs.get("exclusions") is None
-        assert l2_call.kwargs.get("custom_terms") is None
-
-        # Results recovered
-        assert len(ctx.licitacoes_filtradas) == 5
+        # Results recovered via inline substring relaxation.
         assert ctx.relaxation_level == 2
+        assert len(ctx.licitacoes_filtradas) > 0
+        # Recovered bids should be tagged with substring_relaxation provenance.
+        for bid in ctx.licitacoes_filtradas:
+            assert bid.get("_relevance_source") == "substring_relaxation"
 
     @pytest.mark.asyncio
-    async def test_level3_relaxation_top_by_value(self):
-        """Level 3: when level 2 also returns 0, top 10 by value is returned.
+    async def test_level3_empty_with_guidance(self):
+        """Level 3: when Level 2 substring match also fails, return empty + guidance.
 
-        Scenario: custom_terms set, normal=0, level-2=0, level-3 returns
-        top 10 sorted by valorTotalEstimado descending.
+        BTS-011 cluster 3: ISSUE-017 FIX renamed "Level 3 = top 10 by value" to
+        "Level 3 = empty list + user-facing guidance message". Showing irrelevant
+        top-by-value bids (biodescontaminação for a "uniformes escolares" search)
+        destroyed user trust more than showing "0 results found". Test rewritten.
+
+        Scenario: custom_terms that won't substring-match anything → Level 2
+        fails silently → Level 3 returns empty with guidance text.
         """
         raw = _make_raw_licitacoes(15)
-        # Make values varied for sorting verification
         for i, lic in enumerate(raw):
             lic["valorTotalEstimado"] = float((i + 1) * 10_000)
 
@@ -170,32 +172,24 @@ class TestAutoRelaxationReturnsResults:
             "rejeitadas_uf": 0, "rejeitadas_min_match": 0,
             "rejeitadas_prazo": 0, "rejeitadas_outros": 0,
         }
-
-        mock_filter = MagicMock(
-            side_effect=[
-                ([], normal_stats),  # normal: zero
-                ([], {}),            # level 2: also zero
-            ]
-        )
+        mock_filter = MagicMock(return_value=([], normal_stats))
 
         deps = make_deps(aplicar_todos_filtros=mock_filter)
         ctx = make_ctx(
             licitacoes_raw=raw,
-            custom_terms=["material especifico"],
+            # "xyz-zzz-nonexistent" won't match any substring in fake objectoCompra.
+            custom_terms=["xyz-zzz-nonexistent"],
         )
         pipeline = SearchPipeline(deps)
 
         await pipeline.stage_filter(ctx)
 
-        # Level 3: top 10 by value
+        # Level 3: NO top-by-value; empty + guidance.
         assert ctx.relaxation_level == 3
-        assert len(ctx.licitacoes_filtradas) == 10
-
-        # Should be sorted by value descending
-        values = [bid["valorTotalEstimado"] for bid in ctx.licitacoes_filtradas]
-        assert values == sorted(values, reverse=True)
-        # Highest value is 15 * 10_000 = 150_000
-        assert values[0] == 150_000.0
+        assert ctx.licitacoes_filtradas == []
+        # Guidance message should mention the custom term(s).
+        assert ctx.filter_summary is not None
+        assert "xyz-zzz-nonexistent" in ctx.filter_summary
 
 
 # ============================================================================
@@ -358,10 +352,15 @@ class TestAllRelaxationLevelsFail:
 
     @pytest.mark.asyncio
     async def test_level2_and_3_fail_with_value_filter_rejects_all(self):
-        """When normal=0, level-2=0, and even level-3 returns top by value,
-        filter_stats from the normal run still shows the rejection breakdown."""
+        """When normal=0 and Level 2 substring match also misses,
+        Level 3 returns empty + guidance and filter_summary explains why.
+
+        BTS-011 cluster 3: post-ISSUE-017 FIX, Level 3 does NOT return
+        top-by-value anymore (that was the cure worse than the disease).
+        Test rewritten to use custom terms that won't substring-match the
+        fake bid texts, forcing Level 2 to fail and Level 3 to kick in.
+        """
         raw = _make_raw_licitacoes(5)
-        # Set all values to 0 so level 3 still picks them up (sorted by 0)
         for lic in raw:
             lic["valorTotalEstimado"] = 0.0
 
@@ -371,28 +370,21 @@ class TestAllRelaxationLevelsFail:
             "rejeitadas_keyword": 0, "rejeitadas_min_match": 0,
             "rejeitadas_prazo": 0, "rejeitadas_outros": 0,
         }
-
-        mock_filter = MagicMock(
-            side_effect=[
-                ([], normal_stats),  # normal: zero
-                ([], {}),            # level 2: also zero
-            ]
-        )
+        mock_filter = MagicMock(return_value=([], normal_stats))
 
         deps = make_deps(aplicar_todos_filtros=mock_filter)
         ctx = make_ctx(
             licitacoes_raw=raw,
-            custom_terms=["material"],
+            # Term that won't match "aquisicao de materiais diversos lote N".
+            custom_terms=["xyz-nonexistent-term"],
         )
         pipeline = SearchPipeline(deps)
 
         await pipeline.stage_filter(ctx)
 
-        # Level 3 kicks in — returns top by value even with 0 values
+        # Level 3 = empty + guidance (no top-by-value anymore).
         assert ctx.relaxation_level == 3
-        assert len(ctx.licitacoes_filtradas) == 5
-
-        # filter_summary should have been built from the normal stats
-        # (it was built when licitacoes_filtradas was still 0, before level 2/3)
+        assert ctx.licitacoes_filtradas == []
+        # filter_summary should contain the custom_terms guidance text.
         assert ctx.filter_summary is not None
-        assert "5 por valor" in ctx.filter_summary
+        assert "xyz-nonexistent-term" in ctx.filter_summary
