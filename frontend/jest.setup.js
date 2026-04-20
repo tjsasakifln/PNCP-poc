@@ -41,12 +41,23 @@ import { TextEncoder, TextDecoder } from 'util'
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 
-// Polyfill crypto.randomUUID for jsdom (used by SSE search progress)
-if (typeof globalThis.crypto === 'undefined') {
-  globalThis.crypto = {};
-}
-if (!globalThis.crypto.randomUUID) {
-  globalThis.crypto.randomUUID = () => 'test-uuid-0000-0000-0000-000000000000';
+// Polyfill crypto for jsdom — use Node's webcrypto so both randomUUID
+// (SSE search progress) and subtle.digest (CONV-003b rollout hash) work.
+// jsdom exposes `crypto` as a readonly getter so simple assignment is a
+// no-op; use defineProperty to replace it.
+{
+  const { webcrypto } = require('node:crypto');
+  const currentSubtle = globalThis.crypto && globalThis.crypto.subtle;
+  if (!currentSubtle) {
+    Object.defineProperty(globalThis, 'crypto', {
+      value: webcrypto,
+      configurable: true,
+      writable: true,
+    });
+  }
+  if (!globalThis.crypto.randomUUID) {
+    globalThis.crypto.randomUUID = () => 'test-uuid-0000-0000-0000-000000000000';
+  }
 }
 
 // Polyfill AbortSignal.timeout for jsdom (not available in jsdom, but used in server-side fetches)

@@ -1882,6 +1882,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/billing/setup-intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Setup Intent
+         * @description Create a Stripe SetupIntent for pre-signup card capture (CONV-003b AC2).
+         *
+         *     Anonymous endpoint: called before the Supabase user exists, so we cannot
+         *     attach a customer yet. The returned ``payment_method`` (from
+         *     ``stripe.confirmSetup()`` client-side) is forwarded to
+         *     ``POST /v1/auth/signup`` which then creates the Customer and attaches
+         *     the PM server-side via ``services.stripe_signup``.
+         *
+         *     Rate-limited via the same bucket as signup (3 req / 10 min per IP) to
+         *     block abuse. Returns the publishable key alongside the client secret so
+         *     the frontend does not need a second round-trip to ``/config`` (keeps
+         *     the signup flow to 2 network calls: setup-intent → signup).
+         */
+        post: operations["create_setup_intent_v1_billing_setup_intent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/blog/daily/latest": {
         parameters: {
             query?: never;
@@ -8594,6 +8625,21 @@ export interface components {
             }[];
         };
         /**
+         * SetupIntentResponse
+         * @description Response for POST /v1/billing/setup-intent (STORY-CONV-003b AC2).
+         *
+         *     Anonymous pre-signup flow: frontend creates a SetupIntent to collect
+         *     the user's card via Stripe PaymentElement BEFORE the Supabase user
+         *     exists. After `stripe.confirmSetup()` returns a `payment_method`,
+         *     that id is sent to POST /v1/auth/signup.
+         */
+        SetupIntentResponse: {
+            /** Client Secret */
+            client_secret: string;
+            /** Publishable Key */
+            publishable_key: string;
+        };
+        /**
          * ShareAnaliseRequest
          * @description Request to create a shareable analysis link.
          */
@@ -11772,6 +11818,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    create_setup_intent_v1_billing_setup_intent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupIntentResponse"];
                 };
             };
         };
