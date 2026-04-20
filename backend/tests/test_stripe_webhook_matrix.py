@@ -89,11 +89,19 @@ class TestSignatureVerification:
     @patch("webhooks.stripe.STRIPE_WEBHOOK_SECRET", "whsec_test")
     @patch("webhooks.stripe.stripe.Webhook.construct_event")
     async def test_invalid_signature_returns_400(self, mock_construct, mock_request):
+        """BTS-011: Resilient to stripe-as-SimpleNamespace mocking from earlier tests."""
         from webhooks.stripe import stripe_webhook
-        import stripe
-        mock_construct.side_effect = stripe.error.SignatureVerificationError(
-            "bad sig", "sig_header"
-        )
+        import webhooks.stripe as wh_stripe_mod
+        try:
+            SigErr = wh_stripe_mod.stripe.error.SignatureVerificationError
+        except AttributeError:
+            class SigErr(Exception):
+                def __init__(self, message, sig_header=""):
+                    super().__init__(message)
+                    self.sig_header = sig_header
+            wh_stripe_mod.stripe.error.SignatureVerificationError = SigErr
+
+        mock_construct.side_effect = SigErr("bad sig", "sig_header")
         with pytest.raises(HTTPException) as exc_info:
             await stripe_webhook(mock_request)
         assert exc_info.value.status_code == 400

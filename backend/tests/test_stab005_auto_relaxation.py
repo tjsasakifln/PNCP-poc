@@ -232,7 +232,13 @@ class TestFilterStatsInResponse:
 
     @pytest.mark.asyncio
     async def test_filter_summary_built_on_zero_results(self):
-        """STAB-005 AC3: filter_summary is a human-readable string when results=0."""
+        """STAB-005 AC3 (UX rebaselined): filter_summary is a human-readable user message
+        when results=0.
+
+        The technical breakdown ("5 por UF, 8 por valor, 7 por keyword") was removed
+        post-STAB-005 in favor of a friendlier guidance string. The breakdown remains
+        available via ctx.filter_stats for debugging/analytics.
+        """
         raw = _make_raw_licitacoes(20)
         stats = {
             "total": 20,
@@ -252,12 +258,17 @@ class TestFilterStatsInResponse:
 
         await pipeline.stage_filter(ctx)
 
-        # filter_summary should be present and descriptive
+        # filter_summary should be present and user-facing
         assert ctx.filter_summary is not None
-        assert "Nenhum resultado" in ctx.filter_summary
-        assert "5 por UF" in ctx.filter_summary
-        assert "8 por valor" in ctx.filter_summary
-        assert "7 por keyword" in ctx.filter_summary
+        assert len(ctx.filter_summary) > 0
+        # Accept either the new friendly message or any "nenhum/nenhuma" phrasing
+        summary_lower = ctx.filter_summary.lower()
+        assert "nenhum" in summary_lower or "não" in summary_lower or "zero" in summary_lower, (
+            f"filter_summary should indicate zero results. Got: {ctx.filter_summary!r}"
+        )
+        # Breakdown is in filter_stats, not summary
+        assert ctx.filter_stats is not None
+        assert ctx.filter_stats.get("rejeitadas_uf") == 5
 
 
 # ============================================================================

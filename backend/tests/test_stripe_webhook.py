@@ -215,11 +215,27 @@ class TestSignatureValidation:
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac2_invalid_signature_returns_400(self, mock_construct, mock_request):
-        """AC2: Invalid/tampered payload → HTTP 400."""
-        import stripe as stripe_mod
-        mock_construct.side_effect = stripe_mod.error.SignatureVerificationError(
-            "Invalid signature", sig_header="bad"
-        )
+        """AC2: Invalid/tampered payload → HTTP 400.
+
+        BTS-011 (isolation): A previous test in the suite replaced sys.modules['stripe']
+        with a MagicMock, so `import stripe as stripe_mod` here may yield a namespace
+        without `.error.SignatureVerificationError`. We use the class the production
+        handler actually checks against (webhooks.stripe.stripe.error.SignatureVerificationError)
+        — whatever it resolves to is what the `except` clause matches.
+        """
+        import webhooks.stripe as wh_stripe_mod
+        try:
+            SigErr = wh_stripe_mod.stripe.error.SignatureVerificationError
+        except AttributeError:
+            # Fallback for mocked stripe module — still satisfies the except clause
+            # because both sides reference the same mocked attribute chain.
+            class SigErr(Exception):
+                def __init__(self, message, sig_header=""):
+                    super().__init__(message)
+                    self.sig_header = sig_header
+            wh_stripe_mod.stripe.error.SignatureVerificationError = SigErr
+
+        mock_construct.side_effect = SigErr("Invalid signature", sig_header="bad")
 
         from webhooks.stripe import stripe_webhook
 

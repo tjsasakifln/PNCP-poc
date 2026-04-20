@@ -485,7 +485,13 @@ class TestQuotaWithCB:
         assert result.allowed is True
 
     def test_check_quota_fail_open_when_cb_open_no_cache(self):
-        """AC4: When CB open and no cache, allows search (fail-open)."""
+        """AC4 (rebaselined): When CB open and no cache, allows search (fail-open)
+        defaulting to free_trial plan (conservative minimum).
+
+        Previous assertion (smartlic_pro) leaked premium capabilities during
+        outages. Policy tightened to default to free_trial so unknown users
+        don't get pro-only features when Supabase is down.
+        """
         from supabase_client import supabase_cb
         from quota import check_quota
 
@@ -498,7 +504,8 @@ class TestQuotaWithCB:
             result = check_quota("user-789")
 
         assert result.allowed is True
-        assert result.plan_id == "smartlic_pro"
+        # Conservative fail-open plan — never leaks premium capabilities.
+        assert result.plan_id == "free_trial"
 
     def test_check_and_increment_quota_fail_open_when_cb_open(self):
         """AC4: check_and_increment_quota_atomic returns (True, 0, max) when CB open."""

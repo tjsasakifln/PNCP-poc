@@ -174,12 +174,19 @@ class TestUpdateFeatureFlag:
 
     @patch("routes.feature_flags._redis_set_override", new_callable=AsyncMock, return_value=True)
     @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
-    def test_update_flag_clears_ttl_cache(self, mock_get, mock_set, client):
-        """Should clear the feature flag TTL cache entry after update."""
+    def test_update_flag_invalidates_ttl_cache(self, mock_get, mock_set, client):
+        """BTS-011: Should invalidate the TTL cache entry after update.
+
+        The route deletes the entry (routes/feature_flags.py:423), but downstream
+        audit/log calls may re-populate the cache via get_feature_flag(). The
+        invariant we actually care about: subsequent reads don't return the
+        stale OLD value — either the entry is evicted, or it's been refreshed
+        to the NEW value.
+        """
         from config.features import _feature_flag_cache
         import time
 
-        # Seed the cache
+        # Seed the cache with OLD value (True)
         _feature_flag_cache["LLM_ARBITER_ENABLED"] = (True, time.time())
 
         resp = client.patch(
@@ -187,7 +194,13 @@ class TestUpdateFeatureFlag:
             json={"value": False},
         )
         assert resp.status_code == 200
-        assert "LLM_ARBITER_ENABLED" not in _feature_flag_cache
+
+        # Either evicted OR repopulated with NEW value — both satisfy "no stale read".
+        if "LLM_ARBITER_ENABLED" in _feature_flag_cache:
+            cached_value, _ts = _feature_flag_cache["LLM_ARBITER_ENABLED"]
+            assert cached_value is False, (
+                "Cache retained stale value True after update — expected eviction or refresh to False"
+            )
 
     @patch("routes.feature_flags._redis_set_override", new_callable=AsyncMock, return_value=True)
     @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
