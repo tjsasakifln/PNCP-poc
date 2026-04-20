@@ -4,7 +4,7 @@
 **Priority:** P2
 **Effort:** S (2-3h) — mostly assertion-drift
 **Agents:** @dev + @qa
-**Status:** InReview (PR #410 — 25/25 tests green in worktree; blocked on main CI drift unrelated to BTS-009 content — see STORY-BTS-011)
+**Status:** Done — via PR #411 (stacked on BTS-009 branch) merged 2026-04-20 04:03 UTC, commit `5994dedc`. PR #410 closed unmerged (superseded by #411 which carried BTS-009 commits forward).
 
 ---
 
@@ -34,7 +34,7 @@
 ## Acceptance Criteria
 
 - [x] AC1: `pytest` nos 12 arquivos retorna exit code 0 (25/25 PASS — 5 extras triaged vs 20 esperados, delta sanitizado em PR body).
-- [ ] AC2: CI verde. *(aguarda PR merge)*
+- [x] AC2: CI verde. Backend Tests (PR Gate) em main VERDE nos últimos 3 runs consecutivos pós-BTS-011 merge (runs 24683564675 / 24683629411 / 24683689663, 2026-04-20 ~18:32+ UTC).
 - [x] AC3: RCA distinguindo (a) config value drift vs (b) observability output shape drift vs (c) openapi schema drift. Ver PR description para matriz completa.
 - [x] AC4: Cobertura não caiu. Suíte vizinha (test_api_buscar + test_pipeline + test_pipeline_cascade_unit) = 55/55 PASS, sem regressões.
 - [x] AC5: zero quarantine. Nenhum `@pytest.mark.skip` / `xfail` adicionado.
@@ -67,3 +67,4 @@
   - **38 novos endpoints em OpenAPI schema snapshot:** drift legítimo das últimas ~6 weeks de stories públicas (blog, observatório, sitemaps, indice municipal, compliance, fornecedores, notifications, founding). Snapshot regenerado e commitado; sem necessidade de novas stories de API review.
   - **Diff artefato stale** (`openapi_schema.diff.json`) agora é deletado pela própria lógica do teste quando `UPDATE_SNAPSHOTS=1` — commit da deleção evita que ele volte como `dirty tree` em cada CI run.
 - **2026-04-20** — @dev (majestic-valiant session): Re-run do CI de main HEAD `2ff704a4` (post #411 + #407 merges) revelou **~150 falhas** em ~8-10 clusters distintos — conjunto **disjunto** do baseline que BTS-009 atacou. Investigação (advisor consultado) confirmou que são drifts **reais** em outras stories, não flakiness pura nem regressão por #407 (diff de #407 é +17 linhas puramente aditivas em `filter/pipeline.py`). Conclusão: BTS-009 code está correto e pronto; PR #410 blocked por main CI que precisa de **STORY-BTS-011** (nova sweep) antes de destravar. PR #424 (`fix(tests): 4 drift clusters`) já liga 15 falhas; BTS-011 ataca os 135 restantes. Status mantido `InReview`.
+- **2026-04-20 (late)** — @devops (consultor board session): **Status InReview → Done.** Descoberta durante reconciliação docs: PR #410 foi **CLOSED 2026-04-20 04:03 UTC sem merge**; os 8 commits BTS-009 foram absorvidos em main via **PR #411 merge commit `5994dedc`** (stacked PR). Verificação empírica: `git log origin/main -- backend/tests/test_audit.py` e `test_cron_monitoring.py` retornam `5994dedc` como último commit, confirmando que BTS-009 code está em main. BTS-011 (PR #426) depois fixou os drift clusters laterais. Main CI Backend Tests (PR Gate) = VERDE em 3 runs consecutivos. **AC2 fechado retroativamente.** EPIC-BTS-2026Q2 agora 11/11 Done — ready para formal close via handoff session.
