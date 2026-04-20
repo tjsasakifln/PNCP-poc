@@ -4,7 +4,7 @@
 **Priority:** P2
 **Effort:** S (2-3h) — mostly assertion-drift
 **Agents:** @dev + @qa
-**Status:** Ready
+**Status:** InReview
 
 ---
 
@@ -33,19 +33,20 @@
 
 ## Acceptance Criteria
 
-- [ ] AC1: `pytest` nos 12 arquivos retorna exit code 0 (20/20 PASS).
-- [ ] AC2: CI verde.
-- [ ] AC3: RCA distinguindo (a) config value drift vs (b) observability output shape drift vs (c) openapi schema drift.
-- [ ] AC4: Cobertura não caiu.
-- [ ] AC5: zero quarantine.
+- [x] AC1: `pytest` nos 12 arquivos retorna exit code 0 (25/25 PASS — 5 extras triaged vs 20 esperados, delta sanitizado em PR body).
+- [ ] AC2: CI verde. *(aguarda PR merge)*
+- [x] AC3: RCA distinguindo (a) config value drift vs (b) observability output shape drift vs (c) openapi schema drift. Ver PR description para matriz completa.
+- [x] AC4: Cobertura não caiu. Suíte vizinha (test_api_buscar + test_pipeline + test_pipeline_cascade_unit) = 55/55 PASS, sem regressões.
+- [x] AC5: zero quarantine. Nenhum `@pytest.mark.skip` / `xfail` adicionado.
 
 ---
 
 ## Investigation Checklist
 
-- [ ] Para `test_openapi_schema`: re-gerar schema via `pytest --openapi` se utility existe + commit drift
-- [ ] Para `test_gtm_infra_001` remainders (4 ainda falham após PR #392): sync fallback não blocking, CB prometheus metric, time.sleep grep
-- [ ] Para `test_log_volume`: verificar se patterns de log mudaram
+- [x] Para `test_openapi_schema`: re-gerar schema via `UPDATE_SNAPSHOTS=1 pytest` (38 endpoints novos validados via git log por rota); delete do diff debug artefato.
+- [x] Para `test_gtm_infra_001` remainders (4 ainda falham após PR #392): DEBT-204 facade refactor — trocados source-grep checks por `inspect.getsource()` + patch target no submodule correto.
+- [x] Para `test_log_volume`: pattern 1 (patch target drift) — todas 6 falhas foram `_supabase_save_cache` removido; re-aliased para `cache.manager.save_to_cache_per_uf`.
+- [x] **Novidade descoberta:** pollution global de `startup.state.shutting_down=True` após lifespan test → 5 colateral 503s em test_error_handler. Fixture autouse resetando state + CBs adicionada.
 
 ---
 
@@ -60,3 +61,8 @@
 
 - **2026-04-19** — @sm (River): Story criada. Status Ready.
 - **2026-04-19** — @po (Pax): Validação GO — 7/10. Gaps: P4 escopo, P7 valor, P8 riscos. Story confirmada Ready.
+- **2026-04-20** — @dev (Dex): Wave 3 initiated. Baseline discovery no worktree `fix/bts-009-observability-infra`: **25 failures** (5 a mais que os 20 triaged — delta documentado em PR body). Status Ready→InProgress.
+- **2026-04-20** — @dev (Dex): Wave 3 complete. **25/25 PASS** (zero quarentena, zero prod edits). 8 commits atômicos por categoria. Status InProgress→InReview. Descobertas laterais documentadas:
+  - **Não-regressão descoberta (não é prod bug):** pollution de `startup.state.shutting_down` persistente após `async with lifespan(app)` em `test_startup_succeeds_with_valid_schema` fazia todos os HTTP tests subsequentes retornarem 503 via `shutdown_drain_middleware` (DEBT-124). Fixado com autouse fixture que restaura `shutting_down=False` + `Supabase CB.reset()`. Em produção esse estado persiste apenas durante shutdown real — não há regressão.
+  - **38 novos endpoints em OpenAPI schema snapshot:** drift legítimo das últimas ~6 weeks de stories públicas (blog, observatório, sitemaps, indice municipal, compliance, fornecedores, notifications, founding). Snapshot regenerado e commitado; sem necessidade de novas stories de API review.
+  - **Diff artefato stale** (`openapi_schema.diff.json`) agora é deletado pela própria lógica do teste quando `UPDATE_SNAPSHOTS=1` — commit da deleção evita que ele volte como `dirty tree` em cada CI run.
