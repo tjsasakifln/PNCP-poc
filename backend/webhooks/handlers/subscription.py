@@ -2,8 +2,10 @@
 Subscription webhook handlers.
 
 Events:
+- customer.subscription.created
 - customer.subscription.updated
 - customer.subscription.deleted
+- customer.subscription.trial_will_end (STORY-CONV-003a AC4)
 """
 
 import stripe
@@ -12,6 +14,10 @@ from log_sanitizer import get_sanitized_logger
 from webhooks.handlers._shared import invalidate_user_caches
 
 logger = get_sanitized_logger(__name__)
+
+
+# STORY-CONV-003a AC4: Redis dedup TTL for trial_will_end events (7 days).
+_TRIAL_WILL_END_DEDUP_TTL_S = 7 * 24 * 3600
 
 
 async def handle_subscription_updated(sb, event: stripe.Event) -> None:
