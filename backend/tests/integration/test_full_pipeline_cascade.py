@@ -107,9 +107,11 @@ def test_pncp_total_failure_with_cache_returns_cached_data(
         new_callable=AsyncMock,
         return_value=cache_data,
     ), patch(
-        # Also patch the direct import in search_pipeline (used by _execute_pncp_only
-        # PNCPDegradedError handler, which calls the module-level reference)
-        "search_pipeline.get_from_cache_cascade",
+        # Also patch the direct import in pipeline.stages.execute (post-DEBT-110
+        # refactor moved PNCPDegradedError handling out of search_pipeline.py).
+        # search_pipeline now re-exports via `from pipeline.stages import (...)`
+        # so the correct patch target is the submodule that owns the symbol.
+        "pipeline.stages.execute.get_from_cache_cascade",
         new_callable=AsyncMock,
         return_value=cache_data,
     ):
@@ -161,9 +163,9 @@ def test_pncp_total_failure_no_cache_returns_empty_failure(
         new_callable=AsyncMock,
         return_value=None,
     ), patch(
-        # Also patch the direct import in search_pipeline (used by _execute_pncp_only
-        # PNCPDegradedError handler at line ~1391, which calls the module-level reference)
-        "search_pipeline.get_from_cache_cascade",
+        # Also patch pipeline.stages.execute where PNCPDegradedError handling
+        # lives post-DEBT-110 refactor (moved out of search_pipeline.py).
+        "pipeline.stages.execute.get_from_cache_cascade",
         new_callable=AsyncMock,
         return_value=None,
     ):
@@ -248,11 +250,11 @@ def test_llm_timeout_returns_fallback_resumo(
         new_callable=AsyncMock,
         return_value=pncp_success,
     ), patch(
-        # Patch the direct import reference in search_pipeline (where
-        # stage_generate actually calls gerar_resumo at line ~1892).
+        # Patch the direct import reference in pipeline.stages.generate (where
+        # stage_generate actually calls gerar_resumo post-DEBT-110 refactor).
         # Patching "llm.gerar_resumo" only affects the llm module namespace,
-        # not search_pipeline's own reference from `from llm import gerar_resumo`.
-        "search_pipeline.gerar_resumo",
+        # not the submodule's own reference from `from llm import gerar_resumo`.
+        "pipeline.stages.generate.gerar_resumo",
         side_effect=TimeoutError("OpenAI request timed out after 30s"),
     ):
         payload = make_busca_request(ufs=_DEFAULT_UFS)
