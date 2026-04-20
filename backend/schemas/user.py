@@ -1,7 +1,7 @@
 """User profile, onboarding, and auth-related schemas."""
 
 from enum import Enum
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator, field_validator
 from typing import Any, Dict, List, Optional
 
 
@@ -289,3 +289,75 @@ class DeleteAccountResponse(BaseModel):
     """Response for DELETE /me."""
     success: bool
     message: str
+
+
+# ---------------------------------------------------------------------------
+# STORY-CONV-003a: Signup with Stripe trial
+# ---------------------------------------------------------------------------
+
+class SignupRequest(BaseModel):
+    """Request body for POST /v1/auth/signup (STORY-CONV-003a AC1).
+
+    `stripe_payment_method_id` is optional during rollout — when present, the
+    backend creates a Stripe Customer + Subscription with 14-day trial and
+    attaches the PaymentMethod. When absent, a Supabase user is created and
+    the trial is tracked locally (legacy path).
+    """
+
+    email: EmailStr = Field(
+        ...,
+        description="User email (must be valid format, max 320 chars)",
+        max_length=320,
+    )
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=200,
+        description="Password (min 8 chars — Supabase enforces complexity)",
+    )
+    stripe_payment_method_id: Optional[str] = Field(
+        default=None,
+        max_length=255,
+        pattern=r"^pm_[A-Za-z0-9_]+$",
+        description="Stripe PaymentMethod ID (pm_...) from frontend PaymentElement",
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Optional display name, propagated to profiles.full_name",
+    )
+    company: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="Optional company name, stored in profiles.company",
+    )
+
+
+class SignupResponse(BaseModel):
+    """Response body for POST /v1/auth/signup (STORY-CONV-003a AC3)."""
+
+    user_id: str = Field(..., description="Supabase auth.users.id UUID")
+    email: EmailStr = Field(..., description="Confirmed user email")
+    trial_end_ts: Optional[int] = Field(
+        default=None,
+        description=(
+            "Unix epoch seconds when trial ends. Sourced from Stripe when "
+            "subscription created; otherwise computed locally (now + 14d)."
+        ),
+    )
+    stripe_customer_id: Optional[str] = Field(
+        default=None,
+        description="Stripe Customer ID (cus_...) if card was attached",
+    )
+    stripe_subscription_id: Optional[str] = Field(
+        default=None,
+        description="Stripe Subscription ID (sub_...) if card was attached",
+    )
+    subscription_status: str = Field(
+        default="trialing",
+        description="Subscription status: trialing | free_trial | payment_failed",
+    )
+    requires_email_confirmation: bool = Field(
+        default=True,
+        description="Whether Supabase requires email confirmation before login",
+    )
