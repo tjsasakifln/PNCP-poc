@@ -235,7 +235,10 @@ class TestStagePrepareNormalization:
             # Dates should be normalized and valid YYYY-MM-DD
             d_ini = date.fromisoformat(mock_ctx.request.data_inicial)
             d_fin = date.fromisoformat(mock_ctx.request.data_final)
-            assert (d_fin - d_ini).days == 10
+            # BTS-010b: abertas mode now uses a wide 730-day window
+            # (search_datalake RPC ignores dates for abertas, but wide values keep
+            # cache-key compatibility and tracing coherent).
+            assert (d_fin - d_ini).days == 730
             # data_final should be today (UTC)
             assert d_fin == datetime.now(timezone.utc).date()
 

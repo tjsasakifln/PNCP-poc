@@ -45,8 +45,8 @@ class TestSyncClientRequiresModalidade:
             "temProximaPagina": False,
         }
 
-        # Patch client.get on the already-created client instance
-        self.client.client.get = MagicMock(return_value=mock_response)
+        # BTS-010b: sync PNCPClient uses `self.session` (requests.Session), not `self.client`.
+        self.client.session.get = MagicMock(return_value=mock_response)
 
         result = self.client.fetch_page(
             data_inicial="2026-01-01",
@@ -57,7 +57,7 @@ class TestSyncClientRequiresModalidade:
         assert result["totalRegistros"] == 0
 
         # Verify the request was made with codigoModalidadeContratacao
-        call_kwargs = self.client.client.get.call_args
+        call_kwargs = self.client.session.get.call_args
         params_sent = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params", {})
         assert params_sent.get("codigoModalidadeContratacao") == 6
 

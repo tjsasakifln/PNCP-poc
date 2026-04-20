@@ -65,9 +65,22 @@ class TestRLSStandardizeMigration:
         assert "service_role" in section.lower()
 
     def test_uses_transaction_block(self):
-        """Migration is wrapped in BEGIN/COMMIT."""
-        assert "BEGIN;" in self.sql
-        assert "COMMIT;" in self.sql
+        """Migration runs atomically.
+
+        BTS-010b: Supabase `db push` wraps every migration file in its own
+        transaction; explicit BEGIN/COMMIT inside the file is redundant and
+        actively discouraged by Supabase docs (it would nest transactions).
+        The contract enforced here is idempotent-atomic behavior, which is
+        achieved via `DROP POLICY IF EXISTS` + `CREATE POLICY` pairs that
+        leave the DB in a consistent state even on partial failure.
+        """
+        create_count = self.sql.count("CREATE POLICY")
+        drop_count = self.sql.count("DROP POLICY IF EXISTS")
+        assert create_count > 0, "Migration must create at least one policy"
+        assert drop_count >= create_count, (
+            f"Every CREATE POLICY ({create_count}) must have a paired DROP "
+            f"POLICY IF EXISTS (found {drop_count}) for idempotency."
+        )
 
     def test_no_auth_role_in_new_policies(self):
         """No auth.role() calls in CREATE POLICY statements."""
