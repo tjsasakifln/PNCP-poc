@@ -165,45 +165,43 @@ class TestConvertLinkField:
 
 
 # ============================================================================
-# PNCPClient._build_link_edital
+# Link builder (post-DEBT-015 thin-client refactor: consolidated into _build_pncp_link)
 # ============================================================================
 
 
 class TestPncpClientBuildLinkEdital:
-    """Tests for PNCPLegacyAdapter._build_link_edital static method."""
+    """Tests for PNCP link building.
+
+    HISTORY (STORY-BTS-011): PNCPLegacyAdapter._build_link_edital was removed
+    during DEBT-015 SYS-002 thin-client refactor — all link-building logic was
+    consolidated into pipeline.helpers._build_pncp_link. The only semantic change
+    is `no-fields` → None (instead of empty string), which matches UX-400 AC2.
+    """
 
     def test_returns_link_sistema_origem(self):
-        from pncp_client import PNCPLegacyAdapter
-
         item = {"linkSistemaOrigem": "https://example.com/edital"}
-        assert PNCPLegacyAdapter._build_link_edital(item) == "https://example.com/edital"
+        assert _build_pncp_link(item) == "https://example.com/edital"
 
     def test_ac1_builds_fallback_from_fields(self):
-        from pncp_client import PNCPLegacyAdapter
-
         item = {
             "cnpjOrgao": "11111111000100",
             "anoCompra": "2026",
             "sequencialCompra": "5",
         }
-        result = PNCPLegacyAdapter._build_link_edital(item)
+        result = _build_pncp_link(item)
         assert result == "https://pncp.gov.br/app/editais/11111111000100/2026/5"
 
-    def test_returns_empty_when_no_fields(self):
-        from pncp_client import PNCPLegacyAdapter
-
+    def test_returns_none_when_no_fields(self):
+        """Post-DEBT-015: returns None instead of empty string — aligned with UX-400 AC2."""
         item = {"objetoCompra": "Servicos"}
-        # Returns empty string (downstream _build_pncp_link handles final None conversion)
-        assert PNCPLegacyAdapter._build_link_edital(item) == ""
+        assert _build_pncp_link(item) is None
 
     def test_empty_link_sistema_origem_triggers_fallback(self):
-        from pncp_client import PNCPLegacyAdapter
-
         item = {
             "linkSistemaOrigem": "",
             "cnpjOrgao": "22222222000100",
             "anoCompra": "2025",
             "sequencialCompra": "1",
         }
-        result = PNCPLegacyAdapter._build_link_edital(item)
+        result = _build_pncp_link(item)
         assert result == "https://pncp.gov.br/app/editais/22222222000100/2025/1"

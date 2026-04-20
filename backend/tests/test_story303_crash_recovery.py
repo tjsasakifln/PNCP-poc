@@ -17,6 +17,35 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _restore_gunicorn_conf_logger_propagation():
+    """Restore `gunicorn.conf` logger propagation for caplog compatibility.
+
+    BTS-011 cluster 1: `test_crit042_gunicorn_logging.py` applies
+    `logging.config.dictConfig(gunicorn_conf.logconfig_dict)` which globally
+    sets `propagate=False` on the `gunicorn.conf` logger (by design, so that
+    gunicorn doesn't double-emit). That state persists across test files
+    (Python's logging module has process-global state). When pytest discovers
+    test_story303 after test_crit042, caplog receives no records because
+    messages never propagate to the root handler that caplog installs.
+
+    This fixture runs before every test in this module and forces propagation
+    back on, so `caplog.at_level(..., logger="gunicorn.conf")` works as
+    pytest documents. It restores the prior value after each test so we don't
+    affect subsequent tests' expectations.
+    """
+    gc_logger = logging.getLogger("gunicorn.conf")
+    prev_propagate = gc_logger.propagate
+    prev_level = gc_logger.level
+    gc_logger.propagate = True
+    gc_logger.setLevel(logging.DEBUG)
+    try:
+        yield
+    finally:
+        gc_logger.propagate = prev_propagate
+        gc_logger.setLevel(prev_level)
+
+
 # ---------------------------------------------------------------------------
 # AC1: start.sh — GUNICORN_PRELOAD defaults to false
 # ---------------------------------------------------------------------------

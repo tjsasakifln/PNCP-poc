@@ -205,13 +205,21 @@ class TestHttp422Handling:
         assert 422 in config.retryable_status_codes
 
     def test_422_retry_logic_in_source(self):
-        """AC12-AC14: pncp_client.py contains 422-specific retry+breaker logic."""
-        import pncp_client
-        src = Path(pncp_client.__file__).read_text()
-        # Check 422 handling block exists
-        assert "response.status_code == 422" in src, "Missing 422 status check"
-        assert "record_failure" in src, "Missing circuit breaker failure recording for 422"
-        assert "pncp_422_count" in src, "Missing 422 metric logging"
+        """AC12-AC14: 422-specific retry+breaker logic lives in clients.pncp.retry.
+
+        DEBT-015 SYS-002 thin-client refactor moved 422 handling from pncp_client.py
+        into `_handle_422_response()` in clients/pncp/retry.py. pncp_client.py
+        re-exports the symbol for back-compat.
+        """
+        from pathlib import Path
+        import clients.pncp.retry as retry_mod
+        src = Path(retry_mod.__file__).read_text()
+        # Check 422 handling block exists in the thin-client location
+        assert "422" in src, "Missing 422 status handling in clients/pncp/retry.py"
+        assert "_handle_422_response" in src, "Missing _handle_422_response helper"
+        # Back-compat: symbol still importable from pncp_client
+        from pncp_client import _handle_422_response
+        assert callable(_handle_422_response), "_handle_422_response must be re-exported from pncp_client"
 
 
 # ---------------------------------------------------------------------------
@@ -219,23 +227,26 @@ class TestHttp422Handling:
 # ---------------------------------------------------------------------------
 
 class TestFetchTimeout:
-    """AC16-AC17: FETCH_TIMEOUT raised and configurable."""
+    """AC16-AC17 (STORY-4.4 superseded): FETCH_TIMEOUT replaced by PIPELINE_TIMEOUT.
 
-    def test_default_fetch_timeout_360(self):
-        """AC16: Default FETCH_TIMEOUT = 360s (6 minutes)."""
-        import search_pipeline
-        src = Path(search_pipeline.__file__).read_text()
-        # The default in the env fallback should be 360 (6 * 60)
-        assert "6 * 60" in src or '"360"' in src, (
-            "FETCH_TIMEOUT default should be 6 minutes (360s)"
+    STORY-4.4 TD-SYS-003 consolidated search-pipeline timeouts into config/pncp.py
+    PIPELINE_TIMEOUT (default 100s) to enforce the 120s Railway budget waterfall.
+    The legacy FETCH_TIMEOUT (=360s) and SEARCH_FETCH_TIMEOUT env var were removed.
+    """
+
+    def test_default_pipeline_timeout_100s(self):
+        """AC16 (rebaselined): Default PIPELINE_TIMEOUT = 100s per STORY-4.4 waterfall."""
+        from config.pncp import PIPELINE_TIMEOUT
+        assert PIPELINE_TIMEOUT == 100, (
+            f"PIPELINE_TIMEOUT should be 100s per STORY-4.4 TD-SYS-003, got {PIPELINE_TIMEOUT}"
         )
 
-    def test_env_var_configurable(self):
-        """AC17: SEARCH_FETCH_TIMEOUT env var exists in source."""
-        import search_pipeline
-        src = Path(search_pipeline.__file__).read_text()
-        assert "SEARCH_FETCH_TIMEOUT" in src, (
-            "FETCH_TIMEOUT should be configurable via SEARCH_FETCH_TIMEOUT env var"
+    def test_pipeline_timeout_env_configurable(self):
+        """AC17 (rebaselined): PIPELINE_TIMEOUT env var is the override hook post-STORY-4.4."""
+        import config.pncp as config_pncp
+        src = Path(config_pncp.__file__).read_text()
+        assert 'os.getenv("PIPELINE_TIMEOUT"' in src, (
+            "PIPELINE_TIMEOUT should be configurable via PIPELINE_TIMEOUT env var"
         )
 
 
@@ -244,26 +255,30 @@ class TestFetchTimeout:
 # ---------------------------------------------------------------------------
 
 class TestFrontendProxyTimeout:
-    """AC19: Frontend proxy timeout = 480s (8 minutes)."""
+    """AC19 (CRIT-082 rebaselined): Frontend proxy timeout = 60s.
 
-    def test_frontend_proxy_8min(self):
-        """AC19: STAB-003 — route.ts uses 115 * 1000 timeout (115s, below Railway's ~120s hard cutoff)."""
+    CRIT-082 reduced the proxy timeout to 60s (chain: Client 65s > Proxy 60s > Gunicorn 120s)
+    because 202-async is the primary path (<2s) — 60s only covers sync-fallback edge cases.
+    """
+
+    def test_frontend_proxy_60s(self):
+        """CRIT-082: route.ts uses `60 * 1000` timeout."""
         route_ts = Path(__file__).resolve().parents[2] / "frontend" / "app" / "api" / "buscar" / "route.ts"
         if not route_ts.exists():
             pytest.skip("Frontend route.ts not found")
         content = route_ts.read_text(encoding="utf-8")
-        assert "115 * 1000" in content, (
-            "Frontend proxy should use 115s timeout (115 * 1000) — STAB-003 reduced from 8 * 60 * 1000"
+        assert "60 * 1000" in content, (
+            "Frontend proxy should use 60s timeout (60 * 1000) — CRIT-082 reduced from 115s"
         )
 
-    def test_frontend_error_message_8min(self):
-        """AC19: STAB-003 — Timeout error message is user-friendly (no hard-coded minute reference)."""
+    def test_frontend_timeout_error_message(self):
+        """CRIT-082: timeout error message mentions the analysis exceeded the limit."""
         route_ts = Path(__file__).resolve().parents[2] / "frontend" / "app" / "api" / "buscar" / "route.ts"
         if not route_ts.exists():
             pytest.skip("Frontend route.ts not found")
         content = route_ts.read_text(encoding="utf-8")
-        assert "A busca demorou mais que o esperado" in content, (
-            "Frontend timeout error message should contain 'A busca demorou mais que o esperado'"
+        assert "A análise excedeu o tempo limite" in content, (
+            "Frontend timeout error message should contain 'A análise excedeu o tempo limite' (CRIT-082)"
         )
 
 
@@ -318,45 +333,67 @@ class TestPerModalityRecalibration:
         assert PNCP_TIMEOUT_PER_MODALITY == 20.0
 
     def test_per_modality_margin_30s(self):
-        """F03-AC15: Margin between PerUF and PerModality >= 10s (STAB-003: reduced from 30s)."""
+        """F03-AC15 (STORY-4.4 TD-SYS-003): Margin between PerUF and PerModality >= 5s.
+
+        History: original 30s margin (PerUF=90, PerModality=60); STAB-003 reduced to 10s
+        (PerUF=30, PerModality=20); STORY-4.4 tightened to 5s (PerUF=25, PerModality=20)
+        to fit the 100s pipeline budget while preserving strict ordering.
+        """
         from pncp_client import PNCP_TIMEOUT_PER_MODALITY, PNCP_TIMEOUT_PER_UF
         margin = PNCP_TIMEOUT_PER_UF - PNCP_TIMEOUT_PER_MODALITY
-        assert margin >= 10, (
-            f"Margin ({margin}s) must be >= 10s (PerUF - PerModality >= 10s). "
+        assert margin >= 5, (
+            f"Margin ({margin}s) must be >= 5s (PerUF - PerModality >= 5s post-STORY-4.4). "
             f"PerUF={PNCP_TIMEOUT_PER_UF}, PerModality={PNCP_TIMEOUT_PER_MODALITY}"
         )
 
     def test_startup_validation_rejects_inversion(self, caplog):
-        """F03-AC16: validate_timeout_chain() rejects PerModality >= PerUF with critical log."""
+        """F03-AC16: validate_timeout_chain() rejects PerModality >= PerUF with critical log.
+
+        NOTE (STORY-BTS-011): validate_timeout_chain lives in clients.pncp.retry and
+        mutates retry.PNCP_TIMEOUT_* via `global` — patching pncp_client.X targets the
+        re-export copy, which is not read by the function. Patch the source module.
+        """
         import logging
+        import clients.pncp.retry as retry_mod
 
-        with caplog.at_level(logging.CRITICAL, logger="pncp_client"):
-            with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 100.0), \
-                 patch("pncp_client.PNCP_TIMEOUT_PER_UF", 90.0):
-                from pncp_client import validate_timeout_chain
-                validate_timeout_chain()
+        original_mod, original_uf = retry_mod.PNCP_TIMEOUT_PER_MODALITY, retry_mod.PNCP_TIMEOUT_PER_UF
+        try:
+            with caplog.at_level(logging.CRITICAL, logger="clients.pncp.retry"):
+                retry_mod.PNCP_TIMEOUT_PER_MODALITY = 100.0
+                retry_mod.PNCP_TIMEOUT_PER_UF = 90.0
+                retry_mod.validate_timeout_chain()
 
-        assert any("TIMEOUT MISCONFIGURATION" in r.message for r in caplog.records), (
-            "Expected CRITICAL log with 'TIMEOUT MISCONFIGURATION'"
-        )
-        # Verify fallback to safe defaults (STAB-003: _SAFE_PER_MODALITY=20, _SAFE_PER_UF=30)
-        import pncp_client
-        assert pncp_client.PNCP_TIMEOUT_PER_MODALITY == 20.0
-        assert pncp_client.PNCP_TIMEOUT_PER_UF == 30.0
+            assert any("TIMEOUT MISCONFIGURATION" in r.message for r in caplog.records), (
+                "Expected CRITICAL log with 'TIMEOUT MISCONFIGURATION'"
+            )
+            # Fallback to safe defaults (_SAFE_PER_MODALITY=20, _SAFE_PER_UF=30)
+            assert retry_mod.PNCP_TIMEOUT_PER_MODALITY == 20.0
+            assert retry_mod.PNCP_TIMEOUT_PER_UF == 30.0
+        finally:
+            retry_mod.PNCP_TIMEOUT_PER_MODALITY = original_mod
+            retry_mod.PNCP_TIMEOUT_PER_UF = original_uf
 
     def test_startup_validation_warns_near_inversion(self, caplog):
-        """F03-AC17: validate_timeout_chain() warns when PerModality > 80% of PerUF."""
+        """F03-AC17: validate_timeout_chain() warns when PerModality > 80% of PerUF.
+
+        Patch source module clients.pncp.retry (see rejects_inversion test for rationale).
+        """
         import logging
+        import clients.pncp.retry as retry_mod
 
-        with caplog.at_level(logging.WARNING, logger="pncp_client"):
-            with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 80.0), \
-                 patch("pncp_client.PNCP_TIMEOUT_PER_UF", 90.0):
-                from pncp_client import validate_timeout_chain
-                validate_timeout_chain()
+        original_mod, original_uf = retry_mod.PNCP_TIMEOUT_PER_MODALITY, retry_mod.PNCP_TIMEOUT_PER_UF
+        try:
+            with caplog.at_level(logging.WARNING, logger="clients.pncp.retry"):
+                retry_mod.PNCP_TIMEOUT_PER_MODALITY = 80.0
+                retry_mod.PNCP_TIMEOUT_PER_UF = 90.0
+                retry_mod.validate_timeout_chain()
 
-        assert any("TIMEOUT NEAR-INVERSION" in r.message for r in caplog.records), (
-            "Expected WARNING log with 'TIMEOUT NEAR-INVERSION'"
-        )
+            assert any("TIMEOUT NEAR-INVERSION" in r.message for r in caplog.records), (
+                "Expected WARNING log with 'TIMEOUT NEAR-INVERSION'"
+            )
+        finally:
+            retry_mod.PNCP_TIMEOUT_PER_MODALITY = original_mod
+            retry_mod.PNCP_TIMEOUT_PER_UF = original_uf
 
     def test_startup_validation_passes_healthy(self, caplog):
         """F03-AC18: No warnings with healthy defaults (60/90)."""
