@@ -78,6 +78,87 @@ def render_payment_confirmation_email(
     )
 
 
+def render_welcome_to_pro_email(
+    user_name: str,
+    plan_name: str,
+    amount: str,
+    next_renewal_date: str,
+    billing_period: str = "mensal",
+) -> str:
+    """Render first-charge-after-trial welcome email (STORY-CONV-003c AC3).
+
+    Distinct from `render_payment_confirmation_email` (used for renewals):
+    celebrates the trial → paid conversion, reminds the user of key
+    features, and links to account/support. Prevents "confusion about why
+    I was charged" support tickets that typically drive chargebacks in
+    the first billing cycle post-trial.
+    """
+    body = f"""
+    <h1 style="color: {SMARTLIC_GREEN}; font-size: 22px; margin: 0 0 16px;">
+      Bem-vindo ao SmartLic Pro, {user_name}!
+    </h1>
+    <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
+      Seu trial de 14 dias terminou e o primeiro pagamento foi processado.
+      Você agora tem acesso completo aos recursos do {plan_name}.
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e8f5e9; margin: 0 0 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="color: #888; font-size: 13px; padding: 6px 0;">Plano ativo</td>
+              <td align="right" style="color: #333; font-size: 15px; font-weight: 600; padding: 6px 0;">{plan_name}</td>
+            </tr>
+            <tr>
+              <td style="color: #888; font-size: 13px; padding: 6px 0;">Cobrança de hoje</td>
+              <td align="right" style="color: #333; font-size: 15px; font-weight: 600; padding: 6px 0;">{amount}</td>
+            </tr>
+            <tr>
+              <td style="color: #888; font-size: 13px; padding: 6px 0;">Periodicidade</td>
+              <td align="right" style="color: #333; font-size: 15px; padding: 6px 0;">{billing_period.capitalize()}</td>
+            </tr>
+            <tr>
+              <td style="color: #888; font-size: 13px; padding: 6px 0;">Próxima renovação</td>
+              <td align="right" style="color: #333; font-size: 15px; padding: 6px 0;">{next_renewal_date}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <h2 style="color: #333; font-size: 18px; margin: 24px 0 12px;">O que você pode fazer agora</h2>
+    <ul style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px; padding-left: 20px;">
+      <li>Buscas ilimitadas em PNCP + ComprasGov + PCP v2</li>
+      <li>Análise de viabilidade 4 fatores com IA</li>
+      <li>Pipeline Kanban de oportunidades</li>
+      <li>Relatórios Excel + resumo executivo</li>
+    </ul>
+
+    <p style="text-align: center; margin: 16px 0;">
+      <a href="{FRONTEND_URL}/buscar"
+         class="btn"
+         style="display: inline-block; padding: 14px 32px; background-color: {SMARTLIC_GREEN}; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        Abrir SmartLic Pro
+      </a>
+    </p>
+
+    <p style="color: #888; font-size: 13px; line-height: 1.6; margin: 32px 0 0; text-align: center;">
+      Precisa de ajuda? Responda este email ou acesse
+      <a href="{FRONTEND_URL}/ajuda" style="color: {SMARTLIC_GREEN};">smartlic.tech/ajuda</a>.<br>
+      Gerencie assinatura em
+      <a href="{FRONTEND_URL}/conta" style="color: {SMARTLIC_GREEN};">smartlic.tech/conta</a>.
+    </p>
+    """
+
+    return email_base(
+        title=f"Bem-vindo ao SmartLic Pro — {plan_name}",
+        body_html=body,
+        is_transactional=True,
+    )
+
+
 def render_subscription_expiring_email(
     user_name: str,
     plan_name: str,

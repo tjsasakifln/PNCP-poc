@@ -54,18 +54,19 @@ async def handle_invoice_payment_succeeded(sb, event: stripe.Event) -> None:
 
     new_expires = (datetime.now(timezone.utc) + timedelta(days=duration_days)).isoformat()
 
-    # STORY-309 AC11: Check if this was a recovery from dunning (subscription was past_due)
-    # STORY-CONV-003c AC3: Also detect trialing→active transition for trial_converted_auto event
+    # STORY-309 AC11 + STORY-CONV-003c AC3: Detect prior status to branch the
+    # post-charge path — dunning recovery email vs welcome_to_pro (first charge
+    # after trial) vs standard renewal confirmation — and to emit the
+    # trial_converted_auto analytics event when applicable.
     was_past_due = False
     was_trialing = False
     try:
         profile_check = sb.table("profiles").select("subscription_status").eq("id", user_id).single().execute()
-        if profile_check.data:
-            prior_status = profile_check.data.get("subscription_status")
-            if prior_status == "past_due":
-                was_past_due = True
-            elif prior_status == "trialing":
-                was_trialing = True
+        prior_status = (profile_check.data or {}).get("subscription_status")
+        if prior_status == "past_due":
+            was_past_due = True
+        elif prior_status == "trialing":
+            was_trialing = True
     except Exception as e:
         logger.warning(f"Failed to check prior subscription status for user_id={user_id}: {e}")
 
@@ -85,8 +86,17 @@ async def handle_invoice_payment_succeeded(sb, event: stripe.Event) -> None:
 
     await invalidate_user_caches(user_id, f"Annual renewal processed, new_expires={new_expires[:10]}")
 
-    # STORY-225 AC12: Send payment confirmation email
-    _send_payment_confirmation_email(sb, user_id, plan_id, invoice_data, new_expires)
+    # STORY-225 AC12 + STORY-CONV-003c AC3: Send confirmation email.
+    # Trial→paid conversion uses `welcome_to_pro` (first charge after
+    # trial); renewals use the generic `payment_confirmation` template.
+    _send_payment_confirmation_email(
+        sb,
+        user_id,
+        plan_id,
+        invoice_data,
+        new_expires,
+        is_first_charge_after_trial=was_trialing,
+    )
 
     # STORY-309 AC11: Send recovery email if was in dunning
     if was_past_due:
@@ -265,11 +275,29 @@ async def handle_payment_action_required(sb, event: stripe.Event) -> None:
 # Email helpers (fire-and-forget)
 # ============================================================================
 
-def _send_payment_confirmation_email(sb, user_id: str, plan_id: str, invoice_data: dict, new_expires: str) -> None:
-    """Send payment confirmation email (AC12). Never raises."""
+def _send_payment_confirmation_email(
+    sb,
+    user_id: str,
+    plan_id: str,
+    invoice_data: dict,
+    new_expires: str,
+    *,
+    is_first_charge_after_trial: bool = False,
+) -> None:
+    """Send payment confirmation email (AC12 + CONV-003c AC3). Never raises.
+
+    ``is_first_charge_after_trial`` selects the welcome-to-pro template
+    (lifecycle-aware copy) over the generic renewal confirmation. The
+    trial→paid moment is where chargebacks cluster for SaaS — explicit
+    acknowledgement of what the user is paying for reduces "eu não sabia
+    que ia cobrar" tickets.
+    """
     try:
         from email_service import send_email_async
-        from templates.emails.billing import render_payment_confirmation_email
+        from templates.emails.billing import (
+            render_payment_confirmation_email,
+            render_welcome_to_pro_email,
+        )
         from quota import PLAN_NAMES
 
         profile = sb.table("profiles").select("email, full_name").eq("id", user_id).single().execute()
@@ -305,20 +333,37 @@ def _send_payment_confirmation_email(sb, user_id: str, plan_id: str, invoice_dat
         except Exception:
             renewal_date = new_expires[:10]
 
-        html = render_payment_confirmation_email(
-            user_name=name,
-            plan_name=plan_name,
-            amount=amount,
-            next_renewal_date=renewal_date,
-            billing_period=billing_period,
-        )
+        if is_first_charge_after_trial:
+            html = render_welcome_to_pro_email(
+                user_name=name,
+                plan_name=plan_name,
+                amount=amount,
+                next_renewal_date=renewal_date,
+                billing_period=billing_period,
+            )
+            subject = f"Bem-vindo ao SmartLic Pro — {plan_name}"
+            category = "welcome_to_pro"
+        else:
+            html = render_payment_confirmation_email(
+                user_name=name,
+                plan_name=plan_name,
+                amount=amount,
+                next_renewal_date=renewal_date,
+                billing_period=billing_period,
+            )
+            subject = f"Pagamento confirmado — {plan_name}"
+            category = "payment_confirmation"
         send_email_async(
             to=email,
-            subject=f"Pagamento confirmado — {plan_name}",
+            subject=subject,
             html=html,
-            tags=[{"name": "category", "value": "payment_confirmation"}],
+            tags=[{"name": "category", "value": category}],
         )
-        logger.info(f"Payment confirmation email queued for user_id={user_id}")
+        logger.info(
+            "Confirmation email queued (user_id=%s, category=%s)",
+            user_id,
+            category,
+        )
     except Exception as e:
         logger.warning(f"Failed to send payment confirmation email: {e}")
 
