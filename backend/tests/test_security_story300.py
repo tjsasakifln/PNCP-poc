@@ -82,7 +82,7 @@ class TestAC5NeverLeakStackTraces:
         """AC7: Sentry captures the full exception with stack trace."""
         with (
             patch("routes.user.check_user_roles", side_effect=RuntimeError("sentry test")),
-            patch("main.sentry_sdk.capture_exception") as mock_sentry,
+            patch("sentry_sdk.capture_exception") as mock_sentry,
         ):
             response = client.get("/v1/me")
 
@@ -97,7 +97,7 @@ class TestAC5NeverLeakStackTraces:
         """AC5: RLS errors return 403 with correlation_id, no internal details."""
         with (
             patch("routes.user.check_user_roles", side_effect=Exception("new row violates row-level security policy")),
-            patch("main.sentry_sdk.capture_exception"),
+            patch("sentry_sdk.capture_exception"),
         ):
             response = client.get("/v1/me")
 
@@ -110,7 +110,7 @@ class TestAC5NeverLeakStackTraces:
         """AC5: Stripe errors return 500 with correlation_id, no internal details."""
         with (
             patch("routes.user.check_user_roles", side_effect=Exception("Stripe API error: card_declined")),
-            patch("main.sentry_sdk.capture_exception"),
+            patch("sentry_sdk.capture_exception"),
         ):
             response = client.get("/v1/me")
 
@@ -124,7 +124,7 @@ class TestAC5NeverLeakStackTraces:
         """AC5: Error responses never contain Python file paths or module names."""
         with (
             patch("routes.user.check_user_roles", side_effect=ValueError("at /app/backend/routes/user.py line 42")),
-            patch("main.sentry_sdk.capture_exception"),
+            patch("sentry_sdk.capture_exception"),
         ):
             response = client.get("/v1/me")
 

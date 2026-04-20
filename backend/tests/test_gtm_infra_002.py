@@ -22,7 +22,14 @@ class TestT1CanaryTamanhoPagina50:
     @pytest.mark.asyncio
     @patch("cron_jobs.get_pncp_cron_status", return_value={"status": "healthy", "latency_ms": 100, "updated_at": 1000})
     async def test_health_canary_sends_tamanho_pagina_50(self, _mock_cron):
-        """health_canary() must send tamanhoPagina=50 in request params."""
+        """health_canary() must send tamanhoPagina=50 in request params.
+
+        STORY-BTS-009: Production AsyncPNCPClient.health_canary returns ``bool``
+        (True on success, False on error) — see backend/clients/pncp/async_client.py
+        around line 188 onward, ``async def health_canary(self) -> bool``. The old
+        ``{"ok": bool}`` dict contract no longer exists. Tests now assert the
+        boolean return directly.
+        """
         from pncp_client import AsyncPNCPClient
 
         client = AsyncPNCPClient(max_concurrent=10)
@@ -41,7 +48,9 @@ class TestT1CanaryTamanhoPagina50:
 
         result = await client.health_canary()
 
-        assert result["ok"] is True
+        assert result is True, (
+            "health_canary should return True when PNCP responds 2xx"
+        )
         assert "tamanhoPagina" in captured_params, (
             "health_canary MUST send tamanhoPagina parameter"
         )

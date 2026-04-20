@@ -9,8 +9,17 @@ from schemas import BuscaRequest
 
 
 @pytest.mark.asyncio
-async def test_abertas_mode_uses_10_day_window():
-    """AC8+AC13: Default date range is 10 days for modo_busca='abertas'."""
+async def test_abertas_mode_uses_wide_window():
+    """AC8+AC13: Default date range for modo_busca='abertas' is a wide window.
+
+    STORY-BTS-009: The original test expected a 10-day window. Production
+    `pipeline/stages/prepare.py` was updated (commit `933a5c6a`
+    "feat(ingestion): cobertura 100% de editais abertos — backfill + purge por
+    encerramento") to set a **730-day** window because the search_datalake RPC
+    ignores date bounds entirely for `abertas` mode (only filters by
+    `data_encerramento > now()`); wide defaults just keep the cache key and
+    logging surface meaningful. This test mirrors that production contract.
+    """
     # Create a valid request with required fields (modo_busca will override dates)
     today = date.today()
     request = BuscaRequest(
@@ -48,7 +57,7 @@ async def test_abertas_mode_uses_10_day_window():
         await pipeline.stage_prepare(ctx)
 
     today_utc = datetime.now(timezone.utc).date()
-    expected_start = (today_utc - timedelta(days=10)).isoformat()
+    expected_start = (today_utc - timedelta(days=730)).isoformat()
     expected_end = today_utc.isoformat()
     assert ctx.request.data_inicial == expected_start, f"Expected {expected_start}, got {ctx.request.data_inicial}"
     assert ctx.request.data_final == expected_end

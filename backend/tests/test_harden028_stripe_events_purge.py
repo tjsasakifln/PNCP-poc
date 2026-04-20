@@ -118,7 +118,7 @@ async def test_purge_logs_deleted_count(mock_supabase, caplog):
     async def fake_execute(query):
         return SimpleNamespace(data=[{"id": "evt_1"}, {"id": "evt_2"}, {"id": "evt_3"}], count=None)
 
-    with caplog.at_level(logging.INFO, logger="cron_jobs"), \
+    with caplog.at_level(logging.INFO, logger="jobs.cron.billing"), \
          patch("supabase_client.get_supabase", return_value=sb), \
          patch("supabase_client.sb_execute", side_effect=fake_execute):
         from cron_jobs import purge_old_stripe_events
