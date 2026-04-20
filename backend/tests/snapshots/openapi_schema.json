@@ -1772,6 +1772,92 @@
         "title": "CancelSubscriptionResponse",
         "type": "object"
       },
+      "CancelTrialInfoResponse": {
+        "description": "Returned by GET /cancelar-trial to populate the confirmation UI.",
+        "properties": {
+          "already_cancelled": {
+            "default": false,
+            "title": "Already Cancelled",
+            "type": "boolean"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "plan_name": {
+            "title": "Plan Name",
+            "type": "string"
+          },
+          "trial_end_ts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix epoch seconds when trial ends",
+            "title": "Trial End Ts"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "plan_name"
+        ],
+        "title": "CancelTrialInfoResponse",
+        "type": "object"
+      },
+      "CancelTrialRequest": {
+        "properties": {
+          "token": {
+            "description": "Signed cancel-trial JWT",
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "CancelTrialRequest",
+        "type": "object"
+      },
+      "CancelTrialResponse": {
+        "properties": {
+          "access_until": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix epoch seconds \u2014 trial access remains until this timestamp",
+            "title": "Access Until"
+          },
+          "already_cancelled": {
+            "default": false,
+            "title": "Already Cancelled",
+            "type": "boolean"
+          },
+          "cancelled": {
+            "title": "Cancelled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cancelled"
+        ],
+        "title": "CancelTrialResponse",
+        "type": "object"
+      },
       "CheckoutResponse": {
         "description": "Response for POST /checkout.",
         "properties": {
@@ -15382,6 +15468,90 @@
         "summary": "Perfil de due diligence B2G: CEIS + CNEP por CNPJ",
         "tags": [
           "compliance-publicos"
+        ]
+      }
+    },
+    "/v1/conta/cancelar-trial": {
+      "get": {
+        "description": "Return trial metadata for the confirmation UI.\n\nDoes NOT mutate state. Intended to be called by the frontend confirmation\npage (STORY-CONV-003c frontend).",
+        "operationId": "cancel_trial_info_v1_conta_cancelar_trial_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "minLength": 20,
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelTrialInfoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Trial Info",
+        "tags": [
+          "conta"
+        ]
+      },
+      "post": {
+        "description": "Cancel the user's active trial subscription.\n\nIdempotent: if already cancelled, returns ``cancelled=true`` + ``already_cancelled=true``.\nFail-safe: Stripe errors are swallowed but profile is marked ``canceled_trial``\nso the downgrade still happens if the Stripe-side cancel retries succeed out-of-band\nvia billing reconciliation (STORY-314).",
+        "operationId": "cancel_trial_execute_v1_conta_cancelar_trial_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelTrialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelTrialResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Trial Execute",
+        "tags": [
+          "conta"
         ]
       }
     },

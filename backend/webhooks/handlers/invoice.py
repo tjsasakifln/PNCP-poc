@@ -55,13 +55,19 @@ async def handle_invoice_payment_succeeded(sb, event: stripe.Event) -> None:
     new_expires = (datetime.now(timezone.utc) + timedelta(days=duration_days)).isoformat()
 
     # STORY-309 AC11: Check if this was a recovery from dunning (subscription was past_due)
+    # STORY-CONV-003c AC3: Also detect trialing→active transition for trial_converted_auto event
     was_past_due = False
+    was_trialing = False
     try:
         profile_check = sb.table("profiles").select("subscription_status").eq("id", user_id).single().execute()
-        if profile_check.data and profile_check.data.get("subscription_status") == "past_due":
-            was_past_due = True
+        if profile_check.data:
+            prior_status = profile_check.data.get("subscription_status")
+            if prior_status == "past_due":
+                was_past_due = True
+            elif prior_status == "trialing":
+                was_trialing = True
     except Exception as e:
-        logger.warning(f"Failed to check past_due status for user_id={user_id}: {e}")
+        logger.warning(f"Failed to check prior subscription status for user_id={user_id}: {e}")
 
     # Reactivate, extend, and clear dunning state (first_failed_at -> None)
     sb.table("user_subscriptions").update({
@@ -89,6 +95,22 @@ async def handle_invoice_payment_succeeded(sb, event: stripe.Event) -> None:
             await send_recovery_email(user_id, plan_id)
         except Exception as e:
             logger.warning(f"Failed to send dunning recovery email for user_id={user_id}: {e}")
+
+    # STORY-CONV-003c AC3: Trial→Active transition observability event.
+    # First successful charge after a 14-day trial with card — the *conversion*
+    # moment for CONV-003 funnel. Pipe via log-sink to Mixpanel.
+    if was_trialing:
+        amount_paid_cents = invoice_data.get("amount_paid", 0) or 0
+        logger.info(
+            "analytics.trial_converted_auto",
+            extra={
+                "event": "trial_converted_auto",
+                "user_id": user_id,
+                "plan_id": plan_id,
+                "amount_brl": round(amount_paid_cents / 100, 2),
+                "stripe_subscription_id": subscription_id,
+            },
+        )
 
 
 async def handle_invoice_payment_failed(sb, event: stripe.Event) -> None:
