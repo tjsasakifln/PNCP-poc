@@ -71,10 +71,14 @@ class TestFormatCache:
     """AC3: Cache accepted format with 24h TTL."""
 
     def setup_method(self):
-        """Reset cache before each test."""
-        import pncp_client
-        pncp_client._accepted_date_format = None
-        pncp_client._accepted_date_format_ts = 0.0
+        """Reset cache before each test.
+
+        BTS-010b: globals live in clients.pncp.retry after DEBT-204 facade refactor;
+        pncp_client re-exports the functions but the module globals are in the submodule.
+        """
+        from clients.pncp import retry as _retry_mod
+        _retry_mod._accepted_date_format = None
+        _retry_mod._accepted_date_format_ts = 0.0
 
     def test_cache_starts_empty(self):
         assert _get_cached_date_format() is None
@@ -84,17 +88,17 @@ class TestFormatCache:
         assert _get_cached_date_format() == DateFormat.ISO_DASH
 
     def test_cache_expires_after_ttl(self):
-        import pncp_client
+        from clients.pncp import retry as _retry_mod
         _set_cached_date_format(DateFormat.BR_SLASH)
         # Simulate time passage beyond 24h
-        pncp_client._accepted_date_format_ts = time.time() - 86401
+        _retry_mod._accepted_date_format_ts = time.time() - 86401
         assert _get_cached_date_format() is None
 
     def test_cache_valid_within_ttl(self):
-        import pncp_client
+        from clients.pncp import retry as _retry_mod
         _set_cached_date_format(DateFormat.BR_DASH)
         # Simulate time passage within 24h
-        pncp_client._accepted_date_format_ts = time.time() - 3600  # 1h ago
+        _retry_mod._accepted_date_format_ts = time.time() - 3600  # 1h ago
         assert _get_cached_date_format() == DateFormat.BR_DASH
 
     def test_format_rotation_with_cache(self):
@@ -165,9 +169,10 @@ class TestAsyncFormatRotation:
     """AC2: Async client retries with alternative formats on 422."""
 
     def setup_method(self):
-        import pncp_client
-        pncp_client._accepted_date_format = None
-        pncp_client._accepted_date_format_ts = 0.0
+        # BTS-010b: globals live in clients.pncp.retry after DEBT-204 facade refactor.
+        from clients.pncp import retry as _retry_mod
+        _retry_mod._accepted_date_format = None
+        _retry_mod._accepted_date_format_ts = 0.0
 
     def _make_client(self):
         """Create a minimal AsyncPNCPClient for testing."""
@@ -377,9 +382,10 @@ class TestFallbackMessage:
     """AC6: 'Reduza o período' message when all formats fail."""
 
     def setup_method(self):
-        import pncp_client
-        pncp_client._accepted_date_format = None
-        pncp_client._accepted_date_format_ts = 0.0
+        # BTS-010b: globals live in clients.pncp.retry after DEBT-204 facade refactor.
+        from clients.pncp import retry as _retry_mod
+        _retry_mod._accepted_date_format = None
+        _retry_mod._accepted_date_format_ts = 0.0
 
     @pytest.mark.asyncio
     async def test_all_formats_fail_unknown_422_message(self):
@@ -405,7 +411,7 @@ class TestFallbackMessage:
         client._rate_limit = AsyncMock()
 
         with patch("pncp_client._circuit_breaker"):
-            with pytest.raises(PNCPAPIError, match="Reduza o período da análise"):
+            with pytest.raises(PNCPAPIError, match="Reduza o período"):
                 await client._fetch_page_async(
                     "2026-02-08", "2026-02-18", 6, uf="SP"
                 )

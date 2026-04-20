@@ -402,17 +402,31 @@ class TestNamingCleanup:
         assert data["project"]["name"] == "smartlic-backend"
 
     def test_pncp_user_agent_is_smartlic(self):
-        """AC5: User-Agent header uses SmartLic, not BidIQ."""
-        pncp_path = os.path.join(os.path.dirname(__file__), "..", "pncp_client.py")
-        with open(pncp_path, "r", encoding="utf-8") as f:
-            content = f.read()
+        """AC5: User-Agent header uses SmartLic, not BidIQ.
 
-        # Should contain SmartLic User-Agent
-        assert "SmartLic" in content
-        # Should NOT contain BidIQ in User-Agent lines
-        for line in content.split("\n"):
-            if "User-Agent" in line and "BidIQ" in line:
-                pytest.fail(f"BidIQ found in User-Agent header: {line.strip()}")
+        BTS-010b: After DEBT-204 facade refactor, `pncp_client.py` only re-exports
+        from `clients/pncp/`. The User-Agent header lives in the sync/async
+        client submodules — assert across both.
+        """
+        base_dir = os.path.join(os.path.dirname(__file__), "..")
+        client_paths = [
+            os.path.join(base_dir, "clients", "pncp", "sync_client.py"),
+            os.path.join(base_dir, "clients", "pncp", "async_client.py"),
+        ]
+        any_smartlic = False
+        for path in client_paths:
+            assert os.path.exists(path), f"Expected client file missing: {path}"
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+            # Scan User-Agent lines only
+            for line in content.split("\n"):
+                if "User-Agent" in line:
+                    assert "BidIQ" not in line, (
+                        f"BidIQ found in User-Agent header in {path}: {line.strip()}"
+                    )
+                    if "SmartLic" in line:
+                        any_smartlic = True
+        assert any_smartlic, "No SmartLic User-Agent found in PNCP client modules"
 
     def test_no_bidiq_in_backend_production_python(self):
         """AC5: Zero BidIQ strings in production .py files (excluding tests)."""

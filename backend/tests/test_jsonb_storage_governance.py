@@ -97,8 +97,10 @@ class TestJsonbSizeGuard:
         mock_sb.upsert.return_value = mock_sb
         mock_sb.execute.return_value = Mock(data=[{"id": "test"}])
 
+        # BTS-010b: _save_to_supabase lives in cache.supabase; search_cache re-exports
+        # it but doesn't own the logger.
         with patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("search_cache.logger") as mock_logger:
+             patch("cache.supabase.logger") as mock_logger:
             await _save_to_supabase(
                 user_id="user-123",
                 params_hash="abc123def456",

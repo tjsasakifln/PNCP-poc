@@ -226,8 +226,10 @@ class TestPanoramaStats:
         assert res.status_code == 404
 
     def test_panorama_stats_sazonalidade_structure(self, client):
+        # BTS-010b: 'software' sector was split into software_desenvolvimento /
+        # software_licencas; use the current canonical ID.
         with patch("datalake_query.query_datalake", _mock_dl()):
-            res = client.get("/v1/blog/stats/panorama/software")
+            res = client.get("/v1/blog/stats/panorama/software_desenvolvimento")
             data = res.json()
             for month in data["sazonalidade"]:
                 assert "period" in month
@@ -236,8 +238,10 @@ class TestPanoramaStats:
 
     def test_panorama_stats_no_auth(self, client):
         """Public endpoint — no auth required."""
+        # BTS-010b: 'saude' was split into medicamentos / equipamentos_medicos /
+        # insumos_hospitalares; use an existing health-adjacent ID.
         with patch("datalake_query.query_datalake", _mock_dl()):
-            res = client.get("/v1/blog/stats/panorama/saude")
+            res = client.get("/v1/blog/stats/panorama/medicamentos")
             assert res.status_code == 200
 
 

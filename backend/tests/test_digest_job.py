@@ -161,8 +161,15 @@ class TestWorkerSettingsDigest:
             _fake_arq.cron = MagicMock()
 
             from job_queue import WorkerSettings
-            func_names = [f.__name__ if callable(f) else str(f) for f in WorkerSettings.functions]
-            assert "daily_digest_job" in func_names
+            # BTS-010b: some entries may be MagicMocks lacking __name__ due to arq stub;
+            # fall back to repr for those entries so we can scan reliably.
+            func_names = [
+                getattr(f, "__name__", None) or repr(f)
+                for f in WorkerSettings.functions
+            ]
+            assert "daily_digest_job" in func_names, (
+                f"daily_digest_job not found in WorkerSettings.functions: {func_names}"
+            )
 
 
 class TestDigestConfig:

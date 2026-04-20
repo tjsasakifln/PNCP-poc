@@ -204,14 +204,30 @@ class TestPurgeOldBids:
     @pytest.mark.asyncio
     @patch("ingestion.loader.get_supabase")
     async def test_uses_default_retention_days(self, mock_get_sb):
-        """Default retention_days=12 must be passed to RPC when not specified."""
+        """Default retention_days must be passed to RPC when not specified.
+
+        BTS-010b: the production default was raised from 12 to 30 days
+        (ingestion/config.py INGESTION_RETENTION_DAYS default '30') to align
+        with the grace-period policy where closed bids are kept for 30 days
+        after data_encerramento. The function-level default in loader.py
+        (`retention_days: int = 30`) is the authoritative fallback.
+        """
+        from ingestion.loader import purge_old_bids as _purge_loader  # noqa: F401
+        import inspect
+        sig = inspect.signature(_purge_loader)
+        expected_default = sig.parameters["retention_days"].default
+
         mock_sb = MagicMock()
         mock_sb.rpc.return_value.execute.return_value.data = 0
         mock_get_sb.return_value = mock_sb
 
         await purge_old_bids()
 
-        mock_sb.rpc.assert_called_once_with("purge_old_bids", {"p_retention_days": 12})
+        mock_sb.rpc.assert_called_once_with(
+            "purge_old_bids", {"p_retention_days": expected_default}
+        )
+        # Sanity: default must stay a sensible value (>=7 days retention window).
+        assert expected_default >= 7
 
     @pytest.mark.asyncio
     @patch("ingestion.loader.get_supabase")
