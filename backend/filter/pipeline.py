@@ -136,6 +136,23 @@ def aplicar_todos_filtros(
                 # Direct comparison with inferred status
                 if status_inferido == status_lower:
                     resultado_status.append(lic)
+                elif (
+                    status_inferido in ("desconhecido", "todos")
+                    and lic.get("_source") == "PORTAL_COMPRAS"
+                ):
+                    # CRIT-054: PCP v2 pass-through for ambiguous status.
+                    # Restores behavior dropped during DEBT-201 split
+                    # (bf6ab7cc:backend/filter.py:2385-2395). PCP v2 frequently
+                    # returns records with unmapped/empty status; dropping them
+                    # silently under-returns results. PNCP with 'todos' is still
+                    # rejected — this branch gates on _source == PORTAL_COMPRAS.
+                    resultado_status.append(lic)
+                    lic["_status_unconfirmed"] = True
+                    try:
+                        from metrics import FILTER_PASSTHROUGH_TOTAL
+                        FILTER_PASSTHROUGH_TOTAL.labels(reason="pcp_status_ambiguous").inc()
+                    except Exception:
+                        pass
                 else:
                     stats["rejeitadas_status"] += 1
                     # STORY-248 AC9: Record status mismatch
