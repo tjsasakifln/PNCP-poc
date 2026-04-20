@@ -113,10 +113,12 @@ class TestPcpTimeoutIsolation:
         """When PCP times out, PNCP data should be returned as partial."""
         from consolidation import ConsolidationService
 
+        # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) collapsing
+        # "Uniforme escolar tipo A" / "tipo B" (same 60-char prefix + 0.85 jaccard)
         pncp_records = [
-            _make_unified("PNCP", "pncp-001", "Uniforme escolar tipo A"),
-            _make_unified("PNCP", "pncp-002", "Uniforme escolar tipo B"),
-            _make_unified("PNCP", "pncp-003", "Jaleco hospitalar"),
+            _make_unified("PNCP", "pncp-001", "Aquisição de uniformes escolares tipo A para rede municipal"),
+            _make_unified("PNCP", "pncp-002", "Contratação de pavimentação asfáltica urbana zona sul"),
+            _make_unified("PNCP", "pncp-003", "Fornecimento de jalecos hospitalares para unidade básica"),
         ]
 
         adapters = {
@@ -281,6 +283,7 @@ class TestPcpTimeoutIsolation:
                 record_count=2,
                 duration_ms=1500,
                 error=None,
+                skipped_reason=None,
             ),
             SimpleNamespace(
                 source_code="PORTAL_COMPRAS",
@@ -288,13 +291,16 @@ class TestPcpTimeoutIsolation:
                 record_count=0,
                 duration_ms=30000,
                 error="PCP timed out",
+                skipped_reason=None,
             ),
         ]
+        mock_result.ufs_completed = ["SP"]
+        mock_result.ufs_pending = []
 
         with patch("consolidation.ConsolidationService") as MockCS, \
              patch("source_config.sources.get_source_config") as mock_config, \
              patch("pipeline.stages.execute.enriquecer_com_status_inferido") as mock_enrich, \
-             patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock), \
+             patch("cache.manager.save_to_cache_per_uf", new_callable=AsyncMock), \
              patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None):
 
             mock_svc = AsyncMock()

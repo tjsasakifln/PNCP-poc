@@ -455,7 +455,8 @@ class TestNormalize:
         assert record.source_id == "pcp_12345"
         assert record.source_name == "PORTAL_COMPRAS"
         assert "uniformes profissionais" in record.objeto
-        assert record.valor_estimado == 0.0  # v2 has no value data
+        # UX-401 AC1: PCP v2 listing has no value data — normalized to None (not 0.0)
+        assert record.valor_estimado is None
         assert record.orgao == "Secretaria de Administração"
         assert record.uf == "SP"
         assert record.municipio == "Campinas"
@@ -478,10 +479,11 @@ class TestNormalize:
         assert record.objeto == "Aquisição de equipamentos de TI"
 
     def test_normalize_value_is_zero(self, adapter):
-        """Test normalize sets valor_estimado=0.0 (v2 has no value data)."""
+        """Test normalize sets valor_estimado=None (UX-401 AC1: v2 has no value data)."""
         raw = _make_v2_record(1)
         record = adapter.normalize(raw)
-        assert record.valor_estimado == 0.0
+        # UX-401 AC1: PCP v2 listing has no value data — normalized to None (not 0.0)
+        assert record.valor_estimado is None
 
     def test_normalize_missing_id_raises_error(self, adapter):
         """Test normalize raises SourceParseError when codigoLicitacao missing."""

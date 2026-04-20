@@ -125,10 +125,14 @@ def _patch_health_registry():
 async def test_no_early_return_when_within_time():
     """4 UFs requested, 3 respond within 80s -> normal return (not early)."""
     # Records from 3 UFs — elapsed is under EARLY_RETURN_TIME_S
+    # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
     records = [
-        _make_record("SRC", "r1", uf="SP", cnpj="111", numero_edital="001"),
-        _make_record("SRC", "r2", uf="RJ", cnpj="222", numero_edital="002"),
-        _make_record("SRC", "r3", uf="MG", cnpj="333", numero_edital="003"),
+        _make_record("SRC", "r1", uf="SP", cnpj="111", numero_edital="001",
+                     objeto="Aquisição de uniformes escolares para rede municipal"),
+        _make_record("SRC", "r2", uf="RJ", cnpj="222", numero_edital="002",
+                     objeto="Contratação de serviços de pavimentação asfáltica urbana"),
+        _make_record("SRC", "r3", uf="MG", cnpj="333", numero_edital="003",
+                     objeto="Serviço de limpeza predial e manutenção hospitalar"),
     ]
 
     adapter = FakeAdapter("SRC", priority=1, records=records, delay=0)
@@ -163,13 +167,18 @@ async def test_early_return_triggers_on_timeout_threshold():
     Elapsed > early_return_time AND >= 80% -> early return with is_partial=True.
     """
     # Source A: returns records for SP, RJ, MG quickly
+    # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
     records_a = [
-        _make_record("SRC_A", "a1", uf="SP", cnpj="111", numero_edital="001"),
-        _make_record("SRC_A", "a2", uf="RJ", cnpj="222", numero_edital="002"),
-        _make_record("SRC_A", "a3", uf="MG", cnpj="333", numero_edital="003"),
+        _make_record("SRC_A", "a1", uf="SP", cnpj="111", numero_edital="001",
+                     objeto="Aquisição de uniformes escolares para rede municipal"),
+        _make_record("SRC_A", "a2", uf="RJ", cnpj="222", numero_edital="002",
+                     objeto="Contratação de serviços de pavimentação asfáltica urbana"),
+        _make_record("SRC_A", "a3", uf="MG", cnpj="333", numero_edital="003",
+                     objeto="Serviço de limpeza predial e manutenção hospitalar"),
     ]
     # Source B: very slow, would return BA but won't finish in time
-    records_b = [_make_record("SRC_B", "b1", uf="BA", cnpj="444", numero_edital="004")]
+    records_b = [_make_record("SRC_B", "b1", uf="BA", cnpj="444", numero_edital="004",
+                              objeto="Fornecimento de medicamentos para unidade de saúde")]
 
     adapter_a = FakeAdapter("SRC_A", priority=1, records=records_a, delay=0)
     adapter_b = FakeAdapter("SRC_B", priority=2, records=records_b, delay=10)
@@ -335,13 +344,18 @@ async def test_ufs_completed_and_pending_lists():
 async def test_filter_ranking_on_collected_results_only():
     """When early return triggers, dedup/legacy conversion runs on available data only."""
     # Source A: 3 UFs fast
+    # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
     records_a = [
-        _make_record("SRC_A", "a1", uf="SP", cnpj="111", numero_edital="001"),
-        _make_record("SRC_A", "a2", uf="RJ", cnpj="222", numero_edital="002"),
-        _make_record("SRC_A", "a3", uf="MG", cnpj="333", numero_edital="003"),
+        _make_record("SRC_A", "a1", uf="SP", cnpj="111", numero_edital="001",
+                     objeto="Aquisição de uniformes escolares para rede municipal"),
+        _make_record("SRC_A", "a2", uf="RJ", cnpj="222", numero_edital="002",
+                     objeto="Contratação de serviços de pavimentação asfáltica urbana"),
+        _make_record("SRC_A", "a3", uf="MG", cnpj="333", numero_edital="003",
+                     objeto="Serviço de limpeza predial e manutenção hospitalar"),
     ]
     # Source B: 1 UF extremely slow
-    records_b = [_make_record("SRC_B", "b1", uf="BA", cnpj="444", numero_edital="004")]
+    records_b = [_make_record("SRC_B", "b1", uf="BA", cnpj="444", numero_edital="004",
+                              objeto="Fornecimento de medicamentos para unidade de saúde")]
 
     adapter_a = FakeAdapter("SRC_A", priority=1, records=records_a, delay=0)
     adapter_b = FakeAdapter("SRC_B", priority=2, records=records_b, delay=10)
