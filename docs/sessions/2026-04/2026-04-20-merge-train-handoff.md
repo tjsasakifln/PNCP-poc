@@ -159,7 +159,9 @@ Rodei o CI de #411 duas vezes com resultados distintos e descobri que o conjunto
 
 ### Implicação estratégica
 
-**O "CI verde em main" como D-o-D do EPIC-CI-GREEN não pode ser atingido com fixes pontuais** até a flakiness do CI ser resolvida na raiz. Cada run mostra um conjunto diferente de falhas.
+**CI instability é uma hipótese forte mas ainda não confirmada.** A evidência sólida só virá de um **re-run do SHA `532eafcf`** — se mostrar contagem diferente, flakiness confirmada; se mostrar os mesmos 69, são regressões reais que os meus commits introduziram (mecanismo ainda desconhecido).
+
+Próxima sessão deve começar pelo re-run antes de qualquer decisão de rota. Se confirmado flaky, EPIC-CI-GREEN D-o-D precisa revisão (fixes pontuais não bastam). Se real, rollback de #411 para apenas os 12 fixes validados é a opção mais segura.
 
 ### Opções de rota para próxima sessão
 

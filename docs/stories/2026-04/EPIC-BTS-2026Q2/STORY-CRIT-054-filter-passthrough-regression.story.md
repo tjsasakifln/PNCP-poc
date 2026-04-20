@@ -4,7 +4,7 @@
 **Priority:** P1 — Production regression detectada via BTS-005 guardrail (impacta resultado PCP v2 desconhecido/todos)
 **Effort:** XS (1-2h)
 **Agents:** @dev + @qa (possível @architect se ramo tiver invariantes mais largos)
-**Status:** InReview
+**Status:** Done (PR #407 merged `2ff704a4` — 2026-04-20)
 
 ---
 
@@ -104,3 +104,4 @@ elif status_inferido in ("desconhecido", "todos"):
 
 - **2026-04-19** — @dev (via agente BTS-005 guardrail): regressão detectada e documentada em PR #401. Abrindo story como follow-up com guardrail "no prod edit" respeitado.
 - **2026-04-20** — @dev: Fix aplicado em `backend/filter/pipeline.py` (elif adicionado linhas 138-154). Spec re-derivada dos testes (vs story original) e documentada no topo dos ACs. AC1/AC2/AC3/AC5 marcados [x]; AC4 bloqueado por ambiente local sem pytest — CI é validação final. Blast radius mínimo: grep `_status_unconfirmed` confirma zero call sites em produção legacy (só 3 asserts no test file). Status Ready → InReview aguardando merge.
+- **2026-04-20** — @devops: PR #407 `fix(filter): STORY-CRIT-054 — restore PCP v2 pass-through for ambiguous status` merged em `2ff704a4`. Status `InReview` → `Done`.

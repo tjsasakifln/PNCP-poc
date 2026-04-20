@@ -4,7 +4,7 @@
 **Priority:** P2
 **Effort:** S (2-3h) — mostly assertion-drift
 **Agents:** @dev + @qa
-**Status:** InReview
+**Status:** InReview (PR #410 — 25/25 tests green in worktree; blocked on main CI drift unrelated to BTS-009 content — see STORY-BTS-011)
 
 ---
 
@@ -66,3 +66,4 @@
   - **Não-regressão descoberta (não é prod bug):** pollution de `startup.state.shutting_down` persistente após `async with lifespan(app)` em `test_startup_succeeds_with_valid_schema` fazia todos os HTTP tests subsequentes retornarem 503 via `shutdown_drain_middleware` (DEBT-124). Fixado com autouse fixture que restaura `shutting_down=False` + `Supabase CB.reset()`. Em produção esse estado persiste apenas durante shutdown real — não há regressão.
   - **38 novos endpoints em OpenAPI schema snapshot:** drift legítimo das últimas ~6 weeks de stories públicas (blog, observatório, sitemaps, indice municipal, compliance, fornecedores, notifications, founding). Snapshot regenerado e commitado; sem necessidade de novas stories de API review.
   - **Diff artefato stale** (`openapi_schema.diff.json`) agora é deletado pela própria lógica do teste quando `UPDATE_SNAPSHOTS=1` — commit da deleção evita que ele volte como `dirty tree` em cada CI run.
+- **2026-04-20** — @dev (majestic-valiant session): Re-run do CI de main HEAD `2ff704a4` (post #411 + #407 merges) revelou **~150 falhas** em ~8-10 clusters distintos — conjunto **disjunto** do baseline que BTS-009 atacou. Investigação (advisor consultado) confirmou que são drifts **reais** em outras stories, não flakiness pura nem regressão por #407 (diff de #407 é +17 linhas puramente aditivas em `filter/pipeline.py`). Conclusão: BTS-009 code está correto e pronto; PR #410 blocked por main CI que precisa de **STORY-BTS-011** (nova sweep) antes de destravar. PR #424 (`fix(tests): 4 drift clusters`) já liga 15 falhas; BTS-011 ataca os 135 restantes. Status mantido `InReview`.
