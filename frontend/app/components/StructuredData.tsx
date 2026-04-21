@@ -8,6 +8,8 @@
  * so async loading via next/script adds unnecessary overhead and delays
  * structured data availability for crawlers.
  */
+import { AGGREGATE_OFFER_BOUNDS, getPriceValidUntil } from "@/lib/plan-pricing";
+
 export function StructuredData() {
   // Organization Schema — AC6 + STORY-439 AC4: Trust completeness (taxID, founder, addressLocality)
   const organizationSchema = {
@@ -82,10 +84,12 @@ export function StructuredData() {
     operatingSystem: 'Web',
     offers: {
       '@type': 'AggregateOffer',
-      lowPrice: '1599.00',
-      highPrice: '1999.00',
-      priceCurrency: 'BRL',
-      offerCount: 3,
+      lowPrice: AGGREGATE_OFFER_BOUNDS.lowPrice.toFixed(2),
+      highPrice: AGGREGATE_OFFER_BOUNDS.highPrice.toFixed(2),
+      priceCurrency: AGGREGATE_OFFER_BOUNDS.priceCurrency,
+      offerCount: AGGREGATE_OFFER_BOUNDS.offerCount,
+      priceValidUntil: getPriceValidUntil(),
+      availability: 'https://schema.org/InStock',
     },
     description: 'Avaliação de viabilidade de licitações públicas com critérios objetivos. Filtragem por setor, região e modalidade. Relatórios Excel e pipeline de oportunidades.',
     screenshot: 'https://smartlic.tech/api/og',

@@ -21,8 +21,10 @@ import { PlanStatusBanners } from "./components/PlanStatusBanners";
 import { PlanProCard } from "./components/PlanProCard";
 import { PlanConsultoriaCard } from "./components/PlanConsultoriaCard";
 import { PlanFAQ } from "./components/PlanFAQ";
+import { ProductSchema } from "./components/ProductSchema";
 import { buttonVariants } from "../../components/ui/button";
 import { trackViewItem, trackBeginCheckout } from "../components/GoogleAnalytics";
+import { PRO_PRICING, CONSULTORIA_PRICING } from "@/lib/plan-pricing";
 import type { components } from "../api-types.generated";
 
 // STORY-2.1 (EPIC-TD-2026Q2): Profile shape is a subset of the backend
@@ -30,12 +32,9 @@ import type { components } from "../api-types.generated";
 // callers can pass the full response unchanged.
 type UserProfile = Partial<components["schemas"]["UserProfileResponse"]>;
 
-// STORY-360 AC2: Static fallback pricing (source of truth: backend GET /v1/plans -> Stripe)
-const PRICING_FALLBACK: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
-  monthly: { monthly: 397, total: 397, period: "mês" },
-  semiannual: { monthly: 357, total: 2142, period: "semestre", discount: 10 },
-  annual: { monthly: 297, total: 3564, period: "ano", discount: 25 },
-};
+// STORY-360 AC2 + STORY-SEO-004: pricing source of truth lives in `lib/plan-pricing.ts`
+// (consumed here and by ProductSchema.tsx to keep JSON-LD in sync with UI).
+const PRICING_FALLBACK = PRO_PRICING;
 
 // GTM-002: Features list
 const FEATURES = [
@@ -48,11 +47,7 @@ const FEATURES = [
   { text: "Filtragem com 1.000+ regras", detail: "Precisão setorial para seu mercado" },
 ];
 
-const CONSULTORIA_PRICING_FALLBACK: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
-  monthly: { monthly: 997, total: 997, period: "mês" },
-  semiannual: { monthly: 897, total: 5382, period: "semestre", discount: 10 },
-  annual: { monthly: 797, total: 9564, period: "ano", discount: 20 },
-};
+const CONSULTORIA_PRICING_FALLBACK = CONSULTORIA_PRICING;
 
 const CONSULTORIA_FEATURES = [
   { text: "Até 5 usuários", detail: "Sua equipe inteira em uma só conta" },
@@ -302,6 +297,7 @@ export default function PlanosPage() {
 
   return (
     <div className="min-h-screen bg-[var(--canvas)]">
+      <ProductSchema />
       <LandingNavbar />
 
       {/* Stripe redirect overlay */}
