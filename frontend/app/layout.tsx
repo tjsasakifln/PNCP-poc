@@ -17,6 +17,7 @@ import { UserProvider } from "../contexts/UserContext";
 import { StructuredData } from "./components/StructuredData";
 import { GoogleAnalytics } from "./components/GoogleAnalytics";
 import { ClarityAnalytics } from "./components/ClarityAnalytics";
+import { WebVitalsReporter } from "./components/WebVitalsReporter";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -173,6 +174,8 @@ export default function RootLayout({
         />
       </head>
       <body>
+        {/* STORY-SEO-006: Real User Monitoring for Core Web Vitals → GA4 */}
+        <WebVitalsReporter />
         {/* Skip navigation link for accessibility - WCAG 2.4.1 Bypass Blocks */}
         <a
           href="#main-content"
