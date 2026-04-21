@@ -515,6 +515,136 @@ def render_trial_last_day_email(user_name: str, stats: dict, unsubscribe_url: st
 
 
 # ============================================================================
+# Email #5b — Day 13 (branch=card): First-charge-tomorrow notice (STORY-CONV-003c AC1)
+#
+# Distinct from render_trial_last_day_email (branch=legacy) because for users
+# with a payment method on file (rollout_branch="card"), tomorrow the trial
+# auto-converts: the charge happens without any user action. Legacy copy
+# ("amanhã seu acesso expira — assine agora") is wrong for this cohort —
+# access does NOT expire; it seamlessly continues. What this cohort needs is:
+# (a) explicit compliance notice of charge amount/date (reduces chargebacks),
+# (b) visible one-click cancel path via signed JWT link.
+#
+# Copy variant: "ROI-focused + urgência suave" (approved by product 2026-04-21).
+# ============================================================================
+
+def render_trial_last_day_card_email(
+    user_name: str,
+    stats: dict,
+    charge_date_display: str,
+    plan_name: str,
+    amount_display: str,
+    cancel_url: str,
+    unsubscribe_url: str = "",
+) -> str:
+    """Render the D-1-before-auto-charge email for users on the card rollout branch.
+
+    This is the CONV-003c AC1 compliance notice: tomorrow the trial will
+    auto-convert to paid via the card on file. The user does NOT need to
+    take any action to continue. The prominent CTA is a one-click cancel
+    link (signed JWT, 48h validity) so users who want out can exit with a
+    single click — essential to minimize chargebacks on the first billing
+    cycle after trial.
+
+    Args:
+        user_name: User's display name (e.g. "Ana").
+        stats: Dict with trial-usage counters. Reads ``opportunities_found``
+            and ``total_value_estimated`` to build the ROI headline. Empty
+            stats fall back to a neutral variant.
+        charge_date_display: Human-readable charge date ("amanhã, 21/04",
+            or "amanhã" if the caller prefers minimal date noise).
+        plan_name: Plan label shown in the body (e.g. "SmartLic Pro").
+        amount_display: Formatted amount string (e.g. "R$ 397/mês").
+        cancel_url: Fully-qualified URL containing the signed cancel-trial
+            JWT (from ``services.trial_cancel_token.generate_token``).
+        unsubscribe_url: Conversion emails are NOT marketing, but the block
+            is rendered if provided for rendering-consistency.
+    """
+    opps = stats.get("opportunities_found", 0)
+    value = stats.get("total_value_estimated", 0.0)
+
+    if value > 0 and opps > 0:
+        headline = f"{opps} oportunidades em 14 dias — continue amanhã com SmartLic Pro"
+        lead = (
+            f"{user_name}, em 14 dias você acessou <strong>{opps} editais</strong> "
+            f"com potencial de <strong>{_format_brl(value)}</strong> em contratos."
+        )
+        preheader_text = (
+            f"{opps} oportunidades em 14 dias — amanhã vira SmartLic Pro ({amount_display})."
+        )
+    elif opps > 0:
+        headline = f"{opps} oportunidades em 14 dias — continue amanhã com SmartLic Pro"
+        lead = (
+            f"{user_name}, em 14 dias você acessou <strong>{opps} editais</strong> "
+            f"relevantes no SmartLic."
+        )
+        preheader_text = (
+            f"{opps} oportunidades mapeadas — amanhã vira SmartLic Pro ({amount_display})."
+        )
+    else:
+        headline = f"Amanhã seu trial vira {plan_name} — continue ou cancele em 1 clique"
+        lead = (
+            f"{user_name}, seu trial de 14 dias termina amanhã."
+        )
+        preheader_text = (
+            f"Amanhã seu trial vira {plan_name} ({amount_display}). Cancele em 1 clique se preferir."
+        )
+
+    body = f"""
+    {_preheader(preheader_text)}
+    <h1 style="color: {SMARTLIC_GREEN}; font-size: 22px; margin: 0 0 16px;">
+      {headline}
+    </h1>
+    <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
+      {lead}
+    </p>
+    <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
+      <strong>Amanhã ({charge_date_display})</strong>, seu trial vira {plan_name}:
+      <strong>{amount_display}</strong> cobrados automaticamente no cartão cadastrado.
+      Continue crescendo — nada a fazer.
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e8f5e9; margin: 16px 0 24px;">
+      <tr>
+        <td style="padding: 16px 20px;">
+          <p style="color: #555; font-size: 14px; margin: 0; line-height: 1.6;">
+            Prefere pausar? Sem custo, sem perguntas. Cancele antes da cobrança:
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="text-align: center; margin: 24px 0 16px;">
+      <a href="{cancel_url}" class="btn"
+         style="display: inline-block; padding: 14px 32px; background-color: #ffffff; color: #d32f2f; text-decoration: none; border: 2px solid #d32f2f; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        Cancelar minha trial
+      </a>
+    </p>
+    <p style="color: #888; font-size: 13px; text-align: center; margin: 16px 0 0;">
+      Link válido por 48 horas. Ao cancelar, você mantém acesso até o final do trial
+      sem cobrança.
+    </p>
+    <p style="color: #333; font-size: 15px; text-align: center; margin: 32px 0 0;">
+      Vamos juntos,<br/>
+      <strong>Equipe SmartLic</strong>
+    </p>
+    {_unsubscribe_block(unsubscribe_url)}
+    """
+
+    return email_base(
+        title=f"Amanhã sua trial vira {plan_name} — {amount_display}",
+        body_html=body,
+        # Conversion/compliance notice about an imminent charge is NOT
+        # marketing: it must reach users who opted out of marketing emails.
+        # The trial_email_sequence dispatcher classifies last_day as a
+        # conversion email and bypasses the marketing opt-out accordingly.
+        is_transactional=False,
+        unsubscribe_url=unsubscribe_url,
+    )
+
+
+# ============================================================================
 # Email #6 — Day 16: Expirado (AC7 + AC14: coupon 20% off)
 # ============================================================================
 

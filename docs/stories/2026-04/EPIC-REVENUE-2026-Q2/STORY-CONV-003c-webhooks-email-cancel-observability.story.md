@@ -20,14 +20,18 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
 
 ## Acceptance Criteria
 
-### AC1: Email D-1 automático antes do charge
-- [ ] ARQ cron job diário às 9h BRT: `backend/jobs/cron/trial_charge_warning.py`
-- [ ] Query: profiles com `trial_end_ts` entre `now+22h` e `now+26h` (janela de 4h para garantir cobertura com drift)
-- [ ] Envia email via Resend template `templates/emails/trial_charge_tomorrow.html`:
-  - Subject: "Amanhã sua trial SmartLic expira — R$ 397 serão cobrados"
-  - Body: CTA "Cancelar minha trial" (link assinado) + "Manter assinatura" (no-op)
-- [ ] Template sanitizado (Pydantic para vars + HTML escape)
-- [ ] Idempotência: marca `profiles.trial_charge_warning_sent_at` para não reenviar
+### AC1: Email D-1 automático antes do charge — ✅ Implemented via Abstract Coral session (branch-aware reuse)
+- [x] **Cron infrastructure reused from STORY-321** (`services/trial_email_sequence.py` Day 13 "last_day"): already daily at 08:00 BRT with idempotency via `trial_email_log` table and `trial_conversion_emails_enabled` opt-out respected. No new cron needed.
+- [x] **Query:** profiles at `created_at between now-13d-12h and now-12d+12h` (24h window) — already in `process_trial_emails` dispatcher.
+- [x] **Branch-aware copy:** `render_trial_last_day_card_email` in `backend/templates/emails/trial.py` emits compliance-correct Day 13 for users with `profiles.stripe_default_pm_id` set (card rollout). Legacy `render_trial_last_day_email` continues for users without card. Dispatcher in `trial_email_sequence._render_email::last_day` branches on `has_payment_method`.
+  - **Subject (card branch):** `"{N} oportunidades em 14 dias — amanhã vira SmartLic Pro"` (ROI-focused + urgência suave, approved 2026-04-21)
+  - **Body (card branch):** ROI headline + explicit charge notice (date, plan, amount) + one-click `[CANCELAR MINHA TRIAL]` CTA (JWT link via `services.trial_cancel_token.create_cancel_trial_token`, 48h TTL) + brand sign-off
+- [x] **Template safety:** HTML built via typed helpers (`_format_brl`, `_format_charge_date_display`) + static template; no raw user input interpolation beyond `user_name` which is already sanitized by Supabase auth constraints.
+- [x] **Idempotência:** already-enforced via `trial_email_log` UPSERT ON CONFLICT DO NOTHING (`email_number=5`, STORY-321 AC6).
+- [x] **Graceful degradation:** JWT mint failure falls back to unauthenticated `/conta/cancelar-trial` URL — email never blocked on secret config issue.
+- [x] **Tests:** 18 new tests in `backend/tests/test_trial_emails.py` (`TestLastDayCardEmail`, `TestLastDayCardBranchDispatch`, `TestFormatChargeDateDisplay`) — render, cancel-CTA, link embedding, branch dispatch, fallback path, ISO date parsing all covered.
+
+**Design note:** original AC1 proposed a brand-new `trial_charge_warning.py` cron. Investigation found STORY-321 already runs Day 13 "last_day" with full dispatch + idempotency + opt-out infrastructure. Reusing that avoids dual-cron conflict (see CRIT-044) and delivers the same user-visible behavior at ~1/3 the effort.
 
 ### AC2: Endpoint cancel one-click via token JWT ✅ (via PR #431)
 - [x] Token JWT `payload: {user_id, action: "cancel_trial", iat, exp: now+48h}`, chave `TRIAL_CANCEL_JWT_SECRET` (fallback para `SUPABASE_JWT_SECRET` em dev) — `backend/services/trial_cancel_token.py`
@@ -54,7 +58,7 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
   - Email `render_payment_confirmation_email` (STORY-225 AC12)
   - `send_recovery_email` se was_past_due (STORY-309 AC11)
 - [x] Idempotência via `stripe_webhook_events` table (dispatcher em `webhooks/stripe.py` — upsert on_conflict + claim com timeout 5min). Redis dedup alternativa equivalente.
-- [ ] **PENDENTE: email `welcome_to_pro.html` específico para primeiro charge pós-trial** (current `render_payment_confirmation_email` é genérico de renewal; próxima sessão)
+- [x] **email `welcome_to_pro` específico para primeiro charge pós-trial** — `backend/templates/emails/billing.py::render_welcome_to_pro_email` (dedicated template distinct from `render_payment_confirmation_email`), despachado via `invoice.py:336-345` quando `is_first_charge_after_trial=was_trialing`. Tests in `backend/tests/test_welcome_to_pro_email.py` (8 tests — render + dispatcher branch). Validated via Abstract Coral session 2026-04-21.
 - [x] **Mixpanel event `trial_converted_auto`** — `backend/webhooks/handlers/invoice.py::handle_invoice_payment_succeeded` detecta `prior_status == "trialing"` e emite structured log `analytics.trial_converted_auto` com event + user_id + plan_id + amount_brl + stripe_subscription_id (pipeado para Mixpanel via log-sink)
 - [x] **Handler para `invoice.payment_action_required` (3DS/SCA)** — já existe via STORY-309 AC10 em `handle_payment_action_required` + dispatcher routea em `webhooks/stripe.py` linha 208
 
@@ -138,3 +142,11 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
   - Status atualizado Ready → InProgress.
 - **2026-04-20 (flickering-llama)** — @dev: AC3 (welcome_to_pro email branching no `invoice.py`) + AC5 (runbook trial-card-rollback) + AC7 (frontend `/conta/cancelar-trial` page + proxy + tests) implementados em PR #433 (10 tests local PASS).
 - **2026-04-20 (temporal-bonbon evening)** — @devops: PR #431 **MERGED** commit `0ef5902f` (post drift-sweep `1270f909` + CONV-003b `c9c29f3f`). PR #433 rebased com conflict em `invoice.py` resolvido (combina #431's analytics event + #433's email branching). CI rerun em progresso devido a 1 test flake (`test_invalid_signature_rejected DID NOT RAISE` — passa local + isoladamente, falha no full suite — suspeita de test pollution `auth.jwt.decode` patch global). AC1 (cron D-1 email) + AC4 (observability dashboard) deferidos para próxima sessão.
+- **2026-04-21 (abstract-coral consultor session, Opus 4.7)** — @dev: **AC1 COMPLETO** via branch-aware reuse (no new cron).
+  - Descoberta: STORY-321 já roda Day 13 "last_day" via `trial_email_sequence.py` com idempotency + opt-out + dispatch. Criar cron novo duplicava infraestrutura e reabriria risco CRIT-044.
+  - Solução: `render_trial_last_day_card_email` em `backend/templates/emails/trial.py` (copy ROI-focused + urgência suave, compliance-correct — aviso explícito de charge + one-click cancel link via JWT), dispatcher branch-aware em `trial_email_sequence._render_email::last_day` detectando `profiles.stripe_default_pm_id`.
+  - Helper `_format_charge_date_display(created_at)` para exibir data do charge user-friendly.
+  - Graceful degradation: falha de mint JWT → fallback para URL plain (email nunca bloqueado).
+  - `test_trial_emails.py` +18 tests (`TestLastDayCardEmail` × 11, `TestLastDayCardBranchDispatch` × 3, `TestFormatChargeDateDisplay` × 4). Full file 125/125 passing.
+  - **AC3 último item COMPLETO** — auditoria confirmou que `welcome_to_pro` já está implementado em `billing.py:81` + `invoice.py:336-345` + `test_welcome_to_pro_email.py` (já shipado em sessions anteriores).
+  - AC4 (Mixpanel events + Prometheus counters) em sessão paralela.

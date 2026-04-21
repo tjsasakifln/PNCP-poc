@@ -309,9 +309,20 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                 # Find trial users at this milestone
                 # AC4: Only free_trial users (converted users have different plan_type)
                 # AC5: Respect unsubscribe preferences (marketing vs conversion)
+                # STORY-CONV-003c AC1: include `stripe_default_pm_id` so Day 13
+                # dispatch can branch its copy. Users with a payment method in
+                # file (rollout branch=card) auto-convert tomorrow without any
+                # action; they need a compliance notice + one-click cancel link,
+                # not the "your access expires — subscribe now" legacy copy.
+                # `created_at` is included to compute the concrete charge date
+                # (trial_end = created_at + 14d) displayed to the user.
                 users_result = await sb_execute(
                     sb.table("profiles")
-                    .select("id, email, full_name, plan_type, marketing_emails_enabled, trial_conversion_emails_enabled, timezone")
+                    .select(
+                        "id, email, full_name, plan_type, marketing_emails_enabled, "
+                        "trial_conversion_emails_enabled, timezone, "
+                        "stripe_default_pm_id, created_at"
+                    )
                     .eq("plan_type", "free_trial")
                     .gte("created_at", target_start)
                     .lt("created_at", target_end)
@@ -429,6 +440,14 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                     # Build unsubscribe URL (AC2)
                     unsub_url = get_unsubscribe_url(user_id)
 
+                    # STORY-CONV-003c AC1: Detect rollout branch via payment
+                    # method presence. Users with a card on file (branch=card)
+                    # get a compliance-correct copy + one-click cancel link
+                    # on Day 13; users without (branch=legacy) keep the
+                    # scarcity "assine agora" copy.
+                    has_payment_method = bool(user.get("stripe_default_pm_id"))
+                    user_created_at = user.get("created_at")
+
                     # Render and send email
                     try:
                         subject, html = _render_email(
@@ -436,6 +455,9 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                             user_name=user_name,
                             stats=stats,
                             unsubscribe_url=unsub_url,
+                            user_id=user_id,
+                            has_payment_method=has_payment_method,
+                            user_created_at=user_created_at,
                         )
 
                         # Fire-and-forget send
@@ -545,13 +567,55 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
         return {"sent": 0, "skipped": 0, "errors": 1, "error": str(e)}
 
 
+def _format_charge_date_display(user_created_at: str | None) -> str:
+    """STORY-CONV-003c AC1 helper: human-friendly charge date for the Day 13
+    card-branch email. Trial is 14 days from ``created_at``; the charge fires
+    on Day 14 = ``created_at + 14d``. Returns e.g. "amanhã, 21/04".
+
+    Falls back to "amanhã" if the timestamp is missing or unparseable — the
+    word "amanhã" is the load-bearing piece; the date is garnish.
+    """
+    if not user_created_at:
+        return "amanhã"
+    try:
+        from config import TRIAL_DURATION_DAYS
+    except Exception:
+        TRIAL_DURATION_DAYS = 14  # conservative default; never blocks render
+    try:
+        # Supabase returns ISO 8601 with trailing "Z" or offset. ``fromisoformat``
+        # in Python 3.11+ accepts both.
+        created_dt = datetime.fromisoformat(user_created_at.replace("Z", "+00:00"))
+        charge_dt = created_dt + timedelta(days=TRIAL_DURATION_DAYS)
+        return f"amanhã, {charge_dt.strftime('%d/%m')}"
+    except Exception:
+        return "amanhã"
+
+
 def _render_email(
     email_type: str,
     user_name: str,
     stats: dict,
     unsubscribe_url: str = "",
+    *,
+    user_id: str = "",
+    has_payment_method: bool = False,
+    user_created_at: str | None = None,
 ) -> tuple[str, str]:
     """Render the appropriate email template for the given type.
+
+    Args:
+        email_type: Email type from TRIAL_EMAIL_SEQUENCE (e.g. "welcome").
+        user_name: User's display name.
+        stats: Dict with trial-usage counters.
+        unsubscribe_url: One-click unsubscribe URL (RFC 8058).
+        user_id: Supabase user id. Required only when ``email_type=="last_day"``
+            and ``has_payment_method`` is True, to mint the cancel-trial JWT.
+        has_payment_method: STORY-CONV-003c AC1 — True when
+            ``profiles.stripe_default_pm_id`` is set, indicating the user is
+            on the card rollout branch and their trial will auto-convert
+            tomorrow. Drives the Day 13 copy branch.
+        user_created_at: ISO8601 trial start timestamp. Used to compute the
+            human-readable charge date for the Day 13 card variant.
 
     Returns:
         tuple of (subject, html)
@@ -563,6 +627,7 @@ def _render_email(
         render_trial_paywall_alert_email,
         render_trial_value_email,
         render_trial_last_day_email,
+        render_trial_last_day_card_email,
         render_trial_expired_email,
         _format_brl,
     )
@@ -607,11 +672,67 @@ def _render_email(
         html = render_trial_value_email(user_name, stats, unsubscribe_url=unsubscribe_url)
 
     elif email_type == "last_day":
-        if value > 0:
-            subject = f"Amanhã você perde acesso a {_format_brl(value)} em oportunidades"
+        # STORY-CONV-003c AC1: branch by rollout cohort.
+        # - has_payment_method=True (card branch): trial auto-converts
+        #   tomorrow. Copy must be compliance-correct (explicit charge
+        #   notice + one-click cancel link). Legacy "access expires —
+        #   subscribe now" is incorrect for this cohort.
+        # - has_payment_method=False (legacy branch): access expires
+        #   without any charge. Keep scarcity copy that drives manual
+        #   subscription.
+        if has_payment_method and user_id:
+            try:
+                from services.trial_cancel_token import create_cancel_trial_token
+
+                token = create_cancel_trial_token(user_id)
+                cancel_url = f"{FRONTEND_URL}/conta/cancelar-trial?token={token}"
+            except Exception as token_err:
+                # Token minting must not break the send loop. If we cannot
+                # mint, fall back to a plain cancel-trial URL (still works
+                # via in-app auth) so the email is never blocked.
+                logger.warning(
+                    "AC1: cancel-trial token mint failed for user=%s***, "
+                    "falling back to unauthenticated cancel URL: %s",
+                    user_id[:8], token_err,
+                )
+                cancel_url = f"{FRONTEND_URL}/conta/cancelar-trial"
+
+            charge_date_display = _format_charge_date_display(user_created_at)
+            plan_name = "SmartLic Pro"
+            amount_display = "R$ 397/mês"
+
+            if value > 0:
+                opps = stats.get("opportunities_found", 0) or 0
+                if opps > 0:
+                    subject = (
+                        f"{opps} oportunidades em 14 dias — amanhã vira {plan_name}"
+                    )
+                else:
+                    subject = (
+                        f"Amanhã sua trial vira {plan_name} — {amount_display}"
+                    )
+            else:
+                subject = (
+                    f"Amanhã sua trial vira {plan_name} — {amount_display}"
+                )
+
+            html = render_trial_last_day_card_email(
+                user_name=user_name,
+                stats=stats,
+                charge_date_display=charge_date_display,
+                plan_name=plan_name,
+                amount_display=amount_display,
+                cancel_url=cancel_url,
+                unsubscribe_url=unsubscribe_url,
+            )
         else:
-            subject = "Amanhã seu acesso expira — assine agora"
-        html = render_trial_last_day_email(user_name, stats, unsubscribe_url=unsubscribe_url)
+            if value > 0:
+                subject = f"Amanhã você perde acesso a {_format_brl(value)} em oportunidades"
+            else:
+                subject = "Amanhã seu acesso expira — assine agora"
+            html = render_trial_last_day_email(
+                user_name, stats, unsubscribe_url=unsubscribe_url
+            )
 
     elif email_type == "expired":
         count = pipeline if pipeline > 0 else opps

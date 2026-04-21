@@ -12,6 +12,7 @@ from templates.emails.trial import (
     render_trial_paywall_alert_email,
     render_trial_value_email,
     render_trial_last_day_email,
+    render_trial_last_day_card_email,
     render_trial_expired_email,
     _format_brl,
     _stats_block,
@@ -350,6 +351,213 @@ class TestLastDayEmail:
     def test_contains_preheader(self):
         html = render_trial_last_day_email("Test", SAMPLE_STATS)
         assert "display:none" in html
+
+
+# ============================================================================
+# Email #5b — Day 13 card-branch: First-charge-tomorrow compliance notice
+# (STORY-CONV-003c AC1)
+# ============================================================================
+
+SAMPLE_CANCEL_URL = "https://smartlic.tech/conta/cancelar-trial?token=eyJ.sample.jwt"
+
+
+class TestLastDayCardEmail:
+    """STORY-CONV-003c AC1: Email #5b — Day 13 for card-rollout cohort."""
+
+    def _render(self, user_name="Ana", stats=None, cancel_url=SAMPLE_CANCEL_URL):
+        return render_trial_last_day_card_email(
+            user_name=user_name,
+            stats=stats if stats is not None else SAMPLE_STATS,
+            charge_date_display="amanhã, 21/04",
+            plan_name="SmartLic Pro",
+            amount_display="R$ 397/mês",
+            cancel_url=cancel_url,
+        )
+
+    def test_renders_without_error(self):
+        assert "<!DOCTYPE html>" in self._render()
+
+    def test_mentions_auto_charge(self):
+        html = self._render()
+        assert "cartão" in html or "cartao" in html.replace("ã", "a")
+        assert "R$ 397" in html
+
+    def test_cta_is_cancel(self):
+        """AC1 compliance: CTA is CANCEL, not 'Assinar agora' (card branch auto-converts)."""
+        html = self._render()
+        assert "Cancelar minha trial" in html
+        # MUST NOT contain the legacy scarcity CTA
+        assert "Assinar agora" not in html
+
+    def test_cancel_link_is_embedded(self):
+        html = self._render()
+        assert SAMPLE_CANCEL_URL in html
+
+    def test_mentions_tomorrow(self):
+        html = self._render()
+        assert "Amanhã" in html or "amanhã" in html
+
+    def test_does_not_say_access_expires(self):
+        """Critical: card-branch users do NOT lose access — the trial auto-converts.
+        Legacy copy 'seu acesso expira' must NOT appear for this cohort."""
+        html = self._render(stats=ZERO_STATS)
+        assert "acesso expira" not in html
+
+    def test_headline_with_stats_shows_opportunities(self):
+        html = self._render(stats=SAMPLE_STATS)
+        # 47 opportunities from SAMPLE_STATS
+        assert "47" in html
+
+    def test_empty_stats_neutral_headline(self):
+        html = self._render(stats=ZERO_STATS)
+        # Neutral variant — still valid compliance notice
+        assert "<!DOCTYPE html>" in html
+        assert "Cancelar minha trial" in html
+        assert "R$ 397" in html
+
+    def test_preheader_present(self):
+        assert "display:none" in self._render()
+
+    def test_token_validity_note_present(self):
+        """48h TTL of the JWT is disclosed to the user."""
+        html = self._render()
+        assert "48 horas" in html or "48h" in html
+
+    def test_signature(self):
+        """Brand sign-off present."""
+        html = self._render()
+        assert "Equipe SmartLic" in html
+
+
+class TestLastDayCardBranchDispatch:
+    """STORY-CONV-003c AC1: dispatch layer must branch on has_payment_method."""
+
+    def test_render_email_uses_card_variant_when_flag_set(self, monkeypatch):
+        from services import trial_email_sequence
+
+        captured = {}
+
+        def fake_card(**kwargs):
+            captured["variant"] = "card"
+            captured["cancel_url"] = kwargs.get("cancel_url")
+            return "<html>CARD</html>"
+
+        def fake_legacy(user_name, stats, unsubscribe_url=""):
+            captured["variant"] = "legacy"
+            return "<html>LEGACY</html>"
+
+        # Patch imports inside _render_email via the trial module (local import)
+        monkeypatch.setattr(
+            "templates.emails.trial.render_trial_last_day_card_email", fake_card
+        )
+        monkeypatch.setattr(
+            "templates.emails.trial.render_trial_last_day_email", fake_legacy
+        )
+        # Avoid reaching JWT secret config in this unit test
+        monkeypatch.setattr(
+            "services.trial_cancel_token.create_cancel_trial_token",
+            lambda uid: "test.jwt.token",
+        )
+
+        subject, html = trial_email_sequence._render_email(
+            email_type="last_day",
+            user_name="Ana",
+            stats=SAMPLE_STATS,
+            user_id="user-abc-123",
+            has_payment_method=True,
+            user_created_at="2026-04-07T10:00:00Z",
+        )
+
+        assert captured["variant"] == "card"
+        assert "test.jwt.token" in captured["cancel_url"]
+        assert "SmartLic Pro" in subject
+
+    def test_render_email_uses_legacy_variant_when_flag_unset(self, monkeypatch):
+        from services import trial_email_sequence
+
+        captured = {}
+
+        def fake_card(**kwargs):
+            captured["variant"] = "card"
+            return "<html>CARD</html>"
+
+        def fake_legacy(user_name, stats, unsubscribe_url=""):
+            captured["variant"] = "legacy"
+            return "<html>LEGACY</html>"
+
+        monkeypatch.setattr(
+            "templates.emails.trial.render_trial_last_day_card_email", fake_card
+        )
+        monkeypatch.setattr(
+            "templates.emails.trial.render_trial_last_day_email", fake_legacy
+        )
+
+        subject, html = trial_email_sequence._render_email(
+            email_type="last_day",
+            user_name="Ana",
+            stats=SAMPLE_STATS,
+            has_payment_method=False,
+        )
+
+        assert captured["variant"] == "legacy"
+
+    def test_token_mint_failure_falls_back_to_plain_url(self, monkeypatch):
+        """Token minting MUST NOT break the send loop — fall back gracefully."""
+        from services import trial_email_sequence
+
+        captured_kwargs = {}
+
+        def fake_card(**kwargs):
+            captured_kwargs.update(kwargs)
+            return "<html>CARD</html>"
+
+        monkeypatch.setattr(
+            "templates.emails.trial.render_trial_last_day_card_email", fake_card
+        )
+
+        def broken_mint(uid):
+            raise RuntimeError("jwt_secret_missing")
+
+        monkeypatch.setattr(
+            "services.trial_cancel_token.create_cancel_trial_token", broken_mint
+        )
+
+        subject, html = trial_email_sequence._render_email(
+            email_type="last_day",
+            user_name="Ana",
+            stats=SAMPLE_STATS,
+            user_id="user-abc-123",
+            has_payment_method=True,
+        )
+
+        # Fallback URL still produced — no token param
+        assert "/conta/cancelar-trial" in captured_kwargs["cancel_url"]
+        assert "token=" not in captured_kwargs["cancel_url"]
+
+
+class TestFormatChargeDateDisplay:
+    """STORY-CONV-003c AC1 helper: trial_end = created_at + 14d."""
+
+    def test_parses_iso_8601_z_suffix(self):
+        from services.trial_email_sequence import _format_charge_date_display
+
+        # 2026-04-07 + 14d = 2026-04-21
+        assert _format_charge_date_display("2026-04-07T10:00:00Z") == "amanhã, 21/04"
+
+    def test_parses_iso_8601_offset(self):
+        from services.trial_email_sequence import _format_charge_date_display
+
+        assert _format_charge_date_display("2026-04-07T10:00:00+00:00") == "amanhã, 21/04"
+
+    def test_falls_back_on_none(self):
+        from services.trial_email_sequence import _format_charge_date_display
+
+        assert _format_charge_date_display(None) == "amanhã"
+
+    def test_falls_back_on_garbage(self):
+        from services.trial_email_sequence import _format_charge_date_display
+
+        assert _format_charge_date_display("not-an-iso-timestamp") == "amanhã"
 
 
 # ============================================================================
