@@ -477,6 +477,35 @@ BULKHEAD_ACQUIRE_TIMEOUT = _create_counter(
     labelnames=["source"],
 )
 
+# STORY-SEO-001 AC4: Sitemap URL counts per endpoint — observability for the
+# /v1/sitemap/* endpoints that feed `frontend/app/sitemap.ts` shard generation.
+# Drop to 0 for any endpoint → sitemap shard goes empty → long-tail organic
+# traffic silently dies (the exact incident that motivated STORY-SEO-001).
+SITEMAP_URLS_SERVED = _create_counter(
+    "smartlic_sitemap_urls_served_total",
+    "Sitemap URL entries returned by /v1/sitemap/* endpoints",
+    labelnames=["endpoint"],
+)
+
+# Gauge version captures the most recent count per endpoint — useful for
+# `smartlic_sitemap_urls_last{endpoint="cnpjs"} < N` alerts in Grafana/Sentry.
+SITEMAP_URLS_LAST = _create_gauge(
+    "smartlic_sitemap_urls_last",
+    "Most recent sitemap URL count per /v1/sitemap/* endpoint",
+    labelnames=["endpoint"],
+)
+
+
+def record_sitemap_count(endpoint: str, count: int) -> None:
+    """Record a single `/v1/sitemap/{endpoint}` response's URL count.
+
+    Increments the cumulative counter AND overwrites the gauge so Grafana can
+    alert on either a falling gauge (e.g. `smartlic_sitemap_urls_last{endpoint="cnpjs"} < 100`)
+    or a stalled counter rate (`rate(smartlic_sitemap_urls_served_total[1h]) == 0`).
+    """
+    SITEMAP_URLS_SERVED.labels(endpoint=endpoint).inc(count)
+    SITEMAP_URLS_LAST.labels(endpoint=endpoint).set(count)
+
 # ============================================================================
 # Gauges
 # ============================================================================
