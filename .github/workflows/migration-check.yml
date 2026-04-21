@@ -56,6 +56,10 @@ jobs:
               local = $1; gsub(/^[ \t]+|[ \t]+$/, "", local)
               remote = $2; gsub(/^[ \t]+|[ \t]+$/, "", remote)
               if (local == "") next
+              # Filter out stderr leakage (e.g. "Connecting to remote database...",
+              # "Skipping migration README.md...") that lack pipe separators —
+              # real migration rows always have a 14-digit timestamp in Local.
+              if (local !~ /^[0-9]{14}$/) next
               seen[local] = 1
               if (remote != "") applied[local] = 1
             }
