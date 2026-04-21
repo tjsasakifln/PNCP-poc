@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from admin import require_admin
+from metrics import record_sitemap_count
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
@@ -54,6 +55,7 @@ async def get_licitacoes_indexable():
     if _cache is not None:
         data, ts = _cache
         if time.time() - ts < _CACHE_TTL_SECONDS:
+            record_sitemap_count("licitacoes-indexable", len(data.get("combos", [])))
             return LicitacoesIndexableResponse(**data)
 
     bids_threshold = int(os.getenv("MIN_ACTIVE_BIDS_FOR_INDEX", str(_DEFAULT_BIDS_THRESHOLD)))
@@ -67,6 +69,7 @@ async def get_licitacoes_indexable():
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     _cache = (result, time.time())
+    record_sitemap_count("licitacoes-indexable", len(combos))
     return LicitacoesIndexableResponse(**result)
 
 

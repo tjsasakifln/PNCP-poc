@@ -20,6 +20,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from metrics import record_sitemap_count
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["municipios-publicos"])
 
@@ -474,6 +476,7 @@ async def sitemap_municipios():
     """
     cached = _get_cached(_municipio_sitemap_cache, "slugs")
     if cached:
+        record_sitemap_count("municipios", len(cached.get("slugs", [])))
         return SitemapMunicipiosResponse(**cached)
 
     slugs = [m[0] for m in _MUNICIPIOS]
@@ -483,6 +486,7 @@ async def sitemap_municipios():
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     _set_cached(_municipio_sitemap_cache, "slugs", data)
+    record_sitemap_count("municipios", len(slugs))
     return SitemapMunicipiosResponse(**data)
 
 
