@@ -22,6 +22,8 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from metrics import record_sitemap_count
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["itens-publicos"])
 
@@ -363,6 +365,7 @@ async def item_profile(catmat: str):
 async def sitemap_itens():
     cached = _get_cached(_itens_sitemap_cache, "catmats")
     if cached:
+        record_sitemap_count("itens", len(cached.get("catmats", [])))
         return SitemapItensResponse(**cached)
 
     catmats = [s[0] for s in _CATMAT_SEED]
@@ -372,6 +375,7 @@ async def sitemap_itens():
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     _set_cached(_itens_sitemap_cache, "catmats", data)
+    record_sitemap_count("itens", len(catmats))
     return SitemapItensResponse(**data)
 
 

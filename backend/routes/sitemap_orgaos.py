@@ -17,6 +17,8 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from metrics import record_sitemap_count
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
 
@@ -54,10 +56,12 @@ def _set_cached(key: str, data: dict) -> None:
 async def sitemap_orgaos():
     cached = _get_cached("orgaos")
     if cached:
+        record_sitemap_count("orgaos", len(cached.get("orgaos", [])))
         return SitemapOrgaosResponse(**cached)
 
     data = await _fetch_top_orgaos()
     _set_cached("orgaos", data)
+    record_sitemap_count("orgaos", len(data.get("orgaos", [])))
     return SitemapOrgaosResponse(**data)
 
 
@@ -180,11 +184,13 @@ async def sitemap_contratos_orgao_indexable():
     if cached_entry:
         data, ts = cached_entry
         if time.time() - ts < _CACHE_TTL_SECONDS:
+            record_sitemap_count("contratos-orgao-indexable", len(data.get("orgaos", [])))
             return SitemapContratosOrgaoResponse(**data)
         del _contratos_orgao_cache[key]
 
     data = await _fetch_contratos_orgao_indexable()
     _contratos_orgao_cache[key] = (data, time.time())
+    record_sitemap_count("contratos-orgao-indexable", len(data.get("orgaos", [])))
     return SitemapContratosOrgaoResponse(**data)
 
 
