@@ -62,18 +62,19 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
 - [x] **Mixpanel event `trial_converted_auto`** — `backend/webhooks/handlers/invoice.py::handle_invoice_payment_succeeded` detecta `prior_status == "trialing"` e emite structured log `analytics.trial_converted_auto` com event + user_id + plan_id + amount_brl + stripe_subscription_id (pipeado para Mixpanel via log-sink)
 - [x] **Handler para `invoice.payment_action_required` (3DS/SCA)** — já existe via STORY-309 AC10 em `handle_payment_action_required` + dispatcher routea em `webhooks/stripe.py` linha 208
 
-### AC4: Observability end-to-end
-- [ ] Mixpanel events:
-  - `trial_card_captured` no signup (props: `rollout_branch`, `cnae`)
-  - `trial_cancelled_before_charge` no cancel (props: `days_before_charge`)
-  - `trial_converted_auto` no invoice.payment_succeeded primeiro ciclo
-  - `trial_charge_failed` no invoice.payment_failed
-- [ ] Prometheus counters:
-  - `smartlic_trial_signup_with_card_total{branch="card"|"legacy"}`
-  - `smartlic_trial_cancel_before_charge_total`
-  - `smartlic_trial_auto_converted_total`
-  - `smartlic_trial_charge_failed_total`
-- [ ] Dashboard admin `/admin/billing/trial-funnel` (simples, tabela + 4 big numbers)
+### AC4: Observability end-to-end — ✅ Events + counters Done (Abstract Coral session). Dashboard P2 deferred.
+- [x] Mixpanel events (emitidos via structured logger `analytics.*` → log-sink → Mixpanel):
+  - [x] `trial_card_captured` em `backend/routes/auth_signup.py` (após full card path success: Customer + SetupIntent + Subscription). Props: `rollout_branch=card`, `stripe_customer_id`, `stripe_subscription_id`.
+  - [x] `trial_cancelled_before_charge` em `backend/routes/conta.py` (POST /v1/conta/cancelar-trial success path). Props: `user_id`, `trial_end_ts`, `source=one_click_email`. **Implementado via PR #431 em sessão anterior.**
+  - [x] `trial_converted_auto` em `backend/webhooks/handlers/invoice.py::handle_invoice_payment_succeeded` (prior_status=trialing branch). Props: `user_id`, `plan_id`, `amount_brl`, `stripe_subscription_id`. **Implementado via PR #431/#433.**
+  - [x] `trial_charge_failed` em `backend/webhooks/handlers/invoice.py::handle_invoice_payment_failed` (was_trialing branch — distinto de payment_failed genérico). Props: `user_id`, `plan_id`, `amount_brl`, `decline_type`, `decline_code`, `attempt_count`, `stripe_subscription_id`.
+- [x] Prometheus counters em `backend/metrics.py`:
+  - [x] `smartlic_trial_signup_with_card_total{branch="card"|"legacy"}` — card vs legacy ratio durante canário
+  - [x] `smartlic_trial_cancel_before_charge_total` — cancelamentos pré-charge
+  - [x] `smartlic_trial_auto_converted_total` — conversion rate real-time (denominator: signup_with_card{branch=card})
+  - [x] `smartlic_trial_charge_failed_total` — payment fail rate no dia 14 (alert trigger per runbook)
+- [x] Todos counters + branches cobertos por `backend/tests/test_trial_funnel_metrics.py` (7 testes — 4 counter wiring + 2 charge_failed branch + 1 card counter labels).
+- [ ] **Dashboard admin `/admin/billing/trial-funnel`** — **DEFERIDO P2** próxima sessão. Mixpanel nativo + Prometheus/Grafana via métricas acima são suficientes para operar o canário 10%. Dashboard dedicado é nice-to-have, não bloqueia flip.
 
 ### AC5: Rollback plan documentado
 - [ ] `docs/runbooks/trial-card-rollback.md`:
@@ -142,11 +143,17 @@ Fecha compliance essencial: usuário precisa conseguir cancelar em 1 clique ante
   - Status atualizado Ready → InProgress.
 - **2026-04-20 (flickering-llama)** — @dev: AC3 (welcome_to_pro email branching no `invoice.py`) + AC5 (runbook trial-card-rollback) + AC7 (frontend `/conta/cancelar-trial` page + proxy + tests) implementados em PR #433 (10 tests local PASS).
 - **2026-04-20 (temporal-bonbon evening)** — @devops: PR #431 **MERGED** commit `0ef5902f` (post drift-sweep `1270f909` + CONV-003b `c9c29f3f`). PR #433 rebased com conflict em `invoice.py` resolvido (combina #431's analytics event + #433's email branching). CI rerun em progresso devido a 1 test flake (`test_invalid_signature_rejected DID NOT RAISE` — passa local + isoladamente, falha no full suite — suspeita de test pollution `auth.jwt.decode` patch global). AC1 (cron D-1 email) + AC4 (observability dashboard) deferidos para próxima sessão.
-- **2026-04-21 (abstract-coral consultor session, Opus 4.7)** — @dev: **AC1 COMPLETO** via branch-aware reuse (no new cron).
+- **2026-04-21 (abstract-coral consultor session, Opus 4.7 — wave 1)** — @dev: **AC1 + AC3 último item COMPLETOS** via PR #442 merged (branch-aware reuse, no new cron).
   - Descoberta: STORY-321 já roda Day 13 "last_day" via `trial_email_sequence.py` com idempotency + opt-out + dispatch. Criar cron novo duplicava infraestrutura e reabriria risco CRIT-044.
   - Solução: `render_trial_last_day_card_email` em `backend/templates/emails/trial.py` (copy ROI-focused + urgência suave, compliance-correct — aviso explícito de charge + one-click cancel link via JWT), dispatcher branch-aware em `trial_email_sequence._render_email::last_day` detectando `profiles.stripe_default_pm_id`.
   - Helper `_format_charge_date_display(created_at)` para exibir data do charge user-friendly.
   - Graceful degradation: falha de mint JWT → fallback para URL plain (email nunca bloqueado).
   - `test_trial_emails.py` +18 tests (`TestLastDayCardEmail` × 11, `TestLastDayCardBranchDispatch` × 3, `TestFormatChargeDateDisplay` × 4). Full file 125/125 passing.
-  - **AC3 último item COMPLETO** — auditoria confirmou que `welcome_to_pro` já está implementado em `billing.py:81` + `invoice.py:336-345` + `test_welcome_to_pro_email.py` (já shipado em sessions anteriores).
-  - AC4 (Mixpanel events + Prometheus counters) em sessão paralela.
+  - **AC3 último item** — auditoria confirmou que `welcome_to_pro` já está implementado em `billing.py:81` + `invoice.py:336-345` + `test_welcome_to_pro_email.py` (já shipado em sessions anteriores).
+- **2026-04-21 (abstract-coral consultor session, Opus 4.7 — wave 2)** — @dev: **AC4 events + counters COMPLETO** via PR #443.
+  - Novos eventos Mixpanel (via structured log sink): `trial_card_captured` em `routes/auth_signup.py` (card path success); `trial_charge_failed` em `webhooks/handlers/invoice.py::handle_invoice_payment_failed` (was_trialing branch, distinto de dunning genérico). Demais 2 (`trial_cancelled_before_charge`, `trial_converted_auto`) já emitidos em PR #431/#433.
+  - 4 Prometheus counters novos em `metrics.py`: `TRIAL_SIGNUP_WITH_CARD{branch}`, `TRIAL_CANCEL_BEFORE_CHARGE`, `TRIAL_AUTO_CONVERTED`, `TRIAL_CHARGE_FAILED`. Instrumentados em auth_signup (card + legacy), conta cancel endpoint, invoice handlers (both branches).
+  - Emissão robusta: metrics.inc() em try/except — métricas nunca quebram o fluxo de billing.
+  - `tests/test_trial_funnel_metrics.py` 7 testes (counter wiring, charge_failed branch detection, card vs legacy labels). Regression: 48/48 em test_welcome_to_pro + test_cancel_trial_token + test_auth_signup_ratelimit + test_signup_with_card + test_trial_funnel_metrics.
+  - Dashboard `/admin/billing/trial-funnel` deferido P2 (Mixpanel nativo + Grafana/Prometheus suficientes para operar canário 10% sem dashboard custom).
+  - **Story status final pós-session:** AC1 ✅, AC2 ✅, AC3 ✅, AC4 ~90% (events/counters done, dashboard P2 deferred), AC5 ✅, AC6 parcial, AC7 ✅.

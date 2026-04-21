@@ -121,6 +121,14 @@ async def handle_invoice_payment_succeeded(sb, event: stripe.Event) -> None:
                 "stripe_subscription_id": subscription_id,
             },
         )
+        # CONV-003c AC4 Prometheus: conversion rate real-time (denominator
+        # is TRIAL_SIGNUP_WITH_CARD{branch="card"}; ratio = conversion %).
+        try:
+            from metrics import TRIAL_AUTO_CONVERTED
+
+            TRIAL_AUTO_CONVERTED.inc()
+        except Exception:  # noqa: BLE001 — metrics must never break webhook
+            pass
 
 
 async def handle_invoice_payment_failed(sb, event: stripe.Event) -> None:
@@ -158,6 +166,24 @@ async def handle_invoice_payment_failed(sb, event: stripe.Event) -> None:
     local_sub = sub_result.data[0]
     user_id = local_sub["user_id"]
     plan_id = local_sub["plan_id"]
+
+    # STORY-CONV-003c AC4: detect first-charge-after-trial failure. When the
+    # failing invoice lands on a profile still in `trialing` status, this is
+    # the auto-charge misfire at end-of-trial — the single highest-impact
+    # event in the card rollout, since it's the one case where we promised
+    # the user their card would be charged and the charge failed. Separately
+    # instrumented from generic dunning (past_due renewal) because the UX and
+    # recovery playbook are different.
+    was_trialing = False
+    try:
+        profile_check = (
+            sb.table("profiles").select("subscription_status").eq("id", user_id).single().execute()
+        )
+        prior_status = (profile_check.data or {}).get("subscription_status")
+        if prior_status == "trialing":
+            was_trialing = True
+    except Exception as e:
+        logger.warning(f"Failed to check prior subscription_status for user={user_id[:8]}***: {e}")
 
     # Extract attempt count and decline details (STORY-309 AC3)
     attempt_count = invoice_data.get("attempt_count", 1)
@@ -221,6 +247,31 @@ async def handle_invoice_payment_failed(sb, event: stripe.Event) -> None:
             "decline_code": decline_code,
         }
     )
+
+    # STORY-CONV-003c AC4: first-charge-after-trial failure specifically.
+    # Distinct event from the generic payment_failed_event so dashboards can
+    # separate "auto-charge at end of trial failed" (CONV-003 rollout signal,
+    # very bad) from routine renewal dunning.
+    if was_trialing:
+        logger.warning(
+            "analytics.trial_charge_failed",
+            extra={
+                "event": "trial_charge_failed",
+                "user_id": user_id,
+                "plan_id": plan_id,
+                "amount_brl": round(amount / 100, 2),
+                "decline_type": decline_type,
+                "decline_code": decline_code,
+                "attempt_count": attempt_count,
+                "stripe_subscription_id": stripe_subscription_id,
+            },
+        )
+        try:
+            from metrics import TRIAL_CHARGE_FAILED
+
+            TRIAL_CHARGE_FAILED.inc()
+        except Exception:  # noqa: BLE001 — metrics must never break webhook
+            pass
 
     # STORY-309 AC3: Send dunning email via dunning service
     try:

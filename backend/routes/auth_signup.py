@@ -196,6 +196,15 @@ async def signup(
             subscription_status="free_trial",
             company=body.company,
         )
+        # STORY-CONV-003c AC4: observability for the legacy branch of the
+        # rollout. Used to compute the card-vs-legacy ratio during canário
+        # progression (e.g. if PCT=10, card branch should be ~10% of total).
+        try:
+            from metrics import TRIAL_SIGNUP_WITH_CARD
+
+            TRIAL_SIGNUP_WITH_CARD.labels(branch="legacy").inc()
+        except Exception:  # noqa: BLE001 — metrics must never break signup
+            pass
         return SignupResponse(
             user_id=user_id,
             email=email,
@@ -247,6 +256,28 @@ async def signup(
         pm_id=stripe_result["default_pm_id"],
         subscription_status="trialing",
         company=body.company,
+    )
+
+    # STORY-CONV-003c AC4: trial_card_captured observability.
+    # Emitted only when the full card path succeeds — Customer + SetupIntent +
+    # Subscription all created. This is the "card in file for auto-charge"
+    # moment that defines the card rollout branch. Mixpanel via log-sink;
+    # Prometheus counter for real-time rollout monitoring.
+    try:
+        from metrics import TRIAL_SIGNUP_WITH_CARD
+
+        TRIAL_SIGNUP_WITH_CARD.labels(branch="card").inc()
+    except Exception:  # noqa: BLE001 — metrics must never break signup
+        pass
+    logger.info(
+        "analytics.trial_card_captured",
+        extra={
+            "event": "trial_card_captured",
+            "user_id": user_id,
+            "rollout_branch": "card",
+            "stripe_customer_id": stripe_result["customer_id"],
+            "stripe_subscription_id": stripe_result["subscription_id"],
+        },
     )
 
     trial_end_ts = stripe_result["trial_end_ts"] or _compute_local_trial_end_ts()
