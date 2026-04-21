@@ -276,6 +276,13 @@ def cancel_trial_execute(payload: CancelTrialRequest) -> CancelTrialResponse:
             "source": "one_click_email",
         },
     )
+    # CONV-003c AC4 Prometheus: real-time rollout monitoring.
+    try:
+        from metrics import TRIAL_CANCEL_BEFORE_CHARGE
+
+        TRIAL_CANCEL_BEFORE_CHARGE.inc()
+    except Exception:  # noqa: BLE001 — metrics must never break cancel
+        pass
 
     return CancelTrialResponse(
         cancelled=True, access_until=trial_end_ts, already_cancelled=False

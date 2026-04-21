@@ -361,6 +361,34 @@ TRIAL_EMAILS_SENT = _create_counter(
     labelnames=["type"],  # welcome, engagement_early, engagement, tips, urgency, expiring, last_day, expired
 )
 
+# STORY-CONV-003c AC4: trial→paid funnel observability.
+# These counters instrument the 4 pivotal events of the card-rollout trial
+# cycle so the rollout canário can be monitored in Grafana/Prometheus
+# alongside the Mixpanel funnel (both feeds are complementary: Prometheus
+# is real-time + alerting, Mixpanel is user-cohort analysis).
+TRIAL_SIGNUP_WITH_CARD = _create_counter(
+    "smartlic_trial_signup_with_card_total",
+    "Signups that completed SetupIntent + subscription creation with a card on file",
+    labelnames=["branch"],  # "card" = rollout=card succeeded; "legacy" = no card path
+)
+
+TRIAL_CANCEL_BEFORE_CHARGE = _create_counter(
+    "smartlic_trial_cancel_before_charge_total",
+    "Trial cancellations executed before the first auto-charge (one-click cancel path)",
+)
+
+TRIAL_AUTO_CONVERTED = _create_counter(
+    "smartlic_trial_auto_converted_total",
+    "Trials that auto-converted to paid via invoice.payment_succeeded "
+    "(prior_status=trialing branch)",
+)
+
+TRIAL_CHARGE_FAILED = _create_counter(
+    "smartlic_trial_charge_failed_total",
+    "First-charge-after-trial failures (invoice.payment_failed with "
+    "prior_status=trialing)",
+)
+
 # Note: CACHE_REFRESH_TOTAL + CACHE_REFRESH_DURATION removed 2026-04-18
 # (STORY-CIG-BE-cache-warming-deprecate) — cache_refresh_job obsoleto.
 
