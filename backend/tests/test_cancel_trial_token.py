@@ -160,9 +160,19 @@ class TestCreateAndVerifyToken:
         assert exc.value.reason == "expired"
 
     def test_invalid_signature_rejected(self):
+        # Flipping a single last char is flaky: HMAC-SHA256 base64url uses
+        # 43 chars × 6 bits = 258 bits for a 256-bit signature — the last
+        # char has 2 padding bits. Chars in the base64url alphabet that share
+        # the same top-4 bits (e.g. "A"/"B", "C"/"D") decode to IDENTICAL
+        # bytes after padding strip, so a naive flip may yield the same
+        # signature bytes ~6.25% of the time → test passes/fails by chance.
+        #
+        # Deterministic fix: replace the entire signature with "A"*len — this
+        # produces all-zero decoded bytes which cannot possibly be a valid
+        # HMAC-SHA256 output for the given (header, payload, secret) tuple.
         token = create_cancel_trial_token(USER_ID)
-        # Flip last char to break signature
-        tampered = token[:-1] + ("A" if token[-1] != "A" else "B")
+        header, payload, signature = token.split(".")
+        tampered = f"{header}.{payload}.{'A' * len(signature)}"
 
         with pytest.raises(TrialCancelTokenError) as exc:
             verify_cancel_trial_token(tampered)
