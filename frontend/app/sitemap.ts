@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import * as Sentry from '@sentry/nextjs';
 import { getAllSlugs, getArticleBySlug } from '@/lib/blog';
 import { SECTORS } from '@/lib/sectors';
 import { generateSectorParams, generateLicitacoesParams, generateSectorUfParams } from '@/lib/programmatic';
@@ -8,6 +9,43 @@ import { GLOSSARY_TERMS } from '@/lib/glossary-terms';
 import { getAllAuthorSlugs } from '@/lib/authors';
 import { getAllQuestionSlugs } from '@/lib/questions';
 import { getAllMasterclassTemas } from '@/lib/masterclasses';
+
+// STORY-SEO-001 AC3: Observable fetch wrapper. Replaces the silent `catch { return []; }`
+// pattern that hid ECONNREFUSED / DNS / 5xx errors at build time — which is exactly how
+// `sitemap/4.xml` went empty in production for weeks without Sentry or Prometheus alerting.
+// The wrapper still returns null on failure (callers default to []), so build never breaks.
+async function fetchSitemapJson<T>(
+  endpoint: string,
+  extract: (data: unknown) => T,
+  label: string,
+): Promise<T | null> {
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+  const url = `${backendUrl}${endpoint}`;
+  try {
+    const resp = await fetch(url, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!resp.ok) {
+      const err = new Error(`Sitemap fetch ${label} returned HTTP ${resp.status}`);
+      console.error(`[sitemap] ${err.message} url=${url}`);
+      Sentry.captureException(err, {
+        tags: { sitemap_endpoint: label, sitemap_outcome: 'http_error' },
+        contexts: { sitemap: { endpoint, url, status: resp.status } },
+      });
+      return null;
+    }
+    const data = (await resp.json()) as unknown;
+    return extract(data);
+  } catch (err) {
+    console.error(`[sitemap] fetch ${label} failed`, err);
+    Sentry.captureException(err, {
+      tags: { sitemap_endpoint: label, sitemap_outcome: 'fetch_error' },
+      contexts: { sitemap: { endpoint, url } },
+    });
+    return null;
+  }
+}
 
 /**
  * GTM-COPY-006 AC10: Dynamic sitemap with all public pages
@@ -33,28 +71,17 @@ async function fetchLicitacoesIndexable(): Promise<{ setor: string; uf: string }
   if (_licitacoesIndexableFetched && _licitacoesIndexableCache !== null) {
     return _licitacoesIndexableCache;
   }
-  try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const resp = await fetch(`${backendUrl}/v1/sitemap/licitacoes-indexable`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) {
-      // SEO-440: fallback vazio — não incluir combos sem dados confirmados no sitemap.
-      // Antes retornava generateLicitacoesParams() (todas 405 combos), o que colocava
-      // páginas noindex no sitemap → GSC reportava "Excluded by noindex" em massa.
-      return [];
-    }
-    const data = await resp.json();
-    // SEO-440: fallback vazio também aqui — sem dados do backend, não sabemos quais indexar
-    _licitacoesIndexableCache = data.combos || [];
-    _licitacoesIndexableFetched = true;
-    return _licitacoesIndexableCache as { setor: string; uf: string }[];
-  } catch {
-    // SEO-440: fallback vazio no catch — mesma política do !resp.ok.
-    // Retornar generateLicitacoesParams() (405 combos) colocaria páginas noindex no sitemap.
-    return [];
-  }
+  const result = await fetchSitemapJson<{ setor: string; uf: string }[]>(
+    '/v1/sitemap/licitacoes-indexable',
+    (d) => ((d as { combos?: { setor: string; uf: string }[] }).combos ?? []),
+    'licitacoes-indexable',
+  );
+  // SEO-440: empty fallback — without confirmed backend data, we cannot indicate
+  // which combos are indexable. Returning generateLicitacoesParams() (all 405 combos)
+  // would place noindex pages in sitemap → GSC "Excluded by noindex" mass error.
+  _licitacoesIndexableCache = result ?? [];
+  _licitacoesIndexableFetched = true;
+  return _licitacoesIndexableCache;
 }
 
 // SEO-460: Cache para órgãos com contratos reais em pncp_supplier_contracts
@@ -63,20 +90,14 @@ let _contratosOrgaoFetched = false;
 
 async function fetchContratosOrgaoIndexable(): Promise<string[]> {
   if (_contratosOrgaoFetched) return _contratosOrgaoCache;
-  try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const resp = await fetch(`${backendUrl}/v1/sitemap/contratos-orgao-indexable`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    _contratosOrgaoCache = data.orgaos || [];
-    _contratosOrgaoFetched = true;
-    return _contratosOrgaoCache;
-  } catch {
-    return [];
-  }
+  const result = await fetchSitemapJson<string[]>(
+    '/v1/sitemap/contratos-orgao-indexable',
+    (d) => ((d as { orgaos?: string[] }).orgaos ?? []),
+    'contratos-orgao-indexable',
+  );
+  _contratosOrgaoCache = result ?? [];
+  _contratosOrgaoFetched = true;
+  return _contratosOrgaoCache;
 }
 
 // Cache for CNPJ list fetched from backend (build-time)
@@ -85,20 +106,14 @@ let _cnpjFetched = false;
 
 async function fetchSitemapCnpjs(): Promise<string[]> {
   if (_cnpjFetched) return _cnpjCache;
-  try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const resp = await fetch(`${backendUrl}/v1/sitemap/cnpjs`, {
-      cache: 'no-store', // always fresh at build/ISR time — sitemap data must be current
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    _cnpjCache = data.cnpjs || [];
-    _cnpjFetched = true;
-    return _cnpjCache;
-  } catch {
-    return [];
-  }
+  const result = await fetchSitemapJson<string[]>(
+    '/v1/sitemap/cnpjs',
+    (d) => ((d as { cnpjs?: string[] }).cnpjs ?? []),
+    'cnpjs',
+  );
+  _cnpjCache = result ?? [];
+  _cnpjFetched = true;
+  return _cnpjCache;
 }
 
 // SEO-PLAYBOOK Onda 2: Cache for órgãos compradores list
@@ -111,20 +126,14 @@ let _fornecedoresCnpjFetched = false;
 
 async function fetchSitemapFornecedoresCnpj(): Promise<string[]> {
   if (_fornecedoresCnpjFetched) return _fornecedoresCnpjCache;
-  try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const resp = await fetch(`${backendUrl}/v1/sitemap/fornecedores-cnpj`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    _fornecedoresCnpjCache = data.cnpjs || [];
-    _fornecedoresCnpjFetched = true;
-    return _fornecedoresCnpjCache;
-  } catch {
-    return [];
-  }
+  const result = await fetchSitemapJson<string[]>(
+    '/v1/sitemap/fornecedores-cnpj',
+    (d) => ((d as { cnpjs?: string[] }).cnpjs ?? []),
+    'fornecedores-cnpj',
+  );
+  _fornecedoresCnpjCache = result ?? [];
+  _fornecedoresCnpjFetched = true;
+  return _fornecedoresCnpjCache;
 }
 
 // Parte 13 Sprint 4: Cache for municípios slugs
@@ -133,20 +142,14 @@ let _municipiosFetched = false;
 
 async function fetchSitemapMunicipios(): Promise<string[]> {
   if (_municipiosFetched) return _municipiosCache;
-  try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const resp = await fetch(`${backendUrl}/v1/sitemap/municipios`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    _municipiosCache = data.slugs || [];
-    _municipiosFetched = true;
-    return _municipiosCache;
-  } catch {
-    return [];
-  }
+  const result = await fetchSitemapJson<string[]>(
+    '/v1/sitemap/municipios',
+    (d) => ((d as { slugs?: string[] }).slugs ?? []),
+    'municipios',
+  );
+  _municipiosCache = result ?? [];
+  _municipiosFetched = true;
+  return _municipiosCache;
 }
 
 // Parte 13 Sprint 6: Cache for CATMAT codes
@@ -155,38 +158,26 @@ let _itensFetched = false;
 
 async function fetchSitemapItens(): Promise<string[]> {
   if (_itensFetched) return _itensCache;
-  try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const resp = await fetch(`${backendUrl}/v1/sitemap/itens`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    _itensCache = data.catmats || [];
-    _itensFetched = true;
-    return _itensCache;
-  } catch {
-    return [];
-  }
+  const result = await fetchSitemapJson<string[]>(
+    '/v1/sitemap/itens',
+    (d) => ((d as { catmats?: string[] }).catmats ?? []),
+    'itens',
+  );
+  _itensCache = result ?? [];
+  _itensFetched = true;
+  return _itensCache;
 }
 
 async function fetchSitemapOrgaos(): Promise<string[]> {
   if (_orgaoFetched) return _orgaoCache;
-  try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const resp = await fetch(`${backendUrl}/v1/sitemap/orgaos`, {
-      cache: 'no-store', // always fresh at build/ISR time — sitemap data must be current
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    _orgaoCache = data.orgaos || [];
-    _orgaoFetched = true;
-    return _orgaoCache;
-  } catch {
-    return [];
-  }
+  const result = await fetchSitemapJson<string[]>(
+    '/v1/sitemap/orgaos',
+    (d) => ((d as { orgaos?: string[] }).orgaos ?? []),
+    'orgaos',
+  );
+  _orgaoCache = result ?? [];
+  _orgaoFetched = true;
+  return _orgaoCache;
 }
 
 /**
