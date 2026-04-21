@@ -258,7 +258,12 @@ class StressTestUser(HttpUser):
             "setor": "UNIFORMES",
         }
 
-        with self.client.post("/api/buscar", json=payload, name="/api/buscar") as response:
+        with self.client.post(
+            "/api/buscar",
+            json=payload,
+            name="/api/buscar",
+            catch_response=True,
+        ) as response:
             if response.status_code not in [200, 422, 504]:
                 print(f"   Unexpected status: {response.status_code}")
 
