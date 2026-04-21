@@ -70,7 +70,7 @@ health_check_times = []
 @events.request.add_listener
 def on_request(request_type, name, response_time, response_length, exception, **kwargs):
     """Track custom metrics per endpoint."""
-    if name == "/api/buscar":
+    if name == "/v1/buscar":
         search_times.append(response_time)
     elif name.startswith("/api/download"):
         download_times.append(response_time)
@@ -89,7 +89,7 @@ def on_test_stop(environment, **kwargs):
     print("=" * 80)
 
     if search_times:
-        print("\n📊 Search Endpoint (/api/buscar):")
+        print("\n📊 Search Endpoint (/v1/buscar):")
         print(f"   Requests: {len(search_times)}")
         print(f"   Avg: {sum(search_times) / len(search_times):.0f}ms")
         print(f"   Min: {min(search_times):.0f}ms")
@@ -162,9 +162,9 @@ class SmartLicUser(HttpUser):
         }
 
         with self.client.post(
-            "/api/buscar",
+            "/v1/buscar",
             json=payload,
-            name="/api/buscar",
+            name="/v1/buscar",
             catch_response=True
         ) as response:
             if response.status_code == 200:
@@ -259,9 +259,9 @@ class StressTestUser(HttpUser):
         }
 
         with self.client.post(
-            "/api/buscar",
+            "/v1/buscar",
             json=payload,
-            name="/api/buscar",
+            name="/v1/buscar",
             catch_response=True,
         ) as response:
             if response.status_code not in [200, 422, 504]:
