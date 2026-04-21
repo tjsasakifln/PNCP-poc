@@ -191,6 +191,15 @@ async function fetchSitemapOrgaos(): Promise<string[]> {
  * id:3 — Content/blog pages (~500 URLs, sem backend)
  * id:4 — Entity pages (~10k+ URLs, backend: cnpjs, orgaos, fornecedores)
  */
+/**
+ * ISR 1h — uma regeneração por hora cobre N crawler requests (Google + Bing + Yandex).
+ * Sem isso, cada hit em sitemap/4.xml disparava 6 fetches sequenciais ao backend
+ * (~30-45s) — sob carga de múltiplos crawlers simultâneos, o backend saturaria
+ * novamente mesmo com a serialização deste PR. ISR move o custo para 1 request/h
+ * por shard em vez de 1 request por crawler-hit.
+ */
+export const revalidate = 3600;
+
 export async function generateSitemaps() {
   return [
     { id: 0 }, // Core static pages
