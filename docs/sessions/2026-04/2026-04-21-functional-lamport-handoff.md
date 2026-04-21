@@ -245,6 +245,99 @@ gh pr list --state open --limit 10 --json number,statusCheckRollup --jq '.[] | {
 
 ---
 
+## 11. Pick-up point: CI em fila, merges pendentes
+
+**Estado ao fim da sessão (18:04 UTC, ~35min tentando drenar CI):**
+
+GH Actions backlog significativo. 5 PRs novos (#458, #459, #460, #461, #462) + 2 Dependabot (#418, #420) aguardando — todos com Backend Tests e/ou Frontend Tests em QUEUED/IN_PROGRESS. `gh run list --status queued` mostrou 10+ workflows empilhados.
+
+Status específico quando monitor foi parado:
+- **#460** (storybook fix): Backend **SUCCESS**, Frontend QUEUED
+- **#461, #458, #459, #462**: ambos QUEUED
+- **#418, #420** (Dependabot): ambos SUCCESS mas BEHIND (precisam update-branch pós primeiros merges)
+
+Auto-merge está **desabilitado no repo** (`enablePullRequestAutoMerge: false`). `gh pr merge --auto` falha com "Pull request Auto merge is not allowed for this repository".
+
+### 11.1. Comandos para continuar (próxima sessão)
+
+```bash
+# 1. Verificar CI atual dos 5 PRs
+for pr in 460 461 458 459 462; do
+  gh pr view $pr --json state,statusCheckRollup --jq "{pr: $pr, state, required: [.statusCheckRollup[] | select(.workflowName == \"Backend Tests (PR Gate)\" or .workflowName == \"Frontend Tests (PR Gate)\") | .conclusion]}"
+done
+
+# 2. Merge sequencial (strict:true exige um por vez) — execute quando required SUCCESS:
+# 2a. CI fixes primeiro (menor risco, unblocks future PRs)
+gh pr merge 460 --squash --delete-branch   # Storybook babel-loader
+# Aguardar Railway deploy (~3min) e refazer check de CI em próximos PRs
+gh pr merge 461 --squash --delete-branch   # Lighthouse schedule-only
+
+# 2b. Revenue SEO hotfix
+gh pr merge 458 --squash --delete-branch   # sitemap/4.xml serialize + ISR
+
+# 2c. Revenue SEO feature + story docs
+gh pr merge 459 --squash --delete-branch   # BreadcrumbList /licitacoes/[setor] + SEO-002/003 Change Log
+
+# 2d. Session handoff (pode ser mergeado por último, baixo risco)
+gh pr merge 462 --squash --delete-branch
+
+# 3. Dependabot cascade pós os merges acima
+# PRs 418 e 420 ficarão BEHIND após cada merge acima — trigger rebase:
+gh pr comment 418 --body "@dependabot rebase"
+gh pr comment 420 --body "@dependabot rebase"
+# Aguardar CI SUCCESS nos novos HEAD SHAs, depois merge
+gh pr merge 418 --squash --delete-branch
+gh pr merge 420 --squash --delete-branch
+```
+
+### 11.2. Validação pós-deploy (Railway auto-deploy em push para main)
+
+```bash
+# Aguardar ~5min após cada merge para deploy completar, depois:
+
+# Validar #458 (sitemap hotfix) — crítico
+time curl -sL https://smartlic.tech/sitemap/4.xml | grep -c '<url>'
+# Esperado: ≥ 5000 URLs, tempo total <3s na 2a request (primeira hidrata ISR)
+
+# Validar #459 (BreadcrumbList licitacoes/[setor])
+curl -sL https://smartlic.tech/licitacoes/limpeza | grep -c '"@type":"BreadcrumbList"'
+# Esperado: 1
+
+# Validar #460 (Storybook Build) em próximo PR frontend
+# Abrir qualquer PR que toque frontend/components ou frontend/.storybook
+# Workflow "Storybook Build" deve ficar SUCCESS
+
+# Validar #461 (Lighthouse schedule-only) em próximo PR frontend
+# Workflow "Lighthouse Performance Audit" NÃO deve executar em PR
+# Deve executar somente em push para main OU no schedule sexta 06:00 UTC
+
+# Validar baseline zero em TODOS os checks de PRs abertos
+gh pr list --state open --json number --jq '.[].number' | while read pr; do
+  failed=$(gh pr view $pr --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.conclusion == "FAILURE") | .name] | length')
+  [ "$failed" -gt 0 ] && echo "PR #$pr: $failed failures" || echo "PR #$pr: clean"
+done
+```
+
+### 11.3. Rich Results Test (manual browser)
+
+Abrir estas URLs na próxima sessão depois do merge:
+- https://search.google.com/test/rich-results?url=https://smartlic.tech/licitacoes/limpeza (PASS Breadcrumb)
+- https://search.google.com/test/rich-results?url=https://smartlic.tech/blog/analise-viabilidade-editais-guia (PASS Article)
+- https://search.google.com/test/rich-results?url=https://smartlic.tech/sitemap/4.xml (não é rich result mas valida XML)
+
+### 11.4. Se algum CI falhar
+
+Cenário: algum dos 5 PRs retornar FAILURE ao invés de SUCCESS.
+
+- **#460 storybook**: provável ser o mesmo cluster pré-existente (babel-loader não funcionar em edge-case). Checar log do job, ajustar presets. Re-push a mesma branch.
+- **#461 lighthouse**: este PR remove o trigger — se falhar, é porque o workflow ainda executou uma vez antes da mudança. Aguardar próximo PR.
+- **#458 sitemap**: teste unitário em frontend que importa sitemap.ts? Se sim, ajustar.
+- **#459 SEO-003**: apenas adiciona JSON-LD inline. Improvável falhar.
+- **#462 handoff**: docs-only, improvável falhar.
+
+---
+
 **Signed:** Claude Opus 4.7 (1M context)
-**Session duration:** ~2h active (Plan Mode → Auto Mode, validação empírica + 4 PRs)
-**ROI summary:** 3 merges + 4 PRs queued + 2 material discoveries (SEO-002 já feito, BACKEND_URL já setado) + 1 hotfix crítico identificado + 2 clusters CI resolvidos + 2 stories Change Log updated.
+**Session duration:** ~2h active + ~15min CI queue wait (Plan Mode → Auto Mode)
+**ROI summary:** 3 merges + 5 PRs abertos (aguardando CI queue) + 2 material discoveries (SEO-002 já feito, BACKEND_URL já setado) + 1 hotfix crítico identificado (+revalidate ISR adicionado pós-advisor pushback) + 2 clusters CI resolvidos + 2 stories Change Log updated + 2 memories criadas.
+**Estado CI:** Backend queue saturado com ~10 workflows concurrent; merges ficam para continuação quando queue drenar.
