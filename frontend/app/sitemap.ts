@@ -672,22 +672,14 @@ export default async function sitemap(props: { id: Promise<string> }): Promise<M
     // Lowest crawl priority — Google processes these last.
     // -----------------------------------------------------------------------
     case 4: {
-      // Parallelizar todas as chamadas ao backend — cada helper tem AbortSignal.timeout(15000).
-      const [
-        cnpjList,
-        contratosOrgaoList,
-        orgaoList,
-        fornecedoresCnpjList,
-        municipiosList,
-        itensList,
-      ] = await Promise.all([
-        fetchSitemapCnpjs(),
-        fetchContratosOrgaoIndexable(),
-        fetchSitemapOrgaos(),
-        fetchSitemapFornecedoresCnpj(),
-        fetchSitemapMunicipios(),
-        fetchSitemapItens(),
-      ]);
+      // 6 fetches paralelos saturavam o backend (todos timeoutavam em ~30s+) → sitemap vazio em produção.
+      // Serializados: 5-7s cada, total ~30-45s, dentro do orçamento de runtime ISR.
+      const cnpjList = await fetchSitemapCnpjs();
+      const contratosOrgaoList = await fetchContratosOrgaoIndexable();
+      const orgaoList = await fetchSitemapOrgaos();
+      const fornecedoresCnpjList = await fetchSitemapFornecedoresCnpj();
+      const municipiosList = await fetchSitemapMunicipios();
+      const itensList = await fetchSitemapItens();
 
       // SEO-PLAYBOOK Onda 1: CNPJ pages from datalake (≥1 bid, ~4k-5k URLs)
       const cnpjRoutes: MetadataRoute.Sitemap = cnpjList.map((cnpj) => ({
