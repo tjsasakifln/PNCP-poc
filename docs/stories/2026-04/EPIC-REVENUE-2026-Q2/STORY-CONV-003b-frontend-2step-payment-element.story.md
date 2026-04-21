@@ -3,7 +3,7 @@
 **Priority:** P0 — Ativa o fluxo de coleta de cartão para usuários reais
 **Effort:** M (1-2 dias)
 **Squad:** @dev + @qa + @ux-design-expert (revisão copy)
-**Status:** Ready
+**Status:** Done (PR #432 merged `c9c29f3f` — 2026-04-20)
 **Epic:** [EPIC-REVENUE-2026-Q2](EPIC.md)
 **Parent:** [STORY-CONV-003](STORY-CONV-003-cartao-obrigatorio-trial-stripe.story.md) (superseded)
 **Depends on:** [STORY-CONV-003a](STORY-CONV-003a-backend-stripe-signup.story.md) (backend deve estar em main)
@@ -89,3 +89,5 @@ Integra o frontend de signup ao endpoint `POST /v1/auth/signup` já preparado em
 ## Change Log
 
 - **2026-04-19** — @sm (River): Sub-story criada a partir da decomposição de STORY-CONV-003. Status Ready. Bloqueia até CONV-003a mergeada.
+- **2026-04-20 (flickering-llama)** — @dev: Implementação completa — backend `/v1/billing/setup-intent` + frontend 2-step com PaymentElement + A/B rollout via SHA-256(email)%100. 28 tests passando local (4 backend + 14 frontend + 10 integration). PR #432 aberto.
+- **2026-04-20 (temporal-bonbon evening)** — @devops: PR #432 rebased em main pós drift-sweep PR #436 merge (commit `1270f909`). Backend Tests SUCCESS. Mergeado via squash commit `c9c29f3f`. **Status: Done.** Próximo passo: @devops Railway var `NEXT_PUBLIC_TRIAL_REQUIRE_CARD_ROLLOUT_PCT=10` para ativar canário em horário comercial D+1.
