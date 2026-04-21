@@ -270,11 +270,14 @@ class StressTestUser(HttpUser):
             name="/v1/buscar",
             catch_response=True,
         ) as response:
-            # 401 = auth required (load test carries no JWT); 422 = validation;
-            # 504 = gateway timeout (network-level, not logic). All are
-            # acceptable for a latency/availability smoke test.
-            if response.status_code not in [200, 401, 422, 504]:
-                print(f"   Unexpected status: {response.status_code}")
+            # catch_response=True requires explicit success()/failure() call —
+            # unmarked responses default to failure in locust. 200/401/422/504
+            # are all valid for a latency/availability smoke test (401 = no JWT
+            # carried by design; 422 = validation; 504 = gateway timeout).
+            if response.status_code in [200, 401, 422, 504]:
+                response.success()
+            else:
+                response.failure(f"Unexpected status: {response.status_code}")
 
 
 # ============================================================================
