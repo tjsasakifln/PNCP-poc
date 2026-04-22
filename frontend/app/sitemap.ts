@@ -191,6 +191,15 @@ async function fetchSitemapOrgaos(): Promise<string[]> {
  * id:3 — Content/blog pages (~500 URLs, sem backend)
  * id:4 — Entity pages (~10k+ URLs, backend: cnpjs, orgaos, fornecedores)
  */
+/**
+ * ISR 1h — uma regeneração por hora cobre N crawler requests (Google + Bing + Yandex).
+ * Sem isso, cada hit em sitemap/4.xml disparava 6 fetches sequenciais ao backend
+ * (~30-45s) — sob carga de múltiplos crawlers simultâneos, o backend saturaria
+ * novamente mesmo com a serialização deste PR. ISR move o custo para 1 request/h
+ * por shard em vez de 1 request por crawler-hit.
+ */
+export const revalidate = 3600;
+
 export async function generateSitemaps() {
   return [
     { id: 0 }, // Core static pages
@@ -672,22 +681,14 @@ export default async function sitemap(props: { id: Promise<string> }): Promise<M
     // Lowest crawl priority — Google processes these last.
     // -----------------------------------------------------------------------
     case 4: {
-      // Parallelizar todas as chamadas ao backend — cada helper tem AbortSignal.timeout(15000).
-      const [
-        cnpjList,
-        contratosOrgaoList,
-        orgaoList,
-        fornecedoresCnpjList,
-        municipiosList,
-        itensList,
-      ] = await Promise.all([
-        fetchSitemapCnpjs(),
-        fetchContratosOrgaoIndexable(),
-        fetchSitemapOrgaos(),
-        fetchSitemapFornecedoresCnpj(),
-        fetchSitemapMunicipios(),
-        fetchSitemapItens(),
-      ]);
+      // 6 fetches paralelos saturavam o backend (todos timeoutavam em ~30s+) → sitemap vazio em produção.
+      // Serializados: 5-7s cada, total ~30-45s, dentro do orçamento de runtime ISR.
+      const cnpjList = await fetchSitemapCnpjs();
+      const contratosOrgaoList = await fetchContratosOrgaoIndexable();
+      const orgaoList = await fetchSitemapOrgaos();
+      const fornecedoresCnpjList = await fetchSitemapFornecedoresCnpj();
+      const municipiosList = await fetchSitemapMunicipios();
+      const itensList = await fetchSitemapItens();
 
       // SEO-PLAYBOOK Onda 1: CNPJ pages from datalake (≥1 bid, ~4k-5k URLs)
       const cnpjRoutes: MetadataRoute.Sitemap = cnpjList.map((cnpj) => ({
