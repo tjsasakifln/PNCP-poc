@@ -99,8 +99,11 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Supabase Python client
-        run: pip install supabase --quiet
+      - name: Install Supabase Python client + schema deps
+        # email-validator is needed because backend/schemas/__init__.py imports
+        # user.py which uses pydantic.EmailStr. Without it, schemas.contract
+        # fails at import time with ModuleNotFoundError before --validate runs.
+        run: pip install supabase 'pydantic[email]' --quiet
 
       - name: Validate schema contract
         id: schema_contract
