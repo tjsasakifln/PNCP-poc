@@ -1,7 +1,7 @@
 # EPIC-SEO-ORGANIC-2026-04: Observatório de Licitações — Tráfego Orgânico Outlier
 
 **Priority:** P1 — Growth
-**Status:** Draft
+**Status:** Ready
 **Owner:** @sm (River) + @dev + @devops
 **Sprint:** Sequencial (stories independentes, execução em paralelo onde possível)
 **Meta:** 0 → 2.500 cliques orgânicos/mês em 6 meses. 0 → 60 domínios referentes.
@@ -71,3 +71,4 @@ Tornar o SmartLic o **Observatório Público das Licitações do Brasil** — tr
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-11 | @sm (River) | Epic criado — baseado em auditoria GSC + Consenso Conselho CMOs (53 especialistas, 8 clusters) |
+| 2026-04-22 | @po (Sarah) | `*validate-story-draft` verdict **GO** (score 9/10). Transição **Draft → Ready** aplicada. Todas as 6 categorias PASS: goal growth P1 claro (0→2.500 cliques/mês em 6m, 0→60 RDs), 8 stories children bem ordenadas em 3 sprints (urgente → ativos linkáveis → autoridade), KPIs quantificados em 4 horizontes (baseline + 3m + 6m + 12m) com 7 métricas. Nota: stories children (STORY-430, 431, 432, 433, 435, 436, 439) também estão Draft — devem passar por `*validate-story-draft` individuais antes de @dev (foram consideradas fora do escopo desta sessão, conforme plano aprovado que focou em artefatos de primeiro-nível em Draft). Relatório completo: `docs/po-review-2026-04-22.md`. |
