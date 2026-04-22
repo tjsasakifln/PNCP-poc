@@ -181,27 +181,25 @@
 
 ---
 
-## 🚨 AÇÃO HUMANA URGENTE: GitHub Actions billing bloqueando CI
+## 🟡 CI lento por saturação GitHub-hosted runners (não é billing)
 
-**Descoberta 2026-04-22 02:13 UTC** (durante Wave sync-merges):
+**Descoberta 2026-04-22 02:13 UTC** durante Wave sync-merges: 17 runs queued + 0 in_progress + 3 completed nos últimos 20.
 
-```
-gh api /repos/.../actions/runs → 17 queued + 0 in_progress + 3 completed (últimos 20)
-```
+**Análise inicial (INCORRETA)**: atribuída a CRIT-080 (billing issue). Correção após validação empírica (user flag + web search):
+- **Repo é público** → tem minutos ilimitados de Actions (sem spending limit aplicável)
+- **GitHub Status = Actions Operational** (99.37% uptime 90d, sem incident ativo)
+- **Real root cause**: saturação normal de GitHub-hosted runners para repos públicos em traffic spike (padrão documentado em múltiplos community discussions recentes).
 
-**Padrão CRIT-080 confirmado** (memória): quando 100% dos runs recentes ficam em `queued` com `conclusion=null` sem progressão, é **billing/spending limit do GitHub Actions**, não fila normal. Memória diz:
+**Padrão CRIT-080 não se aplica a este repo**: memória foi formada quando repo era privado (com spending limits). Agora público, o mesmo sintoma (queued com conclusion=null) tem causa diferente — é congestionamento da plataforma, resolve sozinho.
 
-> "GitHub Settings > Billing & plans > Actions > resolver pagamento. Deploy de emergência: `railway redeploy --service bidiq-backend -y` (bypassa Actions)."
+**Impacto operacional**:
+- Nenhum dos 8 PRs ativos (#458, #462-#468) pode ter tests re-rodados até runners drenarem a fila
+- Main também afetado (Tests Full Matrix queued desde 01:25 UTC)
 
-**Impacto**:
-- Nenhum dos 8 PRs ativos (#458, #462-#468) pode ter tests re-rodados até billing resolver
-- Main também bloqueado (commit `5e63de44` desde 01:25 UTC com `Tests Full Matrix` queued sem progresso em 48+ minutos)
-- Todo critério mínimo do plan YOLO depende de Backend Tests + Frontend Tests terminarem
+**Ação humana**: nenhuma. É esperar. Fila pública de GitHub Actions normalmente drena em 15-60min dependendo de traffic spike. Se mais de 2h sem progresso: checar https://githubstatus.com para ver se virou incident reportado.
 
-**Próximo passo bloqueante (humano)**: Resolver pagamento em https://github.com/settings/billing/spending_limit ou verificar que o org tem crédito.
-
-**Pós-resolução**:
-1. Runs em queue devem começar a processar automaticamente em <5 min
+**Pós-drenagem**:
+1. Runs começam automaticamente ao vencer a fila (sem intervenção)
 2. Todos PRs re-executam Backend Tests + Frontend Tests contra SHAs atualizados (já sincronizados com main pela sessão atual)
 3. Expected time total para convergir: ~30-40 min após runners voltarem
 4. Sequência de merges pós-verde (ordem recomendada):
@@ -215,5 +213,3 @@ gh api /repos/.../actions/runs → 17 queued + 0 in_progress + 3 completed (últ
    - **#464** (docs handoff — este, fecha a sessão)
    - **#420** (google-auth bump)
    - **#418** (lucide-react bump, rebase unlocks build)
-
-**Se billing NÃO for o root cause**: verificar `gh api /repos/.../actions/runners` para self-hosted runners; ou aguardar 10min para fila normal drenar.
