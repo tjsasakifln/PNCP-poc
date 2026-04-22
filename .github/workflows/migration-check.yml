@@ -99,14 +99,25 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Supabase Python client
-        run: pip install supabase --quiet
+      - name: Install Supabase Python client + schema deps
+        # email-validator is needed because backend/schemas/__init__.py imports
+        # user.py which uses pydantic.EmailStr. Without it, schemas.contract
+        # fails at import time with ModuleNotFoundError before --validate runs.
+        run: pip install supabase 'pydantic[email]' --quiet
 
       - name: Validate schema contract
         id: schema_contract
+        # Must run from backend/ so that ``python -m schemas.contract`` can
+        # resolve the ``schemas`` top-level module. The package's own
+        # ``backend/schemas/__init__.py`` uses absolute ``from schemas.X``
+        # imports (DEBT-302 consolidation) that only work with backend/
+        # on PYTHONPATH. Running ``python -m backend.schemas.contract``
+        # from the repo root raises ModuleNotFoundError: No module named
+        # 'schemas' during package init, before --validate is ever parsed.
+        working-directory: backend
         run: |
           set +e
-          python -m backend.schemas.contract --validate 2>&1 | tee /tmp/schema_contract_output.txt
+          python -m schemas.contract --validate 2>&1 | tee /tmp/schema_contract_output.txt
           EXIT_CODE=${PIPESTATUS[0]}
           set -e
 

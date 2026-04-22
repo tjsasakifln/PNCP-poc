@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { BuscaResult } from "../../../types";
 import { TrialUpsellCTA } from "../../../../components/billing/TrialUpsellCTA";
+import { useAnalytics } from "../../../../hooks/useAnalytics";
 
 interface ResultsFooterProps {
   result: BuscaResult;
@@ -41,6 +42,26 @@ export function ResultsFooter({
   onShowUpgradeModal,
 }: ResultsFooterProps) {
   const [showSourceBadges, setShowSourceBadges] = useState(false);
+  const { trackEvent } = useAnalytics();
+
+  // Fire paywall_hit once per search-result timestamp when paywall is active.
+  // Keyed on result.ultima_atualizacao (per-search unique) so paging/sorting
+  // within the same result doesn't re-fire. Server-truncated results get a
+  // single attributable event for conversion analysis.
+  const firedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!paywallApplied || !totalBeforePaywall) return;
+    const key = result.ultima_atualizacao || "";
+    if (firedFor.current === key) return;
+    firedFor.current = key;
+    trackEvent("paywall_hit", {
+      trigger: "search_truncated",
+      plan_id: planInfo?.plan_id,
+      total_before_paywall: totalBeforePaywall,
+      visible_count: result.licitacoes.length,
+      search_mode: searchMode,
+    });
+  }, [paywallApplied, totalBeforePaywall, result.ultima_atualizacao, result.licitacoes.length, planInfo?.plan_id, searchMode, trackEvent]);
 
   return (
     <>
