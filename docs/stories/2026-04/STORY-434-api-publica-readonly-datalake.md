@@ -3,7 +3,7 @@
 **Priority:** P2
 **Effort:** L (3-5 dias)
 **Squad:** @dev + @devops
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-SEO-ORGANIC-2026-04](EPIC-SEO-ORGANIC-2026-04.md)
 **Sprint:** Sprint 3
 
@@ -184,3 +184,4 @@ _(a preencher pelo @dev durante implementação)_
 | Data | Autor | Mudança |
 |------|-------|---------|
 | 2026-04-11 | @sm (River) | Story criada — API pública é o maior gerador de backlinks acadêmicos e de developers. "github.com" (DA 96) aparece quando devs citam a API em READMEs. |
+| 2026-04-22 | @po (Sarah) | `*validate-story-draft` verdict **GO** (score 7.5/10). Transição **Draft → Ready** aplicada. Gaps menores a endereçar em Dev Notes no início da implementação: (a) decisão final do path da landing page (`/dados-publicos` é a sugestão do próprio Scope/DoD — confirmar durante dev), (b) onde persistir API keys geradas (tabela `public_api_keys` em Supabase? migration necessária?). Nenhum é bloqueador. Relatório completo: `docs/po-review-2026-04-22.md`. |
