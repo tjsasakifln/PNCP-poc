@@ -3,6 +3,7 @@
 import { useAuth } from "../../components/AuthProvider";
 import Link from "next/link";
 import { useAdminSWR } from "../../../hooks/useAdminSWR";
+import GSCSummarySection from "./_components/GSCSummarySection";
 import {
   LineChart,
   Line,
@@ -224,6 +225,9 @@ export default function AdminSEOPage() {
             </div>
           </>
         )}
+
+        {/* STORY-SEO-005: GSC query-level analytics (always rendered — graceful empty state inside) */}
+        <GSCSummarySection />
       </div>
     </div>
   );

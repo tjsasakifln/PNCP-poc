@@ -42,6 +42,14 @@ try:
     except ImportError:
         pass
 
+    # STORY-SEO-005: weekly GSC sync job (Sun 03:00 BRT = 06:00 UTC).
+    # Graceful no-op if GSC_SERVICE_ACCOUNT_JSON env var missing — safe to register always.
+    try:
+        from jobs.cron.gsc_sync import gsc_sync_job
+        _worker_cron_jobs.append(_arq_cron(gsc_sync_job, weekday={6}, hour={6}, minute=0, timeout=1800))
+    except ImportError:
+        pass
+
     try:
         from ingestion.config import DATALAKE_ENABLED
         if DATALAKE_ENABLED:
