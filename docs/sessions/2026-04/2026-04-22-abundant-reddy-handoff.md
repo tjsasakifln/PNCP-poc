@@ -1,9 +1,9 @@
-# Session Handoff — Abundant-Reddy: CI Unblock + Revenue Tracking
+# Session Handoff — Abundant-Reddy: CI Unblock + Revenue Tracking + PO Validation
 
 **Date:** 2026-04-22 (tarde, pós-clever-beaver)
 **Codename:** abundant-reddy
 **Branch base inicial:** `docs/session-2026-04-21-transient-hellman` (limpa, 2 commits de incident dump prévio)
-**Duração:** ~1.5h active (YOLO mode pós-Plan)
+**Duração:** ~1.5h active YOLO (CI/revenue) + ~45min sequencial (PO validate-story-draft)
 **Modelo:** Claude Opus 4.7 (1M context)
 
 ---
@@ -33,6 +33,18 @@ Plano abundant-reddy: reality check descartou 2 premissas erradas (incident `api
 
 - #463 — SEO-001 AC5/AC7 observability (feat/seo-001-ac5-ac7-observability-coverage)
 - #464 — docs/session-2026-04-21-transient-hellman handoff
+
+**PO Validation executada (commit `c0d86545` local, aguarda push por @devops):**
+
+| Artefato | Score | Verdict | Estado |
+|----------|:-----:|---------|--------|
+| STORY-434 (api-publica-readonly-datalake) | 7.5/10 | READY | Draft → **Ready** |
+| EPIC-CI-GREEN-MAIN-2026Q2 | 10/10 | READY | Draft → **Ready** |
+| EPIC-INCIDENT-2026-04-10 | 10/10 | READY (zombie status) | Draft → **Ready** |
+| EPIC-SEO-ORGANIC-2026-04 | 9/10 | READY | Draft → **Ready** |
+| STORY-6.8-i18n-preparation | 3/10 | BLOCKED at-source | Mantém Draft (AC0 LATAM) |
+
+Relatório consolidado: `docs/po-review-2026-04-22.md`.
 
 ---
 
@@ -200,14 +212,53 @@ signup_completed → (trial_card_captured) → paywall_hit → checkout_initiate
 
 ---
 
-## 6. Notas para próximo operador
+## 6. PO Session — `*validate-story-draft` (pós-CI/revenue work)
+
+Disparada pelo user com escopo "todos epics e stories ainda em draft". Trabalho conduzido em Plan Mode primeiro, depois YOLO autorizado.
+
+### 6.1. Descoberta empírica do escopo
+
+| Métrica | Valor |
+|---------|-------|
+| Explore subagent inicial reportou | 103 drafts |
+| Regex precisa (`^\*\*Status:\*\* Draft`) retornou (primeira verificação) | 5 drafts |
+| Verificação pós-execução retornou | 37 drafts |
+| Escopo acordado via AskUserQuestion | 5 artefatos de primeiro-nível |
+| 32 MON-* (commit `f7d7abfc`) | Deferidos como roadmap placeholder |
+
+A primeira verificação retornou 5 (falha de recursão do grep em WSL); a segunda retornou 37 (corrigida). Os 32 extras são o plano de monetização (`MON-*`) commitado em `f7d7abfc`. Decisão acordada: validar só queue ativa de primeiro-nível, deferir MON/SEO-children para sessões futuras wave-by-wave. Memória registrada: `feedback_inventory_double_verify.md`.
+
+### 6.2. Race condition de Edits paralelos
+
+**Primeira tentativa (falhou):** 8 Edits paralelos (4 Status + 4 Change Log) → todos retornaram sucesso, mas `git status` mostrou zero arquivos modificados. System-reminders marcaram cada arquivo como "externally modified, intentional".
+
+**Root cause (investigado nesta sessão):** NÃO é hook/linter. Grep em `.claude/settings.json`, `.husky/`, `.git/hooks/`, `.pre-commit-config.yaml` descartou. Teste empírico: `sed` via Bash persistiu; Edit sequencial (um de cada vez + `git diff` verify) persistiu. Edits paralelos sobre arquivos do mesmo commit HEAD causam race condition silent no harness.
+
+**Fix aplicado:** reaplicação sequencial com verificação `git diff` após cada Edit. As 8 edições finais persistiram em disco corretamente. Memória atualizada: `feedback_story_status_edit_revert.md` (título corrigido — não é hook, é race condition).
+
+### 6.3. Commits criados
+
+- `c0d86545 docs(stories): @po validate-story-draft — 5 artefatos Draft (4 GO + 1 BLOCKED)` — 5 files changed (+252/-4), sem push. Push delegado a @devops quando apropriado.
+
+### 6.4. Follow-up gerado
+
+- **36 stories/epics `MON-*`** permanecem Draft — validar wave-by-wave quando cada entrar em queue ativa.
+- **7 stories children do EPIC-SEO-ORGANIC-2026-04** (430, 431, 432, 433, 435, 436, 439) permanecem Draft — sessão futura.
+- **STORY-6.8-i18n** espera decisão produto LATAM; @pm/sponsor.
+- **Hook/linter investigation** considerado: não existe, era race condition. Não há ação necessária.
+
+---
+
+## 7. Notas para próximo operador
 
 1. **Reality-check primeiro, handoffs depois.** Handoffs envelhecem em horas se pós-incidente.
 2. **Grep-before-implement** salvou ~5h nesta sessão. Especialmente para stories multi-rota com idade >7d.
 3. **Merge train em strict-mode branch protection** requer resync manual quando intermediários mergeiam (não há auto-merge habilitado no repo — tentou `gh pr merge --auto` retorna `Pull request Auto merge is not allowed for this repository`).
 4. **`gh pr edit --body-file` tem silent failure** — usar `gh api PATCH /repos/.../pulls/N -f body=...` (memory já registrava).
 5. **Empty commit push é o único path pra re-trigger PR Validation after body edit** (workflow escuta só `opened/synchronize/reopened`, não `edited`).
+6. **Edits em paralelo de múltiplos arquivos do mesmo commit HEAD causam race condition silent** — tools retornam sucesso, mas `git status` não detecta mudança. Aplicar sequencialmente + `git diff` verify após cada (memory `feedback_story_status_edit_revert.md`).
+7. **Inventários que informam decisão de escopo precisam dupla-verificação** — grep em WSL já mostrou flakiness de recursão nesta sessão. Rodar grep + find antes de perguntar ao user (memory `feedback_inventory_double_verify.md`).
 
 ---
 
-**Sessão fechada:** aguardando Backend Tests em 5 PRs in-flight (ETA 5-15min). Seguinte sessão pode pegar o trem e limpar resíduo.
+**Sessão fechada:** aguardando Backend Tests em 5 PRs in-flight (ETA 5-15min). Seguinte sessão pode pegar o trem e limpar resíduo. PO validation finalizada com 4 transições Draft → Ready persistidas em commit local `c0d86545`; push delegado a @devops.
