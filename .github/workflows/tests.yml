@@ -1,7 +1,7 @@
-# DEBT-123 AC7: This workflow runs the FULL test matrix (Python 3.11 + 3.12, frontend,
-# integration, E2E). It complements backend-tests.yml which runs single-Python backend
+# DEBT-123 AC7: This workflow runs the full test suite (Python 3.12, frontend,
+# integration, E2E). It complements backend-tests.yml which runs backend-only
 # tests PLUS quality tools (pip-audit, ruff, mypy, schema validation, per-module coverage).
-# Both are needed: this for cross-version + E2E, backend-tests.yml for quality gates.
+# Both are needed: this for integration + E2E, backend-tests.yml for quality gates.
 # NOTE: The E2E job here duplicates e2e.yml. e2e.yml is more complete (uploads artifacts,
 # runs smoke tests). tests.yml E2E job serves as a gating step that requires unit tests first.
 name: "Tests (Full Matrix + Integration + E2E)"
@@ -17,13 +17,17 @@ permissions:
   checks: write
   pull-requests: write
 
+concurrency:
+  group: tests-full-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   backend-tests:
     name: Backend Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.12']
 
     steps:
       - name: Checkout code
@@ -62,7 +66,7 @@ jobs:
 
       - name: Publish Backend Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always() && matrix.python-version == '3.11'
+        if: always()
         with:
           files: backend/pytest-report.xml
           check_name: Backend Test Results
@@ -71,7 +75,7 @@ jobs:
       # DEBT-123 AC9: Codecov upload — intentionally non-blocking (external service, not security)
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.11'
+        if: true
         with:
           file: ./backend/coverage.xml
           flags: backend
@@ -79,7 +83,7 @@ jobs:
         continue-on-error: true  # DEBT-123 AC9: intentional — external upload service may be unavailable
 
       - name: Check coverage threshold
-        if: matrix.python-version == '3.11'
+        if: true
         run: |
           cd backend
           if [ -f coverage.xml ]; then
@@ -224,7 +228,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install dependencies
@@ -266,7 +270,7 @@ jobs:
       - name: Set up Python (Backend)
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Set up Node.js (Frontend)

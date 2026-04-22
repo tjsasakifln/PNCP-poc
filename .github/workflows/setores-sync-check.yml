@@ -16,6 +16,10 @@ on:
       - 'frontend/app/buscar/hooks/filters/sectorData.ts'
       - 'scripts/sync-setores-fallback.js'
 
+concurrency:
+  group: setores-sync-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   drift-check:
     runs-on: ubuntu-latest
