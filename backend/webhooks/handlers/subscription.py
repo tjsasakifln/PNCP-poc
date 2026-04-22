@@ -91,12 +91,23 @@ async def handle_subscription_created(sb, event: stripe.Event) -> None:
     """
     Handle customer.subscription.created event.
 
-    SEO-PLAYBOOK Referral: If `metadata.referral_code` is present, mark the
-    matching referral row as converted and credit the referrer with 30 extra
-    days of trial_end on their active subscription (Stripe handles the rest
-    of the prorata automatically on the next invoice).
+    1. Emit `trial_started` Mixpanel funnel event when subscription.status="trialing"
+       — completes signup → trial_started → paywall_hit → checkout_completed funnel.
+    2. SEO-PLAYBOOK Referral: If `metadata.referral_code` is present, mark the
+       matching referral row as converted and credit the referrer with 30 extra
+       days of trial_end on their active subscription (Stripe handles the rest
+       of the prorata automatically on the next invoice).
     """
     subscription_data = event.data.object
+
+    # 1. Emit trial_started analytics event (fire-and-forget, never breaks webhook)
+    try:
+        if subscription_data.get("status") == "trialing":
+            _emit_trial_started_event(sb, subscription_data)
+    except Exception:
+        logger.exception("Failed to emit trial_started analytics event")
+
+    # 2. Referral crediting (existing)
     metadata = subscription_data.get("metadata") or {}
     referral_code = (metadata.get("referral_code") or "").strip().upper()
 
@@ -110,6 +121,78 @@ async def handle_subscription_created(sb, event: stripe.Event) -> None:
     except Exception:
         # Never let referral crediting break the webhook
         logger.exception("Failed to credit referral for code %s", referral_code)
+
+
+def _emit_trial_started_event(sb, subscription_data) -> None:
+    """Emit `trial_started` Mixpanel funnel event for trial subscriptions.
+
+    Resolves user_id via stripe_subscription_id then stripe_customer_id lookup.
+    Fire-and-forget: failures logged, never raised.
+    """
+    from analytics_events import track_funnel_event
+
+    stripe_sub_id = subscription_data.get("id")
+    stripe_customer_id = subscription_data.get("customer")
+
+    user_id = None
+    if stripe_sub_id:
+        sub_result = (
+            sb.table("user_subscriptions")
+            .select("user_id, plan_id")
+            .eq("stripe_subscription_id", stripe_sub_id)
+            .limit(1)
+            .execute()
+        )
+        if sub_result.data:
+            user_id = sub_result.data[0]["user_id"]
+            plan_id = sub_result.data[0].get("plan_id")
+        else:
+            plan_id = None
+    else:
+        plan_id = None
+
+    if not user_id and stripe_customer_id:
+        cust_result = (
+            sb.table("user_subscriptions")
+            .select("user_id, plan_id")
+            .eq("stripe_customer_id", stripe_customer_id)
+            .limit(1)
+            .execute()
+        )
+        if cust_result.data:
+            user_id = cust_result.data[0]["user_id"]
+            plan_id = plan_id or cust_result.data[0].get("plan_id")
+
+    if not user_id:
+        masked = (stripe_sub_id or "")[:8]
+        logger.warning(f"trial_started: cannot resolve user_id for sub {masked}***")
+        return
+
+    plan_id = plan_id or (subscription_data.get("metadata") or {}).get("plan_id")
+    trial_end = subscription_data.get("trial_end")
+
+    stripe_interval = (
+        subscription_data.get("plan", {}).get("interval")
+        or (subscription_data.get("items", {}).get("data") or [{}])[0].get("plan", {}).get("interval")
+    )
+    stripe_interval_count = (
+        subscription_data.get("plan", {}).get("interval_count", 1)
+        or (subscription_data.get("items", {}).get("data") or [{}])[0].get("plan", {}).get("interval_count", 1)
+    )
+    if stripe_interval == "year":
+        billing_period = "annual"
+    elif stripe_interval == "month" and stripe_interval_count == 6:
+        billing_period = "semiannual"
+    else:
+        billing_period = "monthly"
+
+    track_funnel_event("trial_started", user_id, {
+        "plan_id": plan_id,
+        "trial_end_unix": trial_end,
+        "stripe_subscription_id": stripe_sub_id,
+        "billing_period": billing_period,
+    })
+    logger.info(f"trial_started event emitted: user={user_id[:8]}***, plan={plan_id}")
 
 
 def _credit_referral_conversion(sb, referral_code: str, subscription_data) -> None:
