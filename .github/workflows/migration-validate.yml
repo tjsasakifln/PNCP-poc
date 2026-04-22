@@ -29,27 +29,43 @@ jobs:
         with:
           version: latest
 
-      - name: Start Supabase local
+      - name: Start Supabase local (no migrations yet)
         run: |
           # Supabase CLI's --workdir flag chdirs BEFORE init and fails if the
           # target doesn't exist, so create it explicitly and init in-place.
+          # NOTE: do NOT copy migrations into the init dir. supabase start's
+          # internal applier uses prepared statements and rejects multi-command
+          # SQL (SQLSTATE 42601) present in migrations with multiple functions
+          # like 003_atomic_quota_increment.sql. We apply via psql in a later
+          # step which handles multi-statement files natively.
           mkdir -p /tmp/supabase-test
           cd /tmp/supabase-test
           supabase init --yes
-          cd "$GITHUB_WORKSPACE"
-          cp -r supabase/migrations/. /tmp/supabase-test/supabase/migrations/
-          cd /tmp/supabase-test
           supabase start
 
-      - name: Apply all migrations
+      - name: Apply all migrations via psql
         run: |
           cd /tmp/supabase-test
-          supabase db push --local 2>&1 | tee /tmp/migration-output.txt
-          # Check for errors (non-zero exit)
-          if [ $? -ne 0 ]; then
-            echo "::error::Migration sequence failed. See output above."
+          DB_URL=$(supabase status --output json | jq -r '.DB_URL')
+          if [ -z "$DB_URL" ] || [ "$DB_URL" = "null" ]; then
+            echo "::error::Failed to read DB_URL from supabase status"
             exit 1
           fi
+          echo "Applying migrations from $GITHUB_WORKSPACE/supabase/migrations/"
+          shopt -s nullglob
+          # Apply in ascending timestamp order, skip .down.sql rollback scripts.
+          for f in $(ls -1 "$GITHUB_WORKSPACE"/supabase/migrations/*.sql | sort); do
+            base=$(basename "$f")
+            if [[ "$base" == *.down.sql ]]; then
+              echo "  skip (rollback): $base"
+              continue
+            fi
+            echo "  apply: $base"
+            if ! psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$f" 2>&1 | tee -a /tmp/migration-output.txt; then
+              echo "::error::Migration $base failed. See output above."
+              exit 1
+            fi
+          done
 
       - name: Count applied migrations
         run: |
