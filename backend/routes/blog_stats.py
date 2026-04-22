@@ -614,14 +614,18 @@ async def get_cidade_stats(cidade: str):
     Uses the first sector with results to get city data.
     """
     cidade_normalized = cidade.lower().replace("-", " ").strip()
-    cache_key = f"cidade:{cidade_normalized}"
+    # CRIT-SEO-011: normalize to ASCII for match against DataLake items
+    # (PNCP stores city names with accents; slugs arrive without them).
+    # Mirrors the pattern used in get_cidade_sector_stats / get_contratos_cidade_stats.
+    cidade_ascii = _strip_accents(cidade.replace("-", " ").strip())
+    cache_key = f"cidade:{cidade_ascii}"
 
     cached = _cache_get(cache_key)
     if cached:
         return CidadeStats(**cached)
 
-    # Determine UF for city
-    uf = _CITY_TO_UF.get(cidade_normalized)
+    # Determine UF for city (try both normalized and ASCII forms)
+    uf = _CITY_TO_UF.get(cidade_normalized) or _CITY_TO_UF.get(cidade_ascii)
     if not uf:
         raise HTTPException(status_code=404, detail=f"Cidade '{cidade}' não encontrada")
 
@@ -644,11 +648,12 @@ async def get_cidade_stats(cidade: str):
     except Exception as e:
         logger.debug("Datalake query failed for cidade=%s uf=%s: %s", cidade, uf, e)
 
-    # Filter by city name in orgaoEntidade.municipioNome
+    # Filter by city name in orgaoEntidade.municipioNome — accent-insensitive
+    # (CRIT-SEO-011: "são paulo" must match slug "sao-paulo" → cidade_ascii "sao paulo")
     city_results = []
     for item in all_results:
-        item_city = _extract_city(item).lower()
-        if cidade_normalized in item_city or item_city in cidade_normalized:
+        item_city_ascii = _strip_accents(_extract_city(item).lower())
+        if cidade_ascii in item_city_ascii or item_city_ascii in cidade_ascii:
             city_results.append(item)
 
     # Org frequency

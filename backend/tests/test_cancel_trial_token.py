@@ -244,8 +244,15 @@ class TestCancelTrialInfoEndpoint:
         assert resp.json()["detail"]["error"] == "token_expired"
 
     def test_invalid_signature_returns_400(self):
-        token = create_cancel_trial_token(USER_ID)
-        tampered = token[:-1] + ("A" if token[-1] != "A" else "B")
+        # Sign the token with a DIFFERENT secret so the endpoint (running
+        # under the autouse fixture secret) always reports invalid_signature.
+        # A single-char flip of the last base64url char leaves ~1/16 of
+        # possibilities where the decoded signature bytes still validate —
+        # that flakiness caused DNS lookup errors in CI whenever the tamper
+        # accidentally kept the signature valid and the handler tried to
+        # call the real Supabase API.
+        with patch.dict(os.environ, {"TRIAL_CANCEL_JWT_SECRET": "wrong-secret-for-tamper-test-deterministic"}):
+            tampered = create_cancel_trial_token(USER_ID)
 
         app = _make_app()
         client = TestClient(app)
