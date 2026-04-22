@@ -3,7 +3,7 @@
 **Priority:** P0 — Primeira feature 0-de-6-concorrentes (virgin blue ocean)
 **Effort:** S (5 SP, ~4-5h)
 **Squad:** @dev + @qa + @data-engineer (review)
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-PVX-2026-Q3](EPIC.md)
 **Source:** PR #476 §8 Brief 1 (research blue-ocean-product-value-extraction.md)
 
@@ -158,8 +158,31 @@ V1 ativada apenas para conta interna admin para validar pipeline. Definição de
 
 ---
 
+## PO Validation (10-Point Checklist)
+
+**Validator:** @po (Sarah) — 2026-04-22
+**Verdict:** GO (10/10)
+
+| # | Critério | Resultado |
+|---|----------|-----------|
+| 1 | Título claro e objetivo | ✅ |
+| 2 | Descrição completa (problema/necessidade) | ✅ |
+| 3 | AC testáveis (checkboxes + Given/When/Then implícito) | ✅ |
+| 4 | Scope IN/OUT bem definido | ✅ |
+| 5 | Dependências mapeadas (Existing + NONE blocking) | ✅ |
+| 6 | Complexidade estimada (5 SP, ~4-5h) | ✅ |
+| 7 | Valor de negócio claro (virgin moat 0/6 concorrentes) | ✅ |
+| 8 | Riscos documentados + mitigações | ✅ |
+| 9 | Definition of Done explícito | ✅ |
+| 10 | Alinhamento com EPIC-PVX-2026-Q3 + PR #476 | ✅ |
+
+**Decisão:** Story aprovada para execução. Pode iniciar imediatamente após @dev claim.
+
+---
+
 ## Change Log
 
 | Data | Quem | Mudança |
 |------|------|---------|
 | 2026-04-22 | @sm (River) | Story criada a partir de PR #476 §8 Brief 1; status=Draft |
+| 2026-04-22 | @po (Sarah) | 10/10 GO em validate-story-draft; status Draft → Ready |

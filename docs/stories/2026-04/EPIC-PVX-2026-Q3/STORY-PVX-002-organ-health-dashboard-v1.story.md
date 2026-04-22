@@ -3,7 +3,7 @@
 **Priority:** P0 — Segunda feature 0-de-6-concorrentes (virgin blue ocean)
 **Effort:** S (5 SP, ~5-6h)
 **Squad:** @dev + @qa + @data-engineer (review obrigatório — materialized view design)
-**Status:** Draft
+**Status:** Ready
 **Epic:** [EPIC-PVX-2026-Q3](EPIC.md)
 **Source:** PR #476 §8 Brief 2 (research blue-ocean-product-value-extraction.md)
 
@@ -194,8 +194,33 @@ Definição em `STORY-PVX-PRICING-001` sprint 3.
 
 ---
 
+## PO Validation (10-Point Checklist)
+
+**Validator:** @po (Sarah) — 2026-04-22
+**Verdict:** GO (10/10)
+
+| # | Critério | Resultado |
+|---|----------|-----------|
+| 1 | Título claro e objetivo | ✅ |
+| 2 | Descrição completa (problema/necessidade) | ✅ |
+| 3 | AC testáveis (checkboxes + SQL schema explícito + computation formula) | ✅ |
+| 4 | Scope IN/OUT bem definido (v1 backend-only, v2 frontend separado) | ✅ |
+| 5 | Dependências mapeadas (Existing + Blocker para v2 nominado) | ✅ |
+| 6 | Complexidade estimada (5 SP, ~5-6h) | ✅ |
+| 7 | Valor de negócio claro (virgin moat 0/6 concorrentes; tier upsell preview) | ✅ |
+| 8 | Riscos documentados + mitigações (4 riscos com strategy each) | ✅ |
+| 9 | Definition of Done explícito (8 itens incluindo backfill manual) | ✅ |
+| 10 | Alinhamento com EPIC-PVX-2026-Q3 + PR #476 | ✅ |
+
+**Decisão:** Story aprovada para execução. Pode iniciar imediatamente após @dev claim.
+
+**Observação @po:** Story tem dependência implícita de @data-engineer review obrigatório antes de @dev iniciar (campo já listado em Squad). AC1 SQL schema deve ser validado com @data-engineer antes de migration ser commitada — risco mais alto identificado é "campos não populados em pncp_raw_bids" (R3 e R4 da seção Riscos). @dev deve abrir spike de validação SQL como **AC0** antes de seguir para AC1.
+
+---
+
 ## Change Log
 
 | Data | Quem | Mudança |
 |------|------|---------|
 | 2026-04-22 | @sm (River) | Story criada a partir de PR #476 §8 Brief 2; status=Draft |
+| 2026-04-22 | @po (Sarah) | 10/10 GO em validate-story-draft com observação re: data-engineer review obrigatório; status Draft → Ready |
