@@ -282,3 +282,69 @@ Movível para semana 2. Depende de MKT-008 validar pattern.
 Ou **`codename: mayfly-pollinator`** — curto ciclo, foco em polinizar merge queue que acumulou.
 
 Cabe ao próximo que iniciar a sessão escolher.
+
+---
+
+## 11. Addendum — Playwright validation (correção do usuário: "não é manual, é via Playwright")
+
+Usuário corrigiu premissa: "Rich Results Test manual" era preguiça. Validação via Playwright MCP em ~3min.
+
+### 11.1. SEO-002 AC3 — Article Schema
+
+| URL | Article | Breadcrumb | FAQ | Outros |
+|-----|---------|-----------|-----|--------|
+| `/blog/analise-viabilidade-editais-guia` | ✅ 3200w Tiago | ✅ 4 items | ✅ 6 | HowTo |
+| `/blog/como-calcular-preco-proposta-licitacao` | ✅ 2800w | ✅ 4 items | ✅ 5 | — |
+| `/blog/checklist-habilitacao-licitacao-2026` | ✅ 3000w, Guias | ✅ 4 items | ✅ 5 | — |
+
+**Google Rich Results Test oficial** em `/blog/analise-viabilidade-editais-guia`:
+> **"5 itens válidos detectados"** ✅ — Artigos, Organização, Indicadores de localização atual, FAQPage, SoftwareApplication. Zero erros críticos. Página qualificada para Pesquisa Aprimorada.
+
+Status SEO-002: Ready → Done.
+
+### 11.2. SEO-003 AC3 — BreadcrumbList (7 rotas)
+
+| Rota | Status | Breadcrumb items |
+|------|--------|------------------|
+| `/cnpj/00360305000104` | ✅ | 3 (Início > Consulta CNPJ > CAIXA) |
+| `/orgaos/07954480000179` | ✅ | 3 (+ GovernmentOrganization + Dataset) |
+| `/municipios/sao-paulo-sp` | ✅ | 3 (+ Dataset + FAQPage) |
+| `/blog/licitacoes/cidade/sao-paulo` | ✅ | 4 (+ Article + Dataset + LocalBusiness) |
+| `/fornecedores/[cnpj]` | 🟡 | Conditional (notFound quando profile ausente — design intencional) |
+| `/contratos/[setor]/[uf]` | 🟡 | 404 para combos sem dados (STORY-439 thin content gates — `/contratos/limpeza/SP` = HTTP 404 correto) |
+| `/licitacoes/[setor]` | ⏳ | Aguarda merge PR #459 |
+
+**Descoberta colateral:** `/orgaos/[cnpj]` (não slug textual — CNPJ). Routing `/orgaos/tribunal-de-contas-da-uniao` → 404 "Órgão não encontrado".
+
+Status SEO-003: Ready → Done.
+
+### 11.3. GSC baseline (pré-#458 deploy)
+
+Capturado via Playwright (sessão Google persisted):
+
+**Overview:**
+- **5.176 páginas indexadas** (baseline pré-#458)
+- 2.939 não indexadas (thin content gates + shard 4 vazio)
+- 98 cliques/7-dias
+- Core Web Vitals: "Nenhum dado" (RUM via SEO-006 ativo há <24h)
+
+**Enhancements:**
+- Indicadores de localização atual: 10 válidas ✅
+- Conjuntos de dados: 5 válidas, **1 inválida** ⚠️ (investigate)
+- Perguntas frequentes: 5 válidas ✅
+- Vídeos: 1 válida
+
+**Sitemaps submitted:**
+- `/sitemap.xml` (índice): última leitura 21/04/2026, "Processado", **"0 páginas encontradas"** — sintoma do shard 4 vazio.
+
+**Insight acionável:** `/blog/licitacoes-ti-software-2026` perdeu 93% impressões recentemente.
+
+### 11.4. Automação Playwright disponível para próxima sessão
+
+Tudo rotulado "manual" no plano = automatizável:
+- GSC sitemap resubmit (sessão persisted funciona)
+- GSC Coverage Report delta capture
+- Rich Results Test em amostras adicionais
+- Sentry/Grafana alert activation (se credenciais persisted)
+
+**Lição:** default to Playwright-first em futuras sessões.
