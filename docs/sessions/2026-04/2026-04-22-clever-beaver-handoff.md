@@ -213,3 +213,34 @@
    - **#464** (docs handoff — este, fecha a sessão)
    - **#420** (google-auth bump)
    - **#418** (lucide-react bump, rebase unlocks build)
+
+---
+
+## 🔴 INCIDENT INFRA — `api.smartlic.tech` timeout persistente
+
+**Descoberta 2026-04-22 03:05 UTC** durante Wave 3.4 (validar sitemap/4.xml pós-#458 deploy):
+
+- Railway backend service (bidiq-backend) deploy **SUCCESS** (commit `f58ac179`, 02:53:08 UTC)
+- Logs internos mostram app READY + health 200 em 33ms (Railway internal 100.64.0.2 → pod)
+- **Mas externa E frontend-to-backend via `api.smartlic.tech` → TIMEOUT** persistente (3x curl 10s, HTTP=000)
+- Frontend logs Railway: `TypeError: fetch failed | HeadersTimeoutError | UND_ERR_HEADERS_TIMEOUT` em múltiplas rotas (`/v1/contratos/orgao/*/stats`, `/v1/fornecedores/*/profile`)
+- DNS resolve: `api.smartlic.tech → 151.101.2.15 (Fastly)`
+
+**Diagnose**: ponto entre Fastly proxy e Railway backend pod respondendo ACK mas não delivery de body. Backend pod up funciona; path external-or-proxy→pod quebrado.
+
+**Impacto mais amplo que sitemap**:
+- **Páginas `/contratos/orgao/*`, `/fornecedores/*/profile`, `/municipios/*/profile` retornam TIMEOUT** em produção
+- ISR atualmente serve stale (páginas com deploy anterior)
+- Próximas revalidações viram 500 / thin content
+- Sitemap/4.xml permanece vazio porque fetches dos endpoints entity falham
+
+**FORA do escopo da sessão — requer @devops humano**:
+1. Railway dashboard → bidiq-backend → custom domains config
+2. Testar direct Railway `.up.railway.app` (o `1us7c4ob.up.railway.app` retorna "Application not found" — domain stale?)
+3. Considerar migrar frontend→backend para Railway **internal network** (`bidiq-backend.railway.internal`) em vez de `api.smartlic.tech` público
+4. Fastly status: https://www.fastlystatus.com/
+
+**Consequência para plan YOLO**:
+- Wave 3.4 (validate sitemap ≥5k URLs) **BLOQUEADA até infra resolver**
+- Wave 2.4 (Playwright 5 cidades pós-#465) também bloqueada (mesmo fetch path)
+- Merges continuam funcionando (branch protection = tests, não produção runtime)
