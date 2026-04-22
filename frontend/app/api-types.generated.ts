@@ -651,9 +651,31 @@ export interface paths {
         };
         /**
          * Get Seo Metrics
-         * @description Return SEO metrics for the last N days. Admin-only.
+         * @description Return SEO metrics for the last N days (legacy S14 daily rollup). Admin-only.
          */
         get: operations["get_seo_metrics_v1_admin_seo_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/seo/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Gsc Summary
+         * @description Return aggregated GSC analytics from gsc_metrics cache. Admin-only.
+         *
+         *     STORY-SEO-005 AC4. Populated weekly by backend/jobs/cron/gsc_sync.py.
+         */
+        get: operations["get_gsc_summary_v1_admin_seo_summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6959,6 +6981,58 @@ export interface components {
             /** Lead Id */
             lead_id: string;
         };
+        /** GSCLowCTROpportunity */
+        GSCLowCTROpportunity: {
+            /** Clicks */
+            clicks: number;
+            /** Ctr */
+            ctr: number;
+            /** Impressions */
+            impressions: number;
+            /** Page */
+            page: string;
+        };
+        /** GSCPageRow */
+        GSCPageRow: {
+            /** Clicks */
+            clicks: number;
+            /** Ctr */
+            ctr: number;
+            /** Impressions */
+            impressions: number;
+            /** Page */
+            page: string;
+            /** Position */
+            position: number;
+        };
+        /** GSCQueryRow */
+        GSCQueryRow: {
+            /** Clicks */
+            clicks: number;
+            /** Ctr */
+            ctr: number;
+            /** Impressions */
+            impressions: number;
+            /** Position */
+            position: number;
+            /** Query */
+            query: string;
+        };
+        /** GSCSummaryResponse */
+        GSCSummaryResponse: {
+            /** Days */
+            days: number;
+            /** Enabled */
+            enabled: boolean;
+            /** Last Sync At */
+            last_sync_at?: string | null;
+            /** Low Ctr Opportunities */
+            low_ctr_opportunities: components["schemas"]["GSCLowCTROpportunity"][];
+            /** Top Pages Ctr */
+            top_pages_ctr: components["schemas"]["GSCPageRow"][];
+            /** Top Queries */
+            top_queries: components["schemas"]["GSCQueryRow"][];
+        };
         /**
          * GoogleSheetsExportHistory
          * @description Schema for individual export history entry.
@@ -10308,6 +10382,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SEOMetricsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_gsc_summary_v1_admin_seo_summary_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GSCSummaryResponse"];
                 };
             };
             /** @description Validation Error */
