@@ -64,15 +64,9 @@ jobs:
           cd backend
           mypy . --config-file pyproject.toml || echo "::warning::mypy found type errors — review required"
 
-      - name: Run tests with coverage
-        run: |
-          cd backend
-          pytest --cov --cov-report=xml --cov-report=term --cov-fail-under=70
-
-      - name: Upload coverage to Codecov (optional)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./backend/coverage.xml
-          flags: backend
-          fail_ci_if_error: false
+      # STORY-CONV-003c (Abstract Coral session): pytest execution + codecov upload removed.
+      # This workflow is superseded by backend-tests.yml (see header note) for the PR-gate
+      # test matrix + coverage upload. Running pytest here hit PNCP live endpoints via
+      # integration tests with no timeout budget, producing spurious CI failures that did
+      # NOT reflect backend-tests.yml (authoritative gate). Lint/type/security scans above
+      # remain the responsibility of this workflow.

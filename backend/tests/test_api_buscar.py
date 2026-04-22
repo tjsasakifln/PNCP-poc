@@ -96,7 +96,7 @@ class TestBuscarFeatureFlagEnabled:
             )
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -153,7 +153,7 @@ class TestBuscarFeatureFlagEnabled:
             mock_increment_quota.return_value = 24
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -201,7 +201,7 @@ class TestBuscarFeatureFlagDisabled:
             mock_increment_quota.return_value = 1
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -257,7 +257,7 @@ class TestBuscarDateRangeValidation:
 
             # 7 days range (within 30 days limit)
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -309,7 +309,7 @@ class TestBuscarDateRangeValidation:
 
             # 1000 days range (within 1825 days limit)
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2023-05-01",
@@ -361,7 +361,7 @@ class TestBuscarDateRangeValidation:
 
             # Exactly 30 days (Jan 1 to Jan 30 inclusive = 30 days)
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -413,7 +413,7 @@ class TestBuscarDateRangeValidation:
 
             # Single day (1 day range)
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-15",
@@ -478,16 +478,27 @@ class TestBuscarPNCPRateLimiting:
             mock_pncp_class.return_value = mock_client
             mock_client.fetch_all.side_effect = error
 
-            response = client.post(
-                "/buscar",
-                json={
-                    "ufs": ["SC"],
-                    "data_inicial": "2026-01-01",
-                    "data_final": "2026-01-07",
-                    "setor_id": "vestuario",
-                    "force_fresh": True,  # Bypass InMemoryCache from previous tests
-                },
-            )
+            # Post-CRIT-072 refactor: pipeline runs via SearchPipeline.run() in sync mode;
+            # parallel_fetch / PNCPClient mocks above no longer participate in error
+            # propagation. Patch the pipeline run to raise the error directly so the
+            # 503 contract continues to be asserted at the HTTP boundary.
+            async def _raise_rate_limit(_ctx):
+                raise error
+
+            with patch("search_pipeline.SearchPipeline.run", side_effect=_raise_rate_limit):
+                response = client.post(
+                    "/v1/buscar",
+                    json={
+                        "ufs": ["SC"],
+                        "data_inicial": "2026-01-01",
+                        "data_final": "2026-01-07",
+                        "setor_id": "vestuario",
+                        "force_fresh": True,  # Bypass InMemoryCache from previous tests
+                    },
+                    # CRIT-072: ASYNC_SEARCH_DEFAULT=True returns 202; force sync to assert
+                    # the original 503 propagation contract used by this test.
+                    headers={"x-sync": "true"},
+                )
 
             assert response.status_code == 503
             assert "Retry-After" in response.headers
@@ -531,7 +542,7 @@ class TestBuscarUserRateLimiting:
             )
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -589,7 +600,7 @@ class TestBuscarUserRateLimiting:
             mock_increment_quota.return_value = 101
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -630,7 +641,7 @@ class TestBuscarUserRateLimiting:
             )
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -677,7 +688,7 @@ class TestBuscarUserRateLimiting:
             mock_increment_quota.return_value = 1
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -720,7 +731,7 @@ class TestBuscarUserRateLimiting:
             mock_increment_quota.return_value = 1
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -779,7 +790,7 @@ class TestBuscarUserRateLimiting:
             mock_increment_quota.return_value = 11
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -821,7 +832,7 @@ class TestBuscarUserRateLimiting:
             )
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -872,7 +883,7 @@ class TestBuscarErrorHandling:
             )
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -902,7 +913,7 @@ class TestBuscarErrorHandling:
             mock_check_quota.side_effect = RuntimeError("Supabase not configured")
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -955,7 +966,7 @@ class TestBuscarErrorHandling:
             mock_increment_quota.side_effect = Exception("Database error")
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -1014,7 +1025,7 @@ class TestBuscarQuotaIncrementScenarios:
             mock_client_instance.fetch_all.return_value = []
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -1071,7 +1082,7 @@ class TestBuscarQuotaIncrementScenarios:
             mock_client_instance.fetch_all.return_value = []  # No results
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -1127,7 +1138,7 @@ class TestBuscarInvalidSector:
             mock_atomic_increment.return_value = (True, 11, 39)
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -1183,7 +1194,7 @@ class TestBuscarCustomSearchTerms:
             mock_increment_quota.return_value = 11
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -1239,7 +1250,7 @@ class TestBuscarCustomSearchTerms:
             mock_client_instance.fetch_all.return_value = []
 
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",

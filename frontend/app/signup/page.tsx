@@ -8,13 +8,17 @@ import { useAnalytics, getStoredUTMParams } from "../../hooks/useAnalytics";
 import { translateAuthError } from "../../lib/error-messages";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
+import { buttonVariants } from "../../components/ui/button";
 import { safeSetItem, safeGetItem } from "../../lib/storage";
 import { signupSchema, type SignupFormData } from "../../lib/schemas/forms";
 
 import { SignupSuccess } from "./components/SignupSuccess";
 import { SignupOAuth } from "./components/SignupOAuth";
 import { SignupForm } from "./components/SignupForm";
+import CardCollect from "./components/CardCollect";
+import { computeRolloutBranch, readRolloutPctFromEnv, type RolloutBranch } from "./hooks/useRolloutBranch";
 
 // STORY-323: Partner name type
 type PartnerInfo = { name: string; slug: string } | null;
@@ -45,6 +49,12 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // CONV-003b: 2-step state machine. Step 1 = email/password form.
+  // Step 2 = Stripe PaymentElement (only when rollout branch == "card").
+  const [step, setStep] = useState<1 | 2>(1);
+  const [rolloutBranch, setRolloutBranch] = useState<RolloutBranch | null>(null);
+  const [pendingFormData, setPendingFormData] = useState<SignupFormData | null>(null);
 
   // ISSUE-068: Redirect already-authenticated users (consistent with /login)
   useEffect(() => {
@@ -128,28 +138,99 @@ export default function SignupPage() {
     }
   };
 
+  // CONV-003b: legacy path (Supabase direct). Invoked on rollout=legacy or when
+  // the card branch is disabled (PCT=0).
+  const runLegacySignup = async (data: SignupFormData) => {
+    await signUpWithEmail(data.email, data.password, data.fullName);
+    setSuccess(true);
+    trackEvent('signup_completed', {
+      method: "email",
+      rollout_branch: "legacy",
+      ...getStoredUTMParams(),
+    });
+  };
+
+  // CONV-003b: card path (backend /v1/auth/signup). Creates Stripe Customer +
+  // Subscription with 14-day trial. Called from onCardReady in step 2.
+  const runCardSignup = async (data: SignupFormData, paymentMethodId: string) => {
+    const res = await fetch("/api/auth/signup-trial", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        full_name: data.fullName,
+        stripe_payment_method_id: paymentMethodId,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.detail ?? `signup-trial falhou (${res.status})`);
+    }
+    setSuccess(true);
+    trackEvent('signup_completed', {
+      method: "email",
+      rollout_branch: "card",
+      ...getStoredUTMParams(),
+    });
+    // CONV-003c AC4: capture instrumented funnel event. CNAE is collected
+    // later in onboarding, not at signup — pass only the fields available
+    // at this point so downstream Mixpanel breakdowns stay honest.
+    trackEvent('trial_card_captured', {
+      method: "email",
+    });
+  };
+
   const onSubmit = async (data: SignupFormData) => {
     setError(null);
 
     // AC13: Track signup attempt (after validation, before async work)
     trackEvent('signup_attempted', { method: "email" });
 
-    setLoading(true);
+    // CONV-003b: compute rollout branch BEFORE the expensive paths.
+    // SHA-256 is fast (<1ms) and determines whether to show step 2.
+    const pct = readRolloutPctFromEnv();
+    const branch = await computeRolloutBranch(data.email, pct);
+    setRolloutBranch(branch);
 
+    if (branch === "card") {
+      // Defer the actual network call until the card is collected in step 2.
+      setPendingFormData(data);
+      setStep(2);
+      return;
+    }
+
+    // Legacy path — keep original UX untouched.
+    setLoading(true);
     try {
-      await signUpWithEmail(data.email, data.password, data.fullName);
-      setSuccess(true);
-      // AC14 + AC26: Track signup_completed with UTM params
-      trackEvent('signup_completed', {
-        method: "email",
-        ...getStoredUTMParams(),
-      });
+      await runLegacySignup(data);
     } catch (err: unknown) {
       const rawMessage = err instanceof Error ? err.message : "Erro ao criar conta";
       setError(translateAuthError(rawMessage));
     } finally {
       setLoading(false);
     }
+  };
+
+  const onCardReady = async (paymentMethodId: string) => {
+    if (!pendingFormData) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await runCardSignup(pendingFormData, paymentMethodId);
+    } catch (err: unknown) {
+      const rawMessage = err instanceof Error ? err.message : "Erro ao criar conta";
+      setError(translateAuthError(rawMessage));
+      setStep(1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onBackToStep1 = () => {
+    setStep(1);
+    setPendingFormData(null);
+    setError(null);
   };
 
   // SEO-PLAYBOOK Frente 2: persist ?ref=CODE for referral program
@@ -263,6 +344,19 @@ export default function SignupPage() {
             Veja quais licitações valem a pena para sua empresa — em 2 minutos
           </p>
 
+          {/* Already-authenticated fallback: visible CTA (complements silent redirect in useEffect) */}
+          {!authLoading && authSession && (
+            <div className="mb-4 p-3 bg-brand-blue-subtle rounded-input text-center" data-testid="already-auth-banner">
+              <p className="text-sm text-ink mb-2">Você já tem uma conta ativa.</p>
+              <Link
+                href="/buscar"
+                className={buttonVariants({ variant: "primary", size: "sm" })}
+              >
+                Ir para Buscar
+              </Link>
+            </div>
+          )}
+
           {/* STORY-323 AC16: Partner referral badge */}
           {partnerInfo && (
             <div data-testid="partner-badge" className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-input text-center">
@@ -298,15 +392,45 @@ export default function SignupPage() {
             </span>
           </div>
 
-          <SignupOAuth onGoogleSignup={() => signInWithGoogle()} />
+          {step === 1 && (
+            <>
+              <SignupOAuth onGoogleSignup={() => signInWithGoogle()} />
 
-          <SignupForm
-            form={form}
-            loading={loading}
-            error={error}
-            onSubmit={onSubmit}
-            isFormValid={isFormValid}
-          />
+              <SignupForm
+                form={form}
+                loading={loading}
+                error={error}
+                onSubmit={onSubmit}
+                isFormValid={isFormValid}
+              />
+            </>
+          )}
+
+          {step === 2 && rolloutBranch === "card" && (
+            <div data-testid="signup-step-2-card">
+              <h2 className="text-lg font-semibold text-ink mb-2">
+                Adicione um cartão para começar seu trial
+              </h2>
+              <p className="text-sm text-ink-secondary mb-4">
+                14 dias grátis. Cobrança automática em {new Date(Date.now() + 14 * 86400e3).toLocaleDateString("pt-BR")}
+              </p>
+              {error && (
+                <div
+                  role="alert"
+                  className="mb-3 p-2 text-sm text-red-700 bg-red-50 rounded"
+                  data-testid="signup-step-2-error"
+                >
+                  {error}
+                </div>
+              )}
+              <CardCollect
+                onCardReady={onCardReady}
+                onBack={onBackToStep1}
+                loading={loading}
+                submitLabel="Começar trial de 14 dias"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

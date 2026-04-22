@@ -151,7 +151,7 @@ class TestFallbackAdapterNone:
     @patch("source_config.sources.get_source_config")
     @patch("utils.error_reporting.sentry_sdk")
     @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
-    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
+    @patch("cache.manager.save_to_cache_per_uf", new_callable=AsyncMock)
     @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("os.getenv", return_value="true")  # ENABLE_MULTI_SOURCE
     async def test_ac2_fallback_adapter_is_none(
@@ -323,7 +323,7 @@ class TestGenericExceptionHandler:
 
     @pytest.mark.asyncio
     @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock)
-    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
+    @patch("cache.manager.save_to_cache_per_uf", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
     @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
@@ -388,7 +388,7 @@ class TestGenericExceptionHandler:
 
     @pytest.mark.asyncio
     @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
-    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
+    @patch("cache.manager.save_to_cache_per_uf", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
     @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
@@ -443,7 +443,7 @@ class TestAllSourcesFailCache:
 
     @pytest.mark.asyncio
     @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock)
-    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
+    @patch("cache.manager.save_to_cache_per_uf", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
     @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
@@ -598,7 +598,7 @@ class TestSearchWithoutComprasGov:
 
     @pytest.mark.asyncio
     @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
-    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
+    @patch("cache.manager.save_to_cache_per_uf", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
     @patch("pipeline.stages.execute.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")

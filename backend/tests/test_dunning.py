@@ -579,9 +579,11 @@ async def test_require_active_plan_returns_402_for_blocked():
     )
 
     # has_master_access is imported from authorization inside require_active_plan
+    # BTS-010a Pattern 1: quota package split — patch at plan_auth.asyncio (where to_thread is called)
+    # and plan_auth.check_quota (where the lazy `from quota.plan_enforcement import check_quota` lands).
     with patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False), \
-         patch("quota.check_quota", return_value=mock_quota_info), \
-         patch("quota.asyncio") as mock_asyncio:
+         patch("quota.plan_enforcement.check_quota", return_value=mock_quota_info), \
+         patch("quota.plan_auth.asyncio") as mock_asyncio:
 
         mock_asyncio.to_thread = AsyncMock(return_value=mock_quota_info)
 
@@ -618,9 +620,10 @@ async def test_require_active_plan_returns_402_for_grace_period():
         days_since_failure=16,
     )
 
+    # BTS-010a Pattern 1: quota package split — see comment on previous test.
     with patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False), \
-         patch("quota.check_quota", return_value=mock_quota_info), \
-         patch("quota.asyncio") as mock_asyncio:
+         patch("quota.plan_enforcement.check_quota", return_value=mock_quota_info), \
+         patch("quota.plan_auth.asyncio") as mock_asyncio:
 
         mock_asyncio.to_thread = AsyncMock(return_value=mock_quota_info)
 

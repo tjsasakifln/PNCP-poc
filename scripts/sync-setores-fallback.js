@@ -4,10 +4,10 @@
  * Sync Setores Fallback Script
  *
  * Synchronizes hardcoded sector lists in the frontend with the backend's
- * sector definitions (sectors_data.yaml via /setores endpoint).
+ * sector definitions (sectors_data.yaml via /v1/setores endpoint).
  *
  * Targets:
- *   1. useSearchFilters.ts  → SETORES_FALLBACK (id, name, description)
+ *   1. filters/sectorData.ts  → SETORES_FALLBACK (id, name, description)
  *   2. signup/page.tsx      → SECTORS (id, name) + { id: "outro", name: "Outro" }
  *
  * Usage:
@@ -18,7 +18,7 @@
  *   --backend-url URL  Custom backend URL (default: http://localhost:8000)
  *
  * Requirements:
- *   - Backend must be running with /setores endpoint
+ *   - Backend must be running with /v1/setores endpoint
  *
  * STORY-170 AC15 + STORY-249 AC4
  */
@@ -37,7 +37,7 @@ const BACKEND_URL = backendUrlIndex !== -1 && args[backendUrlIndex + 1]
   : (process.env.BACKEND_URL || 'http://localhost:8000');
 
 // Target file paths
-const SEARCH_FILTERS_PATH = path.join(__dirname, '../frontend/app/buscar/hooks/useSearchFilters.ts');
+const SEARCH_FILTERS_PATH = path.join(__dirname, '../frontend/app/buscar/hooks/filters/sectorData.ts');
 const SIGNUP_PAGE_PATH = path.join(__dirname, '../frontend/app/signup/page.tsx');
 
 // ANSI color codes for terminal output
@@ -59,10 +59,10 @@ function log(message, color = 'reset') {
  */
 async function fetchBackendSetores() {
   log('\n  Fetching sectors from backend...', 'cyan');
-  log(`   URL: ${BACKEND_URL}/setores\n`, 'cyan');
+  log(`   URL: ${BACKEND_URL}/v1/setores\n`, 'cyan');
 
   try {
-    const response = await fetch(`${BACKEND_URL}/setores`);
+    const response = await fetch(`${BACKEND_URL}/v1/setores`);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -148,7 +148,7 @@ function compareSetores(label, currentCode, newIds) {
   return { added, removed };
 }
 
-// ─── Target 1: useSearchFilters.ts SETORES_FALLBACK ──────────────────────────
+// ─── Target 1: filters/sectorData.ts SETORES_FALLBACK ────────────────────────
 
 function generateFallbackCode(setores) {
   const entries = setores.map(setor => {
@@ -162,33 +162,33 @@ ${entries}
 }
 
 async function updateSearchFilters(setores) {
-  log('   [1/2] Updating useSearchFilters.ts SETORES_FALLBACK...', 'cyan');
+  log('   [1/2] Updating filters/sectorData.ts SETORES_FALLBACK...', 'cyan');
 
   const content = await fs.readFile(SEARCH_FILTERS_PATH, 'utf-8');
 
   const fallbackRegex = /\/\/ Fallback sectors list[^\n]*\nconst SETORES_FALLBACK: Setor\[\] = \[[^\]]+\];/s;
 
   if (!fallbackRegex.test(content)) {
-    throw new Error('Could not find SETORES_FALLBACK constant in useSearchFilters.ts');
+    throw new Error('Could not find SETORES_FALLBACK constant in filters/sectorData.ts');
   }
 
   // Compare before applying
   const currentMatch = content.match(fallbackRegex);
   if (currentMatch) {
-    compareSetores('useSearchFilters.ts', currentMatch[0], setores.map(s => s.id));
+    compareSetores('filters/sectorData.ts', currentMatch[0], setores.map(s => s.id));
   }
 
   const newCode = generateFallbackCode(setores);
   const updatedContent = content.replace(fallbackRegex, newCode);
 
   if (isDryRun) {
-    log('   DRY RUN - useSearchFilters.ts would become:', 'yellow');
+    log('   DRY RUN - filters/sectorData.ts would become:', 'yellow');
     log('   ' + '-'.repeat(50), 'yellow');
     log(newCode, 'bright');
     log('   ' + '-'.repeat(50), 'yellow');
   } else {
     await fs.writeFile(SEARCH_FILTERS_PATH, updatedContent, 'utf-8');
-    log(`   Updated: ${SEARCH_FILTERS_PATH}`, 'green');
+    log('   Updated: filters/sectorData.ts', 'green');
   }
 }
 
@@ -313,7 +313,7 @@ async function main() {
 
     if (!isDryRun) {
       log('   Next steps:', 'cyan');
-      log('   1. Review changes in useSearchFilters.ts and signup/page.tsx', 'cyan');
+      log('   1. Review changes in filters/sectorData.ts and signup/page.tsx', 'cyan');
       log('   2. Test the frontend with: npm run dev', 'cyan');
       log('   3. Commit the changes if everything looks good\n', 'cyan');
     }

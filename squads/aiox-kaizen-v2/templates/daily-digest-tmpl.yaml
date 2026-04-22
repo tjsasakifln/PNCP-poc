@@ -1,0 +1,13 @@
+# Daily Digest Template — kaizen-v2
+# Schema for daily intelligence capture
+# Generated: By stop-capture.cjs hook or *capture task
+
+date: YYYY-MM-DD
+session_count: 0
+providers_active: []
+activity_summary: ""
+highlights: []
+decisions: []
+stories_touched: []
+learnings: []
+agents_involved: []

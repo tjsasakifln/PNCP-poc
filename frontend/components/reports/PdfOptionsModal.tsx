@@ -240,17 +240,19 @@ export default function PdfOptionsModal({
                   <div className="flex gap-2" role="group" aria-label="Selecione o número de oportunidades">
                     {ITEM_OPTIONS.map((option) => {
                       const isSelected = maxItems === option;
+                      const exceedsTotal = totalResults < option;
+                      const isDisabled = isGenerating || exceedsTotal;
                       return (
                         <label
                           key={option}
                           className={[
-                            "flex-1 flex items-center justify-center px-3 py-2.5 rounded-button border cursor-pointer",
+                            "flex-1 flex items-center justify-center px-3 py-2.5 rounded-button border",
                             "text-sm font-medium transition-colors select-none",
-                            isGenerating
+                            isDisabled
                               ? "border-DEFAULT text-ink-muted opacity-40 cursor-not-allowed"
                               : isSelected
-                              ? "border-brand-navy bg-brand-navy text-white"
-                              : "border-DEFAULT text-ink bg-surface-0 hover:bg-surface-1",
+                              ? "border-brand-navy bg-brand-navy text-white cursor-pointer"
+                              : "border-DEFAULT text-ink bg-surface-0 hover:bg-surface-1 cursor-pointer",
                           ].join(" ")}
                         >
                           <input
@@ -258,7 +260,7 @@ export default function PdfOptionsModal({
                             name="pdf-max-items"
                             value={option}
                             checked={isSelected}
-                            disabled={isGenerating}
+                            disabled={isDisabled}
                             onChange={() => setMaxItems(option)}
                             className="sr-only"
                             aria-label={`${option} oportunidades`}

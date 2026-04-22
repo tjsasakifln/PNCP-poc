@@ -47,12 +47,11 @@ const icons = {
   close: <X {...ICON_PROPS} />,
 };
 
-/* -- Navigation items -- */
+/* -- Navigation items (SHIP-002 AC9: /mensagens feature-gated) -- */
 const PRIMARY_NAV = [
   { href: "/buscar", label: "Buscar", icon: icons.search },
   { href: "/pipeline", label: "Pipeline", icon: icons.pipeline },
   { href: "/historico", label: "Histórico", icon: icons.history },
-  { href: "/mensagens", label: "Mensagens", icon: icons.messages },
   { href: "/dashboard", label: "Dashboard", icon: icons.dashboard },
 ];
 

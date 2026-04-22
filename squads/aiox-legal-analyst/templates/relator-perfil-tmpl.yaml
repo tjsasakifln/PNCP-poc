@@ -1,0 +1,51 @@
+# Template: Perfil de Relator
+# Proposito: Perfil estruturado de Ministro/Desembargador Relator
+
+metadata:
+  relator: "{NOME}"
+  tribunal: "{TRIBUNAL}"
+  orgao: "{TURMA|SECAO|PLENARIO}"
+  tema_analisado: "{TEMA}"
+  periodo_analise: "{PERIODO}"
+  data_relatorio: "{DATA}"
+
+perfil:
+  nome_completo: "{NOME}"
+  cargo: "{CARGO}"
+  posse: "{DATA_POSSE}"
+  formacao: "{FORMACAO}"
+  obras_publicadas: ["{OBRA_1}", "{OBRA_2}"]
+
+analise_votos:
+  total_analisados: "{N}"
+  favoravel: "{PERCENTUAL}"
+  desfavoravel: "{PERCENTUAL}"
+  votos_vencidos: "{N}"
+  divergencias_recorrentes: ["{TEMA_1}", "{TEMA_2}"]
+
+votos_chave:
+  - processo: "{NUMERO}"
+    tema: "{TEMA}"
+    resultado: "{RESULTADO}"
+    tipo_voto: "{VENCEDOR|VENCIDO}"
+    data: "{DATA}"
+    resumo: "{RESUMO}"
+
+linhas_argumentativas:
+  preferidas:
+    - "{LINHA_1}"
+    - "{LINHA_2}"
+  doutrinadores_citados:
+    - "{DOUTRINADOR_1}"
+    - "{DOUTRINADOR_2}"
+  principios_invocados:
+    - "{PRINCIPIO_1}"
+
+evolucao:
+  - periodo: "{PERIODO}"
+    posicao: "{POSICAO}"
+    evento: "{EVENTO_QUE_MUDOU}"
+
+comparacao_turma:
+  alinhamento: "{PERCENTUAL}"
+  principais_divergencias: ["{DIVERGENCIA_1}"]

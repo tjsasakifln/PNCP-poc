@@ -1,0 +1,201 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEGAL ANALYST SQUAD - Configuration
+# Version: 1.0.0
+# Purpose: Analise processual baseada em jurisprudencia, precedentes e CNJ
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: legal-analyst
+version: 1.0.0
+
+pack:
+  name: legal-analyst
+  version: 1.0.0
+  short-title: Analista Processual Squad
+  description: >-
+    Sistema de analise juridica processual com 15 agentes especializados.
+    Pesquisa, classifica e analisa processos judiciais aplicando rigorosamente
+    diretrizes do CNJ, jurisprudencias consolidadas e precedentes dos Relatores.
+    Pipeline: Triagem -> Pesquisa -> Analise -> Fundamentacao -> Validacao -> Entrega.
+  author: AIOS
+  icon: "⚖"
+  slashPrefix: legalAnalyst
+
+entry_agent: legal-chief
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CORE PRINCIPLES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+core_principles:
+  - name: "JURISPRUDENCIA > OPINIAO"
+    rule: "Toda analise fundamentada em julgados reais e precedentes. Opiniao sem jurisprudencia nao e analise."
+
+  - name: "CNJ-COMPLIANT"
+    rule: "Resolucoes do CNJ sao gates obrigatorios (Res. 331/2020, 396/2021). Nao sugestoes."
+
+  - name: "DATAJUD-FIRST"
+    rule: "Dados estruturados conforme padrao DATAJUD do CNJ. Interoperabilidade garantida."
+
+  - name: "RELATOR-AWARE"
+    rule: "Posicionamento do Relator influencia diretamente o resultado. Sempre mapear."
+
+  - name: "CPC Art. 489"
+    rule: "Toda fundamentacao deve atender os 6 incisos do Art. 489 par. 1o do CPC."
+
+  - name: "PRECEDENTE E LEI"
+    rule: "Sistema de precedentes do CPC (Art. 926-928) e vinculante. Stare decisis brasileiro."
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER STRUCTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+tier_structure:
+  orchestrator:
+    agent: legal-chief
+    mind: "Orquestrador"
+    role: "Recebe solicitacoes, roteia para agentes, impoe quality gates, monta entregaveis"
+
+  tier_0:
+    name: "Triagem e Classificacao"
+    agents:
+      - barbosa-classifier
+      - fux-procedural
+      - cnj-compliance
+    purpose: "Classificar processo, verificar admissibilidade, carregar conformidade CNJ"
+
+  tier_1:
+    name: "Pesquisa Jurisprudencial"
+    agents:
+      - mendes-researcher
+      - toffoli-aggregator
+      - weber-indexer
+    purpose: "Pesquisar jurisprudencia, consolidar precedentes, indexar tematicamente"
+
+  tier_2:
+    name: "Analise Aprofundada"
+    agents:
+      - moraes-analyst
+      - barroso-strategist
+      - fachin-precedent
+      - nunes-quantitative
+      - carmem-relator
+    purpose: "Analisar direitos fundamentais, construir estrategia, jurimetria, perfil de relatores"
+    parallelizable: true
+
+  tier_3:
+    name: "Validacao e Entrega"
+    agents:
+      - theodoro-validator
+      - marinoni-quality
+      - datajud-formatter
+    purpose: "Validar fundamentacao, qualidade de precedentes, formatar DATAJUD"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMMANDS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+commands:
+  intake:
+    trigger: "*intake"
+    agent: legal-chief
+    description: "Pipeline completo automatico (6 fases)"
+
+  analisar-processo:
+    trigger: "*analisar-processo {tema}"
+    agent: legal-chief
+    description: "Pipeline completo com tema especifico"
+
+  classificar-processo:
+    trigger: "*classificar-processo {descricao}"
+    agent: barbosa-classifier
+    description: "Classificacao TPU/SGT do CNJ"
+
+  pesquisar-jurisprudencia:
+    trigger: "*pesquisar-jurisprudencia {tema}"
+    agent: mendes-researcher
+    description: "Pesquisa jurisprudencial completa"
+
+  estrategia-argumentativa:
+    trigger: "*estrategia-argumentativa {caso}"
+    agent: barroso-strategist
+    description: "Estrategia argumentativa com ponderacao e CPC Art. 489"
+
+  ponderar-principios:
+    trigger: "*ponderar-principios {p1} vs {p2}"
+    agent: barroso-strategist
+    description: "Ponderacao de principios (Alexy)"
+
+  analisar-relator:
+    trigger: "*analisar-relator {ministro}"
+    agent: carmem-relator
+    description: "Perfil decisorio do relator"
+
+  jurimetria:
+    trigger: "*jurimetria {tema}"
+    agent: nunes-quantitative
+    description: "Analise quantitativa de julgados"
+
+  minutar:
+    trigger: "*minutar {tipo}"
+    agent: barroso-strategist
+    description: "Minuta de peca processual"
+
+  validar-fundamentacao:
+    trigger: "*validar-fundamentacao"
+    agent: theodoro-validator
+    description: "Validacao CPC Art. 489 par. 1o"
+
+  cnj-check:
+    trigger: "*cnj-check {processo}"
+    agent: cnj-compliance
+    description: "Verificacao de conformidade CNJ"
+
+  relatorio:
+    trigger: "*relatorio"
+    agent: legal-chief
+    description: "Relatorio estrategico completo"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SETTINGS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+settings:
+  model: claude-sonnet-4-20250514
+  max_upload_size_mb: 50
+  allowed_extensions: [".pdf"]
+
+  activation:
+    greeting: >
+      Analista Processual Squad ativo. Envie um PDF ou descreva o caso para iniciar.
+      Pipeline: Triagem → Pesquisa → Analise → Fundamentacao → Validacao → Entrega.
+    quick_commands:
+      - "*intake — Pipeline completo"
+      - "*estrategia-argumentativa {caso} — Estrategia"
+      - "*pesquisar-jurisprudencia {tema} — Pesquisa"
+      - "*agentes — Ver todos os agentes"
+
+  quality_gates:
+    - phase: 0
+      gate: "Classificacao TPU/SGT completa?"
+      veto: "BLOQUEAR ate classificar"
+    - phase: 1
+      gate: "5+ acordaos relevantes encontrados?"
+      veto: "BLOQUEAR, solicitar input humano"
+    - phase: 3
+      gate: "CPC Art. 489 par. 1o atendido?"
+      checkpoint: "fundamentacao-quality-check.md"
+    - phase: 4
+      gate: "CNJ compliance PASS?"
+      veto: "BLOQUEAR, retornar Fase 3"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+metadata:
+  agents: 15
+  tasks: 14
+  workflows: 4
+  checklists: 12
+  templates: 10
+  data_files: 6

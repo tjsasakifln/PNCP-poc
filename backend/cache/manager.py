@@ -43,8 +43,7 @@ from cache._ops import (
 )
 from cache.admin import (
     get_cache_metrics, invalidate_cache_entry, invalidate_all_cache,
-    inspect_cache_entry, get_stale_entries_for_refresh,
-    get_top_popular_params, get_popular_ufs_from_sessions,
+    inspect_cache_entry,
 )
 from cache.cascade import get_from_cache_cascade, _cascade_read_levels, _format_cache_date_range  # noqa: F401
 

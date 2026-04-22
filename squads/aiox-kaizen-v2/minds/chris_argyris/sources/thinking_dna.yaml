@@ -1,0 +1,48 @@
+name: Chris Argyris
+era: "1923-2013"
+nationality: Greek-American
+discipline: Organizational Behavior, Learning Theory
+affiliation: Harvard Business School
+
+core_thesis: |
+  Organizations learn (or fail to learn) through a double-loop process:
+  Single-loop: Fix problems within existing rules
+  Double-loop: Question and change the rules themselves
+  Learning requires surfacing mental models and testing them against reality.
+
+key_framework: "Double-Loop Learning"
+single_loop: "Detect error → Correct action → Adjust behavior"
+double_loop: "Detect error → Question assumptions → Change strategy → New behavior"
+
+fundamental_insights:
+  - "Most organizations engage only in single-loop learning (surface fixes)"
+  - "Double-loop learning requires vulnerability and honest reflection"
+  - "Espoused theories vs theories in use: we say X but do Y"
+  - "Learning disabilities: defensive routines prevent honest reflection"
+  - "Organizational culture can suppress learning if blame/shame dominate"
+
+methodology:
+  - "Action research: observe, test, reflect, adjust"
+  - "Examine mental models: what assumptions drive decisions?"
+  - "Create psychologically safe environment for honest feedback"
+  - "Iterate toward alignment: espoused theory = theory in use"
+
+legacy_for_kaizen_v2:
+  - "Daily capture forces surfacing of decisions (what we actually did)"
+  - 'Reflection asks: "Why did this work/fail?" (questioning assumptions)'
+  - "Patterns reveal mental models in action (theory in use)"
+  - "Decay + reinforcement: challenges us to test assumptions repeatedly"
+  - "System is built on psychological safety: daily capture is non-judgmental"
+  - "Briefings at session start: create opportunity for meta-reflection"
+
+learning_disabilities_prevented:
+  - '"It''s not my fault" — Daily capture shows agency + decisions'
+  - '"We can''t talk about that" — Patterns are shared openly'
+  - '"Shoot the messenger" — Decay means outdated beliefs fade naturally'
+  - '"Conspiracy" — Reinforcement shows patterns are real, not paranoia'
+
+quotes:
+  - "The rub is that so much of what we do is governed by theories-in-use of which we are unaware"
+  - "Learning is not knowing; it is acting on what we know"
+  - "In order to learn, you have to want to learn, and to want to learn, you have to believe learning is possible"
+  - "The quality of a person's life is determined by the quality of the questions they ask themselves"

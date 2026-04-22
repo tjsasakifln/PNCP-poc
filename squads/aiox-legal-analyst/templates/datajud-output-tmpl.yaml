@@ -1,0 +1,47 @@
+# Template: Output DATAJUD
+# Proposito: Dados estruturados conforme schema DATAJUD do CNJ (Res. 331/2020)
+
+processo:
+  numero: "{NNNNNNN-DD.AAAA.J.TR.OOOO}"  # Formato CNJ obrigatorio
+  classe:
+    codigo: "{CODIGO_TPU}"
+    descricao: "{DESCRICAO}"
+  assuntos:
+    - codigo: "{CODIGO_TPU}"
+      descricao: "{DESCRICAO}"
+      principal: "{SIM|NAO}"
+  orgao_julgador:
+    codigo: "{CODIGO}"
+    nome: "{NOME}"
+    instancia: "{PRIMEIRO_GRAU|SEGUNDO_GRAU|SUPERIOR}"
+  data_ajuizamento: "{DD/MM/AAAA}"
+  situacao: "{EM_TRAMITACAO|BAIXADO|ARQUIVADO}"
+  valor_causa: "{R$ XX.XXX,XX}"
+
+partes:
+  - nome: "{NOME}"
+    tipo: "{AUTOR|REU|TERCEIRO}"
+    documento: "{CPF|CNPJ}"
+    advogados:
+      - nome: "{NOME}"
+        oab: "{UF NUMERO}"
+
+movimentacoes:
+  - data: "{DD/MM/AAAA}"
+    codigo: "{CODIGO_TPU}"
+    descricao: "{DESCRICAO}"
+    complemento: "{COMPLEMENTO}"
+
+decisoes:
+  - data: "{DD/MM/AAAA}"
+    tipo: "{SENTENCA|ACORDAO|DECISAO_INTERLOCUTORIA|DESPACHO}"
+    magistrado: "{NOME}"
+    resultado: "{RESULTADO}"
+
+metadados:
+  prioridade: "{SIM|NAO}"
+  tipo_prioridade: "{IDOSO|CRIANCA|SAUDE|PRESO}"
+  segredo_justica: "{SIM|NAO}"
+  justica_gratuita: "{SIM|NAO}"
+  data_extracao: "{DD/MM/AAAA}"
+  fonte: "{SISTEMA}"

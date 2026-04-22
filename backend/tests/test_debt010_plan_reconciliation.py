@@ -484,7 +484,8 @@ class TestTableSizeMetrics:
         with patch("supabase_client.get_supabase", return_value=mock_supabase), \
              patch("supabase_client.sb_execute_direct", side_effect=mock_sb_execute_direct), \
              patch("metrics.DB_TABLE_SIZE_BYTES", mock_gauge):
-            from cron_jobs import update_table_size_metrics, _MONITORED_TABLES
+            from cron_jobs import update_table_size_metrics
+            from jobs.cron.billing import _MONITORED_TABLES
             result = await update_table_size_metrics()
 
         assert result["status"] == "ok"
@@ -506,7 +507,8 @@ class TestTableSizeMetrics:
         with patch("supabase_client.get_supabase", return_value=mock_supabase), \
              patch("supabase_client.sb_execute_direct", side_effect=mock_sb_execute_direct), \
              patch("metrics.DB_TABLE_SIZE_BYTES", mock_gauge):
-            from cron_jobs import update_table_size_metrics, _MONITORED_TABLES
+            from cron_jobs import update_table_size_metrics
+            from jobs.cron.billing import _MONITORED_TABLES
             result = await update_table_size_metrics()
 
         assert result["status"] == "ok"
@@ -523,7 +525,7 @@ class TestTableSizeMetrics:
 
         Uses call-order to simulate: first call succeeds, second call fails.
         """
-        from cron_jobs import _MONITORED_TABLES
+        from jobs.cron.billing import _MONITORED_TABLES
 
         first_table = _MONITORED_TABLES[0]
         second_table = _MONITORED_TABLES[1]
@@ -594,7 +596,7 @@ class TestTableSizeMetrics:
     @pytest.mark.asyncio
     async def test_monitored_tables_constant_has_expected_tables(self):
         """_MONITORED_TABLES includes the JSONB-heavy tables from DEBT-010 spec."""
-        from cron_jobs import _MONITORED_TABLES
+        from jobs.cron.billing import _MONITORED_TABLES
 
         expected_tables = {
             "search_results_cache",

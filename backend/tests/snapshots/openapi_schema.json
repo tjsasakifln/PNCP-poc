@@ -988,7 +988,7 @@
                 "type": "null"
               }
             ],
-            "description": "Valor m\u00e1ximo estimado da licita\u00e7\u00e3o em BRL. None = sem limite superior.",
+            "description": "Valor m\u00e1ximo estimado da licita\u00e7\u00e3o em BRL. None = sem limite superior. Ceiling: 1e15 (R$ 1 quatrilh\u00e3o) \u2014 STORY-419 incident guard to match NUMERIC(18,2) on search_sessions.valor_total.",
             "examples": [
               5000000.0
             ],
@@ -1772,6 +1772,92 @@
         "title": "CancelSubscriptionResponse",
         "type": "object"
       },
+      "CancelTrialInfoResponse": {
+        "description": "Returned by GET /cancelar-trial to populate the confirmation UI.",
+        "properties": {
+          "already_cancelled": {
+            "default": false,
+            "title": "Already Cancelled",
+            "type": "boolean"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "plan_name": {
+            "title": "Plan Name",
+            "type": "string"
+          },
+          "trial_end_ts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix epoch seconds when trial ends",
+            "title": "Trial End Ts"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "plan_name"
+        ],
+        "title": "CancelTrialInfoResponse",
+        "type": "object"
+      },
+      "CancelTrialRequest": {
+        "properties": {
+          "token": {
+            "description": "Signed cancel-trial JWT",
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "CancelTrialRequest",
+        "type": "object"
+      },
+      "CancelTrialResponse": {
+        "properties": {
+          "access_until": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix epoch seconds \u2014 trial access remains until this timestamp",
+            "title": "Access Until"
+          },
+          "already_cancelled": {
+            "default": false,
+            "title": "Already Cancelled",
+            "type": "boolean"
+          },
+          "cancelled": {
+            "title": "Cancelled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cancelled"
+        ],
+        "title": "CancelTrialResponse",
+        "type": "object"
+      },
       "CheckoutResponse": {
         "description": "Response for POST /checkout.",
         "properties": {
@@ -1832,7 +1918,7 @@
           "top_oportunidades": {
             "default": [],
             "items": {
-              "$ref": "#/components/schemas/SampleItem"
+              "$ref": "#/components/schemas/routes__blog_stats__SampleItem"
             },
             "title": "Top Oportunidades",
             "type": "array"
@@ -2038,6 +2124,62 @@
         "title": "ComparadorSearchResponse",
         "type": "object"
       },
+      "ComplianceProfileResponse": {
+        "properties": {
+          "aviso_legal": {
+            "title": "Aviso Legal",
+            "type": "string"
+          },
+          "cnpj": {
+            "title": "Cnpj",
+            "type": "string"
+          },
+          "fonte_dados": {
+            "title": "Fonte Dados",
+            "type": "string"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "razao_social": {
+            "title": "Razao Social",
+            "type": "string"
+          },
+          "sancoes": {
+            "items": {
+              "$ref": "#/components/schemas/SancaoEntry"
+            },
+            "title": "Sancoes",
+            "type": "array"
+          },
+          "situacao_geral": {
+            "title": "Situacao Geral",
+            "type": "string"
+          },
+          "total_sancoes_ceis": {
+            "title": "Total Sancoes Ceis",
+            "type": "integer"
+          },
+          "total_sancoes_cnep": {
+            "title": "Total Sancoes Cnep",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cnpj",
+          "razao_social",
+          "situacao_geral",
+          "total_sancoes_ceis",
+          "total_sancoes_cnep",
+          "sancoes",
+          "fonte_dados",
+          "last_updated",
+          "aviso_legal"
+        ],
+        "title": "ComplianceProfileResponse",
+        "type": "object"
+      },
       "ContratoPublico": {
         "properties": {
           "data_inicio": {
@@ -2109,6 +2251,539 @@
           "descricao"
         ],
         "title": "ContratoPublico",
+        "type": "object"
+      },
+      "ContratoReferencia": {
+        "properties": {
+          "data_assinatura": {
+            "title": "Data Assinatura",
+            "type": "string"
+          },
+          "objeto": {
+            "title": "Objeto",
+            "type": "string"
+          },
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor": {
+            "title": "Valor",
+            "type": "number"
+          }
+        },
+        "required": [
+          "objeto",
+          "orgao",
+          "valor",
+          "data_assinatura",
+          "uf"
+        ],
+        "title": "ContratoReferencia",
+        "type": "object"
+      },
+      "ContratosCidadeSetorStats": {
+        "description": "City \u00d7 Sector filtered contract stats for zero-editais cidade\u00d7setor pages.",
+        "properties": {
+          "avg_value": {
+            "title": "Avg Value",
+            "type": "number"
+          },
+          "cidade": {
+            "title": "Cidade",
+            "type": "string"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "monthly_trend": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTrend"
+            },
+            "title": "Monthly Trend",
+            "type": "array"
+          },
+          "n_unique_fornecedores": {
+            "default": 0,
+            "title": "N Unique Fornecedores",
+            "type": "integer"
+          },
+          "n_unique_orgaos": {
+            "default": 0,
+            "title": "N Unique Orgaos",
+            "type": "integer"
+          },
+          "sample_contracts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/routes__blog_stats__SampleContract"
+            },
+            "title": "Sample Contracts",
+            "type": "array"
+          },
+          "sector_id": {
+            "title": "Sector Id",
+            "type": "string"
+          },
+          "sector_name": {
+            "title": "Sector Name",
+            "type": "string"
+          },
+          "top_fornecedores": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTopEntry"
+            },
+            "title": "Top Fornecedores",
+            "type": "array"
+          },
+          "top_orgaos": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTopEntry"
+            },
+            "title": "Top Orgaos",
+            "type": "array"
+          },
+          "total_contracts": {
+            "title": "Total Contracts",
+            "type": "integer"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cidade",
+          "uf",
+          "sector_id",
+          "sector_name",
+          "total_contracts",
+          "total_value",
+          "avg_value",
+          "top_orgaos",
+          "top_fornecedores",
+          "monthly_trend",
+          "last_updated"
+        ],
+        "title": "ContratosCidadeSetorStats",
+        "type": "object"
+      },
+      "ContratosCidadeStats": {
+        "description": "City-level contract stats (all sectors) for zero-editais cidade blog pages.",
+        "properties": {
+          "avg_value": {
+            "title": "Avg Value",
+            "type": "number"
+          },
+          "cidade": {
+            "title": "Cidade",
+            "type": "string"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "monthly_trend": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTrend"
+            },
+            "title": "Monthly Trend",
+            "type": "array"
+          },
+          "n_unique_fornecedores": {
+            "default": 0,
+            "title": "N Unique Fornecedores",
+            "type": "integer"
+          },
+          "n_unique_orgaos": {
+            "default": 0,
+            "title": "N Unique Orgaos",
+            "type": "integer"
+          },
+          "sample_contracts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/routes__blog_stats__SampleContract"
+            },
+            "title": "Sample Contracts",
+            "type": "array"
+          },
+          "top_fornecedores": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTopEntry"
+            },
+            "title": "Top Fornecedores",
+            "type": "array"
+          },
+          "top_orgaos": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTopEntry"
+            },
+            "title": "Top Orgaos",
+            "type": "array"
+          },
+          "total_contracts": {
+            "title": "Total Contracts",
+            "type": "integer"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cidade",
+          "uf",
+          "total_contracts",
+          "total_value",
+          "avg_value",
+          "top_orgaos",
+          "top_fornecedores",
+          "monthly_trend",
+          "last_updated"
+        ],
+        "title": "ContratosCidadeStats",
+        "type": "object"
+      },
+      "ContratosSetorStats": {
+        "properties": {
+          "avg_value": {
+            "title": "Avg Value",
+            "type": "number"
+          },
+          "by_uf": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorUfEntry"
+            },
+            "title": "By Uf",
+            "type": "array"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "monthly_trend": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTrend"
+            },
+            "title": "Monthly Trend",
+            "type": "array"
+          },
+          "n_unique_fornecedores": {
+            "default": 0,
+            "title": "N Unique Fornecedores",
+            "type": "integer"
+          },
+          "n_unique_orgaos": {
+            "default": 0,
+            "title": "N Unique Orgaos",
+            "type": "integer"
+          },
+          "sample_contracts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/routes__blog_stats__SampleContract"
+            },
+            "title": "Sample Contracts",
+            "type": "array"
+          },
+          "sector_id": {
+            "title": "Sector Id",
+            "type": "string"
+          },
+          "sector_name": {
+            "title": "Sector Name",
+            "type": "string"
+          },
+          "top_fornecedores": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTopEntry"
+            },
+            "title": "Top Fornecedores",
+            "type": "array"
+          },
+          "top_orgaos": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTopEntry"
+            },
+            "title": "Top Orgaos",
+            "type": "array"
+          },
+          "total_contracts": {
+            "title": "Total Contracts",
+            "type": "integer"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "sector_id",
+          "sector_name",
+          "total_contracts",
+          "total_value",
+          "avg_value",
+          "top_orgaos",
+          "top_fornecedores",
+          "monthly_trend",
+          "by_uf",
+          "last_updated"
+        ],
+        "title": "ContratosSetorStats",
+        "type": "object"
+      },
+      "ContratosSetorTopEntry": {
+        "properties": {
+          "cnpj": {
+            "title": "Cnpj",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "total_contratos": {
+            "title": "Total Contratos",
+            "type": "integer"
+          },
+          "valor_total": {
+            "title": "Valor Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "nome",
+          "cnpj",
+          "total_contratos",
+          "valor_total"
+        ],
+        "title": "ContratosSetorTopEntry",
+        "type": "object"
+      },
+      "ContratosSetorTrend": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "month",
+          "count",
+          "value"
+        ],
+        "title": "ContratosSetorTrend",
+        "type": "object"
+      },
+      "ContratosSetorUfEntry": {
+        "properties": {
+          "total_contratos": {
+            "title": "Total Contratos",
+            "type": "integer"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor_total": {
+            "title": "Valor Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "uf",
+          "total_contratos",
+          "valor_total"
+        ],
+        "title": "ContratosSetorUfEntry",
+        "type": "object"
+      },
+      "ContratosSetorUfStats": {
+        "description": "Sector \u00d7 UF filtered contract stats (fallback for zero-editais blog pages).",
+        "properties": {
+          "avg_value": {
+            "title": "Avg Value",
+            "type": "number"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "monthly_trend": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTrend"
+            },
+            "title": "Monthly Trend",
+            "type": "array"
+          },
+          "n_unique_fornecedores": {
+            "default": 0,
+            "title": "N Unique Fornecedores",
+            "type": "integer"
+          },
+          "n_unique_orgaos": {
+            "default": 0,
+            "title": "N Unique Orgaos",
+            "type": "integer"
+          },
+          "sample_contracts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/routes__blog_stats__SampleContract"
+            },
+            "title": "Sample Contracts",
+            "type": "array"
+          },
+          "sector_id": {
+            "title": "Sector Id",
+            "type": "string"
+          },
+          "sector_name": {
+            "title": "Sector Name",
+            "type": "string"
+          },
+          "top_fornecedores": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTopEntry"
+            },
+            "title": "Top Fornecedores",
+            "type": "array"
+          },
+          "top_orgaos": {
+            "items": {
+              "$ref": "#/components/schemas/ContratosSetorTopEntry"
+            },
+            "title": "Top Orgaos",
+            "type": "array"
+          },
+          "total_contracts": {
+            "title": "Total Contracts",
+            "type": "integer"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sector_id",
+          "sector_name",
+          "uf",
+          "total_contracts",
+          "total_value",
+          "avg_value",
+          "top_orgaos",
+          "top_fornecedores",
+          "monthly_trend",
+          "last_updated"
+        ],
+        "title": "ContratosSetorUfStats",
+        "type": "object"
+      },
+      "ContratosStatsResponse": {
+        "properties": {
+          "avg_value": {
+            "title": "Avg Value",
+            "type": "number"
+          },
+          "aviso_legal": {
+            "title": "Aviso Legal",
+            "type": "string"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "monthly_trend": {
+            "items": {
+              "$ref": "#/components/schemas/routes__contratos_publicos__MonthlyTrend"
+            },
+            "title": "Monthly Trend",
+            "type": "array"
+          },
+          "sample_contracts": {
+            "items": {
+              "$ref": "#/components/schemas/routes__contratos_publicos__SampleContract"
+            },
+            "title": "Sample Contracts",
+            "type": "array"
+          },
+          "sector_id": {
+            "title": "Sector Id",
+            "type": "string"
+          },
+          "sector_name": {
+            "title": "Sector Name",
+            "type": "string"
+          },
+          "top_fornecedores": {
+            "items": {
+              "$ref": "#/components/schemas/FornecedorRank"
+            },
+            "title": "Top Fornecedores",
+            "type": "array"
+          },
+          "top_orgaos": {
+            "items": {
+              "$ref": "#/components/schemas/OrgaoRank"
+            },
+            "title": "Top Orgaos",
+            "type": "array"
+          },
+          "total_contracts": {
+            "title": "Total Contracts",
+            "type": "integer"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sector_id",
+          "sector_name",
+          "uf",
+          "total_contracts",
+          "total_value",
+          "avg_value",
+          "top_orgaos",
+          "top_fornecedores",
+          "monthly_trend",
+          "sample_contracts",
+          "last_updated",
+          "aviso_legal"
+        ],
+        "title": "ContratosStatsResponse",
         "type": "object"
       },
       "ConversationCategory": {
@@ -2614,6 +3289,199 @@
         "title": "DadosAgregadosResponse",
         "type": "object"
       },
+      "DailyDigestResponse": {
+        "properties": {
+          "avg_value": {
+            "title": "Avg Value",
+            "type": "number"
+          },
+          "by_modalidade": {
+            "items": {
+              "$ref": "#/components/schemas/DailyModalidade"
+            },
+            "title": "By Modalidade",
+            "type": "array"
+          },
+          "by_sector": {
+            "items": {
+              "$ref": "#/components/schemas/DailySector"
+            },
+            "title": "By Sector",
+            "type": "array"
+          },
+          "by_uf": {
+            "items": {
+              "$ref": "#/components/schemas/DailyUf"
+            },
+            "title": "By Uf",
+            "type": "array"
+          },
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "highlights": {
+            "items": {
+              "$ref": "#/components/schemas/DailyHighlight"
+            },
+            "title": "Highlights",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "top_sector": {
+            "title": "Top Sector",
+            "type": "string"
+          },
+          "top_uf": {
+            "title": "Top Uf",
+            "type": "string"
+          },
+          "total_bids": {
+            "title": "Total Bids",
+            "type": "integer"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "title",
+          "total_bids",
+          "total_value",
+          "avg_value",
+          "by_sector",
+          "by_uf",
+          "by_modalidade",
+          "highlights",
+          "top_sector",
+          "top_uf",
+          "updated_at"
+        ],
+        "title": "DailyDigestResponse",
+        "type": "object"
+      },
+      "DailyHighlight": {
+        "properties": {
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "setor": {
+            "title": "Setor",
+            "type": "string"
+          },
+          "titulo": {
+            "title": "Titulo",
+            "type": "string"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          }
+        },
+        "required": [
+          "titulo",
+          "orgao",
+          "uf",
+          "setor"
+        ],
+        "title": "DailyHighlight",
+        "type": "object"
+      },
+      "DailyModalidade": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "modalidade": {
+            "title": "Modalidade",
+            "type": "string"
+          },
+          "pct": {
+            "title": "Pct",
+            "type": "number"
+          }
+        },
+        "required": [
+          "modalidade",
+          "count",
+          "pct"
+        ],
+        "title": "DailyModalidade",
+        "type": "object"
+      },
+      "DailySector": {
+        "properties": {
+          "avg_value": {
+            "title": "Avg Value",
+            "type": "number"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "sector_id": {
+            "title": "Sector Id",
+            "type": "string"
+          },
+          "sector_name": {
+            "title": "Sector Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sector_name",
+          "sector_id",
+          "count",
+          "avg_value"
+        ],
+        "title": "DailySector",
+        "type": "object"
+      },
+      "DailyUf": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uf",
+          "count",
+          "total_value"
+        ],
+        "title": "DailyUf",
+        "type": "object"
+      },
       "DailyVolumeResponse": {
         "properties": {
           "avg_bids_per_day": {
@@ -3024,6 +3892,48 @@
         "title": "EsferaGovernamental",
         "type": "string"
       },
+      "ExitSurveyRequest": {
+        "properties": {
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "reason_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Text"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ExitSurveyRequest",
+        "type": "object"
+      },
+      "ExitSurveyResponse": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at"
+        ],
+        "title": "ExitSurveyResponse",
+        "type": "object"
+      },
       "ExperienciaLicitacoes": {
         "description": "Procurement experience level (STORY-260: added INTERMEDIARIO).",
         "enum": [
@@ -3169,6 +4079,24 @@
           "suggestion"
         ],
         "title": "FPKeywordSuggestion",
+        "type": "object"
+      },
+      "FaqItem": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "answer"
+        ],
+        "title": "FaqItem",
         "type": "object"
       },
       "FeatureFlagItem": {
@@ -3827,6 +4755,137 @@
         "title": "FirstAnalysisResponse",
         "type": "object"
       },
+      "FornecedorProfileResponse": {
+        "properties": {
+          "anos_atividade": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Anos Atividade",
+            "type": "array"
+          },
+          "aviso_legal": {
+            "title": "Aviso Legal",
+            "type": "string"
+          },
+          "cnae_descricao": {
+            "title": "Cnae Descricao",
+            "type": "string"
+          },
+          "cnpj": {
+            "title": "Cnpj",
+            "type": "string"
+          },
+          "contratos_recentes": {
+            "items": {
+              "$ref": "#/components/schemas/RecentContract"
+            },
+            "title": "Contratos Recentes",
+            "type": "array"
+          },
+          "faq_items": {
+            "items": {
+              "$ref": "#/components/schemas/FaqItem"
+            },
+            "title": "Faq Items",
+            "type": "array"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "mei": {
+            "title": "Mei",
+            "type": "boolean"
+          },
+          "municipio": {
+            "title": "Municipio",
+            "type": "string"
+          },
+          "razao_social": {
+            "title": "Razao Social",
+            "type": "string"
+          },
+          "simples_nacional": {
+            "title": "Simples Nacional",
+            "type": "boolean"
+          },
+          "top_compradores": {
+            "items": {
+              "$ref": "#/components/schemas/OrgaoRank"
+            },
+            "title": "Top Compradores",
+            "type": "array"
+          },
+          "total_contratos": {
+            "title": "Total Contratos",
+            "type": "integer"
+          },
+          "uf_sede": {
+            "title": "Uf Sede",
+            "type": "string"
+          },
+          "ufs_atuantes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ufs Atuantes",
+            "type": "array"
+          },
+          "valor_total": {
+            "title": "Valor Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "cnpj",
+          "razao_social",
+          "cnae_descricao",
+          "municipio",
+          "uf_sede",
+          "simples_nacional",
+          "mei",
+          "total_contratos",
+          "valor_total",
+          "ufs_atuantes",
+          "anos_atividade",
+          "top_compradores",
+          "contratos_recentes",
+          "faq_items",
+          "last_updated",
+          "aviso_legal"
+        ],
+        "title": "FornecedorProfileResponse",
+        "type": "object"
+      },
+      "FornecedorRank": {
+        "properties": {
+          "cnpj": {
+            "title": "Cnpj",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "total_contratos": {
+            "title": "Total Contratos",
+            "type": "integer"
+          },
+          "valor_total": {
+            "title": "Valor Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "nome",
+          "cnpj",
+          "total_contratos",
+          "valor_total"
+        ],
+        "title": "FornecedorRank",
+        "type": "object"
+      },
       "FornecedorTop": {
         "properties": {
           "cnpj": {
@@ -3853,6 +4912,126 @@
           "valor_total"
         ],
         "title": "FornecedorTop",
+        "type": "object"
+      },
+      "FornecedoresStatsResponse": {
+        "properties": {
+          "aviso_legal": {
+            "title": "Aviso Legal",
+            "type": "string"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "sector_id": {
+            "title": "Sector Id",
+            "type": "string"
+          },
+          "sector_name": {
+            "title": "Sector Name",
+            "type": "string"
+          },
+          "supplier_ranking": {
+            "items": {
+              "$ref": "#/components/schemas/SupplierEntry"
+            },
+            "title": "Supplier Ranking",
+            "type": "array"
+          },
+          "top_orgaos_compradores": {
+            "items": {
+              "$ref": "#/components/schemas/OrgaoRank"
+            },
+            "title": "Top Orgaos Compradores",
+            "type": "array"
+          },
+          "total_suppliers": {
+            "title": "Total Suppliers",
+            "type": "integer"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sector_id",
+          "sector_name",
+          "uf",
+          "total_suppliers",
+          "supplier_ranking",
+          "top_orgaos_compradores",
+          "last_updated",
+          "aviso_legal"
+        ],
+        "title": "FornecedoresStatsResponse",
+        "type": "object"
+      },
+      "FoundingCheckoutRequest": {
+        "properties": {
+          "cnpj": {
+            "maxLength": 18,
+            "minLength": 11,
+            "title": "Cnpj",
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 320,
+            "minLength": 5,
+            "title": "Email",
+            "type": "string"
+          },
+          "motivo": {
+            "maxLength": 1000,
+            "minLength": 140,
+            "title": "Motivo",
+            "type": "string"
+          },
+          "nome": {
+            "maxLength": 200,
+            "minLength": 2,
+            "title": "Nome",
+            "type": "string"
+          },
+          "razao_social": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Razao Social"
+          }
+        },
+        "required": [
+          "email",
+          "nome",
+          "cnpj",
+          "motivo"
+        ],
+        "title": "FoundingCheckoutRequest",
+        "type": "object"
+      },
+      "FoundingCheckoutResponse": {
+        "properties": {
+          "checkout_url": {
+            "title": "Checkout Url",
+            "type": "string"
+          },
+          "lead_id": {
+            "title": "Lead Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkout_url",
+          "lead_id"
+        ],
+        "title": "FoundingCheckoutResponse",
         "type": "object"
       },
       "GoogleSheetsExportHistory": {
@@ -4040,6 +5219,112 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "IndiceResult": {
+        "properties": {
+          "calculado_em": {
+            "title": "Calculado Em",
+            "type": "string"
+          },
+          "municipio_nome": {
+            "title": "Municipio Nome",
+            "type": "string"
+          },
+          "municipio_slug": {
+            "title": "Municipio Slug",
+            "type": "string"
+          },
+          "percentil": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil"
+          },
+          "periodo": {
+            "title": "Periodo",
+            "type": "string"
+          },
+          "ranking_nacional": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ranking Nacional"
+          },
+          "ranking_uf": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ranking Uf"
+          },
+          "score_consistencia": {
+            "title": "Score Consistencia",
+            "type": "number"
+          },
+          "score_diversidade_mercado": {
+            "title": "Score Diversidade Mercado",
+            "type": "number"
+          },
+          "score_eficiencia_temporal": {
+            "title": "Score Eficiencia Temporal",
+            "type": "number"
+          },
+          "score_total": {
+            "title": "Score Total",
+            "type": "number"
+          },
+          "score_transparencia_digital": {
+            "title": "Score Transparencia Digital",
+            "type": "number"
+          },
+          "score_volume_publicacao": {
+            "title": "Score Volume Publicacao",
+            "type": "number"
+          },
+          "total_editais": {
+            "title": "Total Editais",
+            "type": "integer"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "uf_nome": {
+            "title": "Uf Nome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "municipio_nome",
+          "municipio_slug",
+          "uf",
+          "uf_nome",
+          "periodo",
+          "score_total",
+          "score_volume_publicacao",
+          "score_eficiencia_temporal",
+          "score_diversidade_mercado",
+          "score_transparencia_digital",
+          "score_consistencia",
+          "total_editais",
+          "calculado_em"
+        ],
+        "title": "IndiceResult",
+        "type": "object"
+      },
       "InviteMemberRequest": {
         "properties": {
           "email": {
@@ -4051,6 +5336,114 @@
           "email"
         ],
         "title": "InviteMemberRequest",
+        "type": "object"
+      },
+      "ItemProfileResponse": {
+        "properties": {
+          "aviso_legal": {
+            "title": "Aviso Legal",
+            "type": "string"
+          },
+          "categoria": {
+            "title": "Categoria",
+            "type": "string"
+          },
+          "catmat": {
+            "title": "Catmat",
+            "type": "string"
+          },
+          "contratos_referencia": {
+            "items": {
+              "$ref": "#/components/schemas/ContratoReferencia"
+            },
+            "title": "Contratos Referencia",
+            "type": "array"
+          },
+          "faq_items": {
+            "items": {
+              "$ref": "#/components/schemas/FaqItem"
+            },
+            "title": "Faq Items",
+            "type": "array"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "nome_item": {
+            "title": "Nome Item",
+            "type": "string"
+          },
+          "periodo_referencia": {
+            "title": "Periodo Referencia",
+            "type": "string"
+          },
+          "total_contratos": {
+            "title": "Total Contratos",
+            "type": "integer"
+          },
+          "unidade_referencia": {
+            "title": "Unidade Referencia",
+            "type": "string"
+          },
+          "valor_medio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Medio"
+          },
+          "valor_p10": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor P10"
+          },
+          "valor_p50": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor P50"
+          },
+          "valor_p90": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor P90"
+          }
+        },
+        "required": [
+          "catmat",
+          "nome_item",
+          "categoria",
+          "total_contratos",
+          "unidade_referencia",
+          "contratos_referencia",
+          "faq_items",
+          "periodo_referencia",
+          "last_updated",
+          "aviso_legal"
+        ],
+        "title": "ItemProfileResponse",
         "type": "object"
       },
       "LeadCaptureRequest": {
@@ -4463,43 +5856,36 @@
         "title": "LicitacaoItem",
         "type": "object"
       },
-      "LicitacaoRecente": {
+      "LicitacoesIndexableResponse": {
         "properties": {
-          "data_publicacao": {
-            "title": "Data Publicacao",
-            "type": "string"
+          "combos": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Combos",
+            "type": "array"
           },
-          "modalidade_nome": {
-            "title": "Modalidade Nome",
-            "type": "string"
+          "threshold": {
+            "title": "Threshold",
+            "type": "integer"
           },
-          "objeto_compra": {
-            "title": "Objeto Compra",
-            "type": "string"
+          "total": {
+            "title": "Total",
+            "type": "integer"
           },
-          "uf": {
-            "title": "Uf",
+          "updated_at": {
+            "title": "Updated At",
             "type": "string"
-          },
-          "valor_total_estimado": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Valor Total Estimado"
           }
         },
         "required": [
-          "objeto_compra",
-          "modalidade_nome",
-          "data_publicacao",
-          "uf"
+          "combos",
+          "total",
+          "threshold",
+          "updated_at"
         ],
-        "title": "LicitacaoRecente",
+        "title": "LicitacoesIndexableResponse",
         "type": "object"
       },
       "MessageResponse": {
@@ -4616,22 +6002,97 @@
         "title": "ModalidadeAggregate",
         "type": "object"
       },
-      "ModalidadeCount": {
+      "MunicipioProfileResponse": {
         "properties": {
-          "count": {
-            "title": "Count",
-            "type": "integer"
+          "aviso_legal": {
+            "title": "Aviso Legal",
+            "type": "string"
+          },
+          "faq_items": {
+            "items": {
+              "$ref": "#/components/schemas/FaqItem"
+            },
+            "title": "Faq Items",
+            "type": "array"
+          },
+          "ibge_code": {
+            "title": "Ibge Code",
+            "type": "string"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "licitacoes_recentes": {
+            "items": {
+              "$ref": "#/components/schemas/routes__municipios_publicos__LicitacaoRecente"
+            },
+            "title": "Licitacoes Recentes",
+            "type": "array"
           },
           "nome": {
             "title": "Nome",
             "type": "string"
+          },
+          "pib_per_capita": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pib Per Capita"
+          },
+          "populacao": {
+            "title": "Populacao",
+            "type": "integer"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "total_licitacoes_abertas": {
+            "title": "Total Licitacoes Abertas",
+            "type": "integer"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor_total_licitacoes": {
+            "title": "Valor Total Licitacoes",
+            "type": "number"
           }
         },
         "required": [
+          "slug",
           "nome",
+          "uf",
+          "ibge_code",
+          "populacao",
+          "total_licitacoes_abertas",
+          "valor_total_licitacoes",
+          "licitacoes_recentes",
+          "faq_items",
+          "last_updated",
+          "aviso_legal"
+        ],
+        "title": "MunicipioProfileResponse",
+        "type": "object"
+      },
+      "NewBidsCountResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
           "count"
         ],
-        "title": "ModalidadeCount",
+        "title": "NewBidsCountResponse",
         "type": "object"
       },
       "NewOpportunitiesResponse": {
@@ -4656,6 +6117,17 @@
             "title": "Has Previous Search",
             "type": "boolean"
           },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
           "last_search_at": {
             "anyOf": [
               {
@@ -4673,6 +6145,101 @@
           "has_previous_search"
         ],
         "title": "NewOpportunitiesResponse",
+        "type": "object"
+      },
+      "OrgaoContratosStatsResponse": {
+        "properties": {
+          "avg_value": {
+            "title": "Avg Value",
+            "type": "number"
+          },
+          "aviso_legal": {
+            "title": "Aviso Legal",
+            "type": "string"
+          },
+          "last_updated": {
+            "title": "Last Updated",
+            "type": "string"
+          },
+          "monthly_trend": {
+            "items": {
+              "$ref": "#/components/schemas/routes__contratos_publicos__MonthlyTrend"
+            },
+            "title": "Monthly Trend",
+            "type": "array"
+          },
+          "orgao_cnpj": {
+            "title": "Orgao Cnpj",
+            "type": "string"
+          },
+          "orgao_nome": {
+            "title": "Orgao Nome",
+            "type": "string"
+          },
+          "sample_contracts": {
+            "items": {
+              "$ref": "#/components/schemas/routes__contratos_publicos__SampleContract"
+            },
+            "title": "Sample Contracts",
+            "type": "array"
+          },
+          "top_fornecedores": {
+            "items": {
+              "$ref": "#/components/schemas/FornecedorRank"
+            },
+            "title": "Top Fornecedores",
+            "type": "array"
+          },
+          "total_contracts": {
+            "title": "Total Contracts",
+            "type": "integer"
+          },
+          "total_value": {
+            "title": "Total Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "orgao_nome",
+          "orgao_cnpj",
+          "total_contracts",
+          "total_value",
+          "avg_value",
+          "top_fornecedores",
+          "monthly_trend",
+          "sample_contracts",
+          "last_updated",
+          "aviso_legal"
+        ],
+        "title": "OrgaoContratosStatsResponse",
+        "type": "object"
+      },
+      "OrgaoRank": {
+        "properties": {
+          "cnpj": {
+            "title": "Cnpj",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "total_contratos": {
+            "title": "Total Contratos",
+            "type": "integer"
+          },
+          "valor_total": {
+            "title": "Valor Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "nome",
+          "cnpj",
+          "total_contratos",
+          "valor_total"
+        ],
+        "title": "OrgaoRank",
         "type": "object"
       },
       "OrgaoStatsResponse": {
@@ -4719,7 +6286,7 @@
           },
           "top_modalidades": {
             "items": {
-              "$ref": "#/components/schemas/ModalidadeCount"
+              "$ref": "#/components/schemas/routes__orgao_publico__ModalidadeCount"
             },
             "title": "Top Modalidades",
             "type": "array"
@@ -4746,7 +6313,7 @@
           },
           "ultimas_licitacoes": {
             "items": {
-              "$ref": "#/components/schemas/LicitacaoRecente"
+              "$ref": "#/components/schemas/routes__orgao_publico__LicitacaoRecente"
             },
             "title": "Ultimas Licitacoes",
             "type": "array"
@@ -4852,10 +6419,182 @@
         "title": "PanoramaStats",
         "type": "object"
       },
+      "PdfEditalRequest": {
+        "properties": {
+          "data_encerramento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Encerramento"
+          },
+          "data_publicacao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Publicacao"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "modalidade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalidade"
+          },
+          "municipio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipio"
+          },
+          "numero_compra": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numero Compra"
+          },
+          "objeto": {
+            "title": "Objeto",
+            "type": "string"
+          },
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "pncp_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pncp Id"
+          },
+          "recomendacao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recomendacao"
+          },
+          "resumo_executivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resumo Executivo"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          },
+          "viability_factors": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viability Factors"
+          },
+          "viability_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viability Level"
+          },
+          "viability_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viability Score"
+          }
+        },
+        "required": [
+          "objeto",
+          "orgao",
+          "uf"
+        ],
+        "title": "PdfEditalRequest",
+        "type": "object"
+      },
       "PerfilB2GResponse": {
         "properties": {
           "aviso_legal": {
             "title": "Aviso Legal",
+            "type": "string"
+          },
+          "brasilapi_status": {
+            "default": "ok",
+            "title": "Brasilapi Status",
             "type": "string"
           },
           "contratos": {
@@ -4879,6 +6618,11 @@
           },
           "empresa": {
             "$ref": "#/components/schemas/EmpresaInfo"
+          },
+          "partial": {
+            "default": false,
+            "title": "Partial",
+            "type": "boolean"
           },
           "score": {
             "title": "Score",
@@ -5113,6 +6857,22 @@
           }
         },
         "title": "PerfilContextoResponse",
+        "type": "object"
+      },
+      "PeriodosResponse": {
+        "properties": {
+          "periodos": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Periodos",
+            "type": "array"
+          }
+        },
+        "required": [
+          "periodos"
+        ],
+        "title": "PeriodosResponse",
         "type": "object"
       },
       "PipelineAlertsResponse": {
@@ -5653,6 +7413,81 @@
         "title": "PublicFeatureFlagListResponse",
         "type": "object"
       },
+      "RankingResponse": {
+        "properties": {
+          "fonte": {
+            "title": "Fonte",
+            "type": "string"
+          },
+          "license": {
+            "title": "License",
+            "type": "string"
+          },
+          "periodo": {
+            "title": "Periodo",
+            "type": "string"
+          },
+          "resultados": {
+            "items": {
+              "$ref": "#/components/schemas/IndiceResult"
+            },
+            "title": "Resultados",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "periodo",
+          "total",
+          "resultados",
+          "fonte",
+          "license"
+        ],
+        "title": "RankingResponse",
+        "type": "object"
+      },
+      "RecentContract": {
+        "properties": {
+          "data_assinatura": {
+            "title": "Data Assinatura",
+            "type": "string"
+          },
+          "objeto": {
+            "title": "Objeto",
+            "type": "string"
+          },
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          }
+        },
+        "required": [
+          "objeto",
+          "orgao",
+          "data_assinatura",
+          "uf"
+        ],
+        "title": "RecentContract",
+        "type": "object"
+      },
       "Recomendacao": {
         "description": "Actionable recommendation for a specific procurement opportunity.\n\nGenerated by the LLM consultant or heuristic fallback.\nEach recommendation includes a concrete action and justification.",
         "properties": {
@@ -5705,6 +7540,24 @@
           "justificativa"
         ],
         "title": "Recomendacao",
+        "type": "object"
+      },
+      "RecommendedPlanResponse": {
+        "properties": {
+          "plan_key": {
+            "title": "Plan Key",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_key",
+          "reason"
+        ],
+        "title": "RecommendedPlanResponse",
         "type": "object"
       },
       "RecoveryCodesResponse": {
@@ -5840,6 +7693,96 @@
           "codes"
         ],
         "title": "RegenerateRecoveryResponse",
+        "type": "object"
+      },
+      "RelatorioMensal": {
+        "properties": {
+          "ano": {
+            "title": "Ano",
+            "type": "integer"
+          },
+          "fonte": {
+            "title": "Fonte",
+            "type": "string"
+          },
+          "gerado_em": {
+            "title": "Gerado Em",
+            "type": "string"
+          },
+          "license": {
+            "title": "License",
+            "type": "string"
+          },
+          "mes": {
+            "title": "Mes",
+            "type": "integer"
+          },
+          "mes_nome": {
+            "title": "Mes Nome",
+            "type": "string"
+          },
+          "modalidades": {
+            "items": {
+              "$ref": "#/components/schemas/routes__observatorio__ModalidadeCount"
+            },
+            "title": "Modalidades",
+            "type": "array"
+          },
+          "periodo": {
+            "title": "Periodo",
+            "type": "string"
+          },
+          "setores_em_alta": {
+            "items": {
+              "$ref": "#/components/schemas/SetorHighlight"
+            },
+            "title": "Setores Em Alta",
+            "type": "array"
+          },
+          "tendencia_semanal": {
+            "items": {
+              "$ref": "#/components/schemas/routes__observatorio__MonthlyTrend"
+            },
+            "title": "Tendencia Semanal",
+            "type": "array"
+          },
+          "top_ufs": {
+            "items": {
+              "$ref": "#/components/schemas/UfCount"
+            },
+            "title": "Top Ufs",
+            "type": "array"
+          },
+          "total_editais": {
+            "title": "Total Editais",
+            "type": "integer"
+          },
+          "valor_medio": {
+            "title": "Valor Medio",
+            "type": "number"
+          },
+          "valor_total": {
+            "title": "Valor Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "mes",
+          "ano",
+          "mes_nome",
+          "periodo",
+          "total_editais",
+          "valor_total",
+          "valor_medio",
+          "top_ufs",
+          "modalidades",
+          "tendencia_semanal",
+          "setores_em_alta",
+          "gerado_em",
+          "fonte",
+          "license"
+        ],
+        "title": "RelatorioMensal",
         "type": "object"
       },
       "RelatorioRequest": {
@@ -6322,25 +8265,36 @@
         "title": "SEOMetricsResponse",
         "type": "object"
       },
-      "SampleItem": {
+      "SancaoEntry": {
         "properties": {
-          "data": {
-            "title": "Data",
+          "data_fim": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Fim"
+          },
+          "data_inicio": {
+            "title": "Data Inicio",
             "type": "string"
           },
-          "orgao": {
-            "title": "Orgao",
+          "motivo": {
+            "title": "Motivo",
             "type": "string"
           },
-          "titulo": {
-            "title": "Titulo",
+          "orgao_sancionador": {
+            "title": "Orgao Sancionador",
             "type": "string"
           },
-          "uf": {
-            "title": "Uf",
+          "tipo": {
+            "title": "Tipo",
             "type": "string"
           },
-          "valor": {
+          "valor_multa": {
             "anyOf": [
               {
                 "type": "number"
@@ -6349,16 +8303,16 @@
                 "type": "null"
               }
             ],
-            "title": "Valor"
+            "title": "Valor Multa"
           }
         },
         "required": [
-          "titulo",
-          "orgao",
-          "uf",
-          "data"
+          "tipo",
+          "orgao_sancionador",
+          "data_inicio",
+          "motivo"
         ],
-        "title": "SampleItem",
+        "title": "SancaoEntry",
         "type": "object"
       },
       "SanctionsSummarySchema": {
@@ -6666,7 +8620,7 @@
           },
           "sample_items": {
             "items": {
-              "$ref": "#/components/schemas/SampleItem"
+              "$ref": "#/components/schemas/routes__sectors_public__SampleItem"
             },
             "title": "Sample Items",
             "type": "array"
@@ -6736,6 +8690,22 @@
             "title": "Last Updated",
             "type": "string"
           },
+          "most_recent_bid_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Most Recent Bid Date"
+          },
+          "municipios_ativos": {
+            "default": 0,
+            "title": "Municipios Ativos",
+            "type": "integer"
+          },
           "sector_id": {
             "title": "Sector Id",
             "type": "string"
@@ -6743,6 +8713,14 @@
           "sector_name": {
             "title": "Sector Name",
             "type": "string"
+          },
+          "top_compradores": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TopComprador"
+            },
+            "title": "Top Compradores",
+            "type": "array"
           },
           "top_modalidades": {
             "default": [],
@@ -6754,7 +8732,7 @@
           },
           "top_oportunidades": {
             "items": {
-              "$ref": "#/components/schemas/SampleItem"
+              "$ref": "#/components/schemas/routes__blog_stats__SampleItem"
             },
             "title": "Top Oportunidades",
             "type": "array"
@@ -6784,6 +8762,17 @@
             "default": 0.0,
             "title": "Value Range Min",
             "type": "number"
+          },
+          "vs_media_nacional_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vs Media Nacional Pct"
           }
         },
         "required": [
@@ -6831,6 +8820,39 @@
         "title": "SessionsListResponse",
         "type": "object"
       },
+      "SetorHighlight": {
+        "properties": {
+          "setor_id": {
+            "title": "Setor Id",
+            "type": "string"
+          },
+          "setor_name": {
+            "title": "Setor Name",
+            "type": "string"
+          },
+          "total_anterior": {
+            "title": "Total Anterior",
+            "type": "integer"
+          },
+          "total_atual": {
+            "title": "Total Atual",
+            "type": "integer"
+          },
+          "variacao_pct": {
+            "title": "Variacao Pct",
+            "type": "number"
+          }
+        },
+        "required": [
+          "setor_id",
+          "setor_name",
+          "total_atual",
+          "total_anterior",
+          "variacao_pct"
+        ],
+        "title": "SetorHighlight",
+        "type": "object"
+      },
       "SetoresResponse": {
         "description": "Response for GET /setores endpoint.",
         "properties": {
@@ -6847,6 +8869,25 @@
           "setores"
         ],
         "title": "SetoresResponse",
+        "type": "object"
+      },
+      "SetupIntentResponse": {
+        "description": "Response for POST /v1/billing/setup-intent (STORY-CONV-003b AC2).\n\nAnonymous pre-signup flow: frontend creates a SetupIntent to collect\nthe user's card via Stripe PaymentElement BEFORE the Supabase user\nexists. After `stripe.confirmSetup()` returns a `payment_method`,\nthat id is sent to POST /v1/auth/signup.",
+        "properties": {
+          "client_secret": {
+            "title": "Client Secret",
+            "type": "string"
+          },
+          "publishable_key": {
+            "title": "Publishable Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "client_secret",
+          "publishable_key"
+        ],
+        "title": "SetupIntentResponse",
         "type": "object"
       },
       "ShareAnaliseRequest": {
@@ -7048,6 +9089,141 @@
         "title": "SharedAnalisePublic",
         "type": "object"
       },
+      "SignupRequest": {
+        "description": "Request body for POST /v1/auth/signup (STORY-CONV-003a AC1).\n\n`stripe_payment_method_id` is optional during rollout \u2014 when present, the\nbackend creates a Stripe Customer + Subscription with 14-day trial and\nattaches the PaymentMethod. When absent, a Supabase user is created and\nthe trial is tracked locally (legacy path).",
+        "properties": {
+          "company": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional company name, stored in profiles.company",
+            "title": "Company"
+          },
+          "email": {
+            "description": "User email (must be valid format, max 320 chars)",
+            "format": "email",
+            "maxLength": 320,
+            "title": "Email",
+            "type": "string"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional display name, propagated to profiles.full_name",
+            "title": "Full Name"
+          },
+          "password": {
+            "description": "Password (min 8 chars \u2014 Supabase enforces complexity)",
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          },
+          "stripe_payment_method_id": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "pattern": "^pm_[A-Za-z0-9_]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stripe PaymentMethod ID (pm_...) from frontend PaymentElement",
+            "title": "Stripe Payment Method Id"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "SignupRequest",
+        "type": "object"
+      },
+      "SignupResponse": {
+        "description": "Response body for POST /v1/auth/signup (STORY-CONV-003a AC3).",
+        "properties": {
+          "email": {
+            "description": "Confirmed user email",
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "requires_email_confirmation": {
+            "default": true,
+            "description": "Whether Supabase requires email confirmation before login",
+            "title": "Requires Email Confirmation",
+            "type": "boolean"
+          },
+          "stripe_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stripe Customer ID (cus_...) if card was attached",
+            "title": "Stripe Customer Id"
+          },
+          "stripe_subscription_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stripe Subscription ID (sub_...) if card was attached",
+            "title": "Stripe Subscription Id"
+          },
+          "subscription_status": {
+            "default": "trialing",
+            "description": "Subscription status: trialing | free_trial | payment_failed",
+            "title": "Subscription Status",
+            "type": "string"
+          },
+          "trial_end_ts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unix epoch seconds when trial ends. Sourced from Stripe when subscription created; otherwise computed locally (now + 14d).",
+            "title": "Trial End Ts"
+          },
+          "user_id": {
+            "description": "Supabase auth.users.id UUID",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email"
+        ],
+        "title": "SignupResponse",
+        "type": "object"
+      },
       "SitemapCnpjsResponse": {
         "properties": {
           "cnpjs": {
@@ -7072,6 +9248,110 @@
           "updated_at"
         ],
         "title": "SitemapCnpjsResponse",
+        "type": "object"
+      },
+      "SitemapContratosOrgaoResponse": {
+        "properties": {
+          "orgaos": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Orgaos",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orgaos",
+          "total",
+          "updated_at"
+        ],
+        "title": "SitemapContratosOrgaoResponse",
+        "type": "object"
+      },
+      "SitemapFornecedoresCnpjResponse": {
+        "properties": {
+          "cnpjs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cnpjs",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cnpjs",
+          "total",
+          "updated_at"
+        ],
+        "title": "SitemapFornecedoresCnpjResponse",
+        "type": "object"
+      },
+      "SitemapItensResponse": {
+        "properties": {
+          "catmats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Catmats",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "catmats",
+          "total",
+          "updated_at"
+        ],
+        "title": "SitemapItensResponse",
+        "type": "object"
+      },
+      "SitemapMunicipiosResponse": {
+        "properties": {
+          "slugs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Slugs",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slugs",
+          "total",
+          "updated_at"
+        ],
+        "title": "SitemapMunicipiosResponse",
         "type": "object"
       },
       "SitemapOrgaosResponse": {
@@ -7187,6 +9467,34 @@
         "title": "SummaryResponse",
         "type": "object"
       },
+      "SupplierEntry": {
+        "properties": {
+          "cnpj": {
+            "title": "Cnpj",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "total_contratos": {
+            "title": "Total Contratos",
+            "type": "integer"
+          },
+          "valor_total": {
+            "title": "Valor Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "nome",
+          "cnpj",
+          "total_contratos",
+          "valor_total"
+        ],
+        "title": "SupplierEntry",
+        "type": "object"
+      },
       "TimeSeriesDataPoint": {
         "properties": {
           "label": {
@@ -7213,6 +9521,34 @@
           "value"
         ],
         "title": "TimeSeriesDataPoint",
+        "type": "object"
+      },
+      "TopComprador": {
+        "properties": {
+          "cnpj": {
+            "title": "Cnpj",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "total_contratos": {
+            "title": "Total Contratos",
+            "type": "integer"
+          },
+          "valor_total": {
+            "title": "Valor Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "nome",
+          "cnpj",
+          "total_contratos",
+          "valor_total"
+        ],
+        "title": "TopComprador",
         "type": "object"
       },
       "TopDimensionsResponse": {
@@ -7259,6 +9595,83 @@
       },
       "TopOpportunity": {
         "properties": {
+          "data_encerramento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Encerramento"
+          },
+          "dias_ate_encerramento": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias Ate Encerramento"
+          },
+          "modalidade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalidade"
+          },
+          "numero_controle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numero Controle"
+          },
+          "objeto": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objeto"
+          },
+          "orgao_nome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orgao Nome"
+          },
+          "setor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setor"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -7448,6 +9861,34 @@
           "total_value"
         ],
         "title": "UfAggregate",
+        "type": "object"
+      },
+      "UfCount": {
+        "properties": {
+          "pct": {
+            "title": "Pct",
+            "type": "number"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "uf_name": {
+            "title": "Uf Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uf",
+          "uf_name",
+          "total",
+          "pct"
+        ],
+        "title": "UfCount",
         "type": "object"
       },
       "UfStatusDetail": {
@@ -8086,6 +10527,96 @@
         "title": "WelcomeEmailResponse",
         "type": "object"
       },
+      "routes__blog_stats__SampleContract": {
+        "properties": {
+          "data_assinatura": {
+            "title": "Data Assinatura",
+            "type": "string"
+          },
+          "fornecedor": {
+            "title": "Fornecedor",
+            "type": "string"
+          },
+          "objeto": {
+            "title": "Objeto",
+            "type": "string"
+          },
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          }
+        },
+        "required": [
+          "objeto",
+          "orgao",
+          "fornecedor",
+          "valor",
+          "data_assinatura"
+        ],
+        "title": "SampleContract",
+        "type": "object"
+      },
+      "routes__blog_stats__SampleItem": {
+        "properties": {
+          "data": {
+            "title": "Data",
+            "type": "string"
+          },
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "orgao_cnpj": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orgao Cnpj"
+          },
+          "titulo": {
+            "title": "Titulo",
+            "type": "string"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          }
+        },
+        "required": [
+          "titulo",
+          "orgao",
+          "uf",
+          "data"
+        ],
+        "title": "SampleItem",
+        "type": "object"
+      },
       "routes__blog_stats__TrendPoint": {
         "properties": {
           "avg_value": {
@@ -8109,6 +10640,68 @@
         "title": "TrendPoint",
         "type": "object"
       },
+      "routes__contratos_publicos__MonthlyTrend": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "month",
+          "count",
+          "value"
+        ],
+        "title": "MonthlyTrend",
+        "type": "object"
+      },
+      "routes__contratos_publicos__SampleContract": {
+        "properties": {
+          "data_assinatura": {
+            "title": "Data Assinatura",
+            "type": "string"
+          },
+          "fornecedor": {
+            "title": "Fornecedor",
+            "type": "string"
+          },
+          "objeto": {
+            "title": "Objeto",
+            "type": "string"
+          },
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          }
+        },
+        "required": [
+          "objeto",
+          "orgao",
+          "fornecedor",
+          "data_assinatura"
+        ],
+        "title": "SampleContract",
+        "type": "object"
+      },
       "routes__dados_publicos__TrendPoint": {
         "properties": {
           "count": {
@@ -8130,6 +10723,187 @@
           "value"
         ],
         "title": "TrendPoint",
+        "type": "object"
+      },
+      "routes__municipios_publicos__LicitacaoRecente": {
+        "properties": {
+          "data_publicacao": {
+            "title": "Data Publicacao",
+            "type": "string"
+          },
+          "modalidade": {
+            "title": "Modalidade",
+            "type": "string"
+          },
+          "objeto": {
+            "title": "Objeto",
+            "type": "string"
+          },
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          }
+        },
+        "required": [
+          "objeto",
+          "orgao",
+          "data_publicacao",
+          "modalidade"
+        ],
+        "title": "LicitacaoRecente",
+        "type": "object"
+      },
+      "routes__observatorio__ModalidadeCount": {
+        "properties": {
+          "modalidade_id": {
+            "title": "Modalidade Id",
+            "type": "integer"
+          },
+          "modalidade_name": {
+            "title": "Modalidade Name",
+            "type": "string"
+          },
+          "pct": {
+            "title": "Pct",
+            "type": "number"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "modalidade_id",
+          "modalidade_name",
+          "total",
+          "pct"
+        ],
+        "title": "ModalidadeCount",
+        "type": "object"
+      },
+      "routes__observatorio__MonthlyTrend": {
+        "properties": {
+          "semana": {
+            "title": "Semana",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "semana",
+          "total"
+        ],
+        "title": "MonthlyTrend",
+        "type": "object"
+      },
+      "routes__orgao_publico__LicitacaoRecente": {
+        "properties": {
+          "data_publicacao": {
+            "title": "Data Publicacao",
+            "type": "string"
+          },
+          "modalidade_nome": {
+            "title": "Modalidade Nome",
+            "type": "string"
+          },
+          "objeto_compra": {
+            "title": "Objeto Compra",
+            "type": "string"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor_total_estimado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Total Estimado"
+          }
+        },
+        "required": [
+          "objeto_compra",
+          "modalidade_nome",
+          "data_publicacao",
+          "uf"
+        ],
+        "title": "LicitacaoRecente",
+        "type": "object"
+      },
+      "routes__orgao_publico__ModalidadeCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nome",
+          "count"
+        ],
+        "title": "ModalidadeCount",
+        "type": "object"
+      },
+      "routes__sectors_public__SampleItem": {
+        "properties": {
+          "data": {
+            "title": "Data",
+            "type": "string"
+          },
+          "orgao": {
+            "title": "Orgao",
+            "type": "string"
+          },
+          "titulo": {
+            "title": "Titulo",
+            "type": "string"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          }
+        },
+        "required": [
+          "titulo",
+          "orgao",
+          "uf",
+          "data"
+        ],
+        "title": "SampleItem",
         "type": "object"
       }
     },
@@ -8545,6 +11319,93 @@
         ]
       }
     },
+    "/v1/admin/cb/reset": {
+      "post": {
+        "description": "STORY-416 AC5: Reset all segregated Supabase CBs to CLOSED.\n\nIntended for on-call use after an upstream incident has been mitigated\nand the CBs are still in OPEN/HALF_OPEN due to the cooldown. Returns\nthe previous state per category so the action is auditable in logs.\nAdmin only \u2014 never expose this without authentication.",
+        "operationId": "reset_circuit_breakers_v1_admin_cb_reset_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Reset Circuit Breakers V1 Admin Cb Reset Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reset Circuit Breakers",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/clear-contracts-checkpoints": {
+      "post": {
+        "description": "Clear all Redis checkpoints for contracts crawler.\n\nUse before re-triggering a full crawl when stale checkpoints\ncause windows to be incorrectly skipped.",
+        "operationId": "clear_contracts_checkpoints_v1_admin_clear_contracts_checkpoints_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Clear Contracts Checkpoints V1 Admin Clear Contracts Checkpoints Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Clear Contracts Checkpoints",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/cron-status": {
+      "get": {
+        "description": "Return the pg_cron health snapshot.\n\nCalls ``public.get_cron_health()`` (SECURITY DEFINER) via the backend's\nservice-role Supabase client. Response shape::\n\n    {\n        \"queried_at\": \"2026-04-14T12:00:00+00:00\",\n        \"jobs\": [\n            {\n                \"jobname\": \"purge-old-bids\",\n                \"schedule\": \"0 7 * * *\",\n                \"active\": true,\n                \"last_status\": \"succeeded\",\n                \"last_run_at\": \"2026-04-14T07:00:04+00:00\",\n                \"runs_24h\": 1,\n                \"failures_24h\": 0,\n                \"latency_avg_ms\": 120,\n                \"last_return_message\": null\n            },\n            ...\n        ],\n        \"count\": 6\n    }\n\nOn transient failure (Supabase CB open, RPC error) returns ``status=error``\nwith ``jobs=[]`` so that dashboards degrade gracefully instead of 500-ing.",
+        "operationId": "get_cron_status_v1_admin_cron_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Cron Status V1 Admin Cron Status Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Cron Status",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/feature-flags": {
       "get": {
         "description": "List all registered feature flags with current values and sources.\n\nReturns each flag's effective value, where it comes from (redis override,\nenv var, or default), its description, and registry metadata.\n\nAdmin only.",
@@ -8730,6 +11591,35 @@
         "summary": "Feedback Patterns",
         "tags": [
           "feedback"
+        ]
+      }
+    },
+    "/v1/admin/llm-cost": {
+      "get": {
+        "description": "Return LLM cost snapshot para o m\u00eas corrente (admin-only).\n\nResponse shape::\n\n    {\n        \"month_to_date_usd\": 42.1234,\n        \"budget_usd\": 100.0,\n        \"pct_used\": 42.12,\n        \"projected_end_of_month_usd\": 78.55,\n        \"month\": \"llm_cost_month_2026_04\",\n        \"exceeded\": false\n    }\n\nEm caso de Redis indispon\u00edvel, retorna zeros (graceful degradation).",
+        "operationId": "admin_llm_cost_v1_admin_llm_cost_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Admin Llm Cost V1 Admin Llm Cost Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Llm Cost",
+        "tags": [
+          "admin"
         ]
       }
     },
@@ -9019,6 +11909,35 @@
         ]
       }
     },
+    "/v1/admin/schema-contract-status": {
+      "get": {
+        "description": "STORY-414 AC4: Expose the last schema-contract validation result.\n\nReturns the cached result from the startup check plus a ``stale``\nflag that tells callers whether a fresh run is advisable (the cache\nlives for ``schemas.contract.STATUS_CACHE_TTL`` seconds \u2014 5 min by\ndefault). Forcing a re-validation is out of scope here because it\nwould defeat the point of the cache on a polled dashboard.",
+        "operationId": "get_schema_contract_status_v1_admin_schema_contract_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Schema Contract Status V1 Admin Schema Contract Status Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Schema Contract Status",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/search-trace/{search_id}": {
       "get": {
         "description": "Reconstruct complete search journey from search_id.\n\nAggregates:\n- Progress tracker state (if still active)\n- Cache entries matching this search\n- Job queue results (if ARQ available)",
@@ -9117,6 +12036,31 @@
         "summary": "Get Seo Metrics",
         "tags": [
           "seo_admin"
+        ]
+      }
+    },
+    "/v1/admin/sitemap-cache/refresh": {
+      "post": {
+        "description": "Clears the 24h in-memory sitemap cache and recomputes indexable combos immediately.",
+        "operationId": "refresh_sitemap_cache_v1_admin_sitemap_cache_refresh_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Force-refresh sitemap combos cache (admin only)",
+        "tags": [
+          "sitemap"
         ]
       }
     },
@@ -9243,6 +12187,31 @@
         ]
       }
     },
+    "/v1/admin/trial-exit-surveys": {
+      "get": {
+        "description": "STORY-369 AC6: Admin endpoint \u2014 exit survey counts grouped by reason.",
+        "operationId": "get_exit_surveys_admin_v1_admin_trial_exit_surveys_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Exit Surveys Admin",
+        "tags": [
+          "user"
+        ]
+      }
+    },
     "/v1/admin/trial-metrics": {
       "get": {
         "description": "Trial conversion metrics dashboard.\n\nReturns active trial count, 30-day conversion rate, risk distribution,\nand email funnel stats from trial_email_log.",
@@ -9263,6 +12232,64 @@
           }
         ],
         "summary": "Get Trial Metrics",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/trigger-bids-backfill": {
+      "post": {
+        "description": "Enqueue ingestion_backfill_job to ARQ Worker.\n\nOne-time historical crawl: fetches up to 365 days of PNCP bids\nto capture all currently open opportunities.\nExpected runtime: 4-8h. Safe to call multiple times (ARQ dedup).",
+        "operationId": "trigger_bids_backfill_v1_admin_trigger_bids_backfill_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Trigger Bids Backfill V1 Admin Trigger Bids Backfill Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Trigger Bids Backfill",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/trigger-contracts-backfill": {
+      "post": {
+        "description": "Enqueue contracts_full_crawl_job to ARQ Worker.\n\nRuns on Railway Worker (better network for PNCP).\nSafe to call multiple times \u2014 ARQ deduplicates by job name.",
+        "operationId": "trigger_contracts_backfill_v1_admin_trigger_contracts_backfill_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Trigger Contracts Backfill V1 Admin Trigger Contracts Backfill Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Trigger Contracts Backfill",
         "tags": [
           "admin"
         ]
@@ -11203,6 +14230,48 @@
         ]
       }
     },
+    "/v1/auth/signup": {
+      "post": {
+        "description": "STORY-CONV-003a AC1+AC2+AC3: Signup with optional Stripe trial.\n\nReturns 200 with `SignupResponse`. Error modes:\n\n- 400: disposable email domain or weak password.\n- 400: invalid `stripe_payment_method_id` shape (Pydantic regex).\n- 409: email already registered (detected via Supabase error).\n- 500: Supabase auth.create_user failed (NOT Stripe \u2014 Stripe fails open).",
+        "operationId": "signup_v1_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Signup",
+        "tags": [
+          "auth-signup"
+        ]
+      }
+    },
     "/v1/auth/status": {
       "get": {
         "description": "Check if a signup email has been confirmed.\n\nAC8: Returns { confirmed: boolean, user_id?: string }.\nAC7/AC9: Frontend polls this every 5s for auto-redirect.",
@@ -11371,6 +14440,91 @@
         ]
       }
     },
+    "/v1/billing/setup-intent": {
+      "post": {
+        "description": "Create a Stripe SetupIntent for pre-signup card capture (CONV-003b AC2).\n\nAnonymous endpoint: called before the Supabase user exists, so we cannot\nattach a customer yet. The returned ``payment_method`` (from\n``stripe.confirmSetup()`` client-side) is forwarded to\n``POST /v1/auth/signup`` which then creates the Customer and attaches\nthe PM server-side via ``services.stripe_signup``.\n\nRate-limited via the same bucket as signup (3 req / 10 min per IP) to\nblock abuse. Returns the publishable key alongside the client secret so\nthe frontend does not need a second round-trip to ``/config`` (keeps\nthe signup flow to 2 network calls: setup-intent \u2192 signup).",
+        "operationId": "create_setup_intent_v1_billing_setup_intent_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupIntentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Create Setup Intent",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/blog/daily/latest": {
+      "get": {
+        "operationId": "daily_digest_latest_v1_blog_daily_latest_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyDigestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Digest diario atual (publico)",
+        "tags": [
+          "daily_digest"
+        ]
+      }
+    },
+    "/v1/blog/daily/{date}": {
+      "get": {
+        "operationId": "daily_digest_by_date_v1_blog_daily__date__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "title": "Date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyDigestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Digest diario para uma data especifica (publico)",
+        "tags": [
+          "daily_digest"
+        ]
+      }
+    },
     "/v1/blog/stats/cidade/{cidade}": {
       "get": {
         "description": "City stats: count, frequent buying orgs, avg values.\n\nPublic (no auth). Cached 6h.\nUses the first sector with results to get city data.",
@@ -11461,6 +14615,196 @@
           }
         },
         "summary": "Get Cidade Sector Stats",
+        "tags": [
+          "blog-stats"
+        ]
+      }
+    },
+    "/v1/blog/stats/contratos/cidade/{cidade}": {
+      "get": {
+        "description": "City-level contract stats (all sectors) \u2014 fallback for blog cidade pages.\n\nPublic (no auth). Cached 6h.",
+        "operationId": "get_contratos_cidade_stats_v1_blog_stats_contratos_cidade__cidade__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cidade",
+            "required": true,
+            "schema": {
+              "title": "Cidade",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContratosCidadeStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Contratos Cidade Stats",
+        "tags": [
+          "blog-stats"
+        ]
+      }
+    },
+    "/v1/blog/stats/contratos/cidade/{cidade}/setor/{setor_id}": {
+      "get": {
+        "description": "City \u00d7 Sector contract stats \u2014 fallback for blog cidade\u00d7setor pages.\n\nPublic (no auth). Cached 6h.",
+        "operationId": "get_contratos_cidade_setor_stats_v1_blog_stats_contratos_cidade__cidade__setor__setor_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cidade",
+            "required": true,
+            "schema": {
+              "title": "Cidade",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "setor_id",
+            "required": true,
+            "schema": {
+              "title": "Setor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContratosCidadeSetorStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Contratos Cidade Setor Stats",
+        "tags": [
+          "blog-stats"
+        ]
+      }
+    },
+    "/v1/blog/stats/contratos/{setor_id}": {
+      "get": {
+        "description": "National contract stats by sector from pncp_supplier_contracts.\n\nPublic (no auth). Cached 6h.",
+        "operationId": "get_contratos_setor_stats_v1_blog_stats_contratos__setor_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "setor_id",
+            "required": true,
+            "schema": {
+              "title": "Setor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContratosSetorStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Contratos Setor Stats",
+        "tags": [
+          "blog-stats"
+        ]
+      }
+    },
+    "/v1/blog/stats/contratos/{setor_id}/uf/{uf}": {
+      "get": {
+        "description": "Sector \u00d7 UF contract stats \u2014 fallback for blog pages with zero open editais.\n\nQueries pncp_supplier_contracts filtered by uf (idx_psc_uf_data) and sector\nkeywords. Public (no auth). Cached 6h.",
+        "operationId": "get_contratos_setor_uf_stats_v1_blog_stats_contratos__setor_id__uf__uf__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "setor_id",
+            "required": true,
+            "schema": {
+              "title": "Setor Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "uf",
+            "required": true,
+            "schema": {
+              "title": "Uf",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContratosSetorUfStats"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Contratos Setor Uf Stats",
         "tags": [
           "blog-stats"
         ]
@@ -12084,6 +15428,226 @@
         ]
       }
     },
+    "/v1/compliance/{cnpj}/profile": {
+      "get": {
+        "description": "Agrega registros CEIS e CNEP do Portal da Transparencia para um CNPJ.\n\nPublico, sem auth. Cache: 24h por CNPJ.\nEm caso de falha do Portal da Transparencia, retorna dados parciais.",
+        "operationId": "compliance_profile_v1_compliance__cnpj__profile_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cnpj",
+            "required": true,
+            "schema": {
+              "title": "Cnpj",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Perfil de due diligence B2G: CEIS + CNEP por CNPJ",
+        "tags": [
+          "compliance-publicos"
+        ]
+      }
+    },
+    "/v1/conta/cancelar-trial": {
+      "get": {
+        "description": "Return trial metadata for the confirmation UI.\n\nDoes NOT mutate state. Intended to be called by the frontend confirmation\npage (STORY-CONV-003c frontend).",
+        "operationId": "cancel_trial_info_v1_conta_cancelar_trial_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "minLength": 20,
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelTrialInfoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Trial Info",
+        "tags": [
+          "conta"
+        ]
+      },
+      "post": {
+        "description": "Cancel the user's active trial subscription.\n\nIdempotent: if already cancelled, returns ``cancelled=true`` + ``already_cancelled=true``.\nFail-safe: Stripe errors are swallowed but profile is marked ``canceled_trial``\nso the downgrade still happens if the Stripe-side cancel retries succeed out-of-band\nvia billing reconciliation (STORY-314).",
+        "operationId": "cancel_trial_execute_v1_conta_cancelar_trial_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelTrialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelTrialResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Trial Execute",
+        "tags": [
+          "conta"
+        ]
+      }
+    },
+    "/v1/contratos/orgao/{cnpj}/stats": {
+      "get": {
+        "operationId": "orgao_contratos_stats_v1_contratos_orgao__cnpj__stats_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cnpj",
+            "required": true,
+            "schema": {
+              "title": "Cnpj",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgaoContratosStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Perfil de contratos de um orgao publico (por CNPJ)",
+        "tags": [
+          "contratos-publicos"
+        ]
+      }
+    },
+    "/v1/contratos/{setor}/{uf}/stats": {
+      "get": {
+        "operationId": "contratos_stats_v1_contratos__setor___uf__stats_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "setor",
+            "required": true,
+            "schema": {
+              "title": "Setor",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "uf",
+            "required": true,
+            "schema": {
+              "title": "Uf",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContratosStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Estatisticas de contratos publicos por setor e UF",
+        "tags": [
+          "contratos-publicos"
+        ]
+      }
+    },
     "/v1/dados/agregados": {
       "get": {
         "operationId": "dados_agregados_v1_dados_agregados_get",
@@ -12227,6 +15791,51 @@
         "summary": "Perfil B2G p\u00fablico de uma empresa por CNPJ",
         "tags": [
           "empresa-publica"
+        ]
+      }
+    },
+    "/v1/export/pdf": {
+      "post": {
+        "description": "Generate and return a 1-page A4 PDF for a single bid.\n\nTrial users get a watermark footer.\nSynchronous generation wrapped in asyncio.to_thread with 10s timeout.",
+        "operationId": "export_edital_pdf_v1_export_pdf_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfEditalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export Edital Pdf",
+        "tags": [
+          "export"
         ]
       }
     },
@@ -12424,6 +16033,142 @@
         ]
       }
     },
+    "/v1/fornecedores/{cnpj}/profile": {
+      "get": {
+        "description": "Agrega historico de contratos do PNCP + dados cadastrais (BrasilAPI via\nenriched_entities) para a pagina /fornecedores/{cnpj}.\n\nPublico, sem auth. Cache: 24h TTL em memoria.",
+        "operationId": "fornecedor_profile_v1_fornecedores__cnpj__profile_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cnpj",
+            "required": true,
+            "schema": {
+              "title": "Cnpj",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FornecedorProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Perfil completo de um fornecedor do governo (por CNPJ)",
+        "tags": [
+          "contratos-publicos"
+        ]
+      }
+    },
+    "/v1/fornecedores/{setor}/{uf}/stats": {
+      "get": {
+        "operationId": "fornecedores_stats_v1_fornecedores__setor___uf__stats_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "setor",
+            "required": true,
+            "schema": {
+              "title": "Setor",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "uf",
+            "required": true,
+            "schema": {
+              "title": "Uf",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FornecedoresStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ranking de fornecedores do governo por setor e UF",
+        "tags": [
+          "contratos-publicos"
+        ]
+      }
+    },
+    "/v1/founding/checkout": {
+      "post": {
+        "description": "Create a founding-customer Stripe Checkout Session with FOUNDING30 applied.\n\nSide effects:\n- Inserts a `founding_leads` row with `checkout_status='pending'`.\n- Later webhook events (`checkout.session.completed` / `expired`) update it.",
+        "operationId": "founding_checkout_v1_founding_checkout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FoundingCheckoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoundingCheckoutResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Founding Checkout",
+        "tags": [
+          "founding"
+        ]
+      }
+    },
     "/v1/health": {
       "get": {
         "description": "GTM-STAB-008 AC3: Comprehensive system health endpoint (AC4: internal, detailed).\n\nReturns component-level statuses (Redis, Supabase, ARQ Worker, PNCP)\nand overall health classification (healthy / degraded / unhealthy).",
@@ -12446,7 +16191,7 @@
     },
     "/v1/health/cache": {
       "get": {
-        "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.\nB-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.",
+        "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.\nB-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.\nNote: warmup_coverage removed 2026-04-18 (STORY-CIG-BE-cache-warming-deprecate).",
         "operationId": "cache_health_v1_health_cache_get",
         "responses": {
           "200": {
@@ -12459,6 +16204,26 @@
           }
         },
         "summary": "Cache Health",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/v1/health/sources": {
+      "get": {
+        "description": "UX-428 AC5: Health status for all configured procurement sources.\n\nReturns enabled/disabled state and availability for each source.\nRead-only \u2014 no side effects.",
+        "operationId": "sources_health_v1_health_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sources Health",
         "tags": [
           "health"
         ]
@@ -12481,6 +16246,217 @@
         "summary": "Background Tasks Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/v1/indice-municipal": {
+      "get": {
+        "description": "Ranking nacional ou por UF de transpar\u00eancia municipal. Dados do PNCP.",
+        "operationId": "get_ranking_v1_indice_municipal_get",
+        "parameters": [
+          {
+            "description": "Per\u00edodo trimestral (ex: 2026-Q1)",
+            "in": "query",
+            "name": "periodo",
+            "required": false,
+            "schema": {
+              "default": "2026-Q1",
+              "description": "Per\u00edodo trimestral (ex: 2026-Q1)",
+              "pattern": "^\\d{4}-Q[1-4]$",
+              "title": "Periodo",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtrar por UF",
+            "in": "query",
+            "name": "uf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 2,
+                  "minLength": 2,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrar por UF",
+              "title": "Uf"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ranking de transpar\u00eancia municipal em compras p\u00fablicas (p\u00fablico)",
+        "tags": [
+          "indice-municipal"
+        ]
+      }
+    },
+    "/v1/indice-municipal/periodos": {
+      "get": {
+        "description": "Lista trimestres com dados calculados no \u00edndice.",
+        "operationId": "get_periodos_v1_indice_municipal_periodos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodosResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Per\u00edodos dispon\u00edveis no \u00cdndice Municipal (p\u00fablico)",
+        "tags": [
+          "indice-municipal"
+        ]
+      }
+    },
+    "/v1/indice-municipal/{municipio_slug}": {
+      "get": {
+        "description": "Retorna \u00edndice de transpar\u00eancia de um munic\u00edpio (slug: sao-paulo-sp).",
+        "operationId": "get_municipio_v1_indice_municipal__municipio_slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "municipio_slug",
+            "required": true,
+            "schema": {
+              "title": "Municipio Slug",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Per\u00edodo trimestral (ex: 2026-Q1)",
+            "in": "query",
+            "name": "periodo",
+            "required": false,
+            "schema": {
+              "default": "2026-Q1",
+              "description": "Per\u00edodo trimestral (ex: 2026-Q1)",
+              "pattern": "^\\d{4}-Q[1-4]$",
+              "title": "Periodo",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndiceResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "\u00cdndice de transpar\u00eancia de um munic\u00edpio (p\u00fablico)",
+        "tags": [
+          "indice-municipal"
+        ]
+      }
+    },
+    "/v1/itens/{catmat}/profile": {
+      "get": {
+        "description": "Calcula P10/P50/P90 de contratos do PNCP datalake para um item CATMAT.\n\nPublico, sem auth. Cache: 24h. Substitui o Painel de Precos do ComprasGov\n(descontinuado jul/2025).",
+        "operationId": "item_profile_v1_itens__catmat__profile_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "catmat",
+            "required": true,
+            "schema": {
+              "title": "Catmat",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Benchmark de precos governamentais por codigo CATMAT",
+        "tags": [
+          "itens-publicos"
         ]
       }
     },
@@ -12833,6 +16809,215 @@
         "summary": "Verify Recovery Code",
         "tags": [
           "MFA"
+        ]
+      }
+    },
+    "/v1/municipios/{slug}/profile": {
+      "get": {
+        "description": "Agrega licitacoes abertas do PNCP datalake + dados IBGE para a pagina\n/municipios/{slug}. Publico, sem auth. Cache: 24h TTL em memoria.",
+        "operationId": "municipio_profile_v1_municipios__slug__profile_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MunicipioProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Perfil de municipio com licitacoes abertas (por slug)",
+        "tags": [
+          "municipios-publicos"
+        ]
+      }
+    },
+    "/v1/notifications/new-bids-count": {
+      "delete": {
+        "description": "Clear the new-bids badge for the user (called after they run a search).\n\nIdempotent \u2014 safe to call even if the key does not exist.",
+        "operationId": "clear_new_bids_count_v1_notifications_new_bids_count_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Clear New Bids Count V1 Notifications New Bids Count Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Clear New Bids Count",
+        "tags": [
+          "notifications"
+        ]
+      },
+      "get": {
+        "description": "Return count of new bids available for the user since last check.\n\nReturns 0 when no Redis key exists (cron not yet run, or badge was cleared).",
+        "operationId": "get_new_bids_count_v1_notifications_new_bids_count_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewBidsCountResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get New Bids Count",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/observatorio/relatorio/{mes}/{ano}": {
+      "get": {
+        "operationId": "get_relatorio_mensal_v1_observatorio_relatorio__mes___ano__get",
+        "parameters": [
+          {
+            "description": "M\u00eas (1-12)",
+            "in": "path",
+            "name": "mes",
+            "required": true,
+            "schema": {
+              "description": "M\u00eas (1-12)",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Mes",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Ano",
+            "in": "path",
+            "name": "ano",
+            "required": true,
+            "schema": {
+              "description": "Ano",
+              "maximum": 2030,
+              "minimum": 2024,
+              "title": "Ano",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatorioMensal"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relat\u00f3rio mensal do Observat\u00f3rio de Licita\u00e7\u00f5es (p\u00fablico)",
+        "tags": [
+          "observatorio"
+        ]
+      }
+    },
+    "/v1/observatorio/relatorio/{mes}/{ano}/csv": {
+      "get": {
+        "operationId": "get_relatorio_csv_v1_observatorio_relatorio__mes___ano__csv_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mes",
+            "required": true,
+            "schema": {
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Mes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "ano",
+            "required": true,
+            "schema": {
+              "maximum": 2030,
+              "minimum": 2024,
+              "title": "Ano",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download CSV do relat\u00f3rio mensal (p\u00fablico)",
+        "tags": [
+          "observatorio"
         ]
       }
     },
@@ -14424,6 +18609,18 @@
               "description": "Filter by session status (completed, failed, timed_out)",
               "title": "Status"
             }
+          },
+          {
+            "description": "UX-433 AC3: hide failed/timed_out entries older than 7 days from default listing",
+            "in": "query",
+            "name": "hide_old_failures",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "UX-433 AC3: hide failed/timed_out entries older than 7 days from default listing",
+              "title": "Hide Old Failures",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -14632,6 +18829,115 @@
         "summary": "CNPJs com \u22651 licita\u00e7\u00e3o no datalake (para sitemap)",
         "tags": [
           "sitemap"
+        ]
+      }
+    },
+    "/v1/sitemap/contratos-orgao-indexable": {
+      "get": {
+        "description": "Retorna CNPJs de \u00f3rg\u00e3os com \u22651 contrato ativo em pncp_supplier_contracts.\n\nDiferente de /sitemap/orgaos (que usa pncp_raw_bids/licita\u00e7\u00f5es), este\nendpoint consulta pncp_supplier_contracts \u2014 a tabela que alimenta\n/contratos/orgao/{cnpj}/stats. Garante que o sitemap s\u00f3 inclui URLs\nque retornam 200, eliminando os 794 404s reportados no GSC.\nCache: 24h em mem\u00f3ria.",
+        "operationId": "sitemap_contratos_orgao_indexable_v1_sitemap_contratos_orgao_indexable_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitemapContratosOrgaoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "\u00d3rg\u00e3os compradores com contratos em pncp_supplier_contracts (para sitemap /contratos/orgao/)",
+        "tags": [
+          "sitemap"
+        ]
+      }
+    },
+    "/v1/sitemap/fornecedores-cnpj": {
+      "get": {
+        "description": "Retorna os CNPJs de fornecedores com mais contratos em pncp_supplier_contracts.\n\nUsado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.\nLimite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).\nCache: 24h em memoria.",
+        "operationId": "sitemap_fornecedores_cnpj_v1_sitemap_fornecedores_cnpj_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitemapFornecedoresCnpjResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Top CNPJs de fornecedores com contratos no datalake (para sitemap)",
+        "tags": [
+          "sitemap"
+        ]
+      }
+    },
+    "/v1/sitemap/itens": {
+      "get": {
+        "operationId": "sitemap_itens_v1_sitemap_itens_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitemapItensResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Lista de codigos CATMAT para sitemap.xml",
+        "tags": [
+          "itens-publicos"
+        ]
+      }
+    },
+    "/v1/sitemap/licitacoes-indexable": {
+      "get": {
+        "description": "Retorna combos setor\u00d7UF com bids OR contracts suficientes.",
+        "operationId": "get_licitacoes_indexable_v1_sitemap_licitacoes_indexable_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicitacoesIndexableResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Combos setor\u00d7UF index\u00e1veis (p\u00fablico \u2014 sitemap)",
+        "tags": [
+          "sitemap"
+        ]
+      }
+    },
+    "/v1/sitemap/municipios": {
+      "get": {
+        "description": "Retorna slugs dos municipios pre-cadastrados para o sitemap.xml.\nCache: 24h em memoria.",
+        "operationId": "sitemap_municipios_v1_sitemap_municipios_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitemapMunicipiosResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Lista de slugs de municipios para sitemap.xml",
+        "tags": [
+          "municipios-publicos"
         ]
       }
     },
@@ -14885,6 +19191,53 @@
         ]
       }
     },
+    "/v1/trial/exit-survey": {
+      "post": {
+        "description": "STORY-369 AC2: Submit exit survey when trial expires.\nReturns 409 if user already submitted a survey.",
+        "operationId": "submit_exit_survey_v1_trial_exit_survey_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExitSurveyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExitSurveyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Exit Survey",
+        "tags": [
+          "user"
+        ]
+      }
+    },
     "/v1/trial/extend": {
       "post": {
         "description": "Extend trial by completing a condition.",
@@ -14956,6 +19309,33 @@
         "summary": "Get Extensions Status",
         "tags": [
           "trial"
+        ]
+      }
+    },
+    "/v1/user/recommended-plan": {
+      "get": {
+        "description": "STORY-BIZ-002 AC2: return the upsell-eligible plan for the current user.\n\nDetects consultancy profiles by CNAE prim\u00e1rio (divisions 70.2 / 74.9 / 82.9)\nand recommends the higher-ARPU Consultoria plan. Non-consultancies see the\ndefault Pro recommendation. Cached in Redis for 24h keyed by user_id.",
+        "operationId": "get_recommended_plan_v1_user_recommended_plan_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendedPlanResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Recommended Plan",
+        "tags": [
+          "user"
         ]
       }
     },

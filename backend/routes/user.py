@@ -266,6 +266,76 @@ async def get_trial_status(user: dict = Depends(require_auth), db=Depends(get_db
 
 
 # ============================================================================
+# STORY-BIZ-002: Plan recommendation (consultancy upsell)
+# ============================================================================
+
+
+class RecommendedPlanResponse(BaseModel):
+    plan_key: str
+    reason: str
+
+
+@router.get("/user/recommended-plan", response_model=RecommendedPlanResponse)
+async def get_recommended_plan(
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """STORY-BIZ-002 AC2: return the upsell-eligible plan for the current user.
+
+    Detects consultancy profiles by CNAE primário (divisions 70.2 / 74.9 / 82.9)
+    and recommends the higher-ARPU Consultoria plan. Non-consultancies see the
+    default Pro recommendation. Cached in Redis for 24h keyed by user_id.
+    """
+    from services.plan_recommender import recommend_plan
+
+    user_id = user["id"]
+    cache_key = f"user:recommended_plan:{user_id}"
+
+    try:
+        from redis_pool import get_sync_redis
+        redis = get_sync_redis()
+    except Exception:
+        redis = None
+
+    if redis is not None:
+        try:
+            cached = redis.get(cache_key)
+            if cached:
+                payload = json.loads(cached)
+                return RecommendedPlanResponse(**payload)
+        except Exception as e:
+            logger.debug(f"recommended_plan: Redis GET miss (non-fatal): {e}")
+
+    cnae_primary: str | None = None
+    try:
+        profile_row = await asyncio.to_thread(
+            lambda: db.table("profiles")
+                .select("cnae_primary")
+                .eq("id", user_id)
+                .limit(1)
+                .execute()
+        )
+        if profile_row.data:
+            cnae_primary = (profile_row.data[0] or {}).get("cnae_primary")
+    except Exception as e:
+        logger.warning(f"recommended_plan: profile lookup failed — defaulting to Pro: {e}")
+
+    recommendation = recommend_plan(cnae_primary)
+    response = RecommendedPlanResponse(
+        plan_key=recommendation.plan_key,
+        reason=recommendation.reason,
+    )
+
+    if redis is not None:
+        try:
+            redis.setex(cache_key, 86400, json.dumps(response.model_dump()))
+        except Exception as e:
+            logger.debug(f"recommended_plan: Redis SETEX failed (non-fatal): {e}")
+
+    return response
+
+
+# ============================================================================
 # SYS-023: Profile context — uses user-scoped client (RLS-enforced)
 # ============================================================================
 

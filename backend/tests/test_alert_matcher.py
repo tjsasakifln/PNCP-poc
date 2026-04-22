@@ -726,6 +726,18 @@ class TestAlertsLoop:
 # ============================================================================
 
 
+@pytest.fixture
+def _alerts_enabled_for_preview():
+    """CIG-BE-alerts-endpoint-404: the /v1/alerts/*/preview handler is gated by
+    ALERTS_SYSTEM_ENABLED and short-circuits to 404 when false. Enable it so
+    the preview flow can actually run end-to-end under TestClient.
+    """
+    with patch("routes.alerts.ALERTS_SYSTEM_ENABLED", True), \
+         patch("config.ALERTS_SYSTEM_ENABLED", True):
+        yield
+
+
+@pytest.mark.usefixtures("_alerts_enabled_for_preview")
 class TestPreviewEndpoint:
     """AC12: Preview endpoint for dry-run matching."""
 

@@ -156,9 +156,15 @@ export function Tour({
       handleComplete();
       return;
     }
+    // Sync path when there's no beforeShow — avoids a microtask hop so
+    // synchronous `fireEvent.click` tests observe the new step immediately.
+    if (!steps[next].beforeShow) {
+      setIndex(next);
+      return;
+    }
     isTransitioningRef.current = true;
     try {
-      await steps[next].beforeShow?.();
+      await steps[next].beforeShow();
     } finally {
       isTransitioningRef.current = false;
     }
@@ -169,9 +175,13 @@ export function Tour({
     if (isTransitioningRef.current) return;
     const prev = findValidIndex(steps, index - 1, -1);
     if (prev < 0) return;
+    if (!steps[prev].beforeShow) {
+      setIndex(prev);
+      return;
+    }
     isTransitioningRef.current = true;
     try {
-      await steps[prev].beforeShow?.();
+      await steps[prev].beforeShow();
     } finally {
       isTransitioningRef.current = false;
     }

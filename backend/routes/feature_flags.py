@@ -175,7 +175,6 @@ _FLAG_DESCRIPTIONS: dict[str, str] = {
     "SECTOR_RED_FLAGS_ENABLED": "Sector-specific red flag detection",
     "PROXIMITY_CONTEXT_ENABLED": "Proximity context window for keyword matching",
     "ITEM_INSPECTION_ENABLED": "Item-level inspection for gray-zone contracts",
-    "FILTER_DEBUG_MODE": "Verbose filter debug logging (dev only)",
     # Term Search Quality
     "TERM_SEARCH_LLM_AWARE": "LLM-aware term search quality parity",
     "TERM_SEARCH_SYNONYMS": "Synonym expansion for term search",
@@ -186,17 +185,13 @@ _FLAG_DESCRIPTIONS: dict[str, str] = {
     "PCP_V2_ENABLED": "Portal de Compras Publicas v2 data source",
     "DATALAKE_ENABLED": "ETL ingestion pipeline (pncp_raw_bids)",
     "DATALAKE_QUERY_ENABLED": "Query local datalake instead of live APIs",
-    # Cache & Warming
-    "CACHE_WARMING_ENABLED": "Proactive cache warming on schedule",
-    "CACHE_REFRESH_ENABLED": "Background cache refresh for stale entries",
+    # Cache
     "CACHE_LEGACY_KEY_FALLBACK": "Fallback to legacy cache key format",
-    "CACHE_WARMING_POST_DEPLOY_ENABLED": "Cache warming after deploy (top-N queries)",
     "SHOW_CACHE_FALLBACK_BANNER": "Show cache fallback banner in frontend",
     "SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE": "Serve expired cache during total outage",
     # Search Pipeline
     "SEARCH_ASYNC_ENABLED": "Async search via ARQ job queue",
     "PARTIAL_DATA_SSE_ENABLED": "Partial data delivery via SSE events",
-    "WARMUP_ENABLED": "Startup cache warm-up on boot",
     # Cron & Operations
     "HEALTH_CANARY_ENABLED": "PNCP health canary checks (5-min interval)",
     "DIGEST_ENABLED": "Email digest cron job",
@@ -216,6 +211,13 @@ _FLAG_DESCRIPTIONS: dict[str, str] = {
     "USER_FEEDBACK_ENABLED": "User feedback collection on search results",
     "USE_REDIS_CIRCUIT_BREAKER": "Redis-backed circuit breaker (vs in-memory)",
     "COMPRASGOV_CB_ENABLED": "ComprasGov circuit breaker enabled",
+    # A/B Testing
+    "ab_experiments_enabled": "A/B experiments framework (STORY-A/B)",
+    # Schema Contract (STORY-414)
+    "SCHEMA_CONTRACT_STRICT": "Strict schema contract validation for external responses (STORY-414)",
+    # Datalake Search Improvements
+    "TRIGRAM_FALLBACK_ENABLED": "Trigram fallback for datalake search (STORY-437)",
+    "EMBEDDING_ENABLED": "Semantic embedding search for datalake (STORY-438)",
 }
 
 
@@ -237,7 +239,6 @@ _FLAG_LIFECYCLE: dict[str, dict] = {
     "SECTOR_RED_FLAGS_ENABLED": {"owner": "search", "category": "filter", "lifecycle": "permanent", "created": "2025-12"},
     "PROXIMITY_CONTEXT_ENABLED": {"owner": "search", "category": "filter", "lifecycle": "permanent", "created": "2025-12"},
     "ITEM_INSPECTION_ENABLED": {"owner": "search", "category": "filter", "lifecycle": "permanent", "created": "2025-12"},
-    "FILTER_DEBUG_MODE": {"owner": "search", "category": "debug", "lifecycle": "ops-toggle", "created": "2025-10"},
     # Term Search Quality — experimental, remove when graduated
     "TERM_SEARCH_LLM_AWARE": {"owner": "search", "category": "experimental", "lifecycle": "experimental", "created": "2026-01"},
     "TERM_SEARCH_SYNONYMS": {"owner": "search", "category": "experimental", "lifecycle": "experimental", "created": "2026-01"},
@@ -248,17 +249,13 @@ _FLAG_LIFECYCLE: dict[str, dict] = {
     "PCP_V2_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2025-10"},
     "DATALAKE_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2026-01"},
     "DATALAKE_QUERY_ENABLED": {"owner": "data", "category": "source", "lifecycle": "permanent", "created": "2026-01"},
-    # Cache & Warming
-    "CACHE_WARMING_ENABLED": {"owner": "infra", "category": "cache", "lifecycle": "permanent", "created": "2025-12"},
-    "CACHE_REFRESH_ENABLED": {"owner": "infra", "category": "cache", "lifecycle": "permanent", "created": "2025-11"},
+    # Cache
     "CACHE_LEGACY_KEY_FALLBACK": {"owner": "infra", "category": "cache", "lifecycle": "deprecating", "created": "2026-02", "remove_after": "2026-06"},
-    "CACHE_WARMING_POST_DEPLOY_ENABLED": {"owner": "infra", "category": "cache", "lifecycle": "permanent", "created": "2026-02"},
     "SHOW_CACHE_FALLBACK_BANNER": {"owner": "frontend", "category": "cache", "lifecycle": "ops-toggle", "created": "2026-02"},
     "SERVE_EXPIRED_CACHE_ON_TOTAL_OUTAGE": {"owner": "infra", "category": "cache", "lifecycle": "permanent", "created": "2026-01"},
     # Search Pipeline
     "SEARCH_ASYNC_ENABLED": {"owner": "search", "category": "pipeline", "lifecycle": "experimental", "created": "2025-12"},
     "PARTIAL_DATA_SSE_ENABLED": {"owner": "search", "category": "pipeline", "lifecycle": "permanent", "created": "2025-12"},
-    "WARMUP_ENABLED": {"owner": "infra", "category": "pipeline", "lifecycle": "permanent", "created": "2025-11"},
     # Cron & Operations
     "HEALTH_CANARY_ENABLED": {"owner": "infra", "category": "ops", "lifecycle": "permanent", "created": "2025-11"},
     "DIGEST_ENABLED": {"owner": "email", "category": "ops", "lifecycle": "experimental", "created": "2025-12"},
@@ -278,6 +275,14 @@ _FLAG_LIFECYCLE: dict[str, dict] = {
     "USER_FEEDBACK_ENABLED": {"owner": "product", "category": "infra", "lifecycle": "permanent", "created": "2025-12"},
     "USE_REDIS_CIRCUIT_BREAKER": {"owner": "infra", "category": "infra", "lifecycle": "permanent", "created": "2025-12"},
     "COMPRASGOV_CB_ENABLED": {"owner": "infra", "category": "infra", "lifecycle": "permanent", "created": "2026-02"},
+    # A/B Testing
+    "ab_experiments_enabled": {"owner": "product", "category": "experimental", "lifecycle": "experimental", "created": "2026-03"},
+    # STORY-414: Schema contract gate
+    "SCHEMA_CONTRACT_STRICT": {"owner": "data", "category": "validation", "lifecycle": "experimental", "created": "2026-03"},
+    # STORY-437: Datalake search improvements
+    "TRIGRAM_FALLBACK_ENABLED": {"owner": "search", "category": "search", "lifecycle": "experimental", "created": "2026-03"},
+    # STORY-438: Semantic embeddings
+    "EMBEDDING_ENABLED": {"owner": "search", "category": "search", "lifecycle": "experimental", "created": "2026-03"},
 }
 
 

@@ -64,7 +64,7 @@ class TestWaitForTrackerHeartbeat:
             return mock_tracker
 
         with patch("routes.search_sse.get_tracker", side_effect=delayed_get_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("asyncio.sleep", new_callable=AsyncMock):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -92,7 +92,7 @@ class TestWaitForTrackerHeartbeat:
         )
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None):
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get("/v1/buscar-progress/test-immediate")
@@ -172,7 +172,7 @@ class TestMainLoopHeartbeat:
 
         # Use very short heartbeat interval for fast test
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -217,7 +217,7 @@ class TestMainLoopHeartbeat:
         mock_redis.xread = mock_xread
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
              patch("routes.search_sse._SSE_POLLS_PER_HEARTBEAT", 1), \
              patch("routes.search_sse._SSE_POLL_INTERVAL", 0.01):
             transport = ASGITransport(app=app)
@@ -267,7 +267,7 @@ class TestHeartbeatTelemetry:
             return mock_tracker
 
         with patch("routes.search_sse.get_tracker", side_effect=delayed_get_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("asyncio.sleep", new_callable=AsyncMock), \
              caplog.at_level(logging.DEBUG, logger="routes.search_sse"):
             transport = ASGITransport(app=app)
@@ -304,7 +304,7 @@ class TestHeartbeatTelemetry:
         mock_tracker.queue.get = mock_queue_get
 
         with patch("routes.search_sse.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search_sse.get_redis_pool", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search_sse.get_sse_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search_sse._SSE_HEARTBEAT_INTERVAL", 0.01), \
              caplog.at_level(logging.DEBUG, logger="routes.search_sse"):
             transport = ASGITransport(app=app)

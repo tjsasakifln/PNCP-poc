@@ -1,0 +1,50 @@
+workflow:
+  id: wf-pesquisa-jurisprudencial
+  name: "Pesquisa Jurisprudencial"
+  version: "1.0"
+  squad: legal-analyst
+  description: "Pesquisa + consolidacao + indexacao de jurisprudencia sobre um tema"
+  orchestrator: legal-chief
+  estimated_duration: "30-60 min"
+
+phases:
+  - id: phase_0_classificacao
+    name: "Classificacao Tematica"
+    agents: [barbosa-classifier]
+    tasks:
+      - id: classificar-tema
+        description: "Identificar area do Direito e termos de busca"
+        outputs: [classificacao, termos_busca]
+
+  - id: phase_1_pesquisa
+    name: "Pesquisa"
+    agents: [mendes-researcher, toffoli-aggregator, weber-indexer]
+    tasks:
+      - id: pesquisar
+        description: "Pesquisar STF/STJ/TJs"
+        outputs: [lista_acordaos, sumulas]
+      - id: consolidar
+        description: "Consolidar precedentes e correntes"
+        dependencies: [pesquisar]
+        outputs: [mapa_precedentes]
+      - id: indexar
+        description: "Indexar tematicamente"
+        dependencies: [consolidar]
+        outputs: [indice_navegavel]
+
+  - id: phase_2_analise_rapida
+    name: "Analise Rapida"
+    agents: [carmem-relator, nunes-quantitative]
+    parallelizable: true
+    tasks:
+      - id: relatores
+        description: "Identificar Relatores e tendencias"
+        outputs: [perfis_resumidos]
+      - id: jurimetria
+        description: "Estatisticas basicas"
+        outputs: [jurimetria_basica]
+
+success_criteria:
+  - "5+ acordaos relevantes"
+  - "Correntes mapeadas"
+  - "Indice navegavel gerado"

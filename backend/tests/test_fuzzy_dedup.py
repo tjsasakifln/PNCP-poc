@@ -10,7 +10,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from consolidation import ConsolidationService
+# CIG-BE-consolidation-helpers-private (TD-008): private helpers (_tokenize_objeto,
+# _jaccard, _deduplicate_fuzzy, etc.) moved from ConsolidationService to a dedicated
+# DeduplicationEngine in consolidation/dedup.py. Tests updated to patch the new
+# location instead of restoring helpers as ConsolidationService attributes.
+from consolidation.dedup import DeduplicationEngine
 from unified_schemas.unified import UnifiedProcurement
 
 
@@ -42,8 +46,12 @@ def _make_record(
 
 @pytest.fixture
 def svc():
-    """ConsolidationService with no adapters (only using dedup methods)."""
-    return ConsolidationService(adapters={})
+    """DeduplicationEngine with no adapters (only using dedup methods).
+
+    CIG-BE-consolidation-helpers-private: helpers extracted to DeduplicationEngine.
+    Fixture name `svc` retained for backwards-compat with existing tests.
+    """
+    return DeduplicationEngine(adapters={})
 
 
 # === _tokenize_objeto tests ===
@@ -51,10 +59,12 @@ def svc():
 
 class TestTokenizeObjeto:
     def test_basic_tokenization(self):
-        tokens = ConsolidationService._tokenize_objeto(
+        tokens = DeduplicationEngine._tokenize_objeto(
             "Pavimentação da rua Reinhold Schroeder"
         )
-        assert "pavimentação" in tokens
+        # ISSUE-027: tokenizer strips accents (NFD + remove combining marks)
+        # so "pavimentação" and "pavimentacao" produce the same token.
+        assert "pavimentacao" in tokens
         assert "rua" in tokens
         assert "reinhold" in tokens
         assert "schroeder" in tokens
@@ -62,10 +72,11 @@ class TestTokenizeObjeto:
         assert "da" not in tokens
 
     def test_punctuation_removed(self):
-        tokens = ConsolidationService._tokenize_objeto(
+        tokens = DeduplicationEngine._tokenize_objeto(
             "CONSTRUÇÃO CIVIL, VISANDO A CONSTRUÇÃO DO CAPS."
         )
-        assert "construção" in tokens
+        # ISSUE-027: accents stripped before tokenizing.
+        assert "construcao" in tokens
         assert "civil" in tokens
         assert "caps" in tokens
         # Short tokens and stopwords removed
@@ -73,10 +84,10 @@ class TestTokenizeObjeto:
         assert "," not in tokens
 
     def test_empty_string(self):
-        assert ConsolidationService._tokenize_objeto("") == frozenset()
+        assert DeduplicationEngine._tokenize_objeto("") == frozenset()
 
     def test_short_tokens_excluded(self):
-        tokens = ConsolidationService._tokenize_objeto("a de em um SP RJ")
+        tokens = DeduplicationEngine._tokenize_objeto("a de em um SP RJ")
         # All tokens are <= 2 chars or stopwords
         assert len(tokens) == 0
 
@@ -87,22 +98,22 @@ class TestTokenizeObjeto:
 class TestJaccard:
     def test_identical(self):
         s = frozenset({"pavimentação", "rua", "reinhold"})
-        assert ConsolidationService._jaccard(s, s) == 1.0
+        assert DeduplicationEngine._jaccard(s, s) == 1.0
 
     def test_completely_different(self):
         a = frozenset({"pavimentação", "asfalto"})
         b = frozenset({"uniformes", "escolares"})
-        assert ConsolidationService._jaccard(a, b) == 0.0
+        assert DeduplicationEngine._jaccard(a, b) == 0.0
 
     def test_partial_overlap(self):
         a = frozenset({"pavimentação", "rua", "reinhold", "schroeder"})
         b = frozenset({"pavimentação", "rua", "reinhold", "schroeder", "indaial"})
-        sim = ConsolidationService._jaccard(a, b)
+        sim = DeduplicationEngine._jaccard(a, b)
         assert 0.7 < sim < 1.0  # 4/5 = 0.8
 
     def test_empty_sets(self):
-        assert ConsolidationService._jaccard(frozenset(), frozenset()) == 0.0
-        assert ConsolidationService._jaccard(frozenset({"a"}), frozenset()) == 0.0
+        assert DeduplicationEngine._jaccard(frozenset(), frozenset()) == 0.0
+        assert DeduplicationEngine._jaccard(frozenset({"a"}), frozenset()) == 0.0
 
 
 # === _deduplicate_fuzzy tests ===

@@ -3,7 +3,7 @@
 **Priority:** P0 — Blocks Stripe Reconciliation
 **Effort:** S (0.5 day)
 **Squad:** @data-engineer
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issue:** https://confenge.sentry.io/issues/7388075442/ (6+ eventos)
 **Sprint:** Emergencial (0-48h)
@@ -177,3 +177,4 @@ APIError: record "new" has no field "is_master" (code 42703)
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. Nota: decisão de manter/descontinuar `is_master` como feature precisa alinhamento com @pm durante AC1. |
 | 2026-04-10 | @pm (Morgan) | Decisão AC1: **Opção B** (remover ref do trigger). Investigação revelou que `is_master` é DERIVADO de `plan_type` em `authorization.py:81`, nunca foi coluna. Trigger `20260404000000` foi bug desde o dia 1. Nenhum refactor de código necessário — feature continua LIVE via lógica derivada. |
 | 2026-04-10 | @dev | Implementation. Nova migration `supabase/migrations/20260410130000_story415_fix_is_master_trigger.sql` — `CREATE OR REPLACE FUNCTION public.prevent_privilege_escalation()` sem `NEW.is_master`, mantendo proteção de `is_admin` + `plan_type`. `tests/test_story415_privilege_escalation_trigger.py` (5 tests) valida estática do SQL, ordem de migration (20260410... > 20260404...), e que `authorization.py` ainda deriva `is_master` de `plan_type`. Status Ready → InReview. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-415. |

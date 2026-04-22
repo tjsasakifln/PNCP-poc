@@ -149,6 +149,7 @@ def pncp_records(pncp_client):
 # ─── Saúde Sector Tests ───────────────────────────────────
 
 @pytest.mark.integration
+@pytest.mark.external  # CIG-BE-sectors-overlap-timeout: pncp_records fixture hits live PNCP API
 class TestSaudeIntegration:
     """Validate Saúde sector keywords against real PNCP data."""
 
@@ -231,6 +232,7 @@ class TestSaudeIntegration:
 # ─── Vigilância Sector Tests ──────────────────────────────
 
 @pytest.mark.integration
+@pytest.mark.external  # CIG-BE-sectors-overlap-timeout: pncp_records fixture hits live PNCP API
 class TestVigilanciaIntegration:
     """Validate Vigilância e Segurança sector keywords against real PNCP data."""
 
@@ -292,6 +294,7 @@ class TestVigilanciaIntegration:
 # ─── Transporte Sector Tests ──────────────────────────────
 
 @pytest.mark.integration
+@pytest.mark.external  # CIG-BE-sectors-overlap-timeout: pncp_records fixture hits live PNCP API
 class TestTransporteIntegration:
     """Validate Transporte e Veículos sector keywords against real PNCP data."""
 
@@ -360,11 +363,24 @@ class TestTransporteIntegration:
 # ─── Cross-Sector Overlap Test ─────────────────────────────
 
 @pytest.mark.integration
+@pytest.mark.external  # CIG-BE-sectors-overlap-timeout: pncp_records fixture hits live PNCP API
 class TestCrossSectorOverlap:
     """Verify new sectors don't excessively overlap with existing ones."""
 
     def test_no_excessive_overlap(self, pncp_records):
-        """Each matched record should predominantly belong to one sector."""
+        """Each matched record should predominantly belong to one sector.
+
+        CIG-BE-sectors-overlap-timeout: original implementation walked
+        ``pncp_records × all_sectors`` twice (once to build matching_sectors,
+        once to recompute total_matched), giving O(n × m × cost(match_keywords))
+        with the regex compiler being re-invoked every call. With n≈100 and m=13
+        the 25k+ match_keywords calls timed out the 30s pytest budget on CI.
+
+        Fix: cache each sector's (keywords, exclusions) once, accumulate
+        ``matching_sectors`` per record, and derive ``total_matched`` from the
+        same single pass — no second loop, no recomputed regex matching. The
+        functional contract (overlap_rate < 15%) is unchanged.
+        """
         new_sectors = ["medicamentos", "vigilancia", "transporte_servicos"]
         all_sectors = [
             "vestuario", "alimentos", "informatica", "mobiliario",
@@ -372,8 +388,12 @@ class TestCrossSectorOverlap:
             "manutencao_predial",
         ] + new_sectors
 
+        # Resolve sectors once so we don't pay the YAML/get_sector lookup per record.
+        sector_cache = {sid: get_sector(sid) for sid in all_sectors}
+
         overlap_count = 0
         overlap_examples = []
+        total_matched = 0
 
         for rec in pncp_records:
             objeto = rec.get("objetoCompra", "")
@@ -382,10 +402,13 @@ class TestCrossSectorOverlap:
 
             matching_sectors = []
             for sid in all_sectors:
-                sector = get_sector(sid)
+                sector = sector_cache[sid]
                 ok, _ = match_keywords(objeto, sector.keywords, sector.exclusions)
                 if ok:
                     matching_sectors.append(sid)
+
+            if matching_sectors:
+                total_matched += 1
 
             # Check if a new sector overlaps with others
             new_matched = [s for s in matching_sectors if s in new_sectors]
@@ -396,18 +419,6 @@ class TestCrossSectorOverlap:
                     overlap_examples.append(
                         (objeto[:80], new_matched, old_matched)
                     )
-
-        total_matched = sum(
-            1 for rec in pncp_records
-            if any(
-                match_keywords(
-                    rec.get("objetoCompra", ""),
-                    get_sector(s).keywords,
-                    get_sector(s).exclusions,
-                )[0]
-                for s in all_sectors
-            )
-        )
 
         overlap_rate = overlap_count / total_matched * 100 if total_matched else 0
 
@@ -433,6 +444,7 @@ class TestCrossSectorOverlap:
 # ─── Summary Report ───────────────────────────────────────
 
 @pytest.mark.integration
+@pytest.mark.external  # CIG-BE-sectors-overlap-timeout: pncp_records fixture hits live PNCP API
 class TestSummaryReport:
     """Print a consolidated summary of all sectors."""
 

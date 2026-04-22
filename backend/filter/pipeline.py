@@ -136,6 +136,23 @@ def aplicar_todos_filtros(
                 # Direct comparison with inferred status
                 if status_inferido == status_lower:
                     resultado_status.append(lic)
+                elif (
+                    status_inferido in ("desconhecido", "todos")
+                    and lic.get("_source") == "PORTAL_COMPRAS"
+                ):
+                    # CRIT-054: PCP v2 pass-through for ambiguous status.
+                    # Restores behavior dropped during DEBT-201 split
+                    # (bf6ab7cc:backend/filter.py:2385-2395). PCP v2 frequently
+                    # returns records with unmapped/empty status; dropping them
+                    # silently under-returns results. PNCP with 'todos' is still
+                    # rejected — this branch gates on _source == PORTAL_COMPRAS.
+                    resultado_status.append(lic)
+                    lic["_status_unconfirmed"] = True
+                    try:
+                        from metrics import FILTER_PASSTHROUGH_TOTAL
+                        FILTER_PASSTHROUGH_TOTAL.labels(reason="pcp_status_ambiguous").inc()
+                    except Exception:
+                        pass
                 else:
                     stats["rejeitadas_status"] += 1
                     # STORY-248 AC9: Record status mismatch
@@ -787,6 +804,8 @@ def aplicar_todos_filtros(
     stats["llm_zero_match_aprovadas"] = 0
     stats["llm_zero_match_rejeitadas"] = 0
     stats["llm_zero_match_skipped_short"] = 0
+    # STORY-354 AC9: count LLM fallbacks that returned pending_review=True
+    stats["pending_review_count"] = 0
 
     # STORY-267 AC2: When custom_terms present + TERM_SEARCH_LLM_AWARE, use term-aware prompt
     _use_term_prompt_zm = False
@@ -967,6 +986,24 @@ def aplicar_todos_filtros(
                             f"objeto={lic_item.get('objetoCompra', '')[:80]}"
                         )
                     else:
+                        # STORY-354 AC9: when LLM fails with LLM_FALLBACK_PENDING_ENABLED
+                        # the arbiter tags ``pending_review=True``. The filter-level contract
+                        # (AC19, pinned in tests/test_llm_zero_match.py) stays REJECT — the
+                        # bid is still counted in llm_zero_match_rejeitadas and NOT forwarded
+                        # to aprovadas. Downstream (pipeline/stages/generate.py) consumes
+                        # ``stats["pending_review_count"]`` to store the bid in Redis and
+                        # enqueue the reclassify job — that's where the PENDING_REVIEW
+                        # response metadata is attached, not here.
+                        if isinstance(llm_result, dict) and llm_result.get("pending_review"):
+                            stats["pending_review_count"] += 1
+                            lic_item["_pending_review"] = True
+                            lic_item["_pending_review_reason"] = llm_result.get(
+                                "rejection_reason", "LLM unavailable"
+                            )
+                            logger.debug(
+                                f"LLM zero_match: PENDING_REVIEW tagged (REJECT) "
+                                f"objeto={lic_item.get('objetoCompra', '')[:80]}"
+                            )
                         stats["llm_zero_match_rejeitadas"] += 1
                         # STORY-267 AC16: Track term search metrics
                         if custom_terms:

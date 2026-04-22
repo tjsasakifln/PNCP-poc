@@ -18,19 +18,13 @@ try:
 except Exception:
     _worker_redis_settings = None
 
-# Build cron jobs list
+# Build cron jobs list — cache_refresh_job + cache_warming_job deprecated 2026-04-18
+# (STORY-CIG-BE-cache-warming-deprecate). DataLake is primary; no proactive warming needed.
 try:
     from arq.cron import cron as _arq_cron
-    from config import CACHE_REFRESH_INTERVAL_HOURS, CACHE_REFRESH_BATCH_SIZE
-    from jobs.queue.jobs import cache_refresh_job, cache_warming_job, daily_digest_job, email_alerts_job
+    from jobs.queue.jobs import daily_digest_job, email_alerts_job
 
-    _cron_timeout = max(300, CACHE_REFRESH_BATCH_SIZE * 10)
-    _cron_hours = set(range(0, 24, CACHE_REFRESH_INTERVAL_HOURS))
-    _worker_cron_jobs = [_arq_cron(cache_refresh_job, hour=_cron_hours, minute=0, timeout=_cron_timeout)]
-
-    from config import CACHE_WARMING_ENABLED, CACHE_WARMING_INTERVAL_HOURS as _warming_hours
-    if CACHE_WARMING_ENABLED:
-        _worker_cron_jobs.append(_arq_cron(cache_warming_job, hour=set(range(0, 24, _warming_hours)), minute=30, timeout=1800))
+    _worker_cron_jobs = []
 
     from config import DIGEST_ENABLED, DIGEST_HOUR_UTC
     if DIGEST_ENABLED:
@@ -119,8 +113,8 @@ async def _worker_on_startup(ctx: dict) -> None:
 class WorkerSettings:
     """ARQ worker configuration. Start with: arq job_queue.WorkerSettings"""
     from jobs.queue.jobs import (
-        llm_summary_job, excel_generation_job, cache_refresh_job, bid_analysis_job,
-        cache_warming_job, daily_digest_job, email_alerts_job,
+        llm_summary_job, excel_generation_job, bid_analysis_job,
+        daily_digest_job, email_alerts_job,
         reclassify_pending_bids_job, classify_zero_match_job,
     )
     from jobs.queue.search import search_job
@@ -154,8 +148,8 @@ class WorkerSettings:
         _monitoring_functions = []
 
     functions = [
-        llm_summary_job, excel_generation_job, cache_refresh_job, search_job,
-        bid_analysis_job, cache_warming_job, daily_digest_job, email_alerts_job,
+        llm_summary_job, excel_generation_job, search_job,
+        bid_analysis_job, daily_digest_job, email_alerts_job,
         reclassify_pending_bids_job, classify_zero_match_job,
         *_ingestion_functions,
         *_monitoring_functions,

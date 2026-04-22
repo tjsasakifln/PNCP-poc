@@ -17,15 +17,31 @@ jobs:
   chromatic:
     name: "Chromatic — Visual Regression (10 screens)"
     runs-on: ubuntu-latest
-    if: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
+    # NOTE: job-level `if: ${{ secrets.* }}` is not evaluated by GitHub Actions
+    # (secrets are not exposed to if-conditions). Check is performed inside
+    # the first step below and subsequent steps gate on its output.
 
     steps:
+      - name: Check Chromatic token
+        id: token_check
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: |
+          if [ -z "${CHROMATIC_PROJECT_TOKEN}" ]; then
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CHROMATIC_PROJECT_TOKEN not set — skipping visual regression."
+          else
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout code
+        if: steps.token_check.outputs.has_token == 'true'
         uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Required for Chromatic to detect baselines correctly
 
       - name: Set up Node.js 20
+        if: steps.token_check.outputs.has_token == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -33,16 +49,19 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: steps.token_check.outputs.has_token == 'true'
         run: |
           cd frontend
           npm ci
 
       - name: Install Playwright browsers
+        if: steps.token_check.outputs.has_token == 'true'
         run: |
           cd frontend
           npx playwright install --with-deps chromium
 
       - name: Build Next.js app
+        if: steps.token_check.outputs.has_token == 'true'
         run: |
           cd frontend
           npm run build
@@ -52,6 +71,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ''
 
       - name: Run Chromatic visual tests
+        if: steps.token_check.outputs.has_token == 'true'
         # DEBT-08 AC3/AC5: Run Playwright visual tests and send snapshots to Chromatic.
         # --auto-accept-changes on main branch (baselines are auto-accepted on main).
         # On PRs, Chromatic posts a review UI link to the PR for visual diff review (AC5).

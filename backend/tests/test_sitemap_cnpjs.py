@@ -30,8 +30,21 @@ def _mock_supabase_with_data(rows: list[dict]):
     mock_sb = MagicMock()
     # Make RPC raise so code falls through to paginated table query
     mock_sb.rpc.side_effect = Exception("rpc not available in test")
-    mock_resp = MagicMock()
-    mock_resp.data = rows
+
+    # STORY-BTS-009 followup: slice `rows` per range() call to simulate real
+    # pagination. Returning the same full list on every execute() caused
+    # test_max_5000_cnpjs to loop forever (route uses `len(resp.data) < page_size`
+    # as the terminator; with >5k rows coming back every page, we never break).
+    page_size = 1000
+    next_offset = {"value": 0}
+
+    def execute_paginated(*_args, **_kwargs):
+        resp = MagicMock()
+        start = next_offset["value"]
+        resp.data = rows[start : start + page_size]
+        next_offset["value"] += page_size
+        return resp
+
     (
         mock_sb.table.return_value
         .select.return_value
@@ -39,8 +52,8 @@ def _mock_supabase_with_data(rows: list[dict]):
         .not_.is_.return_value
         .neq.return_value
         .range.return_value
-        .execute.return_value
-    ) = mock_resp
+        .execute
+    ).side_effect = execute_paginated
     return mock_sb
 
 

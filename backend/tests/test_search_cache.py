@@ -179,8 +179,8 @@ class TestGetFromCache:
         mock_sb = self._mock_supabase_with_cache(fetched_at)
 
         with patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache._get_from_local", return_value=None):
+             patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None):
             result = await get_from_cache(
                 user_id="user-123",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -200,8 +200,8 @@ class TestGetFromCache:
         mock_sb.execute.return_value = Mock(data=[])
 
         with patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache._get_from_local", return_value=None):
+             patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None):
             result = await get_from_cache(
                 user_id="user-123",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -213,8 +213,8 @@ class TestGetFromCache:
     async def test_cache_read_failure_returns_none(self):
         """Cache read failures at all levels are non-fatal."""
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
-             patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache._get_from_local", return_value=None):
+             patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None):
             result = await get_from_cache(
                 user_id="user-123",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -370,7 +370,7 @@ class TestGetFromLocalTTL:
             "fetched_at": expired_time,
         }), encoding="utf-8")
 
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             result = _get_from_local(cache_key)
 
         assert result is None
@@ -389,7 +389,7 @@ class TestGetFromLocalTTL:
             "fetched_at": valid_time,
         }), encoding="utf-8")
 
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             result = _get_from_local(cache_key)
 
         assert result is not None
@@ -405,14 +405,14 @@ class TestGetFromLocalTTL:
             "sources_json": ["PNCP"],
         }), encoding="utf-8")
 
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             result = _get_from_local(cache_key)
 
         assert result is None
 
     def test_nonexistent_file_returns_none(self, tmp_path):
         """File does not exist → returns None."""
-        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             result = _get_from_local("nonexistent_hash_value_that_does_not_exist_anywhere")
         assert result is None
 
@@ -442,9 +442,9 @@ class TestGetFromCacheCascade:
             "fetched_at": valid_time,
         }), encoding="utf-8")
 
-        with patch("search_cache._get_from_redis", return_value=None), \
+        with patch("cache.redis._get_from_redis", return_value=None), \
              patch("supabase_client.get_supabase", side_effect=Exception("Supabase down")), \
-             patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+             patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             result = await get_from_cache_cascade(
                 user_id="user-123",
                 params=params,
@@ -465,9 +465,9 @@ class TestGetFromCacheCascade:
             "fetched_at": (now - timedelta(hours=1)).isoformat(),
         }
 
-        with patch("search_cache._get_from_redis", return_value=redis_data), \
-             patch("search_cache._get_from_supabase") as mock_supa, \
-             patch("search_cache._get_from_local") as mock_local:
+        with patch("cache.redis._get_from_redis", return_value=redis_data), \
+             patch("cache.supabase._get_from_supabase") as mock_supa, \
+             patch("cache.local_file._get_from_local") as mock_local:
             result = await get_from_cache_cascade(
                 user_id="user-123",
                 params={"setor_id": 1, "ufs": ["RJ"]},
@@ -489,9 +489,9 @@ class TestGetFromCacheCascade:
         mock_sb.limit.return_value = mock_sb
         mock_sb.execute.return_value = Mock(data=[])
 
-        with patch("search_cache._get_from_redis", return_value=None), \
+        with patch("cache.redis._get_from_redis", return_value=None), \
              patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("search_cache._get_from_local", return_value=None):
+             patch("cache.local_file._get_from_local", return_value=None):
             result = await get_from_cache_cascade(
                 user_id="user-123",
                 params={"setor_id": 1, "ufs": ["MG"]},
@@ -515,9 +515,9 @@ class TestGetFromCacheCascade:
             "fetched_at": valid_time,
         }), encoding="utf-8")
 
-        with patch("search_cache._get_from_redis", return_value=None), \
+        with patch("cache.redis._get_from_redis", return_value=None), \
              patch("supabase_client.get_supabase", side_effect=Exception("Network error")), \
-             patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+             patch("cache.local_file.LOCAL_CACHE_DIR", tmp_path):
             result = await get_from_cache_cascade(
                 user_id="user-456",
                 params=params,

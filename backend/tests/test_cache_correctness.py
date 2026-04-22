@@ -180,7 +180,7 @@ class TestCacheFallbackFlag:
 
     @pytest.mark.asyncio
     @patch("config.CACHE_LEGACY_KEY_FALLBACK", True)
-    @patch("search_cache._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
+    @patch("cache.supabase._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
     async def test_fallback_serves_with_flag(self, mock_global):
         """When exact key misses but legacy key hits, result has cache_fallback=True."""
         now = datetime.now(timezone.utc)
@@ -209,10 +209,10 @@ class TestCacheFallbackFlag:
                 return fresh_data
             return None  # Exact key misses
 
-        with patch("search_cache._get_from_supabase", side_effect=mock_supabase), \
-             patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache._get_from_local", return_value=None), \
-             patch("search_cache._increment_and_reclassify", new_callable=AsyncMock):
+        with patch("cache.supabase._get_from_supabase", side_effect=mock_supabase), \
+             patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None), \
+             patch("cache.manager._increment_and_reclassify", new_callable=AsyncMock):
             result = await get_from_cache("user-1", params)
 
         assert result is not None
@@ -221,7 +221,7 @@ class TestCacheFallbackFlag:
         assert len(result["results"]) == 1
 
     @pytest.mark.asyncio
-    @patch("search_cache._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
+    @patch("cache.supabase._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
     async def test_exact_hit_no_fallback_flag(self, mock_global):
         """When exact key hits, cache_fallback should not be set."""
         now = datetime.now(timezone.utc)
@@ -241,8 +241,8 @@ class TestCacheFallbackFlag:
             "date_to": "2026-02-27",
         }
 
-        with patch("search_cache._get_from_supabase", new_callable=AsyncMock, return_value=fresh_data), \
-             patch("search_cache._increment_and_reclassify", new_callable=AsyncMock):
+        with patch("cache.supabase._get_from_supabase", new_callable=AsyncMock, return_value=fresh_data), \
+             patch("cache.manager._increment_and_reclassify", new_callable=AsyncMock):
             result = await get_from_cache("user-1", params)
 
         assert result is not None
@@ -259,7 +259,7 @@ class TestDualReadLegacyKey:
 
     @pytest.mark.asyncio
     @patch("config.CACHE_LEGACY_KEY_FALLBACK", True)
-    @patch("search_cache._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
+    @patch("cache.supabase._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
     async def test_cascade_dual_read_legacy_key(self, mock_global):
         """get_from_cache_cascade tries legacy key when exact key misses."""
         now = datetime.now(timezone.utc)
@@ -288,9 +288,9 @@ class TestDualReadLegacyKey:
                 return stale_data  # _get_from_redis returns parsed dict
             return None
 
-        with patch("search_cache._get_from_redis", side_effect=mock_redis), \
-             patch("search_cache._get_from_supabase", new_callable=AsyncMock, return_value=None), \
-             patch("search_cache._get_from_local", return_value=None):
+        with patch("cache.redis._get_from_redis", side_effect=mock_redis), \
+             patch("cache.supabase._get_from_supabase", new_callable=AsyncMock, return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None):
             result = await get_from_cache_cascade("user-1", params)
 
         assert result is not None
@@ -299,7 +299,7 @@ class TestDualReadLegacyKey:
 
     @pytest.mark.asyncio
     @patch("config.CACHE_LEGACY_KEY_FALLBACK", False)
-    @patch("search_cache._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
+    @patch("cache.supabase._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
     async def test_dual_read_disabled_skips_legacy(self, mock_global):
         """When CACHE_LEGACY_KEY_FALLBACK=False, legacy key is not tried."""
         params = {
@@ -309,9 +309,9 @@ class TestDualReadLegacyKey:
             "date_to": "2026-02-27",
         }
 
-        with patch("search_cache._get_from_redis", return_value=None), \
-             patch("search_cache._get_from_supabase", new_callable=AsyncMock, return_value=None), \
-             patch("search_cache._get_from_local", return_value=None):
+        with patch("cache.redis._get_from_redis", return_value=None), \
+             patch("cache.supabase._get_from_supabase", new_callable=AsyncMock, return_value=None), \
+             patch("cache.local_file._get_from_local", return_value=None):
             result = await get_from_cache_cascade("user-1", params)
 
         assert result is None  # No fallback attempted
@@ -326,7 +326,7 @@ class TestSWRBackgroundRevalidation:
     """AC17: SWR dispatches background revalidation when serving stale data."""
 
     @pytest.mark.asyncio
-    @patch("search_cache._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
+    @patch("cache.supabase._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
     async def test_stale_cache_triggers_revalidation_tracking(self, mock_global):
         """When cache_age_hours > CACHE_FRESH_HOURS, result is marked as stale."""
         now = datetime.now(timezone.utc)
@@ -347,8 +347,8 @@ class TestSWRBackgroundRevalidation:
             "date_to": "2026-02-27",
         }
 
-        with patch("search_cache._get_from_supabase", new_callable=AsyncMock, return_value=stale_data), \
-             patch("search_cache._increment_and_reclassify", new_callable=AsyncMock):
+        with patch("cache.supabase._get_from_supabase", new_callable=AsyncMock, return_value=stale_data), \
+             patch("cache.manager._increment_and_reclassify", new_callable=AsyncMock):
             result = await get_from_cache("user-1", params)
 
         assert result is not None
@@ -356,7 +356,7 @@ class TestSWRBackgroundRevalidation:
         assert result["cache_age_hours"] > CACHE_FRESH_HOURS
 
     @pytest.mark.asyncio
-    @patch("search_cache._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
+    @patch("cache.supabase._get_global_fallback_from_supabase", new_callable=AsyncMock, return_value=None)
     async def test_fresh_cache_not_stale(self, mock_global):
         """When cache_age_hours < CACHE_FRESH_HOURS, result is not marked as stale."""
         now = datetime.now(timezone.utc)
@@ -377,8 +377,8 @@ class TestSWRBackgroundRevalidation:
             "date_to": "2026-02-27",
         }
 
-        with patch("search_cache._get_from_supabase", new_callable=AsyncMock, return_value=fresh_data), \
-             patch("search_cache._increment_and_reclassify", new_callable=AsyncMock):
+        with patch("cache.supabase._get_from_supabase", new_callable=AsyncMock, return_value=fresh_data), \
+             patch("cache.manager._increment_and_reclassify", new_callable=AsyncMock):
             result = await get_from_cache("user-1", params)
 
         assert result is not None

@@ -1,0 +1,27 @@
+{
+  "language": "portuguese",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"D:\\\\pncp-poc\\\\.claude\\\\hooks\\\\smart-router.cjs\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"D:\\\\pncp-poc\\\\.claude\\\\hooks\\\\squads-briefing.cjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

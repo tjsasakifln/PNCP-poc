@@ -120,7 +120,7 @@ exports[`UX-410: LicitacaoCard dark mode snapshot should render LicitacaoCard wr
     class="flex items-center justify-between gap-2 p-4 pt-3 border-t border-white/15 dark:border-white/10 bg-white/20 dark:bg-white/5"
   >
     <a
-      class="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button   hover:bg-brand-blue-hover transition-colors"
+      class="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
       href="https://pncp.gov.br/app/editais/test"
       rel="noopener noreferrer"
       target="_blank"

@@ -46,6 +46,7 @@ from webhooks.handlers.subscription import (  # noqa: F401
     handle_subscription_created as _handle_subscription_created,
     handle_subscription_updated as _handle_subscription_updated,
     handle_subscription_deleted as _handle_subscription_deleted,
+    handle_subscription_trial_will_end as _handle_subscription_trial_will_end,
     _mark_partner_referral_churned,
     _send_cancellation_email,
 )
@@ -58,6 +59,9 @@ from webhooks.handlers.invoice import (  # noqa: F401
     _send_payment_failed_email,
 )
 from webhooks.handlers._shared import resolve_user_id as _resolve_user_id  # noqa: F401
+from webhooks.handlers.founding import (  # noqa: F401
+    mark_founding_lead_abandoned as _handle_founding_checkout_expired_raw,
+)
 
 logger = get_sanitized_logger(__name__)
 router = APIRouter()
@@ -183,12 +187,20 @@ async def stripe_webhook(request: Request):
                 await _handle_async_payment_succeeded(sb, event)
             elif event.type == "checkout.session.async_payment_failed":
                 await _handle_async_payment_failed(sb, event)
+            elif event.type == "checkout.session.expired":
+                # STORY-BIZ-001: mark founding lead as abandoned when Stripe
+                # session times out (Stripe default is 24h). No-op for non-
+                # founding sessions (metadata filter inside the handler).
+                _handle_founding_checkout_expired_raw(sb, event.data.object)
             elif event.type == "customer.subscription.created":
                 await _handle_subscription_created(sb, event)
             elif event.type == "customer.subscription.updated":
                 await _handle_subscription_updated(sb, event)
             elif event.type == "customer.subscription.deleted":
                 await _handle_subscription_deleted(sb, event)
+            elif event.type == "customer.subscription.trial_will_end":
+                # STORY-CONV-003a AC4: Stripe fires 3d before trial_end.
+                await _handle_subscription_trial_will_end(sb, event)
             elif event.type == "invoice.payment_succeeded":
                 await _handle_invoice_payment_succeeded(sb, event)
             elif event.type == "invoice.payment_failed":

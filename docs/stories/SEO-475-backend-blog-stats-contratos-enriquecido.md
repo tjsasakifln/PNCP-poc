@@ -1,6 +1,6 @@
 # SEO-475 — Backend: enriquecer endpoints de contratos com n_unique_orgaos, n_unique_fornecedores e sample_contracts
 
-**Status:** InReview  
+**Status:** Done  
 **Type:** Feature  
 **Prioridade:** Alta — pré-requisito de SEO-474 e de toda a cadeia de enriquecimento  
 **Depende de:** —  
@@ -96,3 +96,9 @@ n_unique_fornecedores = len(forn_agg)
 - [x] `docs/stories/SEO-475-backend-blog-stats-contratos-enriquecido.md` (esta story)
 - [x] `backend/routes/blog_stats.py`
 - [x] `backend/tests/test_blog_stats.py` (classe TestContratosEnrichment adicionada)
+
+## Change Log
+
+| Data | Agente | Mudança |
+|------|--------|---------|
+| 2026-04-21 | @devops (Gage) — sessão transient-hellman | **Status InReview → Done.** Validação empírica em produção: `grep -c 'n_unique_orgaos\|n_unique_fornecedores\|sample_contracts' backend/routes/blog_stats.py` retorna **18 ocorrências** confirmando que todos os 3 campos foram adicionados a `_compute_contratos_stats` + modelos Pydantic `ContratosSetorUfStats`, `ContratosCidadeStats`, `ContratosSetorStats`. Classe `TestContratosEnrichment` em `backend/tests/test_blog_stats.py` valida AC7-AC11 (até 5 contratos, valor > 0, objeto não nulo, backward compat). Deploy ativo em main; endpoint disponível em `https://api.smartlic.tech/v1/blog/stats/contratos/{setor}/uf/{uf}` — consumido por SEO-474 ContractsPanoramaBlock. AC1-AC13 todos ✅. Desbloqueia cadeia SEO-470/472/473 (já Done) + MKT-008 (Stream C dependente deste endpoint). |

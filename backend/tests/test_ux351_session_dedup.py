@@ -56,7 +56,7 @@ class TestSessionDedup:
     """UX-351 AC1: Prevent duplicate session entries."""
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_creates_new_session_when_no_existing(self, mock_get_sb, mock_profile, mock_sb, base_args):
         """When no session exists for search_id, insert a new one."""
@@ -73,7 +73,7 @@ class TestSessionDedup:
         assert insert_data["status"] == "created"
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_reuses_existing_session_for_same_search_id(self, mock_get_sb, mock_profile, mock_sb, base_args):
         """When session already exists for search_id, return existing ID without inserting."""
@@ -92,7 +92,7 @@ class TestSessionDedup:
         mock_sb.table.return_value.insert.assert_not_called()
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_no_dedup_check_without_search_id(self, mock_get_sb, mock_profile, mock_sb, base_args):
         """When search_id is None, skip dedup and always insert."""
@@ -107,7 +107,7 @@ class TestSessionDedup:
         mock_sb.table.return_value.insert.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("quota.plan_enforcement._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_dedup_check_failure_falls_through_to_insert(self, mock_get_sb, mock_profile, mock_sb, base_args):
         """If dedup check raises an exception, fall through to normal insert."""

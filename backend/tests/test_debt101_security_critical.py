@@ -142,15 +142,26 @@ class TestFaulthandlerProduction:
             assert is_prod is False, f"'{env}' should NOT be production"
 
     def test_uvicorn_standard_in_requirements(self):
-        """requirements.txt should have uvicorn[standard] (not bare uvicorn)."""
+        """requirements.txt must pin bare uvicorn WITHOUT [standard] extras.
+
+        BTS-010b (SECURITY, CRIT-SIGSEGV-v2): uvicorn[standard] pulls in uvloop,
+        which interacts with chardet/hiredis/cryptography C extensions to produce
+        intermittent SIGSEGV crashes in production (see CLAUDE.md CRIT-080 lesson).
+        The intentional, security-correct configuration is bare `uvicorn==<ver>`.
+        Reverting this pin would re-introduce the production crash.
+        """
         req_path = os.path.join(os.path.dirname(__file__), "..", "requirements.txt")
         with open(req_path) as f:
             content = f.read()
-        assert "uvicorn[standard]" in content, "uvicorn[standard] must be in requirements.txt"
-        # Should NOT have bare uvicorn== without [standard]
+        assert "uvicorn[standard]" not in content, (
+            "uvicorn[standard] must NOT be in requirements.txt — "
+            "CRIT-SIGSEGV-v2 requires bare uvicorn (uvloop triggers SIGSEGV)."
+        )
+        # Still must pin some uvicorn version
         lines = [l.strip() for l in content.splitlines() if l.strip().startswith("uvicorn") and not l.strip().startswith("#")]  # noqa: E741
+        assert lines, "requirements.txt must contain a uvicorn pin"
         for line in lines:
-            assert "[standard]" in line, f"uvicorn line must include [standard]: {line}"
+            assert "[standard]" not in line, f"uvicorn line must NOT include [standard]: {line}"
 
 
 # =============================================================================

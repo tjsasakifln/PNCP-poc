@@ -182,6 +182,17 @@ describe('CountdownStatic', () => {
 });
 
 describe('calculateTimeRemaining', () => {
+  // CI flake fix: sem fake timers, Date.now() drift entre criação do futureDate
+  // e chamada de calculateTimeRemaining (que internamente também chama Date.now)
+  // causava hours=2 em vez de 3 quando o runner estava sob carga. Fake timers
+  // congela o clock entre as duas chamadas.
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('calculates days, hours, minutes, seconds correctly', () => {
     const futureDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000);
     const time = calculateTimeRemaining(futureDate);
@@ -239,6 +250,15 @@ describe('formatCountdown', () => {
 });
 
 describe('daysUntil', () => {
+  // Mesmo CI flake fix do describe calculateTimeRemaining — congela clock entre
+  // `new Date(Date.now() + ...)` e a chamada interna de Date.now() em daysUntil.
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('calculates days correctly', () => {
     const futureDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     expect(daysUntil(futureDate)).toBe(3);

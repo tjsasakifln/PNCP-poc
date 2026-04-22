@@ -3,7 +3,7 @@
 **Priority:** P0 — Production Incident (Regressed)
 **Effort:** M (1-2 days)
 **Squad:** @dev + @architect
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sentry Issues:**
 - https://confenge.sentry.io/issues/7400217484/ (44 eventos, Escalating)
@@ -116,3 +116,4 @@
 | 2026-04-10 | @sm (River) | Story criada a partir do incidente multi-causa |
 | 2026-04-10 | @po (Sarah) | `*validate-story-draft` → verdict GO (9/10). Status Draft → Ready. |
 | 2026-04-10 | @dev | Implementation YOLO. `TaskRegistry.register` agora faz fail-fast em assinatura errada via `TaskRegistrationError` (extends TypeError, backward-compat). `start_all` loga tasks estruturadamente antes de iniciar. **StarletteIntegration removido do `backend/startup/sentry.py`** (root cause secundária — CRIT-SIGSEGV + TypeError hook em AsyncExitStackMiddleware). `auto_enabling_integrations=False` impede re-habilitação futura. Testes novos em `tests/test_task_registry_story413.py` (9 tests, todos passam). Status Ready → InReview. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-413. |

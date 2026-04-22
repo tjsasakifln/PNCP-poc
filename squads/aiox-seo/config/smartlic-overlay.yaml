@@ -1,0 +1,106 @@
+# SmartLic Overlay — aiox-seo
+#
+# Customização do squad SEO para inbound orgânico via supplier_contracts.
+
+overlay:
+  squad_name: "aiox-seo"
+  target_version: "1.0.0"
+  domain: "b2g-seo-inbound"
+
+project_context:
+  name: "SmartLic"
+  domain: "smartlic.tech"
+  seo_strategy: "Long-tail orgânico baseado em supplier_contracts (~2M histórico)"
+  primary_entry_points:
+    - "/contratos/[slug]" — pages programmatically geradas de contratos históricos
+    - "/observatorio" — dashboards públicos setoriais
+    - "/orgaos/[slug]" — páginas de órgãos compradores
+    - "/fornecedores/[slug]" — páginas de fornecedores/CNPJs
+
+# Dataset primário — supplier_contracts
+dataset:
+  table: "supplier_contracts"
+  volume: "~2M rows, 3x/semana full crawl + incremental"
+  primary_index_candidates:
+    - "By CNPJ fornecedor (top 10k CNPJs por volume)"
+    - "By órgão (top 5k órgãos por volume)"
+    - "By setor (15 setores × ~27 UFs = 400+ páginas)"
+    - "By modalidade × setor (6 × 15 = 90 pages)"
+  estimated_potential:
+    - "Programmatic SEO: 15k-20k long-tail pages"
+    - "Target: 100k visits/mo organic em 12 meses"
+
+# Sitemap — RPC existente
+sitemap:
+  rpc: "sitemap_orgaos"
+  endpoint: "sitemap.xml geração via FastAPI route"
+  refresh_cadence: "Diária (pós ingestion run)"
+  invariante: "Sitemap DEVE retornar HTTP 200 e ser válido XML — STORY-BTS-011 cluster 5"
+
+# Technical SEO
+technical_seo:
+  framework: "Next.js 16 (App Router)"
+  ssr: "mandatory para páginas programmatic (não ISR estático — dado muda)"
+  metadata:
+    generateMetadata: "obrigatório em [slug]/page.tsx"
+    og_image: "gerar via @vercel/og ou similar"
+  structured_data:
+    - "JSON-LD schema.org/GovernmentService para /orgaos/*"
+    - "JSON-LD schema.org/Organization para /fornecedores/*"
+    - "JSON-LD schema.org/BreadcrumbList em todas"
+  canonicals: "Sempre declarar — evitar duplicate content"
+
+# Core Web Vitals targets
+core_web_vitals:
+  lcp: "< 2.5s (B2G users paciência moderada)"
+  inp: "< 200ms"
+  cls: "< 0.1"
+  measurement: "Vercel Speed Insights ou Lighthouse CI"
+
+# Content strategy
+content_strategy:
+  hub_and_spoke:
+    hub: "/observatorio (dashboards agregados)"
+    spokes: "/contratos/[slug], /orgaos/[slug], /fornecedores/[slug]"
+  link_graph:
+    - "Cada contrato linka seu órgão + fornecedor"
+    - "Cada fornecedor linka seus principais órgãos/setores"
+    - "Cada órgão linka seus top fornecedores"
+  intent_matching:
+    navigational:
+      - "'[CNPJ] + licitacoes'"
+      - "'[nome órgão] + compras'"
+    informational:
+      - "'quanto ganha [empresa] em licitações'"
+      - "'quem fornece para [órgão]'"
+    transactional:
+      - "'editais [setor] [UF] hoje'"
+
+# LLM-powered content
+llm_content_generation:
+  model: "GPT-4.1-nano (econômico)"
+  use_cases:
+    - "Descrição narrativa de contrato (de JSON → prose legível)"
+    - "Resumo executivo de órgão (patterns de compra)"
+    - "Perfil sintético de fornecedor (especialização setorial)"
+  constraint: "Nunca gerar afirmação que não esteja no dataset — fact-check via supplier_contracts"
+
+# Anti-patterns (vetados)
+anti_patterns:
+  - "Keyword stuffing (B2G users + Google detectam)"
+  - "Duplicate content entre /contratos/[slug] e /orgaos/[slug]"
+  - "JavaScript-rendered content sem fallback HTML (Googlebot renderiza, mas perde PageRank)"
+  - "Missing alt text em gráficos (a11y + SEO)"
+  - "Slugs não-canonical (ex: 'contrato-ABCD-123' e 'abcd-123' na mesma page)"
+
+# Integration with existing SmartLic blog
+existing_blog:
+  path: "frontend/app/contratos-*/ e frontend/app/observatorio/"
+  current_volume: "~30-50 posts (manual content)"
+  migration_plan: "Programmatic páginas vão complementar, não substituir"
+
+delegates_to:
+  - squad: "aiox-apex"
+    when: "Performance ou layout de páginas programmatic precisa refactor"
+  - squad: "aiox-deep-research"
+    when: "Precisa validar claim com estatísticas do dataset"

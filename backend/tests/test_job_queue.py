@@ -422,6 +422,7 @@ class TestLlmSummaryJob:
         from job_queue import llm_summary_job
 
         mock_resumo = MagicMock()
+        mock_resumo.resumo_executivo = "Test summary R$ 50.000,00"
         mock_resumo.total_oportunidades = 5
         mock_resumo.valor_total = 100000
         mock_resumo.model_dump = MagicMock(return_value={
@@ -451,6 +452,7 @@ class TestLlmSummaryJob:
         from job_queue import llm_summary_job
 
         mock_fallback = MagicMock()
+        mock_fallback.resumo_executivo = "Fallback summary"
         mock_fallback.total_oportunidades = 2
         mock_fallback.valor_total = 0
         mock_fallback.model_dump = MagicMock(return_value={"resumo_executivo": "Fallback"})
@@ -469,6 +471,7 @@ class TestLlmSummaryJob:
         from job_queue import llm_summary_job
 
         mock_resumo = MagicMock()
+        mock_resumo.resumo_executivo = "Test summary"
         mock_resumo.total_oportunidades = 1
         mock_resumo.valor_total = 0
         mock_resumo.model_dump = MagicMock(return_value={"resumo_executivo": "Test"})
@@ -491,6 +494,7 @@ class TestLlmSummaryJob:
         from job_queue import llm_summary_job
 
         mock_resumo = MagicMock()
+        mock_resumo.resumo_executivo = "LLM-generated text"
         mock_resumo.total_oportunidades = 999
         mock_resumo.valor_total = 999999
         mock_resumo.model_dump = MagicMock(return_value={})

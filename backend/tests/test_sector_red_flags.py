@@ -38,7 +38,7 @@ class TestSectorRedFlagsReject:
 
     def test_software_reject_sistema_ar_condicionado(self):
         obj = normalize_text("Instalação de sistema de ar condicionado split para prédio")
-        flagged, terms = has_sector_red_flags(obj, "software")
+        flagged, terms = has_sector_red_flags(obj, "software_desenvolvimento")
         assert flagged is True
 
     def test_engenharia_reject_engenharia_de_software(self):
@@ -123,7 +123,7 @@ class TestSectorRedFlagsPass:
 
     def test_software_pass_sistema_erp(self):
         obj = normalize_text("Licenciamento de sistema ERP para gestão administrativa")
-        flagged, terms = has_sector_red_flags(obj, "software")
+        flagged, terms = has_sector_red_flags(obj, "software_desenvolvimento")
         assert flagged is False
 
     def test_engenharia_pass_projeto_estrutural(self):
@@ -210,7 +210,7 @@ class TestSectorRedFlagsEdgeCases:
         obj = normalize_text(
             "Manutenção de sistema de ar condicionado e sistema de drenagem pluvial"
         )
-        flagged, terms = has_sector_red_flags(obj, "software")
+        flagged, terms = has_sector_red_flags(obj, "software_desenvolvimento")
         assert flagged is True
         assert len(terms) >= 2
 
@@ -221,16 +221,22 @@ class TestSectorRedFlagsEdgeCases:
         assert flagged is True
         assert len(terms) == 1
 
-    def test_all_15_sectors_have_entries(self):
-        """All sectors must be present in RED_FLAGS_PER_SECTOR."""
-        expected = {
-            "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
-            "engenharia", "software", "servicos_prediais", "produtos_limpeza",
-            "medicamentos", "equipamentos_medicos", "insumos_hospitalares", "vigilancia",
-            "transporte_servicos", "frota_veicular", "manutencao_predial", "engenharia_rodoviaria",
-            "materiais_eletricos", "materiais_hidraulicos",
-        }
-        assert set(RED_FLAGS_PER_SECTOR.keys()) == expected
+    def test_all_sectors_have_entries(self):
+        """All sectors defined in sectors_data.yaml must appear in RED_FLAGS_PER_SECTOR.
+
+        CIG-BE-story-drift-sectors-split: derive the expected set dynamically from
+        ``sectors_data.yaml`` instead of hardcoding, per the same pattern the
+        frontend uses in ``scripts/sync-setores-fallback.js``. This keeps
+        expectations aligned with post-split sector IDs (software →
+        software_desenvolvimento / software_licencas, etc.).
+        """
+        import yaml
+        from pathlib import Path
+
+        sectors_yaml = Path(__file__).resolve().parent.parent / "sectors_data.yaml"
+        data = yaml.safe_load(sectors_yaml.read_text())
+        expected_from_yaml = set(data["sectors"].keys())
+        assert set(RED_FLAGS_PER_SECTOR.keys()) == expected_from_yaml
 
 
 # =============================================================================
@@ -308,19 +314,19 @@ class TestCamada2ASectorRedFlags:
         """Bid with sector red flag in 2-5% density zone is REJECTED."""
         obj = "Instalação de sistema de ar condicionado para prédio municipal"
         obj_norm = normalize_text(obj)
-        flagged, terms = has_sector_red_flags(obj_norm, "software")
+        flagged, terms = has_sector_red_flags(obj_norm, "software_desenvolvimento")
         assert flagged is True
 
     def test_sector_red_flag_rejects_in_low_density(self):
         """Bid with sector red flag in 1-2% density zone is REJECTED."""
         obj = "Manutenção preventiva de sistema de drenagem urbana"
         obj_norm = normalize_text(obj)
-        flagged, terms = has_sector_red_flags(obj_norm, "software")
+        flagged, terms = has_sector_red_flags(obj_norm, "software_desenvolvimento")
         assert flagged is True
 
     def test_feature_flag_disabled_skips_check(self):
         """When SECTOR_RED_FLAGS_ENABLED=false, sector red flags are not applied."""
         # has_sector_red_flags works independently — flag only controls pipeline
         obj = normalize_text("Instalação de sistema de ar condicionado")
-        flagged, _ = has_sector_red_flags(obj, "software")
+        flagged, _ = has_sector_red_flags(obj, "software_desenvolvimento")
         assert flagged is True

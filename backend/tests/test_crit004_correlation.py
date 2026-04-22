@@ -250,6 +250,7 @@ class TestJobQueueCorrelation:
         """AC15-AC16: llm_summary_job accepts **kwargs including _trace_id."""
         # Mock all dependencies at their source modules (deferred imports in job_queue)
         mock_resumo = MagicMock()
+        mock_resumo.resumo_executivo = "Test summary"
         mock_resumo.total_oportunidades = 0
         mock_resumo.valor_total = 0
         mock_resumo.model_dump.return_value = {"resumo_executivo": "Test"}
@@ -310,16 +311,26 @@ class TestAdminTraceEndpoint:
     def setup_method(self):
         from main import app
         from auth import require_auth
-        app.dependency_overrides[require_auth] = lambda: {
+        from admin import require_admin
+        admin_user = {
             "sub": "test-user-id",
+            "id": "test-user-id",
             "email": "test@example.com",
+            "is_admin": True,
+            "is_master": True,
         }
+        app.dependency_overrides[require_auth] = lambda: admin_user
+        # Route uses Depends(require_admin) — override that too so tests
+        # can hit /v1/admin/search-trace without a real admin token.
+        app.dependency_overrides[require_admin] = lambda: admin_user
         self.client = TestClient(app)
 
     def teardown_method(self):
         from main import app
         from auth import require_auth
+        from admin import require_admin
         app.dependency_overrides.pop(require_auth, None)
+        app.dependency_overrides.pop(require_admin, None)
 
     @patch("redis_pool.get_redis_pool", new_callable=AsyncMock, return_value=None)
     @patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None)
@@ -369,7 +380,9 @@ class TestAdminTraceEndpoint:
     def test_trace_endpoint_requires_auth(self):
         from main import app
         from auth import require_auth
+        from admin import require_admin
         app.dependency_overrides.pop(require_auth, None)
+        app.dependency_overrides.pop(require_admin, None)
 
         resp = self.client.get("/v1/admin/search-trace/no-auth")
         # Without auth override, should fail
@@ -403,15 +416,20 @@ class TestLogFormatConfiguration:
     """AC9-AC10: Log format includes search_id and correlation_id placeholders."""
 
     def test_log_format_has_search_id(self):
-        """Verify config.py log format string includes search_id."""
+        """Verify config base log format string includes search_id.
+
+        CIG-BE-story-drift-billing-webhooks-correlation: config became a
+        package; the log-format string lives in ``config.base``, not in the
+        re-export-only ``__init__.py``.
+        """
         import inspect
-        import config
-        source = inspect.getsource(config)
+        import config.base
+        source = inspect.getsource(config.base)
         assert "search_id" in source
 
     def test_log_format_has_correlation_id(self):
-        """Verify config.py log format string includes correlation_id."""
+        """Verify config base log format string includes correlation_id."""
         import inspect
-        import config
-        source = inspect.getsource(config)
+        import config.base
+        source = inspect.getsource(config.base)
         assert "correlation_id" in source

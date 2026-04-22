@@ -152,12 +152,12 @@ from jobs.queue.result_store import (  # noqa: F401
 )
 
 # --- Job functions ---
+# Note: cache_refresh_job + cache_warming_job deprecated 2026-04-18
+# (STORY-CIG-BE-cache-warming-deprecate).
 from jobs.queue.jobs import (  # noqa: F401
     llm_summary_job, excel_generation_job, bid_analysis_job,
-    cache_refresh_job, cache_warming_job,
     daily_digest_job, email_alerts_job,
     reclassify_pending_bids_job, classify_zero_match_job,
-    _get_active_search_count, _warming_wait_for_idle,
 )
 
 # --- Search job ---

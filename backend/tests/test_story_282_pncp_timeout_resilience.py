@@ -30,16 +30,20 @@ class TestAC1AggressiveTimeouts:
         assert config.read_timeout == 15.0, "STORY-282 AC1: read_timeout should be 15"
 
     def test_env_override_pncp_connect_timeout(self, monkeypatch):
-        """PNCP_CONNECT_TIMEOUT env var overrides default."""
+        """PNCP_CONNECT_TIMEOUT env var overrides default.
+
+        NOTE (STORY-BTS-011): RetryConfig is defined in config.pncp (not in the
+        config package root). Reloading the package root does NOT re-evaluate
+        submodule dataclass field defaults — we must reload config.pncp.
+        """
         monkeypatch.setenv("PNCP_CONNECT_TIMEOUT", "5")
         monkeypatch.setenv("PNCP_READ_TIMEOUT", "8")
         monkeypatch.setenv("PNCP_MAX_RETRIES", "0")
-        # Must reimport to pick up env
         import importlib
-        import config
-        importlib.reload(config)
+        import config.pncp
+        importlib.reload(config.pncp)
         try:
-            c = config.RetryConfig()
+            c = config.pncp.RetryConfig()
             assert c.connect_timeout == 5.0
             assert c.read_timeout == 8.0
             assert c.max_retries == 0
@@ -48,7 +52,7 @@ class TestAC1AggressiveTimeouts:
             monkeypatch.delenv("PNCP_CONNECT_TIMEOUT", raising=False)
             monkeypatch.delenv("PNCP_READ_TIMEOUT", raising=False)
             monkeypatch.delenv("PNCP_MAX_RETRIES", raising=False)
-            importlib.reload(config)
+            importlib.reload(config.pncp)
 
     def test_config_module_level_vars(self):
         """config.py exposes PNCP_CONNECT_TIMEOUT, PNCP_READ_TIMEOUT, PNCP_MAX_RETRIES."""
@@ -82,21 +86,26 @@ class TestAC2PageLimit:
     """STORY-282 AC2: Verify page limit per modality caps at PNCP_MAX_PAGES."""
 
     def test_config_pncp_max_pages_default(self):
-        """PNCP_MAX_PAGES defaults to 5."""
+        """PNCP_MAX_PAGES defaults to 20 (raised from 5 post-STORY-282 for better coverage)."""
         from config import PNCP_MAX_PAGES
-        assert PNCP_MAX_PAGES == 5
+        # Post-STORY-282 default: raised 5→20 because 50-items/page × 20 pages = 1000-item ceiling
+        # provides enough coverage for high-volume UFs (SP/MG/RJ) without exceeding budget.
+        assert PNCP_MAX_PAGES == 20
 
     def test_config_pncp_max_pages_env_override(self, monkeypatch):
-        """PNCP_MAX_PAGES can be overridden via env."""
+        """PNCP_MAX_PAGES can be overridden via env.
+
+        Reload target is config.pncp (module that reads the env), not the config package root.
+        """
         monkeypatch.setenv("PNCP_MAX_PAGES", "10")
         import importlib
-        import config
-        importlib.reload(config)
+        import config.pncp
+        importlib.reload(config.pncp)
         try:
-            assert config.PNCP_MAX_PAGES == 10
+            assert config.pncp.PNCP_MAX_PAGES == 10
         finally:
             monkeypatch.delenv("PNCP_MAX_PAGES", raising=False)
-            importlib.reload(config)
+            importlib.reload(config.pncp)
 
     @pytest.mark.asyncio
     async def test_fetch_single_modality_respects_max_pages(self):

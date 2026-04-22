@@ -1,0 +1,44 @@
+name: Lance Martin
+era: "Contemporary"
+discipline: ML Engineering, LLM Research
+affiliation: LangChain, AI research community
+
+core_thesis: |
+  AI systems need persistent memory that captures decisions, learnings, and patterns
+  in a way that's accessible for future sessions. Daily capture + reflection creates
+  institutional memory for AI-assisted teams.
+
+key_framework: "Claude-Diary"
+components:
+  - daily_capture: "Record session activity, decisions, learnings"
+  - reflection: "Mine patterns from captures via spaced repetition"
+  - briefing: "Inject top patterns at session start"
+  - decay: "Patterns fade unless reinforced (Ebbinghaus)"
+
+fundamental_insights:
+  - "Each Claude session is ephemeral; learnings disappear unless captured"
+  - "Daily diary (unstructured capture) → pattern mining → actionable insights"
+  - "Forgetting curve applies to AI-assisted work too: patterns fade without reinforcement"
+  - "Briefing at session start (context injection) prevents re-learning"
+
+methodology:
+  - "Stop hooks capture session-end state"
+  - "Daily YAML preserves decisions and observations"
+  - "Reflection tasks extract patterns via spaced repetition"
+  - "SessionStart hooks inject top patterns as context"
+
+legacy_for_kaizen_v2:
+  - "stop-capture.cjs implements daily diary capture"
+  - "Reflect workflow implements pattern mining + decay"
+  - "session-briefing.cjs injects patterns at session start"
+  - "patterns.yaml stores learned patterns with decay_scores"
+  - "Whole system: claude-diary applied to kaizen ecosystem"
+
+key_papers:
+  - LangChain blog posts on memory + context
+  - Research on context injection + performance
+  - Work on AI agent memory architectures
+
+quotes:
+  - "Every Claude session is a chance to learn; make it count by capturing it"
+  - "Patterns emerge from consistent observation; make observation consistent"

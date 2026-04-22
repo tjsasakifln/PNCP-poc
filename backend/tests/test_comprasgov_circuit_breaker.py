@@ -188,11 +188,15 @@ class TestThresholdAlignment:
 
         try:
             # Re-import to get defaults
+            # pncp_client re-exports PNCP/PCP constants; COMPRASGOV constants live
+            # in config.pncp (source of truth) — no pncp_client re-export (TD-007 split).
             from pncp_client import (
                 PNCP_CIRCUIT_BREAKER_THRESHOLD,
                 PNCP_CIRCUIT_BREAKER_COOLDOWN,
                 PCP_CIRCUIT_BREAKER_THRESHOLD,
                 PCP_CIRCUIT_BREAKER_COOLDOWN,
+            )
+            from config import (
                 COMPRASGOV_CIRCUIT_BREAKER_THRESHOLD,
                 COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN,
             )

@@ -23,10 +23,28 @@ def client():
 
 
 def _mock_supabase_response(data: list[dict]):
+    """Legacy table-query mock (kept for other tests in this file that
+    coincidentally pass because the RPC primary path returns a MagicMock,
+    fails the `isinstance(..., list)` check, and emits an empty orgao_list).
+    New/fixed tests should prefer `_mock_rpc_response`.
+    """
     mock_sb = MagicMock()
     mock_resp = MagicMock()
     mock_resp.data = data
     mock_sb.table.return_value.select.return_value.eq.return_value.not_.is_.return_value.neq.return_value.limit.return_value.execute.return_value = mock_resp
+    return mock_sb
+
+
+def _mock_rpc_response(cnpjs: list[str]):
+    """Mock sb.rpc('get_sitemap_orgaos_json', ...).execute() returning a list
+    of CNPJ strings (the RPC `RETURNS json` scalar already does server-side
+    GROUP BY + length≥11 + is_active + not-null filtering; see migration
+    20260408200000_sitemap_rpc_json.sql).
+    """
+    mock_sb = MagicMock()
+    mock_resp = MagicMock()
+    mock_resp.data = cnpjs
+    mock_sb.rpc.return_value.execute.return_value = mock_resp
     return mock_sb
 
 
@@ -35,20 +53,24 @@ class TestSitemapOrgaos:
 
     @patch("supabase_client.get_supabase")
     def test_returns_orgaos_with_min_5_bids(self, mock_get_sb, client):
-        """Only órgãos with ≥5 bids should be returned."""
-        rows = (
-            [{"orgao_cnpj": "11111111000100"}] * 5  # Exactly 5 — included
-            + [{"orgao_cnpj": "22222222000200"}] * 4  # Only 4 — excluded
-            + [{"orgao_cnpj": "33333333000300"}] * 10  # 10 — included
-        )
-        mock_get_sb.return_value = _mock_supabase_response(rows)
+        """Órgãos filtered + ordered by bid_count server-side.
+
+        BTS-011 cluster 5: the ≥5-bid filter + aggregation live in the
+        `get_sitemap_orgaos_json` RPC (SQL GROUP BY … HAVING-like semantics
+        via ORDER BY bid_count DESC + LIMIT). Python route just receives the
+        final list. Mocking the RPC directly matches the primary code path
+        (`sb.rpc(...).execute()` in `routes/sitemap_orgaos.py::_fetch_top_orgaos`).
+        """
+        # RPC already applied server-side filtering (≥5 bids, length≥11, not-null)
+        # Return sorted by bid_count desc: 33... (10 bids), 11... (5 bids)
+        mock_get_sb.return_value = _mock_rpc_response(["33333333000300", "11111111000100"])
 
         resp = client.get("/v1/sitemap/orgaos")
         assert resp.status_code == 200
         data = resp.json()
         assert "33333333000300" in data["orgaos"]  # 10 bids
         assert "11111111000100" in data["orgaos"]  # 5 bids
-        assert "22222222000200" not in data["orgaos"]  # 4 bids
+        assert "22222222000200" not in data["orgaos"]  # 4 bids (excluded by RPC)
         assert data["total"] == 2
 
     @patch("supabase_client.get_supabase")
@@ -64,14 +86,15 @@ class TestSitemapOrgaos:
 
     @patch("supabase_client.get_supabase")
     def test_filters_invalid_cnpjs(self, mock_get_sb, client):
-        """Null, empty, and short CNPJs are filtered out."""
-        rows = (
-            [{"orgao_cnpj": None}] * 10
-            + [{"orgao_cnpj": ""}] * 10
-            + [{"orgao_cnpj": "123"}] * 10  # Too short
-            + [{"orgao_cnpj": "44444444000400"}] * 6  # Valid
-        )
-        mock_get_sb.return_value = _mock_supabase_response(rows)
+        """Null, empty, and short CNPJs are filtered out server-side.
+
+        BTS-011 cluster 5: invalid-CNPJ filtering (`length >= 11`, not null,
+        not empty) lives in the RPC SQL. The Python layer also guards with
+        `isinstance(c, str) and len(c) >= 11` to short-circuit malformed
+        payloads before they hit the response model. Mock the RPC to return
+        only the valid entry (what the SQL would have emitted).
+        """
+        mock_get_sb.return_value = _mock_rpc_response(["44444444000400"])
 
         resp = client.get("/v1/sitemap/orgaos")
         assert resp.status_code == 200

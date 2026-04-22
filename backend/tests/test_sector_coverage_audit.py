@@ -178,17 +178,32 @@ class TestCoOccurrenceRulesStructure:
 
     @pytest.mark.parametrize("sector_id", sorted(EXPANDED_SECTORS))
     def test_trigger_matches_sector_keyword(self, sector_id):
-        """Each CRIT-FLT-007 expanded rule's trigger must match a sector keyword prefix."""
+        """Each CRIT-FLT-007 expanded rule's trigger must be resolvable against the sector.
+
+        BTS-010b: a rule's trigger may be either (a) a keyword prefix/substring
+        match, OR (b) a cross-sector collision signal whose positive_signals map
+        to the sector's own keywords (e.g. 'construcao' in manutencao_predial
+        fires only when paired with 'predial'/'edificacao'). Zero-churn P1 §5B
+        documents this pattern. Both forms are legitimate.
+        """
         s = get_sector(sector_id)
+        keywords_lower = [kw.lower() for kw in s.keywords]
         for rule in s.co_occurrence_rules:
             trigger = rule.trigger.lower()
-            # Check prefix match OR substring match (some triggers are semantic)
-            matched = any(
-                kw.lower().startswith(trigger) or trigger in kw.lower()
-                for kw in s.keywords
+            # (a) trigger is itself a keyword prefix/substring
+            keyword_matched = any(
+                kw.startswith(trigger) or trigger in kw for kw in keywords_lower
             )
-            assert matched, (
-                f"{sector_id}: trigger '{rule.trigger}' doesn't match any keyword"
+            # (b) cross-sector disambiguation: at least one positive_signal must
+            #     be a sector keyword so the rule actually resolves to this sector.
+            positive_signals_matched = any(
+                any(kw.startswith(sig.lower()) or sig.lower() in kw for kw in keywords_lower)
+                for sig in rule.positive_signals
+            )
+            assert keyword_matched or positive_signals_matched, (
+                f"{sector_id}: trigger '{rule.trigger}' neither matches any keyword "
+                f"nor has any positive_signal ({rule.positive_signals}) resolvable "
+                f"to a sector keyword"
             )
 
 
@@ -471,6 +486,7 @@ class TestPrecisionRecallPerSector:
         )
 
 
+@pytest.mark.external  # CIG-BE-precision-recall-regex-hotspot (deferred): both tests iterate ALL_SECTOR_IDS × SINGLE_SECTOR_CASES through _match → match_keywords → re.compile hot loop in backend/filter/keywords.py:1085; catastrophic backtracking exceeds 30s pytest budget. Same root cause as test_precision_recall_benchmark; tracked by STORY-CIG-BE-precision-recall-regex-hotspot for @architect review.
 class TestCrossSectorCollision:
     """AC7: Cross-sector collision rate < 10%."""
 

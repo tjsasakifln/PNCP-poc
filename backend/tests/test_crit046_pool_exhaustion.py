@@ -174,9 +174,13 @@ class TestHttpxPoolConfiguration:
     """AC3/AC4: Test _configure_httpx_pool configures limits and timeouts."""
 
     def test_configure_httpx_pool_sets_limits(self):
-        """Pool configured with max_connections=50, max_keepalive=20."""
+        """Pool configured with the production defaults from supabase_client (DEBT-018)."""
         import httpx
-        from supabase_client import _configure_httpx_pool
+        from supabase_client import (
+            _configure_httpx_pool,
+            _POOL_MAX_CONNECTIONS,
+            _POOL_MAX_KEEPALIVE,
+        )
 
         # Create a mock supabase client with a real httpx session
         mock_client = Mock()
@@ -191,10 +195,11 @@ class TestHttpxPoolConfiguration:
         new_session = mock_client.postgrest.session
         assert isinstance(new_session, httpx.Client)
 
-        # Verify the transport has the correct limits
+        # Verify the transport has the correct limits matching module constants
+        # (env-tunable via SUPABASE_POOL_MAX_CONNECTIONS / SUPABASE_POOL_MAX_KEEPALIVE).
         transport = new_session._transport
-        assert transport._pool._max_connections == 50
-        assert transport._pool._max_keepalive_connections == 20
+        assert transport._pool._max_connections == _POOL_MAX_CONNECTIONS
+        assert transport._pool._max_keepalive_connections == _POOL_MAX_KEEPALIVE
 
     def test_configure_httpx_pool_sets_timeout(self):
         """Timeout configured as 30s total, 10s connect."""
@@ -471,12 +476,14 @@ class TestPoolConstants:
     """Verify CRIT-046 constants are correctly defined."""
 
     def test_pool_max_connections(self):
+        """DEBT-018 lowered the default to 25 (env-tunable via SUPABASE_POOL_MAX_CONNECTIONS)."""
         from supabase_client import _POOL_MAX_CONNECTIONS
-        assert _POOL_MAX_CONNECTIONS == 50
+        assert _POOL_MAX_CONNECTIONS == 25
 
     def test_pool_max_keepalive(self):
+        """DEBT-018 lowered the default to 10 (env-tunable via SUPABASE_POOL_MAX_KEEPALIVE)."""
         from supabase_client import _POOL_MAX_KEEPALIVE
-        assert _POOL_MAX_KEEPALIVE == 20
+        assert _POOL_MAX_KEEPALIVE == 10
 
     def test_pool_timeout(self):
         from supabase_client import _POOL_TIMEOUT

@@ -188,12 +188,14 @@ async def test_different_procurements_from_different_sources_both_kept():
     """
     AC30: Different procurements from different sources → both kept.
     """
+    # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
     pncp_record = create_procurement(
         source_id="PNCP-111",
         source_name="PNCP",
         cnpj="11.111.111/0001-11",
         numero_edital="001/2025",
         ano="2025",
+        objeto="Aquisição de uniformes escolares para rede municipal",
     )
     pcp_record = create_procurement(
         source_id="PCP-222",
@@ -201,6 +203,7 @@ async def test_different_procurements_from_different_sources_both_kept():
         cnpj="22.222.222/0001-22",
         numero_edital="002/2025",
         ano="2025",
+        objeto="Contratação de serviços de pavimentação asfáltica urbana",
     )
 
     pncp_adapter = MockSourceAdapter(code="PNCP", name="PNCP", records=[pncp_record])
@@ -378,12 +381,14 @@ async def test_both_adapters_succeed_is_partial_false():
     """
     AC31: Both adapters succeed → all results merged, is_partial=False.
     """
+    # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
     pncp_record = create_procurement(
         source_id="PNCP-1",
         source_name="PNCP",
         cnpj="11.111.111/0001-11",
         numero_edital="001/2025",
         ano="2025",
+        objeto="Aquisição de uniformes escolares para rede municipal",
     )
     pcp_record = create_procurement(
         source_id="PCP-1",
@@ -391,6 +396,7 @@ async def test_both_adapters_succeed_is_partial_false():
         cnpj="22.222.222/0001-22",
         numero_edital="002/2025",
         ano="2025",
+        objeto="Contratação de serviços de pavimentação asfáltica urbana",
     )
 
     pncp_adapter = MockSourceAdapter(code="PNCP", name="PNCP", records=[pncp_record])
@@ -499,13 +505,16 @@ async def test_partial_failure_one_of_three_sources_fails():
     """
     AC31: 1 out of 3 sources fails → partial results with is_partial=True.
     """
+    # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
     pncp_record = create_procurement(
         source_id="PNCP-1", source_name="PNCP", cnpj="11.111.111/0001-11",
-        numero_edital="001/2025", ano="2025"
+        numero_edital="001/2025", ano="2025",
+        objeto="Aquisição de uniformes escolares para rede municipal",
     )
     portal_record = create_procurement(
         source_id="PORTAL-1", source_name="Portal", cnpj="22.222.222/0001-22",
-        numero_edital="002/2025", ano="2025"
+        numero_edital="002/2025", ano="2025",
+        objeto="Contratação de serviços de pavimentação asfáltica urbana",
     )
 
     pncp_adapter = MockSourceAdapter(code="PNCP", name="PNCP", records=[pncp_record])
@@ -807,21 +816,25 @@ async def test_timeout_with_partial_records_salvaged():
     Requires async generator yielding records before timeout.
     """
     # Create a slow adapter that yields 2 records then times out
+    # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
     async def slow_fetch_generator():
         # Yield 2 records quickly
         yield create_procurement(
             source_id="SLOW-1", source_name="SlowSource", cnpj="10.000.000/0001-10",
-            numero_edital="001/2025", ano="2025"
+            numero_edital="001/2025", ano="2025",
+            objeto="Aquisição de uniformes escolares para rede municipal",
         )
         yield create_procurement(
             source_id="SLOW-2", source_name="SlowSource", cnpj="20.000.000/0001-20",
-            numero_edital="002/2025", ano="2025"
+            numero_edital="002/2025", ano="2025",
+            objeto="Contratação de serviços de pavimentação asfáltica urbana",
         )
         # Then hang indefinitely
         await asyncio.sleep(100)
         yield create_procurement(
             source_id="SLOW-3", source_name="SlowSource", cnpj="30.000.000/0001-30",
-            numero_edital="003/2025", ano="2025"
+            numero_edital="003/2025", ano="2025",
+            objeto="Serviço de limpeza predial e manutenção hospitalar",
         )
 
     class SlowAdapter(SourceAdapter):

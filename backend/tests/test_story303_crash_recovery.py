@@ -17,6 +17,35 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _restore_gunicorn_conf_logger_propagation():
+    """Restore `gunicorn.conf` logger propagation for caplog compatibility.
+
+    BTS-011 cluster 1: `test_crit042_gunicorn_logging.py` applies
+    `logging.config.dictConfig(gunicorn_conf.logconfig_dict)` which globally
+    sets `propagate=False` on the `gunicorn.conf` logger (by design, so that
+    gunicorn doesn't double-emit). That state persists across test files
+    (Python's logging module has process-global state). When pytest discovers
+    test_story303 after test_crit042, caplog receives no records because
+    messages never propagate to the root handler that caplog installs.
+
+    This fixture runs before every test in this module and forces propagation
+    back on, so `caplog.at_level(..., logger="gunicorn.conf")` works as
+    pytest documents. It restores the prior value after each test so we don't
+    affect subsequent tests' expectations.
+    """
+    gc_logger = logging.getLogger("gunicorn.conf")
+    prev_propagate = gc_logger.propagate
+    prev_level = gc_logger.level
+    gc_logger.propagate = True
+    gc_logger.setLevel(logging.DEBUG)
+    try:
+        yield
+    finally:
+        gc_logger.propagate = prev_propagate
+        gc_logger.setLevel(prev_level)
+
+
 # ---------------------------------------------------------------------------
 # AC1: start.sh — GUNICORN_PRELOAD defaults to false
 # ---------------------------------------------------------------------------
@@ -77,8 +106,18 @@ class TestRequirementsCryptographyPin:
     """AC10-AC11: cryptography must be pinned to an exact version."""
 
     def test_ac10_cryptography_pinned_exact(self):
-        """requirements.txt pins cryptography==X.Y.Z (not >=)."""
+        """requirements.txt pins cryptography to a single 46.x release line.
+
+        CIG-BE-story-drift-cryptography-pin: STORY-303 AC10 originally required
+        ``cryptography==46.0.5`` (exact pin). After CVE-2026-26007 + CVE-2026-34073
+        fixes (DEBT-SYS-002), the constraint was widened to
+        ``cryptography>=46.0.6,<47.0.0`` — the upper bound on the major release
+        preserves fork-safety (47.x has not been validated) while still letting
+        the security floor advance with patch releases. AC10 is satisfied as
+        long as the constraint stays bounded inside the 46.x line.
+        """
         import os
+        import re
 
         req_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "requirements.txt"
@@ -86,13 +125,24 @@ class TestRequirementsCryptographyPin:
         with open(req_path) as f:
             content = f.read()
 
-        # Must have exact pin
-        assert "cryptography==46.0.5" in content, (
-            "requirements.txt must pin cryptography==46.0.5 exactly (STORY-303 AC10)"
+        # Accept either exact pin (==46.x.y) or the bounded range used post-DEBT-SYS-002.
+        exact = re.search(r"cryptography==46\.\d+\.\d+", content) is not None
+        bounded = re.search(
+            r"cryptography>=46\.\d+\.\d+,<47\.0\.0", content
+        ) is not None
+        assert exact or bounded, (
+            "requirements.txt must pin cryptography to the 46.x line "
+            "(==46.x.y exact OR >=46.x.y,<47.0.0 bounded)"
         )
 
     def test_ac10_no_cryptography_greater_than(self):
-        """requirements.txt must NOT have cryptography>= (unpinned)."""
+        """requirements.txt cryptography pin must be bounded to the 46.x line.
+
+        Same rationale as ``test_ac10_cryptography_pinned_exact``: a bare ``>=``
+        without an upper bound would break fork-safety, but the
+        ``>=46.0.6,<47.0.0`` range introduced post-DEBT-SYS-002 keeps the upper
+        bound and is therefore acceptable.
+        """
         import os
 
         req_path = os.path.join(
@@ -104,10 +154,11 @@ class TestRequirementsCryptographyPin:
         for line in lines:
             stripped = line.strip()
             if stripped.startswith("cryptography") and not stripped.startswith("#"):
-                assert ">=" not in stripped, (
-                    f"cryptography must not use >= (found: {stripped}). "
-                    "Pin exact version for fork-safety (STORY-303 AC10)"
-                )
+                if ">=" in stripped:
+                    assert "<47.0.0" in stripped, (
+                        f"cryptography must keep the <47.0.0 upper bound "
+                        f"(found: {stripped}). Unbounded >= breaks fork-safety."
+                    )
 
     def test_ac11_cryptography_has_fork_safety_comment(self):
         """requirements.txt has a comment about fork-safety testing on upgrade."""

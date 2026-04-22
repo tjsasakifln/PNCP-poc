@@ -18,6 +18,8 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from metrics import record_sitemap_count
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
 
@@ -97,10 +99,12 @@ def _set_fornecedores_cached(key: str, data: dict) -> None:
 async def sitemap_cnpjs():
     cached = _get_cached("cnpjs")
     if cached:
+        record_sitemap_count("cnpjs", len(cached.get("cnpjs", [])))
         return SitemapCnpjsResponse(**cached)
 
     data = await _fetch_top_cnpjs()
     _set_cached("cnpjs", data)
+    record_sitemap_count("cnpjs", len(data.get("cnpjs", [])))
     return SitemapCnpjsResponse(**data)
 
 
@@ -231,10 +235,12 @@ async def sitemap_fornecedores_cnpj():
     """
     cached = _get_fornecedores_cached("fornecedores_cnpj")
     if cached:
+        record_sitemap_count("fornecedores-cnpj", len(cached.get("cnpjs", [])))
         return SitemapFornecedoresCnpjResponse(**cached)
 
     data = await _fetch_top_fornecedores_cnpjs()
     _set_fornecedores_cached("fornecedores_cnpj", data)
+    record_sitemap_count("fornecedores-cnpj", len(data.get("cnpjs", [])))
     return SitemapFornecedoresCnpjResponse(**data)
 
 

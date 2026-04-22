@@ -1,0 +1,92 @@
+# SmartLic Overlay — aiox-apex
+#
+# Customização B2G do squad APEX (Frontend Intelligence) para o SmartLic.
+# NÃO edite squad.yaml original — este overlay é carregado POR ÚLTIMO.
+# Ordem: _shared → squad.yaml → smartlic-overlay.yaml → *.smartlic.md
+
+overlay:
+  squad_name: "aiox-apex"
+  target_version: "1.7.0"
+  domain: "b2g-licitacoes"
+
+# Contexto do produto injetado em todos os agentes APEX
+project_context:
+  name: "SmartLic"
+  type: "SaaS B2G"
+  url: "https://smartlic.tech"
+  stage: "POC v0.5 — beta com trials, pre-revenue"
+  stack_frontend:
+    framework: "Next.js 16 (App Router)"
+    react: "18"
+    typescript: "5.9"
+    styling: "Tailwind CSS 3"
+    animation: "Framer Motion"
+    charts: "Recharts"
+    auth: "@supabase/ssr"
+    dnd: "@dnd-kit (pipeline kanban)"
+    onboarding: "Shepherd.js (3-step wizard /onboarding)"
+    testing: "Jest + jsdom + Playwright E2E (60 flows)"
+
+# Componentes críticos que APEX deve conhecer
+critical_components:
+  search_page:
+    path: "frontend/app/buscar/"
+    main_page: "frontend/app/buscar/page.tsx"
+    components_dir: "frontend/app/buscar/components/"
+    key_components:
+      - "SearchForm, SearchResults, FilterPanel, UfProgressGrid"
+      - "Resilience: CacheBanner, DegradationBanner, PartialResultsPrompt, SourcesUnavailable"
+      - "AI: LlmSourceBadge, ViabilityBadge, FeedbackButtons, ReliabilityBadge"
+      - "Loading: EnhancedLoadingProgress, LoadingProgress"
+  pipeline:
+    path: "frontend/app/pipeline/"
+    drag_n_drop: "@dnd-kit (kanban)"
+  dashboard:
+    path: "frontend/app/dashboard/"
+    analytics: "Recharts"
+  billing:
+    components: "PlanCard, PlanToggle, PaymentFailedBanner, CancelSubscriptionModal"
+
+# SSE é crítico — APEX deve proteger esta integração
+sse_integration:
+  endpoint: "GET /buscar-progress/{search_id}"
+  client: "new EventSource(url)"
+  events: [progress, partial_results, llm_ready, excel_ready, complete, error]
+  fallback: "Time-based polling + progress simulation se SSE falha"
+  test_polyfill: "jest.setup.js precisa de EventSource polyfill (jsdom não tem)"
+
+# Invariantes específicos frontend
+invariants:
+  api_types: "frontend/app/api-types.generated.ts é AUTO-GERADO — NEVER edit by hand"
+  test_coverage: "60% threshold (jest.config.js)"
+  type_sync: "Após mudança em response_model: npm --prefix frontend run generate:api-types"
+  strict_null_checks: "TypeScript strict mode — no 'any'"
+
+# Ajustes aos quality_standards do APEX (ver squad.yaml tier_4)
+quality_adjustments:
+  performance_web:
+    lcp_target: "< 2.5s (SmartLic relaxado vs APEX default < 1.2s — B2G users toleram dashboard pesado)"
+    first_load_js: "budget atual ~1.75MB gzipped (ver .size-limit.js) — STORY-5.14 visando -600KB em 90d"
+  accessibility:
+    wcag_level: "AA (mantém padrão APEX)"
+    locale: "pt-BR primary"
+
+# Workflow integrations
+delegates_to:
+  - squad: "aiox-dispatch"
+    when: "Story envolve refactor de múltiplos componentes (>5 files) — paralelizar via DISPATCH"
+  - squad: "aiox-seo"
+    when: "Trabalho toca landing pages públicas (/contratos-*, /observatorio)"
+
+# Ferramentas específicas do projeto
+project_tools:
+  dev_server: "npm run dev (frontend port 3000, backend uvicorn port 8000)"
+  type_check: "npm run build (Next.js incluido)"
+  lint: "npm run lint"
+  test: "npm test / npm run test:coverage / npm run test:e2e"
+  browser_test: "Playwright MCP (produção https://smartlic.tech)"
+
+# Credenciais de teste (para manual testing via Playwright MCP)
+test_accounts:
+  admin: "tiago.sasaki@gmail.com (senha env SEED_ADMIN_PASSWORD)"
+  master: "marinalvabaron@gmail.com (senha env SEED_MASTER_PASSWORD)"

@@ -1,0 +1,55 @@
+# Template: Fundamentacao Juridica
+# Proposito: Estrutura de fundamentacao conforme CPC Art. 489 par. 1o
+
+metadata:
+  processo: "{NUMERO}"
+  tema: "{TEMA}"
+  data: "{DATA}"
+  autor: "{AGENTE}"
+
+tese_principal:
+  enunciado: "{TESE}"
+  tipo: "{CONSTITUCIONAL|LEGAL|JURISPRUDENCIAL}"
+
+argumentos:
+  - ordem: 1
+    tipo: "{CONSTITUCIONAL|LEGAL|JURISPRUDENCIAL|DOUTRINARIO}"
+    argumento: "{ARGUMENTO}"
+    fundamento_legal: "{ARTIGO|SUMULA|PRECEDENTE}"
+    evidencia: "{CITACAO_COMPLETA}"
+    forca: "{VINCULANTE|PERSUASIVO}"
+  - ordem: 2
+    tipo: "{TIPO}"
+    argumento: "{ARGUMENTO}"
+    fundamento_legal: "{FUNDAMENTO}"
+    evidencia: "{CITACAO}"
+    forca: "{FORCA}"
+
+tese_subsidiaria:
+  enunciado: "{TESE_SUB}"
+  condicao: "{QUANDO_USAR}"
+  argumentos:
+    - "{ARGUMENTO_SUB_1}"
+
+contra_argumentos:
+  - argumento_adverso: "{CONTRA}"
+    resposta: "{RESPOSTA}"
+    fundamento: "{FUNDAMENTO}"
+
+ponderacao:
+  aplicavel: "{SIM|NAO}"
+  principios_em_colisao:
+    - principio_1: "{P1}"
+    - principio_2: "{P2}"
+  adequacao: "{RESULTADO}"
+  necessidade: "{RESULTADO}"
+  proporcionalidade_estrita: "{RESULTADO}"
+  conclusao: "{CONCLUSAO}"
+
+validacao_art_489:
+  inciso_i: "{CONFORME|NAO_CONFORME}"
+  inciso_ii: "{CONFORME|NAO_CONFORME}"
+  inciso_iii: "{CONFORME|NAO_CONFORME}"
+  inciso_iv: "{CONFORME|NAO_CONFORME}"
+  inciso_v: "{CONFORME|NAO_CONFORME}"
+  inciso_vi: "{CONFORME|NAO_CONFORME}"

@@ -153,6 +153,19 @@ class TestPostgREST1000RowTruncationWarning:
     4. Still return all rows collected (not drop them).
     """
 
+    @pytest.fixture(autouse=True)
+    def _clear_datalake_cache(self):
+        """STORY-BTS-009: ``datalake_query`` has a module-level ``_query_cache``
+        that persists across test invocations. Without this fixture the failure/
+        empty-list assertions leak cached results from prior tests in the class
+        ("Cache HIT for N UFs, returning M cached records" visible in captured
+        logs). Clear before each test to guarantee fresh RPC paths.
+        """
+        import datalake_query
+        datalake_query._query_cache.clear()
+        yield
+        datalake_query._query_cache.clear()
+
     def _make_rows(self, n: int) -> list[dict]:
         """Return n minimal rows that _row_to_normalized() can handle."""
         return [
@@ -338,6 +351,7 @@ class TestPostgREST1000RowTruncationWarning:
                 f"Each RPC call should pass a single UF; got p_ufs={p_ufs}"
             )
 
+    @pytest.mark.external  # STORY-CIG-BACKEND-SWEEP triage row #105: real DNS call a Supabase, httpx.ConnectError em sandbox; mock fixture não intercepta RPC internal path.
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
     @patch("supabase_client.get_supabase")
@@ -366,6 +380,7 @@ class TestPostgREST1000RowTruncationWarning:
         # SC failed, PR returned 3 rows — should still return PR's rows
         assert len(result) == 3
 
+    @pytest.mark.external  # STORY-CIG-BACKEND-SWEEP triage row #106: real DNS call a Supabase, httpx.ConnectError em sandbox; mock fixture não intercepta RPC internal path.
     @pytest.mark.timeout(30)
     @pytest.mark.asyncio
     @patch("supabase_client.get_supabase")

@@ -27,7 +27,7 @@ def cache_dir(tmp_path):
     """Create a temporary cache directory and patch LOCAL_CACHE_DIR."""
     cache_path = tmp_path / "smartlic_cache"
     cache_path.mkdir()
-    with patch("search_cache.LOCAL_CACHE_DIR", cache_path):
+    with patch("cache.local_file.LOCAL_CACHE_DIR", cache_path):
         yield cache_path
 
 
@@ -55,7 +55,7 @@ class TestCheckCacheDirSize:
 
     def test_returns_zero_when_dir_not_exists(self, tmp_path):
         nonexistent = tmp_path / "nope"
-        with patch("search_cache.LOCAL_CACHE_DIR", nonexistent):
+        with patch("cache.local_file.LOCAL_CACHE_DIR", nonexistent):
             assert _check_cache_dir_size() == 0
 
     def test_evicts_oldest_files_when_over_200mb(self, cache_dir):
@@ -104,7 +104,7 @@ class TestSaveToLocalIntegration:
 
     def test_save_to_local_triggers_size_check(self, cache_dir):
         """Verify _check_cache_dir_size is called during _save_to_local."""
-        with patch("search_cache._check_cache_dir_size") as mock_check:
+        with patch("cache.local_file._check_cache_dir_size") as mock_check:
             _save_to_local("test_key_abc", [{"id": 1}], ["pncp"])
             mock_check.assert_called_once()
 
@@ -118,7 +118,7 @@ class TestCleanupLocalCacheIntegration:
 
     def test_cleanup_triggers_size_check(self, cache_dir):
         """Verify _check_cache_dir_size is called during cleanup."""
-        with patch("search_cache._check_cache_dir_size") as mock_check:
+        with patch("cache.local_file._check_cache_dir_size") as mock_check:
             cleanup_local_cache()
             mock_check.assert_called_once()
 

@@ -1,0 +1,313 @@
+workflow:
+  id: wf-analise-processual-completa
+  name: "Pipeline Completo de Analise Processual"
+  version: "1.0"
+  squad: legal-analyst
+  description: "Pipeline completo: triagem -> pesquisa -> analise -> fundamentacao -> validacao -> entrega"
+  orchestrator: legal-chief
+  estimated_duration: "2-4 horas"
+
+  metadata:
+    author: "AIOS Legal Analyst Squad"
+    created: "2026-03-11"
+    updated: "2026-03-11"
+    tags: [analise-processual, jurisprudencia, cnj-compliant, datajud]
+
+phases:
+  - id: phase_0_triagem
+    name: "Triagem e Classificacao"
+    description: "Classificar processo, verificar admissibilidade, carregar conformidade CNJ"
+    agents:
+      - barbosa-classifier
+      - fux-procedural
+      - cnj-compliance
+
+    tasks:
+      - id: classificar-processo
+        description: "Classificar conforme TPU/SGT do CNJ"
+        dependencies: []
+        inputs:
+          - descricao_caso
+          - pdf_dados_extraidos
+        outputs:
+          - classificacao_tpu
+          - competencia
+          - codigo_datajud
+
+      - id: verificar-admissibilidade
+        description: "Verificar pressupostos processuais e condicoes da acao"
+        dependencies: [classificar-processo]
+        inputs:
+          - classificacao_tpu
+          - dados_processo
+        outputs:
+          - admissibilidade_report
+          - via_alternativa (se inadmissivel)
+
+      - id: carregar-cnj
+        description: "Carregar Resolucoes CNJ aplicaveis e schema DATAJUD"
+        dependencies: [classificar-processo]
+        inputs:
+          - classificacao_tpu
+        outputs:
+          - resolucoes_aplicaveis
+          - datajud_schema_required
+
+    checkpoint:
+      gate: "Processo classificado? Admissivel? CNJ carregado?"
+      validation_criteria:
+        - "Classe TPU atribuida"
+        - "Competencia definida"
+        - "Admissibilidade verificada"
+        - "Resolucoes CNJ carregadas"
+      checklist: classificacao-processual-check.md
+      veto_conditions:
+        - condition: "Processo inadmissivel"
+          action: "Sugerir via alternativa, EXIT ou CONTINUAR com ressalvas"
+        - condition: "Classificacao impossivel"
+          action: "BLOQUEAR, solicitar informacoes adicionais"
+
+  - id: phase_1_pesquisa
+    name: "Pesquisa Jurisprudencial"
+    description: "Pesquisar jurisprudencia, consolidar precedentes, indexar"
+    agents:
+      - mendes-researcher
+      - toffoli-aggregator
+      - moraes-analyst
+      - weber-indexer
+
+    tasks:
+      - id: pesquisar-jurisprudencia
+        description: "Pesquisa em STF, STJ, TJs, TRFs"
+        dependencies: []
+        inputs:
+          - tema
+          - classificacao_tpu
+        outputs:
+          - lista_acordaos
+          - sumulas_aplicaveis
+
+      - id: consolidar-precedentes
+        description: "Consolidar precedentes, mapear correntes, IRDR, repetitivos"
+        dependencies: [pesquisar-jurisprudencia]
+        inputs:
+          - lista_acordaos
+        outputs:
+          - mapa_precedentes
+          - correntes_jurisprudenciais
+
+      - id: analisar-direitos-fundamentais
+        description: "Analisar direitos fundamentais envolvidos (se aplicavel)"
+        dependencies: [pesquisar-jurisprudencia]
+        inputs:
+          - dados_caso
+        outputs:
+          - direitos_fundamentais_report
+
+      - id: indexar-jurisprudencia
+        description: "Indexar e categorizar tematicamente"
+        dependencies: [consolidar-precedentes]
+        inputs:
+          - lista_acordaos
+          - mapa_precedentes
+        outputs:
+          - indice_jurisprudencia
+          - tags_tematicas
+
+    checkpoint:
+      gate: "5+ acordaos? Precedentes consolidados? Indexados?"
+      validation_criteria:
+        - "Minimo 5 acordaos relevantes"
+        - "Correntes identificadas"
+        - "Sumulas mapeadas"
+        - "Indice tematico gerado"
+      veto_conditions:
+        - condition: "Menos de 3 acordaos"
+          action: "BLOQUEAR, solicitar input humano"
+      human_review: true
+
+  - id: phase_2_analise
+    name: "Analise de Relatores e Precedentes"
+    description: "Analise aprofundada de cada precedente, Relatores e jurimetria"
+    agents:
+      - barroso-strategist
+      - fachin-precedent
+      - nunes-quantitative
+      - carmem-relator
+
+    parallelizable: true
+
+    tasks:
+      - id: analisar-precedentes
+        description: "Ratio decidendi, distinguishing para cada precedente-chave"
+        dependencies: []
+        inputs:
+          - mapa_precedentes
+        outputs:
+          - fichas_precedentes
+          - distinguishing_preparados
+
+      - id: jurimetria
+        description: "Analise quantitativa: taxas, valores, tendencias"
+        dependencies: []
+        inputs:
+          - indice_jurisprudencia
+        outputs:
+          - jurimetria_report
+
+      - id: perfil-relatores
+        description: "Perfil e tendencia dos Relatores relevantes"
+        dependencies: []
+        inputs:
+          - indice_jurisprudencia
+          - relatores_identificados
+        outputs:
+          - perfis_relatores
+
+      - id: linhas-argumentativas
+        description: "Identificar linhas argumentativas viáveis"
+        dependencies: [analisar-precedentes]
+        inputs:
+          - fichas_precedentes
+          - correntes_jurisprudenciais
+        outputs:
+          - linhas_argumentativas
+
+    checkpoint:
+      gate: "Precedentes analisados? Jurimetria? Relatores mapeados?"
+      validation_criteria:
+        - "Fichas de precedentes preenchidas"
+        - "Dados jurimetricos calculados"
+        - "Perfis de Relatores gerados"
+        - "Linhas argumentativas identificadas"
+
+  - id: phase_3_fundamentacao
+    name: "Fundamentacao"
+    description: "Construcao da fundamentacao tecnica conforme CPC Art. 489"
+    agents:
+      - barroso-strategist
+      - fachin-precedent
+
+    tasks:
+      - id: estrategia-argumentativa
+        description: "Construir tese principal + subsidiaria + contra-argumentos"
+        dependencies: []
+        inputs:
+          - linhas_argumentativas
+          - fichas_precedentes
+          - perfis_relatores
+          - jurimetria_report
+        outputs:
+          - estrategia_completa
+
+      - id: qualificar-citacoes
+        description: "Qualificar cada citacao com ratio decidendi"
+        dependencies: [estrategia-argumentativa]
+        inputs:
+          - estrategia_completa
+          - fichas_precedentes
+        outputs:
+          - fundamentacao_qualificada
+
+    checkpoint:
+      gate: "CPC Art. 489 atendido? Estrategia coerente?"
+      checklist: fundamentacao-quality-check.md
+      human_review: true
+      review_focus: "Aprovacao da fundamentacao antes da validacao"
+
+  - id: phase_4_validacao
+    name: "Validacao"
+    description: "Quality gates: fundamentacao + precedentes + CNJ + DATAJUD"
+    agents:
+      - theodoro-validator
+      - marinoni-quality
+      - cnj-compliance
+      - datajud-formatter
+
+    tasks:
+      - id: validar-fundamentacao
+        description: "Validar CPC Art. 489 e coerencia"
+        dependencies: []
+        inputs:
+          - fundamentacao_qualificada
+        outputs:
+          - validacao_fundamentacao
+
+      - id: validar-precedentes
+        description: "Validar vigencia e qualidade dos precedentes"
+        dependencies: []
+        inputs:
+          - fichas_precedentes
+          - fundamentacao_qualificada
+        outputs:
+          - validacao_precedentes
+
+      - id: validar-cnj
+        description: "Verificar conformidade CNJ final"
+        dependencies: [validar-fundamentacao, validar-precedentes]
+        inputs:
+          - resolucoes_aplicaveis
+          - todos_dados
+        outputs:
+          - cnj_compliance_report
+
+      - id: formatar-datajud
+        description: "Formatar dados conforme DATAJUD schema"
+        dependencies: [validar-cnj]
+        inputs:
+          - todos_dados
+        outputs:
+          - dados_datajud_yaml
+
+    checkpoint:
+      gate: "Fundamentacao OK? Precedentes OK? CNJ OK? DATAJUD OK?"
+      checklists:
+        - fundamentacao-quality-check.md
+        - precedente-quality-check.md
+        - cnj-resolucoes-check.md
+      veto_conditions:
+        - condition: "Fundamentacao reprovada"
+          action: "Retornar a Fase 3"
+        - condition: "CNJ nao conforme"
+          action: "BLOQUEAR, corrigir gaps"
+
+  - id: phase_5_entrega
+    name: "Montagem e Entrega"
+    description: "Montar pacote final formatado"
+    agents:
+      - legal-chief
+      - datajud-formatter
+
+    tasks:
+      - id: montar-relatorio
+        description: "Montar relatorio final completo"
+        dependencies: []
+        inputs:
+          - todos_outputs
+        outputs:
+          - relatorio_executivo
+          - pacote_completo
+
+      - id: armazenar-dominio
+        description: "Armazenar conhecimento para reuso"
+        dependencies: [montar-relatorio]
+        inputs:
+          - todos_artefatos
+        outputs:
+          - "minds/{tema}/ (arquivo completo)"
+
+    stores: "minds/{tema}/"
+
+success_criteria:
+  - "Classificacao TPU/DATAJUD completa"
+  - "Minimo 5 precedentes qualificados"
+  - "Fundamentacao CPC Art. 489 aprovada"
+  - "Conformidade CNJ verificada"
+  - "Dados DATAJUD formatados"
+  - "Relatorio final entregue"
+
+failure_modes:
+  - "Processo inadmissivel -> EXIT com alternativa"
+  - "Jurisprudencia insuficiente -> BLOQUEAR na Fase 1"
+  - "Fundamentacao reprovada -> Retornar a Fase 3"
+  - "CNJ nao conforme -> BLOQUEAR na Fase 4"

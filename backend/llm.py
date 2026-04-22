@@ -359,16 +359,21 @@ Data atual: {datetime.now().strftime("%d/%m/%Y")}
 
             # STORY-2.11 (EPIC-TD-2026Q2 P0): Track cost in monthly budget counter.
             # Fire-and-forget — nunca bloqueia a request.
+            # CIG-BE-asyncio-run-production-scan Phase 2 Option C:
+            # skip tracking instead of spinning a throwaway loop via asyncio.run()
+            # when invoked from a thread pool worker. Long-term fix (Option A) is
+            # run_coroutine_threadsafe on the main app loop — tracked as dívida.
             try:
                 import asyncio as _asyncio
                 from llm_budget import track_llm_cost as _track
 
-                _loop = _asyncio.get_event_loop()
-                if _loop.is_running():
+                try:
+                    _loop = _asyncio.get_running_loop()
                     _asyncio.ensure_future(_track(_cost_usd))
-                else:
-                    # Contexto sync (ex: testes) — dispara em event loop novo
-                    _asyncio.run(_track(_cost_usd))
+                except RuntimeError:
+                    from metrics import LLM_BUDGET_TRACK_SKIPPED as _skipped
+
+                    _skipped.labels(reason="no_running_loop").inc()
             except Exception:
                 pass
     except Exception:

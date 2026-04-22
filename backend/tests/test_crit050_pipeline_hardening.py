@@ -386,7 +386,7 @@ class TestAC15Stage4CrashPartialResponse:
     @pytest.mark.asyncio
     @patch("pipeline.stages.persist.quota")
     @patch("pipeline.stages.execute.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
-    @patch("pipeline.cache_manager._supabase_save_cache", new_callable=AsyncMock)
+    @patch("cache.manager.save_to_cache_per_uf", new_callable=AsyncMock)
     @patch("pipeline.stages.validate._supabase_get_cache", new_callable=AsyncMock, return_value=None)
     @patch("pipeline.cache_manager.get_fallback_cache", new_callable=AsyncMock, return_value=None)
     async def test_stage_filter_exception_uses_fallback_resumo(

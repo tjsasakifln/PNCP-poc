@@ -10,6 +10,7 @@ to match current SearchPipeline quota flow + CRIT-009 structured errors.
 """
 
 from unittest.mock import patch
+import pytest
 from fastapi.testclient import TestClient
 from datetime import datetime, timezone, timedelta
 from main import app
@@ -32,6 +33,31 @@ def setup_auth_override(user_id="test-user"):
     def cleanup():
         app.dependency_overrides.clear()
     return cleanup
+
+
+@pytest.fixture(autouse=True)
+def _reset_supabase_circuit_breakers():
+    """STORY-BTS-009: Isolate Supabase CB state across tests.
+
+    These tests exercise the full /v1/buscar pipeline, which attempts real
+    Supabase calls (e.g., ``ensure_profile_exists``). Non-UUID test user ids
+    surface 22P02 errors that trip the global CB, which then bleeds into
+    subsequent test files (notably ``test_error_handler.py``) as 503s. Reset
+    all CBs before and after each test so the pollution stays contained.
+    """
+    try:
+        from supabase_client import _CB_REGISTRY, supabase_cb
+        for cb in list(_CB_REGISTRY.values()) + [supabase_cb]:
+            cb.reset()
+    except Exception:
+        pass
+    yield
+    try:
+        from supabase_client import _CB_REGISTRY, supabase_cb
+        for cb in list(_CB_REGISTRY.values()) + [supabase_cb]:
+            cb.reset()
+    except Exception:
+        pass
 
 
 # ============================================================================
@@ -83,8 +109,10 @@ class TestQuotaLimitReached:
                 error_message="Você atingiu 1000 análises este mês. Seu limite renova em 15 dias.",
             )
 
+            # DEBT-107 / startup.routes: search_router is registered with the /v1/ prefix.
+            # Tests that POST to /buscar without /v1/ get 404 (no handler at root).
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -95,12 +123,15 @@ class TestQuotaLimitReached:
 
             assert response.status_code == 403
             detail = response.json()["detail"]
-            # STORY-265 AC8: require_active_plan (called before try/except) returns
-            # {"error": "plan_expired", "message": ..., "upgrade_url": "/planos"}
+            # CRIT-009 structured error shape (see test_api_buscar.py for the canonical
+            # pattern that was kept in sync with prod). STORY-265 AC8's earlier
+            # ``{"error": "plan_expired"}`` shape was refactored into
+            # ``{"error_code": "QUOTA_EXCEEDED", "detail": error_message, ...}``
+            # by CRIT-009 enrichment. Mirror that here.
             if isinstance(detail, dict):
-                assert detail.get("error") == "plan_expired"
-                assert "1000 análises" in detail["message"]
-                assert "15 dias" in detail["message"]
+                assert detail.get("error_code") == "QUOTA_EXCEEDED"
+                assert "1000 análises" in detail["detail"]
+                assert "15 dias" in detail["detail"]
             else:
                 # Fallback for non-structured (should not happen, but defensive)
                 assert "1000 análises" in detail
@@ -116,8 +147,8 @@ class TestQuotaLimitReached:
     ):
         """Should return 403 with structured error when FREE trial expires.
 
-        The error_message from QuotaInfo is passed through to the response.
-        STORY-265 AC8: require_active_plan returns {"error": "trial_expired", "message": ...}.
+        The error_message from QuotaInfo is passed through to the response
+        (CRIT-009 enriched shape, same as ``test_quota_exhausted_returns_403``).
         """
         cleanup = setup_auth_override("user-trial-expired")
         try:
@@ -136,8 +167,10 @@ class TestQuotaLimitReached:
                 error_message="Seu trial expirou. Veja o valor que você analisou e continue tendo vantagem.",
             )
 
+            # DEBT-107 / startup.routes: search_router is registered with the /v1/ prefix.
+            # Tests that POST to /buscar without /v1/ get 404 (no handler at root).
             response = client.post(
-                "/buscar",
+                "/v1/buscar",
                 json={
                     "ufs": ["SC"],
                     "data_inicial": "2026-01-01",
@@ -148,10 +181,14 @@ class TestQuotaLimitReached:
 
             assert response.status_code == 403
             detail = response.json()["detail"]
-            # STORY-265 AC8: require_active_plan returns {"error": "trial_expired", "message": ...}
+            # CRIT-009 enriched shape (see test_api_buscar.py) — trial_expired messages
+            # flow through the same QUOTA_EXCEEDED error_code path.
             if isinstance(detail, dict):
-                assert detail.get("error") == "trial_expired"
-                assert "trial expirou" in detail["message"].lower() or "expirou" in detail["message"].lower()
+                assert detail.get("error_code") == "QUOTA_EXCEEDED"
+                assert (
+                    "trial expirou" in detail["detail"].lower()
+                    or "expirou" in detail["detail"].lower()
+                )
             else:
                 # Fallback for non-structured
                 assert "trial expirou" in detail

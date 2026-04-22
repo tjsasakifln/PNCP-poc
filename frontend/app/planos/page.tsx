@@ -21,7 +21,10 @@ import { PlanStatusBanners } from "./components/PlanStatusBanners";
 import { PlanProCard } from "./components/PlanProCard";
 import { PlanConsultoriaCard } from "./components/PlanConsultoriaCard";
 import { PlanFAQ } from "./components/PlanFAQ";
+import { ProductSchema } from "./components/ProductSchema";
+import { buttonVariants } from "../../components/ui/button";
 import { trackViewItem, trackBeginCheckout } from "../components/GoogleAnalytics";
+import { PRO_PRICING, CONSULTORIA_PRICING } from "@/lib/plan-pricing";
 import type { components } from "../api-types.generated";
 
 // STORY-2.1 (EPIC-TD-2026Q2): Profile shape is a subset of the backend
@@ -29,12 +32,9 @@ import type { components } from "../api-types.generated";
 // callers can pass the full response unchanged.
 type UserProfile = Partial<components["schemas"]["UserProfileResponse"]>;
 
-// STORY-360 AC2: Static fallback pricing (source of truth: backend GET /v1/plans -> Stripe)
-const PRICING_FALLBACK: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
-  monthly: { monthly: 397, total: 397, period: "mês" },
-  semiannual: { monthly: 357, total: 2142, period: "semestre", discount: 10 },
-  annual: { monthly: 297, total: 3564, period: "ano", discount: 25 },
-};
+// STORY-360 AC2 + STORY-SEO-004: pricing source of truth lives in `lib/plan-pricing.ts`
+// (consumed here and by ProductSchema.tsx to keep JSON-LD in sync with UI).
+const PRICING_FALLBACK = PRO_PRICING;
 
 // GTM-002: Features list
 const FEATURES = [
@@ -47,11 +47,7 @@ const FEATURES = [
   { text: "Filtragem com 1.000+ regras", detail: "Precisão setorial para seu mercado" },
 ];
 
-const CONSULTORIA_PRICING_FALLBACK: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
-  monthly: { monthly: 997, total: 997, period: "mês" },
-  semiannual: { monthly: 897, total: 5382, period: "semestre", discount: 10 },
-  annual: { monthly: 797, total: 9564, period: "ano", discount: 20 },
-};
+const CONSULTORIA_PRICING_FALLBACK = CONSULTORIA_PRICING;
 
 const CONSULTORIA_FEATURES = [
   { text: "Até 5 usuários", detail: "Sua equipe inteira em uma só conta" },
@@ -89,6 +85,25 @@ export default function PlanosPage() {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [partnerName, setPartnerName] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
+
+  // STORY-BIZ-002: scroll to consultoria card when landing with ?highlight=consultoria
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("highlight") !== "consultoria") return;
+    // Defer until the card is mounted
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById("plano-consultoria");
+      if (el && typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.classList.add("ring-2", "ring-indigo-400", "ring-offset-2");
+        window.setTimeout(() => {
+          el.classList.remove("ring-2", "ring-indigo-400", "ring-offset-2");
+        }, 3000);
+      }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // TD-008 AC4: SWR-based dynamic pricing with static fallback
   type PricingMap = Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }>;
@@ -282,6 +297,7 @@ export default function PlanosPage() {
 
   return (
     <div className="min-h-screen bg-[var(--canvas)]">
+      <ProductSchema />
       <LandingNavbar />
 
       {/* Stripe redirect overlay */}
@@ -369,14 +385,17 @@ export default function PlanosPage() {
           </div>
         </div>
 
-        <PlanConsultoriaCard
-          pricing={consultoriaPricing}
-          billingPeriod={billingPeriod}
-          features={CONSULTORIA_FEATURES}
-          isConsultoriaLead={isConsultoriaLead}
-          checkoutLoading={checkoutLoading}
-          onCheckout={() => { if (!session) { window.location.href = "/login"; return; } handleConsultoriaCheckout(); }}
-        />
+        {/* STORY-BIZ-002: anchor for ?highlight=consultoria scroll-to. */}
+        <div id="plano-consultoria" data-plan-key="consultoria">
+          <PlanConsultoriaCard
+            pricing={consultoriaPricing}
+            billingPeriod={billingPeriod}
+            features={CONSULTORIA_FEATURES}
+            isConsultoriaLead={isConsultoriaLead}
+            checkoutLoading={checkoutLoading}
+            onCheckout={() => { if (!session) { window.location.href = "/login"; return; } handleConsultoriaCheckout(); }}
+          />
+        </div>
 
         {/* Testimonials */}
         <div className="mt-16" data-testid="pricing-testimonials">
@@ -440,9 +459,12 @@ export default function PlanosPage() {
           <div className="border-t border-gray-200 dark:border-gray-700" />
         </div>
 
-        {/* Bottom CTA */}
+        {/* Bottom CTA — uses shared buttonVariants for consistent styling (DEBT-006 AC4) */}
         <div className="mt-12 text-center">
-          <Link href="/buscar" className="text-sm text-[var(--ink-muted)] hover:underline">
+          <Link
+            href="/buscar"
+            className={buttonVariants({ variant: "link", size: "sm", className: "text-[var(--ink-muted)]" })}
+          >
             {hasFullAccess ? "Voltar para análises" : "Continuar com período de avaliação"}
           </Link>
         </div>

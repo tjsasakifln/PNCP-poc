@@ -118,7 +118,7 @@ class TestT1AsyncReturns202:
 
                 client = TestClient(app)
                 response = client.post(
-                    "/buscar",
+                    "/v1/buscar",
                     json={
                         "ufs": ["SP"],
                         "data_inicial": "2026-02-01",
@@ -158,7 +158,7 @@ class TestT2WorkerProcesses:
         with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
-             patch("job_queue.persist_job_result", new_callable=AsyncMock) as mock_persist, \
+             patch("jobs.queue.result_store.persist_job_result", new_callable=AsyncMock) as mock_persist, \
              patch("middleware.search_id_var"), \
              patch("middleware.request_id_var"), \
              patch("metrics.SEARCH_JOB_DURATION") as mock_metric:
@@ -197,7 +197,7 @@ class TestT3SSEDelivery:
         with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response), \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
-             patch("job_queue.persist_job_result", new_callable=AsyncMock), \
+             patch("jobs.queue.result_store.persist_job_result", new_callable=AsyncMock), \
              patch("middleware.search_id_var"), \
              patch("middleware.request_id_var"), \
              patch("metrics.SEARCH_JOB_DURATION") as mock_metric:
@@ -383,7 +383,7 @@ class TestT6QuotaInPOST:
 
                 client = TestClient(app)
                 response = client.post(
-                    "/buscar",
+                    "/v1/buscar",
                     json={
                         "ufs": ["SP"],
                         "data_inicial": "2026-02-01",
@@ -482,7 +482,7 @@ class TestT7AsyncReturnsImmediately:
                 client = TestClient(app)
                 start = time.time()
                 response = client.post(
-                    "/buscar",
+                    "/v1/buscar",
                     json={
                         "ufs": ["SP", "RJ", "MG", "BA", "RS"],
                         "data_inicial": "2026-02-01",
@@ -654,7 +654,7 @@ class TestT10Heartbeat:
         with patch("pipeline.worker.executar_busca_completa", new_callable=AsyncMock, return_value=mock_busca_response) as mock_exec, \
              patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
              patch("progress.remove_tracker", new_callable=AsyncMock), \
-             patch("job_queue.persist_job_result", new_callable=AsyncMock), \
+             patch("jobs.queue.result_store.persist_job_result", new_callable=AsyncMock), \
              patch("middleware.search_id_var"), \
              patch("middleware.request_id_var"), \
              patch("metrics.SEARCH_JOB_DURATION") as mock_metric:
@@ -694,9 +694,12 @@ class TestFeatureFlagConfig:
         assert SEARCH_ASYNC_ENABLED is False
 
     def test_async_timeout_constant(self):
-        """STORY-292: _ASYNC_SEARCH_TIMEOUT replaces SEARCH_ASYNC_WAIT_TIMEOUT."""
+        """STORY-292 / AC9: _ASYNC_SEARCH_TIMEOUT replaces SEARCH_ASYNC_WAIT_TIMEOUT.
+
+        Raised from 120s to 240s to accommodate tamanhoPagina=50 per-UF latency.
+        """
         from routes.search import _ASYNC_SEARCH_TIMEOUT
-        assert _ASYNC_SEARCH_TIMEOUT == 120
+        assert _ASYNC_SEARCH_TIMEOUT == 240
 
 
 class TestSearchQueuedResponse:

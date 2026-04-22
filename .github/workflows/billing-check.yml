@@ -10,31 +10,31 @@ jobs:
     name: Check Actions Billing Health
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Check recent workflow run status
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "=== GitHub Actions Billing Health Check ==="
 
-          # Get recent workflow runs and check for stalled/queued jobs
-          RUNS=$(gh api /repos/${{ github.repository }}/actions/runs \
+          RUNS=$(gh api "/repos/${{ github.repository }}/actions/runs" \
             --jq '.workflow_runs[:20]')
 
-          QUEUED_COUNT=$(echo "$RUNS" | \
-            python3 -c "
-import sys, json
-runs = json.load(sys.stdin)
-stalled = [r for r in runs if r.get('status') in ('queued', 'waiting') and r.get('conclusion') is None]
-print(len(stalled))
-")
+          # Python logic lives in .github/scripts/billing-check.py — see that file
+          # for details. Avoid embedding multi-line Python inside YAML `run: |`
+          # because de-indented Python lines terminate the YAML block scalar.
+          OUTPUT=$(echo "$RUNS" | python3 .github/scripts/billing-check.py)
+          echo "$OUTPUT"
 
-          LAST_CONCLUSION=$(echo "$RUNS" | \
-            python3 -c "
-import sys, json
-runs = json.load(sys.stdin)
-completed = [r for r in runs if r.get('conclusion') is not None]
-print(completed[0]['conclusion'] if completed else 'unknown')
-")
+          QUEUED_COUNT=$(echo "$OUTPUT" | awk -F'=' '/^queued_count=/ {print $2}')
+          LAST_CONCLUSION=$(echo "$OUTPUT" | awk -F'=' '/^last_conclusion=/ {print $2}')
 
           echo "Queued/stalled workflows: $QUEUED_COUNT"
           echo "Last completed workflow conclusion: $LAST_CONCLUSION"

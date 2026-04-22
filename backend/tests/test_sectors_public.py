@@ -98,7 +98,8 @@ class TestSlugMapping:
 
     def test_all_sector_slugs_count(self):
         slugs = get_all_sector_slugs()
-        assert len(slugs) == 19
+        # sectors_data.yaml has 20 sectors (materiais_hidraulicos added post-initial set).
+        assert len(slugs) == 20
 
     def test_all_slugs_have_correct_structure(self):
         slugs = get_all_sector_slugs()
@@ -145,7 +146,7 @@ class TestSectorsListEndpoint:
         resp = client.get("/v1/sectors")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data) == 15
+        assert len(data) == 20
         assert data[0]["slug"]
         assert data[0]["name"]
 
@@ -303,5 +304,5 @@ class TestRefreshAllSectorStats:
         }
 
         count = await refresh_all_sector_stats()
-        assert count == 15  # All 15 sectors
-        assert mock_gen.call_count == 15
+        assert count == 20  # All 20 sectors (sectors_data.yaml)
+        assert mock_gen.call_count == 20

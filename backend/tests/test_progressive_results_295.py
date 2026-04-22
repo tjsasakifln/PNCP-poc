@@ -86,12 +86,22 @@ class FakeAdapter(SourceAdapter):
 async def test_fast_source_emits_partial_before_slow_completes():
     """AC15: When one source is fast and another is slow, on_source_done
     is called for the fast source BEFORE the slow source finishes."""
+    # STORY-BTS-006: Use distinct objetos per record to avoid title-prefix
+    # cross-org dedup (added to consolidation.dedup post-STORY-295). The test
+    # asserts raw record counts, not dedup behavior — which is covered by
+    # dedicated dedup tests.
     fast_records = [
-        _make_record("FAST", f"fast-{i}", cnpj=f"111{i:04d}", numero_edital=f"{i:03d}")
+        _make_record(
+            "FAST", f"fast-{i}", cnpj=f"111{i:04d}", numero_edital=f"{i:03d}",
+            objeto=f"Material de limpeza fast {i}",
+        )
         for i in range(5)
     ]
     slow_records = [
-        _make_record("SLOW", f"slow-{i}", cnpj=f"222{i:04d}", numero_edital=f"{i:03d}")
+        _make_record(
+            "SLOW", f"slow-{i}", cnpj=f"222{i:04d}", numero_edital=f"{i:03d}",
+            objeto=f"Material de limpeza slow {i}",
+        )
         for i in range(3)
     ]
 
@@ -187,8 +197,12 @@ async def test_partial_results_timing_under_10s():
 @pytest.mark.asyncio
 async def test_one_source_fails_others_deliver():
     """AC16: If one source fails, results from other sources are still delivered."""
+    # STORY-BTS-006: Distinct objetos to avoid title-prefix cross-org dedup.
     ok_records = [
-        _make_record("OK_SOURCE", f"ok-{i}", cnpj=f"111{i:04d}", numero_edital=f"{i:03d}")
+        _make_record(
+            "OK_SOURCE", f"ok-{i}", cnpj=f"111{i:04d}", numero_edital=f"{i:03d}",
+            objeto=f"Material de limpeza ok {i}",
+        )
         for i in range(3)
     ]
 
@@ -386,7 +400,11 @@ async def test_tracker_emit_source_error():
     assert event.progress == -1
     assert "PORTAL_COMPRAS" in event.message
     assert event.detail["source"] == "PORTAL_COMPRAS"
-    assert event.detail["error"] == "Connection refused"
+    # CIG-BE-progressive-partial: UX-428 AC3 added _sanitize_source_error which
+    # maps raw error strings to user-friendly messages prefixed with the source
+    # code. "Connection refused" doesn't match any keyword (auth/rate limit/
+    # timeout/...) so it falls through to the default "<source>: erro temporário".
+    assert event.detail["error"] == "PORTAL_COMPRAS: erro temporário"
 
 
 @pytest.mark.asyncio

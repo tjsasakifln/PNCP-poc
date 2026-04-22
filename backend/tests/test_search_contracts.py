@@ -380,15 +380,16 @@ class TestStatusEndpointContract:
             "started_at": "2026-01-01T00:00:00Z",
         }
 
-        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None):
-            with patch("routes.search_status.get_state_machine", return_value=None):
-                with patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
-                    with patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None):
-                        async with AsyncClient(
-                            transport=ASGITransport(app=app),
-                            base_url="http://test",
-                        ) as client:
-                            resp = await client.get(f"/v1/search/{search_id}/status")
+        with patch("routes.search_status._verify_search_ownership", new_callable=AsyncMock):
+            with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None):
+                with patch("routes.search_status.get_state_machine", return_value=None):
+                    with patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
+                        with patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=None):
+                            async with AsyncClient(
+                                transport=ASGITransport(app=app),
+                                base_url="http://test",
+                            ) as client:
+                                resp = await client.get(f"/v1/search/{search_id}/status")
 
         assert resp.status_code == 200
         data = resp.json()
@@ -452,15 +453,16 @@ class TestStatusEndpointContract:
             "excel_status": "ready",
         }
 
-        with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None):
-            with patch("routes.search_status.get_state_machine", return_value=None):
-                with patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
-                    with patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=mock_excel):
-                        async with AsyncClient(
-                            transport=ASGITransport(app=app),
-                            base_url="http://test",
-                        ) as client:
-                            resp = await client.get(f"/v1/search/{search_id}/status")
+        with patch("routes.search_status._verify_search_ownership", new_callable=AsyncMock):
+            with patch("routes.search_status.get_tracker", new_callable=AsyncMock, return_value=None):
+                with patch("routes.search_status.get_state_machine", return_value=None):
+                    with patch("routes.search_status.get_search_status", new_callable=AsyncMock, return_value=mock_status):
+                        with patch("job_queue.get_job_result", new_callable=AsyncMock, return_value=mock_excel):
+                            async with AsyncClient(
+                                transport=ASGITransport(app=app),
+                                base_url="http://test",
+                            ) as client:
+                                resp = await client.get(f"/v1/search/{search_id}/status")
 
         assert resp.status_code == 200
         data = resp.json()
@@ -498,11 +500,15 @@ class TestBackwardCompatImports:
         assert callable(_persist_results_to_redis)
 
     def test_can_import_async_search_functions(self):
-        """AC10: Async search functions importable from routes.search."""
+        """AC10: Async search functions importable from routes.search.
+
+        AC9: _ASYNC_SEARCH_TIMEOUT raised from 120s to 240s to accommodate
+        tamanhoPagina=50 per-UF latency.
+        """
         from routes.search import (
             _ASYNC_SEARCH_TIMEOUT,
         )
-        assert _ASYNC_SEARCH_TIMEOUT == 120
+        assert _ASYNC_SEARCH_TIMEOUT == 240
 
     def test_can_import_status_endpoints(self):
         """AC10: Status endpoint functions importable from routes.search."""

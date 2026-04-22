@@ -35,6 +35,21 @@ def _auth_override(mock_user):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def _organizations_enabled():
+    """Organizations routes are feature-flagged (default false) and short-circuit
+    to HTTP 404 before hitting the PGRST205 guard. Force the flag on at both the
+    import site (routes.organizations) and the config module so the guard path
+    is actually reached.
+
+    CIG-BE-pgrst205-http503-contract: previously the suite assumed the flag
+    was on by default; it is now gated, so the guard was unreachable.
+    """
+    with patch("routes.organizations.ORGANIZATIONS_ENABLED", True), \
+         patch("config.ORGANIZATIONS_ENABLED", True):
+        yield
+
+
 class TestPGRST205Guard:
     """STORY-331 AC3: PGRST205 → HTTP 503 on all organization endpoints."""
 

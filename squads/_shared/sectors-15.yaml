@@ -1,0 +1,52 @@
+# Referência simbólica — 15 setores B2G do SmartLic
+#
+# ⚠️ ESTE ARQUIVO NÃO É FONTE DE VERDADE.
+#
+# Source of truth: /mnt/d/pncp-poc/backend/sectors_data.yaml
+#
+# Este arquivo existe apenas para que agentes de squads saibam:
+#   1. QUANTOS setores existem (15, valor congelado)
+#   2. ONDE buscar detalhes (backend/sectors_data.yaml)
+#   3. QUE cada setor tem: id, name, keywords, exclusions, viability_value_range
+#
+# Se você está editando algo relacionado a setores, LEIA
+# backend/sectors_data.yaml e NÃO duplique aqui.
+#
+# Sync frontend fallback (opcional, mensal):
+#   node scripts/sync-setores-fallback.js --dry-run
+#   node scripts/sync-setores-fallback.js
+
+reference:
+  canonical_path: "backend/sectors_data.yaml"
+  loader_module: "backend/sectors.py"
+  backend_endpoint: "GET /setores"
+  frontend_fallback: "frontend/app/buscar/page.tsx (SETORES_FALLBACK const)"
+  total_count: 15
+  structure_per_sector:
+    - id: "string (canonical, lowercase-kebab)"
+    - name: "string (human-readable PT-BR)"
+    - description: "string"
+    - keywords: "list[string] (case-insensitive matching)"
+    - exclusions: "list[string] (negative matches)"
+    - viability_value_range: "{min, typical, max}"
+
+# IDs válidos (enumeração — para validação rápida sem ler backend)
+sector_ids:
+  - tecnologia-informacao
+  - construcao-civil
+  - servicos-limpeza
+  - seguranca-privada
+  - alimentacao-nutricao
+  - saude-medicamentos
+  - equipamentos-medicos
+  - transporte-logistica
+  - servicos-gerais
+  - consultoria
+  - engenharia
+  - mobiliario-escritorio
+  - material-escritorio
+  - combustiveis
+  - uniformes-epi
+
+# Para detalhes COMPLETOS (keywords, exclusions, ranges), leia:
+#   /mnt/d/pncp-poc/backend/sectors_data.yaml

@@ -32,8 +32,8 @@ class TestMeEndpoint:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("quota.get_plan_capabilities")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_plan_capabilities")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     @patch("supabase_client.get_supabase")
     def test_returns_user_profile_with_capabilities(
         self, mock_get_supabase, mock_get_used, mock_get_plan_caps, mock_check_roles
@@ -94,7 +94,7 @@ class TestMeEndpoint:
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
+    @patch("quota.plan_enforcement.get_monthly_quota_used")
     def test_returns_trial_info_for_free_users(
         self, mock_get_used, mock_get_supabase, mock_check_roles
     ):
@@ -138,7 +138,7 @@ class TestMeEndpoint:
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("quota.create_fallback_quota_info")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(
         self, mock_get_supabase, mock_check_quota, mock_create_fallback, mock_check_roles
@@ -188,7 +188,7 @@ class TestBuscarEndpointQuotaValidation:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     def test_blocks_request_when_quota_exhausted(self, mock_check_quota, mock_rate_limiter):
         """Should return 403 when monthly quota exhausted."""
         cleanup = setup_auth_override("user-quota-exhausted-story165")
@@ -229,7 +229,7 @@ class TestBuscarEndpointQuotaValidation:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     def test_blocks_request_when_trial_expired(self, mock_check_quota, mock_rate_limiter):
         """Should return 403 when trial expired."""
         cleanup = setup_auth_override("user-trial-expired-story165")
@@ -271,7 +271,7 @@ class TestBuscarEndpointQuotaValidation:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
     @patch("quota.check_and_increment_quota_atomic")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("routes.search.PNCPClient")
     def test_increments_quota_on_successful_search(
@@ -281,8 +281,14 @@ class TestBuscarEndpointQuotaValidation:
         mock_check_quota,
         mock_atomic_increment,
         mock_rate_limiter,
+        monkeypatch,
     ):
         """Should increment quota after successful search."""
+        # POST /v1/buscar's pipeline.stages.execute defaults ENABLE_MULTI_SOURCE=true;
+        # this test only mocks routes.search.PNCPClient (legacy single-source). Force
+        # the legacy path to keep the mocked client in control and avoid CI flake
+        # where buscar_todas_ufs_paralelo hangs on real network.
+        monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
         cleanup = setup_auth_override("user-increment-quota-story165")
         try:
             # Rate limit passes
@@ -334,7 +340,7 @@ class TestBuscarEndpointExcelGating:
     @patch("pipeline.stages.generate.upload_excel")
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_and_increment_quota_atomic")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("routes.search.PNCPClient")
     @patch("routes.search.create_excel")
@@ -346,12 +352,15 @@ class TestBuscarEndpointExcelGating:
         mock_check_quota,
         mock_atomic_increment,
         mock_upload_excel,
+        monkeypatch,
     ):
         """Should generate Excel for Máquina plan (allow_excel=True).
 
         Pipeline now uploads Excel to storage (not base64 inline), so
         excel_base64 is always None. We verify excel_available=True instead.
         """
+        # Force legacy single-source path (see test_increments_quota_on_successful_search).
+        monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
         cleanup = setup_auth_override("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
@@ -416,8 +425,11 @@ class TestBuscarEndpointExcelGating:
         mock_increment_quota,
         mock_check_quota,
         mock_rate_limiter,
+        monkeypatch,
     ):
         """Should skip Excel for Consultor Ágil plan (allow_excel=False)."""
+        # Force legacy single-source path (see test_increments_quota_on_successful_search).
+        monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
         # Mock rate limiter to allow requests
         mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
@@ -455,8 +467,10 @@ class TestBuscarEndpointExcelGating:
 
             assert data["excel_available"] is False
             assert data["excel_base64"] is None
-            assert "Máquina" in data["upgrade_message"]
-            assert "R$ 597/mês" in data["upgrade_message"]
+            # GTM-002: "Máquina" plan was renamed to "SmartLic Pro" (CLAUDE.md
+            # Pricing); upgrade copy was updated accordingly. Story-165 originally
+            # expected the old branding.
+            assert "SmartLic Pro" in data["upgrade_message"]
         finally:
             cleanup()
 
@@ -466,7 +480,7 @@ class TestBuscarEndpointFallbackBehavior:
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("routes.search.rate_limiter")
-    @patch("quota.check_quota")
+    @patch("quota.plan_enforcement.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("routes.search.PNCPClient")
     def test_continues_on_quota_increment_failure(
@@ -475,8 +489,11 @@ class TestBuscarEndpointFallbackBehavior:
         mock_increment_quota,
         mock_check_quota,
         mock_rate_limiter,
+        monkeypatch,
     ):
         """Should continue search even if quota increment fails."""
+        # Force legacy single-source path (see test_increments_quota_on_successful_search).
+        monkeypatch.setenv("ENABLE_MULTI_SOURCE", "false")
         # Mock rate limiter to allow requests
         mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 

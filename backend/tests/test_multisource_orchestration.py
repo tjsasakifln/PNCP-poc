@@ -260,14 +260,14 @@ class TestAutomaticFailover:
         svc = ConsolidationService(adapters=adapters, timeout_per_source=25)
 
         # Patch _wrap_source to capture the timeout values used
-        original_wrap = svc._wrap_source
+        original_wrap = svc._fetcher.wrap_source
         captured_timeouts = {}
 
         async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None, **kwargs):
             captured_timeouts[code] = timeout
             return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout, **kwargs)
 
-        svc._wrap_source = capturing_wrap
+        svc._fetcher.wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")
 
         # PNCP should keep its original timeout (25)
@@ -291,14 +291,14 @@ class TestAutomaticFailover:
 
         svc = ConsolidationService(adapters=adapters, timeout_per_source=25)
 
-        original_wrap = svc._wrap_source
+        original_wrap = svc._fetcher.wrap_source
         captured_timeouts = {}
 
         async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None, **kwargs):
             captured_timeouts[code] = timeout
             return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout, **kwargs)
 
-        svc._wrap_source = capturing_wrap
+        svc._fetcher.wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")
 
         # Both sources should use default timeout
@@ -333,9 +333,16 @@ class TestDegradedMode:
     @pytest.mark.asyncio
     async def test_not_partial_when_all_sources_succeed(self):
         """is_partial=False when all sources return data successfully."""
-        records_a = [_make_record("SOURCE_A", "a1", cnpj="111")]
+        # Use distinct objects to avoid TITLE-PREFIX-DEDUP (ISSUE-027) fuzzy match
+        records_a = [_make_record(
+            "SOURCE_A", "a1", cnpj="111",
+            objeto="Aquisição de uniformes escolares para rede municipal",
+        )]
         records_b = [
-            _make_record("SOURCE_B", "b1", cnpj="222", numero_edital="002")
+            _make_record(
+                "SOURCE_B", "b1", cnpj="222", numero_edital="002",
+                objeto="Contratação de serviços de pavimentação asfáltica urbana",
+            )
         ]
 
         adapters = {
@@ -498,7 +505,7 @@ class TestComprasGovFallback:
             fallback_adapter=fallback,
         )
 
-        original_wrap = svc._wrap_source
+        original_wrap = svc._fetcher.wrap_source
         fallback_timeout_used = None
 
         async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None, **kwargs):
@@ -507,7 +514,7 @@ class TestComprasGovFallback:
                 fallback_timeout_used = timeout
             return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout, **kwargs)
 
-        svc._wrap_source = capturing_wrap
+        svc._fetcher.wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")
 
         assert fallback_timeout_used == 40

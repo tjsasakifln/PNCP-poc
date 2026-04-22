@@ -1,6 +1,6 @@
 # SEO-474 — Componente ContractsPanoramaBlock: da semântica de fallback para panorama universal
 
-**Status:** InReview  
+**Status:** Done  
 **Type:** Refactor + Feature  
 **Prioridade:** Alta — pré-requisito de SEO-470, SEO-472 e SEO-473  
 **Depende de:** SEO-475 (backend enriquecido — garante dados suficientes no response)  
@@ -109,3 +109,9 @@ Este critério é gate de aprovação de QA tanto quanto testes TypeScript.
 - [x] `frontend/components/blog/TrendBarChart.tsx` (novo — client component Recharts, ssr:false)
 - [x] `frontend/components/blog/HistoricalContractsFallback.tsx` (reescrito como adapter wrapper)
 - [x] `frontend/lib/contracts-fallback.ts` (SampleContract + n_unique_orgaos/fornecedores adicionados)
+
+## Change Log
+
+| Data | Agente | Mudança |
+|------|--------|---------|
+| 2026-04-21 | @devops (Gage) — sessão transient-hellman | **Status InReview → Done.** Validação empírica: `ContractsPanoramaBlock.tsx` + `TrendBarChart.tsx` + `HistoricalContractsFallback.tsx` existem em `frontend/components/blog/` em main. Integração confirmada em duas páginas programáticas: `frontend/app/blog/licitacoes/[setor]/[uf]/page.tsx` e `frontend/app/blog/licitacoes/cidade/[cidade]/page.tsx`. Curl em `https://smartlic.tech/blog/licitacoes/saude/SP` retorna 2 matches de "Panorama de Contratos" renderizado. AC1-AC14 todos ✅, depende de SEO-475 Done (confirmado mesma sessão). Desbloqueia SEO-470/472/473 (já marcadas Done) com panorama block renderizando em ~505 páginas programáticas. Recharts com `dynamic import { ssr: false }` evita hydration mismatch conforme risk register. |

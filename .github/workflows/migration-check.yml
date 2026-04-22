@@ -39,16 +39,36 @@ jobs:
           OUTPUT=$(supabase migration list --linked 2>&1)
           echo "$OUTPUT"
 
-          # Detect unapplied migrations: rows with Local value but empty Remote
-          # Supabase CLI outputs table with "Local | Remote | Time" columns
-          # An unapplied migration has content in Local but nothing in Remote
+          # Detect unapplied migrations: rows with Local value but empty Remote.
+          # Supabase CLI outputs table with "Local | Remote | Time" columns.
+          #
+          # NOTE (CONV-003c Abstract Coral session): recent Supabase CLI versions
+          # emit a DUAL-ROW per applied migration — the first row has both Local
+          # and Remote populated (truly applied), and a spurious second row has
+          # Local populated but Remote empty. A single-pass scan misclassifies
+          # the second row as "unapplied" and raises a false positive.
+          #
+          # The 2-pass scan below marks a migration as applied if ANY row for
+          # that Local value has a non-empty Remote. Truly unapplied migrations
+          # are those whose ALL rows have empty Remote.
           UNAPPLIED=$(echo "$OUTPUT" | awk -F'|' '
             NR > 2 {
               local = $1; gsub(/^[ \t]+|[ \t]+$/, "", local)
               remote = $2; gsub(/^[ \t]+|[ \t]+$/, "", remote)
-              if (local != "" && remote == "") print local
+              if (local == "") next
+              # Filter out stderr leakage (e.g. "Connecting to remote database...",
+              # "Skipping migration README.md...") that lack pipe separators —
+              # real migration rows always have a 14-digit timestamp in Local.
+              if (local !~ /^[0-9]{14}$/) next
+              seen[local] = 1
+              if (remote != "") applied[local] = 1
             }
-          ')
+            END {
+              for (m in seen) {
+                if (!applied[m]) print m
+              }
+            }
+          ' | sort)
 
           # Also check for explicit "Not applied" text (older CLI versions)
           if [ -n "$UNAPPLIED" ] || echo "$OUTPUT" | grep -q "Not applied"; then
@@ -79,14 +99,25 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Supabase Python client
-        run: pip install supabase --quiet
+      - name: Install Supabase Python client + schema deps
+        # email-validator is needed because backend/schemas/__init__.py imports
+        # user.py which uses pydantic.EmailStr. Without it, schemas.contract
+        # fails at import time with ModuleNotFoundError before --validate runs.
+        run: pip install supabase 'pydantic[email]' --quiet
 
       - name: Validate schema contract
         id: schema_contract
+        # Must run from backend/ so that ``python -m schemas.contract`` can
+        # resolve the ``schemas`` top-level module. The package's own
+        # ``backend/schemas/__init__.py`` uses absolute ``from schemas.X``
+        # imports (DEBT-302 consolidation) that only work with backend/
+        # on PYTHONPATH. Running ``python -m backend.schemas.contract``
+        # from the repo root raises ModuleNotFoundError: No module named
+        # 'schemas' during package init, before --validate is ever parsed.
+        working-directory: backend
         run: |
           set +e
-          python -m backend.schemas.contract --validate 2>&1 | tee /tmp/schema_contract_output.txt
+          python -m schemas.contract --validate 2>&1 | tee /tmp/schema_contract_output.txt
           EXIT_CODE=${PIPESTATUS[0]}
           set -e
 

@@ -3,7 +3,7 @@
 **Priority:** P1
 **Effort:** M (1-2 days)
 **Squad:** @dev + @data-engineer
-**Status:** InReview
+**Status:** Done
 **Epic:** [EPIC-INCIDENT-2026-04-10](EPIC-INCIDENT-2026-04-10.md)
 **Sprint:** Sprint Seguinte (48h-1w)
 
@@ -120,3 +120,4 @@ _(a preencher pelo @dev durante implementação)_
 |------|-------|---------|
 | 2026-04-11 | @sm (River) | Story criada — statement timeouts identificados em varredura Sentry pós-EPIC-INCIDENT-2026-04-10 |
 | 2026-04-11 | @po (Sarah) | Validação `*validate-story-draft`. Score: 8/10. GO. Status: Draft → Ready. |
+| 2026-04-19 | @devops (Gage) | Status InReview → Done. Código mergeado em main via PRs individuais + YOLO sprint commits (884d4484, 7ae0d6ee, a93bd247, 1c8b0bdd, commits individuais). Sync pós-confirmação empírica via git log --grep=STORY-426. |
