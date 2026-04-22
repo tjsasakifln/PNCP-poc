@@ -4,7 +4,7 @@
 **Priority:** 🟠 P1
 **Story Points:** 5 SP
 **Owner:** @dev
-**Status:** Ready
+**Status:** Done (AC1-AC5 shipped, AC3 Rich Results formal PASS em transient-hellman)
 **Audit Ref:** Audit 1.1 + 3.4
 
 ---
@@ -173,3 +173,4 @@ export default async function BlogPost({ params }) {
 |------|--------|--------|
 | 2026-04-21 | @sm (River) | Story criada a partir do audit SEO 2026-04-21 |
 | 2026-04-21 | @po (Pax) | Validação 7.5/10 — GO. Obs: sem seção Risks; dep SEO-007 informal. Status Draft → Ready |
+| 2026-04-21 | @devops (Gage) — sessão transient-hellman | **AC3 formalmente validado via Playwright + Google Rich Results Test.** 3 blog URLs validadas (`/blog/analise-viabilidade-editais-guia` — 3200 words, Tiago Sasaki Person author; `/blog/como-calcular-preco-proposta-licitacao` — 2800 words; `/blog/checklist-habilitacao-licitacao-2026` — 3000 words, articleSection=Guias). Rich Results Test oficial Google em `/blog/analise-viabilidade-editais-guia` retornou **5 itens válidos** (Article + FAQPage + Organization + LocalBusiness + SoftwareApplication) com `check_circle` e zero erros críticos. Status Ready → Done. AC6 (GSC "Articles" report +30d) permanece pós-deploy manual. |

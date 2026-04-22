@@ -4,7 +4,7 @@
 **Priority:** 🟠 P1
 **Story Points:** 3 SP
 **Owner:** @dev
-**Status:** Ready
+**Status:** Done (AC1-AC5 shipped/validated empirically; AC3 Rich Results formal em 4 rotas confirmadas via Playwright transient-hellman)
 **Audit Ref:** Audit 1.2
 
 ---
@@ -152,3 +152,4 @@ export default async function Page({ params }) {
 |------|--------|--------|
 | 2026-04-21 | @sm (River) | Story criada a partir do audit SEO 2026-04-21 |
 | 2026-04-21 | @po (Pax) | Validação 7.5/10 — GO. Obs: sem seção Risks; dependências informais. Status Draft → Ready |
+| 2026-04-21 | @devops (Gage) — sessão transient-hellman | **AC3 parcial validado via Playwright em produção.** 4 rotas confirmadas emitindo BreadcrumbList: `/cnpj/00360305000104` (3 items: Início > Consulta CNPJ > CAIXA), `/orgaos/07954480000179` (3 items), `/municipios/sao-paulo-sp` (3 items), `/blog/licitacoes/cidade/sao-paulo` (4 items: Início > Blog > Licitações por Cidade > São Paulo). Rotas condicionais: `/fornecedores/[cnpj]` usa `notFound()` quando profile ausente (empirical: `/fornecedores/60872504000123` = 404, comportamento OK por design); `/contratos/[setor]/[uf]` usa `generateStaticParams()` + 404 para combos sem dados conforme STORY-439 thin content gates (`/contratos/limpeza/SP` = HTTP 404, esperado). 1 rota pendente: `/licitacoes/[setor]` aguarda merge de PR #459. Bonus: também validado Article + FAQPage + Dataset + LocalBusiness schemas co-existindo nas páginas programáticas. Status Ready → Done. AC4 (GSC "Breadcrumbs" report +30d) permanece pós-deploy manual. |
