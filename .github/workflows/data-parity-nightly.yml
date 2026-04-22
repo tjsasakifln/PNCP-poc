@@ -1,0 +1,48 @@
+name: Data Parity Nightly (CRIT-DATA-PARITY-001)
+
+# Runs entity endpoint parity contract tests against production.
+# Advisory-only: failure here does NOT block PRs — it opens an issue
+# (follow-up) so ops can triage drift without paging on-call mid-night.
+#
+# Manual dispatch also supported for ad-hoc runs after shipping endpoint changes.
+
+on:
+  schedule:
+    # 07:00 UTC = 04:00 BRT — quiet hour, datalake post-2am-full-crawl is fresh
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Parity target URL (default: https://smartlic.tech)'
+        default: 'https://smartlic.tech'
+        type: string
+
+jobs:
+  parity:
+    name: Entity Endpoint Parity Contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install httpx pytest pytest-asyncio pytest-timeout
+
+      - name: Run parity contract tests
+        env:
+          PARITY_TARGET_URL: ${{ github.event.inputs.target_url || 'https://smartlic.tech' }}
+        working-directory: backend
+        run: |
+          pytest tests/contract/ -v -m parity --tb=short --no-header
+
+      - name: Report drift (on failure)
+        if: failure()
+        run: |
+          echo "::warning::CRIT-DATA-PARITY-001 drift detected against ${PARITY_TARGET_URL:-https://smartlic.tech} — see job output. Investigate via docs/stories/CRIT-DATA-PARITY-001-entity-endpoints-consistency-contract.md"
+        env:
+          PARITY_TARGET_URL: ${{ github.event.inputs.target_url || 'https://smartlic.tech' }}
