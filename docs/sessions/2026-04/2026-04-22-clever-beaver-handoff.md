@@ -244,3 +244,78 @@
 - Wave 3.4 (validate sitemap ≥5k URLs) **BLOQUEADA até infra resolver**
 - Wave 2.4 (Playwright 5 cidades pós-#465) também bloqueada (mesmo fetch path)
 - Merges continuam funcionando (branch protection = tests, não produção runtime)
+
+---
+
+## Snapshot final da sessão (encerramento 2026-04-22 ~03:15 UTC)
+
+### PRs ativas e estado ao encerrar
+
+| PR | Status CI | Bloqueio | Próxima ação |
+|----|-----------|----------|--------------|
+| **#461** | ✅ MERGED 01:25 UTC | — | — |
+| **#458** | ✅ MERGED 02:53 UTC | — | (validação Wave 3.4 bloqueada por incident infra) |
+| **#465** CRIT-SEO-011 | BT+FT SUCCESS, re-running pós-sync | aguardando checks pós-merge main sync | auto-merge quando CLEAN |
+| **#466** migration-check fix | synced pós-#458 | re-running checks | auto-merge quando CLEAN |
+| **#467** ingest graceful skip | synced pós-#458 | re-running checks | auto-merge quando CLEAN |
+| **#468** parity skeleton | BT network transient (rerun enqueued), synced | pending rerun | auto-merge quando CLEAN |
+| **#469** countdown fakeTimers | checks queued | aguardando fila | merge → unlock #463 post-rebase |
+| **#463** SEO observability | BT SUCCESS, FT flaky Countdown | depende de #469 merged + rebase | post-#469 sync |
+| **#462** docs functional-lamport | BT JWT flaky (rerun enqueued) | pending rerun | auto-merge se passar |
+| **#464** docs transient-hellman | branch atual (esta sessão) | não-required pending | (merge após outras docs) |
+| **#420** google-auth bump | Dependabot pending | BEHIND | rebase + merge |
+| **#418** lucide-react bump | BEHIND + build fail (fixed in main via #460) | BEHIND | rebase resolve |
+
+### Total PRs manipulados nesta sessão
+
+- 2 merged (#461, #458)
+- 4 criadas novas (#466, #467, #468, #469)
+- 7 PRs sync-merged com main (cascade)
+- 4 PR bodies corrigidos (via `gh api PATCH` após descoberta que `gh pr edit` não persiste)
+- 2 rerun de flaky tests (#462 JWT, #468 network)
+- 1 handoff interim (este) + 4 commits incrementais no branch docs
+
+### Incident infra `api.smartlic.tech` — pendente @devops humano
+
+Ver seção "INCIDENT INFRA" acima. Backend deploy SUCCESS mas path Fastly→pod quebrado; frontend e external fetches timeoutam. Bloqueia validação sitemap (Wave 3.4) e Playwright CRIT-SEO-011 (Wave 2.4). **Ação humana**: investigar Railway custom domain config OU migrar frontend→backend para Railway internal network.
+
+### Critério de parada MÍNIMO do plan YOLO — parcialmente atingido
+
+| Item | Status |
+|------|--------|
+| #465 merged | 🔜 pending CI |
+| #458 merged | ✅ |
+| #463 merged | 🔜 pending #469 |
+| #461 merged | ✅ |
+| BACKEND_URL setada | ✅ (já estava) |
+| CRIT-SEO-011 Playwright 5 cidades | ❌ BLOQUEADO por incident infra |
+| Sitemap/4.xml ≥5k URLs | ❌ BLOQUEADO por incident infra |
+| GSC resubmitted | ❌ BLOQUEADO por incident infra |
+
+### Pick-up próxima sessão
+
+1. **PRIORIDADE 1 — investigar incident infra** (Railway custom domain config OR Fastly status). Sem isso, revenue unlock (CRIT-SEO-011 + sitemap) fica parado.
+2. **Assim que infra OK**:
+   - Merge #465 → flush Redis `cidade:*` → Playwright 5 cidades
+   - Validate sitemap/4.xml ≥5k URLs → GSC resubmit
+3. **Independente de infra** (CI health):
+   - #466 merge → Migration Check em main volta a passar
+   - #467 merge → Ingest LicitaJá workflow para de falhar 4x/dia
+   - #469 merge → countdown flake desaparece de futuros PRs
+4. **Batch cleanup**:
+   - #463, #462, #464, #468 conforme checks passarem
+   - #420, #418 rebase Dependabot
+
+### Memórias novas salvas (reference futuras sessões)
+
+- `reference_pr_body_edit_persistence.md` — `gh pr edit --body-file` não persiste; use `gh api --method PATCH`
+- `reference_main_required_checks.md` — required = só Backend Tests + Frontend Tests
+- `reference_railway_backend_url_already_set.md` — BACKEND_URL já configurado em bidiq-frontend
+- `reference_crit080_not_applicable_public_repo.md` — CRIT-080 billing não aplica em repo público
+- `feedback_concurrent_jobs_cap.md` — GH Actions cap 20 concurrent; sync-merge em >3 PRs satura fila
+
+### Links importantes
+
+- Plan file: `~/.claude/plans/dotado-de-uma-converg-ncia-clever-beaux.md`
+- Handoff anterior: `docs/sessions/2026-04/2026-04-21-transient-hellman-handoff.md`
+- PR #464 (este handoff): https://github.com/tjsasakifln/PNCP-poc/pull/464
