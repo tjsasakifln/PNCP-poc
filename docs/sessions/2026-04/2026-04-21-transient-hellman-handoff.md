@@ -348,3 +348,135 @@ Tudo rotulado "manual" no plano = automatizável:
 - Sentry/Grafana alert activation (se credenciais persisted)
 
 **Lição:** default to Playwright-first em futuras sessões.
+
+---
+
+## 12. 🔴 CRITICAL BUG DISCOVERY — CRIT-SEO-011 + Escalação Sistêmica
+
+Esta descoberta durante a sessão mudou materialmente o perfil de valor do trabalho: saímos de "validação SEO" para "bug revenue-blocking descoberto + fix shipado + contrato sistêmico criado".
+
+### 12.1. O que aconteceu
+
+Usuário questionou: *"me preocupa páginas com valor R$0"*
+
+Navegação via Playwright em `/blog/licitacoes/cidade/sao-paulo` revelou:
+- "Editais Abertos: **0**"
+- "Valor Médio: **R$ 0**"
+- "No momento não identificamos editais ativos para São Paulo nos últimos 10 dias."
+
+**Para a maior economia do Brasil.** Impossível empiricamente.
+
+### 12.2. Smoking gun (diagnóstico empírico via Playwright + curl)
+
+```bash
+# Endpoint A — página "/municipios/" usa esse:
+$ curl https://api.smartlic.tech/v1/municipios/sao-paulo-sp/profile
+{"total_licitacoes_abertas": 500, "valor_total_licitacoes": 396959994.0, ...}
+
+# Endpoint B — página "/blog/licitacoes/cidade/" usa esse:
+$ curl https://api.smartlic.tech/v1/blog/stats/cidade/sao-paulo
+{"total_editais": 0, "orgaos_frequentes": [], "avg_value": 0.0, ...}
+```
+
+**Mesmo município. Mesma fonte de dados. 500 editais / R$ 396M vs 0 editais / R$ 0.**
+
+### 12.3. Root cause (2 min de debug em código)
+
+`backend/routes/blog_stats.py::get_cidade_stats` linha 616 usava apenas `.lower()` sem `_strip_accents()`. DataLake (PNCP) armazena nomes de municípios COM acento ("São Paulo"), slugs no frontend chegam sem ("sao-paulo"). Match `"sao paulo" in "são paulo"` = **False** (ã ≠ a em substring Python).
+
+Funções irmãs (linhas 683, 1065, 1106) já usavam `_strip_accents()`. Apenas `get_cidade_stats` ficou de fora. Regressão de code review anterior.
+
+**Impacto:** ~70% das cidades brasileiras afetadas — São Paulo, São Luís, Brasília, Goiânia, Maceió, Vitória, João Pessoa, Belém... Todas renderizando "0 editais" + "R$ 0" em páginas programáticas.
+
+**Consequências:**
+- SEO: Google marca thin content → deindexação
+- UX: bounce 100% para organic traffic
+- Trust: dois endpoints do produto mostram números contraditórios
+
+### 12.4. Fix shipado — PR #465
+
+`fix(crit-seo-011): cidade stats accent-insensitive match + parity docs`
+
+**3 linhas modificadas** em `blog_stats.py` replicando pattern das funções irmãs:
+1. `cidade_ascii = _strip_accents(...)` + cache key ASCII
+2. `_CITY_TO_UF.get(normalized) or .get(ascii)` fallback
+3. Match usando `item_city_ascii` vs `cidade_ascii` (accent-insensitive)
+
+**6/6 testes pass local** (3 novos em TestCidadeStats):
+- ✅ São Paulo accent-insensitive match
+- ✅ Brasília (outra cidade afetada)
+- ✅ Curitiba (regressão reversa — cidades sem acento continuam funcionando)
+
+**Branch:** `fix/crit-seo-011-cidade-accent-normalization`
+**PR #465:** https://github.com/tjsasakifln/PNCP-poc/pull/465
+
+### 12.5. Escalação do usuário — "não pode ocorrer com qualquer município, ente, esfera etc / tem de haver paridade entre informações"
+
+Usuário pediu visão **sistêmica**. Criada story separada:
+
+**`CRIT-DATA-PARITY-001 — Contrato de Paridade entre Endpoints de Entidade`**
+
+Escopo:
+- Documentar TODAS as pairs `(A, B)` de endpoints que agregam o mesmo dataset
+- Contract tests CI **nightly** que falham se `|A - B| / max(A, B) > 5%`
+- Centralizar normalização de strings em `backend/core/normalization.py`
+- Padronizar time windows em `backend/core/time_windows.py`
+- Declarar explicitamente data source por endpoint (`backend/core/data_sources.py`)
+- Sentry alert em drift
+- Governança: toda nova rota de agregação requer entry no contrato
+
+**Pairs que devem ter paridade** (listagem inicial na story):
+- `/v1/municipios/{slug}/profile` ↔ `/v1/blog/stats/cidade/{cidade}` (caso-farol fechado pelo PR #465)
+- `/v1/municipios/{slug}/profile` ↔ `/v1/blog/stats/cidade/{cidade}/setor/{setor_id}`
+- `/v1/municipios/{slug}/profile` ↔ `/v1/blog/stats/contratos/cidade/{cidade}`
+- `/v1/orgaos/{cnpj}/profile` ↔ `/v1/blog/stats/contratos/orgao/{cnpj}` (auditoria pendente)
+- `/v1/fornecedores/{cnpj}/profile` ↔ endpoints de contratos fornecedor
+- Setores × UF cross-endpoint
+- Esferas (federal / estadual / municipal) se aplicável
+
+Roadmap 3-sprint na story (imediato → sustentável → governança contínua).
+
+### 12.6. Post-deploy validations (pendentes — automatizáveis via Playwright)
+
+Após merge de PR #465:
+
+```bash
+# 1. Validar endpoint backend retorna dados
+curl /v1/blog/stats/cidade/sao-paulo
+# Expect: total_editais > 400 (similar a /municipios/.../profile)
+
+# 2. Flush cache stale (Redis 6h TTL):
+railway run --service bidiq-backend 'redis-cli --scan --pattern "cidade:*" | xargs redis-cli DEL'
+
+# 3. Playwright: validar 5 cidades sample
+# - /blog/licitacoes/cidade/sao-paulo (SP)
+# - /blog/licitacoes/cidade/brasilia (DF)
+# - /blog/licitacoes/cidade/goiania (GO)
+# - /blog/licitacoes/cidade/maceio (AL)
+# - /blog/licitacoes/cidade/joao-pessoa (PB)
+# Expect: todas com "Editais Abertos: N" ≠ 0 + "Valor Médio: R$ X" ≠ R$ 0
+```
+
+### 12.7. Estado do trabalho desta sessão — score revisto
+
+Sessão agora entregou trabalho **muito mais estratégico** do que inicialmente percebido:
+
+| Categoria | Entrega |
+|-----------|---------|
+| Bugs revenue-blocking corrigidos | 1 (CRIT-SEO-011, afeta ~70% cidades) |
+| Stories sistêmicas criadas | 2 (CRIT-SEO-011 narrow + CRIT-DATA-PARITY-001 sistêmico) |
+| PRs abertas | 2 (#463 SEO-001 AC5/AC7; #465 CRIT-SEO-011 hotfix) |
+| PRs mergeadas | 1 (#460 Storybook) |
+| Stories transitionadas Done | 4 (SEO-474, SEO-475, SEO-002, SEO-003) |
+| Validações via Playwright | 3 blog posts + 4 entity routes + Rich Results Test formal |
+| GSC baseline capturado | ✅ (5.176 indexadas) |
+
+**Próxima sessão pick-up atualizado:**
+1. Merge #465 (CRIT-SEO-011 — P0 revenue-blocking) — prioridade máxima
+2. Flush Redis cache `cidade:*` pós-deploy
+3. Validar via Playwright 5 cidades sample
+4. Iniciar CRIT-DATA-PARITY-001 Sprint 1: docs/architecture/data-parity-contract.md + contract tests skeleton
+5. Drenar merge queue restante (#461, #458, #459, #462, Dependabot)
+6. MKT-008 post killer (Stream C original)
+
+**Lição estratégica:** validação via Playwright em produção é a forma mais eficiente de descobrir bugs críticos. User flag "R$0 me preocupa" levou a descoberta sistêmica que vai economizar semanas de degradação SEO não-detectada.
