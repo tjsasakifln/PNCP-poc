@@ -184,3 +184,72 @@ Próxima merge de #480 fecha o gap.
 ---
 
 **Sessão fechada:** 1 merge crítico shippado em main (pillars), 1 fix cirúrgico em #478 (api-types), 1 cleanup documentado (#459). 5 PRs em update-branch para próxima sessão completar merge train. Funnel Mixpanel a 1 merge de fechar (#480). Próxima sessão herda CI quase-toda-verde + GSC submission pack pronto para uso.
+
+---
+
+## 8. Encerramento (atualização final 2026-04-22 ~15:35 UTC)
+
+**Decisão do user:** "atualize handoff e encerre" — sessão encerrada antes do CI completar nos PRs em update-branch.
+
+**Estado final dos PRs (snapshot fechamento):**
+
+```
+PR-418 = BLOCKED  (Dependabot lucide-react, CI rodando)
+PR-420 = BLOCKED  (Dependabot google-auth, CI rodando)
+PR-459 = DIRTY    (BreadcrumbList — comentário com resolução postado)
+PR-470 = BLOCKED  (uptime metric, CI rodando)
+PR-476 = BLOCKED  (blue ocean research, CI rodando)
+PR-478 = BLOCKED  (GSC dashboard + api-types fix shippado, CI rodando)
+PR-479 = BLOCKED  (mutable-simon handoff, CI rodando)
+PR-480 = BLOCKED  (trial_started event, CI rodando)
+PR-481 = BLOCKED  (PVX-001/002 stories, CI rodando)
+PR-482 = BLOCKED  (incident docs, CI rodando)
+PR-483 = BLOCKED  (BTS-011 drift sweep parallel, CI rodando)
+PR-484 = BLOCKED  (generic-sparrow handoff parallel, CI rodando)
+PR-485 = BLOCKED  (este handoff precious-noodle, CI rodando)
+```
+
+13 PRs em queue de CI simultânea — fila GH Actions saturada (memory `feedback_concurrent_jobs_cap` confirmada novamente). Backend Tests ~13min cada; merge train deve ser exequível pela próxima sessão em ~15-20min após CI verdear.
+
+**Para próxima sessão executar imediatamente:**
+
+```bash
+# 1. Verificar quais PRs ficaram CLEAN/UNSTABLE
+gh pr list --state open --json number,mergeStateStatus \
+  --jq '.[] | select(.mergeStateStatus=="CLEAN" or .mergeStateStatus=="UNSTABLE") | .number'
+
+# 2. Mergear em batches de 2-3 (ordem de prioridade):
+#    P0: #480 (fecha funil Mixpanel)
+#    P1: #478 (GSC dashboard + api-types fix)
+#    P1: #481 (PVX stories user-approved)
+#    P2: #470, #476, #482
+#    P2: #420, #418 (Dependabot)
+#    P3: #479, #485, #484 (handoffs)
+gh pr merge {NUM} --squash --delete-branch
+
+# 3. Após cada batch, fetch:
+git fetch origin main
+
+# 4. Pillars já LIVE em prod (HTTP 200 confirmado às 15:18 UTC):
+#    User pode submeter ao GSC seguindo precious-noodle-gsc-submission.md
+```
+
+**Métricas finais consolidadas (Day 1 mutable-simon + Day 2 precious-noodle):**
+
+| Métrica | Day 1 | Day 2 | Total semana |
+|---------|------:|------:|-------------:|
+| PRs mergeados em main | 9 | 1 | **10** |
+| PRs em flight (CI verde pendente) | 2 | 7+ | 9+ |
+| Funil Mixpanel events live | 4/5 | 4/5 | **4/5** (#480 fecha) |
+| Pillar pages SEO live | 0 | 3 | **3** (LIVE em prod) |
+| Stories user-approved | 0 | PVX-001/002 | 2 |
+| Linhas de código alteradas | ~13k | ~107 | ~13.1k |
+
+**Insight estratégico:** Day 2 demonstrou que o gargalo não é mais delivery (10 PRs/2 dias) — é **CI throughput** (Backend Tests 13min × 13 PRs simultâneos = saturação 30-60min). Próxima sessão deve experimentar batching mais granular (2 PRs por vez, esperar verde antes do próximo batch) para reduzir wall-clock total.
+
+**O que NÃO precisou de intervenção:** funil ponta-a-ponta de #474 (paywall_hit) já está captando dados em prod desde Day 1; pillars indexáveis automaticamente via sitemap shard 0 (já incluído no #477 merge). User-led GSC submission acelera 1-2 semanas → 24-48h, mas não é blocker se omitido.
+
+**Memória nova confirmada nesta sessão (recomendar para `/remember`):**
+- `feedback_validate_migration_global_failure_main` — Validate Migration Sequence falha em main com `SQLSTATE 42601` (multi-cmd prepared statement). Não-required mas bloqueia merge UI em PRs com migrations. Investigar antes de novas migrations com `CREATE OR REPLACE FUNCTION ... $$ ... $$`.
+- `feedback_sandbox_blocks_push_to_external_branches` — push direto a branches que a sessão não criou requer AskUserQuestion explícita. Memória `reference_pr_validation_sections` já cobre PR body sections, mas push policy é separada.
+- `feedback_parallel_session_branch_chaos` — sessões paralelas no mesmo working dir trocam branches sob HEAD. Pillars/handoffs/migrations colidem. Recomendação durável: `--isolation=worktree` para Agent ou diretórios separados por sessão concorrente.
