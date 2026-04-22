@@ -1,17 +1,19 @@
 /**
  * @jest-environment node
  *
- * Regression test for HTTP 524 sitemap timeout fix.
+ * Regression test for sitemap fetch behavior.
  *
- * Bug: sitemap() chamava endpoints do backend sequencialmente, somando latência →
- * Railway/Cloudflare retornava HTTP 524.
+ * Historical context:
+ *  - v1 (pre-SEO-460): awaits sequenciais → somou latência → HTTP 524.
+ *  - v2 (SEO-460): Promise.all paraleliza + AbortSignal.timeout(15000).
+ *  - v3 (#458, 2026-04-21): awaits sequenciais DE NOVO — 6 fetches paralelos
+ *    saturavam o backend em produção (todos timeoutavam simultaneamente em ~30s+),
+ *    resultando em sitemap/4.xml vazio. Serialização + ISR 1h (revalidate=3600)
+ *    move o custo para 1 request/h por shard (amortizado entre crawlers).
  *
- * Fix: Promise.all() paraleliza as chamadas; AbortSignal.timeout(15000) limita cada
- * fetch a 15s individualmente.
- *
- * Com o Sitemap Index (SEO-460), os endpoints ficam distribuídos por sub-sitemap:
+ * Por sub-sitemap:
  *  - id:2 → /v1/sitemap/licitacoes-indexable (1 endpoint)
- *  - id:4 → 6 endpoints de entidades em Promise.all
+ *  - id:4 → 6 endpoints de entidades em awaits sequenciais
  */
 
 // Mock fetch globally (node env pattern — see __tests__/api/buscar.test.ts)
@@ -76,7 +78,7 @@ function makeFastFetchMock() {
   );
 }
 
-describe('sitemap() — parallel fetch regression (HTTP 524 fix)', () => {
+describe('sitemap() — fetch behavior (signal + serialization)', () => {
   beforeEach(() => {
     (global.fetch as jest.Mock).mockReset();
   });
@@ -110,12 +112,13 @@ describe('sitemap() — parallel fetch regression (HTTP 524 fix)', () => {
     }
   });
 
-  it('sub-sitemap id:4 inicia todos os 6 fetches antes de qualquer resposta resolver (Promise.all)', async () => {
+  it('sub-sitemap id:4 serializa os 6 fetches (um por vez) para proteger backend de saturação', async () => {
+    // #458: código mudou de Promise.all → awaits sequenciais.
+    // Garantia: no máximo 1 fetch em voo a qualquer momento; o próximo só inicia
+    // após o anterior resolver. Isso previne o 6-way saturation que causava
+    // sitemap/4.xml vazio em produção.
     const initiated: string[] = [];
-    let releaseAll!: () => void;
-    const gate = new Promise<void>((res) => {
-      releaseAll = res;
-    });
+    const resolvers: Array<() => void> = [];
 
     (global.fetch as jest.Mock).mockImplementation(
       (url: string | URL | Request) => {
@@ -123,10 +126,14 @@ describe('sitemap() — parallel fetch regression (HTTP 524 fix)', () => {
         const endpoint = ENTITY_ENDPOINTS.find((e) => urlStr.includes(e));
         if (endpoint) {
           initiated.push(endpoint);
-          return gate.then(() => ({
-            ok: true,
-            json: () => Promise.resolve(PAYLOAD_BY_ENDPOINT[endpoint]),
-          })) as Promise<Response>;
+          return new Promise<Response>((resolve) => {
+            resolvers.push(() =>
+              resolve({
+                ok: true,
+                json: () => Promise.resolve(PAYLOAD_BY_ENDPOINT[endpoint]),
+              } as Response),
+            );
+          });
         }
         return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as Response);
       },
@@ -135,14 +142,23 @@ describe('sitemap() — parallel fetch regression (HTTP 524 fix)', () => {
     const sitemap = await importSitemapFresh();
     const sitemapPromise = sitemap({ id: 4 });
 
-    // Flush microtasks para que Promise.all dispare todos os fetches
-    for (let i = 0; i < 20; i++) await Promise.resolve();
+    const flush = async () => {
+      for (let i = 0; i < 20; i++) await Promise.resolve();
+    };
 
-    // Com Promise.all: todos os 6 devem estar em voo antes de qualquer resposta resolver
-    // Com sequential awaits (bug original): apenas 1 teria sido iniciado
-    expect(initiated.length).toBe(6);
+    // Serial: após microtasks iniciais, APENAS 1 fetch em voo
+    await flush();
+    expect(initiated.length).toBe(1);
 
-    releaseAll();
+    // Resolve cada um → próximo inicia; contagem avança 1 a 1
+    for (let step = 1; step < ENTITY_ENDPOINTS.length; step++) {
+      resolvers[step - 1]();
+      await flush();
+      expect(initiated.length).toBe(step + 1);
+    }
+
+    // Resolve o último para completar a promise
+    resolvers[ENTITY_ENDPOINTS.length - 1]();
     await sitemapPromise;
   });
 });

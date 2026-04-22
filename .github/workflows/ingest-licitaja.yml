@@ -31,7 +31,24 @@ jobs:
       - name: Install dependencies
         run: pip install httpx python-dotenv
 
+      # If the LICITAJA_API_KEY secret is missing (rotated, revoked, or never
+      # configured for GitHub Actions), skip ingestion gracefully instead of
+      # failing every 6h. Warning stays visible in the run summary so operators
+      # notice; workflow self-heals the moment the secret is re-added.
+      - name: Check LICITAJA_API_KEY availability
+        id: check_key
+        env:
+          LICITAJA_API_KEY: ${{ secrets.LICITAJA_API_KEY }}
+        run: |
+          if [ -z "$LICITAJA_API_KEY" ]; then
+            echo "::warning::LICITAJA_API_KEY not configured in repository Actions secrets — ingestion skipped. See https://github.com/tjsasakifln/PNCP-poc/settings/secrets/actions"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run ingestion
+        if: steps.check_key.outputs.skip != 'true'
         env:
           LICITAJA_API_KEY: ${{ secrets.LICITAJA_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
