@@ -150,25 +150,35 @@ Conflito com main + Lighthouse fail. Não touched nesta sessão. Próximo operad
 
 ---
 
-## Estado final ao encerramento (2026-04-22 ~17:30 BRT)
+## Estado final ao encerramento (2026-04-22 ~17:45 BRT)
 
-- **PRs novos abertos:** 4 (todos BEHIND, sync triggered, CI rodando)
-- **Stories Ready para @dev:** 2 (PVX-001 + PVX-002)
+- **PRs novos abertos:** 5 (#480, #481, #482, #483, #484 handoff)
+  - Status pós-sync: TODOS BLOCKED com 0 failing checks (CI rodando após `gh api PUT /pulls/N/update-branch`)
+  - Esperado: convergem para MERGEABLE quando required checks (Backend Tests + Frontend Tests PR Gate) passarem
+- **Stories Ready para @dev:** 2 (PVX-001 + PVX-002, ambas 10/10 GO via @po)
+- **Stories Draft criadas:** 1 (BTS-013 para cluster story_221 deferred)
 - **Drift clusters fechados:** 3/4
-- **Incident em aberto para @devops:** 1 (api.smartlic.tech)
-- **Plan generic-sparrow waves:**
-  - A.0 ✅ (PR #477 já existia)
-  - A.1 ✅ (triage feita; #459 deferred)
-  - A.2 ⏸ (depende CI verde)
-  - B ✅ (PR #480)
-  - C ✅ (PR #481 + #476 body)
-  - D ⏸ (advisor: defer, story Ready)
-  - E ❌ (deletada — user defer "100% inbound SEO")
-  - F ⏸ (PR #482 STORY-INCIDENT)
-  - G ✅ (PR #483 — 3/4 clusters)
+- **Incident em aberto para @devops:** 1 (api.smartlic.tech) — STORY-INCIDENT em PR #482
+- **PR #476 body atualizado:** decisões A+B consignadas via `gh api PATCH` (não merge — content-only)
+- **Plan generic-sparrow waves status final:**
+  - A.0 ✅ (PR #477 já existia em mutable-simon)
+  - A.1 ✅ (triage feita; #459 DIRTY deferred)
+  - A.2 ⏸ (PRs novos BLOCKED aguardando CI; merge train fica para próxima sessão)
+  - B ✅ (PR #480 trial_started funnel)
+  - C ✅ (PR #481 EPIC-PVX + 2 stories Ready + #476 body decisões)
+  - D ⏸ (advisor: defer; backend down + 4-5h vs <1h budget; story já Ready)
+  - E ❌ (deletada — user prior decision "100% inbound SEO")
+  - F ⏸ (PR #482 STORY-INCIDENT; spike-first stop, infra issue para @devops)
+  - G ✅ (PR #483 — 3/4 clusters; cluster 4 → STORY-BTS-013)
+
+### Final user-facing summary
+
+5 PRs abertos como deliverable durable. 11 tests fixados (zero regressões). 3 stories Ready/Draft criadas. 2 decisões de produto (PR #476 A+B) consignadas com sign-off. 2 escalações críticas para usuário: incident infra (PR #482) + branch-switching bug.
+
+Wave D (PVX-001 backend, primeira feature 0/6 concorrentes) ficou como pickup imediato pós-resolução do incident. Não foi iniciada para evitar uncommitted work em time budget reduzido + risco de branch-switching agravar com mais arquivos.
 
 ---
 
-**Encerramento:** Sessão entregou 4 PRs durables + 3 stories + 1 incident report + 11 tests deterministicos sem xfail. Trabalho de revenue moats desbloqueado para próxima sessão (PVX-001 Ready). Incident infra escalado para @devops via story + handoff. Plan generic-sparrow restante: Wave A.2 + D + remaining drift cluster, todos com pre-reqs claros.
+**Encerramento:** Sessão entregou 5 PRs durables (4 features/docs + 1 handoff) + 3 stories + 1 incident report + 11 tests deterministicos sem xfail. Trabalho de revenue moats desbloqueado (PVX-001 Ready). Incident infra escalado. Plan generic-sparrow restante (Wave A.2 + D + remaining cluster) com pre-reqs claros e dependências explícitas.
 
-**Próximo operador:** começar com `git branch --show-current` (defesa contra auto-switch bug) + checar status PRs #480-#483 + decidir merges + investigar incident #482.
+**Próximo operador:** começar com `git branch --show-current` (defesa contra auto-switch bug) + checar status PRs #480-#484 + decidir merges quando CI verde + investigar incident #482 com @devops antes de Wave D.
