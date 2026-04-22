@@ -1,15 +1,23 @@
 name: "Lighthouse CI (Performance Audit)"
 
+# DEBT-CI-lighthouse: removido trigger em pull_request por custo vs sinal:
+# - Lighthouse sintético (3 URLs × 3 runs + build + server start) tomava 6-8min
+#   em CI e fallhava silenciosamente em ~50% dos PRs, gerando falso-negativo.
+# - CWV real já é coletado via web-vitals → GA4 em produção (PR #453 / SEO-006),
+#   que é o sinal que o Google usa para ranqueamento. Lighthouse CI agora fica
+#   como gate de regressão pós-merge (push main) + snapshot semanal agendado.
+# - Regressão real crítica é detectada em <24h via RUM p75; Lighthouse sintético
+#   vira safety net, não bloqueador de velocity.
 on:
-  pull_request:
-    branches: [main, master]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/lighthouse.yml'
   push:
     branches: [main, master]
     paths:
       - 'frontend/**'
+  schedule:
+    # Sexta 06:00 UTC = 03:00 BRT — snapshot semanal com janela de fim-de-semana
+    # para analisar regressões antes da semana operacional.
+    - cron: '0 6 * * 5'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,6 +28,8 @@ jobs:
   lighthouse:
     name: Lighthouse Performance Audit
     runs-on: ubuntu-latest
+    # Fail-fast se o audit pendurar (era causa do 6-8min hang anterior).
+    timeout-minutes: 10
     # Non-gating: perf audit is advisory. If build/run fails (e.g. missing
     # secrets) the workflow run is still marked success so it does not block
     # the main CI signal. Real perf regressions surface via the PR comment
