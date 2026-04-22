@@ -1,7 +1,7 @@
 # EPIC-CI-GREEN-MAIN-2026Q2 — Consertar todos os testes falhando, levar `main` de vermelho a verde sustentável
 
 **Sprint-alvo:** 2026-Q2-S4 (sucessor direto de `EPIC-CI-RECOVERY-2026Q2`)
-**Status:** Draft
+**Status:** Ready
 **Priority:** P0 — credibilidade do CI como gate de qualidade
 **Owner:** @pm (coordenação), @dev (implementação), @qa (validação), @devops (push/PR)
 **Início esperado:** após merge de PR #372
@@ -177,3 +177,4 @@ BACKEND-SWEEP produz N stories filhas (fora do escopo desta sessão @sm)
 ## Change Log
 
 - **2026-04-16** — @sm: epic criado com 22 stories (19 FE + 2 BE + 1 infra) após destravamento do predecessor EPIC-CI-RECOVERY-2026Q2; política conserto-real estabelecida; ordem de fases definida.
+- **2026-04-22** — @po (Sarah): `*validate-story-draft` verdict **GO** (score 10/10). Transição **Draft → Ready** aplicada. Todas as 6 categorias PASS: goal P0 claro, 22 stories children bem compostas (19 FE + 2 BE + 1 infra) com fase/owner/dependências explícitas, meta agregada quantificada (7 condições binárias), política conserto-real não-negociável documentada, ordem de execução em 8 fases justificada. Pronto para @sm começar a criar/iniciar stories children. Relatório completo: `docs/po-review-2026-04-22.md`.
