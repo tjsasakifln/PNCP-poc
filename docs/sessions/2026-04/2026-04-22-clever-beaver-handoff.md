@@ -115,11 +115,16 @@
    browser_snapshot → expect "500 editais" + "R$ XXX M" (não zeros)
    # Repetir: brasilia, goiania, maceio, vitoria
    ```
-4. **Merge #458** (sitemap serialize) + **setar `BACKEND_URL` Railway frontend**:
+4. **Merge #458** (sitemap serialize):
    ```
    gh pr merge 458 --squash --delete-branch
    # Aguardar Railway deploy (~2-3min)
-   railway variables set BACKEND_URL=https://api.smartlic.tech --service smartlic-frontend
+   # IMPORTANTE: BACKEND_URL=https://api.smartlic.tech JÁ está setado em
+   # bidiq-frontend service (confirmado 2026-04-22 01:45 via railway variables).
+   # O handoff original de transient-hellman indicou Wave 3.3 como pendente —
+   # mas o handoff anterior de functional-lamport já notava que a var estava
+   # setada. Critical path simplifica: #458 merge + deploy → sitemap/4.xml
+   # popula automaticamente (o bloqueio real era a saturação Promise.all).
    # Validação:
    curl -s https://smartlic.tech/sitemap/4.xml | grep -c '<url>'  # expect ≥ 5000
    ```
