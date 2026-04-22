@@ -37,6 +37,7 @@ markers = [
     "benchmark: Performance benchmarks (require pytest-benchmark, skipped in CI)",
     "contract: Contract/snapshot tests (shape validation against committed snapshots — offline, default run)",
     "external: Tests that hit live external APIs (opt-in via RUN_LIVE_CONTRACT_TESTS=1)",
+    "parity: CRIT-DATA-PARITY-001 entity endpoint parity tests (hit live target via PARITY_TARGET_URL — skipped when unset)",
     "fuzz: Property-based fuzz tests using Hypothesis (STORY-6.7)",
 ]
 
