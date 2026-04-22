@@ -474,6 +474,31 @@ export default async function sitemap(props: { id: Promise<string> }): Promise<M
           changeFrequency: 'monthly' as const,
           priority: 0.6,
         },
+        // STORY-SEO-008: Pillar Pages (topical authority hub)
+        {
+          url: `${baseUrl}/guia`,
+          lastModified: new Date('2026-04-22'),
+          changeFrequency: 'monthly' as const,
+          priority: 0.9,
+        },
+        {
+          url: `${baseUrl}/guia/licitacoes`,
+          lastModified: new Date('2026-04-22'),
+          changeFrequency: 'monthly' as const,
+          priority: 0.9,
+        },
+        {
+          url: `${baseUrl}/guia/lei-14133`,
+          lastModified: new Date('2026-04-22'),
+          changeFrequency: 'monthly' as const,
+          priority: 0.9,
+        },
+        {
+          url: `${baseUrl}/guia/pncp`,
+          lastModified: new Date('2026-04-22'),
+          changeFrequency: 'monthly' as const,
+          priority: 0.9,
+        },
       ];
 
     // -----------------------------------------------------------------------
