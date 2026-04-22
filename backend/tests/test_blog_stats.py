@@ -201,6 +201,78 @@ class TestCidadeStats:
             assert res2.json() == res1.json()
             assert mock_dl.call_count == 1
 
+    def test_cidade_stats_accent_insensitive_match(self, client):
+        """CRIT-SEO-011: slug 'sao-paulo' DEVE bater com item_city 'São Paulo' (acento).
+
+        Regressão histórica: antes do fix, get_cidade_stats usava apenas .lower()
+        sem _strip_accents(), causando `"sao paulo" in "são paulo"` = False e
+        retornando total_editais=0 para TODAS as cidades com acento no nome
+        (São Paulo, São Luís, Brasília, Goiânia, etc — ~70% das cidades BR).
+        """
+        # Fabricar resultado DataLake onde item_city TEM acento (como PNCP armazena)
+        items_with_accent = [
+            {
+                "numeroControlePNCP": "TEST-001",
+                "orgaoEntidade": {"municipioNome": "São Paulo", "ufSigla": "SP"},
+                "valorTotalEstimado": 100000.0,
+                "objetoCompra": "Teste de normalização de acento",
+                "dataPublicacaoPncp": "2026-04-20",
+            },
+            {
+                "numeroControlePNCP": "TEST-002",
+                "orgaoEntidade": {"municipioNome": "São Paulo", "ufSigla": "SP"},
+                "valorTotalEstimado": 50000.0,
+                "objetoCompra": "Segundo teste",
+                "dataPublicacaoPncp": "2026-04-20",
+            },
+        ]
+        with patch("datalake_query.query_datalake", _mock_dl(items_with_accent)):
+            # Slug sem acento (como vem do frontend)
+            res = client.get("/v1/blog/stats/cidade/sao-paulo")
+            assert res.status_code == 200
+            data = res.json()
+            # Antes do fix: total_editais=0. Após fix: 2 (ambos items batem via ASCII)
+            assert data["total_editais"] == 2, (
+                f"Esperado 2 editais (ambos itens têm 'São Paulo' com acento); "
+                f"recebido {data['total_editais']}. Bug CRIT-SEO-011 voltou?"
+            )
+            assert data["avg_value"] == 75000.0  # (100k + 50k) / 2
+
+    def test_cidade_stats_brasilia_accent_fix(self, client):
+        """CRIT-SEO-011: Brasília (com acento) — outra cidade afetada pelo bug."""
+        items = [
+            {
+                "numeroControlePNCP": "TEST-BSB-001",
+                "orgaoEntidade": {"municipioNome": "Brasília", "ufSigla": "DF"},
+                "valorTotalEstimado": 200000.0,
+                "objetoCompra": "Teste Brasília",
+                "dataPublicacaoPncp": "2026-04-20",
+            },
+        ]
+        with patch("datalake_query.query_datalake", _mock_dl(items)):
+            res = client.get("/v1/blog/stats/cidade/brasilia")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["total_editais"] == 1
+            assert data["uf"] == "DF"
+
+    def test_cidade_stats_no_accent_city_still_works(self, client):
+        """Regressão reversa: cidades sem acento (ex: Curitiba) continuam funcionando."""
+        items = [
+            {
+                "numeroControlePNCP": "TEST-CWB-001",
+                "orgaoEntidade": {"municipioNome": "Curitiba", "ufSigla": "PR"},
+                "valorTotalEstimado": 75000.0,
+                "objetoCompra": "Teste Curitiba",
+                "dataPublicacaoPncp": "2026-04-20",
+            },
+        ]
+        with patch("datalake_query.query_datalake", _mock_dl(items)):
+            res = client.get("/v1/blog/stats/cidade/curitiba")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["total_editais"] == 1
+
 
 # ---------------------------------------------------------------------------
 # Endpoint 4: GET /v1/blog/stats/panorama/{setor_id}
