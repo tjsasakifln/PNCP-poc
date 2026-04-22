@@ -178,3 +178,42 @@
 ---
 
 **Encerramento**: Sessão ativa. 4 critérios mínimos do plan em progresso (2 deles dependentes do próximo human review). Cascata de merges enfileirada aguardando CI green. Nenhum regressão introduzida em main.
+
+---
+
+## 🚨 AÇÃO HUMANA URGENTE: GitHub Actions billing bloqueando CI
+
+**Descoberta 2026-04-22 02:13 UTC** (durante Wave sync-merges):
+
+```
+gh api /repos/.../actions/runs → 17 queued + 0 in_progress + 3 completed (últimos 20)
+```
+
+**Padrão CRIT-080 confirmado** (memória): quando 100% dos runs recentes ficam em `queued` com `conclusion=null` sem progressão, é **billing/spending limit do GitHub Actions**, não fila normal. Memória diz:
+
+> "GitHub Settings > Billing & plans > Actions > resolver pagamento. Deploy de emergência: `railway redeploy --service bidiq-backend -y` (bypassa Actions)."
+
+**Impacto**:
+- Nenhum dos 8 PRs ativos (#458, #462-#468) pode ter tests re-rodados até billing resolver
+- Main também bloqueado (commit `5e63de44` desde 01:25 UTC com `Tests Full Matrix` queued sem progresso em 48+ minutos)
+- Todo critério mínimo do plan YOLO depende de Backend Tests + Frontend Tests terminarem
+
+**Próximo passo bloqueante (humano)**: Resolver pagamento em https://github.com/settings/billing/spending_limit ou verificar que o org tem crédito.
+
+**Pós-resolução**:
+1. Runs em queue devem começar a processar automaticamente em <5 min
+2. Todos PRs re-executam Backend Tests + Frontend Tests contra SHAs atualizados (já sincronizados com main pela sessão atual)
+3. Expected time total para convergir: ~30-40 min após runners voltarem
+4. Sequência de merges pós-verde (ordem recomendada):
+   - **#465** (CRIT-SEO-011 hotfix, P0 revenue) → flush Redis `cidade:*` → Playwright 5 cidades
+   - **#458** (sitemap serialize) → validate `sitemap/4.xml` ≥5k URLs → resubmit GSC
+   - **#466** (migration-check fix, CI health)
+   - **#463** (SEO observability, depende de #458 deployed)
+   - **#467** (ingest-licitaja graceful skip, CI health)
+   - **#468** (parity contract skeleton)
+   - **#462** (docs handoff)
+   - **#464** (docs handoff — este, fecha a sessão)
+   - **#420** (google-auth bump)
+   - **#418** (lucide-react bump, rebase unlocks build)
+
+**Se billing NÃO for o root cause**: verificar `gh api /repos/.../actions/runners` para self-hosted runners; ou aguardar 10min para fila normal drenar.
