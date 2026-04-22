@@ -31,8 +31,13 @@ jobs:
 
       - name: Start Supabase local
         run: |
-          supabase init --workdir /tmp/supabase-test || true
-          cp -r supabase/migrations /tmp/supabase-test/supabase/migrations
+          # Supabase CLI's --workdir flag chdirs BEFORE init and fails if the
+          # target doesn't exist, so create it explicitly and init in-place.
+          mkdir -p /tmp/supabase-test
+          cd /tmp/supabase-test
+          supabase init --yes
+          cd "$GITHUB_WORKSPACE"
+          cp -r supabase/migrations/. /tmp/supabase-test/supabase/migrations/
           cd /tmp/supabase-test
           supabase start
 
