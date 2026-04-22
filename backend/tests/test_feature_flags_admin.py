@@ -172,17 +172,6 @@ class TestUpdateFeatureFlag:
         )
         assert resp.status_code == 422
 
-    @pytest.mark.xfail(
-        strict=False,
-        reason=(
-            "BTS-012: route deletes cache entry (routes/feature_flags.py:423) but "
-            "audit_logger.log or log_admin_action downstream call re-reads via "
-            "get_feature_flag(), repopulating the cache with the still-stale in-memory "
-            "override. Needs investigation: whether audit_logger should use bypass-cache "
-            "read, or whether _resolve_flag_value order should set in-memory before "
-            "audit call. Non-critical (admin endpoint only, no prod user impact)."
-        ),
-    )
     @patch("routes.feature_flags._redis_set_override", new_callable=AsyncMock, return_value=True)
     @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
     def test_update_flag_invalidates_ttl_cache(self, mock_get, mock_set, client):
