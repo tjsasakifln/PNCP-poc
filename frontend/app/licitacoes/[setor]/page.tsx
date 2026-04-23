@@ -474,6 +474,22 @@ export default async function SectorPage({
           __html: JSON.stringify(buildHowToJsonLd(sector)),
         }}
       />
+
+      {/* STORY-SEO-003: BreadcrumbList — elegibilidade para breadcrumb SERP em sector landing pages */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Início", item: "https://smartlic.tech" },
+              { "@type": "ListItem", position: 2, name: "Licitações", item: "https://smartlic.tech/licitacoes" },
+              { "@type": "ListItem", position: 3, name: sector.name, item: `https://smartlic.tech/licitacoes/${setor}` },
+            ],
+          }),
+        }}
+      />
     </main>
   );
 }
