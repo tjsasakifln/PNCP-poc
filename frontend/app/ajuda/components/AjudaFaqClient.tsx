@@ -186,10 +186,11 @@ export default function AjudaFaqClient() {
               />
             </svg>
             <input
-              type="text"
+              type="search"
               placeholder="Buscar nas perguntas frequentes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Buscar nas perguntas frequentes"
               className="w-full pl-12 pr-4 py-3 rounded-button border border-[var(--border)]
                          bg-[var(--surface-0)] text-[var(--ink)]
                          placeholder:text-[var(--ink-muted)]
@@ -273,10 +274,12 @@ export default function AjudaFaqClient() {
               />
             </svg>
             <h3 className="text-lg font-semibold text-[var(--ink)] mb-2">
-              Nenhuma pergunta encontrada
+              {searchQuery.trim()
+                ? `Nenhuma pergunta encontrada para "${searchQuery.trim()}"`
+                : "Nenhuma pergunta encontrada"}
             </h3>
             <p className="text-[var(--ink-secondary)] mb-4">
-              Tente buscar com termos diferentes ou entre em contato conosco.
+              Tente buscar com termos diferentes ou <a href="#contato" className="underline hover:text-[var(--brand-blue)]">entre em contato conosco</a>.
             </p>
           </div>
         ) : (
