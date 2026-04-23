@@ -197,6 +197,13 @@ EMBEDDING_THRESHOLD: float = float(os.getenv("EMBEDDING_THRESHOLD", "0.6"))
 _feature_flag_cache: dict[str, tuple[bool, float]] = {}
 _FEATURE_FLAG_TTL: float = 60.0
 
+# In-memory runtime overrides set via PATCH /admin/feature-flags/{name}.
+# Lives here (not in routes) so that get_feature_flag() can consult it
+# directly and consistently, without circular imports. BTS-013: previously
+# in routes/feature_flags.py, which meant get_feature_flag ignored it and
+# the TTL cache served the stale registry default after an override.
+_runtime_overrides: dict[str, bool] = {}
+
 _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     # --- LLM & Classification ---
     "ENABLE_NEW_PRICING": ("ENABLE_NEW_PRICING", "true"),
@@ -261,8 +268,18 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
 
 
 def get_feature_flag(name: str, default: bool | None = None) -> bool:
-    """Get a feature flag value with TTL-based caching (60s)."""
+    """Get a feature flag value with TTL-based caching (60s).
+
+    Resolution order: runtime_override > TTL cache > env var > registry default.
+    Runtime overrides are authoritative and bypass the TTL cache — an admin
+    toggle via PATCH /admin/feature-flags/{name} takes effect immediately and
+    stays effective until cleared via reload_feature_flags().
+    """
     import time as _time
+
+    # Runtime overrides (set via admin endpoint) are authoritative.
+    if name in _runtime_overrides:
+        return _runtime_overrides[name]
 
     now = _time.time()
 

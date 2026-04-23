@@ -27,6 +27,7 @@ from auth import require_auth
 from config.features import (
     _FEATURE_FLAG_REGISTRY,
     _feature_flag_cache,
+    _runtime_overrides,
     get_feature_flag,
     reload_feature_flags,
 )
@@ -38,10 +39,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/feature-flags", tags=["admin", "feature-flags"])
 
-# ---------------------------------------------------------------------------
-# In-memory runtime overrides (fallback when Redis is unavailable)
-# ---------------------------------------------------------------------------
-_runtime_overrides: dict[str, bool] = {}
+# _runtime_overrides canonical location is config.features so that
+# get_feature_flag() reads the override directly. Re-exported by this
+# module for backwards compatibility with tests and internal callers.
+# BTS-013 fix.
 
 _REDIS_PREFIX = "smartlic:ff:"
 
