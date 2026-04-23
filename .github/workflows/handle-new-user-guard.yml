@@ -7,6 +7,10 @@ on:
 permissions:
   pull-requests: write
 
+concurrency:
+  group: new-user-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-handle-new-user:
     runs-on: ubuntu-latest

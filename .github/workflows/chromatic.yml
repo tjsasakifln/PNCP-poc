@@ -7,11 +7,21 @@ name: "Chromatic Visual Regression"
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/chromatic.yml'
   push:
     branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/chromatic.yml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: chromatic-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   chromatic:
