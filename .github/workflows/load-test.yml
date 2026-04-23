@@ -25,6 +25,10 @@ permissions:
   pull-requests: write
   checks: write
 
+concurrency:
+  group: load-test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   load-test:
     name: Load Test - Backend API
