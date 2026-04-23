@@ -28,6 +28,7 @@ async def run_health_canary() -> dict:
         duration = _time.time() - start
 
         overall = status_data.get("status", "unhealthy")
+        api_status = status_data.get("api_status")
         sources = status_data.get("sources", {})
         components = status_data.get("components", {})
 
@@ -49,7 +50,7 @@ async def run_health_canary() -> dict:
             else:
                 update_pncp_cron_status("unknown", pncp_latency)
 
-        await save_health_check(overall, sources, components, avg_latency)
+        await save_health_check(overall, sources, components, avg_latency, api_status=api_status)
         await detect_incident(overall, sources)
 
         try:

@@ -117,7 +117,7 @@ SOURCE_HEALTH_ENDPOINTS = {
 
 async def check_source_health(
     source_code: str,
-    timeout: float = 10.0,
+    timeout: float = 20.0,
 ) -> SourceHealthResult:
     """
     Check health of a single procurement source.
@@ -244,7 +244,7 @@ async def check_source_health(
 
 async def check_all_sources_health(
     enabled_sources: Optional[List[str]] = None,
-    timeout: float = 10.0,
+    timeout: float = 20.0,
 ) -> Dict[str, SourceHealthResult]:
     """
     Check health of all enabled sources in parallel.
@@ -511,7 +511,7 @@ async def get_public_status() -> Dict[str, Any]:
     # W1-PR2: ComprasGov removed — offline since 2026-03-03 (HARDEN-010)
     source_checks = await check_all_sources_health(
         enabled_sources=["PNCP", "Portal"],
-        timeout=10.0,
+        timeout=20.0,
     )
 
     sources = {}
@@ -554,7 +554,7 @@ async def get_public_status() -> Dict[str, Any]:
     except Exception:
         components["arq_worker"] = "unknown"
 
-    # Overall status
+    # Overall status (combined view: components + sources — kept for /status page)
     source_statuses = [r.status for r in source_checks.values()]
     comp_unhealthy = any(v == "unhealthy" for v in components.values())
 
@@ -565,29 +565,60 @@ async def get_public_status() -> Dict[str, Any]:
     else:
         overall = "healthy"
 
-    # Uptime percentages (AC7)
-    uptime = await calculate_uptime_percentages()
+    # API status: SmartLic availability excluding upstreams. Users hit the local
+    # DataLake (DATALAKE_QUERY_ENABLED=true), so PNCP/Portal timeouts do not
+    # affect user-visible availability. Uptime SLO is measured against this.
+    if comp_unhealthy:
+        api_status = "unhealthy"
+    elif any(v != "healthy" for v in components.values()):
+        api_status = "degraded"
+    else:
+        api_status = "healthy"
 
-    # Last incident
+    uptime = await calculate_uptime_percentages()
+    upstream_uptime = await calculate_upstream_uptime_percentages()
+
     last_incident = await get_last_incident()
 
     return {
         "status": overall,
+        "api_status": api_status,
         "sources": sources,
         "components": components,
         "uptime_pct_24h": uptime.get("24h", 0.0),
         "uptime_pct_7d": uptime.get("7d", 0.0),
         "uptime_pct_30d": uptime.get("30d", 0.0),
+        "upstream_uptime_pct_24h": upstream_uptime.get("24h", 0.0),
+        "upstream_uptime_pct_7d": upstream_uptime.get("7d", 0.0),
+        "upstream_uptime_pct_30d": upstream_uptime.get("30d", 0.0),
         "last_incident": last_incident,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
-async def calculate_uptime_percentages() -> Dict[str, float]:
-    """STORY-316 AC7: Calculate uptime from health_checks history.
+def _score_rows(rows: List[Dict[str, Any]], field_name: str, fallback_field: Optional[str] = None) -> float:
+    """healthy=100, degraded=50, unhealthy=0. Missing => healthy. Fallback to secondary field if primary is NULL."""
+    if not rows:
+        return 100.0
+    total = 0.0
+    for row in rows:
+        status = row.get(field_name)
+        if status is None and fallback_field:
+            status = row.get(fallback_field)
+        status = status or "healthy"
+        if status == "healthy":
+            total += 100.0
+        elif status == "degraded":
+            total += 50.0
+    return round(total / len(rows), 1)
 
-    healthy=100%, degraded=50%, unhealthy=0%.
-    Returns percentages for 24h, 7d, 30d windows.
+
+async def calculate_uptime_percentages() -> Dict[str, float]:
+    """Calculate SmartLic API uptime from health_checks history.
+
+    Based on api_status column (own components only — Redis, Supabase, ARQ).
+    Excludes PNCP/Portal upstreams since users hit the local DataLake.
+    Falls back to overall_status for pre-migration rows where api_status is NULL.
 
     CRIT-042: Uses sb_execute_direct() — called from canary path.
     """
@@ -605,34 +636,49 @@ async def calculate_uptime_percentages() -> Dict[str, float]:
             cutoff = (now - delta).isoformat()
             resp = await sb_execute_direct(
                 sb.table("health_checks")
-                .select("overall_status")
+                .select("api_status, overall_status")
                 .gte("checked_at", cutoff)
                 .order("checked_at", desc=True)
             )
             rows = resp.data or []
-            if not rows:
-                result[label] = 100.0
-                continue
-
-            total_score = 0.0
-            for row in rows:
-                status = row.get("overall_status", "healthy")
-                if status == "healthy":
-                    total_score += 100.0
-                elif status == "degraded":
-                    total_score += 50.0
-                # unhealthy = 0
-
-            result[label] = round(total_score / len(rows), 1)
+            result[label] = _score_rows(rows, "api_status", fallback_field="overall_status")
     except Exception as e:
         logger.warning("Failed to calculate uptime percentages: %s", e)
 
-    # STORY-352 AC4: Update Prometheus gauge
     if UPTIME_PCT_30D is not None:
         try:
             UPTIME_PCT_30D.set(result["30d"])
         except Exception:
             pass
+
+    return result
+
+
+async def calculate_upstream_uptime_percentages() -> Dict[str, float]:
+    """Calculate upstream (PNCP/Portal) availability from health_checks history.
+
+    Informational signal only — not used for SLO. Reflects government API
+    reachability, which is orthogonal to SmartLic user-visible availability
+    now that the product serves from the local DataLake.
+    """
+    result = {"24h": 100.0, "7d": 100.0, "30d": 100.0}
+    try:
+        from supabase_client import get_supabase, sb_execute_direct
+        sb = get_supabase()
+        now = datetime.now(timezone.utc)
+
+        for label, delta in [("24h", timedelta(hours=24)), ("7d", timedelta(days=7)), ("30d", timedelta(days=30))]:
+            cutoff = (now - delta).isoformat()
+            resp = await sb_execute_direct(
+                sb.table("health_checks")
+                .select("overall_status")
+                .gte("checked_at", cutoff)
+                .order("checked_at", desc=True)
+            )
+            rows = resp.data or []
+            result[label] = _score_rows(rows, "overall_status")
+    except Exception as e:
+        logger.warning("Failed to calculate upstream uptime: %s", e)
 
     return result
 
@@ -676,12 +722,36 @@ async def get_recent_incidents(days: int = 30) -> List[Dict[str, Any]]:
         return []
 
 
-async def save_health_check(overall_status: str, sources: Dict, components: Dict, latency_ms: Optional[int] = None) -> None:
+async def save_health_check(
+    overall_status: str,
+    sources: Dict,
+    components: Dict,
+    latency_ms: Optional[int] = None,
+    api_status: Optional[str] = None,
+) -> None:
     """STORY-316 AC6: Save a health check result to DB.
 
     CRIT-042 AC2: Uses sb_execute_direct() to bypass circuit breaker.
     SHIP-003 AC4: Graceful skip when CB OPEN or Supabase unreachable.
+
+    api_status: SmartLic availability excluding upstreams — drives uptime SLO.
+    If not provided, derived from components for backward compat.
     """
+    if api_status is None:
+        comp_statuses: List[str] = []
+        if isinstance(components, dict):
+            for v in components.values():
+                if isinstance(v, str):
+                    comp_statuses.append(v)
+                elif isinstance(v, dict):
+                    comp_statuses.append(v.get("status", "healthy"))
+        if any(s == "unhealthy" for s in comp_statuses):
+            api_status = "unhealthy"
+        elif any(s not in ("healthy", "up") for s in comp_statuses):
+            api_status = "degraded"
+        else:
+            api_status = "healthy"
+
     try:
         from supabase_client import get_supabase, sb_execute_direct
         sb = get_supabase()
@@ -689,6 +759,7 @@ async def save_health_check(overall_status: str, sources: Dict, components: Dict
         await sb_execute_direct(
             sb.table("health_checks").insert({
                 "overall_status": overall_status,
+                "api_status": api_status,
                 "sources_json": json.dumps(sources) if isinstance(sources, dict) else sources,
                 "components_json": json.dumps(components) if isinstance(components, dict) else components,
                 "latency_ms": latency_ms,
