@@ -314,3 +314,49 @@ Se retorna DOWN (PR #495 ainda não merged OU outra falha pós-merge):
 | Incidents P0 em curso | **1** (api.smartlic.tech DOWN, revert pending merge) |
 
 **Status prod (13:35Z):** DOWN. PR #495 revert CI em andamento. ETA restore: ~15-20min pós-merge.
+
+---
+
+## 12. Encerramento 13:20Z — admin merge #495 + sessão fechada
+
+User instruiu encerrar. Backend Tests #495 ainda pendente; prod DOWN há 50min. Prod > test coverage para revert de incidente.
+
+**Ação final:**
+- `gh pr merge 495 --admin --merge` → MERGED `56294a5c0e93ec68b962611dc7310d77ed94006d` em 2026-04-23T13:19:49Z
+- Deploy to Production workflow run `24837573176` triggerou automaticamente (status in_progress)
+- Prod `api.smartlic.tech/health` ainda 404 no momento do merge (deploy completa ~5-8min)
+
+**Métricas finais:**
+
+| Métrica | Valor |
+|---------|------:|
+| PRs mergeados em main | **3** (#487, #479, **#495 revert incident**) |
+| PRs novos abertos | 4 (#491 SEO-479, #492 SAB-014, #493 SEO-480, #494 SAB-015) — bloqueados pelo gate |
+| Commits em session branch | 5 |
+| Stories criadas | 2 (INCIDENT Railway, DEBT-CI migration) |
+| Memories novas | 2 |
+| Incidents P0 resolvidos (revert shipado) | **1** |
+
+**Pickup next operator (blocker gate):**
+
+```bash
+# 1. Validar prod UP
+curl -sf https://api.smartlic.tech/health && echo "PROD UP" || echo "PROD DOWN"
+```
+
+Se UP:
+- Merge train batches 2-3: #490 → #491 → #492 → #493 → #494 → #483 → #420/#418 → #476
+- Depois Phase 4 funnel baseline doc
+
+Se DOWN após 15min do merge 56294a5c:
+- `mcp Railway list-deployments` — check novo deploy FAILED
+- Pode ser runtime ainda quebrado por outro motivo (CRIT-083 jemalloc, workers fork-unsafe, etc.)
+- Escalate — usar `gh workflow run "Deploy to Production (Railway)"` em commit pre-#470 (ex: `9b0ea565`) para emergência
+
+**Follow-up durables persistidos:**
+
+- STORY-INCIDENT-2026-04-23-railway-rootdir-prod-down.md (AC1-AC3 ACs completos via revert; AC5 migration defer)
+- STORY-DEBT-CI-migration-dessync-local-remote.md (caveat: apenas 20260422120000 realmente unapplied; outras 9 dual-row display bug)
+- Re-ship #470 em story dedicada após STORY-DEBT-CI resolver tracking
+
+**Sessão temporal-dongarra Day 2 encerrada.** Revert #495 shipado em main para normalizar prod. CI + deploy Railway em curso. Próxima sessão herda baseline com revert aplicado.
