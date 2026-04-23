@@ -115,7 +115,7 @@ export function PlanProCard({
             ? "Continuar com SmartLic"
             : userStatus === "trial"
             ? "Assinar agora"
-            : "Começar a filtrar oportunidades"}
+            : "Começar trial grátis de 14 dias"}
         </Button>
 
         <p className="mt-3 text-center text-xs text-[var(--ink-muted)]">
