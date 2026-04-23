@@ -7,6 +7,11 @@ on:
       - "frontend/app/**/components/**"
       - "frontend/.storybook/**"
       - "frontend/package.json"
+      - ".github/workflows/storybook-build.yml"
+
+concurrency:
+  group: storybook-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

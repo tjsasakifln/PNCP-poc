@@ -15,6 +15,10 @@ on:
       - 'frontend/content/**'
       - 'scripts/lint-text.js'
 
+concurrency:
+  group: editorial-lint-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint-editorial:
     name: Verificar termos proibidos
