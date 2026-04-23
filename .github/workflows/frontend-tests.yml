@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: frontend-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend-tests:
     name: Frontend Tests
