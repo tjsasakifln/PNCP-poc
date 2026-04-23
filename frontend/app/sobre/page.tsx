@@ -17,8 +17,8 @@ import LandingNavbar from '../components/landing/LandingNavbar';
 
 // GTM-COPY-006 pattern: Per-page metadata for SEO
 export const metadata = {
-  title: 'Sobre o SmartLic — Metodologia e Critérios de Avaliação',
-  description: 'Conheça a CONFENGE, a empresa por trás do SmartLic. Entenda nossa metodologia de avaliação de licitações: critérios objetivos, fontes oficiais e inteligência artificial aplicada.',
+  title: 'Metodologia e Critérios de Avaliação',
+  description: 'Conheça a metodologia SmartLic: critérios objetivos, fontes oficiais do PNCP e IA aplicada à avaliação de licitações públicas.',
   alternates: {
     canonical: 'https://smartlic.tech/sobre',
   },
