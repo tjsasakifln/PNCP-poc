@@ -9,6 +9,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: migration-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   warn-pending-migrations:
     name: Check Pending Migrations

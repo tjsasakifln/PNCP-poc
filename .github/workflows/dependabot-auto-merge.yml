@@ -8,6 +8,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: dependabot-automerge-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   auto-merge:
     name: Auto-merge Dependabot PRs

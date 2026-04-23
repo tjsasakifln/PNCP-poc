@@ -6,14 +6,28 @@ name: "Dep Scan (pip-audit + npm audit)"
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'backend/requirements*.txt'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/dep-scan.yml'
   push:
     branches: [main]
+    paths:
+      - 'backend/requirements*.txt'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/dep-scan.yml'
   schedule:
     # Weekly scan on Mondays at 08:00 UTC
     - cron: '0 8 * * 1'
 
 permissions:
   contents: read
+
+concurrency:
+  group: dep-scan-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # ─────────────────────────────────────────────────

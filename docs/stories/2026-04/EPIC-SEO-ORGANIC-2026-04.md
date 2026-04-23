@@ -25,14 +25,14 @@ Tornar o SmartLic o **Observatório Público das Licitações do Brasil** — tr
 
 | Story | Priority | Effort | Squad | Status | Objetivo |
 |-------|:--------:|:------:|-------|:------:|----------|
-| [STORY-430](STORY-430-thin-content-surgery-noindex-programmatic-pages.md) | **P0** | M | @dev + @devops | Draft | Cirurgia thin content — noindex 30% piores |
-| [STORY-431](STORY-431-observatorio-relatorio-mensal-licitacoes.md) | P1 | L | @dev + @devops | Draft | Observatório — relatório mensal de dados |
-| [STORY-432](STORY-432-calculadora-embed-linkbait.md) | P1 | M | @dev | Draft | Calculadora embeddável como link bait |
-| [STORY-433](STORY-433-quick-wins-backlinks-sebrae-haro-listings.md) | P1 | S | @devops | Draft | Quick wins — SEBRAE, HARO, listings |
+| [STORY-430](STORY-430-thin-content-surgery-noindex-programmatic-pages.md) | **P0** | M | @dev + @devops | **Done** | Cirurgia thin content — noindex 30% piores |
+| [STORY-431](STORY-431-observatorio-relatorio-mensal-licitacoes.md) | P1 | L | @dev + @devops | InProgress | Observatório — relatório mensal de dados |
+| [STORY-432](STORY-432-calculadora-embed-linkbait.md) | P1 | M | @dev | InProgress | Calculadora embeddável como link bait |
+| [STORY-433](STORY-433-quick-wins-backlinks-sebrae-haro-listings.md) | P1 | S | @devops | InProgress | Quick wins — SEBRAE, HARO, listings |
 | [STORY-434](STORY-434-api-publica-readonly-datalake.md) | P2 | L | @dev + @devops | Draft | API pública read-only do datalake |
 | [STORY-435](STORY-435-indice-transparencia-municipal.md) | P2 | XL | @dev + @devops | Draft | Índice de Transparência Municipal |
-| [STORY-436](STORY-436-padrao-editorial-conteudo-publico.md) | **P1** | S | @dev | Draft | Padrão editorial — sem vestígios de AI no conteúdo público |
-| [STORY-439](STORY-439-thin-content-gates-entity-pages-trust-signals.md) | **P0** | M | @dev + @devops | Draft | Thin content gates entity pages + Trust signals (E-E-A-T) |
+| [STORY-436](STORY-436-padrao-editorial-conteudo-publico.md) | **P1** | S | @dev | **Done** | Padrão editorial — sem vestígios de AI no conteúdo público |
+| [STORY-439](STORY-439-thin-content-gates-entity-pages-trust-signals.md) | **P0** | M | @dev + @devops | **Done** | Thin content gates entity pages + Trust signals (E-E-A-T) |
 
 ---
 
@@ -72,3 +72,4 @@ Tornar o SmartLic o **Observatório Público das Licitações do Brasil** — tr
 |------|-------|---------|
 | 2026-04-11 | @sm (River) | Epic criado — baseado em auditoria GSC + Consenso Conselho CMOs (53 especialistas, 8 clusters) |
 | 2026-04-22 | @po (Sarah) | `*validate-story-draft` verdict **GO** (score 9/10). Transição **Draft → Ready** aplicada. Todas as 6 categorias PASS: goal growth P1 claro (0→2.500 cliques/mês em 6m, 0→60 RDs), 8 stories children bem ordenadas em 3 sprints (urgente → ativos linkáveis → autoridade), KPIs quantificados em 4 horizontes (baseline + 3m + 6m + 12m) com 7 métricas. Nota: stories children (STORY-430, 431, 432, 433, 435, 436, 439) também estão Draft — devem passar por `*validate-story-draft` individuais antes de @dev (foram consideradas fora do escopo desta sessão, conforme plano aprovado que focou em artefatos de primeiro-nível em Draft). Relatório completo: `docs/po-review-2026-04-22.md`. |
+| 2026-04-22 | @sm (zippy-star) | Sync de status pós-empirical-discovery: STORY-430 (thin content surgery), STORY-436 (padrão editorial), STORY-439 (entity gates + E-E-A-T) já marcadas Done nos arquivos individuais desde 2026-04-12. Epic table estava desatualizada — todas as children Done têm commits correspondentes em main (STORY-430 via migrations FTS + sitemap filter; STORY-439 via orgaos noindex gate + Organization schema; STORY-436 via editorial lint CI + pillar pages). Sprint 1 integralmente Done. STORY-431/432/433 em InProgress (calculadora shippada majoritariamente; observatório + backlinks pending real execution). |
