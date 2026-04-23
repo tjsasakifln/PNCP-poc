@@ -175,18 +175,18 @@ class TestUpdateFeatureFlag:
     @patch("routes.feature_flags._redis_set_override", new_callable=AsyncMock, return_value=True)
     @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
     def test_update_flag_invalidates_ttl_cache(self, mock_get, mock_set, client):
-        """BTS-011: Should invalidate the TTL cache entry after update.
+        """BTS-013: After an admin update, subsequent reads must return the new value.
 
-        The route deletes the entry (routes/feature_flags.py:423), but downstream
-        audit/log calls may re-populate the cache via get_feature_flag(). The
-        invariant we actually care about: subsequent reads don't return the
-        stale OLD value — either the entry is evicted, or it's been refreshed
-        to the NEW value.
+        Test the observable invariant (subsequent get_feature_flag() reads),
+        not the internal cache state. BTS-013 made _runtime_overrides
+        authoritative in config/features — so the admin toggle takes effect
+        immediately regardless of what the TTL cache happens to contain.
         """
-        from config.features import _feature_flag_cache
+        from config.features import _feature_flag_cache, get_feature_flag
         import time
 
-        # Seed the cache with OLD value (True)
+        # Seed the cache with OLD value (True) — establishes that even a
+        # pre-populated stale cache entry must not shadow the new override.
         _feature_flag_cache["LLM_ARBITER_ENABLED"] = (True, time.time())
 
         resp = client.patch(
@@ -195,12 +195,11 @@ class TestUpdateFeatureFlag:
         )
         assert resp.status_code == 200
 
-        # Either evicted OR repopulated with NEW value — both satisfy "no stale read".
-        if "LLM_ARBITER_ENABLED" in _feature_flag_cache:
-            cached_value, _ts = _feature_flag_cache["LLM_ARBITER_ENABLED"]
-            assert cached_value is False, (
-                "Cache retained stale value True after update — expected eviction or refresh to False"
-            )
+        # Observable invariant: next read returns the NEW value (False),
+        # because runtime_overrides is authoritative over TTL cache.
+        assert get_feature_flag("LLM_ARBITER_ENABLED") is False, (
+            "get_feature_flag returned stale True after admin update to False"
+        )
 
     @patch("routes.feature_flags._redis_set_override", new_callable=AsyncMock, return_value=True)
     @patch("routes.feature_flags._redis_get_override", new_callable=AsyncMock, return_value=None)
