@@ -242,3 +242,75 @@ Se sessão encerrar antes: STORY-INCIDENT + handoff + memory persistem. Próxima
 ---
 
 **Sessão temporal-dongarra Day 2 em curso.** 2 merges shippados, 4 PRs novos abertos, 2 incidents diagnosticados com stories durables, 2 memories salvas. Prod DOWN aguardando user Railway fix. Merge train + funnel validation diferidos pós-restore.
+
+---
+
+## 9. Atualização 13:30Z — Railway fix + runtime failure + revert strategy
+
+**User aplicou fix Railway Root Directory com sucesso** (backend sem leading slash). Build passou, image pushed (`sha256:46f9fa2c`).
+
+**App não subiu mesmo assim:** 11 healthchecks em 5min retornaram `service unavailable` → `1/1 replicas never became healthy`.
+
+**Root cause secundário:** `health.py` (pós-#470) depende da coluna `health_checks.api_status` que a migration `20260422120000` nunca foi aplicada em prod (deploy do #470 ontem falhou em Apply Pending Migrations step; subsequent deploys SKIP-chained).
+
+**Caveat advisor STORY-DEBT-CI:** awk 2-pass scan do `migration-check.yml` filtra o dual-row pattern — SÓ `20260422120000` tem **ambas** rows com Remote vazio (genuinely unapplied). As outras 9 têm Remote populated em uma row (applied, tracking dual-row display bug supabase CLI). **STORY-DEBT-CI over-scopped inicialmente** — atualizar com este discovery.
+
+**Tentativa CLI aplicar migration:**
+- `supabase migration repair --status applied` × 10 → tracking dessync persistente
+- `supabase db push --linked --include-all` → PK duplicate `schema_migrations_pkey (version)=20260414132000 already exists`
+- `repair --status reverted` × 10 + retry push → mesmo erro; CLI não resolve sem DB URL direto ou SQL editor dashboard
+
+**Decisão user:** git revert #470.
+
+**Ação executada:**
+- Commit `8ab5a8b3` revert de `1ca66fa` (5 files, 28+/129- lines; delete migration files)
+- Branch `fix/revert-470-prod-incident-2026-04-23` pushed
+- PR #495 aberto
+- CI rodando
+
+**Próxima ação (quando PR #495 CI verde):**
+- Merge #495 → deploy auto-triggered → prod UP com código pre-#470 (não depende de `api_status`)
+- `api.smartlic.tech/health` deve voltar 200 em ~8min
+
+**Re-ship #470 posterior:**
+- Story dedicada após STORY-DEBT-CI-migration-dessync auditoria
+- Ordem correta: aplicar migration manual dashboard → re-ship #470 → CI + deploy
+
+---
+
+## 10. Pickup IMEDIATO (next operator — primeiro comando)
+
+**BLOCKER GATE — não prossiga sem confirmar:**
+
+```bash
+curl -sf https://api.smartlic.tech/health && echo "PROD UP — pode continuar merge train" || echo "PROD DOWN — NÃO merge NENHUM PR; escalate"
+```
+
+Se retorna UP:
+1. `gh pr list --state open --json number,mergeStateStatus` — verificar PRs abertos
+2. Processar batches 2-3 (ver seção 5)
+3. Phase 4 funnel baseline
+
+Se retorna DOWN (PR #495 ainda não merged OU outra falha pós-merge):
+1. `gh pr view 495 --json mergeStateStatus,mergeable,statusCheckRollup`
+2. Se CI verde: merge via `@devops`
+3. Se CI red: investigar + escalate
+4. **NÃO merge #483, #491-494, Dependabots até prod UP** (evita cascade de failed deploys)
+
+**Razão do gate:** user viu deploys falhados essa sessão por root-dir bug; cada merge triggera deploy. Main branch com prod DOWN = noise + risk de sobrepor fix.
+
+---
+
+## 11. Métricas atualizadas (pós-13:30Z)
+
+| Métrica | Valor |
+|---------|------:|
+| PRs mergeados em main | **2** (#487, #479) |
+| PRs novos abertos | **5** (#491, #492, #493, #494, **#495 revert incident**) |
+| Commits em session branch | **4** (charter+stories, selenium, DEBT-CI, handoff) |
+| Stories criadas | **2** (INCIDENT Railway, DEBT-CI migration) |
+| Memories novas | **2** (Railway rootdir, /ajuda search) |
+| Migration operations attempted | **4** via supabase CLI |
+| Incidents P0 em curso | **1** (api.smartlic.tech DOWN, revert pending merge) |
+
+**Status prod (13:35Z):** DOWN. PR #495 revert CI em andamento. ETA restore: ~15-20min pós-merge.
