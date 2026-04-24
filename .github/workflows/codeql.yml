@@ -1,10 +1,23 @@
+# mission sparkling-patterson 2026-04-24: skip CodeQL on docs-only PRs
+# (saves ~6min of queue time per docs-only PR). Weekly schedule still
+# scans the full repo against the latest query pack.
 name: "CodeQL Security Scan"
 
 on:
   push:
     branches: [master, main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
   pull_request:
     branches: [master, main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
   schedule:
     # Run every Monday at 00:00 UTC
     - cron: '0 0 * * 1'
