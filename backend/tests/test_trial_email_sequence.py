@@ -258,7 +258,8 @@ class TestProcessTrialEmails:
              patch("supabase_client.sb_execute", side_effect=_sb_execute_side_effect), \
              patch("services.trial_email_sequence.get_trial_user_stats", return_value=mock_stats), \
              patch("email_service.send_email_async") as mock_send, \
-             patch("metrics.TRIAL_EMAILS_SENT"):
+             patch("metrics.TRIAL_EMAILS_SENT"), \
+             patch("analytics_events.track_funnel_event") as mock_track:
 
             result = await process_trial_emails()
 
@@ -266,6 +267,16 @@ class TestProcessTrialEmails:
             mock_send.assert_called()
             first_call = mock_send.call_args_list[0]
             assert "Bem-vindo" in first_call.kwargs.get("subject", "") or "Bem-vindo" in str(first_call)
+
+            # Mixpanel funnel emit — closes cohort gap (which email led to which conversion)
+            mock_track.assert_called()
+            track_call = mock_track.call_args_list[0]
+            assert track_call.args[0] == "trial_email_sent"
+            assert track_call.args[1] == "user-welcome-uuid"
+            payload = track_call.args[2]
+            assert payload["email_type"] == "welcome"
+            assert payload["email_number"] == 1
+            assert payload["day"] == 0
 
     @pytest.mark.asyncio
     async def test_skips_converted_users(self):
