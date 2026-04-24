@@ -4439,7 +4439,15 @@ export interface paths {
         put?: never;
         /**
          * Resend Webhook
-         * @description AC11: Handle Resend webhook events for email tracking.
+         * @description Handle Resend webhook events for email tracking.
+         *
+         *     Accepts the full delivery lifecycle (sent → delivered → opened → clicked)
+         *     plus failure paths (bounced, complained, delivery_delayed, failed) so the
+         *     admin funnel dashboard can distinguish "email never arrived" from "email
+         *     arrived but wasn't engaged". Service handler
+         *     (`services.trial_email_sequence.handle_resend_webhook`) populates the
+         *     columns added in migration 20260424180000_trial_email_delivery_tracking.
+         *     Always returns 200 so Resend doesn't retry on transient server errors.
          */
         post: operations["resend_webhook_v1_trial_emails_webhook_post"];
         delete?: never;

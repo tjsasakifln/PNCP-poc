@@ -75,16 +75,25 @@ async def unsubscribe_trial_emails(
 
 @router.post("/trial-emails/webhook")
 async def resend_webhook(request: Request):
-    """AC11: Handle Resend webhook events for email tracking."""
+    """Handle Resend webhook events for email tracking.
+
+    Accepts the full delivery lifecycle (sent → delivered → opened → clicked)
+    plus failure paths (bounced, complained, delivery_delayed, failed) so the
+    admin funnel dashboard can distinguish "email never arrived" from "email
+    arrived but wasn't engaged". Service handler
+    (`services.trial_email_sequence.handle_resend_webhook`) populates the
+    columns added in migration 20260424180000_trial_email_delivery_tracking.
+    Always returns 200 so Resend doesn't retry on transient server errors.
+    """
     try:
         body = await request.json()
         event_type = body.get("type", "")
         data = body.get("data", {})
 
-        if event_type not in ("email.opened", "email.clicked", "email.delivered"):
-            return JSONResponse({"status": "ignored"})
+        from services.trial_email_sequence import RESEND_STATUS_MAP, handle_resend_webhook
+        if event_type not in RESEND_STATUS_MAP:
+            return JSONResponse({"status": "ignored", "event_type": event_type})
 
-        from services.trial_email_sequence import handle_resend_webhook
         processed = await handle_resend_webhook(event_type, data)
 
         return JSONResponse({"status": "processed" if processed else "skipped"})

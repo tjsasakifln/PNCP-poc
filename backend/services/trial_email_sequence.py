@@ -834,15 +834,53 @@ def _render_email(
 # AC11: Resend webhook handler for opens/clicks
 # ============================================================================
 
+RESEND_STATUS_MAP = {
+    "email.sent": "sent",
+    "email.delivered": "delivered",
+    "email.opened": "opened",
+    "email.clicked": "clicked",
+    "email.bounced": "bounced",
+    "email.complained": "complained",
+    "email.delivery_delayed": "delivery_delayed",
+    "email.failed": "failed",
+}
+
+# Status precedence: higher value wins when multiple events land for the
+# same email. e.g. opened (3) must not downgrade a row that already
+# reached clicked (4). bounced / complained / failed are terminal.
+_STATUS_PRIORITY = {
+    None: 0,
+    "queued": 1,
+    "sent": 2,
+    "delivered": 3,
+    "opened": 4,
+    "clicked": 5,
+    "delivery_delayed": 2,
+    "bounced": 6,
+    "complained": 6,
+    "failed": 6,
+}
+
+
 async def handle_resend_webhook(event_type: str, data: dict) -> bool:
-    """AC11: Process Resend webhook for email open/click tracking.
+    """Process Resend webhook for email tracking.
+
+    Populates columns added in migration 20260424180000_trial_email_delivery_tracking:
+    delivery_status / delivered_at / bounced_at / complained_at / failed_at /
+    bounce_reason. Also keeps the pre-existing opened_at / clicked_at columns
+    populated for backward compatibility with dashboards built before the
+    migration landed.
+
+    Emits Mixpanel funnel events so conversion dashboards can show the
+    real email funnel (sent → delivered → opened → clicked) instead of
+    the broken "14 sent / 0 opens" view the session started with.
 
     Args:
-        event_type: Resend event type (e.g., "email.opened", "email.clicked")
-        data: Webhook payload data
+        event_type: Resend event type (email.delivered, email.opened, etc.)
+        data: Resend webhook payload ``data`` object. ``email_id`` is required.
 
     Returns:
-        True if processed, False if skipped/error
+        True if the update touched a row, False if skipped / unknown event.
     """
     try:
         from supabase_client import get_supabase, sb_execute
@@ -851,28 +889,80 @@ async def handle_resend_webhook(event_type: str, data: dict) -> bool:
         if not email_id:
             return False
 
+        new_status = RESEND_STATUS_MAP.get(event_type)
+        if new_status is None:
+            return False
+
         sb = get_supabase()
         now = datetime.now(timezone.utc).isoformat()
 
-        if event_type == "email.opened":
-            await sb_execute(
-                sb.table("trial_email_log")
-                .update({"opened_at": now})
-                .eq("resend_email_id", email_id)
-                .is_("opened_at", "null")
-            )
-            return True
+        # 1) Fetch the existing row so we can (a) respect status precedence
+        # and (b) enrich the Mixpanel event with user_id + email_type.
+        existing = await sb_execute(
+            sb.table("trial_email_log")
+            .select("id, user_id, email_type, delivery_status, opened_at, clicked_at")
+            .eq("resend_email_id", email_id)
+            .limit(1)
+        )
+        rows = getattr(existing, "data", None) or []
+        if not rows:
+            return False
+        row = rows[0]
 
+        current_status = row.get("delivery_status")
+        if _STATUS_PRIORITY.get(new_status, 0) < _STATUS_PRIORITY.get(current_status, 0):
+            # Event arrived out of order (e.g. delivered after opened).
+            # Keep the higher-priority status but still record the timestamp
+            # for the specific event so delivered_at / bounced_at etc. are
+            # accurate even when the overall state already moved on.
+            update: dict = {}
+        else:
+            update = {"delivery_status": new_status}
+
+        if event_type == "email.delivered":
+            update["delivered_at"] = now
+        elif event_type == "email.opened":
+            if not row.get("opened_at"):
+                update["opened_at"] = now
         elif event_type == "email.clicked":
+            if not row.get("clicked_at"):
+                update["clicked_at"] = now
+        elif event_type == "email.bounced":
+            update["bounced_at"] = now
+            reason = data.get("bounce", {}).get("type") or data.get("bounce_reason")
+            if reason:
+                update["bounce_reason"] = str(reason)[:200]
+        elif event_type == "email.complained":
+            update["complained_at"] = now
+        elif event_type == "email.failed":
+            update["failed_at"] = now
+            reason = data.get("reason") or data.get("failure_reason")
+            if reason:
+                update["bounce_reason"] = str(reason)[:200]
+
+        if update:
             await sb_execute(
                 sb.table("trial_email_log")
-                .update({"clicked_at": now})
+                .update(update)
                 .eq("resend_email_id", email_id)
-                .is_("clicked_at", "null")
             )
-            return True
 
-        return False
+        # 2) Fire Mixpanel funnel event (fire-and-forget, never blocks webhook).
+        try:
+            from analytics_events import track_funnel_event
+            track_funnel_event(
+                f"trial_email_{new_status}",
+                row.get("user_id") or "",
+                {
+                    "email_type": row.get("email_type"),
+                    "resend_email_id": email_id,
+                    "event_type": event_type,
+                },
+            )
+        except Exception:
+            pass
+
+        return True
 
     except Exception as e:
         logger.error(f"Resend webhook processing error: {e}")
