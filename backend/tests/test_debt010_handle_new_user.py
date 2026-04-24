@@ -167,3 +167,65 @@ class TestTriggerFieldMapping:
         assert "COALESCE((NEW.raw_user_meta_data->>'whatsapp_consent')::boolean, FALSE)" in sql
         # context_data defaults to empty JSONB
         assert "'{}'::jsonb" in sql
+
+
+class TestHandleNewUserTrialExpiresAt:
+    """velvet-music (2026-04-24): trigger must populate trial_expires_at.
+
+    Without this field, plan_enforcement.py can't block trials (expires_at_dt
+    is NULL → the expiry check `if expires_at_dt and now > expires_at_dt` is
+    False → paywall never triggers → zero conversion pressure).
+    """
+
+    MIGRATION_FILE = "20260424123244_fix_handle_new_user_trial_expires_at.sql"
+
+    def _read_migration(self) -> str:
+        import os
+        path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "supabase", "migrations", self.MIGRATION_FILE,
+        )
+        with open(path, "r") as f:
+            return f.read()
+
+    def _read_down_migration(self) -> str:
+        import os
+        path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "supabase", "migrations",
+            self.MIGRATION_FILE.replace(".sql", ".down.sql"),
+        )
+        with open(path, "r") as f:
+            return f.read()
+
+    def test_migration_inserts_trial_expires_at(self):
+        sql = self._read_migration()
+        # Must include trial_expires_at in the column list AND in VALUES
+        assert "trial_expires_at" in sql.lower()
+        assert "NOW() + INTERVAL '14 days'" in sql
+
+    def test_migration_preserves_on_conflict(self):
+        sql = self._read_migration()
+        assert "ON CONFLICT" in sql
+        assert "DO NOTHING" in sql
+
+    def test_migration_preserves_security_definer(self):
+        sql = self._read_migration()
+        assert "SECURITY DEFINER" in sql
+
+    def test_migration_has_backfill_update(self):
+        sql = self._read_migration()
+        # Backfill for existing NULL rows
+        assert "UPDATE public.profiles" in sql
+        assert "trial_expires_at IS NULL" in sql
+        assert "plan_type = 'free_trial'" in sql
+
+    def test_down_migration_pairs_exist(self):
+        """STORY-6.2 gate: every migration must have a paired .down.sql."""
+        down_sql = self._read_down_migration()
+        # Down must restore the 10-field INSERT without trial_expires_at
+        assert "CREATE OR REPLACE FUNCTION public.handle_new_user()" in down_sql
+        assert "SECURITY DEFINER" in down_sql
+        # Down must NOT reinsert trial_expires_at (otherwise rollback is a no-op)
+        insert_section = down_sql.split("INSERT INTO public.profiles")[1].split("VALUES")[0]
+        assert "trial_expires_at" not in insert_section.lower()
