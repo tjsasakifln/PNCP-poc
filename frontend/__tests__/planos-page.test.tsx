@@ -461,7 +461,7 @@ describe("AC9: Non-logged user (anonymous)", () => {
   it("shows anonymous CTA (GTM-COPY-002)", () => {
     setupMocks({ session: false });
     render(<PlanosPage />);
-    expect(screen.getByRole("button", { name: /Começar a filtrar oportunidades/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Começar trial grátis/i })).toBeInTheDocument();
   });
 
   it("shows pricing content normally", () => {
