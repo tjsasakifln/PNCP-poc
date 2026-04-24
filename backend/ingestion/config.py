@@ -84,8 +84,9 @@ INGESTION_UFS = os.getenv(
 # Retention / Purge
 # ---------------------------------------------------------------------------
 
-# Legacy alias kept for backward compat — prefer INGESTION_PURGE_GRACE_DAYS
-INGESTION_RETENTION_DAYS = int(os.getenv("INGESTION_RETENTION_DAYS", "30"))
+# STORY-OBS-001: retention bumped 30→400 days so SEO programmatic pages
+# (observatorio, alertas, municipios, orgao) have ~13 months of history.
+INGESTION_RETENTION_DAYS = int(os.getenv("INGESTION_RETENTION_DAYS", "400"))
 
 # Days after data_encerramento before a closed bid is purged (default 30).
 # Bids still open (data_encerramento in the future) are NEVER purged.

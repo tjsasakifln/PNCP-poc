@@ -316,7 +316,7 @@ git add frontend/app/api-types.generated.ts
 
 **Layer 1: Periodic Ingestion (ETL → Supabase)**
 - ARQ cron jobs: full daily (2am BRT), incremental 3x/day (8am/2pm/8pm BRT), purge daily (4am BRT)
-- Table `pncp_raw_bids` (~50K+ rows): open bids — content_hash dedup, GIN full-text index (Portuguese), 12-day retention
+- Table `pncp_raw_bids` (~1.5M rows @ 400d): open + historical bids — content_hash dedup, GIN full-text index (Portuguese), **400-day retention** (STORY-OBS-001 — required by observatório/SEO programmatic pages)
 - Table `supplier_contracts` (~2M+ rows): historical contracts feeding SEO organic inbound — 3x/week full crawl, incremental same days
 - Config: `backend/ingestion/` (config, crawler, transformer, loader, checkpoint, scheduler)
 - Checkpoint tracking: `ingestion_checkpoints` + `ingestion_runs` tables for resumable crawls
@@ -369,7 +369,7 @@ For detailed module tables and route maps, see `.claude/rules/architecture-detai
 - **Scope:** 27 UFs × 6 modalidades (4,5,6,7,8,12), 10-day window (full), 3-day (incremental)
 - **Concurrency:** 5 UFs parallel, 2s delay between batches, max 50 pages per (UF, modalidade)
 - **Upsert:** 500 rows/batch via `upsert_pncp_raw_bids` RPC with content_hash dedup
-- **Retention:** 12 days (purge sets `is_active=false`, soft-delete)
+- **Retention:** 400 days (STORY-OBS-001 — hard-delete via `purge_old_bids(400)` pg_cron daily 07 UTC). Previously 12d; bumped because `/observatorio/raio-x-*` and other programmatic SEO routes (alertas, municipios, orgao) query historical windows and were rendering 200 OK with zero data.
 - **Tables:** `pncp_raw_bids` (data), `ingestion_checkpoints` (progress), `ingestion_runs` (audit)
 - **Worker:** `PROCESS_TYPE=worker` → `arq job_queue.WorkerSettings`
 - **pg_cron backup (STORY-1.2):** `purge-old-bids` scheduled via `cron.schedule('purge-old-bids', '0 7 * * *', ...)` — runs server-side even if Railway worker is offline. Monitored by STORY-1.1.
