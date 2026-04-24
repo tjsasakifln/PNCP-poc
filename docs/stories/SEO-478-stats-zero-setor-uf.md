@@ -1,6 +1,6 @@
 # SEO-478 — Bug: Stats zeradas em combos setor×UF (ex: software/SP)
 
-**Status:** InProgress
+**Status:** Done
 **Type:** Bugfix/Investigação — P1
 **Prioridade:** Alta — páginas de marketing públicas exibem "0 editais, R$0" para combos ativos
 

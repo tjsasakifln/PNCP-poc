@@ -122,7 +122,7 @@ def test_register_rejects_sync_function_when_is_coroutine_true() -> None:
     def not_async() -> None:
         return None
 
-    with pytest.raises(TaskRegistrationError, match="not an async function"):
+    with pytest.raises(TaskRegistrationError, match="is_coroutine=True"):
         registry.register("sync_as_coro", not_async, is_coroutine=True)  # type: ignore[arg-type]
 
 

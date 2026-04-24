@@ -116,7 +116,6 @@ jobs:
           done
           echo "All deploy attempts failed"
           exit 1
-        working-directory: backend
 
       - name: Wait for deployment
         run: sleep 45
