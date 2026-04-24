@@ -64,7 +64,6 @@ async def run_health_canary() -> dict:
         status_data = await get_public_status()
         duration = _time.time() - start
         overall = status_data.get("status", "unhealthy")
-        api_status = status_data.get("api_status")
         sources = status_data.get("sources", {})
         components = status_data.get("components", {})
         latencies = [s.get("latency_ms", 0) for s in sources.values() if isinstance(s, dict) and s.get("latency_ms") is not None]
@@ -79,7 +78,7 @@ async def run_health_canary() -> dict:
                 _update_pncp_cron_status("degraded" if pncp_status_str == "degraded" else "down", pncp_latency)
             else:
                 _update_pncp_cron_status("unknown", pncp_latency)
-        await save_health_check(overall, sources, components, avg_latency, api_status=api_status)
+        await save_health_check(overall, sources, components, avg_latency)
         await detect_incident(overall, sources)
         try:
             HEALTH_CANARY_DURATION.observe(duration)

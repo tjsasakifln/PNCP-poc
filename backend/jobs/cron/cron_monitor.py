@@ -13,6 +13,7 @@ prevents spam when a job fails repeatedly for the same reason.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from datetime import datetime, timezone
@@ -24,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 # Stale threshold: a daily cron that has not succeeded in >25h is suspect.
 STALE_AFTER_HOURS = 25
+
+# Run monitor every hour (3600s). Override via CRON_MONITOR_INTERVAL_S env var.
+CRON_MONITOR_INTERVAL_SECONDS = 3600
 
 
 def _parse_ts(value: Any) -> datetime | None:
@@ -45,6 +49,11 @@ def _is_stale(last_run_at: datetime | None, now: datetime) -> bool:
         return True
     delta_hours = (now - last_run_at).total_seconds() / 3600.0
     return delta_hours > STALE_AFTER_HOURS
+
+
+def _fire_sentry_alert(jobname: str, reason: str, row: dict[str, Any]) -> None:
+    """Alias for _emit_sentry_alert — public name used in tests and run_cron_monitor."""
+    _emit_sentry_alert(jobname, reason, row)
 
 
 def _emit_sentry_alert(jobname: str, reason: str, row: dict[str, Any]) -> None:
@@ -94,6 +103,62 @@ def evaluate_jobs(rows: Iterable[dict[str, Any]], *, now: datetime | None = None
     return problems
 
 
+async def run_cron_monitor() -> dict:
+    """Core monitoring logic: query get_cron_health() and fire alerts for problems.
+
+    Public interface for tests and direct invocation. Returns::
+
+        {"status": "ok", "jobs_checked": N, "alerts_fired": M}
+        {"status": "error", "jobs_checked": 0, "alerts_fired": 0, "error": "..."}
+    """
+    try:
+        sb = get_supabase()
+        result = await sb_execute_direct(sb.rpc("get_cron_health"))
+        rows = getattr(result, "data", None) or []
+    except Exception as exc:
+        logger.error("[CronMonitor] RPC failed: %s", exc, exc_info=True)
+        return {"status": "error", "jobs_checked": 0, "alerts_fired": 0, "error": str(exc)}
+
+    problems = evaluate_jobs(rows)
+    for p in problems:
+        _fire_sentry_alert(p["jobname"], p["reason"], p["row"])
+
+    logger.info(
+        "[CronMonitor] Evaluated %d jobs, %d problems",
+        len(rows),
+        len(problems),
+    )
+    return {
+        "status": "ok",
+        "jobs_checked": len(rows),
+        "alerts_fired": len(problems),
+    }
+
+
+async def _cron_monitor_loop() -> None:
+    """Asyncio task loop — runs run_cron_monitor() hourly."""
+    import os
+    interval = int(os.getenv("CRON_MONITOR_INTERVAL_S", str(CRON_MONITOR_INTERVAL_SECONDS)))
+    await asyncio.sleep(60)  # Short initial delay to let startup settle
+    while True:
+        try:
+            await run_cron_monitor()
+            await asyncio.sleep(interval)
+        except asyncio.CancelledError:
+            logger.info("[CronMonitor] Task cancelled")
+            break
+        except Exception as exc:
+            logger.error("[CronMonitor] Loop error: %s", exc, exc_info=True)
+            await asyncio.sleep(300)  # Back-off on error
+
+
+async def start_cron_monitor_task() -> asyncio.Task:
+    """Create and return the cron monitor asyncio Task."""
+    task = asyncio.create_task(_cron_monitor_loop(), name="cron_monitor")
+    logger.info("[CronMonitor] Hourly monitor task started (interval: %ds)", CRON_MONITOR_INTERVAL_SECONDS)
+    return task
+
+
 async def cron_monitoring_job(ctx: dict) -> dict:
     """ARQ cron handler: scheduled hourly (minute=0).
 
@@ -110,12 +175,12 @@ async def cron_monitoring_job(ctx: dict) -> dict:
         logger.error("[CronMonitor] RPC failed: %s", exc, exc_info=True)
         # Surface the monitoring failure itself so Sentry doesn't stay quiet
         # while the underlying signal is blind.
-        _emit_sentry_alert("_monitor_self", f"rpc_error:{type(exc).__name__}", {"error": str(exc)})
+        _fire_sentry_alert("_monitor_self", f"rpc_error:{type(exc).__name__}", {"error": str(exc)})
         return {"status": "failed", "error": str(exc), "duration_s": duration_s}
 
     problems = evaluate_jobs(rows)
     for p in problems:
-        _emit_sentry_alert(p["jobname"], p["reason"], p["row"])
+        _fire_sentry_alert(p["jobname"], p["reason"], p["row"])
 
     duration_s = round(time.monotonic() - start, 2)
     logger.info(
