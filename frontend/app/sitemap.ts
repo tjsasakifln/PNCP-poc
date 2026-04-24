@@ -23,7 +23,7 @@ async function fetchSitemapJson<T>(
   const url = `${backendUrl}${endpoint}`;
   try {
     const resp = await fetch(url, {
-      cache: 'no-store',
+      next: { revalidate: 3600 },
       signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) {
