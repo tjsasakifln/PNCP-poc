@@ -17,7 +17,7 @@ import { FeaturesContent } from './FeaturesContent';
 
 // GTM-COPY-006 AC5: Per-page metadata for /features
 export const metadata = {
-  title: 'O Que Muda no Seu Resultado com Avaliação de Viabilidade',
+  title: 'Avaliação de Viabilidade de Licitações B2G',
   description: 'Compare cenários: sem avaliação vs com SmartLic. Critérios objetivos, fontes oficiais e filtragem estratégica para decidir em quais licitações investir.',
   alternates: {
     canonical: 'https://smartlic.tech/features',

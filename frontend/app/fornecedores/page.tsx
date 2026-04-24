@@ -7,7 +7,7 @@ import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Fornecedores do Governo por Setor e Estado — SmartLic',
+  title: 'Fornecedores do Governo por Setor e Estado',
   description:
     'Descubra quais empresas vendem para o governo por setor e estado. Ranking de fornecedores com dados do PNCP atualizados diariamente.',
   alternates: { canonical: buildCanonical('/fornecedores') },
