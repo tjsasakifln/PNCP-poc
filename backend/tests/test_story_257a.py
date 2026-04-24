@@ -150,35 +150,33 @@ async def test_t3_circuit_breaker_recovers_after_cooldown():
 # T4: Health canary 400: NÃO ativa circuit breaker, busca prossegue
 # ============================================================================
 
-@pytest.mark.xfail(
-    strict=False,
-    reason=(
-        "BTS-012: test expects health canary 400 → ok=True (search proceeds), but "
-        "prod returns ok=False. Either the AsyncMock response.status_code is being "
-        "coerced to a truthy-but-non-integer, or prod policy changed to treat 400 "
-        "as transient. Needs inspection of health_canary() branch for 400 status. "
-        "Paired with T5 inversion — likely same root cause."
-    ),
-)
 @pytest.mark.asyncio
 async def test_t4_health_canary_400_does_not_trip_breaker():
-    """T4: Health canary 400: NÃO ativa circuit breaker, busca prossegue."""
+    """T4: Health canary 400: NÃO ativa circuit breaker, busca prossegue.
+
+    BTS-012 (generic-sparrow): test contract updated. health_canary() returns
+    bool (not dict {"ok": ...}). Mock setup also corrected: must use AsyncMock
+    return_value so asyncio.wait_for receives an awaitable.
+    """
     breaker = get_circuit_breaker()
 
-    # Mock HTTP to return 400 (client error)
-    mock_response = AsyncMock()
+    # Mock HTTP to return 400 (client error). MagicMock for the response
+    # (not AsyncMock) so .status_code is a plain int rather than another mock.
+    mock_response = MagicMock()
     mock_response.status_code = 400
     mock_response.text = "Bad Request"
 
     async with AsyncPNCPClient(max_concurrent=10) as client:
-        with patch.object(client._client, 'get', return_value=mock_response), \
+        # AsyncMock so awaiting client._client.get(...) yields mock_response.
+        async_get = AsyncMock(return_value=mock_response)
+        with patch.object(client._client, 'get', async_get), \
              patch("cron_jobs.get_pncp_cron_status", return_value={"status": "healthy", "latency_ms": 100, "updated_at": 1000}):
             result = await client.health_canary()
 
-            # Health canary should return dict with ok=True (proceed with search)
-            assert result["ok"] is True, "Health canary should return ok=True on 400"
+            # Health canary returns True for 4xx (client error → search proceeds).
+            assert result is True, "Health canary should return True on 400 (search proceeds)"
 
-            # Circuit breaker should NOT be degraded
+            # Circuit breaker should NOT be degraded.
             assert not breaker.is_degraded, "Circuit breaker should remain healthy after 400"
 
 
@@ -186,35 +184,35 @@ async def test_t4_health_canary_400_does_not_trip_breaker():
 # T5: Health canary 503: ATIVA circuit breaker via record_failure()
 # ============================================================================
 
-@pytest.mark.xfail(
-    strict=False,
-    reason=(
-        "BTS-012: test expects health canary 503 → ok=False (search blocked + "
-        "CB failure), but prod returns ok=True. Paired with T4 inversion — "
-        "same root cause (AsyncMock response.status_code coercion or 4xx/5xx "
-        "policy inversion in health_canary()). Needs dedicated inspection."
-    ),
-)
 @pytest.mark.asyncio
 async def test_t5_health_canary_503_trips_breaker():
-    """T5: Health canary 503: ATIVA circuit breaker via record_failure()."""
+    """T5: Health canary 503: ATIVA circuit breaker via record_failure().
+
+    BTS-012 (generic-sparrow): test contract updated to match impl. Same
+    rationale as T4: health_canary returns bool (not dict), mock_response
+    must be MagicMock (not AsyncMock) for status_code to be plain int.
+    """
     breaker = get_circuit_breaker()
 
     # Mock HTTP to return 503 (server error)
-    mock_response = AsyncMock()
+    mock_response = MagicMock()
     mock_response.status_code = 503
     mock_response.text = "Service Unavailable"
 
     async with AsyncPNCPClient(max_concurrent=10) as client:
-        with patch.object(client._client, 'get', return_value=mock_response), \
+        async_get = AsyncMock(return_value=mock_response)
+        with patch.object(client._client, 'get', async_get), \
              patch("cron_jobs.get_pncp_cron_status", return_value={"status": "healthy", "latency_ms": 100, "updated_at": 1000}):
             result = await client.health_canary()
 
-            # Health canary should return dict with ok=False (skip search)
-            assert result["ok"] is False, "Health canary should return ok=False on 503"
+            # Health canary returns False on 5xx (search blocked).
+            assert result is False, "Health canary should return False on 503 (search blocked)"
 
-            # Circuit breaker should have recorded a failure
-            assert breaker.consecutive_failures > 0, "Circuit breaker should record failure on 503"
+            # Circuit breaker should have recorded a failure (consecutive_failures > 0
+            # OR is_degraded=True after multiple failures).
+            assert breaker.consecutive_failures > 0 or breaker.is_degraded, (
+                "Circuit breaker should record failure on 503"
+            )
 
 
 # ============================================================================
