@@ -36,6 +36,12 @@ type UserProfile = Partial<components["schemas"]["UserProfileResponse"]>;
 // (consumed here and by ProductSchema.tsx to keep JSON-LD in sync with UI).
 const PRICING_FALLBACK = PRO_PRICING;
 
+// Coupon → discount % mapping. Day 16 trial-expired email sends TRIAL_COMEBACK_20.
+// Keep in sync with Stripe coupon configuration (Stripe is source of truth for actual billing).
+const COUPON_DISCOUNTS: Record<string, number> = {
+  TRIAL_COMEBACK_20: 20,
+};
+
 // GTM-002: Features list
 const FEATURES = [
   { text: "1.000 análises por mês", detail: "Avalie oportunidades em todos os 27 estados" },
@@ -210,6 +216,9 @@ export default function PlanosPage() {
 
   const currentPricing = proPricing[billingPeriod];
   const hasFullAccess = userStatus === "subscriber" || userStatus === "privileged";
+  const couponDiscountPercent = couponCode
+    ? COUPON_DISCOUNTS[couponCode.toUpperCase()]
+    : undefined;
 
   const handleManageSubscription = useCallback(async () => {
     if (!session?.access_token) return;
@@ -231,6 +240,15 @@ export default function PlanosPage() {
     if (!session) { window.location.href = "/login"; return; }
     setCheckoutLoading(true);
     trackEvent("checkout_initiated", { plan_id: "smartlic_pro", billing_period: billingPeriod, source: "planos_page" });
+    if (typeof window !== "undefined" && window.mixpanel) {
+      window.mixpanel.track("plan_selected", {
+        plan_id: "smartlic_pro",
+        billing_period: billingPeriod,
+        has_coupon: !!couponCode,
+        coupon_id: couponCode ?? null,
+        discount_percent: couponDiscountPercent ?? null,
+      });
+    }
     clarityEvent("checkout_initiated");
     claritySet("selected_plan", "smartlic_pro");
     claritySet("billing_period", billingPeriod);
@@ -263,6 +281,15 @@ export default function PlanosPage() {
     if (!session) { window.location.href = "/login"; return; }
     setCheckoutLoading(true);
     trackEvent("checkout_initiated", { plan_id: "consultoria", billing_period: billingPeriod, source: "planos_page" });
+    if (typeof window !== "undefined" && window.mixpanel) {
+      window.mixpanel.track("plan_selected", {
+        plan_id: "consultoria",
+        billing_period: billingPeriod,
+        has_coupon: !!couponCode,
+        coupon_id: couponCode ?? null,
+        discount_percent: couponDiscountPercent ?? null,
+      });
+    }
     clarityEvent("checkout_initiated");
     claritySet("selected_plan", "consultoria");
     claritySet("billing_period", billingPeriod);
@@ -337,6 +364,19 @@ export default function PlanosPage() {
           onManageSubscription={handleManageSubscription}
         />
 
+        {couponDiscountPercent !== undefined && (
+          <div
+            className="mb-6 rounded-card border border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/30 px-4 py-3 text-center text-sm font-medium text-emerald-800 dark:text-emerald-200"
+            role="status"
+            data-testid="coupon-banner"
+          >
+            <span className="font-bold">Desconto de {couponDiscountPercent}% aplicado</span>
+            <span className="ml-2 text-xs text-emerald-700 dark:text-emerald-300">
+              (cupom {couponCode?.toUpperCase()})
+            </span>
+          </div>
+        )}
+
         {/* Billing Period Toggle */}
         <div className="flex justify-center mb-8">
           <PlanToggle value={billingPeriod} onChange={setBillingPeriod} discounts={{ semiannual: proPricing.semiannual.discount, annual: proPricing.annual.discount }} />
@@ -353,6 +393,7 @@ export default function PlanosPage() {
           planLoading={planLoading || authLoading}
           onCheckout={handleCheckout}
           onManageSubscription={handleManageSubscription}
+          couponDiscountPercent={couponDiscountPercent}
         />
 
         {/* ROI Anchor Message */}
@@ -404,6 +445,7 @@ export default function PlanosPage() {
             isConsultoriaLead={isConsultoriaLead}
             checkoutLoading={checkoutLoading}
             onCheckout={() => { if (!session) { window.location.href = "/login"; return; } handleConsultoriaCheckout(); }}
+            couponDiscountPercent={couponDiscountPercent}
           />
         </div>
 
