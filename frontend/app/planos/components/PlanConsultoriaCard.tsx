@@ -21,6 +21,7 @@ interface PlanConsultoriaCardProps {
   isConsultoriaLead: boolean;
   checkoutLoading: boolean;
   onCheckout: () => void;
+  couponDiscountPercent?: number;
 }
 
 export function PlanConsultoriaCard({
@@ -30,8 +31,12 @@ export function PlanConsultoriaCard({
   isConsultoriaLead,
   checkoutLoading,
   onCheckout,
+  couponDiscountPercent,
 }: PlanConsultoriaCardProps) {
   const currentPricing = pricing[billingPeriod];
+  const discountedMonthly = couponDiscountPercent
+    ? currentPricing.monthly * (1 - couponDiscountPercent / 100)
+    : null;
 
   return (
     <div className="mt-16 max-w-lg mx-auto">
@@ -55,12 +60,34 @@ export function PlanConsultoriaCard({
         </div>
         {/* Dynamic Price */}
         <div className="text-center mb-6">
-          <div className="flex items-baseline justify-center gap-1">
-            <span className="text-5xl font-bold text-amber-700 dark:text-amber-400">
-              {formatCurrency(currentPricing.monthly)}
-            </span>
-            <span className="text-lg text-[var(--ink-muted)]">/mês</span>
-          </div>
+          {discountedMonthly !== null ? (
+            <>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-2xl line-through text-[var(--ink-muted)]" data-testid="consultoria-price-original">
+                  {formatCurrency(currentPricing.monthly)}
+                </span>
+                <span
+                  className="inline-block px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full"
+                  data-testid="consultoria-coupon-pill"
+                >
+                  -{couponDiscountPercent}%
+                </span>
+              </div>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-5xl font-bold text-emerald-600 dark:text-emerald-400" data-testid="consultoria-price-discounted">
+                  {formatCurrency(discountedMonthly)}
+                </span>
+                <span className="text-lg text-[var(--ink-muted)]">/mês</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-5xl font-bold text-amber-700 dark:text-amber-400">
+                {formatCurrency(currentPricing.monthly)}
+              </span>
+              <span className="text-lg text-[var(--ink-muted)]">/mês</span>
+            </div>
+          )}
           {currentPricing.discount && (
             <div className="mt-2">
               <span className="inline-block px-3 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 text-sm font-semibold rounded-full">

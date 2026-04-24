@@ -26,6 +26,7 @@ interface PlanProCardProps {
   planLoading?: boolean;
   onCheckout: () => void;
   onManageSubscription: () => void;
+  couponDiscountPercent?: number;
 }
 
 export function PlanProCard({
@@ -39,7 +40,14 @@ export function PlanProCard({
   planLoading,
   onCheckout,
   onManageSubscription,
+  couponDiscountPercent,
 }: PlanProCardProps) {
+  const discountedMonthly = couponDiscountPercent
+    ? currentPricing.monthly * (1 - couponDiscountPercent / 100)
+    : null;
+  const discountedTotal = couponDiscountPercent
+    ? currentPricing.total * (1 - couponDiscountPercent / 100)
+    : null;
   return (
     <div className="max-w-lg mx-auto">
       <div className="backdrop-blur-xl bg-white/50 dark:bg-gray-900/40 border-2 border-[var(--brand-blue)] rounded-card p-8 shadow-gem-amethyst">
@@ -53,12 +61,34 @@ export function PlanProCard({
 
         {/* Dynamic Price */}
         <div className="text-center mb-6">
-          <div className="flex items-baseline justify-center gap-1">
-            <span className="text-5xl font-bold text-[var(--brand-navy)]">
-              {formatCurrency(currentPricing.monthly)}
-            </span>
-            <span className="text-lg text-[var(--ink-muted)]">/mês</span>
-          </div>
+          {discountedMonthly !== null ? (
+            <>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-2xl line-through text-[var(--ink-muted)]" data-testid="price-original">
+                  {formatCurrency(currentPricing.monthly)}
+                </span>
+                <span
+                  className="inline-block px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full"
+                  data-testid="coupon-pill"
+                >
+                  -{couponDiscountPercent}%
+                </span>
+              </div>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-5xl font-bold text-emerald-600 dark:text-emerald-400" data-testid="price-discounted">
+                  {formatCurrency(discountedMonthly)}
+                </span>
+                <span className="text-lg text-[var(--ink-muted)]">/mês</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-5xl font-bold text-[var(--brand-navy)]">
+                {formatCurrency(currentPricing.monthly)}
+              </span>
+              <span className="text-lg text-[var(--ink-muted)]">/mês</span>
+            </div>
+          )}
 
           {currentPricing.discount && (
             <div className="mt-2">
@@ -67,12 +97,12 @@ export function PlanProCard({
               </span>
               {billingPeriod === "semiannual" && (
                 <p className="text-xs text-[var(--ink-muted)] mt-1">
-                  Cobrado {formatCurrency(currentPricing.total)} a cada 6 meses
+                  Cobrado {formatCurrency(discountedTotal ?? currentPricing.total)} a cada 6 meses
                 </p>
               )}
               {billingPeriod === "annual" && (
                 <p className="text-xs text-[var(--ink-muted)] mt-1">
-                  Cobrado {formatCurrency(currentPricing.total)} por ano
+                  Cobrado {formatCurrency(discountedTotal ?? currentPricing.total)} por ano
                 </p>
               )}
             </div>
