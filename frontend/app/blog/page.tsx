@@ -7,6 +7,7 @@ import BlogListClient from './BlogListClient';
 
 /**
  * STORY-261 AC4/AC5: Blog listing page with hero, category filters, and article grid.
+ * SEO-480: Blog JSON-LD + article semantic wrappers for rich results.
  */
 
 export const metadata: Metadata = {
@@ -24,9 +25,43 @@ export const metadata: Metadata = {
   },
 };
 
+// SEO-480: Blog schema with blogPost entries (Google rich results eligibility).
+function buildBlogSchema() {
+  const sorted = [...BLOG_ARTICLES].sort(
+    (a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime(),
+  );
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'Blog SmartLic — Inteligência em Licitações',
+    description:
+      'Artigos, guias e análises sobre licitações públicas para empresas B2G e consultorias.',
+    url: 'https://smartlic.tech/blog',
+    publisher: {
+      '@type': 'Organization',
+      name: 'SmartLic',
+      url: 'https://smartlic.tech',
+    },
+    blogPost: sorted.slice(0, 10).map((a) => ({
+      '@type': 'BlogPosting',
+      headline: a.title,
+      description: a.description,
+      url: `https://smartlic.tech/blog/${a.slug}`,
+      datePublished: a.publishDate,
+      author: { '@type': 'Organization', name: 'SmartLic' },
+      articleSection: a.category,
+    })),
+  };
+}
+
 export default function BlogPage() {
+  const blogSchema = buildBlogSchema();
   return (
     <div className="min-h-screen flex flex-col bg-canvas">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
+      />
       <LandingNavbar />
 
       <main className="flex-1">
