@@ -184,13 +184,27 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       # DEBT-123 AC9: Migration push — intentionally non-blocking (marks deploy DEGRADED, not failed)
+      # velvet-music fix: Supabase CLI db push treats `.down.sql` as migrations too,
+      # which causes schema_migrations_pkey duplicate when both `.sql` + `.down.sql`
+      # share a timestamp (STORY-6.2 paired convention). Move .down.sql files aside
+      # before push, then restore (runner is ephemeral but keep git state clean).
       - name: Apply migrations (db push)
         id: push
         if: steps.check.outputs.has_pending == 'true'
         continue-on-error: true  # DEBT-123 AC9: intentional — migration failure = DEGRADED deploy, not rollback
         run: |
           echo "=== Applying pending migrations ==="
+          mkdir -p /tmp/_down_migrations_stash
+          find supabase/migrations -maxdepth 1 -name '*.down.sql' -exec mv {} /tmp/_down_migrations_stash/ \; || true
           supabase db push --include-all
+          STATUS=$?
+          # Restore (best-effort — runner is ephemeral but keep working tree coherent)
+          find /tmp/_down_migrations_stash -maxdepth 1 -name '*.down.sql' -exec mv {} supabase/migrations/ \; || true
+          rmdir /tmp/_down_migrations_stash 2>/dev/null || true
+          if [ $STATUS -ne 0 ]; then
+            echo "::error::supabase db push failed with status $STATUS"
+            exit $STATUS
+          fi
           echo "Migrations applied successfully."
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
