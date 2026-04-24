@@ -73,28 +73,30 @@ export default function BlogListClient({
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {sorted.map((article, index) => (
           <React.Fragment key={article.slug}>
-            <Link
-              href={`/blog/${article.slug}`}
-              className="group block bg-surface-0 border border-[var(--border)] rounded-xl p-5 sm:p-6 hover:border-brand-blue/30 hover:shadow-md transition-all"
-              data-testid="blog-article-card"
-            >
-              <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-brand-blue bg-brand-blue-subtle rounded-full mb-3">
-                {article.category}
-              </span>
-              <h3 className="text-base sm:text-lg font-bold text-ink group-hover:text-brand-blue transition-colors line-clamp-2 mb-2">
-                {article.title}
-              </h3>
-              <p className="text-sm text-ink-secondary line-clamp-2 mb-3">
-                {article.description}
-              </p>
-              <div className="flex items-center gap-3 text-xs text-ink-muted">
-                <time dateTime={article.publishDate}>
-                  {formatDate(article.publishDate)}
-                </time>
-                <span aria-hidden="true">&middot;</span>
-                <span>{article.readingTime}</span>
-              </div>
-            </Link>
+            {/* SEO-480: <article> wrapper for semantic HTML + crawler discovery */}
+            <article className="contents" data-testid="blog-article-card">
+              <Link
+                href={`/blog/${article.slug}`}
+                className="group block bg-surface-0 border border-[var(--border)] rounded-xl p-5 sm:p-6 hover:border-brand-blue/30 hover:shadow-md transition-all"
+              >
+                <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-brand-blue bg-brand-blue-subtle rounded-full mb-3">
+                  {article.category}
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-ink group-hover:text-brand-blue transition-colors line-clamp-2 mb-2">
+                  {article.title}
+                </h3>
+                <p className="text-sm text-ink-secondary line-clamp-2 mb-3">
+                  {article.description}
+                </p>
+                <div className="flex items-center gap-3 text-xs text-ink-muted">
+                  <time dateTime={article.publishDate}>
+                    {formatDate(article.publishDate)}
+                  </time>
+                  <span aria-hidden="true">&middot;</span>
+                  <span>{article.readingTime}</span>
+                </div>
+              </Link>
+            </article>
 
             {/* CTA Banner every 6 articles */}
             {(index + 1) % 6 === 0 && index < sorted.length - 1 && (
