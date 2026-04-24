@@ -206,11 +206,13 @@ class TestPurgeOldBids:
     async def test_uses_default_retention_days(self, mock_get_sb):
         """Default retention_days must be passed to RPC when not specified.
 
-        BTS-010b: the production default was raised from 12 to 30 days
-        (ingestion/config.py INGESTION_RETENTION_DAYS default '30') to align
-        with the grace-period policy where closed bids are kept for 30 days
-        after data_encerramento. The function-level default in loader.py
-        (`retention_days: int = 30`) is the authoritative fallback.
+        STORY-OBS-001 (supersedes BTS-010b): retention raised from 30 to 400
+        days so /observatorio/raio-x-* and other SEO programmatic pages
+        (alertas, municipios, orgao, dados-publicos) can query ~13 months
+        of historical data. The function-level default in loader.py
+        (`retention_days: int = 400`) is the authoritative fallback and
+        MUST stay >= 365 so observatório can always render the previous
+        calendar year's latest month.
         """
         from ingestion.loader import purge_old_bids as _purge_loader  # noqa: F401
         import inspect
@@ -226,8 +228,13 @@ class TestPurgeOldBids:
         mock_sb.rpc.assert_called_once_with(
             "purge_old_bids", {"p_retention_days": expected_default}
         )
-        # Sanity: default must stay a sensible value (>=7 days retention window).
-        assert expected_default >= 7
+        # STORY-OBS-001 invariant: SEO programmatic surface requires ≥365d
+        # so the previous full calendar year is always queryable.
+        assert expected_default >= 365, (
+            f"Retention default {expected_default} < 365d — would break "
+            f"/observatorio/raio-x-* and other historical SEO pages. "
+            f"See STORY-OBS-001."
+        )
 
     @pytest.mark.asyncio
     @patch("ingestion.loader.get_supabase")
