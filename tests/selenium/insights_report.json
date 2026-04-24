@@ -1,0 +1,94 @@
+{
+  "run_at": "2026-04-23T02:00:31.057980Z",
+  "base_url": "https://smartlic.tech",
+  "total_insights": 9,
+  "summary": {
+    "PERF": 0,
+    "UX": 2,
+    "SEO": 6,
+    "A11Y": 0,
+    "CONTENT": 1
+  },
+  "metrics": {
+    "page_load_home_seconds": 2.32,
+    "page_load_licitações_hub_seconds": 0.44,
+    "page_load_contratos_hub_seconds": 0.58,
+    "page_load_fornecedores_hub_seconds": 0.52,
+    "page_load_blog_seconds": 0.6,
+    "page_load_sobre_seconds": 0.56,
+    "page_load_planos_pricing_seconds": 0.61,
+    "page_load_features_seconds": 0.55,
+    "page_load_ajuda_seconds": 0.56,
+    "seo___title_len": 49,
+    "seo___desc_len": 155,
+    "seo__licitacoes_title_len": 55,
+    "seo__licitacoes_desc_len": 128,
+    "seo__contratos_title_len": 59,
+    "seo__contratos_desc_len": 131,
+    "seo__fornecedores_title_len": 64,
+    "seo__fornecedores_desc_len": 132,
+    "seo__blog_title_len": 53,
+    "seo__blog_desc_len": 150,
+    "seo__sobre_title_len": 66,
+    "seo__sobre_desc_len": 178,
+    "seo__planos_title_len": 76,
+    "seo__planos_desc_len": 150,
+    "seo__features_title_len": 67,
+    "seo__features_desc_len": 152,
+    "seo__ajuda_title_len": 59,
+    "seo__ajuda_desc_len": 120,
+    "structured_data__": "['Organization', 'WebSite', 'SoftwareApplication']",
+    "structured_data__sobre": "['Organization', 'WebSite', 'SoftwareApplication', 'Organization']",
+    "structured_data__blog": "['Organization', 'WebSite', 'SoftwareApplication']",
+    "structured_data__planos": "['Organization', 'WebSite', 'SoftwareApplication', 'Product', 'Product']",
+    "licitacoes_internal_links_count": 18,
+    "blog_article_links_count": 0
+  },
+  "insights": [
+    {
+      "category": "SEO",
+      "test": "test_seo_snapshot_audit[/fornecedores-fornecedores hub]",
+      "message": "/fornecedores: título 64 chars > 60 — truncado no Google"
+    },
+    {
+      "category": "SEO",
+      "test": "test_seo_snapshot_audit[/sobre-sobre]",
+      "message": "/sobre: título 66 chars > 60 — truncado no Google"
+    },
+    {
+      "category": "SEO",
+      "test": "test_seo_snapshot_audit[/sobre-sobre]",
+      "message": "/sobre: description 178 chars > 160 — truncada"
+    },
+    {
+      "category": "SEO",
+      "test": "test_seo_snapshot_audit[/planos-planos/pricing]",
+      "message": "/planos: título 76 chars > 60 — truncado no Google"
+    },
+    {
+      "category": "SEO",
+      "test": "test_seo_snapshot_audit[/features-features]",
+      "message": "/features: título 67 chars > 60 — truncado no Google"
+    },
+    {
+      "category": "SEO",
+      "test": "test_structured_data_present[/blog-expected_types2]",
+      "message": "/blog: structured data 'Blog' ausente. Presentes: ['Organization', 'WebSite', 'SoftwareApplication']. Rich results no Google dependem deste schema."
+    },
+    {
+      "category": "CONTENT",
+      "test": "test_blog_has_articles_listed",
+      "message": "/blog lista 0 artigos visíveis — hub de blog com poucos artigos linkados impacta crawlability."
+    },
+    {
+      "category": "UX",
+      "test": "test_planos_page_shows_prices",
+      "message": "/planos não destaca o período de trial de 14 dias — reduzir fricção mencionando 'sem cartão' e 'gratuito por 14 dias' aumenta conversão."
+    },
+    {
+      "category": "UX",
+      "test": "test_ajuda_page_has_searchable_content",
+      "message": "/ajuda sem campo de busca — usuários com dúvida específica precisam navegar manualmente. Campo de busca reduz tickets de suporte."
+    }
+  ]
+}
