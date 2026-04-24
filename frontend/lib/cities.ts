@@ -31,25 +31,37 @@ export function slugify(input: string): string {
 
 /**
  * Raw UF -> cities mapping mirroring backend/routes/blog_stats.py::UF_CITIES.
- * When the backend adds more cities, append them here.
+ * STORY-SEO-012: Expanded from 16 → 27 UFs to include all Brazilian state
+ * capitals. When the backend adds more cities, append them here.
  */
 const UF_CITIES_RAW: Record<string, string[]> = {
-  SP: ['São Paulo', 'Campinas', 'Guarulhos', 'São Bernardo do Campo', 'Osasco', 'Santo André', 'Mauá', 'Mogi das Cruzes', 'Diadema'],
-  RJ: ['Rio de Janeiro', 'Niterói', 'Duque de Caxias', 'Nova Iguaçu', 'São Gonçalo', 'Belford Roxo', 'São João de Meriti'],
-  MG: ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora', 'Betim', 'Montes Claros', 'Ribeirão das Neves'],
+  AC: ['Rio Branco', 'Cruzeiro do Sul', 'Sena Madureira'],
+  AL: ['Maceió', 'Arapiraca', 'Palmeira dos Índios', 'Rio Largo'],
+  AM: ['Manaus', 'Parintins', 'Itacoatiara', 'Manacapuru'],
+  AP: ['Macapá', 'Santana', 'Laranjal do Jari'],
+  BA: ['Salvador', 'Feira de Santana', 'Vitória da Conquista', 'Camaçari', 'Juazeiro', 'Ilhéus', 'Itabuna'],
+  CE: ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Maracanaú', 'Sobral'],
   DF: ['Brasília'],
-  PR: ['Curitiba', 'Londrina', 'Maringá', 'Cascavel', 'Ponta Grossa', 'São José dos Pinhais', 'Foz do Iguaçu'],
-  BA: ['Salvador', 'Feira de Santana', 'Vitória da Conquista', 'Camaçari', 'Juazeiro', 'Ilhéus'],
-  RS: ['Porto Alegre', 'Caxias do Sul', 'Pelotas', 'Canoas', 'Santa Maria', 'Viamão'],
+  ES: ['Vitória', 'Vila Velha', 'Serra', 'Cariacica', 'Cachoeiro de Itapemirim'],
   GO: ['Goiânia', 'Aparecida de Goiânia', 'Anápolis', 'Rio Verde', 'Águas Lindas de Goiás'],
-  PE: ['Recife', 'Jaboatão dos Guararapes', 'Olinda', 'Caruaru', 'Petrolina'],
-  SC: ['Florianópolis', 'Joinville', 'Blumenau', 'São José'],
-  CE: ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Maracanaú'],
-  PA: ['Belém', 'Ananindeua', 'Santarém', 'Marabá'],
-  AM: ['Manaus', 'Parintins', 'Manacapuru'],
   MA: ['São Luís', 'Imperatriz', 'Timon', 'Caxias'],
-  ES: ['Vitória', 'Vila Velha', 'Serra', 'Cariacica'],
-  RN: ['Mossoró'],
+  MG: ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora', 'Betim', 'Montes Claros', 'Ribeirão das Neves'],
+  MS: ['Campo Grande', 'Dourados', 'Três Lagoas', 'Corumbá'],
+  MT: ['Cuiabá', 'Várzea Grande', 'Rondonópolis', 'Sinop'],
+  PA: ['Belém', 'Ananindeua', 'Santarém', 'Marabá', 'Castanhal'],
+  PB: ['João Pessoa', 'Campina Grande', 'Santa Rita', 'Patos'],
+  PE: ['Recife', 'Jaboatão dos Guararapes', 'Olinda', 'Caruaru', 'Petrolina'],
+  PI: ['Teresina', 'Parnaíba', 'Picos', 'Floriano'],
+  PR: ['Curitiba', 'Londrina', 'Maringá', 'Cascavel', 'Ponta Grossa', 'São José dos Pinhais', 'Foz do Iguaçu'],
+  RJ: ['Rio de Janeiro', 'Niterói', 'Duque de Caxias', 'Nova Iguaçu', 'São Gonçalo', 'Belford Roxo', 'São João de Meriti', 'Campos dos Goytacazes', 'Petrópolis'],
+  RN: ['Natal', 'Mossoró', 'Parnamirim', 'São Gonçalo do Amarante'],
+  RO: ['Porto Velho', 'Ji-Paraná', 'Ariquemes', 'Vilhena'],
+  RR: ['Boa Vista', 'Rorainópolis'],
+  RS: ['Porto Alegre', 'Caxias do Sul', 'Pelotas', 'Canoas', 'Santa Maria', 'Viamão', 'Novo Hamburgo'],
+  SC: ['Florianópolis', 'Joinville', 'Blumenau', 'São José', 'Chapecó', 'Criciúma'],
+  SE: ['Aracaju', 'Nossa Senhora do Socorro', 'Lagarto', 'Itabaiana'],
+  SP: ['São Paulo', 'Campinas', 'Guarulhos', 'São Bernardo do Campo', 'Osasco', 'Santo André', 'Mauá', 'Mogi das Cruzes', 'Diadema', 'Sorocaba', 'Ribeirão Preto', 'São José dos Campos'],
+  TO: ['Palmas', 'Araguaína', 'Gurupi', 'Porto Nacional'],
 };
 
 function buildCities(): CityMeta[] {
@@ -64,7 +76,7 @@ function buildCities(): CityMeta[] {
 
 /**
  * Canonical list of cities for programmatic SEO pages.
- * Currently 81 cities across 16 UFs (matches backend UF_CITIES).
+ * STORY-SEO-012: ~140 cities across 27 UFs (matches backend UF_CITIES).
  */
 export const CITIES: CityMeta[] = buildCities();
 

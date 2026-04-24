@@ -31,7 +31,14 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install httpx pytest pytest-asyncio pytest-timeout
+        # Full requirements.txt needed because tests/conftest.py autouse fixtures
+        # (_enable_feature_gated_routes, _force_sync_search) import `config`, which
+        # cascades into fastapi/pydantic at collection time. Minimal httpx-only
+        # install caused ModuleNotFoundError: 'fastapi' on every parity test.
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          pip install pytest-asyncio pytest-timeout
 
       - name: Run parity contract tests
         env:

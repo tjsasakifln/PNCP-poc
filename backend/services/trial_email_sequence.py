@@ -498,6 +498,21 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                         except Exception:
                             pass
 
+                        # Mixpanel funnel event — enables cohort attribution
+                        # (which email led to which conversion). Fire-and-forget.
+                        try:
+                            from analytics_events import track_funnel_event
+
+                            track_funnel_event("trial_email_sent", user_id, {
+                                "email_type": email_type,
+                                "email_number": email_number,
+                                "day": day,
+                                "is_conversion_email": is_conversion_email,
+                                "has_payment_method": has_payment_method,
+                            })
+                        except Exception:
+                            pass
+
                         logger.info(
                             "trial_sequence_email_sent",
                             extra={

@@ -376,6 +376,62 @@ async def handle_subscription_deleted(sb, event: stripe.Event) -> None:
     # STORY-225 AC14: Send cancellation confirmation email
     _send_cancellation_email(sb, user_id, local_sub)
 
+    # Emit subscription_canceled funnel event (fire-and-forget, never breaks webhook)
+    try:
+        _emit_subscription_canceled_event(user_id, local_sub, subscription_data)
+    except Exception:
+        logger.exception("Failed to emit subscription_canceled analytics event")
+
+
+def _emit_subscription_canceled_event(user_id: str, local_sub: dict, subscription_data) -> None:
+    """Emit `subscription_canceled` Mixpanel funnel event.
+
+    Closes churn cohort tracking — without this, churn is invisible in Mixpanel.
+    Fire-and-forget: failures logged, never raised.
+    """
+    from analytics_events import track_funnel_event
+
+    def _get(d, key, default=None):
+        if hasattr(d, "get"):
+            return d.get(key, default)
+        return getattr(d, key, default)
+
+    cancellation_details = _get(subscription_data, "cancellation_details", {}) or {}
+    cancellation_reason = _get(cancellation_details, "reason", None)
+
+    stripe_interval = (
+        _get(_get(subscription_data, "plan", {}) or {}, "interval", None)
+        or _get(
+            (_get(_get(subscription_data, "items", {}) or {}, "data", []) or [{}])[0].get("plan", {}) if isinstance(
+                (_get(_get(subscription_data, "items", {}) or {}, "data", []) or [{}])[0], dict
+            ) else {},
+            "interval",
+            None,
+        )
+    )
+    stripe_interval_count = (
+        _get(_get(subscription_data, "plan", {}) or {}, "interval_count", 1)
+        or 1
+    )
+    if stripe_interval == "year":
+        billing_period = "annual"
+    elif stripe_interval == "month" and stripe_interval_count == 6:
+        billing_period = "semiannual"
+    else:
+        billing_period = "monthly"
+
+    track_funnel_event("subscription_canceled", user_id, {
+        "plan_id": local_sub.get("plan_id"),
+        "stripe_subscription_id": _get(subscription_data, "id", None),
+        "billing_period": billing_period,
+        "cancellation_reason": cancellation_reason,
+        "expires_at": local_sub.get("expires_at"),
+    })
+    logger.info(
+        f"subscription_canceled event emitted: user={user_id[:8]}***, "
+        f"plan={local_sub.get('plan_id')}, reason={cancellation_reason}"
+    )
+
 
 async def handle_subscription_trial_will_end(sb, event: stripe.Event) -> None:
     """
