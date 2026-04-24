@@ -1,6 +1,6 @@
 {
-  "version": "5.0.3",
-  "installedAt": "2026-03-22T14:17:38.654Z",
+  "version": "5.0.4",
+  "installedAt": "2026-04-14T14:52:10.119Z",
   "mode": "project-development",
   "fileHashes": {
     "core\\index.js": "sha256:970b617b0e723e8248065f698eca2298a5a0b72e3e43ee820ea85294555736e2",
@@ -13,11 +13,11 @@
     "data\\agent-config-requirements.yaml": "sha256:68e87b5777d1872c4fed6644dd3c7e3c3e8fd590df7d2b58c36d541cf8e38dd3",
     "data\\aiox-kb.md": "sha256:72c569d40b3c79a6235d571d901b87972dd72253b885b03b95b254f2dea05832",
     "data\\capability-detection.js": "sha256:5176849c01d90e5867f18962e03ff10a10628f40c30fe5c8cb65209f833c0884",
-    "data\\entity-registry.yaml": "sha256:151aca46769c614f0238e7a8e2968884c3888b438ff1c634f0eeb2505e325b83",
+    "data\\entity-registry.yaml": "sha256:b9291b845201a58d059c62eed6ef328686a9b163b5e651a553e74e279b76f9a6",
     "data\\learned-patterns.yaml": "sha256:24ac0b160615583a0ff783d3da8af80b7f94191575d6db2054ec8e10a3f945dc",
     "data\\mcp-discipline.js": "sha256:b535d69a72cfd326ee9102e8855693600c95a97591fcb3a4ea655e5255be3d12",
     "data\\mcp-tool-examples.yaml": "sha256:8a38e4171d7434d79f83032d9c37f2f604d9411dbec6c3c0334d6661481745fd",
-    "data\\registry-update-log.jsonl": "sha256:decc1a8e979144cf393607ff550f16553c73b04ea6c4cbef9791ce98315d21f9",
+    "data\\registry-update-log.jsonl": "sha256:1005eb3e6ac49d13dc0059544d5dc16e9493e55b5a97e38970591e4dd798b895",
     "data\\technical-preferences.md": "sha256:abb9327d3ce96a3cd49e73a555da4078e81ea0c4dbfe7154420c3ec7ac1c93b7",
     "data\\tok2-validation.js": "sha256:743e4663c8e7dd8a7080247ecaafd78f7b901594d7f0ffd6ccf8baab78e3e12b",
     "data\\tok3-token-comparison.js": "sha256:1f484f8054bec7a7e8055acbc9fddd7863a769948c30c6db42c5c8694410da8f",
