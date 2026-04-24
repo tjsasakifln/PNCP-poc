@@ -4,13 +4,19 @@
 # Both are needed: this for integration + E2E, backend-tests.yml for quality gates.
 # NOTE: The E2E job here duplicates e2e.yml. e2e.yml is more complete (uploads artifacts,
 # runs smoke tests). tests.yml E2E job serves as a gating step that requires unit tests first.
+#
+# mission sparkling-patterson 2026-04-24: deferred to post-merge. PR gate
+# is backend-tests.yml + frontend-tests.yml (those are what branch
+# protection enforces). Running the Python 3.12 matrix + integration +
+# E2E on every PR was duplicated work that added 8-10 min of queue time
+# per PR. Now runs on push to main/master (catches regressions before
+# deploy) and workflow_dispatch (manual on-demand for risky PRs).
 name: "Tests (Full Matrix + Integration + E2E)"
 
 on:
-  pull_request:
-    branches: [master, main]
   push:
     branches: [master, main]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
