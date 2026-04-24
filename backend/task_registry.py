@@ -93,39 +93,52 @@ class TaskRegistry:
                 f"(got {type(start_fn).__name__})"
             )
 
+        # STORY-413: Validate that start_fn is an async callable. Both task
+        # factories (is_coroutine=False) and raw coroutines (is_coroutine=True)
+        # must be async — a sync function passed here would crash at startup.
+        if not inspect.iscoroutinefunction(start_fn):
+            if is_coroutine:
+                raise TaskRegistrationError(
+                    f"TaskRegistry.register('{name}'): is_coroutine=True but "
+                    f"start_fn is not a coroutine function "
+                    f"(inspect.iscoroutinefunction returned False). "
+                    f"Pass an `async def` function or set is_coroutine=False."
+                )
+            else:
+                raise TaskRegistrationError(
+                    f"TaskRegistry.register('{name}'): start_fn is not an async callable "
+                    f"(got {type(start_fn).__name__}). "
+                    f"Use `async def` for task factories."
+                )
+
         # STORY-413: Validate that the shape of start_fn matches the declared
         # mode. The registry invokes ``start_fn()`` with zero arguments in
-        # start_all(), so any required positional parameter would raise a
-        # TypeError("... missing 1 required positional argument: ...") at
-        # startup — which is exactly the crash loop we are protecting against.
+        # start_all(), so any required parameter would raise a
+        # TypeError("... missing 1 required argument: ...") at startup.
         try:
             sig = inspect.signature(start_fn)
         except (TypeError, ValueError):
             sig = None
 
         if sig is not None:
-            required_positional = [
+            required_params = [
                 p
                 for p in sig.parameters.values()
                 if p.kind
-                in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                in (
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    inspect.Parameter.KEYWORD_ONLY,
+                )
                 and p.default is inspect.Parameter.empty
             ]
-            if required_positional:
+            if required_params:
                 raise TaskRegistrationError(
-                    f"TaskRegistry.register('{name}'): start_fn has required "
-                    f"positional arguments {[p.name for p in required_positional]!r}; "
-                    f"registry invokes start_fn() with zero arguments. "
+                    f"TaskRegistry.register('{name}'): start_fn must accept "
+                    f"zero required arguments (registry calls start_fn() with no args); "
+                    f"found required params: {[p.name for p in required_params]!r}. "
                     f"Wrap the factory in a zero-arg lambda or set defaults."
                 )
-
-        if is_coroutine and not inspect.iscoroutinefunction(start_fn):
-            raise TaskRegistrationError(
-                f"TaskRegistry.register('{name}'): is_coroutine=True but "
-                f"start_fn is not an async function "
-                f"(inspect.iscoroutinefunction returned False). "
-                f"Either pass an `async def` or set is_coroutine=False."
-            )
 
         if name in self._entries:
             logger.warning("TaskRegistry: duplicate registration for '%s' — overwriting", name)
@@ -141,22 +154,26 @@ class TaskRegistry:
         # STORY-413: Structured pre-start log so that if the middleware stack
         # crashes during task scheduling, Sentry/Railway logs show exactly
         # which tasks were about to be started and in which mode.
+        task_roster = [
+            f"{n}({'coroutine' if self._entries[n].is_coroutine else 'factory'})"
+            for n in self._start_order
+        ]
         logger.info(
-            "TaskRegistry.start_all: about to start %d tasks: %s",
+            "TaskRegistry: starting %d tasks in order: %s",
             len(self._start_order),
-            [
-                {
-                    "name": n,
-                    "mode": "coroutine" if self._entries[n].is_coroutine else "factory",
-                    "qualname": getattr(self._entries[n].start_fn, "__qualname__", repr(self._entries[n].start_fn)),
-                }
-                for n in self._start_order
-            ],
+            task_roster,
         )
 
         results: Dict[str, bool] = {}
         for name in self._start_order:
             entry = self._entries[name]
+            qualname = getattr(entry.start_fn, "__qualname__", repr(entry.start_fn))
+            logger.info(
+                "TaskRegistry: starting task=%s mode=%s qualname=%s",
+                name,
+                "coroutine" if entry.is_coroutine else "factory",
+                qualname,
+            )
             try:
                 if entry.is_coroutine:
                     entry.task = asyncio.create_task(entry.start_fn())
@@ -170,10 +187,10 @@ class TaskRegistry:
                 entry.error = f"{type(e).__name__}: {e}"
                 results[name] = False
                 logger.error(
-                    "TaskRegistry: failed to start '%s' (mode=%s, qualname=%s): %s",
+                    "TaskRegistry: failed to start task=%s (mode=%s, qualname=%s): %s",
                     name,
                     "coroutine" if entry.is_coroutine else "factory",
-                    getattr(entry.start_fn, "__qualname__", repr(entry.start_fn)),
+                    qualname,
                     entry.error,
                 )
 
