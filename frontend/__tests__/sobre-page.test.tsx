@@ -171,7 +171,7 @@ describe('/sobre metadata export', () => {
     // Import the module to check metadata export
     const module = await import('../app/sobre/page');
     expect(module.metadata).toBeDefined();
-    expect(module.metadata.title).toContain('Sobre o SmartLic');
+    expect(module.metadata.title).toContain('Metodologia');
     expect(module.metadata.description).toBeTruthy();
   });
 });
