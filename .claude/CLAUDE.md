@@ -226,6 +226,16 @@ npm run trace -- workflow-name
 <!-- These sections are managed by AIOX. Edit content between markers carefully. -->
 <!-- Your custom content above will be preserved during updates. -->
 
+
+
+
+
+
+
+
+
+
+
 <!-- AIOX-MANAGED-START: core-framework -->
 ## Core Framework Understanding
 
