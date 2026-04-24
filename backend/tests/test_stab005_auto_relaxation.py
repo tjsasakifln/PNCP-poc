@@ -104,17 +104,6 @@ def _make_raw_licitacoes(n, uf="SC"):
 class TestAutoRelaxationReturnsResults:
     """STAB-005 AC6: When normal filtering returns 0, auto-relaxation kicks in."""
 
-    @pytest.mark.xfail(
-        strict=False,
-        reason=(
-            "BTS-012: test expects relaxation_level=2 (Level 2 substring match) but "
-            "prod consistently returns relaxation_level=3 (Level 3 guidance fallback). "
-            "Needs investigation of filter_stage.py stage_filter() logic — either "
-            "Level 2 substring match is not triggering as designed, or test fixture "
-            "custom_terms='material' is not substring-matching 'materiais' due to "
-            "normalize_text differences. Non-blocking for prod (results still returned)."
-        ),
-    )
     @pytest.mark.asyncio
     async def test_level2_relaxation_when_normal_returns_zero(self):
         """Level 2: inline substring matching recovers results.
@@ -125,8 +114,13 @@ class TestAutoRelaxationReturnsResults:
         function is NOT re-called — substring match runs directly on
         `ctx.licitacoes_raw`. Test rewritten to reflect that contract.
 
-        Scenario: custom_terms "material" matches "materiais" (normalized
-        substring) in the raw object texts → Level 2 recovers results.
+        Scenario: custom_terms "materia" substring-matches "materiais" in the
+        raw object texts after normalize_text → Level 2 recovers results.
+
+        BTS-012 (generic-sparrow): fixture corrected from "material" to
+        "materia". "material" is NOT a substring of "materiais" (diverge at
+        7th char: l vs i). "materia" IS a substring (m-a-t-e-r-i-a prefix).
+        Removed xfail marker — test is now deterministic.
         """
         raw = _make_raw_licitacoes(20)
 
@@ -142,9 +136,10 @@ class TestAutoRelaxationReturnsResults:
         deps = make_deps(aplicar_todos_filtros=mock_filter)
         ctx = make_ctx(
             licitacoes_raw=raw,
-            # "material" will substring-match "materiais" in the fake
-            # objectoCompra strings after normalize_text.
-            custom_terms=["material"],
+            # "materia" substring-matches "materiais" after normalize_text.
+            # Original "material" diverges from "materiais" at 7th char (l vs i),
+            # which is why old fixture failed silently and forced xfail.
+            custom_terms=["materia"],
         )
         pipeline = SearchPipeline(deps)
 
@@ -160,6 +155,8 @@ class TestAutoRelaxationReturnsResults:
         # Recovered bids should be tagged with substring_relaxation provenance.
         for bid in ctx.licitacoes_filtradas:
             assert bid.get("_relevance_source") == "substring_relaxation"
+            # AC: matched_terms preserves user's original custom_terms ("materia")
+            assert bid.get("_matched_terms") == ["materia"]
 
     @pytest.mark.asyncio
     async def test_level3_empty_with_guidance(self):
