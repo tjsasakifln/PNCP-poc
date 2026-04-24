@@ -395,12 +395,8 @@ export default async function sitemap(props: { id: Promise<string> }): Promise<M
           changeFrequency: 'monthly' as const,
           priority: 0.8,
         },
-        {
-          url: `${baseUrl}/observatorio/raio-x-marco-2026`,
-          lastModified: new Date('2026-04-01'),
-          changeFrequency: 'monthly' as const,
-          priority: 0.7,
-        },
+        // STORY-SEO-017 AC4: removido /observatorio/raio-x-marco-2026 — rota nao existe
+        // em frontend/app/observatorio/, gerava 404 no sitemap sweep 2026-04-24.
         // S3: Comparador de Editais
         {
           url: `${baseUrl}/comparador`,
@@ -664,19 +660,27 @@ export default async function sitemap(props: { id: Promise<string> }): Promise<M
         };
       });
 
-      // SEO Wave 3.2: Licitações do dia — last 30 days
-      const licitacoesDoDialRoutes: MetadataRoute.Sitemap = Array.from({ length: 30 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().slice(0, 10);
-        const freq: 'hourly' | 'daily' = i === 0 ? 'hourly' : 'daily';
-        return {
-          url: `${baseUrl}/blog/licitacoes-do-dia/${dateStr}`,
-          lastModified: i === 0 ? today : d,
-          changeFrequency: freq,
-          priority: i === 0 ? 0.9 : 0.7,
-        };
-      });
+      // STORY-SEO-017: Licitacoes do dia — apenas datas com >=5 bids ativos.
+      // Substitui Array.from({length:30}) hardcoded que gerava 42 URLs 404 no GSC
+      // sweep 2026-04-24 (datas sem dados em pncp_raw_bids: fim de semana, feriado).
+      const indexableDates = await fetchSitemapJson<string[]>(
+        '/v1/sitemap/licitacoes-do-dia-indexable',
+        (d) => ((d as { dates?: string[] }).dates ?? []),
+        'licitacoes-do-dia-indexable',
+      );
+      const todayStr = today.toISOString().slice(0, 10);
+      const licitacoesDoDialRoutes: MetadataRoute.Sitemap = (indexableDates ?? [])
+        .slice(0, 30)
+        .map((dateStr) => {
+          const d = new Date(dateStr + 'T12:00:00');
+          const isToday = dateStr === todayStr;
+          return {
+            url: `${baseUrl}/blog/licitacoes-do-dia/${dateStr}`,
+            lastModified: isToday ? today : d,
+            changeFrequency: (isToday ? 'hourly' : 'daily') as 'hourly' | 'daily',
+            priority: isToday ? 0.9 : 0.7,
+          };
+        });
 
       // SEO Frente 4: City pSEO pages (/blog/licitacoes/cidade/[cidade])
       // STORY-439 AC2: City × Sector pSEO pages (1.215 URLs) removidas do sitemap.

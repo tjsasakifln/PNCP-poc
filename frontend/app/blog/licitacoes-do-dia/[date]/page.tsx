@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { buildCanonical, SITE_URL } from '@/lib/seo';
 import { getAuthorBySlug, DEFAULT_AUTHOR_SLUG } from '@/lib/authors';
@@ -119,8 +118,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { date } = await params;
   const data = await fetchDailyData(date);
 
+  // STORY-SEO-017 AC3: datas sem dados retornam 200 + noindex (nao 404).
+  // Elimina os 42 URLs 404 reportados no GSC sweep 2026-04-24.
   if (!data) {
-    return { title: 'Digest Diario', robots: { index: false } };
+    const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(date);
+    return {
+      title: isValidDate ? `Sem licitacoes publicadas em ${date} | SmartLic` : 'Digest Diario',
+      robots: { index: false, follow: false },
+      alternates: isValidDate ? { canonical: buildCanonical(`/blog/licitacoes-do-dia/${date}`) } : undefined,
+    };
   }
 
   const formattedDate = formatDateBR(date);
@@ -209,8 +215,43 @@ export default async function DailyDigestDetailPage({ params }: Props) {
   const { date } = await params;
   const data = await fetchDailyData(date);
 
+  // STORY-SEO-017 AC3: datas sem dados renderizam fallback graceful (200 + noindex
+  // via generateMetadata). Antes era notFound() -> 404 -> 42 URLs penalizados no GSC.
   if (!data) {
-    notFound();
+    const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(date);
+    const formattedDate = isValidDate ? formatDateBR(date) : date;
+    return (
+      <div className="min-h-screen flex flex-col bg-canvas">
+        <LandingNavbar />
+        <main className="flex-1">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold text-ink mb-3">
+              {isValidDate ? `Sem licitacoes publicadas em ${formattedDate}` : 'Data invalida'}
+            </h1>
+            <p className="text-ink-secondary mb-8">
+              {isValidDate
+                ? 'Nao encontramos licitacoes publicadas no PNCP nesta data. Pode ser fim de semana, feriado ou simplesmente um dia de baixo volume.'
+                : 'Esta URL nao corresponde a uma data valida (formato esperado: YYYY-MM-DD).'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/blog/licitacoes-do-dia"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-brand-blue text-white font-semibold hover:bg-brand-blue/90 transition-colors"
+              >
+                Ver outros dias
+              </Link>
+              <Link
+                href="/buscar"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-lg border border-[var(--border)] text-ink font-semibold hover:bg-surface-1 transition-colors"
+              >
+                Buscar editais
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   const jsonLd = buildJsonLd(data);
