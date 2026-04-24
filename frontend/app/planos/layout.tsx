@@ -3,7 +3,7 @@ import { ErrorBoundary } from "../../components/ErrorBoundary";
 
 // GTM-COPY-006 AC5: Per-page metadata for /planos
 export const metadata: Metadata = {
-  title: "Investimento SmartLic Pro — Quanto Custa Filtrar com Inteligência",
+  title: "Planos e Preços — SmartLic Pro",
   description:
     "SmartLic Pro a partir de R$ 297/mês. Avaliação de viabilidade, exportação Excel e pipeline de oportunidades. Sem contrato. 14 dias de acesso completo.",
   alternates: {
