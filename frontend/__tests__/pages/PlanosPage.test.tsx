@@ -287,7 +287,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Começar a filtrar oportunidades/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Começar trial grátis/i })).toBeInTheDocument();
       });
     });
 
@@ -302,7 +302,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Começar a filtrar oportunidades/i });
+        const ctaButton = screen.getByRole('button', { name: /Começar trial grátis/i });
         fireEvent.click(ctaButton);
       });
 

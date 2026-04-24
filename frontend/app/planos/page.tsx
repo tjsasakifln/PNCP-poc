@@ -315,7 +315,17 @@ export default function PlanosPage() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-display font-bold text-[var(--ink)] mb-4">Comece a Vencer Licitações</h1>
-          <p className="text-lg text-[var(--ink-secondary)] max-w-2xl mx-auto">O SmartLic é um só. Você decide com que frequência quer investir em inteligência competitiva.</p>
+          <p className="text-lg text-[var(--ink-secondary)] max-w-2xl mx-auto mb-5">O SmartLic é um só. Você decide com que frequência quer investir em inteligência competitiva.</p>
+          {/* SAB-014: Trial badge above the fold — "14 dias grátis • sem cartão" */}
+          <div
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-blue)]/30 bg-[var(--brand-blue)]/10 px-4 py-1.5 text-sm font-medium text-[var(--brand-blue)]"
+            data-testid="trial-badge"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span><strong>14 dias grátis</strong> · Sem cartão de crédito</span>
+          </div>
         </div>
 
         <PlanStatusBanners
