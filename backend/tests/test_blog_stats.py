@@ -275,6 +275,108 @@ class TestCidadeStats:
 
 
 # ---------------------------------------------------------------------------
+# STORY-SEO-012: UF_CITIES expansion (16 → 27 UFs, 12 capitals unblocked)
+# ---------------------------------------------------------------------------
+
+# All 27 Brazilian state capitals + their slug forms (slug → expected_uf)
+_CAPITALS_27 = [
+    ("rio-branco", "AC"), ("maceio", "AL"), ("manaus", "AM"), ("macapa", "AP"),
+    ("salvador", "BA"), ("fortaleza", "CE"), ("brasilia", "DF"), ("vitoria", "ES"),
+    ("goiania", "GO"), ("sao-luis", "MA"), ("belo-horizonte", "MG"),
+    ("campo-grande", "MS"), ("cuiaba", "MT"), ("belem", "PA"), ("joao-pessoa", "PB"),
+    ("recife", "PE"), ("teresina", "PI"), ("curitiba", "PR"), ("rio-de-janeiro", "RJ"),
+    ("natal", "RN"), ("porto-velho", "RO"), ("boa-vista", "RR"), ("porto-alegre", "RS"),
+    ("florianopolis", "SC"), ("aracaju", "SE"), ("sao-paulo", "SP"), ("palmas", "TO"),
+]
+
+# 12 capitals previously returning 404 (story scope)
+_CAPITALS_PREVIOUSLY_404 = [
+    "maceio", "joao-pessoa", "aracaju", "teresina", "rio-branco", "porto-velho",
+    "boa-vista", "macapa", "palmas", "cuiaba", "campo-grande", "natal",
+]
+
+
+class TestStorySEO012CapitalsExpansion:
+    """STORY-SEO-012: validate UF_CITIES covers all 27 Brazilian capitals.
+
+    Closes 12-capital gap that returned 404 before this story (Maceió, João
+    Pessoa, Aracaju, Teresina, Rio Branco, Porto Velho, Boa Vista, Macapá,
+    Palmas, Cuiabá, Campo Grande, Natal).
+    """
+
+    def test_uf_cities_dict_has_27_entries(self):
+        """AC3: structural — UF_CITIES must cover all 27 Brazilian UFs."""
+        from routes.blog_stats import UF_CITIES, ALL_UFS
+
+        assert len(UF_CITIES) == 27, (
+            f"Expected 27 UFs, got {len(UF_CITIES)}: missing "
+            f"{set(ALL_UFS) - set(UF_CITIES.keys())}"
+        )
+        assert set(UF_CITIES.keys()) == set(ALL_UFS), (
+            f"UF_CITIES keys must equal ALL_UFS. "
+            f"Missing: {set(ALL_UFS) - set(UF_CITIES.keys())}, "
+            f"Extra: {set(UF_CITIES.keys()) - set(ALL_UFS)}"
+        )
+        # Each UF must have at least the capital (≥1 city)
+        for uf, cities in UF_CITIES.items():
+            assert len(cities) >= 1, f"UF {uf} has no cities listed"
+
+    @pytest.mark.parametrize("slug,expected_uf", _CAPITALS_27)
+    def test_all_27_state_capitals_return_200(self, client, slug, expected_uf):
+        """AC2: All 27 state capitals must return HTTP 200 (not 404).
+
+        With mocked DataLake (empty results), total_editais=0 is acceptable;
+        the assertion is that the slug resolves to a UF and the endpoint
+        returns 200, not 404.
+        """
+        with patch("datalake_query.query_datalake", _mock_dl([])):
+            res = client.get(f"/v1/blog/stats/cidade/{slug}")
+            assert res.status_code == 200, (
+                f"Capital '{slug}' returned {res.status_code} (expected 200). "
+                f"UF_CITIES likely missing entry for {expected_uf}."
+            )
+            data = res.json()
+            assert data["uf"] == expected_uf, (
+                f"Capital '{slug}' resolved to UF '{data['uf']}', "
+                f"expected '{expected_uf}'"
+            )
+
+    @pytest.mark.parametrize("slug", _CAPITALS_PREVIOUSLY_404)
+    def test_cidade_stats_newly_added_capitals_work(self, client, slug):
+        """AC6: 12 capitals that returned 404 before STORY-SEO-012 must now return 200.
+
+        Regression guard for the specific scope of this story.
+        """
+        with patch("datalake_query.query_datalake", _mock_dl([])):
+            res = client.get(f"/v1/blog/stats/cidade/{slug}")
+            assert res.status_code == 200, (
+                f"REGRESSION: capital '{slug}' returned {res.status_code} "
+                f"(was 404 before STORY-SEO-012; must be 200 now). "
+                f"Check UF_CITIES dict in backend/routes/blog_stats.py."
+            )
+
+    def test_uf_cities_each_uf_has_capital(self):
+        """Sanity: each UF entry must include its actual capital as the first city."""
+        from routes.blog_stats import UF_CITIES
+
+        # UF -> expected capital (display name with accents)
+        capitals = {
+            "AC": "Rio Branco", "AL": "Maceió", "AM": "Manaus", "AP": "Macapá",
+            "BA": "Salvador", "CE": "Fortaleza", "DF": "Brasília", "ES": "Vitória",
+            "GO": "Goiânia", "MA": "São Luís", "MG": "Belo Horizonte",
+            "MS": "Campo Grande", "MT": "Cuiabá", "PA": "Belém", "PB": "João Pessoa",
+            "PE": "Recife", "PI": "Teresina", "PR": "Curitiba", "RJ": "Rio de Janeiro",
+            "RN": "Natal", "RO": "Porto Velho", "RR": "Boa Vista", "RS": "Porto Alegre",
+            "SC": "Florianópolis", "SE": "Aracaju", "SP": "São Paulo", "TO": "Palmas",
+        }
+        for uf, expected_capital in capitals.items():
+            assert expected_capital in UF_CITIES[uf], (
+                f"UF {uf}: capital '{expected_capital}' not in cities list "
+                f"{UF_CITIES[uf]}"
+            )
+
+
+# ---------------------------------------------------------------------------
 # Endpoint 4: GET /v1/blog/stats/panorama/{setor_id}
 # ---------------------------------------------------------------------------
 

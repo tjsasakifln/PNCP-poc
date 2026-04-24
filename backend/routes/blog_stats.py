@@ -45,24 +45,39 @@ TOP_UFS = ["SP", "RJ", "MG", "DF", "PR", "BA", "RS", "GO", "PE", "SC"]
 # Modality code → name mapping (Lei 14.133/2021 — PNCP codes)
 from config.pncp import MODALIDADES_PNCP as MODALITY_NAMES
 
-# UF → major cities mapping for city endpoint
+# UF → major cities mapping for city endpoint.
+# STORY-SEO-012: Expanded from 16 → 27 UFs to fix 12 capitals returning 404
+# (Maceió, João Pessoa, Aracaju, Teresina, Rio Branco, Porto Velho, Boa Vista,
+# Macapá, Palmas, Cuiabá, Campo Grande, Natal). Curadoria: capital + top 5-10
+# cidades por UF (IBGE população + PIB municipal).
 UF_CITIES: dict[str, list[str]] = {
-    "SP": ["São Paulo", "Campinas", "Guarulhos", "São Bernardo do Campo", "Osasco", "Santo André", "Mauá", "Mogi das Cruzes", "Diadema"],
-    "RJ": ["Rio de Janeiro", "Niterói", "Duque de Caxias", "Nova Iguaçu", "São Gonçalo", "Belford Roxo", "São João de Meriti"],
-    "MG": ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim", "Montes Claros", "Ribeirão das Neves"],
+    "AC": ["Rio Branco", "Cruzeiro do Sul", "Sena Madureira"],
+    "AL": ["Maceió", "Arapiraca", "Palmeira dos Índios", "Rio Largo"],
+    "AM": ["Manaus", "Parintins", "Itacoatiara", "Manacapuru"],
+    "AP": ["Macapá", "Santana", "Laranjal do Jari"],
+    "BA": ["Salvador", "Feira de Santana", "Vitória da Conquista", "Camaçari", "Juazeiro", "Ilhéus", "Itabuna"],
+    "CE": ["Fortaleza", "Caucaia", "Juazeiro do Norte", "Maracanaú", "Sobral"],
     "DF": ["Brasília"],
-    "PR": ["Curitiba", "Londrina", "Maringá", "Cascavel", "Ponta Grossa", "São José dos Pinhais", "Foz do Iguaçu"],
-    "BA": ["Salvador", "Feira de Santana", "Vitória da Conquista", "Camaçari", "Juazeiro", "Ilhéus"],
-    "RS": ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria", "Viamão"],
+    "ES": ["Vitória", "Vila Velha", "Serra", "Cariacica", "Cachoeiro de Itapemirim"],
     "GO": ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Águas Lindas de Goiás"],
-    "PE": ["Recife", "Jaboatão dos Guararapes", "Olinda", "Caruaru", "Petrolina"],
-    "SC": ["Florianópolis", "Joinville", "Blumenau", "São José"],
-    "CE": ["Fortaleza", "Caucaia", "Juazeiro do Norte", "Maracanaú"],
-    "PA": ["Belém", "Ananindeua", "Santarém", "Marabá"],
-    "AM": ["Manaus", "Parintins", "Manacapuru"],
     "MA": ["São Luís", "Imperatriz", "Timon", "Caxias"],
-    "ES": ["Vitória", "Vila Velha", "Serra", "Cariacica"],
-    "RN": ["Mossoró"],
+    "MG": ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim", "Montes Claros", "Ribeirão das Neves"],
+    "MS": ["Campo Grande", "Dourados", "Três Lagoas", "Corumbá"],
+    "MT": ["Cuiabá", "Várzea Grande", "Rondonópolis", "Sinop"],
+    "PA": ["Belém", "Ananindeua", "Santarém", "Marabá", "Castanhal"],
+    "PB": ["João Pessoa", "Campina Grande", "Santa Rita", "Patos"],
+    "PE": ["Recife", "Jaboatão dos Guararapes", "Olinda", "Caruaru", "Petrolina"],
+    "PI": ["Teresina", "Parnaíba", "Picos", "Floriano"],
+    "PR": ["Curitiba", "Londrina", "Maringá", "Cascavel", "Ponta Grossa", "São José dos Pinhais", "Foz do Iguaçu"],
+    "RJ": ["Rio de Janeiro", "Niterói", "Duque de Caxias", "Nova Iguaçu", "São Gonçalo", "Belford Roxo", "São João de Meriti", "Campos dos Goytacazes", "Petrópolis"],
+    "RN": ["Natal", "Mossoró", "Parnamirim", "São Gonçalo do Amarante"],
+    "RO": ["Porto Velho", "Ji-Paraná", "Ariquemes", "Vilhena"],
+    "RR": ["Boa Vista", "Rorainópolis"],
+    "RS": ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria", "Viamão", "Novo Hamburgo"],
+    "SC": ["Florianópolis", "Joinville", "Blumenau", "São José", "Chapecó", "Criciúma"],
+    "SE": ["Aracaju", "Nossa Senhora do Socorro", "Lagarto", "Itabaiana"],
+    "SP": ["São Paulo", "Campinas", "Guarulhos", "São Bernardo do Campo", "Osasco", "Santo André", "Mauá", "Mogi das Cruzes", "Diadema", "Sorocaba", "Ribeirão Preto", "São José dos Campos"],
+    "TO": ["Palmas", "Araguaína", "Gurupi", "Porto Nacional"],
 }
 
 def _strip_accents(text: str) -> str:

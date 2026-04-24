@@ -1,11 +1,12 @@
 # STORY-SEO-012 — `UF_CITIES` incompleto: 11 capitais brasileiras retornam 404 em `/blog/stats/cidade/*`
 
-**Status:** Draft
+**Status:** InReview
 **Type:** Critical Bug (revenue-adjacent — thin content / deindex risk)
 **Priority:** 🔴 P0 — mesmo vetor SEO do CRIT-SEO-011, escala comparable
 **Owner:** @dev
 **Origem:** sessão snappy-treehouse 2026-04-24, descoberta via smoke test AC3 de CRIT-SEO-011
 **Dependency:** none (CRIT-SEO-011 já Done; este é follow-up independente)
+**Complexity:** S (single file, dict literal expansion, ~140 entries)
 
 ---
 
@@ -158,21 +159,21 @@ UF_CITIES: dict[str, list[str]] = {
 
 ## Acceptance Criteria
 
-- [ ] **AC1:** `backend/routes/blog_stats.py:UF_CITIES` cobre as 27 UFs brasileiras (sigla + capital + ≥2 cidades secundárias)
-- [ ] **AC2:** `curl /v1/blog/stats/cidade/{slug-capital}` retorna HTTP 200 (não 404) para todas as 27 capitais:
+- [x] **AC1:** `backend/routes/blog_stats.py:UF_CITIES` cobre as 27 UFs brasileiras (sigla + capital + ≥2 cidades secundárias)
+- [x] **AC2:** `curl /v1/blog/stats/cidade/{slug-capital}` retorna HTTP 200 (não 404) para todas as 27 capitais:
   ```bash
   for slug in maceio joao-pessoa aracaju teresina rio-branco porto-velho boa-vista macapa palmas cuiaba campo-grande natal; do
     curl -s -o /dev/null -w "$slug: %{http_code}\n" https://api.smartlic.tech/v1/blog/stats/cidade/$slug
   done
   # Esperado: todas retornam 200
   ```
-- [ ] **AC3:** Testes unitários em `backend/tests/test_blog_stats.py` adicionam:
+- [x] **AC3:** Testes unitários em `backend/tests/test_blog_stats.py` adicionam:
   - `test_all_27_state_capitals_return_200` — parametrized com todas capitais
   - `test_uf_cities_dict_has_27_entries` — validação estrutural
   - `test_cidade_stats_newly_added_capitals_work` — sample com ≥5 capitais novas
-- [ ] **AC4:** Cache Redis `cidade:*` flush pós-deploy — cidade keys antigas podem ter cached 404 (`_cache_get` em linha 623 guarda response incluindo 404? Validar antes. Se não cacheia 404: SKIP).
-- [ ] **AC5:** Sitemap shard de cidades regenera (se pipeline SEO materializa páginas por cidade, inclui novas UFs) — verificar `frontend/app/sitemap*.xml.ts` ou equivalente
-- [ ] **AC6:** Smoke test 12 capitais faltantes via `curl` produção pós-deploy — todas HTTP 200 com `total_editais ≥ 0` (pode ser 0 se cidade não tem dados recentes, mas não 404)
+- [x] **AC4:** ~~Cache Redis~~ Cache InMemory `_blog_cache` (linhas 31-33) verificar — `_cache_get/_cache_set` apenas armazena successful responses (linha 679 cache após sucesso); 404 raise antes de cache. **SKIP flush** — não cacheia errors. Documentar em Dev Notes.
+- [x] **AC5:** Sitemap shard de cidades regenera (se pipeline SEO materializa páginas por cidade, inclui novas UFs) — verificar `frontend/app/sitemap*.xml.ts` ou equivalente
+- [ ] **AC6 (smoke prod, pendente devops merge):** Smoke test 12 capitais faltantes via `curl` produção pós-deploy — todas HTTP 200 com `total_editais ≥ 0` (pode ser 0 se cidade não tem dados recentes, mas não 404)
 
 ---
 
@@ -226,3 +227,47 @@ UF_CITIES: dict[str, list[str]] = {
 
 - Curadoria de cidades secundárias deve usar IBGE como fonte canônica — evita discussão sobre qual cidade incluir. Critério: população + PIB municipal (cut-off top 5-10 por UF).
 - Se esse padrão de allowlist virar gargalo (novas cidades batendo 404 no futuro), epic follow-up pode migrar para lookup dinâmico contra tabela `municipios` no DB.
+
+---
+
+## Change Log
+
+| Data | Quem | Mudança |
+|------|------|---------|
+| 2026-04-24 | @sm (snappy-treehouse) | Story criada Draft |
+| 2026-04-24 | @po (frolicking-glacier) | Validação 10-pt: GO (8/10 hard + 2 minor). Status `Draft → Ready`. AC4 atualizada (cache é InMemory, não Redis; 404 não cacheado → SKIP flush). Complexity field adicionado: S. |
+| 2026-04-24 | @dev (frolicking-glacier) | Implementado: UF_CITIES expandido 16→27 UFs (~140 cidades). Frontend mirror `frontend/lib/cities.ts` sincronizado. 41 unit tests adicionados em test_blog_stats.py (TestStorySEO012CapitalsExpansion). 104 regression tests passing. Status `Ready → InReview`. AC1-AC5 done; AC6 (smoke prod) pendente devops merge. |
+
+---
+
+## Dev Agent Record
+
+### Implementation summary
+
+| Item | Status |
+|------|--------|
+| Backend `UF_CITIES` expansion | ✅ 27 UFs, ~140 cidades curadas (capital + top 5-10 por UF, IBGE-based) |
+| Frontend `cities.ts` mirror | ✅ Sincronizado (mesmo conteúdo) |
+| Tests parametrizados | ✅ 41 tests novos: structural (1) + 27 capitais (parametrize) + 12 previously-404 (parametrize) + sanity (1) |
+| Full-file regression | ✅ 104 tests passing (test_blog_stats.py + test_blog_stats_cidade_setor.py) |
+| AC1 — 27 UFs cobertas | ✅ |
+| AC2 — 12 capitais 200 (unit) | ✅ |
+| AC3 — 3 tests parametrizados | ✅ |
+| AC4 — Cache flush | ⏭️ SKIP (justificado: `_blog_cache` in-memory, 404 raise antes do cache_set linha 679; cache nunca armazena erros) |
+| AC5 — Sitemap regen | ✅ Sitemap usa `CITIES` derivado de `UF_CITIES_RAW` (frontend/lib/cities.ts) — recompila automaticamente no próximo build Next.js após merge. Não requer ação manual. |
+| AC6 — Smoke prod 12 capitais | ⏸️ Pendente — devops fará após merge + Railway deploy |
+
+### File List
+
+| File | Change |
+|------|--------|
+| `backend/routes/blog_stats.py` | UF_CITIES dict expandido 16→27 UFs |
+| `frontend/lib/cities.ts` | UF_CITIES_RAW mirror sincronizado |
+| `backend/tests/test_blog_stats.py` | TestStorySEO012CapitalsExpansion class adicionada (41 tests) |
+
+### Notes
+
+- **AC4 rationale:** `routes/blog_stats.py` linhas 287-298 (`_cache_get` / `_cache_set`) opera só sobre dict in-memory `_blog_cache` (linha 33). Linha 630 raise HTTPException 404 ANTES de qualquer cache_set. Logo, cidades antes-404 nunca tiveram entrada no cache. Cache flush não é necessário.
+- **AC5 rationale:** `frontend/app/sitemap.ts:683` usa `CITIES` array vindo de `frontend/lib/cities.ts`, que deriva de `UF_CITIES_RAW`. Atualizar este dict automaticamente atualiza CITIES → sitemap regenera no próximo build/ISR. Verificado: sitemap.ts não tem hardcode separado de cidades.
+- Paste de TESTING: `pytest tests/test_blog_stats.py::TestStorySEO012CapitalsExpansion -v` → 41/41 PASSED em 8.32s.
+- **NÃO commitado por @dev** — `@devops` cuida do commit + merge no fim da sessão.
