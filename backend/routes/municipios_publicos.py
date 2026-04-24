@@ -17,7 +17,9 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
+
+from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 from pydantic import BaseModel
 
 from metrics import record_sitemap_count
@@ -470,10 +472,11 @@ async def municipio_profile(slug: str):
     response_model=SitemapMunicipiosResponse,
     summary="Lista de slugs de municipios para sitemap.xml",
 )
-async def sitemap_municipios():
+async def sitemap_municipios(response: Response):
     """Retorna slugs dos municipios pre-cadastrados para o sitemap.xml.
     Cache: 24h em memoria.
     """
+    response.headers.update(SITEMAP_CACHE_HEADERS)
     cached = _get_cached(_municipio_sitemap_cache, "slugs")
     if cached:
         record_sitemap_count("municipios", len(cached.get("slugs", [])))

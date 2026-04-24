@@ -14,10 +14,11 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
 from metrics import record_sitemap_count
+from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
@@ -55,11 +56,12 @@ def _set_cached(key: str, data: dict) -> None:
     response_model=SitemapLicitacoesDoDiaResponse,
     summary="Datas dos ultimos 30d com >=5 bids ativos (sitemap /blog/licitacoes-do-dia/)",
 )
-async def sitemap_licitacoes_do_dia_indexable():
+async def sitemap_licitacoes_do_dia_indexable(response: Response):
     """Retorna apenas datas com bids suficientes para ter pagina renderizavel.
 
     Elimina os 42 URLs 404 reportados no GSC sweep 2026-04-24.
     """
+    response.headers.update(SITEMAP_CACHE_HEADERS)
     cached = _get_cached("dates")
     if cached:
         record_sitemap_count("licitacoes-do-dia-indexable", len(cached.get("dates", [])))
