@@ -71,7 +71,9 @@ PyYAML>=6.0,<7.0
 python-json-logger>=2.0.4,<3.0.0
 
 # Error tracking (STORY-211)
-sentry-sdk[fastapi]>=2.0.0
+# STORY-413: Pinned exactly to block transitive upgrades — open pin was the transport
+# for the 2026-04-10 crash loop (StarletteIntegration double-wrap regression).
+sentry-sdk[fastapi]==2.52.0
 
 # Prometheus metrics exporter (GTM-RESILIENCE-E03)
 prometheus_client>=0.20.0
