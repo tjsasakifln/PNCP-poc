@@ -9,6 +9,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
+from analytics_events import track_funnel_event
 from log_sanitizer import mask_user_id
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,15 @@ async def require_active_plan(user: dict) -> dict:
                 "plan_id": quota_info.plan_id,
             },
         )
+        track_funnel_event(
+            "paywall_hit",
+            user_id=user_id,
+            properties={
+                "reason": "dunning_blocked",
+                "plan_id": quota_info.plan_id,
+                "days_since_failure": _days_since_failure,
+            },
+        )
         raise HTTPException(
             status_code=402,
             detail={
@@ -81,6 +91,15 @@ async def require_active_plan(user: dict) -> dict:
                 "dunning_phase": "grace_period",
                 "days_since_failure": _days_since_failure,
                 "plan_id": quota_info.plan_id,
+            },
+        )
+        track_funnel_event(
+            "paywall_hit",
+            user_id=user_id,
+            properties={
+                "reason": "dunning_grace_period",
+                "plan_id": quota_info.plan_id,
+                "days_since_failure": _days_since_failure,
             },
         )
         raise HTTPException(
@@ -111,6 +130,16 @@ async def require_active_plan(user: dict) -> dict:
                 "plan_id": quota_info.plan_id,
                 "expired_at": quota_info.trial_expires_at.isoformat() if quota_info.trial_expires_at else None,
                 "days_overdue": days_overdue,
+            },
+        )
+        track_funnel_event(
+            "paywall_hit",
+            user_id=user_id,
+            properties={
+                "reason": error_type,
+                "plan_id": quota_info.plan_id,
+                "trial_days_past": days_overdue if is_trial else None,
+                "expired_at": quota_info.trial_expires_at.isoformat() if quota_info.trial_expires_at else None,
             },
         )
 
