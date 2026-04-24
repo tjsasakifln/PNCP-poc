@@ -19,7 +19,9 @@ from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
+
+from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 from pydantic import BaseModel
 
 from metrics import record_sitemap_count
@@ -362,7 +364,8 @@ async def item_profile(catmat: str):
     response_model=SitemapItensResponse,
     summary="Lista de codigos CATMAT para sitemap.xml",
 )
-async def sitemap_itens():
+async def sitemap_itens(response: Response):
+    response.headers.update(SITEMAP_CACHE_HEADERS)
     cached = _get_cached(_itens_sitemap_cache, "catmats")
     if cached:
         record_sitemap_count("itens", len(cached.get("catmats", [])))

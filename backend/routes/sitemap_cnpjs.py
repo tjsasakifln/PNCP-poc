@@ -15,10 +15,11 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
 from metrics import record_sitemap_count
+from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
@@ -96,7 +97,8 @@ def _set_fornecedores_cached(key: str, data: dict) -> None:
     response_model=SitemapCnpjsResponse,
     summary="CNPJs com ≥1 licitação no datalake (para sitemap)",
 )
-async def sitemap_cnpjs():
+async def sitemap_cnpjs(response: Response):
+    response.headers.update(SITEMAP_CACHE_HEADERS)
     cached = _get_cached("cnpjs")
     if cached:
         record_sitemap_count("cnpjs", len(cached.get("cnpjs", [])))
@@ -226,13 +228,14 @@ async def _fetch_top_cnpjs() -> dict:
     response_model=SitemapFornecedoresCnpjResponse,
     summary="Top CNPJs de fornecedores com contratos no datalake (para sitemap)",
 )
-async def sitemap_fornecedores_cnpj():
+async def sitemap_fornecedores_cnpj(response: Response):
     """Retorna os CNPJs de fornecedores com mais contratos em pncp_supplier_contracts.
 
     Usado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.
     Limite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).
     Cache: 24h em memoria.
     """
+    response.headers.update(SITEMAP_CACHE_HEADERS)
     cached = _get_fornecedores_cached("fornecedores_cnpj")
     if cached:
         record_sitemap_count("fornecedores-cnpj", len(cached.get("cnpjs", [])))

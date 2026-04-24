@@ -14,11 +14,12 @@ import os
 import time
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel
 
 from admin import require_admin
 from metrics import record_sitemap_count
+from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
@@ -48,8 +49,9 @@ class LicitacoesIndexableResponse(BaseModel):
     response_model=LicitacoesIndexableResponse,
     summary="Combos setor×UF indexáveis (público — sitemap)",
 )
-async def get_licitacoes_indexable():
+async def get_licitacoes_indexable(response: Response):
     """Retorna combos setor×UF com bids OR contracts suficientes."""
+    response.headers.update(SITEMAP_CACHE_HEADERS)
     global _cache
 
     if _cache is not None:

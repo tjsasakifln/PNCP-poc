@@ -14,10 +14,11 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
 from metrics import record_sitemap_count
+from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
@@ -53,7 +54,8 @@ def _set_cached(key: str, data: dict) -> None:
     response_model=SitemapOrgaosResponse,
     summary="Órgãos compradores com ≥1 licitação no datalake (para sitemap)",
 )
-async def sitemap_orgaos():
+async def sitemap_orgaos(response: Response):
+    response.headers.update(SITEMAP_CACHE_HEADERS)
     cached = _get_cached("orgaos")
     if cached:
         record_sitemap_count("orgaos", len(cached.get("orgaos", [])))
@@ -170,7 +172,7 @@ class SitemapContratosOrgaoResponse(BaseModel):
     response_model=SitemapContratosOrgaoResponse,
     summary="Órgãos compradores com contratos em pncp_supplier_contracts (para sitemap /contratos/orgao/)",
 )
-async def sitemap_contratos_orgao_indexable():
+async def sitemap_contratos_orgao_indexable(response: Response):
     """Retorna CNPJs de órgãos com ≥1 contrato ativo em pncp_supplier_contracts.
 
     Diferente de /sitemap/orgaos (que usa pncp_raw_bids/licitações), este
@@ -179,6 +181,7 @@ async def sitemap_contratos_orgao_indexable():
     que retornam 200, eliminando os 794 404s reportados no GSC.
     Cache: 24h em memória.
     """
+    response.headers.update(SITEMAP_CACHE_HEADERS)
     key = "contratos_orgao_indexable"
     cached_entry = _contratos_orgao_cache.get(key)
     if cached_entry:

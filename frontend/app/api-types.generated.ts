@@ -4222,6 +4222,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sitemap/licitacoes-do-dia-indexable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Datas dos ultimos 30d com >=5 bids ativos (sitemap /blog/licitacoes-do-dia/)
+         * @description Retorna apenas datas com bids suficientes para ter pagina renderizavel.
+         *
+         *     Elimina os 42 URLs 404 reportados no GSC sweep 2026-04-24.
+         */
+        get: operations["sitemap_licitacoes_do_dia_indexable_v1_sitemap_licitacoes_do_dia_indexable_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sitemap/licitacoes-indexable": {
         parameters: {
             query?: never;
@@ -4417,7 +4439,15 @@ export interface paths {
         put?: never;
         /**
          * Resend Webhook
-         * @description AC11: Handle Resend webhook events for email tracking.
+         * @description Handle Resend webhook events for email tracking.
+         *
+         *     Accepts the full delivery lifecycle (sent → delivered → opened → clicked)
+         *     plus failure paths (bounced, complained, delivery_delayed, failed) so the
+         *     admin funnel dashboard can distinguish "email never arrived" from "email
+         *     arrived but wasn't engaged". Service handler
+         *     (`services.trial_email_sequence.handle_resend_webhook`) populates the
+         *     columns added in migration 20260424180000_trial_email_delivery_tracking.
+         *     Always returns 200 so Resend doesn't retry on transient server errors.
          */
         post: operations["resend_webhook_v1_trial_emails_webhook_post"];
         delete?: never;
@@ -8899,6 +8929,15 @@ export interface components {
         SitemapItensResponse: {
             /** Catmats */
             catmats: string[];
+            /** Total */
+            total: number;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** SitemapLicitacoesDoDiaResponse */
+        SitemapLicitacoesDoDiaResponse: {
+            /** Dates */
+            dates: string[];
             /** Total */
             total: number;
             /** Updated At */
@@ -14973,6 +15012,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SitemapItensResponse"];
+                };
+            };
+        };
+    };
+    sitemap_licitacoes_do_dia_indexable_v1_sitemap_licitacoes_do_dia_indexable_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapLicitacoesDoDiaResponse"];
                 };
             };
         };
