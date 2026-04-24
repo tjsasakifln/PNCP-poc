@@ -9328,6 +9328,32 @@
         "title": "SitemapItensResponse",
         "type": "object"
       },
+      "SitemapLicitacoesDoDiaResponse": {
+        "properties": {
+          "dates": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Dates",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dates",
+          "total",
+          "updated_at"
+        ],
+        "title": "SitemapLicitacoesDoDiaResponse",
+        "type": "object"
+      },
       "SitemapMunicipiosResponse": {
         "properties": {
           "slugs": {
@@ -18894,6 +18920,28 @@
         "summary": "Lista de codigos CATMAT para sitemap.xml",
         "tags": [
           "itens-publicos"
+        ]
+      }
+    },
+    "/v1/sitemap/licitacoes-do-dia-indexable": {
+      "get": {
+        "description": "Retorna apenas datas com bids suficientes para ter pagina renderizavel.\n\nElimina os 42 URLs 404 reportados no GSC sweep 2026-04-24.",
+        "operationId": "sitemap_licitacoes_do_dia_indexable_v1_sitemap_licitacoes_do_dia_indexable_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitemapLicitacoesDoDiaResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Datas dos ultimos 30d com >=5 bids ativos (sitemap /blog/licitacoes-do-dia/)",
+        "tags": [
+          "sitemap"
         ]
       }
     },
