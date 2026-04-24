@@ -40,12 +40,19 @@ Mental model corrigido durante sessão (advisor feedback): scheduler de email us
 
 Hipótese conversion bump Day 16: hoje user chega em `/planos?coupon=TRIAL_COMEBACK_20`, vê preço cheio sem perceber desconto. Com banner + preço riscado, desconto torna-se acionável visualmente. Mensurável via `plan_selected` rate em cohort com `has_coupon=true`.
 
+## Estado no encerramento (sessão fechada user request)
+
+- PR #501: `OPEN`, `mergeable=MERGEABLE`, `mergeStateStatus=BLOCKED`
+- **Frontend Tests: PASS** (2 jobs — 2m44s + 5m50s)
+- **Backend Tests: pending** (ainda rodando — único check required restante)
+- Branch `feat/trial-conversion-smooth-island` base atualizada com main
+
 ## Pendente (dono + prazo)
 
-- [ ] **Merge PR #501** — @devops — aguardando CI (Backend Tests + Frontend Tests são os únicos required); auto-merge off, merge manual após checks green
-- [ ] **Smoke prod pós-deploy** — @devops — site+api 200 por ≥30min, `/planos?coupon=TRIAL_COMEBACK_20` renderiza badge
+- [ ] **Merge PR #501** — @devops — aguardar Backend Tests green, `gh pr merge 501 --squash` (auto-merge off repo)
+- [ ] **Smoke prod pós-merge** — @devops — `curl -sf https://smartlic.tech` + `https://api.smartlic.tech/health` ≥30min, abrir `/planos?coupon=TRIAL_COMEBACK_20` verifica badge emerald + preços riscados
 - [ ] **24h soak Mixpanel verify** — próxima sessão (2026-04-25+) — queries prontas abaixo
-- [ ] **Delete script ad-hoc** `backend/scripts/audit_trial_email_log_smooth_island.py` — próxima sessão (untracked, só existe local)
+- [ ] **Delete script ad-hoc** `backend/scripts/audit_trial_email_log_smooth_island.py` — próxima sessão (untracked)
 
 ## 24h soak queries (para próxima sessão)
 
@@ -88,12 +95,16 @@ Nada não-derivável descoberto — memory permanece inalterada.
 
 | Métrica | Alvo | Realizado |
 |---------|------|-----------|
-| Shipped to prod | ≥1 mudança caminho de receita | PR #501 pronto (aguarda merge + deploy) |
+| Shipped to prod | ≥1 mudança caminho de receita | PARCIAL — PR #501 pronto, não mergeado (user encerrou) |
 | Incidentes novos | 0 | 0 |
-| Tempo em docs | <15% | ~10% (este handoff) |
+| Tempo em docs | <15% | ~10% (handoff + audit script) |
 | Tempo em fix não-prod | <25% | 0% (tudo prod-targeted) |
-| Instrumentação adicionada | ≥1 evento funil | 2 eventos (`paywall_hit` + `plan_selected`) |
+| Instrumentação adicionada | ≥1 evento funil | 2 eventos (`paywall_hit` backend + `plan_selected` frontend) |
+
+## Memory updates
+
+Salvo em memory: `reference_trial_email_log_delivery_status_null.md` — coluna `delivery_status` em `trial_email_log` é NULL em 100% dos registros auditados (9 emails para 2 users). Scheduler registra dispatch mas Resend callback não popula status. Não-derivável — quem auditar delivery no futuro deve ir em Resend dashboard, não em DB.
 
 ## Próxima ação prioritária
 
-**@devops aguarda CI green e mergeia #501. Depois smoke prod. Próxima sessão: verify 24h soak Mixpanel.**
+**@devops aguarda Backend Tests green → `gh pr merge 501 --squash` → smoke prod. Próxima sessão: verify 24h soak Mixpanel (queries acima).**
