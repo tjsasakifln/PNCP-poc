@@ -1,6 +1,22 @@
 # ROADMAP — SmartLic
 
-**Versao:** 4.1 | **Atualizado:** 2026-04-18 | **Status:** Reliability Sprint Complete, Cache Warming Deprecated, Active Backlog
+**Versao:** 4.2 | **Atualizado:** 2026-04-24 | **Status:** Growth Viral Epic Q3 Drafted, Active Backlog
+
+## 2026-04-24 — EPIC-GROWTH-VIRAL-2026-Q3: On-Page CAC-Zero
+
+21 stories novas organizadas em 6 waves (142 SP, 4 sprints). Objetivo: K-factor B2B ≥0.20, 30% signups via viral loops, -40% CAC em 6 meses. Inspiração Manus (waitlist + replay), Lovable (gallery + remix), ChatGPT (share), Loom/Calendly (todo output é anúncio). Adaptações B2G com pseudonimização default + opt-in LGPD.
+
+- **Wave 0 Infra (GV-001):** A/B testing framework + funnel auto-tracking (BLOCKER)
+- **Wave 1 Viral Loops (GV-002-005):** watermark + pseudonimização, analysis replay, embed widget, propose-to-colleague
+- **Wave 2 Scarcity (GV-006-008):** early-access waitlist, trending gallery, live impact ticker
+- **Wave 3 Habit (GV-009-012):** daily matching, badges+certificate LinkedIn, weekly wins digest, post-win celebration
+- **Wave 4 Collaboration (GV-013-015):** team invites tiered, consultoria→cliente read-only, concorrente alert
+- **Wave 5 Monetization (GV-016-018):** usage milestone ROI variant, exit-intent modal, referral tiered+social widget
+- **Wave 6 Content (GV-019-021):** sectorial benchmarking, ROI calculator embed, churn winback campaign
+
+Epic master: `docs/stories/2026-04/EPIC-GROWTH-VIRAL-2026-Q3.md`. Estende STORY-289/312/432/449 sem duplicar.
+
+---
 
 ## 2026-04 — Cache Warming Deprecation (DataLake é a fonte)
 
@@ -121,6 +137,19 @@ Source: `docs/stories/EPIC-UX-PREMIUM-2026-02.md` (35 problems from production a
 | STORY-256 | Sanctions check integration |
 | STORY-257A | Backend busca inquebravel |
 | STORY-257B | Frontend UX transparente |
+
+### Growth Viral Epic Q3 (GV-001 to GV-021)
+
+Source: `docs/stories/2026-04/EPIC-GROWTH-VIRAL-2026-Q3.md`
+
+| Sprint | Stories | Foco | SP |
+|--------|---------|------|----|
+| 1 | GV-001, 002, 005, 018 | Infra + viral loops base + referral UI | 26 |
+| 2 | GV-003, 006, 009, 012, 013, 017, 021 | Replay + waitlist + daily + winback | 42 |
+| 3 | GV-004, 007, 010, 014, 016 | Embed + trending + badges + consultoria | 45 |
+| 4 | GV-008, 011, 015, 019, 020 | Ticker + wins digest + concorrente + content | 29 |
+
+Status: todas Draft — Sprint 1 aguarda STORY-289 Done (pré-req de GV-018).
 
 ### GTM Remaining (GTM-001, GTM-002)
 
