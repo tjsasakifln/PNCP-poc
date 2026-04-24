@@ -19,7 +19,7 @@ async function fetchSitemapJson<T>(
   extract: (data: unknown) => T,
   label: string,
 ): Promise<T | null> {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+  const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
   const url = `${backendUrl}${endpoint}`;
   try {
     const resp = await fetch(url, {
