@@ -46,10 +46,13 @@ Diagnostic completo: `docs/sessions/2026-04/2026-04-24-sparkling-patterson-funne
 ## Pendente
 
 - [ ] **@devops** — merge PR #506 após BT+FT verde (non-blocking, CI optim)
-- [ ] **User (manual)** — configurar webhook no Resend dashboard:
-  - URL: `https://api.smartlic.tech/trial-emails/webhook`
-  - Eventos: `email.sent, email.delivered, email.opened, email.clicked, email.bounced, email.complained, email.delivery_delayed, email.failed`
-  - Sem config Resend → `delivery_status` permanece NULL em prod
+- [x] ~~User manual Resend dashboard~~ — **feito via API** 2026-04-24T18:19Z
+  - Webhook ID `758ea803-3a6d-44c9-94b8-abdb8c4f43c2`
+  - Endpoint: `https://api.smartlic.tech/trial-emails/webhook`
+  - Status: `enabled`
+  - 8 events: `email.sent/delivered/opened/clicked/bounced/complained/delivery_delayed/failed`
+  - `signing_secret` salvo em Railway `RESEND_WEBHOOK_SECRET` (service bidiq-backend)
+- [ ] **@dev próxima sessão** — HMAC verify no endpoint `routes/trial_emails.py::resend_webhook` usando `RESEND_WEBHOOK_SECRET` (Svix-style). Hoje handler aceita qualquer payload = security gap
 - [ ] **@dev próxima sessão** — D+1 verify pós-Resend config:
   ```sql
   SELECT delivery_status, COUNT(*) FROM trial_email_log
@@ -63,7 +66,7 @@ Diagnostic completo: `docs/sessions/2026-04/2026-04-24-sparkling-patterson-funne
 
 - **Aquisição morta (0 signups 7d):** sem canal SEO ligado efetivamente (indexação do PR #505 leva 30-60d). Próxima sessão: ofensiva aquisição (paid/outbound/review GSC crawl pós-deploy).
 - **Churn pós-paid 100%:** 1/1 conversão cancelou em 30d. Win-back sequence inexistente. Backlog.
-- **Resend webhook unconfigured:** sem config manual, 100% do código de A refocado fica dormant.
+- ~~Resend webhook unconfigured~~ **Resolvido** 2026-04-24T18:19Z (webhook ID 758ea803 enabled, signing_secret em Railway)
 - **`founding_leads` lifetime=0:** frontend capture nunca populou tabela. Investigar próxima sessão — bug ou feature nunca deployada.
 
 ## Memory updates
@@ -83,7 +86,8 @@ Diagnostic completo: `docs/sessions/2026-04/2026-04-24-sparkling-patterson-funne
 
 ## Próxima ação prioritária de receita
 
-1. **User config Resend dashboard webhook** (5min manual) — sem isso A refocado fica dormant
-2. **Reativar aquisição** — sitemap-4.xml em prod pós-deploy #505, submit GSC, monitor crawl 7d
-3. **Investigar founding_leads=0** — frontend capture broken?
-4. Considerar win-back email (schedule 1-shot agent 14 dias pós-churn se nenhum implementado até então)
+1. **D+1 verify Resend tracking** — `SELECT delivery_status, COUNT(*) FROM trial_email_log WHERE sent_at >= (now() - interval '24h') GROUP BY 1` + Mixpanel funnel
+2. **HMAC verify no webhook** — `RESEND_WEBHOOK_SECRET` disponível em Railway, handler atual aceita qualquer POST (sec gap). Svix lib recomendada
+3. **Reativar aquisição** — sitemap-4.xml em prod pós-deploy #505, submit GSC, monitor crawl 7d
+4. **Investigar founding_leads=0 lifetime** — frontend capture broken?
+5. Win-back email (schedule 1-shot agent 14 dias pós-churn se nenhum implementado até então)
