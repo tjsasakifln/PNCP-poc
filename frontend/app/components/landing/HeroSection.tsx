@@ -125,6 +125,20 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             </GradientButton>
           </motion.div>
 
+          {/* Trial risk-reduction badge — above-the-fold proof of low signup risk */}
+          <motion.div
+            className="mt-4 flex items-center justify-center lg:justify-start"
+            variants={fadeInUp}
+            data-testid="hero-trial-badge"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-sm font-medium text-emerald-800 dark:text-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <strong>14 dias grátis</strong>
+              <span className="text-emerald-700/80 dark:text-emerald-300/80">·</span>
+              <span>sem cartão de crédito</span>
+            </span>
+          </motion.div>
+
           {/* Trust indicators */}
           <motion.div
             className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-xs text-ink-muted"
