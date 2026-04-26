@@ -11,10 +11,12 @@ import TestimonialSection from '../components/TestimonialSection';
 import FinalCTA from './components/landing/FinalCTA';
 import { TrendingEditais } from './components/landing/TrendingEditais';
 import Footer from './components/Footer';
+import { HomeFaqStructuredData } from './components/HomeFaqStructuredData';
 
 export default function LandingPage() {
   return (
     <>
+      <HomeFaqStructuredData />
       <LandingNavbar />
 
       <main id="main-content">
