@@ -5,7 +5,7 @@ import mixpanel from 'mixpanel-browser';
 import * as Sentry from '@sentry/nextjs';
 import { usePathname } from 'next/navigation';
 import { getCookieConsent, type CookieConsent } from './CookieConsentBanner';
-import { captureUTMParams } from '../../hooks/useAnalytics';
+import { captureUTMParams, captureLandingContext } from '../../hooks/useAnalytics';
 import { useClarity } from '../../hooks/useClarity';
 import { useAuth } from './AuthProvider';
 import { useUserProfile } from '../../hooks/useUserProfile';
@@ -87,6 +87,9 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
       // STORY-219 AC24-AC27: Capture UTM params on first load
       captureUTMParams();
+      // Capture landing page + external referrer (idempotent per session) for
+      // signup attribution. Survives client-side navigation to /signup.
+      captureLandingContext();
 
       // Track page_load
       try {

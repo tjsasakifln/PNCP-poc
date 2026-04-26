@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../components/AuthProvider";
-import { useAnalytics, getStoredUTMParams } from "../../hooks/useAnalytics";
+import { useAnalytics, getAcquisitionProperties } from "../../hooks/useAnalytics";
 import { translateAuthError } from "../../lib/error-messages";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -146,7 +146,7 @@ export default function SignupPage() {
     trackEvent('signup_completed', {
       method: "email",
       rollout_branch: "legacy",
-      ...getStoredUTMParams(),
+      ...getAcquisitionProperties(),
     });
   };
 
@@ -171,7 +171,7 @@ export default function SignupPage() {
     trackEvent('signup_completed', {
       method: "email",
       rollout_branch: "card",
-      ...getStoredUTMParams(),
+      ...getAcquisitionProperties(),
     });
     // CONV-003c AC4: capture instrumented funnel event. CNAE is collected
     // later in onboarding, not at signup — pass only the fields available
