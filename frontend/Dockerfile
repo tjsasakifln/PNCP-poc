@@ -112,6 +112,25 @@ RUN echo "=== Build-time Environment Variables ===" && \
 # Create build timestamp to prevent caching
 RUN echo "BUILD_TIMESTAMP=$(date +%Y%m%d%H%M%S)" > /tmp/build-info.txt && cat /tmp/build-info.txt
 
+# SEO-PROG-008: Build-time assertion — fail fast if BACKEND_URL absent in prod build.
+# Memory `reference_frontend_dockerfile_backend_url_gap_2026_04_24`: build-time SSG
+# fetches (sitemap.ts, /cnpj/[cnpj], /fornecedores/[cnpj], etc.) silently fall back
+# to localhost:8000 if Railway service var is missing → sitemap-4.xml renders with 0
+# entries → GSC indexing collapses. Asserting at build prevents silent regression.
+RUN if [ "$NEXT_PUBLIC_ENVIRONMENT" = "production" ]; then \
+      if [ -z "$BACKEND_URL" ]; then \
+        echo "ERROR: BACKEND_URL is required in production builds. Set Railway service variable bidiq-frontend.BACKEND_URL=https://api.smartlic.tech" >&2; \
+        exit 1; \
+      fi; \
+      if [ -z "$NEXT_PUBLIC_BACKEND_URL" ]; then \
+        echo "ERROR: NEXT_PUBLIC_BACKEND_URL is required in production builds (client-side fetches). Set Railway service variable bidiq-frontend.NEXT_PUBLIC_BACKEND_URL=https://api.smartlic.tech" >&2; \
+        exit 1; \
+      fi; \
+      echo "BACKEND_URL assertion: OK (BACKEND_URL=$BACKEND_URL, NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL)"; \
+    else \
+      echo "BACKEND_URL assertion: SKIPPED (NEXT_PUBLIC_ENVIRONMENT=$NEXT_PUBLIC_ENVIRONMENT, not production)"; \
+    fi
+
 # Build the application
 # This will inline NEXT_PUBLIC_* vars into the JavaScript bundle
 RUN npm run build && echo "Build completed at $(date)"
