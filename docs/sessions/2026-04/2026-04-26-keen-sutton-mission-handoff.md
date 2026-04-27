@@ -24,6 +24,7 @@ Fechar incident SSG-hammers-backend (humble-dolphin), ship FAQ rich result, vali
 
 ## Pendente (dono + prazo)
 
+- [ ] **AbortSignal coverage gap** — @dev — **BLOQUEIA próximo frontend deploy**. Adicionar `AbortSignal.timeout(8000)` em fetches build-time de `/blog/stats/cidade/{x}/setor/{y}`, `/v1/orgao/{cnpj}/stats`, `/itens/*/price`, `/v1/municipios/profile/*`. Validado 02:01-02:14 que cascade ainda ocorre em escala menor sem coverage completa.
 - [ ] **Fix window calc `process_trial_emails`** — @dev — antes de campanha drive trials. Trocar `target_start = now - timedelta(days=day, hours=12)` para janela maior; corrigir `target_end` de `day-1` para `day`.
 - [ ] **Composite index query rewrite** — @data-engineer — investigar por que planner não pick `idx_psc_municipio_trgm` no padrão prod (UF first + LIMIT/ORDER). Possíveis hints: re-ordenar WHERE, materializar UF subquery, ou index com expressão. Não bloqueia receita (hotfix protege).
 - [ ] **Other pg_cron failures** — @data-engineer — `bloat-check-pncp-raw-bids` (column relpages errado), `cleanup-cold-cache-entries` (syntax INTERVAL 7 days), `cleanup-reconciliation-log`, `retention-search-sessions`. Backlog low-priority — não impactam receita.
@@ -33,7 +34,8 @@ Fechar incident SSG-hammers-backend (humble-dolphin), ship FAQ rich result, vali
 
 ## Riscos vivos
 
-- **Sev3 (próximas 24-48h)**: frontend Railway build #514 ainda BUILDING ao escrever este handoff. Hotfix em prod deve evitar repetição do incident, mas validar `/sitemap/4.xml` populado + FAQ smoke pós-deploy. Se /4.xml continuar 0 URLs após deploy success, escalar como follow-up story.
+- **Sev2 (BLOQUEIA próximo frontend deploy)**: AbortSignal coverage gap. Hotfix #515 só cobriu `/api/badge/stats` + `/estatisticas/page.tsx`. Endpoints SSG ainda sem AbortSignal: `/blog/stats/cidade/{x}/setor/{y}`, `/v1/orgao/{cnpj}/stats`, possivelmente `/itens/*/price`, `/v1/municipios/profile/*`. Validado empiricamente 2026-04-27 02:01-02:14: builds frontend SUCCESS (não abort), MAS backend ficou slow (8s/request × 2 workers, queue saturation Railway proxy 502 em `/health`). Cascade survived hotfix mas com sintoma diferente. **Próximo frontend deploy vai re-trigger este pattern enquanto coverage incompleta.** Fix: `AbortSignal.timeout(8000)` em todos fetches SSG `frontend/app/**/page.tsx` que chamam backend stats endpoints.
+- **Sev3 (sitemap regenerativo)**: `/sitemap/4.xml` retorna 0 URLs mesmo pós-rebuild SUCCESS. Memória `feedback_handoff_stale_30h.md` confirma flutuação 0↔7368 sem deploy — backend `/v1/sitemap/{cnpjs|orgaos|...}` timeout em event loop sob carga. Não bloqueia receita imediata; defer.
 - **Sev3 (CI)**: próximo deploy auto-apply pode hit duplicate-key em `schema_migrations` na migration 20260427015000 (já registrada manualmente). Alternativa: monitorar deploy.yml; se falhar, executar `supabase migration repair --status applied 20260427015000` ou ajustar workflow.
 - **Sev1 (lifecycle)**: welcome day-0 missing 100%. Quando aquisição crescer (e onboarding email é primeiro touchpoint), gap dói rapidamente. Fix antes de campanha de trial.
 
@@ -60,4 +62,6 @@ KPI session: **green** (3 ships, 0 incidents, instrumentação ≥1, doc <15%).
 
 ## Próxima ação prioritária de receita
 
-Fix `process_trial_emails` window calc (welcome day-0). Sem isso, qualquer campanha de aquisição perde primeiro touchpoint do funil de email lifecycle.
+**Antes de qualquer outra coisa**: AbortSignal coverage gap em endpoints SSG restantes. Bloqueia próximo frontend deploy seguro. ~30min de trabalho.
+
+Depois: fix `process_trial_emails` window calc (welcome day-0). Sem isso, qualquer campanha de aquisição perde primeiro touchpoint do funil de email lifecycle.
