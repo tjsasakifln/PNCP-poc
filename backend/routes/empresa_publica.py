@@ -3,9 +3,10 @@
 Aggregates BrasilAPI (company data) + Portal da Transparência (contracts)
 + datalake (open bids in detected sector) into a single public profile.
 
-Public (no auth). Cache: InMemory 24h TTL.
+Public (no auth). Cache: InMemory 24h TTL on success, 5min on partial/budget-exceeded.
 """
 
+import asyncio
 import logging
 import re
 import time
@@ -23,7 +24,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["empresa-publica"])
 
 _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h
-_perfil_cache: dict[str, tuple[dict, float]] = {}
+# Negative-cache TTL: when _build_perfil times out (Supabase saturated under
+# Googlebot crawl) we cache an empty "unavailable" response so subsequent
+# requests for the same CNPJ return instantly instead of re-saturating the
+# DB pool. 5 min lets the next crawler hit retry without DDoSing ourselves.
+_NEGATIVE_CACHE_TTL_SECONDS = 5 * 60
+# Hard request budget: perfil-b2g must respond within 30s or fall back to
+# the "unavailable" partial. Guards against 4 workers × 60s statement_timeout
+# pile-ups observed during the 2026-04-27 SSG crawl incident.
+_PERFIL_TOTAL_BUDGET_S = 30.0
+_perfil_cache: dict[str, tuple[dict, float, float]] = {}  # data, stored_at, ttl
 
 _CNPJ_RE = re.compile(r"^\d{14}$")
 # STORY-417: Timeout reduced 15→8s so a BrasilAPI hang cannot blow the
@@ -155,9 +165,50 @@ async def perfil_b2g(cnpj: str):
     if cached:
         return PerfilB2GResponse(**cached)
 
-    data = await _build_perfil(cnpj_clean)
-    _set_cached(cnpj_clean, data)
+    try:
+        data = await asyncio.wait_for(_build_perfil(cnpj_clean), timeout=_PERFIL_TOTAL_BUDGET_S)
+        _set_cached(cnpj_clean, data, ttl=_CACHE_TTL_SECONDS)
+    except asyncio.TimeoutError:
+        logger.warning(
+            "perfil_b2g: total budget %.0fs exceeded for %s — returning unavailable partial",
+            _PERFIL_TOTAL_BUDGET_S, cnpj_clean,
+        )
+        data = _build_unavailable_response(cnpj_clean)
+        _set_cached(cnpj_clean, data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("perfil_b2g: unexpected error for %s: %s", cnpj_clean, exc)
+        data = _build_unavailable_response(cnpj_clean)
+        _set_cached(cnpj_clean, data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+
     return PerfilB2GResponse(**data)
+
+
+def _build_unavailable_response(cnpj: str) -> dict:
+    """Minimal partial response when upstream sources saturate."""
+    return {
+        "empresa": {
+            "razao_social": "Empresa",
+            "cnpj": cnpj,
+            "cnae_principal": "",
+            "porte": "",
+            "uf": "",
+            "situacao": "",
+        },
+        "contratos": [],
+        "score": "SEM_HISTORICO",
+        "setor_detectado": "outros",
+        "setor_nome": "Outros",
+        "editais_abertos_setor": 0,
+        "editais_amostra": [],
+        "total_contratos_24m": 0,
+        "valor_total_24m": 0.0,
+        "ufs_atuacao": [],
+        "aviso_legal": "Dados temporariamente indisponíveis. Tente novamente em alguns minutos.",
+        "brasilapi_status": "unavailable",
+        "partial": True,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -167,15 +218,15 @@ async def perfil_b2g(cnpj: str):
 def _get_cached(key: str) -> Optional[dict]:
     if key not in _perfil_cache:
         return None
-    data, ts = _perfil_cache[key]
-    if time.time() - ts >= _CACHE_TTL_SECONDS:
+    data, ts, ttl = _perfil_cache[key]
+    if time.time() - ts >= ttl:
         del _perfil_cache[key]
         return None
     return data
 
 
-def _set_cached(key: str, data: dict) -> None:
-    _perfil_cache[key] = (data, time.time())
+def _set_cached(key: str, data: dict, ttl: float = _CACHE_TTL_SECONDS) -> None:
+    _perfil_cache[key] = (data, time.time(), ttl)
 
 
 # ---------------------------------------------------------------------------
