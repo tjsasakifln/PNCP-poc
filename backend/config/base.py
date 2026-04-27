@@ -93,8 +93,13 @@ def validate_env_vars() -> None:
     AC12: Check required vars: SUPABASE_URL, SERVICE_ROLE_KEY, JWT_SECRET, STRIPE_WEBHOOK_SECRET
     AC13: Warn on recommended vars: OPENAI_API_KEY, STRIPE_SECRET_KEY, SENTRY_DSN
     AC14: Raise RuntimeError if critical vars missing AND ENVIRONMENT=production
+
+    MON-FN-005: MIXPANEL_TOKEN promoted to required in production. Memory
+    `reference_mixpanel_backend_token_gap_2026_04_24` — token was silently
+    absent in prod, suppressing paywall_hit/trial_started events for an
+    unknown period. Funnel analytics is oxygen for monetization decisions.
     """
-    required_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_JWT_SECRET", "STRIPE_WEBHOOK_SECRET"]
+    required_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_JWT_SECRET", "STRIPE_WEBHOOK_SECRET", "MIXPANEL_TOKEN"]
     recommended_vars = ["OPENAI_API_KEY", "STRIPE_SECRET_KEY", "SENTRY_DSN"]
 
     env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()

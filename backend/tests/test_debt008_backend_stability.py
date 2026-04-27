@@ -372,7 +372,7 @@ class TestStartupValidation:
         validate_env_vars()  # No exception = pass
 
     def test_all_required_vars_present_no_error(self, monkeypatch):
-        """No error when all required vars including STRIPE_WEBHOOK_SECRET are set."""
+        """No error when all required vars including STRIPE_WEBHOOK_SECRET + MIXPANEL_TOKEN are set."""
         from config import validate_env_vars
 
         monkeypatch.setenv("ENVIRONMENT", "production")
@@ -380,6 +380,7 @@ class TestStartupValidation:
         monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "test_key")
         monkeypatch.setenv("SUPABASE_JWT_SECRET", "test_jwt")
         monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+        monkeypatch.setenv("MIXPANEL_TOKEN", "mp_test")  # MON-FN-005
 
         # Should not raise
         validate_env_vars()

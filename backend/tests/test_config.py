@@ -1,8 +1,13 @@
 """Tests for configuration module, including logging setup."""
 
 import logging
+import os
 import sys
-from config import setup_logging, RetryConfig
+from unittest.mock import patch
+
+import pytest
+
+from config import setup_logging, RetryConfig, validate_env_vars
 
 
 class TestSetupLogging:
@@ -331,3 +336,48 @@ class TestRetryConfig:
         config = RetryConfig(retryable_exceptions=custom_exceptions)
 
         assert config.retryable_exceptions == custom_exceptions
+
+
+class TestValidateEnvVarsMixpanelToken:
+    """MON-FN-005: MIXPANEL_TOKEN must be required in production.
+
+    Memory `reference_mixpanel_backend_token_gap_2026_04_24` — token was
+    silently absent in prod, suppressing paywall_hit/trial_started events
+    for an unknown period. Boot fail closes the gap.
+    """
+
+    @patch.dict(os.environ, {
+        "ENVIRONMENT": "production",
+        "SUPABASE_URL": "https://x.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "k",
+        "SUPABASE_JWT_SECRET": "s",
+        "STRIPE_WEBHOOK_SECRET": "w",
+        "MIXPANEL_TOKEN": "",
+    }, clear=False)
+    def test_mixpanel_missing_in_production_raises(self):
+        with pytest.raises(RuntimeError, match="MIXPANEL_TOKEN"):
+            validate_env_vars()
+
+    @patch.dict(os.environ, {
+        "ENVIRONMENT": "development",
+        "SUPABASE_URL": "https://x.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "k",
+        "SUPABASE_JWT_SECRET": "s",
+        "STRIPE_WEBHOOK_SECRET": "w",
+        "MIXPANEL_TOKEN": "",
+    }, clear=False)
+    def test_mixpanel_missing_in_dev_only_warns(self, caplog):
+        with caplog.at_level(logging.WARNING):
+            validate_env_vars()
+        assert any("MIXPANEL_TOKEN" in r.message for r in caplog.records)
+
+    @patch.dict(os.environ, {
+        "ENVIRONMENT": "production",
+        "SUPABASE_URL": "https://x.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "k",
+        "SUPABASE_JWT_SECRET": "s",
+        "STRIPE_WEBHOOK_SECRET": "w",
+        "MIXPANEL_TOKEN": "bc4162c2267b4c415357a02e2ef39cdc",
+    }, clear=False)
+    def test_mixpanel_present_in_production_passes(self):
+        validate_env_vars()
