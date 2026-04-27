@@ -6,7 +6,7 @@
 
 # CACHE BUST - forces Railway rebuild (change to invalidate cache)
 # GTM-FIX-002: Add missing NEXT_PUBLIC_* build ARGs for Sentry/Mixpanel/Stripe
-ARG CACHEBUST=20260416-fix-storybook-peer-deps
+ARG CACHEBUST=20260426-seo020-backend-url-arg
 
 # Stage 1: Dependencies
 # Using node:20.11-alpine3.19 instead of node:20-alpine to force layer rebuild
@@ -44,6 +44,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_BACKEND_URL
+# STORY-SEO-020: server-only BACKEND_URL needed by sitemap.ts at build time.
+# Without this, frontend/app/sitemap.ts falls back to localhost:8000, producing
+# sitemap-4.xml with 0 <loc> entries in production.
+ARG BACKEND_URL
 ARG NEXT_PUBLIC_CANONICAL_URL
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_APP_NAME=SmartLic
@@ -71,6 +75,7 @@ ARG SENTRY_PROJECT
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+ENV BACKEND_URL=$BACKEND_URL
 ENV NEXT_PUBLIC_CANONICAL_URL=$NEXT_PUBLIC_CANONICAL_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
@@ -93,6 +98,7 @@ ENV SENTRY_PROJECT=$SENTRY_PROJECT
 # Debug: Print build-time environment variables
 RUN echo "=== Build-time Environment Variables ===" && \
     echo "NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL" && \
+    echo "BACKEND_URL=$BACKEND_URL" && \
     echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" && \
     echo "NEXT_PUBLIC_CANONICAL_URL=$NEXT_PUBLIC_CANONICAL_URL" && \
     echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" && \

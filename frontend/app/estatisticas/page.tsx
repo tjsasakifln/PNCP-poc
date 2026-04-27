@@ -127,6 +127,7 @@ async function fetchStats(): Promise<StatsResponse> {
   try {
     const resp = await fetch(`${baseUrl}/v1/stats/public`, {
       next: { revalidate: 21600 },
+      signal: AbortSignal.timeout(8000),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return await resp.json();
