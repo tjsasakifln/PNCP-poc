@@ -76,7 +76,7 @@ jobs:
           retention-days: 30
 
       - name: Comment PR with Lighthouse results
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         if: github.event_name == 'pull_request'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
