@@ -1,0 +1,2767 @@
+[
+  [
+    "smartlic",
+    "6",
+    "9",
+    "66,7%",
+    "1,0"
+  ],
+  [
+    "supra distribuidora de materiais hospitalares ltda",
+    "1",
+    "8",
+    "12,5%",
+    "7,4"
+  ],
+  [
+    "licitações públicas para o ano de 2026",
+    "0",
+    "93",
+    "0%",
+    "4,7"
+  ],
+  [
+    "licitação de projetos de engenharia 2026",
+    "0",
+    "13",
+    "0%",
+    "5,1"
+  ],
+  [
+    "69034668000156",
+    "0",
+    "13",
+    "0%",
+    "10,9"
+  ],
+  [
+    "pncp contratos",
+    "0",
+    "12",
+    "0%",
+    "8,6"
+  ],
+  [
+    "licitações públicas ano 2026",
+    "0",
+    "11",
+    "0%",
+    "4,2"
+  ],
+  [
+    "funeraria são josé são gabriel rs",
+    "0",
+    "11",
+    "0%",
+    "6,1"
+  ],
+  [
+    "tekis",
+    "0",
+    "11",
+    "0%",
+    "8,9"
+  ],
+  [
+    "labbrasil",
+    "0",
+    "10",
+    "0%",
+    "6,6"
+  ],
+  [
+    "licitação desenvolvimento de software 2026",
+    "0",
+    "8",
+    "0%",
+    "7,0"
+  ],
+  [
+    "tecnocenter materiais medicos hospitalares ltda",
+    "0",
+    "7",
+    "0%",
+    "12,1"
+  ],
+  [
+    "smart lic",
+    "0",
+    "7",
+    "0%",
+    "59,6"
+  ],
+  [
+    "licitações públicas 2026",
+    "0",
+    "6",
+    "0%",
+    "4,2"
+  ],
+  [
+    "pncp consulta contratos",
+    "0",
+    "6",
+    "0%",
+    "6,3"
+  ],
+  [
+    "astemh",
+    "0",
+    "6",
+    "0%",
+    "9,2"
+  ],
+  [
+    "planservice pelotas",
+    "0",
+    "5",
+    "0%",
+    "1,0"
+  ],
+  [
+    "04907604000177",
+    "0",
+    "5",
+    "0%",
+    "6,8"
+  ],
+  [
+    "consulta contratos pncp",
+    "0",
+    "5",
+    "0%",
+    "8,4"
+  ],
+  [
+    "01914765000108",
+    "0",
+    "5",
+    "0%",
+    "9,0"
+  ],
+  [
+    "copan panificadora",
+    "0",
+    "5",
+    "0%",
+    "9,0"
+  ],
+  [
+    "panificadora copan",
+    "0",
+    "5",
+    "0%",
+    "9,0"
+  ],
+  [
+    "imagem midia",
+    "0",
+    "5",
+    "0%",
+    "9,2"
+  ],
+  [
+    "03874953000177",
+    "0",
+    "5",
+    "0%",
+    "10,2"
+  ],
+  [
+    "neumann madeireira ltda",
+    "0",
+    "5",
+    "0%",
+    "10,4"
+  ],
+  [
+    "27486182000109",
+    "0",
+    "5",
+    "0%",
+    "10,8"
+  ],
+  [
+    "longevity pharma",
+    "0",
+    "5",
+    "0%",
+    "10,8"
+  ],
+  [
+    "pncp licitações",
+    "0",
+    "5",
+    "0%",
+    "31,4"
+  ],
+  [
+    "essencial (licitação or edital or rfp or pregão or concurso)",
+    "0",
+    "4",
+    "0%",
+    "4,8"
+  ],
+  [
+    "asus implementos cnpj",
+    "0",
+    "4",
+    "0%",
+    "6,0"
+  ],
+  [
+    "hella comercio e servicos ltda",
+    "0",
+    "4",
+    "0%",
+    "7,2"
+  ],
+  [
+    "eco diagnostica cnpj",
+    "0",
+    "4",
+    "0%",
+    "8,2"
+  ],
+  [
+    "ls distribuidora de medicamentos e material hospitalar",
+    "0",
+    "4",
+    "0%",
+    "8,5"
+  ],
+  [
+    "24706364000150",
+    "0",
+    "4",
+    "0%",
+    "8,8"
+  ],
+  [
+    "royal atacadista e comercio ltda",
+    "0",
+    "4",
+    "0%",
+    "8,8"
+  ],
+  [
+    "funerária são josé são gabriel rs",
+    "0",
+    "4",
+    "0%",
+    "9,0"
+  ],
+  [
+    "arte sutil persianas e cortinas ltda",
+    "0",
+    "4",
+    "0%",
+    "9,2"
+  ],
+  [
+    "cez engenharia",
+    "0",
+    "4",
+    "0%",
+    "9,2"
+  ],
+  [
+    "60.637.667/0001-21",
+    "0",
+    "4",
+    "0%",
+    "9,5"
+  ],
+  [
+    "cnpj eco diagnostica",
+    "0",
+    "4",
+    "0%",
+    "10,0"
+  ],
+  [
+    "consulta ceis cnpj",
+    "0",
+    "4",
+    "0%",
+    "10,0"
+  ],
+  [
+    "riva gas",
+    "0",
+    "4",
+    "0%",
+    "10,0"
+  ],
+  [
+    "auto peças mambai",
+    "0",
+    "4",
+    "0%",
+    "10,2"
+  ],
+  [
+    "cnpj 03094629000136",
+    "0",
+    "4",
+    "0%",
+    "10,2"
+  ],
+  [
+    "plasag",
+    "0",
+    "4",
+    "0%",
+    "10,5"
+  ],
+  [
+    "posto de molas sapiranga",
+    "0",
+    "4",
+    "0%",
+    "10,5"
+  ],
+  [
+    "24.039.073/0001-55",
+    "0",
+    "4",
+    "0%",
+    "11,0"
+  ],
+  [
+    "cnpj 69034668000156",
+    "0",
+    "4",
+    "0%",
+    "11,0"
+  ],
+  [
+    "multitruck itatiba",
+    "0",
+    "4",
+    "0%",
+    "11,5"
+  ],
+  [
+    "pncp licitação",
+    "0",
+    "4",
+    "0%",
+    "27,2"
+  ],
+  [
+    "topsan",
+    "0",
+    "3",
+    "0%",
+    "2,0"
+  ],
+  [
+    "alipaticos",
+    "0",
+    "3",
+    "0%",
+    "4,3"
+  ],
+  [
+    "sifamaq",
+    "0",
+    "3",
+    "0%",
+    "5,7"
+  ],
+  [
+    "d camp alimentos ltda",
+    "0",
+    "3",
+    "0%",
+    "6,0"
+  ],
+  [
+    "contrato emergencial são leopoldo 2026",
+    "0",
+    "3",
+    "0%",
+    "6,3"
+  ],
+  [
+    "munl",
+    "0",
+    "3",
+    "0%",
+    "6,3"
+  ],
+  [
+    "\"art. 105\" \"lei 14.133\" duração dos contratos",
+    "0",
+    "3",
+    "0%",
+    "7,0"
+  ],
+  [
+    "cnpj planservice",
+    "0",
+    "3",
+    "0%",
+    "7,0"
+  ],
+  [
+    "consulta pncp contratos",
+    "0",
+    "3",
+    "0%",
+    "7,0"
+  ],
+  [
+    "ncg gases",
+    "0",
+    "3",
+    "0%",
+    "7,0"
+  ],
+  [
+    "planservice cnpj",
+    "0",
+    "3",
+    "0%",
+    "7,0"
+  ],
+  [
+    "planeje tecnologia e servicos ltda",
+    "0",
+    "3",
+    "0%",
+    "7,3"
+  ],
+  [
+    "03094629000136",
+    "0",
+    "3",
+    "0%",
+    "7,7"
+  ],
+  [
+    "05102155000586",
+    "0",
+    "3",
+    "0%",
+    "7,7"
+  ],
+  [
+    "42.692.703/0001-78",
+    "0",
+    "3",
+    "0%",
+    "8,0"
+  ],
+  [
+    "new med importadora e distribuidora de materiais medicos ltda",
+    "0",
+    "3",
+    "0%",
+    "8,0"
+  ],
+  [
+    "dalo empreendimentos ltda",
+    "0",
+    "3",
+    "0%",
+    "8,3"
+  ],
+  [
+    "\"art. 71\" \"lei 14.133\" adjudicação homologação",
+    "0",
+    "3",
+    "0%",
+    "8,7"
+  ],
+  [
+    "00028986000108",
+    "0",
+    "3",
+    "0%",
+    "8,7"
+  ],
+  [
+    "high quality clothes ltda",
+    "0",
+    "3",
+    "0%",
+    "8,7"
+  ],
+  [
+    "pncp busca editais",
+    "0",
+    "3",
+    "0%",
+    "8,7"
+  ],
+  [
+    "izzy distribuidora",
+    "0",
+    "3",
+    "0%",
+    "9,0"
+  ],
+  [
+    "05.003.729/0004-88",
+    "0",
+    "3",
+    "0%",
+    "9,3"
+  ],
+  [
+    "20501854000169",
+    "0",
+    "3",
+    "0%",
+    "9,3"
+  ],
+  [
+    "03264927000127",
+    "0",
+    "3",
+    "0%",
+    "9,7"
+  ],
+  [
+    "extinrosa",
+    "0",
+    "3",
+    "0%",
+    "9,7"
+  ],
+  [
+    "hidro saneamento materiais hidraulicos ltda",
+    "0",
+    "3",
+    "0%",
+    "9,7"
+  ],
+  [
+    "01754239000896",
+    "0",
+    "3",
+    "0%",
+    "10,0"
+  ],
+  [
+    "netware internet",
+    "0",
+    "3",
+    "0%",
+    "10,0"
+  ],
+  [
+    "tecnoset cnpj",
+    "0",
+    "3",
+    "0%",
+    "10,0"
+  ],
+  [
+    "03506307000157",
+    "0",
+    "3",
+    "0%",
+    "10,7"
+  ],
+  [
+    "17140820000777",
+    "0",
+    "3",
+    "0%",
+    "10,7"
+  ],
+  [
+    "cnpj 88630413000281",
+    "0",
+    "3",
+    "0%",
+    "10,7"
+  ],
+  [
+    "nw informatica",
+    "0",
+    "3",
+    "0%",
+    "10,7"
+  ],
+  [
+    "69034668000156 cnpj",
+    "0",
+    "3",
+    "0%",
+    "11,0"
+  ],
+  [
+    "licitações",
+    "0",
+    "3",
+    "0%",
+    "11,0"
+  ],
+  [
+    "usipatos",
+    "0",
+    "3",
+    "0%",
+    "11,0"
+  ],
+  [
+    "comercial merlo",
+    "0",
+    "3",
+    "0%",
+    "11,7"
+  ],
+  [
+    "tecnocenter material médico hospitalar ltda joão pessoa",
+    "0",
+    "3",
+    "0%",
+    "11,7"
+  ],
+  [
+    "tekton construtora ltda",
+    "0",
+    "3",
+    "0%",
+    "15,0"
+  ],
+  [
+    "densitom",
+    "0",
+    "3",
+    "0%",
+    "17,3"
+  ],
+  [
+    "como encontrar contratos de licitações publicas para ver preços e fornecedores",
+    "0",
+    "3",
+    "0%",
+    "19,7"
+  ],
+  [
+    "contratos de ti",
+    "0",
+    "3",
+    "0%",
+    "80,3"
+  ],
+  [
+    "curso de licitações e contratos",
+    "0",
+    "2",
+    "0%",
+    "1,0"
+  ],
+  [
+    "liscon",
+    "0",
+    "2",
+    "0%",
+    "1,0"
+  ],
+  [
+    "teltex tecnologia cnpj",
+    "0",
+    "2",
+    "0%",
+    "1,0"
+  ],
+  [
+    "tiserv",
+    "0",
+    "2",
+    "0%",
+    "1,0"
+  ],
+  [
+    "importire importadora e distribuidora de pneus ltda",
+    "0",
+    "2",
+    "0%",
+    "5,0"
+  ],
+  [
+    "agrosuco",
+    "0",
+    "2",
+    "0%",
+    "6,0"
+  ],
+  [
+    "las do brasil comercio de produtos analiticos e laboratoriais ltda",
+    "0",
+    "2",
+    "0%",
+    "6,0"
+  ],
+  [
+    "pncp 2026",
+    "0",
+    "2",
+    "0%",
+    "6,0"
+  ],
+  [
+    "\"império assessoria e concursos\"",
+    "0",
+    "2",
+    "0%",
+    "6,5"
+  ],
+  [
+    "play pharma",
+    "0",
+    "2",
+    "0%",
+    "6,5"
+  ],
+  [
+    "30500671000182",
+    "0",
+    "2",
+    "0%",
+    "7,0"
+  ],
+  [
+    "difapi comercio e servicos ltda",
+    "0",
+    "2",
+    "0%",
+    "7,0"
+  ],
+  [
+    "mare informatica",
+    "0",
+    "2",
+    "0%",
+    "7,0"
+  ],
+  [
+    "neobel",
+    "0",
+    "2",
+    "0%",
+    "7,0"
+  ],
+  [
+    "norclean industria e comercio ltda",
+    "0",
+    "2",
+    "0%",
+    "7,0"
+  ],
+  [
+    "imprimatech",
+    "0",
+    "2",
+    "0%",
+    "7,5"
+  ],
+  [
+    "34.223.536/0001-98",
+    "0",
+    "2",
+    "0%",
+    "8,0"
+  ],
+  [
+    "bolsa bec",
+    "0",
+    "2",
+    "0%",
+    "8,0"
+  ],
+  [
+    "bolsa eletrônica de compras bec",
+    "0",
+    "2",
+    "0%",
+    "8,0"
+  ],
+  [
+    "d. camp alimentos ltda",
+    "0",
+    "2",
+    "0%",
+    "8,0"
+  ],
+  [
+    "ludwig biotecnologia",
+    "0",
+    "2",
+    "0%",
+    "8,0"
+  ],
+  [
+    "oyster comercio de equipamentos ltda",
+    "0",
+    "2",
+    "0%",
+    "8,0"
+  ],
+  [
+    "92559830000171",
+    "0",
+    "2",
+    "0%",
+    "8,5"
+  ],
+  [
+    "bec bolsa eletrônica",
+    "0",
+    "2",
+    "0%",
+    "8,5"
+  ],
+  [
+    "netware telecomunicacoes e informatica ltda",
+    "0",
+    "2",
+    "0%",
+    "8,5"
+  ],
+  [
+    "53859112000169",
+    "0",
+    "2",
+    "0%",
+    "9,0"
+  ],
+  [
+    "b gyn",
+    "0",
+    "2",
+    "0%",
+    "9,0"
+  ],
+  [
+    "pnpc contratos",
+    "0",
+    "2",
+    "0%",
+    "9,0"
+  ],
+  [
+    "rcb paineis eletricos",
+    "0",
+    "2",
+    "0%",
+    "9,0"
+  ],
+  [
+    "x digital brasil",
+    "0",
+    "2",
+    "0%",
+    "9,0"
+  ],
+  [
+    "imediata distribuidora de produtos para a saude ltda",
+    "0",
+    "2",
+    "0%",
+    "9,5"
+  ],
+  [
+    "integrado distribuidor frigorifico ltda",
+    "0",
+    "2",
+    "0%",
+    "9,5"
+  ],
+  [
+    "only up cnpj",
+    "0",
+    "2",
+    "0%",
+    "9,5"
+  ],
+  [
+    "pncp",
+    "0",
+    "2",
+    "0%",
+    "9,5"
+  ],
+  [
+    "14.378.714/0001-42",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "26.702.164/0001-54",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "alrantech importacoes e comercio ltda",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "bella editora e grafica ltda",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "br paving",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "cepar ferragens",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "extinrosa limeira",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "gyn brasil suprimentos",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "medical life comercio de produtos hospitalares ltda",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "migra distribuidora",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "pensalab cnpj",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "pncp api editais",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "sislam esteio",
+    "0",
+    "2",
+    "0%",
+    "10,0"
+  ],
+  [
+    "58055343000133",
+    "0",
+    "2",
+    "0%",
+    "10,5"
+  ],
+  [
+    "72381189001001",
+    "0",
+    "2",
+    "0%",
+    "10,5"
+  ],
+  [
+    "globali",
+    "0",
+    "2",
+    "0%",
+    "10,5"
+  ],
+  [
+    "ideal construção e pavimentação ltda",
+    "0",
+    "2",
+    "0%",
+    "10,5"
+  ],
+  [
+    "multi truck itatiba",
+    "0",
+    "2",
+    "0%",
+    "10,5"
+  ],
+  [
+    "trede center commerce ltda",
+    "0",
+    "2",
+    "0%",
+    "10,5"
+  ],
+  [
+    "controllab cnpj",
+    "0",
+    "2",
+    "0%",
+    "11,0"
+  ],
+  [
+    "mcn comercio e importacao de produtos cirurgicos ltda",
+    "0",
+    "2",
+    "0%",
+    "11,0"
+  ],
+  [
+    "sempre hospitalar ltda",
+    "0",
+    "2",
+    "0%",
+    "11,0"
+  ],
+  [
+    "societe comercio de veiculos ltda",
+    "0",
+    "2",
+    "0%",
+    "11,0"
+  ],
+  [
+    "embacom ltda",
+    "0",
+    "2",
+    "0%",
+    "11,5"
+  ],
+  [
+    "oncoexo cnpj",
+    "0",
+    "2",
+    "0%",
+    "11,5"
+  ],
+  [
+    "best pharma curitiba",
+    "0",
+    "2",
+    "0%",
+    "12,0"
+  ],
+  [
+    "borges e gomes engenharia",
+    "0",
+    "2",
+    "0%",
+    "12,0"
+  ],
+  [
+    "health max ltda",
+    "0",
+    "2",
+    "0%",
+    "12,0"
+  ],
+  [
+    "posto celeste",
+    "0",
+    "2",
+    "0%",
+    "12,0"
+  ],
+  [
+    "pncp consulta licitações",
+    "0",
+    "2",
+    "0%",
+    "12,5"
+  ],
+  [
+    "simplifique pneus",
+    "0",
+    "2",
+    "0%",
+    "12,5"
+  ],
+  [
+    "sim",
+    "0",
+    "2",
+    "0%",
+    "17,0"
+  ],
+  [
+    "bolsa eletrônica de compras",
+    "0",
+    "2",
+    "0%",
+    "20,0"
+  ],
+  [
+    "pncp area de trabalho",
+    "0",
+    "2",
+    "0%",
+    "24,0"
+  ],
+  [
+    "cobenge 2024",
+    "0",
+    "2",
+    "0%",
+    "25,5"
+  ],
+  [
+    "ccomex",
+    "0",
+    "2",
+    "0%",
+    "27,5"
+  ],
+  [
+    "calux comercial ltda",
+    "0",
+    "2",
+    "0%",
+    "28,0"
+  ],
+  [
+    "oxynobre",
+    "0",
+    "2",
+    "0%",
+    "28,0"
+  ],
+  [
+    "manual pncp",
+    "0",
+    "2",
+    "0%",
+    "29,5"
+  ],
+  [
+    "análise de licitações tecnologia b2g erione",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "best bra",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "cnpj tecnoset",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "e em 2025?",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "edital de licitação",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "edital social 2026",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "elite digital ltda",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "filgueira & filgueira ltda",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "health max home care",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "hidrosaneamento",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "importire",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "licitações em aberto",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "o que é nota de empenho?",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "significado de adjudicação",
+    "0",
+    "1",
+    "0%",
+    "1,0"
+  ],
+  [
+    "cross bid",
+    "0",
+    "1",
+    "0%",
+    "2,0"
+  ],
+  [
+    "o que é nota de empenho",
+    "0",
+    "1",
+    "0%",
+    "2,0"
+  ],
+  [
+    "onde está agora?",
+    "0",
+    "1",
+    "0%",
+    "2,0"
+  ],
+  [
+    "prlv industria de suplementos alimentares ltda",
+    "0",
+    "1",
+    "0%",
+    "2,0"
+  ],
+  [
+    "nota de empenho",
+    "0",
+    "1",
+    "0%",
+    "3,0"
+  ],
+  [
+    "ok promo cnpj",
+    "0",
+    "1",
+    "0%",
+    "3,0"
+  ],
+  [
+    "quem é henry freitas",
+    "0",
+    "1",
+    "0%",
+    "3,0"
+  ],
+  [
+    "\"art. 71\" \"lei 14.133\" adjudicação",
+    "0",
+    "1",
+    "0%",
+    "4,0"
+  ],
+  [
+    "cez engenharia ltda",
+    "0",
+    "1",
+    "0%",
+    "4,0"
+  ],
+  [
+    "cobrasin vinhedo",
+    "0",
+    "1",
+    "0%",
+    "4,0"
+  ],
+  [
+    "consulta editais pncp",
+    "0",
+    "1",
+    "0%",
+    "4,0"
+  ],
+  [
+    "holhl",
+    "0",
+    "1",
+    "0%",
+    "4,0"
+  ],
+  [
+    "licitações públicas 2026 brasil",
+    "0",
+    "1",
+    "0%",
+    "4,0"
+  ],
+  [
+    "licitações públicas brasil 2026",
+    "0",
+    "1",
+    "0%",
+    "4,0"
+  ],
+  [
+    "cigon",
+    "0",
+    "1",
+    "0%",
+    "5,0"
+  ],
+  [
+    "licitação",
+    "0",
+    "1",
+    "0%",
+    "5,0"
+  ],
+  [
+    "\"art. 105\" \"lei 14.133\" vigência dos contratos",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "aquabona",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "casa do psicopedagogo ltda",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "justice ai ltda",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "lr novo visual",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "lupmed comercial distribuicao e importacao ltda",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "meps led atacado e distribuidora ltda",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "mhedica service comercio e manutencao ltda",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "paupedra concreto usinado",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "pncp contrato",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "public thinker",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "qeite",
+    "0",
+    "1",
+    "0%",
+    "6,0"
+  ],
+  [
+    "59.095.876/0001-01",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "agebox",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "alfa medico hospitalar",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "area de trabalho pncp",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "b.e.c",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "bec bolsa",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "bolsa eletrônica bec",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "cimoveis comercio de moveis ltda",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "elite comercio de maquinas e veiculos ltda",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "nort med produtos hospitalares ltda",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "pncp contratos consulta",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "practice gases",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "preciso criar um site",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "public thinker treinamentos",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "roldao braga ribeiro ltda",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "tci teloes",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "torcida brasileira industria e comercio ltda",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "znec produções",
+    "0",
+    "1",
+    "0%",
+    "7,0"
+  ],
+  [
+    "05872814000130",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "59.777.691/0001-87",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "83675413000101",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "ads comercial do brasil ltda",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "alfa tecnologia em engenharia e infraestrutura de redes ltda",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "bec bolsa eletrônica de compras",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "centro automotivo agudos",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "concursos e licitações comunicação pública tecnologia inovação 2026",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "consultar contratos pncp",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "contratos uepg",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "global g7",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "imagem mídia",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "moveplast",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "mrb distribuidora",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "o que é pncp?",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "rivagas",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "softplan cnpj",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "vitor diogo wendling",
+    "0",
+    "1",
+    "0%",
+    "8,0"
+  ],
+  [
+    "\"art. 54\" \"lei 14.133\" edital",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "05340639000130",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "07.616.162/0001-06",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "16701716000156",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "34028316002823",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "40.435.095/0001-90",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "88630413000281",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "atacado virtual max ltda",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "ceprof",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "cnpj seec rn",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "edenred solucoes de mobilidade e instituicao de pagamento hu s.a",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "impressione solucoes em copias e impressoes ltda",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "ipml",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "juar brindes ltda",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "ls distribuidora de medicamentos e material hospitalar ltda",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "memory projetos e desenvolvimento de sistemas ltda",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "pgli",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "psc engenharia",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "qualys diagnósticos",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "rj distribuidora de auto pecas ltda",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "segville",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "trena terraplenagem e construções s.a",
+    "0",
+    "1",
+    "0%",
+    "9,0"
+  ],
+  [
+    "\"império assessoria e concursos\" banca",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "00604122000197",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "01104751000110",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "02302100000106",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "47.673.948/0001-71",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "alrantech",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "anjomedi distribuidora de medicamentos ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "ats produtos medico cirurgicos ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "aufran",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "bankfort vigilancia privada ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "bonato diesel",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "camero dracena",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "cnpj 08324196000181",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "cnpj 16701716000156",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "cnpj fepese",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "como consultar preços no pncp",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "dipar ferragens eireli",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "drogamed",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "futura agencia de viagens e turismo ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "grando pneus",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "infoshop41 teleinformatica ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "interprise instrumentos analiticos ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "licite saude comercio de produtos hospitalares ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "mscon",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "nucleo saude ambiental e agropecuaria ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "okpromo",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "playpharma",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "pncp busca de editais",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "rochedo hospitalar",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "startractor",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "suprema sertãozinho",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "teletex computadores e sistemas ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "total cafe",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "uniwear",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "ursa comercial ltda",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "valeria malhas",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "vo nino embalagens",
+    "0",
+    "1",
+    "0%",
+    "10,0"
+  ],
+  [
+    "04.907.604/0001-77",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "14007211000160",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "33654831000136",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "55.972.087/0001-50",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "68314830000127",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "79052122000181",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "barra de proteção eletrônica para porta elevador atlas schindler",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "bella soluções comerciais ltda",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "cnpj 72.381.189/0010-01",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "danialex tec - material medico hospitalar ltda",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "deltaway",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "densitom jaraguá do sul",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "destaque distribuidora de veiculos e pecas ltda",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "expo iguatama 2026",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "instituicao only up",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "licitapro consultoria ltda",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "log distribuidora de produtos hospitalar e higiene pessoal ltda",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "mercadão do produtor januária",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "oxi morena",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "play tecnologia e telefonia movel ltda",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "supplement labs ltda",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "vear tecnologia ltda",
+    "0",
+    "1",
+    "0%",
+    "11,0"
+  ],
+  [
+    "agencia futura df",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "arthur embalagens lençóis paulista",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "boynton importação e exportação ltda",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "cnpj iaupe",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "cqi vistoria",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "destaque persianas",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "disk car locacao de veiculos sa",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "dm serviços de climatização e aquecimento ltda",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "dna comercio e representacoes ltda",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "heli brasil cnpj",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "iaupe cnpj",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "licitações abertas",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "live medical",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "noar turismo",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "qualys diagnosticos comercio s.a",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "serv pref",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "soma engenharia e construções ltda",
+    "0",
+    "1",
+    "0%",
+    "12,0"
+  ],
+  [
+    "ação serviços",
+    "0",
+    "1",
+    "0%",
+    "13,0"
+  ],
+  [
+    "gno marketing e publicidade ltda",
+    "0",
+    "1",
+    "0%",
+    "13,0"
+  ],
+  [
+    "informobile",
+    "0",
+    "1",
+    "0%",
+    "14,0"
+  ],
+  [
+    "lotus central de distribuicao de higienicos ltda",
+    "0",
+    "1",
+    "0%",
+    "14,0"
+  ],
+  [
+    "jvl jatai",
+    "0",
+    "1",
+    "0%",
+    "16,0"
+  ],
+  [
+    "meta x industria e comercio ltda",
+    "0",
+    "1",
+    "0%",
+    "16,0"
+  ],
+  [
+    "catedral de servicos ltda",
+    "0",
+    "1",
+    "0%",
+    "17,0"
+  ],
+  [
+    "hts home care",
+    "0",
+    "1",
+    "0%",
+    "17,0"
+  ],
+  [
+    "licitações pncp",
+    "0",
+    "1",
+    "0%",
+    "17,0"
+  ],
+  [
+    "cnpj 69.034.668/0001-56",
+    "0",
+    "1",
+    "0%",
+    "19,0"
+  ],
+  [
+    "resgatecnica comercio de equipamentos de resgate ltda",
+    "0",
+    "1",
+    "0%",
+    "19,0"
+  ],
+  [
+    "plusmed distribuidora de medicamentos e produtos hospitalares ltda",
+    "0",
+    "1",
+    "0%",
+    "20,0"
+  ],
+  [
+    "roriz instrumentos musicais",
+    "0",
+    "1",
+    "0%",
+    "20,0"
+  ],
+  [
+    "gçu",
+    "0",
+    "1",
+    "0%",
+    "21,0"
+  ],
+  [
+    "adjudicada licitação",
+    "0",
+    "1",
+    "0%",
+    "22,0"
+  ],
+  [
+    "sem licitante",
+    "0",
+    "1",
+    "0%",
+    "22,0"
+  ],
+  [
+    "freedom veiculos eletricos ltda",
+    "0",
+    "1",
+    "0%",
+    "23,0"
+  ],
+  [
+    "gve sc",
+    "0",
+    "1",
+    "0%",
+    "23,0"
+  ],
+  [
+    "lupmed",
+    "0",
+    "1",
+    "0%",
+    "24,0"
+  ],
+  [
+    "desentupidora valdir",
+    "0",
+    "1",
+    "0%",
+    "25,0"
+  ],
+  [
+    "iob online juridico",
+    "0",
+    "1",
+    "0%",
+    "25,0"
+  ],
+  [
+    "lopes kalil engenharia e comercio ltda",
+    "0",
+    "1",
+    "0%",
+    "25,0"
+  ],
+  [
+    "unitec hospitalar",
+    "0",
+    "1",
+    "0%",
+    "25,0"
+  ],
+  [
+    "datamed ltda",
+    "0",
+    "1",
+    "0%",
+    "26,0"
+  ],
+  [
+    "iob síntese",
+    "0",
+    "1",
+    "0%",
+    "26,0"
+  ],
+  [
+    "nefrocenter",
+    "0",
+    "1",
+    "0%",
+    "28,0"
+  ],
+  [
+    "chail distribuidora de veiculos ltda",
+    "0",
+    "1",
+    "0%",
+    "29,0"
+  ],
+  [
+    "velmax tatui",
+    "0",
+    "1",
+    "0%",
+    "29,0"
+  ],
+  [
+    "versa engenharia ambiental ltda",
+    "0",
+    "1",
+    "0%",
+    "29,0"
+  ],
+  [
+    "pncp licitacoes",
+    "0",
+    "1",
+    "0%",
+    "30,0"
+  ],
+  [
+    "rbs zero hora editora jornalistica sa",
+    "0",
+    "1",
+    "0%",
+    "30,0"
+  ],
+  [
+    "freedom veículos elétricos ltda",
+    "0",
+    "1",
+    "0%",
+    "32,0"
+  ],
+  [
+    "captar consultoria",
+    "0",
+    "1",
+    "0%",
+    "33,0"
+  ],
+  [
+    "fidalgo tech",
+    "0",
+    "1",
+    "0%",
+    "36,0"
+  ],
+  [
+    "zero hora editora jornalistica sa",
+    "0",
+    "1",
+    "0%",
+    "37,0"
+  ],
+  [
+    "licitações software",
+    "0",
+    "1",
+    "0%",
+    "38,0"
+  ],
+  [
+    "inforshop suprimentos ltda",
+    "0",
+    "1",
+    "0%",
+    "40,0"
+  ],
+  [
+    "marmed",
+    "0",
+    "1",
+    "0%",
+    "41,0"
+  ],
+  [
+    "lumiere veiculos",
+    "0",
+    "1",
+    "0%",
+    "43,0"
+  ],
+  [
+    "pncp consulta licitação",
+    "0",
+    "1",
+    "0%",
+    "44,0"
+  ],
+  [
+    "www.animoengenharia.com.br",
+    "0",
+    "1",
+    "0%",
+    "47,0"
+  ],
+  [
+    "ata aerotaxi abaete",
+    "0",
+    "1",
+    "0%",
+    "48,0"
+  ],
+  [
+    "2 via demae caldas novas",
+    "0",
+    "1",
+    "0%",
+    "50,0"
+  ],
+  [
+    "cony engenharia",
+    "0",
+    "1",
+    "0%",
+    "53,0"
+  ],
+  [
+    "informata",
+    "0",
+    "1",
+    "0%",
+    "54,0"
+  ],
+  [
+    "alpha eletronicos",
+    "0",
+    "1",
+    "0%",
+    "55,0"
+  ],
+  [
+    "pncp licitacao",
+    "0",
+    "1",
+    "0%",
+    "56,0"
+  ],
+  [
+    "adjudicar licitação",
+    "0",
+    "1",
+    "0%",
+    "68,0"
+  ],
+  [
+    "caroline embalagens",
+    "0",
+    "1",
+    "0%",
+    "76,0"
+  ],
+  [
+    "nucleo de informacao e coordenacao do ponto br",
+    "0",
+    "1",
+    "0%",
+    "79,0"
+  ],
+  [
+    "licitação pública",
+    "0",
+    "1",
+    "0%",
+    "82,0"
+  ],
+  [
+    "cimev",
+    "0",
+    "1",
+    "0%",
+    "83,0"
+  ],
+  [
+    "ferragista nacional",
+    "0",
+    "1",
+    "0%",
+    "84,0"
+  ]
+]
