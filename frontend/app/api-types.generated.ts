@@ -2690,7 +2690,7 @@ export interface paths {
          * @description Agrega historico de contratos do PNCP + dados cadastrais (BrasilAPI via
          *     enriched_entities) para a pagina /fornecedores/{cnpj}.
          *
-         *     Publico, sem auth. Cache: 24h TTL em memoria.
+         *     Publico, sem auth. Cache: 24h TTL em memoria (5min em fallback partial).
          */
         get: operations["fornecedor_profile_v1_fornecedores__cnpj__profile_get"];
         put?: never;

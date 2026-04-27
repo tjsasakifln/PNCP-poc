@@ -1,7 +1,8 @@
 """SEO Wave 2+: Public stats endpoints for /contratos and /fornecedores programmatic pages.
 
 Public (no auth) endpoints that aggregate contract data from pncp_supplier_contracts
-by sector (keyword matching on objeto_contrato) and UF. Cache: InMemory 24h TTL.
+by sector (keyword matching on objeto_contrato) and UF. Cache: InMemory 24h TTL on
+success, 5min on partial/budget-exceeded.
 
 Endpoints:
   GET /contratos/{setor}/{uf}/stats       — spending transparency (12.2.1)
@@ -10,6 +11,7 @@ Endpoints:
   GET /fornecedores/{cnpj}/profile        — supplier profile page (Sprint 3 Parte 13)
 """
 
+import asyncio
 import logging
 import re
 import time
@@ -26,6 +28,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["contratos-publicos"])
 
 _CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h
+# Negative-cache TTL when DB query fails / event loop saturates: 5min.
+# Prevents Googlebot retry storm from re-saturating the pool.
+_NEGATIVE_CACHE_TTL_SECONDS = 5 * 60
+# Hard request budget for fornecedor_profile (Googlebot-hit programmatic SEO route).
+_FORNECEDOR_PROFILE_BUDGET_S = 30.0
 _contratos_cache: dict[str, tuple[dict, float]] = {}
 _fornecedores_cache: dict[str, tuple[dict, float]] = {}
 _orgao_contratos_cache: dict[str, tuple[dict, float]] = {}
@@ -133,15 +140,21 @@ class FornecedoresStatsResponse(BaseModel):
 def _get_cached(cache: dict, key: str) -> Optional[dict]:
     if key not in cache:
         return None
-    data, ts = cache[key]
-    if time.time() - ts >= _CACHE_TTL_SECONDS:
+    entry = cache[key]
+    # Backward-compat: legacy entries are (data, ts); new entries (data, ts, ttl).
+    if len(entry) == 3:
+        data, ts, ttl = entry
+    else:
+        data, ts = entry
+        ttl = _CACHE_TTL_SECONDS
+    if time.time() - ts >= ttl:
         del cache[key]
         return None
     return data
 
 
-def _set_cached(cache: dict, key: str, data: dict) -> None:
-    cache[key] = (data, time.time())
+def _set_cached(cache: dict, key: str, data: dict, ttl: float = _CACHE_TTL_SECONDS) -> None:
+    cache[key] = (data, time.time(), ttl)
 
 
 # ---------------------------------------------------------------------------
@@ -570,7 +583,7 @@ async def fornecedor_profile(cnpj: str):
     """Agrega historico de contratos do PNCP + dados cadastrais (BrasilAPI via
     enriched_entities) para a pagina /fornecedores/{cnpj}.
 
-    Publico, sem auth. Cache: 24h TTL em memoria.
+    Publico, sem auth. Cache: 24h TTL em memoria (5min em fallback partial).
     """
     cnpj_clean = cnpj.strip()
     if not _CNPJ_RE.match(cnpj_clean):
@@ -581,26 +594,73 @@ async def fornecedor_profile(cnpj: str):
     if cached:
         return FornecedorProfileResponse(**cached)
 
-    from supabase_client import get_supabase
+    try:
+        response_data = await asyncio.wait_for(
+            _build_fornecedor_profile(cnpj_clean),
+            timeout=_FORNECEDOR_PROFILE_BUDGET_S,
+        )
+        _set_cached(_fornecedor_profile_cache, cache_key, response_data, ttl=_CACHE_TTL_SECONDS)
+        return FornecedorProfileResponse(**response_data)
+    except HTTPException:
+        raise
+    except asyncio.TimeoutError:
+        logger.warning(
+            "fornecedor_profile budget %.0fs exceeded for %s — returning unavailable partial",
+            _FORNECEDOR_PROFILE_BUDGET_S, cnpj_clean,
+        )
+        partial = _build_fornecedor_unavailable(cnpj_clean)
+        _set_cached(_fornecedor_profile_cache, cache_key, partial, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+        return FornecedorProfileResponse(**partial)
+    except Exception as exc:
+        logger.warning("fornecedor_profile unexpected error for %s: %s", cnpj_clean, exc)
+        partial = _build_fornecedor_unavailable(cnpj_clean)
+        _set_cached(_fornecedor_profile_cache, cache_key, partial, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+        return FornecedorProfileResponse(**partial)
+
+
+def _build_fornecedor_unavailable(cnpj: str) -> dict:
+    """Minimal partial response when DB saturates — keeps the response model shape."""
+    now = datetime.now(timezone.utc)
+    return {
+        "cnpj": cnpj,
+        "razao_social": cnpj,
+        "cnae_descricao": "",
+        "municipio": "",
+        "uf_sede": "",
+        "simples_nacional": False,
+        "mei": False,
+        "total_contratos": 0,
+        "valor_total": 0.0,
+        "ufs_atuantes": [],
+        "anos_atividade": [],
+        "top_compradores": [],
+        "contratos_recentes": [],
+        "faq_items": [],
+        "last_updated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "aviso_legal": "Dados temporariamente indisponíveis. Tente novamente em alguns minutos.",
+    }
+
+
+async def _build_fornecedor_profile(cnpj_clean: str) -> dict:
+    from supabase_client import get_supabase, sb_execute
     sb = get_supabase()
 
     # --- Contratos do fornecedor (pncp_supplier_contracts) ---
-    try:
-        resp = (
-            sb.table("pncp_supplier_contracts")
-            .select(
-                "ni_fornecedor,nome_fornecedor,orgao_cnpj,orgao_nome,"
-                "valor_global,data_assinatura,objeto_contrato,uf"
-            )
-            .eq("ni_fornecedor", cnpj_clean)
-            .eq("is_active", True)
-            .order("data_assinatura", desc=True)
-            .limit(500)
-            .execute()
+    # STORY-417 pattern: use sb_execute (non-blocking + circuit breaker) instead
+    # of bare .execute() so a Supabase outage trips the CB and fast-fails
+    # subsequent calls instead of accumulating slow timeouts on the event loop.
+    resp = await sb_execute(
+        sb.table("pncp_supplier_contracts")
+        .select(
+            "ni_fornecedor,nome_fornecedor,orgao_cnpj,orgao_nome,"
+            "valor_global,data_assinatura,objeto_contrato,uf"
         )
-    except Exception as e:
-        logger.error("fornecedor_profile contratos query falhou para %s: %s", cnpj_clean, e)
-        raise HTTPException(status_code=502, detail="Erro ao consultar o datalake de contratos")
+        .eq("ni_fornecedor", cnpj_clean)
+        .eq("is_active", True)
+        .order("data_assinatura", desc=True)
+        .limit(500),
+        category="read",
+    )
 
     rows = resp.data or []
     if not rows:
@@ -609,13 +669,13 @@ async def fornecedor_profile(cnpj: str):
     # --- Dados cadastrais (enriched_entities — opcional) ---
     enriched_data: dict = {}
     try:
-        enrich_resp = (
+        enrich_resp = await sb_execute(
             sb.table("enriched_entities")
             .select("data")
             .eq("entity_type", "fornecedor")
             .eq("entity_id", cnpj_clean)
-            .limit(1)
-            .execute()
+            .limit(1),
+            category="read",
         )
         if enrich_resp.data:
             enriched_data = enrich_resp.data[0].get("data") or {}
@@ -729,8 +789,7 @@ async def fornecedor_profile(cnpj: str):
         ),
     }
 
-    _set_cached(_fornecedor_profile_cache, cache_key, response_data)
-    return FornecedorProfileResponse(**response_data)
+    return response_data
 
 
 def _format_brl(value: float) -> str:
