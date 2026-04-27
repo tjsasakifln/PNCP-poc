@@ -806,12 +806,21 @@ class TestContratosSetorUfStats:
             assert data["top_orgaos"] == []
             assert data["top_fornecedores"] == []
 
-    def test_sector_uf_contratos_db_failure_502(self, client):
+    def test_sector_uf_contratos_db_failure_returns_empty(self, client):
+        # Hotfix incident 2026-04-27: DB failure returns 200 + empty stats
+        # (instead of 502) to prevent crawler retry storm that wedged backend.
+        # Endpoint cache absorbs the empty response.
         mock_sb = MagicMock()
         mock_sb.table.side_effect = RuntimeError("connection refused")
         with patch("supabase_client.get_supabase", return_value=mock_sb):
-            res = client.get("/v1/blog/stats/contratos/vestuario/uf/SP")
-            assert res.status_code == 502
+            # Unique slug to bypass cache from preceding tests in the class
+            res = client.get("/v1/blog/stats/contratos/vestuario/uf/AC")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["total_contracts"] == 0
+            assert data["total_value"] == 0.0
+            assert data["top_orgaos"] == []
+            assert data["top_fornecedores"] == []
 
 
 class TestContratosCidadeStats:
@@ -843,12 +852,20 @@ class TestContratosCidadeStats:
             res = client.get("/v1/blog/stats/contratos/cidade/nonexistent-city")
             assert res.status_code == 404
 
-    def test_cidade_contratos_db_failure_502(self, client):
+    def test_cidade_contratos_db_failure_returns_empty(self, client):
+        # Hotfix incident 2026-04-27: DB failure returns 200 + empty stats
+        # (instead of 502) to prevent crawler retry storm that wedged backend.
         mock_sb = MagicMock()
         mock_sb.table.side_effect = RuntimeError("db down")
         with patch("supabase_client.get_supabase", return_value=mock_sb):
-            res = client.get("/v1/blog/stats/contratos/cidade/sao-paulo")
-            assert res.status_code == 502
+            # Unique slug to bypass cache from preceding tests in the class
+            res = client.get("/v1/blog/stats/contratos/cidade/manaus")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["total_contracts"] == 0
+            assert data["total_value"] == 0.0
+            assert data["top_orgaos"] == []
+            assert data["top_fornecedores"] == []
 
 
 class TestContratosCidadeSetorStats:
