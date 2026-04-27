@@ -70,3 +70,17 @@ Restaurar API SmartLic + funil de pagamento. API morto há 5 dias (Sentry "Healt
 | Stories Ready P0 puxadas | ≥1 | ❌ 0 (SEN-BE-001/008 código defer) |
 
 **Veredito:** parcial. API morto → recuperando. Mas SEN-BE-001/008 código não shipped — outage remanescente parcial. Próxima sessão deve abrir com SEN-BE-001 indices + SEN-BE-008 cache, não improvisação.
+
+## Final state (encerramento sessão)
+
+Burst final `/health/live` x10 via `api.smartlic.tech` ~14:00 UTC: **9/10 success** (mesmo ratio confirmado em 2 amostras 30min apart). Backend estável.
+
+Branch pushed: `session/2026-04-27-api-recovery` (2 commits, 18 files docs/gsc, 0 código). URL: https://github.com/tjsasakifln/PNCP-poc/tree/session/2026-04-27-api-recovery
+
+**Próxima ação prioritária para receita:** Pull SEN-BE-001 (índices `pncp_supplier_contracts`) + SEN-BE-008 (cache /me + perfil-b2g L2 SWR). Statement_timeout 60s é mitigação; código é fix raiz. Sem isso, endpoints pesados continuam flap sob carga real.
+
+**Soak monitor sugerido (24h):**
+- Sentry issue `7409200983` (/health 51 evt) lastSeen sem avanço 1h+
+- Sentry issue `7401422575` (perfil-b2g 153 evt) lastSeen sem avanço 1h+
+- Sentry "Health degraded pncp" (713 evt) → resolve após 1h sem novos events
+- ARQ worker (bidiq-worker) sem regressão por statement_timeout 60s — verificar via `railway logs --service bidiq-worker`
