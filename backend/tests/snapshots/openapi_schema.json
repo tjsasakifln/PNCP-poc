@@ -16061,7 +16061,7 @@
     },
     "/v1/fornecedores/{cnpj}/profile": {
       "get": {
-        "description": "Agrega historico de contratos do PNCP + dados cadastrais (BrasilAPI via\nenriched_entities) para a pagina /fornecedores/{cnpj}.\n\nPublico, sem auth. Cache: 24h TTL em memoria.",
+        "description": "Agrega historico de contratos do PNCP + dados cadastrais (BrasilAPI via\nenriched_entities) para a pagina /fornecedores/{cnpj}.\n\nPublico, sem auth. Cache: 24h TTL em memoria (5min em fallback partial).",
         "operationId": "fornecedor_profile_v1_fornecedores__cnpj__profile_get",
         "parameters": [
           {
