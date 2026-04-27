@@ -919,7 +919,26 @@ def _compute_contratos_stats(
             "contratos DB query failed (sector=%s uf=%s municipio=%s): %s",
             sector.id if sector else None, uf, municipio_pattern, e,
         )
-        raise HTTPException(status_code=502, detail="Erro ao consultar o datalake de contratos")
+        # SmartLic incident 2026-04-27 humble-dolphin: hobby plan + 1 worker
+        # + DB statement_timeout (8s) on (uf, municipio_pattern ilike) was
+        # raising 502 and producing crawler retry storm that wedged the only
+        # uvicorn worker. Returning empty stats keeps endpoint responsive
+        # while DB recovers; the 6h cache layer at endpoint level absorbs
+        # the empty response so subsequent hits don't re-query.
+        now = datetime.now(timezone.utc)
+        return {
+            "total_contracts": 0,
+            "total_value": 0.0,
+            "avg_value": 0.0,
+            "top_orgaos": [],
+            "top_fornecedores": [],
+            "monthly_trend": [],
+            "by_uf": [],
+            "last_updated": now.isoformat(),
+            "n_unique_orgaos": 0,
+            "n_unique_fornecedores": 0,
+            "sample_contracts": [],
+        }
 
     rows = resp.data or []
 

@@ -13,6 +13,7 @@ export async function GET() {
   try {
     const resp = await fetch(`${backendUrl}/v1/stats/public?format=badge`, {
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!resp.ok) {
