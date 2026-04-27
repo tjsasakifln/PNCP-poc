@@ -19,10 +19,15 @@ watchPatterns = ["**"]
 # Cross-worker SSE: handled by Redis Streams (STORY-276, STORY-294).
 # Graceful shutdown: --timeout-graceful-shutdown 120 aligned with drainingSeconds.
 startCommand = "sh -c 'uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --timeout-keep-alive 75 --workers ${WEB_CONCURRENCY:-2} --timeout-graceful-shutdown 120'"
-healthcheckPath = "/health"
+# Stage-2 fix 2026-04-27: was /health (probes 5 external APIs with 10s each timeout).
+# Under sustained Googlebot crawl, /health couldn't respond → 11 healthcheck retries
+# failed → Railway never promoted new container, leaving old wedged one in service
+# (deploys 14:00, 14:15 both got "1/1 replicas never became healthy"). /health/live
+# is pure-async (no IO, just returns startup_time) — guaranteed-fast under any load.
+healthcheckPath = "/health/live"
 # SLA-001 + STORY-303 AC6: 300s grace period for cold starts.
 # Without --preload (STORY-303), each worker loads 65+ modules independently (~5-15s).
-# Railway won't route traffic until /health/ready returns 200, preventing CRIT-010 404s.
+# Railway won't route traffic until /health/live returns 200, preventing CRIT-010 404s.
 # Combined with main.py lifespan gate (ready:false until startup complete).
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
