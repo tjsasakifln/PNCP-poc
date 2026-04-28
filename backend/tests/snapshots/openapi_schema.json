@@ -18882,7 +18882,7 @@
     },
     "/v1/sitemap/fornecedores-cnpj": {
       "get": {
-        "description": "Retorna os CNPJs de fornecedores com mais contratos em pncp_supplier_contracts.\n\nUsado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.\nLimite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).\nCache: 24h em memoria.",
+        "description": "Retorna os CNPJs de fornecedores com mais contratos em pncp_supplier_contracts.\n\nUsado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.\nLimite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).\nCache: 24h em memoria sucesso, 5min em falha (negative cache PR #529 pattern).",
         "operationId": "sitemap_fornecedores_cnpj_v1_sitemap_fornecedores_cnpj_get",
         "responses": {
           "200": {
