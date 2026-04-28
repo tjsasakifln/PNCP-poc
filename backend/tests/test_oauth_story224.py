@@ -396,14 +396,21 @@ class TestAC13TokenDecryption:
         assert decrypted == special_token
 
     def test_decrypt_raises_error_on_tampered_ciphertext(self):
-        """Should raise error when ciphertext is tampered with."""
+        """Should raise error when ciphertext is tampered with.
+
+        Memory `feedback_jwt_base64url_flaky_test.md`: single-char flip in
+        base64url has ~6.25% false-pass rate (Fernet is padding-tolerant for
+        some chars). Use multi-byte sentinel replacement to guarantee
+        HMAC-MAC mismatch.
+        """
         from oauth import encrypt_aes256, decrypt_aes256
 
         plaintext = "ya29.test_token"
         encrypted = encrypt_aes256(plaintext)
 
-        # Tamper with ciphertext (flip a character)
-        tampered = encrypted[:-5] + "X" + encrypted[-4:]
+        # Replace 8 bytes near the end with sentinel chars — guarantees
+        # HMAC mismatch in Fernet, no chance of false-pass on retry.
+        tampered = encrypted[:-12] + "!!!!!!!!" + encrypted[-4:]
 
         with pytest.raises(Exception):  # Fernet raises InvalidToken
             decrypt_aes256(tampered)

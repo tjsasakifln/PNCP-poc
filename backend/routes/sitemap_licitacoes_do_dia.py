@@ -9,6 +9,7 @@ Pattern segue sitemap_orgaos.py (RPC primary com fallback paginado + InMemory ca
 TTL 1h (dia corrente muda durante o dia).
 """
 
+import asyncio
 import logging
 import time
 from datetime import datetime, timedelta, timezone
@@ -23,8 +24,11 @@ from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
 
-_CACHE_TTL_SECONDS = 60 * 60  # 1h — dia corrente muda durante o dia
-_cache: dict[str, tuple[dict, float]] = {}
+_CACHE_TTL_SECONDS = 60 * 60  # 1h success — dia corrente muda durante o dia
+# Negative cache TTL — same pattern as PR #529 perfil-b2g hotfix.
+_NEGATIVE_CACHE_TTL_SECONDS = 5 * 60
+_BUDGET_S = 25.0
+_cache: dict[str, tuple[dict, float, float]] = {}  # key -> (data, stored_at, ttl)
 
 _WINDOW_DAYS = 30
 _MIN_BIDS_PER_DAY = 5  # threshold para considerar dia indexavel
@@ -40,15 +44,23 @@ def _get_cached(key: str) -> Optional[dict]:
     entry = _cache.get(key)
     if entry is None:
         return None
-    data, ts = entry
-    if time.time() - ts >= _CACHE_TTL_SECONDS:
+    data, ts, ttl = entry
+    if time.time() - ts >= ttl:
         del _cache[key]
         return None
     return data
 
 
-def _set_cached(key: str, data: dict) -> None:
-    _cache[key] = (data, time.time())
+def _set_cached(key: str, data: dict, ttl: float = _CACHE_TTL_SECONDS) -> None:
+    _cache[key] = (data, time.time(), ttl)
+
+
+def _empty_dates_response() -> dict:
+    return {
+        "dates": [],
+        "total": 0,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @router.get(
@@ -67,13 +79,29 @@ async def sitemap_licitacoes_do_dia_indexable(response: Response):
         record_sitemap_count("licitacoes-do-dia-indexable", len(cached.get("dates", [])))
         return SitemapLicitacoesDoDiaResponse(**cached)
 
-    data = await _fetch_indexable_dates()
-    _set_cached("dates", data)
+    try:
+        data = await asyncio.wait_for(
+            asyncio.to_thread(_fetch_indexable_dates),
+            timeout=_BUDGET_S,
+        )
+        _set_cached("dates", data, ttl=_CACHE_TTL_SECONDS)
+    except asyncio.TimeoutError:
+        logger.warning(
+            "sitemap_licitacoes_do_dia: budget %.0fs exceeded — empty negative cache",
+            _BUDGET_S,
+        )
+        data = _empty_dates_response()
+        _set_cached("dates", data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+    except Exception as exc:
+        logger.error("sitemap_licitacoes_do_dia unexpected error: %s", exc)
+        data = _empty_dates_response()
+        _set_cached("dates", data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+
     record_sitemap_count("licitacoes-do-dia-indexable", len(data.get("dates", [])))
     return SitemapLicitacoesDoDiaResponse(**data)
 
 
-async def _fetch_indexable_dates() -> dict:
+def _fetch_indexable_dates() -> dict:
     """Scan pncp_raw_bids janela 30d, conta por data, filtra HAVING >=5.
 
     Implementa client-side aggregation: paginated fetch de data_publicacao

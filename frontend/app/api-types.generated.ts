@@ -4194,7 +4194,7 @@ export interface paths {
          *
          *     Usado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.
          *     Limite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).
-         *     Cache: 24h em memoria.
+         *     Cache: 24h em memoria sucesso, 5min em falha (negative cache PR #529 pattern).
          */
         get: operations["sitemap_fornecedores_cnpj_v1_sitemap_fornecedores_cnpj_get"];
         put?: never;
