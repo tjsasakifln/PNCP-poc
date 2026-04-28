@@ -1232,6 +1232,18 @@ FEEDBACK_NEGATIVE_TOTAL = _create_counter(
     labelnames=["setor"],
 )
 
+# STORY-SEO-005: GSC weekly sync observability
+smartlic_gsc_sync_duration_seconds = _create_histogram(
+    "smartlic_gsc_sync_duration_seconds",
+    "Duration of the weekly Google Search Console sync job",
+    buckets=[5, 15, 30, 60, 120, 300, 600, 1200],
+)
+
+smartlic_gsc_sync_rows_upserted_total = _create_counter(
+    "smartlic_gsc_sync_rows_upserted_total",
+    "Total rows upserted by the GSC weekly sync job",
+)
+
 # ============================================================================
 # ASGI app factory for /metrics endpoint
 # ============================================================================
