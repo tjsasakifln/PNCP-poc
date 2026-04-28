@@ -17,6 +17,7 @@ import { getCookieConsent } from '../app/components/CookieConsentBanner';
 
 const UTM_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
 const UTM_STORAGE_KEY = 'smartlic_utm_params';
+const LANDING_CONTEXT_STORAGE_KEY = 'smartlic_landing_context';
 
 /**
  * Check if analytics consent has been granted.
@@ -75,6 +76,72 @@ export function getStoredUTMParams(): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+/**
+ * Capture acquisition context (landing page + external referrer) on first
+ * page load of the session. Persists in sessionStorage so attribution survives
+ * client-side navigation between landing → /signup.
+ *
+ * Idempotent — only writes once per session. Skips refs that point at our own
+ * domain (internal nav). Should be called after captureUTMParams().
+ */
+export function captureLandingContext(): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    if (sessionStorage.getItem(LANDING_CONTEXT_STORAGE_KEY)) return;
+
+    const rawReferrer = document.referrer || '';
+    let externalReferrer = '';
+    try {
+      if (rawReferrer) {
+        const refUrl = new URL(rawReferrer);
+        if (refUrl.hostname && refUrl.hostname !== window.location.hostname) {
+          externalReferrer = `${refUrl.hostname}${refUrl.pathname}`;
+        }
+      }
+    } catch {
+      externalReferrer = '';
+    }
+
+    const ctx = {
+      landing_page: window.location.pathname || '/',
+      landing_referrer: externalReferrer || 'direct',
+      landing_timestamp: new Date().toISOString(),
+    };
+
+    sessionStorage.setItem(LANDING_CONTEXT_STORAGE_KEY, JSON.stringify(ctx));
+  } catch (error) {
+    console.warn('Landing context capture failed:', error);
+  }
+}
+
+/**
+ * Retrieve stored landing context (landing_page + external referrer + timestamp).
+ * Returns empty object if never captured (e.g., consent denied at first load).
+ */
+export function getStoredLandingContext(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+
+  try {
+    const stored = sessionStorage.getItem(LANDING_CONTEXT_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Combined acquisition properties for signup_completed and similar funnel events.
+ * Merges stored UTM params and landing context. Use this in tracking calls to
+ * preserve full attribution chain (where they came from + which page converted).
+ */
+export function getAcquisitionProperties(): Record<string, string> {
+  return {
+    ...getStoredUTMParams(),
+    ...getStoredLandingContext(),
+  };
 }
 
 /**
