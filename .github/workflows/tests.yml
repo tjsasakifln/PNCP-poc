@@ -420,7 +420,7 @@ jobs:
 
       # DEBT-123 AC9: PR comment — intentionally non-blocking (informational, not a gate)
       - name: Comment PR with E2E results
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         if: always() && github.event_name == 'pull_request'
         continue-on-error: true  # DEBT-123 AC9: intentional — PR comment is informational
         with:

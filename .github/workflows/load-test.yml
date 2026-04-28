@@ -202,7 +202,7 @@ jobs:
           retention-days: 7
 
       - name: Comment PR with results
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         if: always() && github.event_name == 'pull_request'
         continue-on-error: true  # DEBT-123 AC9: intentional — PR comment is informational, not a gate
         with:
