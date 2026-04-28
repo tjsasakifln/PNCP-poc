@@ -9,6 +9,7 @@ Implementation layers:
 2. Fallback: paginated table query (loop 1k/page until exhausted)
 """
 
+import asyncio
 import logging
 import time
 from datetime import datetime, timezone
@@ -23,8 +24,11 @@ from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
 
-_CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h
-_sitemap_cache: dict[str, tuple[dict, float]] = {}
+_CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h success
+# Negative cache TTL — same pattern as PR #529 perfil-b2g hotfix.
+_NEGATIVE_CACHE_TTL_SECONDS = 5 * 60
+_BUDGET_S = 25.0
+_sitemap_cache: dict[str, tuple[dict, float, float]] = {}  # key -> (data, stored_at, ttl)
 
 _MAX_ORGAOS = 2000
 
@@ -38,15 +42,23 @@ class SitemapOrgaosResponse(BaseModel):
 def _get_cached(key: str) -> Optional[dict]:
     if key not in _sitemap_cache:
         return None
-    data, ts = _sitemap_cache[key]
-    if time.time() - ts >= _CACHE_TTL_SECONDS:
+    data, ts, ttl = _sitemap_cache[key]
+    if time.time() - ts >= ttl:
         del _sitemap_cache[key]
         return None
     return data
 
 
-def _set_cached(key: str, data: dict) -> None:
-    _sitemap_cache[key] = (data, time.time())
+def _set_cached(key: str, data: dict, ttl: float = _CACHE_TTL_SECONDS) -> None:
+    _sitemap_cache[key] = (data, time.time(), ttl)
+
+
+def _empty_orgaos_response() -> dict:
+    return {
+        "orgaos": [],
+        "total": 0,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @router.get(
@@ -61,13 +73,29 @@ async def sitemap_orgaos(response: Response):
         record_sitemap_count("orgaos", len(cached.get("orgaos", [])))
         return SitemapOrgaosResponse(**cached)
 
-    data = await _fetch_top_orgaos()
-    _set_cached("orgaos", data)
+    try:
+        data = await asyncio.wait_for(
+            asyncio.to_thread(_fetch_top_orgaos),
+            timeout=_BUDGET_S,
+        )
+        _set_cached("orgaos", data, ttl=_CACHE_TTL_SECONDS)
+    except asyncio.TimeoutError:
+        logger.warning(
+            "sitemap_orgaos: budget %.0fs exceeded — returning empty negative cache",
+            _BUDGET_S,
+        )
+        data = _empty_orgaos_response()
+        _set_cached("orgaos", data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+    except Exception as exc:
+        logger.error("sitemap_orgaos unexpected error: %s", exc)
+        data = _empty_orgaos_response()
+        _set_cached("orgaos", data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+
     record_sitemap_count("orgaos", len(data.get("orgaos", [])))
     return SitemapOrgaosResponse(**data)
 
 
-async def _fetch_top_orgaos() -> dict:
+def _fetch_top_orgaos() -> dict:
     """Query pncp_raw_bids for distinct orgao_cnpj with ≥1 active bid.
 
     Uses get_sitemap_orgaos_json RPC (RETURNS json scalar) which bypasses
@@ -157,7 +185,7 @@ async def _fetch_top_orgaos() -> dict:
 # SEO-460: /sitemap/contratos-orgao-indexable — órgãos com contratos reais
 # ---------------------------------------------------------------------------
 
-_contratos_orgao_cache: dict[str, tuple[dict, float]] = {}
+_contratos_orgao_cache: dict[str, tuple[dict, float, float]] = {}  # key -> (data, stored_at, ttl)
 _MAX_CONTRATOS_ORGAOS = 2000
 
 
@@ -185,19 +213,35 @@ async def sitemap_contratos_orgao_indexable(response: Response):
     key = "contratos_orgao_indexable"
     cached_entry = _contratos_orgao_cache.get(key)
     if cached_entry:
-        data, ts = cached_entry
-        if time.time() - ts < _CACHE_TTL_SECONDS:
+        data, ts, ttl = cached_entry
+        if time.time() - ts < ttl:
             record_sitemap_count("contratos-orgao-indexable", len(data.get("orgaos", [])))
             return SitemapContratosOrgaoResponse(**data)
         del _contratos_orgao_cache[key]
 
-    data = await _fetch_contratos_orgao_indexable()
-    _contratos_orgao_cache[key] = (data, time.time())
+    try:
+        data = await asyncio.wait_for(
+            asyncio.to_thread(_fetch_contratos_orgao_indexable),
+            timeout=_BUDGET_S,
+        )
+        _contratos_orgao_cache[key] = (data, time.time(), _CACHE_TTL_SECONDS)
+    except asyncio.TimeoutError:
+        logger.warning(
+            "sitemap_contratos_orgao_indexable: budget %.0fs exceeded — empty negative cache",
+            _BUDGET_S,
+        )
+        data = _empty_orgaos_response()
+        _contratos_orgao_cache[key] = (data, time.time(), _NEGATIVE_CACHE_TTL_SECONDS)
+    except Exception as exc:
+        logger.error("sitemap_contratos_orgao_indexable unexpected error: %s", exc)
+        data = _empty_orgaos_response()
+        _contratos_orgao_cache[key] = (data, time.time(), _NEGATIVE_CACHE_TTL_SECONDS)
+
     record_sitemap_count("contratos-orgao-indexable", len(data.get("orgaos", [])))
     return SitemapContratosOrgaoResponse(**data)
 
 
-async def _fetch_contratos_orgao_indexable() -> dict:
+def _fetch_contratos_orgao_indexable() -> dict:
     """Scan pncp_supplier_contracts para distinct orgao_cnpj com is_active=True."""
     try:
         from supabase_client import get_supabase

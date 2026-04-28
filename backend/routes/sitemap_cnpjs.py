@@ -10,6 +10,7 @@ Layers de implementacao (/sitemap/cnpjs):
 2. Fallback: paginated table query (loop 1k/page ate esgotar)
 """
 
+import asyncio
 import logging
 import time
 from datetime import datetime, timezone
@@ -24,8 +25,16 @@ from routes._sitemap_cache_headers import SITEMAP_CACHE_HEADERS
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sitemap"])
 
-_CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h
-_sitemap_cache: dict[str, tuple[dict, float]] = {}
+_CACHE_TTL_SECONDS = 24 * 60 * 60  # 24h success
+# Negative cache: when DB query saturates and we time out, cache an empty
+# response for 5 min so the next ISR rebuild / crawler hit returns instantly
+# instead of re-saturating the pool. Same pattern as PR #529 perfil-b2g hotfix.
+_NEGATIVE_CACHE_TTL_SECONDS = 5 * 60
+# Hard async budget: must respond within this window or fall through to
+# negative cache. supabase-py is sync, so the actual DB call runs in a
+# worker thread (asyncio.to_thread) — the budget bounds total async wait.
+_BUDGET_S = 25.0
+_sitemap_cache: dict[str, tuple[dict, float, float]] = {}  # key -> (data, stored_at, ttl)
 
 _MAX_CNPJS = 5000
 
@@ -61,35 +70,35 @@ class SitemapFornecedoresCnpjResponse(BaseModel):
 
 _MAX_FORNECEDORES_CNPJS = 5000
 
-_fornecedores_sitemap_cache: dict[str, tuple[dict, float]] = {}
+_fornecedores_sitemap_cache: dict[str, tuple[dict, float, float]] = {}  # key -> (data, stored_at, ttl)
 
 
 def _get_cached(key: str) -> Optional[dict]:
     if key not in _sitemap_cache:
         return None
-    data, ts = _sitemap_cache[key]
-    if time.time() - ts >= _CACHE_TTL_SECONDS:
+    data, ts, ttl = _sitemap_cache[key]
+    if time.time() - ts >= ttl:
         del _sitemap_cache[key]
         return None
     return data
 
 
-def _set_cached(key: str, data: dict) -> None:
-    _sitemap_cache[key] = (data, time.time())
+def _set_cached(key: str, data: dict, ttl: float = _CACHE_TTL_SECONDS) -> None:
+    _sitemap_cache[key] = (data, time.time(), ttl)
 
 
 def _get_fornecedores_cached(key: str) -> Optional[dict]:
     if key not in _fornecedores_sitemap_cache:
         return None
-    data, ts = _fornecedores_sitemap_cache[key]
-    if time.time() - ts >= _CACHE_TTL_SECONDS:
+    data, ts, ttl = _fornecedores_sitemap_cache[key]
+    if time.time() - ts >= ttl:
         del _fornecedores_sitemap_cache[key]
         return None
     return data
 
 
-def _set_fornecedores_cached(key: str, data: dict) -> None:
-    _fornecedores_sitemap_cache[key] = (data, time.time())
+def _set_fornecedores_cached(key: str, data: dict, ttl: float = _CACHE_TTL_SECONDS) -> None:
+    _fornecedores_sitemap_cache[key] = (data, time.time(), ttl)
 
 
 @router.get(
@@ -104,10 +113,34 @@ async def sitemap_cnpjs(response: Response):
         record_sitemap_count("cnpjs", len(cached.get("cnpjs", [])))
         return SitemapCnpjsResponse(**cached)
 
-    data = await _fetch_top_cnpjs()
-    _set_cached("cnpjs", data)
+    try:
+        data = await asyncio.wait_for(
+            asyncio.to_thread(_fetch_top_cnpjs),
+            timeout=_BUDGET_S,
+        )
+        _set_cached("cnpjs", data, ttl=_CACHE_TTL_SECONDS)
+    except asyncio.TimeoutError:
+        logger.warning(
+            "sitemap_cnpjs: budget %.0fs exceeded — returning empty negative cache",
+            _BUDGET_S,
+        )
+        data = _empty_cnpjs_response()
+        _set_cached("cnpjs", data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+    except Exception as exc:
+        logger.error("sitemap_cnpjs unexpected error: %s", exc)
+        data = _empty_cnpjs_response()
+        _set_cached("cnpjs", data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+
     record_sitemap_count("cnpjs", len(data.get("cnpjs", [])))
     return SitemapCnpjsResponse(**data)
+
+
+def _empty_cnpjs_response() -> dict:
+    return {
+        "cnpjs": [],
+        "total": 0,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def _merge_with_seed(buyer_cnpjs: list[str]) -> list[str]:
@@ -127,12 +160,13 @@ def _merge_with_seed(buyer_cnpjs: list[str]) -> list[str]:
     return result[:_MAX_CNPJS]
 
 
-async def _fetch_top_cnpjs() -> dict:
+def _fetch_top_cnpjs() -> dict:
     """Query pncp_raw_bids for distinct orgao_cnpj with ≥1 active bid.
 
-    Uses get_sitemap_cnpjs_json RPC (RETURNS json scalar) which bypasses
-    PostgREST max-rows=1000. Falls back to paginated table query if RPC
-    doesn't exist yet (e.g., migration not yet applied).
+    Sync — supabase-py is sync, so caller wraps this in asyncio.to_thread
+    to keep the event loop free. Uses get_sitemap_cnpjs_json RPC
+    (RETURNS json scalar) which bypasses PostgREST max-rows=1000. Falls
+    back to paginated table query if RPC doesn't exist yet.
     """
     try:
         from supabase_client import get_supabase
@@ -233,7 +267,7 @@ async def sitemap_fornecedores_cnpj(response: Response):
 
     Usado pelo frontend para gerar /fornecedores/{cnpj} no sitemap.xml.
     Limite: 5.000 CNPJs por volume de contratos (mais contratos = maior valor SEO).
-    Cache: 24h em memoria.
+    Cache: 24h em memoria sucesso, 5min em falha (negative cache PR #529 pattern).
     """
     response.headers.update(SITEMAP_CACHE_HEADERS)
     cached = _get_fornecedores_cached("fornecedores_cnpj")
@@ -241,13 +275,29 @@ async def sitemap_fornecedores_cnpj(response: Response):
         record_sitemap_count("fornecedores-cnpj", len(cached.get("cnpjs", [])))
         return SitemapFornecedoresCnpjResponse(**cached)
 
-    data = await _fetch_top_fornecedores_cnpjs()
-    _set_fornecedores_cached("fornecedores_cnpj", data)
+    try:
+        data = await asyncio.wait_for(
+            asyncio.to_thread(_fetch_top_fornecedores_cnpjs),
+            timeout=_BUDGET_S,
+        )
+        _set_fornecedores_cached("fornecedores_cnpj", data, ttl=_CACHE_TTL_SECONDS)
+    except asyncio.TimeoutError:
+        logger.warning(
+            "sitemap_fornecedores_cnpj: budget %.0fs exceeded — returning empty negative cache",
+            _BUDGET_S,
+        )
+        data = _empty_cnpjs_response()
+        _set_fornecedores_cached("fornecedores_cnpj", data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+    except Exception as exc:
+        logger.error("sitemap_fornecedores_cnpj unexpected error: %s", exc)
+        data = _empty_cnpjs_response()
+        _set_fornecedores_cached("fornecedores_cnpj", data, ttl=_NEGATIVE_CACHE_TTL_SECONDS)
+
     record_sitemap_count("fornecedores-cnpj", len(data.get("cnpjs", [])))
     return SitemapFornecedoresCnpjResponse(**data)
 
 
-async def _fetch_top_fornecedores_cnpjs() -> dict:
+def _fetch_top_fornecedores_cnpjs() -> dict:
     """Busca os CNPJs de fornecedores mais ativos em pncp_supplier_contracts.
 
     Estrategia: paginated scan para contar contratos por ni_fornecedor,
