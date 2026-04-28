@@ -38,7 +38,7 @@ openai==1.109.1
 supabase==2.28.0
 PyJWT>=2.12.0,<3.0.0  # Local JWT validation + ES256/JWKS support (STORY-227). CVE-2026-32597: crit header bypass fixed in 2.12.0
 bcrypt>=4.0.0,<5.0.0  # STORY-317: Recovery code hashing for MFA TOTP
-stripe==11.4.1
+stripe==11.6.0
 redis==5.3.1  # Feature flag caching (STORY-171)
 # sqlalchemy and psycopg2-binary moved to requirements-dev.txt (STORY-201)
 # Kept in database.py for test backward compat only
