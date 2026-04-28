@@ -4,10 +4,11 @@ Common step-by-step procedures for recurring development tasks.
 
 ## Adding a New Filter / Sector Keywords
 
-1. Edit sector keywords in `backend/sectors_data.yaml` (not hardcoded in filter.py)
-2. Update test_filter.py with new keyword coverage
+1. Edit sector keywords in `backend/sectors_data.yaml` (not hardcoded — `filter/` is a package)
+2. Update tests in `backend/tests/test_filter*.py` with new keyword coverage + benchmark precision/recall (≥85%/≥70%)
 3. Run `pytest -k test_filter` to verify no regressions
 4. Run `node scripts/sync-setores-fallback.js --dry-run` if sector structure changed
+5. Verify pipeline order in `backend/filter/pipeline.py` (fail-fast: UF → value → keyword density → LLM zero-match → status/date)
 
 ## Modifying Excel Output
 
@@ -18,10 +19,16 @@ Common step-by-step procedures for recurring development tasks.
 
 ## Changing LLM Prompt
 
-1. Update system_prompt in llm.py
-2. Adjust ResumoLicitacoes schema if output format changes
-3. Update fallback logic to match new schema
-4. Test with edge cases (0 bids, 100+ bids)
+For **executive summaries** (`ResumoLicitacoes`):
+1. Update system prompt in `backend/llm.py`
+2. Adjust `ResumoLicitacoes` schema in `backend/schemas/search.py` if output format changes
+3. Update fallback `gerar_resumo_fallback()` to match new schema
+4. Test with edge cases (0 bids, 100+ bids, partial-data fallback)
+
+For **classification** (`llm_arbiter/`):
+1. Update prompt builder in `backend/llm_arbiter/prompt_builder.py` (or `zero_match.py::_build_zero_match_prompt`)
+2. Re-run benchmark in `backend/tests/test_llm_arbiter*.py` (15 samples/sector — precision ≥85%, recall ≥70%)
+3. Adjust temperature / model in `classification.py::_get_client` only if SLA degrades
 
 ## Adding Environment Variables
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **SmartLic** — Plataforma de inteligencia em licitacoes publicas que automatiza a descoberta, analise e qualificacao de oportunidades para empresas B2G (Business-to-Government). Produto da **CONFENGE Avaliacoes e Inteligencia Artificial LTDA**.
 
-**Estagio:** POC avancado (v0.5) em producao — beta com trials, pre-revenue.
+**Estagio:** Producao v0.5 — beta com trials pagos, pre-revenue (runway-critical).
 **URL:** https://smartlic.tech
 **Publico-alvo:** Empresas B2G (todos os portes) + Consultorias/Assessorias de licitacao.
 **Diferenciais:** IA de classificacao setorial (GPT-4.1-nano) + Analise de viabilidade 4 fatores.
@@ -22,9 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Tech Stack
 
-**Backend:** FastAPI 0.129, Python 3.12, Pydantic v2, httpx, OpenAI SDK (GPT-4.1-nano), Supabase (PostgreSQL 17 + Auth + RLS), Redis (cache + circuit breaker + state), ARQ (async job queue), Stripe (billing), Resend (email), Prometheus + OpenTelemetry + Sentry, openpyxl, PyYAML
+**Backend:** FastAPI 0.136, Python 3.12, Pydantic 2.12, httpx, OpenAI SDK 1.109 (GPT-4.1-nano), Supabase (PostgreSQL 17 + Auth + RLS), Redis (cache + circuit breaker + SSE state + ARQ queue + rate limiter + distributed locks), ARQ 0.26+ (async job queue), Stripe 11.4 (billing — 12 webhook events), Resend (email — domain `smartlic.tech` verified), Prometheus + OpenTelemetry + Sentry, openpyxl (Excel), ReportLab (PDF), PyYAML
 
-**Frontend:** Next.js 16, React 18, TypeScript 5.9, Tailwind CSS 3, Framer Motion, Recharts, Supabase SSR (auth), Sentry, Mixpanel, @dnd-kit (pipeline), Shepherd.js (onboarding)
+**Frontend:** Next.js 16.1, React 18.3, TypeScript 5.9, Tailwind CSS 3.4 + CSS variables theme tokens (WCAG AA validated), Framer Motion, Recharts, Supabase SSR (auth), Sentry, Mixpanel, @dnd-kit (pipeline kanban — code-split lazy), Shepherd.js (onboarding tour). ~25 core pages + 10k+ programmatic SEO pages (ISR `revalidate=3600`).
 
 **Infra:** Railway (web + worker + frontend), Supabase Cloud, Redis (Upstash/Railway), GitHub Actions (CI/CD)
 
@@ -34,7 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ComprasGov v3: `https://dadosabertos.compras.gov.br` (priority 3, dual-endpoint)
 - OpenAI API: GPT-4.1-nano para classificacao + resumos
 
-**15 Setores:** Definidos em `backend/sectors_data.yaml` — cada setor tem keywords, exclusoes, e viability_value_range.
+**20 Setores:** Definidos em `backend/sectors_data.yaml` — cada setor tem keywords, exclusoes, context_required_keywords, e viability_value_range.
 
 ## Smart Routing — Auto-Invocação de Skills
 
@@ -317,7 +317,7 @@ git add frontend/app/api-types.generated.ts
 **Layer 1: Periodic Ingestion (ETL → Supabase)**
 - ARQ cron jobs: full daily (2am BRT), incremental 3x/day (8am/2pm/8pm BRT), purge daily (4am BRT)
 - Table `pncp_raw_bids` (~1.5M rows @ 400d): open + historical bids — content_hash dedup, GIN full-text index (Portuguese), **400-day retention** (STORY-OBS-001 — required by observatório/SEO programmatic pages)
-- Table `supplier_contracts` (~2M+ rows): historical contracts feeding SEO organic inbound — 3x/week full crawl, incremental same days
+- Table `pncp_supplier_contracts` (~2M+ rows): historical contracts feeding SEO organic inbound (drives 10k+ programmatic ISR pages) — 3x/week full crawl (mon/wed/fri 06 UTC), incremental same days {12,18,0}h UTC
 - Config: `backend/ingestion/` (config, crawler, transformer, loader, checkpoint, scheduler)
 - Checkpoint tracking: `ingestion_checkpoints` + `ingestion_runs` tables for resumable crawls
 - Feature flag: `DATALAKE_ENABLED` (default true)
@@ -431,7 +431,7 @@ Metrics (Prometheus): `smartlic_pncp_max_page_size_changed_total`, `smartlic_pnc
 
 ### LLM Integration
 - GPT-4.1-nano for classification + summaries
-- Zero-match prompt: `_build_zero_match_prompt()` in `llm_arbiter.py`
+- Zero-match prompt: `_build_zero_match_prompt()` in `llm_arbiter/zero_match.py` (`llm_arbiter/` is a package — classification.py, zero_match.py, async_runtime.py, batch_api.py, prompt_builder.py)
 - Fallback = PENDING_REVIEW on failure (gray zone + zero-match) when `LLM_FALLBACK_PENDING_ENABLED=true`; REJECT when disabled
 - ARQ background jobs for summaries (immediate fallback response)
 - ThreadPoolExecutor(max_workers=10) for parallel LLM calls
@@ -488,7 +488,7 @@ To unblock a specific deploy (emergency), override via Railway vars: `PIPELINE_T
 
 ### Backend (backend/tests/)
 
-**169 test files, 5131+ passing, 0 failures** — CI gate: `.github/workflows/backend-tests.yml`
+**454 test files, 5131+ passing (last verified), 0 failures** — CI gate: `.github/workflows/backend-tests.yml`
 
 **Zero-Failure Policy:** 0 failures is the only acceptable baseline. Fix them, never treat as "pre-existing".
 
@@ -511,7 +511,7 @@ To unblock a specific deploy (emergency), override via Railway vars: `PIPELINE_T
 
 ### Frontend (frontend/__tests__/)
 
-**135 test files, 2681+ passing, 0 failures** — CI gate: `.github/workflows/frontend-tests.yml`
+**376 test files, 2681+ passing (last verified), 0 failures** — CI gate: `.github/workflows/frontend-tests.yml`
 
 **jest.setup.js polyfills:** `crypto.randomUUID` + `EventSource` (jsdom lacks both)
 
@@ -543,7 +543,7 @@ Supabase Auth with RLS on all tables. Input validation via Pydantic (backend) an
 |----------|-------|
 | **Docs** | `PRD.md`, `ROADMAP.md`, `CHANGELOG.md`, `docs/summaries/gtm-resilience-summary.md`, `docs/summaries/gtm-fixes-summary.md` |
 | **Config** | `.env.example`, `backend/requirements.txt`, `frontend/package.json`, `backend/sectors_data.yaml`, `backend/config.py` |
-| **Database** | `supabase/migrations/` (35), `backend/migrations/` (7+) |
+| **Database** | `supabase/migrations/` (~183 migrations, 48 tables, 13+ RPCs — source of truth, paired `.down.sql` mandatory STORY-6.2), `backend/migrations/` (12 legacy Alembic — audit only, do NOT add new) |
 | **Ingestion** | `backend/ingestion/` (config, crawler, transformer, loader, checkpoint, scheduler), `backend/datalake_query.py` |
 | **AIOS** | `.aios-core/development/agents/` (11), `.aios-core/development/tasks/` (115+), `.aios-core/development/workflows/` (7) |
 
