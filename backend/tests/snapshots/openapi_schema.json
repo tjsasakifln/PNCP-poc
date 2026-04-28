@@ -19194,8 +19194,58 @@
     },
     "/v1/trial-emails/webhook": {
       "post": {
-        "description": "Handle Resend webhook events for email tracking.\n\nAccepts the full delivery lifecycle (sent \u2192 delivered \u2192 opened \u2192 clicked)\nplus failure paths (bounced, complained, delivery_delayed, failed) so the\nadmin funnel dashboard can distinguish \"email never arrived\" from \"email\narrived but wasn't engaged\". Service handler\n(`services.trial_email_sequence.handle_resend_webhook`) populates the\ncolumns added in migration 20260424180000_trial_email_delivery_tracking.\nAlways returns 200 so Resend doesn't retry on transient server errors.",
+        "description": "Handle Resend webhook events for email tracking.\n\nSecurity: Svix HMAC-SHA256 signature verified against `RESEND_WEBHOOK_SECRET`.\nReplay protection: timestamp must be within 5 minutes of now.\nFail-closed \u2014 missing secret or invalid signature returns 401.\n\nAccepts the full delivery lifecycle (sent \u2192 delivered \u2192 opened \u2192 clicked)\nplus failure paths (bounced, complained, delivery_delayed, failed) so the\nadmin funnel dashboard can distinguish \"email never arrived\" from \"email\narrived but wasn't engaged\". Service handler\n(`services.trial_email_sequence.handle_resend_webhook`) populates the\ncolumns added in migration 20260424180000_trial_email_delivery_tracking.\n\nReturns 200 for processed/ignored/skipped so Resend doesn't retry; 401 on\nsignature failure (Resend will retry \u2014 desired so legitimate events aren't\nlost during transient secret rotation).",
         "operationId": "resend_webhook_v1_trial_emails_webhook_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "svix-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Svix-Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "svix-timestamp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Svix-Timestamp"
+            }
+          },
+          {
+            "in": "header",
+            "name": "svix-signature",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Svix-Signature"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -19204,6 +19254,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Resend Webhook",

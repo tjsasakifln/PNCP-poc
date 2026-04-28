@@ -1,6 +1,6 @@
 # SEN-BE-001b: service_role com `statement_timeout=NULL` permite queries ilimitadas (root cause complement)
 
-**Status:** Draft
+**Status:** Ready
 **Origem:** Reversa Audit 2026-04-27 (`_reversa_sdd/review-report.md` Gap-10) + Memory `reference_supabase_service_role_no_timeout_default.md` + incident pós-mortem 2026-04-27 (PR #529 Stage 2)
 **Prioridade:** P0 — outage-prevention (causa raiz identificada do incident 2026-04-27)
 **Complexidade:** XS (1 migration + smoke test)
@@ -105,3 +105,4 @@ PR #529 mitigou via budget timeouts em Python (asyncio.wait_for) + negative cach
 | Data | Agente | Ação |
 |------|--------|------|
 | 2026-04-27 | @sm | Story criada via Reversa Audit Gap-10. CTO decision: timeout=60s alinhado com budget pipeline. Status=Draft → @po validation |
+| 2026-04-27 | @po | Validation 10/10 → **GO**. Score: title/desc/AC/scope/deps/complexity/value/risks/DoD/alignment all ✓. Companion limpo de SEN-BE-001 (sintoma vs root). Status Draft → Ready. Pronto para @dev pickup. |
