@@ -78,6 +78,15 @@ sentry-sdk[fastapi]==2.52.0
 # Prometheus metrics exporter (GTM-RESILIENCE-E03)
 prometheus_client>=0.20.0
 
+# Product analytics (paywall_hit, trial_started, signup_completed, ...).
+# MIXPANEL_TOKEN é required em prod startup (PR #530 MON-FN-005), mas a
+# lib estava ausente do requirements até esta sessão (goofy-llama
+# 2026-04-27): `_get_mixpanel()` em backend/analytics_events.py:36
+# falhava silently em ImportError, devolvendo None, e os events só
+# iam para `logger.debug`. Resultado: 7d sem nenhum event backend no
+# dashboard Mixpanel apesar do token configurado.
+mixpanel>=4.10.0
+
 # Async job queue for background LLM + Excel processing (GTM-RESILIENCE-F01)
 arq>=0.26,<1.0
 
