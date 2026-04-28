@@ -13,6 +13,7 @@ Cache: InMemory 6h TTL.
 Safety: No internal IDs or direct links (same as sectors_public.py).
 """
 
+import asyncio
 import logging
 import time
 import unicodedata
@@ -28,9 +29,19 @@ from sectors import SECTORS, SectorConfig
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/blog/stats", tags=["blog-stats"])
 
-# 6h InMemory cache
+# 6h InMemory cache (success path)
 _CACHE_TTL_SECONDS = 6 * 60 * 60
-_blog_cache: dict[str, tuple[dict, float]] = {}
+# 5min negative cache (DB timeout / failure path) — pattern from
+# empresa_publica._NEGATIVE_CACHE_TTL_SECONDS. Stops Googlebot retry-storm
+# from re-saturating Supabase pool while letting the next crawl wave probe
+# again after a short window.
+_NEGATIVE_CACHE_TTL_SECONDS = 5 * 60
+# Hard budget for a single contratos query. Sync .execute() runs in a
+# worker thread (asyncio.to_thread) so the event loop stays responsive
+# even when the query saturates; wait_for caps total wall-clock so the
+# Railway proxy 15s healthcheck timeout never trips.
+_CONTRATOS_QUERY_BUDGET_S = 10.0
+_blog_cache: dict[str, tuple[dict, float, float]] = {}  # (data, stored_at, ttl_seconds)
 
 # All 27 Brazilian UFs
 ALL_UFS = [
@@ -302,15 +313,15 @@ class ContratosCidadeSetorStats(BaseModel):
 def _cache_get(key: str) -> Optional[dict]:
     if key not in _blog_cache:
         return None
-    data, ts = _blog_cache[key]
-    if time.time() - ts >= _CACHE_TTL_SECONDS:
+    data, ts, ttl = _blog_cache[key]
+    if time.time() - ts >= ttl:
         del _blog_cache[key]
         return None
     return data
 
 
-def _cache_set(key: str, data: dict) -> None:
-    _blog_cache[key] = (data, time.time())
+def _cache_set(key: str, data: dict, ttl: float = _CACHE_TTL_SECONDS) -> None:
+    _blog_cache[key] = (data, time.time(), ttl)
 
 
 def invalidate_blog_cache() -> None:
@@ -875,72 +886,104 @@ def _safe_float_blog(val) -> float:
         return 0.0
 
 
-def _compute_contratos_stats(
+def _query_contratos_sync(
+    *,
+    uf: Optional[str] = None,
+    municipio_pattern: Optional[str] = None,
+) -> list[dict]:
+    """Sync Supabase query against pncp_supplier_contracts.
+
+    Must run inside ``asyncio.to_thread(...)`` — the supabase-py client uses
+    blocking httpx and will wedge the event loop otherwise. The 2026-04-27
+    Stage 3 outage was caused by this function being called directly from
+    an async handler with no thread-offload; a single 30s ``ilike`` on
+    municipio froze ``/health/live`` for every Railway proxy probe.
+    """
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    query = (
+        sb.table("pncp_supplier_contracts")
+        .select(
+            "ni_fornecedor,nome_fornecedor,orgao_cnpj,orgao_nome,"
+            "valor_global,data_assinatura,objeto_contrato,uf,municipio"
+        )
+        .eq("is_active", True)
+    )
+    if uf:
+        query = query.eq("uf", uf)
+    if municipio_pattern:
+        # pncp_supplier_contracts.municipio is free-text — case-insensitive
+        # substring match via ilike (handles variations like "São Paulo" vs "SAO PAULO").
+        query = query.ilike("municipio", f"%{municipio_pattern}%")
+
+    resp = (
+        query
+        .order("data_assinatura", desc=True)
+        .limit(5000)
+        .execute()
+    )
+    return resp.data or []
+
+
+def _empty_contratos_stats() -> dict:
+    """Minimal payload returned when the DB query fails or times out.
+
+    Shape matches the success-path dict so Pydantic models validate. Caller
+    decides cache TTL (negative cache: ``_NEGATIVE_CACHE_TTL_SECONDS``).
+    """
+    now = datetime.now(timezone.utc)
+    return {
+        "total_contracts": 0,
+        "total_value": 0.0,
+        "avg_value": 0.0,
+        "top_orgaos": [],
+        "top_fornecedores": [],
+        "monthly_trend": [],
+        "by_uf": [],
+        "last_updated": now.isoformat(),
+        "n_unique_orgaos": 0,
+        "n_unique_fornecedores": 0,
+        "sample_contracts": [],
+    }
+
+
+async def _compute_contratos_stats(
     sector: Optional[SectorConfig] = None,
     *,
     uf: Optional[str] = None,
     municipio_pattern: Optional[str] = None,
-) -> dict:
-    """Query pncp_supplier_contracts with optional UF/municipio filters, aggregate.
+) -> tuple[dict, bool]:
+    """Query pncp_supplier_contracts and aggregate.
 
-    Returns a dict containing the common aggregation fields (total_contracts,
-    total_value, avg_value, top_orgaos, top_fornecedores, monthly_trend, by_uf).
-    Endpoint wrappers add their specific fields (sector_id, cidade, etc).
-
-    Raises HTTPException(502) on DB failure.
+    Returns ``(data, partial)`` where ``partial=True`` means the query failed
+    or exceeded ``_CONTRATOS_QUERY_BUDGET_S`` and ``data`` is an empty
+    fallback shape. Callers should cache the partial response under a
+    shorter TTL (``_NEGATIVE_CACHE_TTL_SECONDS``) so Googlebot retry storms
+    don't keep hitting the slow query path.
     """
     try:
-        from supabase_client import get_supabase
-        sb = get_supabase()
-
-        query = (
-            sb.table("pncp_supplier_contracts")
-            .select(
-                "ni_fornecedor,nome_fornecedor,orgao_cnpj,orgao_nome,"
-                "valor_global,data_assinatura,objeto_contrato,uf,municipio"
-            )
-            .eq("is_active", True)
+        rows = await asyncio.wait_for(
+            asyncio.to_thread(
+                _query_contratos_sync,
+                uf=uf,
+                municipio_pattern=municipio_pattern,
+            ),
+            timeout=_CONTRATOS_QUERY_BUDGET_S,
         )
-        if uf:
-            query = query.eq("uf", uf)
-        if municipio_pattern:
-            # pncp_supplier_contracts.municipio is free-text — case-insensitive
-            # substring match via ilike (handles variations like "São Paulo" vs "SAO PAULO").
-            query = query.ilike("municipio", f"%{municipio_pattern}%")
-
-        resp = (
-            query
-            .order("data_assinatura", desc=True)
-            .limit(5000)
-            .execute()
+    except asyncio.TimeoutError:
+        logger.warning(
+            "contratos query exceeded %.0fs budget (sector=%s uf=%s municipio=%s)",
+            _CONTRATOS_QUERY_BUDGET_S,
+            sector.id if sector else None, uf, municipio_pattern,
         )
+        return _empty_contratos_stats(), True
     except Exception as e:
         logger.error(
             "contratos DB query failed (sector=%s uf=%s municipio=%s): %s",
             sector.id if sector else None, uf, municipio_pattern, e,
         )
-        # SmartLic incident 2026-04-27 humble-dolphin: hobby plan + 1 worker
-        # + DB statement_timeout (8s) on (uf, municipio_pattern ilike) was
-        # raising 502 and producing crawler retry storm that wedged the only
-        # uvicorn worker. Returning empty stats keeps endpoint responsive
-        # while DB recovers; the 6h cache layer at endpoint level absorbs
-        # the empty response so subsequent hits don't re-query.
-        now = datetime.now(timezone.utc)
-        return {
-            "total_contracts": 0,
-            "total_value": 0.0,
-            "avg_value": 0.0,
-            "top_orgaos": [],
-            "top_fornecedores": [],
-            "monthly_trend": [],
-            "by_uf": [],
-            "last_updated": now.isoformat(),
-            "n_unique_orgaos": 0,
-            "n_unique_fornecedores": 0,
-            "sample_contracts": [],
-        }
-
-    rows = resp.data or []
+        return _empty_contratos_stats(), True
 
     # Filter by sector keywords (if sector provided)
     if sector is not None:
@@ -1047,7 +1090,7 @@ def _compute_contratos_stats(
         "n_unique_orgaos": len(orgao_agg),
         "n_unique_fornecedores": len(forn_agg),
         "sample_contracts": sample_contracts_raw,
-    }
+    }, False
 
 
 @router.get("/contratos/{setor_id}", response_model=ContratosSetorStats)
@@ -1063,9 +1106,9 @@ async def get_contratos_setor_stats(setor_id: str):
     if cached:
         return ContratosSetorStats(**cached)
 
-    base = _compute_contratos_stats(sector)
+    base, partial = await _compute_contratos_stats(sector)
     data = {"sector_id": sector.id, "sector_name": sector.name, **base}
-    _cache_set(cache_key, data)
+    _cache_set(cache_key, data, ttl=_NEGATIVE_CACHE_TTL_SECONDS if partial else _CACHE_TTL_SECONDS)
     return ContratosSetorStats(**data)
 
 
@@ -1087,7 +1130,7 @@ async def get_contratos_setor_uf_stats(setor_id: str, uf: str):
     if cached:
         return ContratosSetorUfStats(**cached)
 
-    base = _compute_contratos_stats(sector, uf=uf)
+    base, partial = await _compute_contratos_stats(sector, uf=uf)
     # Drop by_uf (always single UF in this scope — keeps payload lean)
     base.pop("by_uf", None)
     data = {
@@ -1096,7 +1139,7 @@ async def get_contratos_setor_uf_stats(setor_id: str, uf: str):
         "uf": uf,
         **base,
     }
-    _cache_set(cache_key, data)
+    _cache_set(cache_key, data, ttl=_NEGATIVE_CACHE_TTL_SECONDS if partial else _CACHE_TTL_SECONDS)
     return ContratosSetorUfStats(**data)
 
 
@@ -1127,14 +1170,14 @@ async def get_contratos_cidade_stats(cidade: str):
     )
 
     # Filter by UF first (indexed) + ilike on municipio (free-text)
-    base = _compute_contratos_stats(uf=uf, municipio_pattern=municipio_display)
+    base, partial = await _compute_contratos_stats(uf=uf, municipio_pattern=municipio_display)
     base.pop("by_uf", None)
     data = {
         "cidade": municipio_display,
         "uf": uf,
         **base,
     }
-    _cache_set(cache_key, data)
+    _cache_set(cache_key, data, ttl=_NEGATIVE_CACHE_TTL_SECONDS if partial else _CACHE_TTL_SECONDS)
     return ContratosCidadeStats(**data)
 
 
@@ -1166,7 +1209,7 @@ async def get_contratos_cidade_setor_stats(cidade: str, setor_id: str):
         or cidade.replace("-", " ").title()
     )
 
-    base = _compute_contratos_stats(sector, uf=uf, municipio_pattern=municipio_display)
+    base, partial = await _compute_contratos_stats(sector, uf=uf, municipio_pattern=municipio_display)
     base.pop("by_uf", None)
     data = {
         "cidade": municipio_display,
@@ -1175,5 +1218,5 @@ async def get_contratos_cidade_setor_stats(cidade: str, setor_id: str):
         "sector_name": sector.name,
         **base,
     }
-    _cache_set(cache_key, data)
+    _cache_set(cache_key, data, ttl=_NEGATIVE_CACHE_TTL_SECONDS if partial else _CACHE_TTL_SECONDS)
     return ContratosCidadeSetorStats(**data)
