@@ -20,7 +20,7 @@ locust==2.43.2
 
 # Legacy ORM (kept for test backward compat, deprecated in STORY-201)
 sqlalchemy==2.0.49
-psycopg2-binary==2.9.11
+psycopg2-binary==2.9.12
 
 # Code quality
 ruff==0.15.0
