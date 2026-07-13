@@ -16,7 +16,7 @@ pytest-xdist==3.8.0
 faker==37.12.0
 
 # Load testing
-locust==2.44.4
+locust==2.45.0
 
 # Legacy ORM (kept for test backward compat, deprecated in STORY-201)
 sqlalchemy==2.0.51
@@ -33,4 +33,4 @@ hypothesis>=6.155.7
 mutmut>=2.4.0
 
 # Import/dependency analysis
-import-linter==2.12
+import-linter==2.13
