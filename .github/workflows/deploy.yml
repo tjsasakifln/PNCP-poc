@@ -587,7 +587,7 @@ jobs:
 
       - name: Send Slack notification
         if: steps.check_webhook.outputs.skip != 'true'
-        uses: slackapi/slack-github-action@v3.0.3
+        uses: slackapi/slack-github-action@v3.0.5
         with:
           webhook: ${{ secrets.SLACK_DEPLOY_WEBHOOK }}
           webhook-type: incoming-webhook
