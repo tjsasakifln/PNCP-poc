@@ -43,7 +43,7 @@ jobs:
           echo "✅ Runtime deps check complete"
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v3
         with:
           version: v2.15.8
 
