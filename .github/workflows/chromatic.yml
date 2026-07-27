@@ -52,7 +52,7 @@ jobs:
 
       - name: Set up Node.js 20
         if: steps.token_check.outputs.has_token == 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'

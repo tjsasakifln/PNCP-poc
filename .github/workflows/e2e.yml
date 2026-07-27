@@ -70,7 +70,7 @@ jobs:
           cache: 'pip'
 
       - name: Set up Node.js (Frontend)
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
@@ -228,7 +228,7 @@ jobs:
 
       - name: Set up Node.js (Frontend)
         if: steps.guard.outputs.skip == 'false'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
