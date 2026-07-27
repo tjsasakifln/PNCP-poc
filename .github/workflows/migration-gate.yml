@@ -140,7 +140,7 @@ jobs:
 
       # STORY-414 AC3: Validate schema contract on every PR (warns, does not block merge)
       - name: Set up Python 3.12
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 

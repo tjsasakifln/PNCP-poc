@@ -115,7 +115,7 @@ jobs:
       # STORY-414 AC3: Validate schema contract after confirming migrations are applied.
       # Exits 1 if critical columns are missing — prevents drift from reaching prod silently.
       - name: Set up Python 3.12
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
