@@ -6,6 +6,17 @@ labels: feature
 assignees: ''
 ---
 
+## Alinhamento estratégico (obrigatório)
+
+Ler [ADR-STRAT-001](../../docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md) antes de abrir.
+
+SmartLic é inbound público da CONFENGE, alimentado pelo extra-cli. **Não** propor: assinatura, billing, Stripe, trial, quota, DataLake/crawler próprio, login wall em conteúdo público, Warmbly como blocker, expansão pSEO antes dos gates P0.
+
+- Categoria: KEEP + PRIORITIZE | KEEP + ADAPT | SUNSET | REPLACE | DEFER
+- Prioridade pedida: P0 | P1 | P2 | P3
+- Label de onda: `roadmap:now` | `roadmap:next` | `roadmap:later`
+- Issue do caminho crítico relacionada: #
+
 ## Context
 
 <!-- Why is this feature needed? What problem does it solve? -->

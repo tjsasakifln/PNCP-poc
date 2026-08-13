@@ -1,6 +1,7 @@
 ## Context
 
 <!-- Por que esta mudança é necessária? Qual problema ela resolve? -->
+<!-- P0/P1 não podem introduzir billing/SaaS/DataLake/crawler próprio (ADR-STRAT-001). -->
 
 ## Changes
 
@@ -56,6 +57,7 @@ Closes #
 
 ## Checklist (Não remover)
 
+- [ ] Alinha a [ADR-STRAT-001](../docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md) (não reabre tese SaaS/billing/DataLake próprio)
 - [ ] PR title follows Conventional Commits format (`feat:`, `fix:`, `docs:`, etc.)
 - [ ] All acceptance criteria from the issue are met
 - [ ] Code is formatted (backend: `ruff format`, frontend: `npm run lint`)

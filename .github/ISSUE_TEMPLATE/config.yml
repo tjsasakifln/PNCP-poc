@@ -1,11 +1,14 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 📚 Documentation
-    url: https://github.com/tjsasakifln/PNCP-poc/blob/master/README.md
-    about: Read the project documentation
-  - name: 🗺️ Roadmap
-    url: https://github.com/tjsasakifln/PNCP-poc/blob/master/ROADMAP.md
-    about: Check the project roadmap and milestones
-  - name: 💬 Discussions
-    url: https://github.com/tjsasakifln/PNCP-poc/discussions
-    about: Ask questions and discuss ideas with the community
+  - name: Decisão estratégica (ADR-STRAT-001)
+    url: https://github.com/tjsasakifln/SmartLic/blob/main/docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md
+    about: SmartLic é inbound da CONFENGE, não SaaS independente
+  - name: Caminho crítico
+    url: https://github.com/tjsasakifln/SmartLic/blob/main/docs/strategy/critical-path.md
+    about: Ordem P0 até o go-live público
+  - name: README
+    url: https://github.com/tjsasakifln/SmartLic/blob/main/README.md
+    about: O que o SmartLic é e não é
+  - name: Roadmap
+    url: https://github.com/tjsasakifln/SmartLic/blob/main/ROADMAP.md
+    about: Caminho crítico e histórico

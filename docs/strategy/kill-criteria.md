@@ -1,6 +1,9 @@
 # Kill-Criteria — SmartLic (Plano Board v2.0)
 
-**Data:** 2026-04-20 | **Horizonte:** D+1 a D+90 (→ 2026-07-18) | **North Star:** MRR R$ 0 → R$ 3.000+
+> **SUPERSEDIDO em 2026-08-13 por [ADR-STRAT-001](../adr/ADR-STRAT-001-smartlic-confenge-inbound.md).**  
+> North Star de MRR/assinatura/trial **não é mais vigente**. O critério econômico atual é tempo até demanda qualificada para a CONFENGE. Este arquivo permanece só como arquivo histórico do plano board v2.0.
+
+**Data:** 2026-04-20 | **Horizonte:** D+1 a D+90 (→ 2026-07-18) | **North Star (OBSOLETO):** MRR R$ 0 → R$ 3.000+
 
 ---
 

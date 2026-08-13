@@ -17,23 +17,34 @@ jest.mock("../../contexts/UserContext", () => ({
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+// Deadlines must be relative to "now": a fixed 2026-06-30 expired on 2026-08-13
+// and hid the banner in every "renders when available" case.
+const FUTURE_DEADLINE = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+const PAST_DEADLINE = "2026-06-30T23:59:59Z";
+
 // Founding availability response helpers
 const AVAILABLE = {
   available: true,
   seats_remaining: 10,
-  deadline_at: "2026-06-30T23:59:59Z",
+  deadline_at: FUTURE_DEADLINE,
 };
 
 const NOT_AVAILABLE = {
   available: false,
   seats_remaining: 0,
-  deadline_at: "2026-06-30T23:59:59Z",
+  deadline_at: FUTURE_DEADLINE,
 };
 
 const SOLD_OUT = {
   available: true,
   seats_remaining: 0,
-  deadline_at: "2026-06-30T23:59:59Z",
+  deadline_at: FUTURE_DEADLINE,
+};
+
+const EXPIRED = {
+  available: true,
+  seats_remaining: 10,
+  deadline_at: PAST_DEADLINE,
 };
 
 // User context states
@@ -151,6 +162,21 @@ describe("FoundersTopBanner", () => {
       const { container } = render(<FoundersTopBanner />);
 
       // Wait a tick for async fetch
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+      });
+
+      expect(container.firstChild).toBeNull();
+    });
+  });
+
+  describe("hidden when deadline has passed", () => {
+    it("does not render when deadline_at is in the past", async () => {
+      mockUseUser.mockReturnValue(TRIAL_USER);
+      mockFetchAvailability(EXPIRED);
+
+      const { container } = render(<FoundersTopBanner />);
+
       await act(async () => {
         await new Promise((r) => setTimeout(r, 50));
       });

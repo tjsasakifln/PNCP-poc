@@ -1,6 +1,11 @@
 # Plano Fundadores — Política Interna
 
-**Versão:** 1.0 | **Data:** 2026-05-07 | **Status:** Vigente  
+> **ARQUIVO HISTÓRICO — NÃO EXECUTAR.** Oferta encerrada (deadline 2026-06-30).
+> As seções 7 (Go-Live) e 8 (Rollback) descrevem um procedimento **não vigente**.
+> Não habilitar `FOUNDERS_OFFER_ENABLED`, não criar Price Stripe, não aplicar as migrations deste arquivo como go-live, não publicar checkout.
+> Posicionamento vigente: [ADR-STRAT-001](adr/ADR-STRAT-001-smartlic-confenge-inbound.md) · sunset [#2111](https://github.com/tjsasakifln/SmartLic/issues/2111).
+
+**Versão:** 1.0 | **Data:** 2026-05-07 | **Status:** Histórico (não vigente como tese de produto)  
 **Oferta:** R$997 one-time vitalício | **Deadline:** 30/06/2026 | **Cap:** 50 vagas
 
 ---
@@ -91,7 +96,9 @@ As seguintes restrições aplicam mesmo para fundadores:
 
 ## 7. Checklist Go-Live
 
-Antes de habilitar `FOUNDERS_OFFER_ENABLED=true` em produção:
+> **NÃO EXECUTAR.** Checklist histórico. O go-live desta oferta está cancelado. Não habilitar `FOUNDERS_OFFER_ENABLED` nem configurar Stripe/Railway a partir deste arquivo.
+
+Antes de habilitar `FOUNDERS_OFFER_ENABLED=true` em produção (procedimento **histórico**, não vigente):
 
 - [ ] Stripe Price one-time R$997 criada via `scripts/create_founding_lifetime_price.py` (idempotente)
 - [ ] `FOUNDING_ONE_TIME_PRICE_ID` setado em Railway prod (bidiq-backend)
@@ -111,7 +118,9 @@ Antes de habilitar `FOUNDERS_OFFER_ENABLED=true` em produção:
 
 ## 8. Checklist Rollback
 
-Se necessário reverter a oferta após ativação:
+> **NÃO EXECUTAR.** Checklist histórico. Não usar estes passos como runbook vigente de billing.
+
+Se necessário reverter a oferta após ativação (procedimento **histórico**, não vigente):
 
 1. `railway variables set FOUNDERS_OFFER_ENABLED=false` (imediato, sem deploy)
 2. Desativar Price no Stripe Dashboard (impede novos checkouts)

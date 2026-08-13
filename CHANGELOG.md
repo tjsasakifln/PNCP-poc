@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Estratégia / inbound CONFENGE
+- **ADR-STRAT-001 — SmartLic deixa de ser SaaS independente ([#1262](https://github.com/tjsasakifln/SmartLic/issues/1262))** — Decisão autoritativa: extra-cli = truth/data plane; SmartLic = discovery/inbound; CONFENGE = conversão/serviço; Warmbly não bloqueia go-live. README, PRD (cabeçalho), ROADMAP, `llms.txt`, CLAUDE.md, issue templates e destino de runtime alinhados. Inventário de capabilities e revisão de backlog em `docs/strategy/`. Guardrail `scripts/check_strategic_positioning.py`. Billing/Stripe/trial permanecem no código até #2111.
+
 ### Added — Frontend / SEO
 - **JourneyLinks — jornadas de intenção progressiva [CONV-017] (#1332)** — Substitui 'Páginas Relacionadas' (lista plana) por jornadas estruturadas de intenção progressiva em 4 entity pages (`fornecedores`, `orgaos`, `contratos`, `municipios`). `JourneyLinks` (server component com Schema.org ItemList JSON-LD) + `JourneyLinkTracker` (client component para Mixpanel). `relatedResolver.ts` com tipos `JourneyStep`/`JourneyContext` e resolvers por contexto de entidade. Rollback: `git revert <merge-commit>`.
 

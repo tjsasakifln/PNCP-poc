@@ -6,6 +6,8 @@ labels: bug
 assignees: ''
 ---
 
+<!-- Superfície pública e SEO têm prioridade sobre jornadas SaaS/billing (ADR-STRAT-001). -->
+
 ## Describe the bug
 
 <!-- A clear and concise description of what the bug is -->

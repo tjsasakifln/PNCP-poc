@@ -1,46 +1,39 @@
 # SmartLic
 
-> Plataforma de inteligência em licitações públicas para empresas B2G (Business-to-Government). Automatiza a descoberta, análise e qualificação de oportunidades em editais governamentais brasileiros.
+> Inteligência pública de licitações brasileiras. Ativo de descoberta e inbound da CONFENGE Avaliações e Inteligência Artificial LTDA. Não é um produto de assinatura.
 
-SmartLic é uma plataforma SaaS desenvolvida pela CONFENGE Avaliações e Inteligência Artificial LTDA. Agrega dados do PNCP (Portal Nacional de Contratações Públicas), PCP e ComprasGov, aplica IA para classificação setorial e análise de viabilidade, e entrega um pipeline de oportunidades qualificadas para equipes comerciais B2G.
+SmartLic publica páginas e ferramentas indexáveis sobre editais, contratos, órgãos, municípios e empresas, com base em dados públicos canônicos. A autoridade de fatos (aquisição, DataLake, identidade, provenance, freshness) é o extra-cli. A CONFENGE realiza diagnóstico, análise e consultoria. O SmartLic não vende plano, trial nem cota comercial.
 
-## Principais Funcionalidades
+## Superfícies públicas
 
-- [Busca de Licitações](https://smartlic.tech/buscar): Busca multi-fonte com filtros por setor, UF, modalidade e faixa de valor
-- [Pipeline de Oportunidades](https://smartlic.tech/pipeline): Kanban para gestão de editais com drag-and-drop
-- [Dashboard](https://smartlic.tech/dashboard): Analytics de buscas, conversões e histórico de oportunidades
-- [Alertas de Editais](https://smartlic.tech/alertas-publicos): Monitoramento em tempo real por setor e UF
-- [Planos e Preços](https://smartlic.tech/planos): SmartLic Pro — R$297/mês (anual) a R$397/mês (mensal)
+- [Observatório](https://smartlic.tech/observatorio): recortes e leitura de mercado
+- [Licitações por setor](https://smartlic.tech/licitacoes): páginas com dado público por setor
+- [Consulta CNPJ](https://smartlic.tech/cnpj): histórico de contratos de um fornecedor
+- [Contratos](https://smartlic.tech/contratos): contratos homologados por setor e UF
+- [Órgãos](https://smartlic.tech/orgaos): compradores públicos
+- [Municípios](https://smartlic.tech/municipios): recorte territorial
+- [Alertas públicos](https://smartlic.tech/alertas-publicos): monitoramento por setor e UF
+- [Estatísticas](https://smartlic.tech/estatisticas): agregados do mercado
 
-## Conteúdo Educacional
+## Ferramentas e conteúdo
 
-- [Blog sobre Licitações](https://smartlic.tech/blog): Guias práticos e estratégias para empresas B2G
-- [Glossário de Licitações](https://smartlic.tech/glossario): Termos técnicos explicados
-- [Perguntas Frequentes](https://smartlic.tech/perguntas): Dúvidas comuns sobre licitações públicas
-- [Calculadora B2G](https://smartlic.tech/calculadora): Estimativa de viabilidade de editais
-- [Masterclass de Licitações](https://smartlic.tech/masterclass): Conteúdo aprofundado por setor
+- [Blog](https://smartlic.tech/blog): guias e leitura de mercado B2G
+- [Glossário](https://smartlic.tech/glossario): termos de licitação
+- [Perguntas frequentes](https://smartlic.tech/perguntas)
+- [Calculadora B2G](https://smartlic.tech/calculadora)
+- [Consultoria B2G](https://smartlic.tech/consultoria-b2g): ponte para a CONFENGE
 
-## Setores Atendidos
+## Setores cobertos
 
 Engenharia e Construção, TI e Software, Saúde e Farmácia, Alimentação e Nutrição, Limpeza e Facilities, Segurança, Transporte e Logística, Consultoria e Serviços, Educação e Treinamento, Mobiliário e Equipamentos, Telecomunicações, Energia, Meio Ambiente, Vestuário e EPIs, Manutenção.
 
-## Dados e Fontes
-
-- [Estatísticas de Licitações](https://smartlic.tech/estatisticas): Dados agregados do mercado de licitações públicas brasileiro
-- [Panorama por Setor](https://smartlic.tech/licitacoes): Landing pages com dados em tempo real por setor
-- [Consulta CNPJ B2G](https://smartlic.tech/cnpj): Análise de histórico de contratos por CNPJ
-- [Relatório 2026 T1](https://smartlic.tech/relatorio-2026-t1): Panorama do mercado de licitações Brasil 2026
-
 ## Sobre
 
-- [Sobre o SmartLic](https://smartlic.tech/sobre): Missão, time e tecnologia
-- [Cases de Sucesso](https://smartlic.tech/casos): Resultados reais de clientes
-- [Features](https://smartlic.tech/features): Funcionalidades detalhadas da plataforma
-- [Termos de Uso](https://smartlic.tech/termos): Termos e condições
-- [Privacidade](https://smartlic.tech/privacidade): Política de privacidade
-
-## Contato
-
-- Site: https://smartlic.tech
-- Email: contato@smartlic.tech
+- [Sobre](https://smartlic.tech/sobre)
+- [Cases](https://smartlic.tech/casos)
+- [Termos](https://smartlic.tech/termos)
+- [Privacidade](https://smartlic.tech/privacidade)
 - Empresa: CONFENGE Avaliações e Inteligência Artificial LTDA
+- Site: https://smartlic.tech
+- Serviço e conversão: https://confenge.com.br
+- Contato: contato@smartlic.tech · tiago.sasaki@confenge.com.br
