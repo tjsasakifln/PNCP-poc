@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from auth import require_auth
 from log_sanitizer import sanitize
 from rate_limiter import require_rate_limit
+from saas_commerce import require_saas_commerce
 from supabase_client import get_supabase, sb_execute
 
 from schemas.checkout import (
@@ -193,6 +194,7 @@ async def _ensure_stripe_price(product: dict) -> str:
 async def create_one_time_checkout(
     payload: CheckoutRequest,
     user: dict = Depends(require_auth),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Create a Stripe Checkout Session for a one-time digital product purchase.
 
@@ -308,6 +310,7 @@ async def create_one_time_checkout(
 async def create_api_subscription_checkout(
     payload: ApiSubscriptionCheckoutRequest,
     user: dict = Depends(require_auth),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Create a Stripe Checkout Session for an API tier subscription.
 

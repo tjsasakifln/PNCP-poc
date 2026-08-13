@@ -111,14 +111,17 @@ def test_provision_command_rejects_non_admin(regular_client):
     assert r.status_code == 403
 
 
-@patch.dict(os.environ, {"COMMAND_PRICE_ID": ""})
-def test_provision_command_missing_price_id(admin_client):
-    """Missing COMMAND_PRICE_ID returns 500."""
-    with patch("routes.admin_command.os.getenv", return_value=""):
-        r = admin_client.post(
-            "/v1/admin/subscriptions/command",
-            json={"email": "noprice@example.com"},
-        )
+def test_provision_command_missing_price_id(admin_client, monkeypatch):
+    """Missing COMMAND_PRICE_ID returns 500.
+
+    Do not mock ``os.getenv`` wholesale — that also blanks
+    ``SAAS_COMMERCE_ENABLED`` and 410s before the price check.
+    """
+    monkeypatch.setenv("COMMAND_PRICE_ID", "")
+    r = admin_client.post(
+        "/v1/admin/subscriptions/command",
+        json={"email": "noprice@example.com"},
+    )
     assert r.status_code == 500
     body = r.json()
     assert "Preco" in body.get("detail", "")

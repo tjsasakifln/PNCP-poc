@@ -179,6 +179,24 @@ def _enable_feature_gated_routes(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _enable_saas_commerce_for_legacy_tests(monkeypatch, request):
+    """#2111: production default is freeze (SAAS_COMMERCE_ENABLED=false).
+
+    Legacy billing/checkout/signup tests still exercise the old path; they
+    opt back in via this fixture. Tests marked ``saas_freeze`` keep the
+    production default and assert 410.
+    """
+    from config import features as feat
+
+    if request.node.get_closest_marker("saas_freeze"):
+        monkeypatch.setenv("SAAS_COMMERCE_ENABLED", "false")
+    else:
+        monkeypatch.setenv("SAAS_COMMERCE_ENABLED", "true")
+    feat._feature_flag_cache.pop("SAAS_COMMERCE_ENABLED", None)
+    feat._runtime_overrides.pop("SAAS_COMMERCE_ENABLED", None)
+
+
+@pytest.fixture(autouse=True)
 def _force_sync_search(monkeypatch):
     """STORY-292 + CRIT-072: Default tests to sync search mode.
 

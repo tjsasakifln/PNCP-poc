@@ -38,6 +38,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from metrics import FOUNDING_CHECKOUTS_TOTAL
 from rate_limiter import require_rate_limit
+from saas_commerce import require_saas_commerce
 from supabase_client import get_supabase, sb_execute
 
 
@@ -472,6 +473,7 @@ async def founding_checkout(
     payload: FoundingCheckoutRequest,
     request: Request,
     _rl=Depends(require_rate_limit(3, 3600)),
+    _frozen=Depends(require_saas_commerce),
 ) -> Any:
     """Create a founding-customer Stripe Checkout Session (v2 one-time payment).
 

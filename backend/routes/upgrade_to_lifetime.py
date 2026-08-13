@@ -13,6 +13,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends
+from saas_commerce import require_saas_commerce
 from pydantic import BaseModel, Field
 import stripe as stripe_lib
 
@@ -295,6 +296,7 @@ async def upgrade_to_lifetime_preview(user: dict = Depends(require_auth)):
 async def upgrade_to_lifetime(
     request: UpgradeToLifetimeRequest,
     user: dict = Depends(require_mfa_high_impact),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Upgrade Pro mensal -> Lifetime founder (#1011 / UPGRADE-PATH-013).
 

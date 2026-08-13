@@ -2,6 +2,7 @@
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException
+from saas_commerce import require_saas_commerce
 from pydantic import BaseModel, Field
 from auth import require_auth
 
@@ -43,6 +44,7 @@ class ExtensionsStatusResponse(BaseModel):
 async def extend_trial_endpoint(
     body: ExtendRequest,
     user: dict = Depends(require_auth),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Extend trial by completing a condition."""
     from services.trial_extension import extend_trial

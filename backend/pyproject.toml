@@ -40,6 +40,7 @@ markers = [
     "parity: CRIT-DATA-PARITY-001 entity endpoint parity tests (hit live target via PARITY_TARGET_URL — skipped when unset)",
     "fuzz: Property-based fuzz tests using Hypothesis (STORY-6.7)",
     "load: Load / fan-out reproduction tests (RES-BE-015 — requires explicit `-m load` selection)",
+    "saas_freeze: #2111 freeze tests — keep SAAS_COMMERCE_ENABLED=false",
 ]
 
 # pytest-asyncio configuration
