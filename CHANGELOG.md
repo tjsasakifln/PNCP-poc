@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Sunset SaaS onda 1
+- **Freeze comercial ([#2111](https://github.com/tjsasakifln/SmartLic/issues/2111))** — `SAAS_COMMERCE_ENABLED` default `false`. Checkout, founding, intel-reports, setup-intent, upgrade, mudança de período, extensão de trial e signup comercial retornam HTTP 410 com `error_code=SAAS_COMMERCE_FROZEN`. Webhooks, cancelamento e URLs públicas indexadas permanecem. Inventário: `docs/strategy/saas-sunset-inventory-2111.md`. Rollback: `SAAS_COMMERCE_ENABLED=true`.
+
 ### Changed — Estratégia / inbound CONFENGE
 - **ADR-STRAT-001 — SmartLic deixa de ser SaaS independente ([#1262](https://github.com/tjsasakifln/SmartLic/issues/1262))** — Decisão autoritativa: extra-cli = truth/data plane; SmartLic = discovery/inbound; CONFENGE = conversão/serviço; Warmbly não bloqueia go-live. README, PRD (cabeçalho), ROADMAP, `llms.txt`, CLAUDE.md, issue templates e destino de runtime alinhados. Inventário de capabilities e revisão de backlog em `docs/strategy/`. Guardrail `scripts/check_strategic_positioning.py`. Billing/Stripe/trial permanecem no código até #2111.
 

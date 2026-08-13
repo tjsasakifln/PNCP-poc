@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 import stripe as stripe_lib
 
 from auth import require_auth, require_mfa_high_impact
+from saas_commerce import require_saas_commerce
 from services.billing import (
     update_stripe_subscription_billing_period,
     get_next_billing_date,
@@ -74,6 +75,7 @@ class CancelFeedbackResponse(BaseModel):
 async def update_billing_period(
     request: UpdateBillingPeriodRequest,
     user: dict = Depends(require_mfa_high_impact),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Update subscription billing period (monthly / semiannual / annual).
 

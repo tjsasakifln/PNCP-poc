@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from auth import require_auth, require_mfa_high_impact
 from database import get_db
 from rate_limiter import require_rate_limit, SIGNUP_RATE_LIMIT_PER_10MIN
+from saas_commerce import require_saas_commerce
 from schemas import BillingPlansResponse, CheckoutResponse
 from schemas.billing import SetupIntentResponse
 from schemas.parity import BillingPortalResponse, SubscriptionStatusResponse
@@ -77,6 +78,7 @@ async def create_checkout(
     coupon: str | None = Query(None),
     user: dict = Depends(require_auth),
     db=Depends(get_db),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Create Stripe Checkout session for a plan purchase."""
     import stripe as stripe_lib
@@ -340,6 +342,7 @@ async def get_subscription_status(
 async def create_setup_intent(
     request: Request,
     _rl=Depends(require_rate_limit(SIGNUP_RATE_LIMIT_PER_10MIN, 600)),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Create a Stripe SetupIntent for pre-signup card capture (CONV-003b AC2).
 

@@ -288,6 +288,10 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "TRIAL_PAYWALL_ENABLED": ("TRIAL_PAYWALL_ENABLED", "true"),
     # --- Founding / Billing ---
     "FOUNDERS_OFFER_ENABLED": ("FOUNDERS_OFFER_ENABLED", "true"),
+    # #2111 / ADR-STRAT-001: master freeze for new SaaS commerce.
+    # Default false — checkout, trial, upgrade and new plans are 410.
+    # Set true only to temporarily re-enable the legado path.
+    "SAAS_COMMERCE_ENABLED": ("SAAS_COMMERCE_ENABLED", "false"),
     # --- A/B Testing ---
     "ab_experiments_enabled": ("AB_EXPERIMENTS_ENABLED", "false"),
     # --- Feature Gates (unreleased features) ---

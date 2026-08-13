@@ -18,6 +18,7 @@ import os
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
+from saas_commerce import require_saas_commerce
 from fastapi.responses import StreamingResponse
 
 from auth import require_auth
@@ -40,6 +41,7 @@ router = APIRouter(prefix="/intel-reports", tags=["intel_reports"])
 async def create_intel_report_checkout(
     body: IntelReportCheckoutRequest,
     user: dict = Depends(require_auth),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Create a Stripe Checkout session for an Intel Report one-time purchase.
 

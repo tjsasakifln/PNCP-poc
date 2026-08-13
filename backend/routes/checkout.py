@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from auth import require_auth
 from log_sanitizer import sanitize
 from rate_limiter import require_rate_limit
+from saas_commerce import require_saas_commerce
 from supabase_client import get_supabase, sb_execute
 
 from schemas.checkout import (
@@ -46,6 +47,7 @@ router = APIRouter(
     tags=["checkout"],
     dependencies=[
         Depends(checkout_rate_limit),
+        Depends(require_saas_commerce),
     ],
 )
 

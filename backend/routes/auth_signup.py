@@ -27,6 +27,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from saas_commerce import require_saas_commerce
 from pydantic import BaseModel, EmailStr, Field
 
 from rate_limiter import (
@@ -116,6 +117,7 @@ async def signup(
     request: Request,
     body: SignupRequest,
     _rl=Depends(require_rate_limit(SIGNUP_RATE_LIMIT_PER_10MIN, 600)),
+    _frozen=Depends(require_saas_commerce),
 ) -> SignupResponse:
     """STORY-CONV-003a AC1+AC2+AC3: Signup with optional Stripe trial.
 

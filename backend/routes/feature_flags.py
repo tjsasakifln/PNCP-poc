@@ -252,6 +252,7 @@ _FLAG_DESCRIPTIONS: dict[str, str] = {
     "EMBEDDING_ENABLED": "Semantic embedding search for datalake (STORY-438)",
     # Founders Offer
     "FOUNDERS_OFFER_ENABLED": "Kill switch for the Founders lifetime offer (epic:fundadores — BIZ-FOUND-002)",
+    "SAAS_COMMERCE_ENABLED": "Master freeze for new SaaS checkout/trial/upgrade (#2111 / ADR-STRAT-001). Default false.",
     # TIER-COMMAND-003: Command tier feature flags
     "COMMAND_API_ACCESS": "Command tier: API access capability (TIER-COMMAND-003)",
     "COMMAND_MULTI_USER": "Command tier: multi-user capability (TIER-COMMAND-003)",
@@ -329,6 +330,7 @@ _FLAG_LIFECYCLE: dict[str, dict] = {
     "EMBEDDING_ENABLED": {"owner": "search", "category": "search", "lifecycle": "experimental", "created": "2026-03"},
     # BIZ-FOUND-002: Founders lifetime offer kill switch
     "FOUNDERS_OFFER_ENABLED": {"owner": "billing", "category": "founding", "lifecycle": "temporary", "created": "2026-05"},
+    "SAAS_COMMERCE_ENABLED": {"owner": "billing", "category": "billing", "lifecycle": "temporary", "created": "2026-08"},
     # SUBINTEL-030 (EPIC-SUBINTEL #1224): subcontracting intelligence vertical
     "SUBCONTRACT_INTEL_ENABLED": {"owner": "product", "category": "subcontract", "lifecycle": "permanent", "created": "2026-05"},
     # PREDINT-000 (EPIC-PREDINT #1260): predictive intelligence vertical
