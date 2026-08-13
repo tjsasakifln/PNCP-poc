@@ -6,6 +6,12 @@ labels: epic
 assignees: ''
 ---
 
+## Alinhamento estratégico (obrigatório)
+
+Ler [ADR-STRAT-001](../../docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md). Epics P0 não podem furar o caminho crítico `#1262 → #2111 → #2113 → extra-cli#354 → #2108 → #2112 → #2116 → #2115 → #2114 → #2117 → go-live`. Proibido novo SaaS, billing, segundo DataLake, crawler próprio ou acoplar go-live ao Warmbly.
+
+- Categoria dominante: KEEP + PRIORITIZE | KEEP + ADAPT | SUNSET | REPLACE | DEFER
+
 ## Epic Overview
 
 <!-- High-level description of this epic's purpose -->

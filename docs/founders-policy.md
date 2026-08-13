@@ -1,6 +1,8 @@
 # Plano Fundadores — Política Interna
 
-**Versão:** 1.0 | **Data:** 2026-05-07 | **Status:** Vigente  
+> **Aviso 2026-08-13:** oferta **histórica**. Não criar nova jornada de checkout/assinatura. Posicionamento vigente: [ADR-STRAT-001](adr/ADR-STRAT-001-smartlic-confenge-inbound.md) · sunset [#2111](https://github.com/tjsasakifln/SmartLic/issues/2111).
+
+**Versão:** 1.0 | **Data:** 2026-05-07 | **Status:** Histórico (não vigente como tese de produto)  
 **Oferta:** R$997 one-time vitalício | **Deadline:** 30/06/2026 | **Cap:** 50 vagas
 
 ---

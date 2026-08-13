@@ -1,225 +1,178 @@
-# SmartLic — Public Procurement Intelligence Platform
+# SmartLic — inteligência pública de licitações da CONFENGE
 
-[![Live](https://img.shields.io/badge/status-production-brightgreen)](https://smartlic.tech)
+[![Live](https://img.shields.io/badge/status-public--intelligence-0E7490)](https://smartlic.tech)
 [![Backend Tests](https://github.com/tjsasakifln/SmartLic/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/tjsasakifln/SmartLic/actions/workflows/backend-tests.yml)
 [![Frontend Tests](https://github.com/tjsasakifln/SmartLic/actions/workflows/frontend-tests.yml/badge.svg)](https://github.com/tjsasakifln/SmartLic/actions/workflows/frontend-tests.yml)
 [![CodeQL](https://github.com/tjsasakifln/SmartLic/actions/workflows/codeql.yml/badge.svg)](https://github.com/tjsasakifln/SmartLic/actions/workflows/codeql.yml)
+[![Strategy](https://img.shields.io/badge/ADR-STRAT--001-5319E7)](./docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md)
 
-**Live:** [smartlic.tech](https://smartlic.tech) · Production v0.5 · Paid trials · Stripe live billing
+**Live:** [smartlic.tech](https://smartlic.tech) · Braço público de inbound da [CONFENGE](https://confenge.com.br)
 
----
-
-## What This System Does
-
-SmartLic ingests Brazil's public procurement data from 3 government APIs (PNCP, ComprasGov, PCP v2),
-normalizes it into a unified DataLake, runs full-text search in Portuguese against 3.5M+ records,
-classifies opportunities into 20 industry sectors using a hybrid keyword + LLM pipeline, scores
-viability across 4 factors, and delivers results through a web app with alerts, exports, and
-billing enforcement.
-
-**Technically:** a 3-layer data architecture (ETL ingestion → PostgreSQL full-text search pipeline →
-multi-tier cache) exposed through a FastAPI backend with 187 endpoints, a Next.js 16 frontend
-with 10k+ programmatic SEO pages, Stripe billing with atomic quota enforcement, ARQ background
-workers for summaries and exports, and a Prometheus + Sentry + OpenTelemetry observability stack.
-
-For a detailed engineering narrative, see [CASE STUDY](./CASE_STUDY.md).
+> **Decisão vigente ([#1262](https://github.com/tjsasakifln/SmartLic/issues/1262), [ADR-STRAT-001](./docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md)):** o SmartLic **não** é um SaaS independente. Não vende assinatura, não opera trial e não é autoridade de dados. Transforma fatos públicos canônicos do `extra-cli` em superfícies úteis, indexáveis e verificáveis, conduzindo demanda qualificada à consultoria CONFENGE.
 
 ---
 
-## Technical Overview
+## O que este sistema é
 
-### Architecture
+**extra-cli** = truth / data plane canônico (aquisição, crawling, DataLake, identidade, provenance, freshness).  
+**SmartLic** = public discovery / intelligence / inbound plane (páginas, SEO, ferramentas, contexto, CTA).  
+**CONFENGE** = conversion / service plane (diagnóstico, análise, consultoria).  
+**Warmbly** = action / outreach plane separado — **não** bloqueia o go-live.
+
+O ativo central é a capacidade de transformar dados públicos canônicos em páginas e ferramentas que um humano (e o Google) consegue verificar, e que naturalmente levam a um diagnóstico CONFENGE.
+
+## O que este sistema não é mais
+
+- venda de assinatura, trial, billing, Stripe, quotas comerciais;
+- DataLake concorrente ou crawling próprio como autoridade;
+- login obrigatório para conteúdo público;
+- expansão de SaaS ou workspace privado multi-tenant sem evidência comercial.
+
+Código legado de billing/trial ainda existe no repositório e está em sunset ([#2111](https://github.com/tjsasakifln/SmartLic/issues/2111)). Não é direção de produto.
+
+---
+
+## Arquitetura estratégica
 
 ```mermaid
 flowchart LR
-    subgraph Sources["Data Sources"]
-        A[PNCP API]
-        B[ComprasGov v3]
-        C[PCP v2]
+    subgraph Extra["extra-cli — truth / data plane"]
+        SRC[PNCP · ComprasGov · PCP]
+        DL[DataLake canônico · Netcup]
+        PR[public_read_v1]
+        SRC --> DL --> PR
     end
 
-    subgraph ETL["Ingestion (ARQ + Redis)"]
-        D[Daily ETL<br/>27 UFs × 6 modalities]
+    subgraph SmartLic["SmartLic — discovery / inbound"]
+        ADAPT[Adapter FastAPI]
+        WEB[Next.js público · pSEO · ferramentas]
+        CTA[CTA consultivo]
+        PR --> ADAPT --> WEB --> CTA
     end
 
-    subgraph DataLake["DataLake (Supabase PostgreSQL 17)"]
-        F[Tenders<br/>1.5M rows · 400d retention]
-        G[Contracts<br/>2M+ rows · historical]
+    subgraph Confenge["CONFENGE — service plane"]
+        SVC[Diagnóstico · consultoria]
+        CTA --> SVC
     end
-
-    subgraph AI["Classification Pipeline"]
-        H[Keyword Density<br/>deterministic filter ~80%]
-        I[LLM Arbiter<br/>GPT-4.1-nano · ambiguous cases]
-        J[Viability Scorer<br/>4-factor assessment]
-    end
-
-    subgraph API["API Layer (FastAPI)"]
-        K[Search Pipeline<br/>7-stage state machine]
-    end
-
-    subgraph Delivery["Delivery"]
-        L[Web App]
-        M[Email Alerts]
-        N[Excel · PDF · Sheets]
-        O[10k+ SEO Pages]
-    end
-
-    A --> D
-    B --> D
-    C --> D
-    D --> F
-    D --> G
-    F --> H
-    F --> K
-    G --> J
-    H --> I
-    I --> K
-    J --> K
-    K --> L
-    K --> M
-    K --> N
-    K --> O
 ```
 
-### Key Metrics
+O caminho de leitura alvo é `extra-cli.public_read_v1` ([extra-cli#354](https://github.com/tjsasakifln/extra-cli/issues/354)). O DataLake/crawler históricos deste repositório são **legado transicional** — não migrar para a Netcup; aposentar via [#2108](https://github.com/tjsasakifln/SmartLic/issues/2108).
 
-| Metric | Value | Evidence |
-|--------|-------|----------|
-| DataLake records | 3.5M+ (1.5M tenders + 2M contracts) | Measured from Supabase `pncp_raw_bids` + `pncp_supplier_contracts` row counts, 2026-06 |
-| Full-text search latency | < 100ms p95 | `search_datalake` RPC execution time, Sentry Performance p95 window |
-| Test suite | 5,131+ passing, 0 failures | CI result on latest `main` (`.github/workflows/backend-tests.yml`) |
-| AI sector classification precision | ≥ 85% | Validated against 15 labeled samples/sector, benchmark in `tests/test_llm_arbiter_benchmark.py` |
-| AI sector classification recall | ≥ 70% | Same benchmark; 20 sectors × 15 samples = 300-label evaluation set |
-| SEO pages indexed | 10,000+ | Google Search Console indexed pages estimate + ISR `revalidate=3600` |
-| API endpoints | 187 | OpenAPI schema auto-generated from FastAPI route decorators |
-| PostgreSQL migrations | 183+ | `supabase/migrations/` directory, applied via CI auto-deploy |
-| Daily ingestion volume | ~10,000 tenders | PNCP API daily publication rate, 27 UFs × 6 modalities |
-| Billing | Stripe live, 9 plans | 12 webhook events with idempotency, atomic quota via RPC |
+### Caminho crítico
 
-### Stack
+Documentado em [`docs/strategy/critical-path.md`](./docs/strategy/critical-path.md):
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | FastAPI 0.136, Python 3.12, Pydantic 2.13, httpx 0.28 |
-| Frontend | Next.js 16, React 18.3, TypeScript 5.9, Tailwind CSS 3.4 |
-| Database | Supabase (PostgreSQL 17), 48+ tables, RLS on all tables |
-| Cache | Redis (L1 InMemoryCache 4h → L2 Redis 4h → L3 Supabase 24h) |
-| Queue | ARQ 0.26+ (Python async job queue backed by Redis) |
-| LLM | OpenAI GPT-4.1-nano (classification + executive summaries) |
-| Billing | Stripe 11.4 (Checkout, webhooks, customer portal) |
-| Email | Resend (transactional, domain `smartlic.tech`) |
-| Observability | Prometheus + OpenTelemetry + Sentry + Mixpanel |
-| Infrastructure | Railway (web + worker), Supabase Cloud, Redis (Upstash/Railway) |
+`#1262` → `#2111` → `#2113` → `extra-cli#354` → `#2108` → `#2112` → `#2116` → `#2115` → `#2114` → `#2117` → go-live público.
 
-### Testing
+### Destino de runtime
 
-5,131+ backend tests + 2,681+ frontend tests + 60 E2E (Playwright). CI gate on every push.
-
-Tests protect:
-- **Search pipeline** — 7-stage state machine contracts, time budget invariants, dedup logic
-- **LLM responses** — structured output parsing, hallucination checks, fallback on malformed JSON
-- **Billing** — webhook signature verification, plan enforcement, quota atomicity, grace periods
-- **Auth** — JWT validation (3 strategies), RLS enforcement, role checks
-- **Cache** — SWR staleness windows, L1/L2/L3 fallthrough, key invalidation
-- **Ingestion** — content hash dedup, checkpoint resume, 400-day retention enforcement
-- **API contracts** — OpenAPI snapshot diff (`openapi_schema.diff.json`), Pydantic schema canary
-- **Security** — pip-audit in CI, CodeQL analysis, secret scanning
+| Componente | Destino | Detalhe |
+|------------|---------|---------|
+| FastAPI | KEEP + ADAPT | Adapter de apresentação; não autoridade |
+| Redis / ARQ | KEEP + ADAPT / sunset de ingestão e billing | Ver [`runtime-destination.md`](./docs/strategy/runtime-destination.md) |
+| Supabase | REPLACE como autoridade | Store transicional até #2108 |
+| Stripe | SUNSET | #2111 |
+| Railway | REPLACE | Runtime mínimo na Netcup (#2115) |
+| Warmbly | DEFER | Fora do go-live |
 
 ---
 
-## Market Context
+## Superfícies públicas (o que preservar)
 
-### The Problem
+- Consulta de empresa / CNPJ, órgãos, municípios, contratos, licitações
+- Observatório e recortes editoriais
+- Ferramentas públicas (calculadora, comparador, glossário, perguntas, blog)
+- Sitemaps e ISR (`revalidate=3600`) — **nunca** `notFound()` em gap de dado ([ADR-SEO-001](./docs/adr/ADR-SEO-001-programmatic-routes-no-notfound-on-data-gap.md))
 
-Brazil's government procurement market moves $500B+/year. Most suppliers discover opportunities
-through fragmented portals, outdated PDFs, regional newsletters, and WhatsApp groups.
+### Métricas de engenharia (legado medido; não são KPIs de SaaS)
 
-PNCP (the official national procurement portal) publishes ~10,000 tenders per day across 5,000+
-agencies. Without classification, a supplier must manually scan hundreds of irrelevant listings
-to find the few that match their sector.
+| Métrica | Valor | Evidência |
+|---------|-------|-----------|
+| Registros históricos no store transicional | 3.5M+ (1.5M editais + 2M contratos) | Contagem Supabase 2026-06; autoridade futura = extra-cli |
+| Latência FTS | < 100ms p95 | RPC `search_datalake` (legado; sucessor = query pack `public_read_v1`) |
+| Suite de testes | 5,131+ backend + 2,681+ frontend + 60 E2E | CI em `main` |
+| Precisão classificação setorial | ≥ 85% | `tests/test_llm_arbiter_benchmark.py` |
+| Recall classificação setorial | ≥ 70% | mesmo benchmark |
+| Páginas programáticas | 10,000+ | GSC + ISR |
+| Endpoints FastAPI | 187 | OpenAPI; encolher no adapter |
 
-### Why Now
+### Stack (estado de transição)
 
-- **Lei 14.133/2021** mandated structured digital procurement data for the first time
-- **PNCP public API** (launched 2023) made programmatic ingestion viable
-- **LLM inference costs** dropped to fractions of a cent per classification — economically viable at scale
+| Camada | Tecnologia | Nota estratégica |
+|--------|-----------|------------------|
+| Superfície | Next.js 16, React 18.3, TypeScript 5.9, Tailwind 3.4 | KEEP + PRIORITIZE |
+| Adapter | FastAPI 0.136, Python 3.12, Pydantic 2.13 | KEEP + ADAPT |
+| Truth plane | extra-cli / PostgreSQL na Netcup (`public_read_v1`) | REPLACE do DataLake próprio |
+| Store transicional | Supabase PostgreSQL 17 | Não é autoridade |
+| Cache | Redis + InMemory | KEEP + ADAPT |
+| Fila | ARQ 0.26+ | Sunset de ingestão/billing |
+| LLM | GPT-4.1-nano | Inteligência de apresentação |
+| Billing | Stripe 11.4 | SUNSET — não expandir |
+| Email | Resend (`smartlic.tech`) | Adaptar para lead/handoff |
+| Observabilidade | Prometheus + OTel + Sentry + Mixpanel | Adaptar para inbound |
+| Infra atual | Railway | REPLACE por Netcup (#2115) |
 
-### Business Model
+### Testes
 
-SaaS, 14-day free trial, no credit card required.
-
-| Plan | BRL/mo | USD/mo (approx) |
-|------|--------|-----------------|
-| Pro (monthly) | R$ 397 | ~$80 |
-| Pro (annual) | R$ 297 | ~$60 |
-| Consultoria (monthly) | R$ 997 | ~$200 |
-| Consultoria (annual) | R$ 797 | ~$160 |
-
-### Traction
-
-- Paid trials active — Stripe billing live
-- Organic inbound via 10k+ Google-indexed SEO pages
-- DataLake compounding daily (3.5M+ records, growing)
-
-For detailed metrics, request the investor data room: tiago.sasaki@confenge.com.br
+A suite protege contratos que ainda existem (busca, classificação, auth admin, cache, ingestão legada, OpenAPI, security). Testes de billing/quota **não** autorizam nova jornada comercial — documentam o legado até a remoção (#2111). Zero-failure policy permanece.
 
 ---
 
-## Team
+## Contexto de mercado
 
-**Tiago Sasaki — Solo Technical Founder / Applied AI Engineer**
+O mercado de compras públicas brasileiro movimenta centenas de bilhões por ano. A descoberta ainda é fragmentada (portais, PDFs, WhatsApp). Lei 14.133/2021 e a API do PNCP tornaram o dado estruturado viável. O papel do SmartLic é **tornar esse dado público utilizável e verificável**, não vender um login.
+
+**Modelo vigente:** inbound da CONFENGE. Serviço, diagnóstico e conversão acontecem na CONFENGE. Não há plano de assinatura substituto.
+
+---
+
+## Time
+
+**Tiago Sasaki** — founder / applied AI  
 [GitHub](https://github.com/tjsasakifln) · tiago.sasaki@confenge.com.br
-
-Solo technical founder. Built the full stack: DataLake architecture, AI classification pipeline,
-187 API endpoints, Stripe billing integration, 10k+ programmatic SEO engine, observability.
 
 CONFENGE Avaliações e Inteligência Artificial LTDA — CNPJ 52.407.089/0001-09.
 
 ---
 
-## Documentation
+## Documentação
 
-### For Engineers (evaluating the system)
+| Documento | Função |
+|-----------|--------|
+| [ADR-STRAT-001](./docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md) | Decisão estratégica autoritativa |
+| [Caminho crítico](./docs/strategy/critical-path.md) | Ordem P0 e go-live |
+| [Disposition de capabilities](./docs/strategy/capability-disposition-1262.md) | KEEP / SUNSET / REPLACE / DEFER |
+| [Destino de runtime](./docs/strategy/runtime-destination.md) | FastAPI, Redis, ARQ, Supabase, Railway |
+| [Revisão de backlog](./docs/strategy/backlog-review-1262.md) | Issues abertas vs nova direção |
+| [ADR-SEO-001](./docs/adr/ADR-SEO-001-programmatic-routes-no-notfound-on-data-gap.md) | pSEO nunca 404 em gap de dado |
+| [PRD](./PRD.md) | Especificação técnica histórica — supersedida no posicionamento |
+| [ROADMAP](./ROADMAP.md) | Caminho crítico + histórico |
+| [CHANGELOG](./CHANGELOG.md) | Histórico de versões |
+| [CASE STUDY](./CASE_STUDY.md) | Narrativa de engenharia do período SaaS (histórico) |
 
-| Document | Purpose |
-|----------|---------|
-| [CASE STUDY](./CASE_STUDY.md) | Engineering narrative: problem, architecture, decisions, incidents, lessons |
-| [AI Classification Pipeline](./docs/ai-pipeline.md) | Hybrid keyword + LLM pipeline: anti-hallucination, cost control, structured output |
-| [System Architecture](./docs/architecture/system-architecture.md) | Full module map, ERD, C4 diagrams, ADRs |
-| [Operational Reliability](./_reversa_sdd/operational-reliability-2026-05.md) | SLO targets, incident history, MTTR, error budget |
-| [Backend README](./backend/README.md) | FastAPI app structure, module map, test commands, env setup |
-| [Deployment](./docs/DEPLOYMENT.md) | Railway, Supabase, environment variables, CI/CD |
-
-### For Product / Business
-
-| Document | Purpose |
-|----------|---------|
-| [PRD](./PRD.md) | Full product specification |
-| [Roadmap](./ROADMAP.md) | Backlog and status |
-| [CHANGELOG](./CHANGELOG.md) | Version history |
+Docs de deploy em `docs/DEPLOYMENT.md` descrevem o arranjo **legado** Railway/Vercel. Destino: Netcup (#2115).
 
 ---
 
-## Operational Status
+## Status operacional (transição)
 
-| Signal | Target | How Measured |
-|--------|--------|-------------|
-| API latency | p95 < 2s | Sentry Performance |
-| Uptime | > 99.5% | `/health/ready` probe |
-| MTTR | < 30min | Time from Sentry alert to confirmed fix |
+| Sinal | Alvo | Medição |
+|-------|------|---------|
+| Disponibilidade da superfície pública | > 99.5% | `/health/ready` |
+| Latência do adapter | p95 < 2s | Sentry Performance |
+| Freshness / provenance | expostos em toda família pública | contrato `public_read_v1` (após #2108) |
 
 - Sentry: https://confenge.sentry.io/projects/smartlic-backend/
-- Health probe: https://api.smartlic.tech/health/ready
-- Runbook: [`_reversa_sdd/operational-reliability-2026-05.md`](./_reversa_sdd/operational-reliability-2026-05.md)
+- Health: https://api.smartlic.tech/health/ready
 
 ---
 
-## License
+## Licença
 
 © 2024–2026 CONFENGE AVALIAÇÕES E INTELIGÊNCIA ARTIFICIAL LTDA — All rights reserved.
 
-Proprietary software. Contact: tiago.sasaki@confenge.com.br
+Software proprietário. Contato: tiago.sasaki@confenge.com.br
 
 ---
 
-Tags: `govtech` · `b2g-saas` · `pncp` · `comprasgov` · `public-procurement` · `llm-classification` · `fastapi` · `nextjs` · `supabase` · `brazil` · `latam`
+Tags: `govtech` · `b2g` · `inbound` · `pncp` · `comprasgov` · `public-procurement` · `confenge` · `fastapi` · `nextjs` · `brazil`

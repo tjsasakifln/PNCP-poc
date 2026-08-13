@@ -1,7 +1,8 @@
 # ADR-BILL-SYNC-001 — Bidirectional Stripe ↔ DB sync strategy for `plan_billing_periods`
 
-**Status:** Accepted
+**Status:** Deprecated
 **Date:** 2026-04-28
+**Deprecated:** 2026-08-13 — billing/Stripe não é direção de produto ([ADR-STRAT-001](./ADR-STRAT-001-smartlic-confenge-inbound.md), #2111). Manter apenas enquanto o código de sync existir; não expandir.
 **Story:** [BILL-SYNC-001](../stories/2026-04/BILL-SYNC-001-stripe-product-price-bidirectional-sync.story.md)
 **Owners:** @dev, @data-engineer
 **Related:** STORY-360 (frontend reads DB pricing — Done), STORY-307 (Stripe webhook idempotency), DEBT-114 (sole source of truth removed in `plans.stripe_price_id`)

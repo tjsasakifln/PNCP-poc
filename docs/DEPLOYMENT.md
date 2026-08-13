@@ -1,9 +1,12 @@
-# 🚀 BidIQ Uniformes - Production Deployment Guide
+# BidIQ Uniformes / SmartLic — Production Deployment Guide (legado)
 
-**Version:** 1.1
+> **SUPERSEDIDO como destino.** Arranjo atual em produção ainda é Railway + Supabase (histórico deste arquivo: Vercel + Railway do POC BidIQ).  
+> **Destino vigente:** runtime mínimo na Netcup ([#2115](https://github.com/tjsasakifln/SmartLic/issues/2115)), dados canônicos no extra-cli. Não tratar Railway/Vercel/Stripe como arquitetura alvo. Ver [ADR-STRAT-001](adr/ADR-STRAT-001-smartlic-confenge-inbound.md) e [`runtime-destination.md`](strategy/runtime-destination.md).
+
+**Version:** 1.1 (aviso de destino 2026-08-13)
 **Last Updated:** 2026-01-28
-**Target Platforms:** Vercel (Frontend) + Railway (Backend)
-**Deployment Status:** ✅ **DEPLOYED TO PRODUCTION**
+**Target Platforms (legado):** Vercel (Frontend) + Railway (Backend)
+**Deployment Status:** produção transicional em https://smartlic.tech
 
 **Live URLs:**
 - **Frontend:** https://bidiq-uniformes.vercel.app ✅ LIVE

@@ -1,0 +1,43 @@
+name: "Strategic positioning (ADR-STRAT-001)"
+
+# Impede que docs canônicos voltem a definir SmartLic como SaaS independente.
+# Issue: #1262
+
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'PRD.md'
+      - 'ROADMAP.md'
+      - 'frontend/public/llms.txt'
+      - 'docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md'
+      - 'docs/strategy/**'
+      - 'scripts/check_strategic_positioning.py'
+      - '.github/workflows/strategic-positioning-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'PRD.md'
+      - 'ROADMAP.md'
+      - 'frontend/public/llms.txt'
+      - 'docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md'
+      - 'docs/strategy/**'
+      - 'scripts/check_strategic_positioning.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: strategic-positioning-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Canonical docs vs ADR-STRAT-001
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run positioning guard
+        run: python3 scripts/check_strategic_positioning.py

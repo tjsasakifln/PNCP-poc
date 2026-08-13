@@ -3,11 +3,14 @@
 > **SOFTWARE PROPRIETÁRIO** — © 2024-2026 CONFENGE AVALIAÇÕES E INTELIGÊNCIA ARTIFICIAL LTDA. Todos os direitos reservados.
 > Contato: tiago.sasaki@confenge.com.br | WhatsApp: +55 (48) 9 8834-4559
 
-**Versão:** 0.5.3
-**Data:** Abril 2026
-**Tipo:** Especificação técnica de implementação
-**Status:** PRODUCTION — Contracts Backfill + SEO Expansion (2026-04-09)
-**Produto:** SmartLic — Plataforma de inteligência em licitações públicas
+> **SUPERSEDIDO NO POSICIONAMENTO — [ADR-STRAT-001](docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md) · [#1262](https://github.com/tjsasakifln/SmartLic/issues/1262) · 2026-08-13.**
+> O SmartLic **não é um SaaS independente** e **não tem MRR/assinatura como objetivo**. É o inbound plane público da CONFENGE, alimentado pelo extra-cli (`public_read_v1`). Este PRD permanece como especificação técnica do sistema legado (busca, classificação, SEO, rotas). Billing, trial, Stripe, quotas e DataLake próprio **não** são direção de produto. Fonte de verdade estratégica: ADR-STRAT-001. Caminho crítico: `docs/strategy/critical-path.md`.
+
+**Versão:** 0.5.3 (posicionamento atualizado 2026-08-13)
+**Data:** Abril 2026 / adendo estratégico agosto 2026
+**Tipo:** Especificação técnica de implementação (corpo) + aviso de reposicionamento (este cabeçalho)
+**Status:** TRANSIÇÃO — inbound CONFENGE; sunset SaaS (#2111)
+**Produto:** SmartLic — inteligência pública / inbound da CONFENGE
 **Empresa:** CONFENGE Avaliações e Inteligência Artificial LTDA
 **Production:** https://smartlic.tech
 
@@ -24,12 +27,14 @@
 
 ### 0.1 O que é o SmartLic
 
-Plataforma de inteligência em licitações públicas que automatiza a descoberta, análise e qualificação de oportunidades para empresas B2G (Business-to-Government) e consultorias de licitação.
+Braço público de inteligência e inbound da CONFENGE. Publica páginas e ferramentas indexáveis sobre licitações, contratos, órgãos, municípios e empresas, com base em fatos públicos canônicos do extra-cli. Não é produto de assinatura.
 
-**Diferenciais:**
+**Diferenciais que permanecem (apresentação, não autoridade de dados):**
 - IA de classificação setorial (GPT-4.1-nano) com zero-match classification
 - Análise de viabilidade com 4 fatores (modalidade, timeline, valor, geografia)
-- Busca multi-fonte consolidada (PNCP + PCP + ComprasGov)
+- Superfícies públicas verificáveis (pSEO, ferramentas, observatório)
+
+**Fronteiras:** extra-cli = truth/data plane · SmartLic = discovery/inbound · CONFENGE = conversão/serviço · Warmbly ≠ blocker de go-live.
 
 ### 0.2 Arquitetura atual
 
@@ -70,7 +75,7 @@ Plataforma de inteligência em licitações públicas que automatiza a descobert
 │  └─────────────────────────────────────────────────────────────────┘ │
 │                                                                      │
 │  CACHE: InMemory(4h) + Supabase(24h) | SWR background refresh       │
-│  BILLING: Stripe (SmartLic Pro R$397/mês) | Quota enforcement          │
+│  BILLING: Stripe / quota — LEGADO em sunset (#2111); não é objetivo    │
 │  OBSERVABILITY: Prometheus /metrics | OpenTelemetry | Sentry         │
 │  AUTH: Supabase (email + Google OAuth) | RLS | JWT                   │
 └──────────────────────────────────────────────────────────────────────┘

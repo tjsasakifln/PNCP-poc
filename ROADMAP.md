@@ -1,10 +1,36 @@
 # ROADMAP — SmartLic
 
-**Versao:** 8.0 | **Atualizado:** 2026-06-15 | **Status:** Intel Reports 100%, Reposicionamento 100%, Q2 Multi-Camada ~99%, Wave 4 100%, UX Premium 100%, SDD Gaps 100%
+**Versao:** 9.0 | **Atualizado:** 2026-08-13 | **Status:** inbound CONFENGE — caminho crítico P0 vigente ([ADR-STRAT-001](docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md))
 
-## 2026-04-24 — EPIC-GROWTH-VIRAL-2026-Q3: On-Page CAC-Zero
+> **Direção vigente ([#1262](https://github.com/tjsasakifln/SmartLic/issues/1262)):** SmartLic é o public discovery / intelligence / inbound plane da CONFENGE, alimentado pelo extra-cli. Não há tese de assinatura, trial, Stripe ou DataLake próprio. Documento operacional: [`docs/strategy/critical-path.md`](docs/strategy/critical-path.md).
 
-21 stories novas organizadas em 6 waves (142 SP, 4 sprints). Objetivo: K-factor B2B ≥0.20, 30% signups via viral loops, -40% CAC em 6 meses. Inspiração Manus (waitlist + replay), Lovable (gallery + remix), ChatGPT (share), Loom/Calendly (todo output é anúncio). Adaptações B2G com pseudonimização default + opt-in LGPD.
+## Caminho crítico (único backlog que compete por recurso)
+
+Ordem estrita. P1/P2 não furam esta fila.
+
+| Ordem | Issue | Entrega |
+|------:|-------|---------|
+| 1 | [#1262](https://github.com/tjsasakifln/SmartLic/issues/1262) | Decisão estratégica e freeze |
+| 2 | [#2111](https://github.com/tjsasakifln/SmartLic/issues/2111) | Sunset SaaS / Stripe / trial / quotas |
+| 3 | [#2113](https://github.com/tjsasakifln/SmartLic/issues/2113) | Preservar patrimônio SEO |
+| 4 | [extra-cli#354](https://github.com/tjsasakifln/extra-cli/issues/354) | `public_read_v1` |
+| 5 | [#2108](https://github.com/tjsasakifln/SmartLic/issues/2108) | Consumir contrato; aposentar DataLake/crawler SmartLic |
+| 6 | [#2112](https://github.com/tjsasakifln/SmartLic/issues/2112) | Public intelligence MVP |
+| 7 | [#2116](https://github.com/tjsasakifln/SmartLic/issues/2116) | Isolamento / performance |
+| 8 | [#2115](https://github.com/tjsasakifln/SmartLic/issues/2115) | Runtime mínimo Netcup |
+| 9 | [#2114](https://github.com/tjsasakifln/SmartLic/issues/2114) | Marca SmartLic ↔ CONFENGE |
+| 10 | [#2117](https://github.com/tjsasakifln/SmartLic/issues/2117) | Attribution e handoff |
+| 11 | Go-live público | Somente com gates verdes |
+
+**Next (não agora):** #2109 product-as-content · #2118 pSEO só com dado único.  
+**Later:** #2107 assessment privado.  
+**Fora:** Warmbly, CRM, Kafka, K8s, segundo DataLake, novo billing.
+
+O bloco abaixo (EPIC-GROWTH-VIRAL e fases 2026-04) é **histórico do período SaaS**. Não é o plano vigente.
+
+## 2026-04-24 — EPIC-GROWTH-VIRAL-2026-Q3: On-Page CAC-Zero (HISTÓRICO / SUPERSEDIDO)
+
+21 stories organizadas em 6 waves (142 SP, 4 sprints). Objetivo *na época*: loops virais e CAC. **Supersedido por ADR-STRAT-001** — signup/K-factor não é north star. Mantido apenas como arquivo histórico.
 
 - **Wave 0 Infra (GV-001):** A/B testing framework + funnel auto-tracking (BLOCKER)
 - **Wave 1 Viral Loops (GV-002-005):** watermark + pseudonimização, analysis replay, embed widget, propose-to-colleague
@@ -36,22 +62,21 @@ Decisão arquitetural baseada no novo modelo de dados: Supabase agora armazena ~
 ## Status Atual
 
 ```
-POC CORE:            [####################] 100% DEPLOYED
-GTM LAUNCH:          [####################] 100% (10/10 stories)
-GTM FIXES:           [####################] 100% (37 fixes)
-GTM RESILIENCE:      [####################] 100% (25/25 stories)
-RELIABILITY SPRINT:  [####################] 100% (13/13 stories, 4 sprints)
-REPOSICIONAMENTO B2G:[####################] 100% (23/23 issues — milestone fechado)
-FOUNDERS PLAN:       [####################] 100% (23 issues — #782–#795, #861–#872)
-TECH DEBT (TD):      [####################] 100% (61/61 issues fechadas)
-INTEL REPORTS:       [####################] 100% (8/8 issues, todas fechadas)
-UX PREMIUM:          [####################] 100% (12/12 issues criadas, todas closed)
-Q2 MULTI-CAMADA:     [###################.] ~99% (5 EPICs + CONV + Verticais, ~85 issues, ~83 closed, ~2 open — 4/5 EPICs fechados 2026-06-15)
-Q2 WAVE 4 (JUN):     [####################] 100% (55 issues, 55 closed, 0 open — #1400–#1453)
-SDD GAPS (Reversa):  [####################] 100% (21 issues, 21 closed, 0 open — #1579–#1599)
+ESTRATÉGIA (#1262 / ADR-STRAT-001):   [########............] docs + freeze (este ciclo)
+SUNSET SaaS (#2111):                  [....................] após #1262
+SEO PATRIMÔNIO (#2113):               [....................]
+extra-cli public_read_v1 (#354):      [....................] producer
+CONSUMER (#2108):                     [....................]
+MVP PÚBLICO (#2112):                  [....................]
+ISOLAMENTO (#2116) / NETCUP (#2115):  [....................]
+MARCA (#2114) / HANDOFF (#2117):      [....................]
+GO-LIVE PÚBLICO:                      [....................] gated
+
+— histórico legado (não é o plano vigente) —
+POC / GTM / RELIABILITY / FOUNDERS / TD / INTEL / UX / Q2 / SDD: 100% no tracker antigo
 ```
 
-**Production:** https://smartlic.tech
+**Production (transição):** https://smartlic.tech — ainda no runtime legado (Railway/Supabase). Destino: Netcup + extra-cli.
 
 ---
 
@@ -137,7 +162,9 @@ Plano Fundadores vitalício R$997 one-time. 23 issues implementados em 2 dias.
 
 ## Backlog Ativo
 
-### Intel Reports Epic (100% — todas fechadas)
+O backlog que compete por recurso está **somente** na tabela do caminho crítico no topo deste arquivo e em [`docs/strategy/backlog-review-1262.md`](docs/strategy/backlog-review-1262.md). As seções abaixo são arquivo histórico (epics 2026-04/05/06). #1262 deixou de ser "Terminal do Operador" e passou a ser a decisão de inbound.
+
+### Intel Reports Epic (100% — todas fechadas · tese de compra avulsa em sunset)
 
 Milestone: `Intel Reports Epic` (#1) — open:0, closed:8.
 
@@ -265,11 +292,13 @@ Status: todas Draft — Milestone criado (#4), issues a criar.
 | #1287 | NETINT-010 — Feed de Inteligência Coletiva (bloco aditivo na dashboard) | Closed |
 | #1288 | NETINT-011 — Bloco 'Padrões de Mercado' em páginas de setor (pSEO aditivo) | Closed |
 
-### EPIC-B2GOPS — Sistema Operacional B2G (#1262)
+### EPIC-B2GOPS — escopo antigo (workspace). #1262 foi reutilizada.
+
+O workspace/war-room (#1277–#1294) está fechado e **não** é caminho crítico (SUNSET/DEFER). A issue #1262 agora é a decisão de inbound CONFENGE.
 
 | Issue | Título | Status |
 |-------|--------|--------|
-| #1262 | EPIC-B2GOPS — Sistema Operacional B2G (Terminal do Operador) | Open |
+| #1262 | Reposicionar SmartLic como braço público de inbound da CONFENGE | Open (decisão vigente) |
 | #1277 | B2GOPS-001 — Schema workspace_watchlists + RPCs | Closed |
 | #1278 | B2GOPS-002 — Schema workspace_documents + RPCs de gestão documental | Closed |
 | #1279 | B2GOPS-003 — Schema workspace_timeline + RPCs de timeline operacional | Closed |
@@ -668,12 +697,12 @@ Bloco de infraestrutura, segurança e operações criado ~2026-06-14/15. 32 issu
 | #1815 | Accessibility audit — validar WCAG AA em todas as páginas | Open |
 | #1816 | Penetration test — auditoria de segurança externa antes do v1.0 | Open |
 
-### Q2 Pendentes (2 issues)
+### Q2 Pendentes (supersedidos)
 
 | Issue | Título | Status |
 |-------|--------|--------|
-| #1262 | EPIC-B2GOPS — Sistema Operacional B2G (Terminal do Operador) | Open |
-| #1235 | SUBINTEL-031 — Novo tier premium "SmartLic Insight" (empacotamento comercial) | Open (Paused-Revenue-Dependent) |
+| #1262 | Inbound CONFENGE (não é mais B2GOPS) | Aberta no caminho crítico; ver topo deste arquivo |
+| #1235 | SUBINTEL-031 — tier premium "SmartLic Insight" | Premissa SaaS morta — não reabrir; SUNSET |
 
 ---
 

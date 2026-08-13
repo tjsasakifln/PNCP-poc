@@ -1,10 +1,13 @@
 # SmartLic Brownfield Architecture Document
 
+> **Posicionamento vigente:** [ADR-STRAT-001](../adr/ADR-STRAT-001-smartlic-confenge-inbound.md).  
+> Este arquivo descreve o **estado físico do código** (ainda com billing, DataLake próprio, Railway). Não descreve a direção de produto. Destino de cada runtime: [`docs/strategy/runtime-destination.md`](../strategy/runtime-destination.md).
+
 ## Introduction
 
-Este documento captura o **ESTADO ATUAL** do codebase SmartLic — uma plataforma SaaS B2G (Business-to-Government) de inteligência em licitações públicas — incluindo dívida técnica, workarounds conhecidos, padrões inconsistentes e restrições de integração. Serve como referência para agentes AI trabalhando em aprimoramentos e para a fase de Planning (Epic/Stories) do workflow brownfield-discovery.
+Este documento captura o **ESTADO ATUAL** do codebase SmartLic — superfície pública de inteligência em licitações + legado SaaS em sunset — incluindo dívida técnica, workarounds conhecidos, padrões inconsistentes e restrições de integração. Serve como referência para agentes AI trabalhando em aprimoramentos brownfield.
 
-**NÃO é um documento arquitetural aspiracional.** É um retrato honesto do sistema em produção em https://smartlic.tech.
+**NÃO é um documento arquitetural aspiracional.** É um retrato honesto do sistema em produção em https://smartlic.tech. A tese de produto está no ADR-STRAT-001.
 
 ### Document Scope
 

@@ -4,21 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**SmartLic** — Plataforma de inteligencia em licitacoes publicas que automatiza a descoberta, analise e qualificacao de oportunidades para empresas B2G (Business-to-Government). Produto da **CONFENGE Avaliacoes e Inteligencia Artificial LTDA**.
+**SmartLic** — Braço público de inteligência e inbound da **CONFENGE Avaliações e Inteligência Artificial LTDA**. Transforma fatos públicos canônicos em páginas e ferramentas indexáveis, verificáveis e comercialmente relevantes.
 
-**Estagio:** Producao v0.5 — beta com trials pagos, pre-revenue (runway-critical).
-**URL:** https://smartlic.tech
-**Publico-alvo:** Empresas B2G (todos os portes) + Consultorias/Assessorias de licitacao.
-**Diferenciais:** IA de classificacao setorial (GPT-4.1-nano) + Analise de viabilidade 4 fatores.
+**Decisão vigente:** [ADR-STRAT-001](docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md) · [#1262](https://github.com/tjsasakifln/SmartLic/issues/1262).  
+**Não é SaaS independente.** Não vender assinatura, trial, billing, Stripe, quotas. Não criar DataLake/crawler próprio como autoridade. Não exigir login para conteúdo público. Warmbly não bloqueia go-live.
 
-### O que o SmartLic faz
+**Estágio:** transição — superfície pública em smartlic.tech; truth plane alvo = extra-cli `public_read_v1`.  
+**URL:** https://smartlic.tech  
+**Público-alvo:** empresas B2G e quem busca dado público de licitações; conversão = consultoria CONFENGE.  
+**Diferenciais de apresentação:** IA de classificação setorial (GPT-4.1-nano) + viabilidade 4 fatores + pSEO verificável.
 
-1. **Busca multi-fonte** — Agrega PNCP + PCP v2 + ComprasGov v3 em uma busca consolidada com dedup
-2. **Classificacao IA** — LLM arbiter classifica relevancia setorial (keyword + zero-match classification)
-3. **Analise de viabilidade** — 4 fatores (modalidade 30%, timeline 25%, valor 25%, geografia 20%)
-4. **Pipeline de oportunidades** — Kanban de editais com drag-and-drop
-5. **Relatorios** — Excel estilizado + resumo executivo com IA
-6. **Historico** — Buscas salvas, sessoes, analytics
+### Fronteiras (não negociáveis)
+
+- **extra-cli** — truth/data plane (aquisição, crawling, DataLake, identidade, provenance, freshness).
+- **SmartLic** — discovery/inbound (páginas, SEO, ferramentas, CTA).
+- **CONFENGE** — conversion/service (diagnóstico, consultoria).
+- **Caminho crítico:** `#1262 → #2111 → #2113 → extra-cli#354 → #2108 → #2112 → #2116 → #2115 → #2114 → #2117 → go-live`.
+
+### O que o SmartLic faz (direção atual)
+
+1. **Superfícies públicas** — CNPJ, órgãos, municípios, contratos, licitações, observatório, ferramentas
+2. **Inteligência de apresentação** — classificação setorial + viabilidade sobre dado canônico
+3. **SEO / pSEO controlado** — páginas indexáveis; nunca `notFound()` em gap de dado (ADR-SEO-001)
+4. **CTA consultivo** — conduzir demanda à CONFENGE (não signup/trial)
+5. **Adapter** — FastAPI como apresentação até o cutover; extra-cli é a autoridade
+
+Código de busca autenticada, pipeline kanban, billing e ingestion próprios é **legado** (KEEP+ADAPT ou SUNSET — ver `docs/strategy/capability-disposition-1262.md`). Não expandir.
 
 ### Tech Stack
 
@@ -26,13 +37,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Frontend:** Next.js 16.1, React 18.3, TypeScript 5.9, Tailwind CSS 3.4 + CSS variables theme tokens (WCAG AA validated), Framer Motion, Recharts, Supabase SSR (auth), Sentry, Mixpanel, @dnd-kit (pipeline kanban — code-split lazy), Shepherd.js (onboarding tour). ~25 core pages + 10k+ programmatic SEO pages (ISR `revalidate=3600`).
 
-**Infra:** Railway (web + worker + frontend), Supabase Cloud, Redis (Upstash/Railway), GitHub Actions (CI/CD)
+**Infra (transição):** Railway (web + worker + frontend) — destino Netcup (#2115). Supabase = store transicional, **não** autoridade. Redis/ARQ = KEEP+ADAPT / sunset de ingestão e billing. Stripe = SUNSET (#2111).
 
-**Data Sources:**
-- PNCP API: `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao` (priority 1)
-- PCP v2 API: `https://compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos` (priority 2, public, no auth)
-- ComprasGov v3: `https://dadosabertos.compras.gov.br` (priority 3, dual-endpoint)
-- OpenAI API: GPT-4.1-nano para classificacao + resumos
+**Data plane:**
+- **Canônico (alvo):** extra-cli `public_read_v1` ([extra-cli#354](https://github.com/tjsasakifln/extra-cli/issues/354))
+- **Legado (não expandir):** PNCP / PCP v2 / ComprasGov via `backend/ingestion/` e Supabase DataLake — aposentar em #2108
+- OpenAI API: GPT-4.1-nano para classificação + resumos de apresentação
 
 **20 Setores:** Definidos em `backend/sectors_data.yaml` — cada setor tem keywords, exclusoes, context_required_keywords, e viability_value_range.
 
