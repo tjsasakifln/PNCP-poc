@@ -54,7 +54,7 @@ describe('Footer Component', () => {
 
     it('should render all expected sections', () => {
       expect(screen.getByText('Sobre')).toBeInTheDocument();
-      expect(screen.getByText('Planos')).toBeInTheDocument();
+      expect(screen.getByText('CONFENGE')).toBeInTheDocument();
       expect(screen.getByText('Suporte')).toBeInTheDocument();
       expect(screen.getByText('Legal')).toBeInTheDocument();
     });
@@ -65,10 +65,10 @@ describe('Footer Component', () => {
       expect(screen.getByText('Soluções')).toBeInTheDocument();
     });
 
-    it('should render SaaS link pointing to /planos', () => {
-      const links = screen.getAllByRole('link', { name: /^saas$/i });
+    it('should render Consultoria CONFENGE instead of SaaS /planos', () => {
+      const links = screen.getAllByRole('link', { name: /consultoria confenge/i });
       expect(links.length).toBeGreaterThanOrEqual(1);
-      expect(links[0]).toHaveAttribute('href', '/planos');
+      expect(links[0]).toHaveAttribute('href', '/consultoria-b2g');
     });
 
     it('should render Radar B2G link pointing to /consultoria-b2g?modalidade=radar', () => {

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { buildCanonical } from '@/lib/seo';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
+import { PublicFamilyShell } from '@/app/components/intelligence/PublicFamilyShell';
 
 // Sprint 4 Parte 13: hub de municípios para SEO programático
 export const metadata: Metadata = {
@@ -174,12 +175,13 @@ export default function MunicipiosHubPage() {
               as oportunidades mais relevantes para o seu setor e região.
             </p>
             <Link
-              href="/signup"
+              href="/consultoria-b2g?cta=cta.municipality.local"
               className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Teste grátis por 14 dias
+              Pedir recorte local à CONFENGE
             </Link>
           </section>
+          <PublicFamilyShell family="municipality" />
         </div>
       </main>
       <Footer />

@@ -7,7 +7,7 @@ import AntecipeDecidaExecute from './components/landing/AntecipeDecidaExecute';
 import TerminalComparison from './components/landing/TerminalComparison';
 import SocialProofMetrics from './components/landing/SocialProofMetrics';
 import PersonasSection from './components/landing/PersonasSection';
-import PricingSectionB2G from './components/landing/PricingSectionB2G';
+import PublicIntelligenceSection from './components/landing/PublicIntelligenceSection';
 import MarketSocialProof from './components/landing/MarketSocialProof';
 import Footer from './components/Footer';
 import NewsletterFooter from './components/landing/NewsletterFooter';
@@ -26,7 +26,7 @@ export default function LandingPage() {
         <TerminalComparison />
         <SocialProofMetrics />
         <PersonasSection />
-        <PricingSectionB2G />
+        <PublicIntelligenceSection />
         <MarketSocialProof />
       </main>
 

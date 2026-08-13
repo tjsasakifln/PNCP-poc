@@ -6411,6 +6411,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/public-read/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Read Health */
+        get: operations["public_read_health_v1_public_read_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public-read/{family}/{public_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Read Family */
+        get: operations["public_read_family_v1_public_read__family___public_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/referral/code": {
         parameters: {
             query?: never;
@@ -11840,6 +11874,32 @@ export interface components {
             /** Suggestion */
             suggestion: string;
         };
+        /** FamilyRead */
+        FamilyRead: {
+            /**
+             * Contract Version
+             * @default v1.0.0
+             */
+            contract_version: string;
+            /** Divergence */
+            divergence?: string[];
+            entity?: components["schemas"]["PublicEntity"] | null;
+            /** Family */
+            family: string;
+            health?: components["schemas"]["SurfaceHealth"] | null;
+            /** Items */
+            items?: components["schemas"]["PublicEntity"][];
+            /** Mode */
+            mode: string;
+            /** Row Count */
+            row_count?: number | null;
+            /**
+             * Served From
+             * @enum {string}
+             */
+            served_from: "public_read_v1" | "legacy" | "last_known_good" | "blocked";
+            snapshot?: components["schemas"]["SnapshotMeta"] | null;
+        };
         /** FaqItem */
         FaqItem: {
             /** Answer */
@@ -13221,10 +13281,22 @@ export interface components {
             captured_at?: string | null;
             /** Cnpj */
             cnpj?: string | null;
+            /** Consent Version */
+            consent_version?: string | null;
+            /** Correlation Id */
+            correlation_id?: string | null;
+            /** Cta Id */
+            cta_id?: string | null;
             /** Email */
             email: string;
             /** Empresa */
             empresa?: string | null;
+            /** Entity Public Id */
+            entity_public_id?: string | null;
+            /** Entity Type */
+            entity_type?: string | null;
+            /** Landing Url */
+            landing_url?: string | null;
             /** Mensagem */
             mensagem?: string | null;
             /** Modalidade Interesse */
@@ -13235,6 +13307,10 @@ export interface components {
             origin_url?: string | null;
             /** Referer Path */
             referer_path?: string | null;
+            /** Referrer */
+            referrer?: string | null;
+            /** Route Family */
+            route_family?: string | null;
             /** Sector */
             sector?: string | null;
             /** Source */
@@ -13245,6 +13321,8 @@ export interface components {
             uf?: string | null;
             /** Utm Campaign */
             utm_campaign?: string | null;
+            /** Utm Medium */
+            utm_medium?: string | null;
             /** Utm Source */
             utm_source?: string | null;
         };
@@ -13253,8 +13331,12 @@ export interface components {
          * @description Body for POST /v1/lead-capture (201).
          */
         LeadCaptureResponse: {
+            /** Handoff State */
+            handoff_state?: string | null;
             /** Id */
             id?: string | null;
+            /** Receipt Id */
+            receipt_id?: string | null;
             /** Success */
             success: boolean;
         };
@@ -14785,6 +14867,43 @@ export interface components {
             next_question?: string | null;
             /** Total Fields */
             total_fields: number;
+        };
+        /** PublicEntity */
+        PublicEntity: {
+            /** As Of */
+            as_of?: string | null;
+            /** Canonical Id */
+            canonical_id: string;
+            /**
+             * Completeness
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            completeness: "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "BLOCKED";
+            /** Display Name */
+            display_name?: string | null;
+            /** Family */
+            family: string;
+            /**
+             * Freshness
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            freshness: "FRESH" | "STALE" | "FAILED" | "BLOCKED" | "UNKNOWN";
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            };
+            /** Reason Codes */
+            reason_codes?: string[];
+            /** Source Updated At */
+            source_updated_at?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** PublicFeatureFlagItem */
         PublicFeatureFlagItem: {
@@ -16872,6 +16991,28 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** SnapshotMeta */
+        SnapshotMeta: {
+            /** As Of */
+            as_of?: string | null;
+            /**
+             * Completeness
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            completeness: "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "BLOCKED";
+            /** Content Hash */
+            content_hash?: string | null;
+            /**
+             * Contract Version
+             * @default v1.0.0
+             */
+            contract_version: string;
+            /** Snapshot Id */
+            snapshot_id?: string | null;
+            /** State */
+            state?: string | null;
+        };
         /**
          * SourceHealthEntry
          * @description Per-source health state.
@@ -17100,6 +17241,37 @@ export interface components {
             total_contratos: number;
             /** Valor Total */
             valor_total: number;
+        };
+        /** SurfaceHealth */
+        SurfaceHealth: {
+            /** As Of */
+            as_of?: string | null;
+            /**
+             * Completeness
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            completeness: "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "BLOCKED";
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Last Error */
+            last_error?: string | null;
+            /**
+             * Last Refresh Status
+             * @default NEVER
+             */
+            last_refresh_status: string;
+            /** Query P95 Ms */
+            query_p95_ms?: number | null;
+            /** Refreshed At */
+            refreshed_at?: string | null;
+            /** Snapshot Id */
+            snapshot_id?: string | null;
+            /** View Name */
+            view_name: string;
         };
         /**
          * SurveyAggregateResponse
@@ -27189,6 +27361,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TopSuppliersResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_read_health_v1_public_read_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    public_read_family_v1_public_read__family___public_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family: string;
+                public_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyRead"];
                 };
             };
             /** @description Validation Error */

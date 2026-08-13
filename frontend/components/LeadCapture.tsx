@@ -68,7 +68,7 @@ export function LeadCapture({ source, heading, description, setor, uf, buttonTex
           disabled={status === 'loading'}
           className="px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap"
         >
-          {status === 'loading' ? 'Enviando...' : buttonText || 'Receber Grátis'}
+          {status === 'loading' ? 'Enviando...' : buttonText || 'Receber o recorte'}
         </button>
       </form>
       {status === 'error' && (

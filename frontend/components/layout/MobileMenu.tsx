@@ -16,17 +16,16 @@ type NavLink =
 
 // REPO-010: Soluções dropdown items (Phase 0 — all except SaaS point to /consultoria-b2g)
 const SOLUCOES_ITEMS = [
-  { label: 'SaaS', href: '/buscar' },
-  { label: 'Radar B2G', href: '/consultoria-b2g?modalidade=radar' },
-  { label: 'Report B2G', href: '/consultoria-b2g?modalidade=report' },
-  { label: 'Intel Reports', href: '/consultoria-b2g?modalidade=intel' },
+  { label: 'Licitações', href: '/licitacoes' },
+  { label: 'Contratos', href: '/contratos' },
+  { label: 'Empresas', href: '/cnpj' },
+  { label: 'Consultoria CONFENGE', href: '/consultoria-b2g' },
 ] as const;
 
-// REPO-010: Removed Como Funciona (scroll-to, low value), Casos (no page), Suporte (consolidated into Perguntas)
 const NAV_LINKS: NavLink[] = [
   { href: '/', label: 'Home' },
   { href: '/consultoria-b2g', label: 'Consultoria' },
-  { href: '/planos', label: 'Planos' },
+  { href: '/licitacoes', label: 'Licitações' },
   { href: '/blog', label: 'Blog' },
   { href: '/sobre', label: 'Sobre' },
   { href: '/perguntas', label: 'Perguntas' },
@@ -304,13 +303,13 @@ export default function MobileMenu({ isOpen, onClose, user, scrollToSection }: M
                 Entrar
               </Link>
               <Link
-                href="/signup?source=header-cta-mobile"
+                href="/consultoria-b2g?cta=cta.home.diagnostico"
                 onClick={onClose}
                 className="block w-full min-h-[44px] px-4 py-3 text-center text-base font-semibold
                            bg-[var(--brand-navy)] hover:bg-[var(--brand-blue-hover)] text-white rounded-lg
                            transition-all focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
               >
-                Comece Gratis
+                Diagnóstico CONFENGE
               </Link>
             </div>
           )}

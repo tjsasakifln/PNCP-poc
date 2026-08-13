@@ -63,6 +63,7 @@ class TestAllSourcesAccepted:
             resp = _post(client, {"email": "test@example.com", "source": source})
         assert resp.status_code == 201, f"Failed for source={source}: {resp.text}"
         assert resp.json()["success"] is True
+        assert resp.json().get("receipt_id")
 
 
 # ---------------------------------------------------------------------------

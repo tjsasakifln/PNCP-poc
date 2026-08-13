@@ -155,8 +155,7 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Soluções</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                {/* SaaS: /planos preferred over /buscar (auth-gated) per footer public-access policy */}
-                <FooterLink href="/planos">SaaS</FooterLink>
+                <FooterLink href="/consultoria-b2g">Consultoria CONFENGE</FooterLink>
               </li>
               <li>
                 <FooterLink href="/consultoria-b2g?modalidade=radar">Radar B2G</FooterLink>
@@ -174,15 +173,15 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Planos */}
+          {/* Conversão consultiva */}
           <div>
-            <h3 className="font-bold text-lg mb-4 text-ink">Planos</h3>
+            <h3 className="font-bold text-lg mb-4 text-ink">CONFENGE</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <FooterLink href="/planos">Planos e Preços</FooterLink>
+                <FooterLink href="/consultoria-b2g">Diagnóstico CONFENGE</FooterLink>
               </li>
               <li>
-                <FooterLink href="/signup?source=footer">Teste Gratuito</FooterLink>
+                <FooterLink href="/sobre">SmartLic e a CONFENGE</FooterLink>
               </li>
             </ul>
           </div>

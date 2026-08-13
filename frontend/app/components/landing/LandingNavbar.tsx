@@ -32,6 +32,9 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
               className="text-xl font-semibold text-brand-navy hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded-button px-1 tracking-tight"
             >
               SmartLic<span className="text-brand-blue font-normal">.tech</span>
+              <span className="ml-2 hidden text-[11px] font-normal uppercase tracking-wide text-ink-secondary lg:inline">
+                Inteligência pública da CONFENGE
+              </span>
             </Link>
           </div>
 
@@ -47,10 +50,10 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
               Consultoria
             </Link>
             <Link
-              href="/planos"
+              href="/licitacoes"
               className="text-sm text-ink-secondary/80 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
             >
-              Planos
+              Licitações
             </Link>
             <Link
               href="/blog"

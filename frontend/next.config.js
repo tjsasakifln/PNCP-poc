@@ -64,23 +64,23 @@ const nextConfig = {
 
   // SEO: Redirect acentuado → slug canônico (ISSUE-SEO-004)
   // SEO: Consolidar pricing pages — /pricing → /planos (ISSUE-SEO-005)
-  // Fix #870: Redirecionar /founding → /fundadores (301 permanente)
+  // #2111/#2113: founding/planos/signup saem do funil público sem chain.
   async redirects() {
     return [
       ...buildLegacyLicitacoesRedirects(),
       {
         source: '/founding/obrigado',
-        destination: '/fundadores/obrigado',
+        destination: '/sobre',
         permanent: true,
       },
       {
         source: '/founding',
-        destination: '/fundadores',
+        destination: '/sobre',
         permanent: true,
       },
       {
         source: '/founding/:path*',
-        destination: '/fundadores/:path*',
+        destination: '/sobre',
         permanent: true,
       },
       {
@@ -105,7 +105,37 @@ const nextConfig = {
       },
       {
         source: '/pricing',
-        destination: '/planos',
+        destination: '/consultoria-b2g',
+        permanent: true,
+      },
+      {
+        source: '/planos',
+        destination: '/consultoria-b2g',
+        permanent: true,
+      },
+      {
+        source: '/planos/:path*',
+        destination: '/consultoria-b2g',
+        permanent: true,
+      },
+      {
+        source: '/signup',
+        destination: '/consultoria-b2g',
+        permanent: true,
+      },
+      {
+        source: '/signup/:path*',
+        destination: '/consultoria-b2g',
+        permanent: true,
+      },
+      {
+        source: '/fundadores',
+        destination: '/sobre',
+        permanent: true,
+      },
+      {
+        source: '/fundadores/:path*',
+        destination: '/sobre',
         permanent: true,
       },
     ];

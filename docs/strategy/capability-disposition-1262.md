@@ -17,7 +17,10 @@ Ativos que encurtam o tempo até demanda qualificada para a CONFENGE, ou que já
 | Sitemaps, canonical, robots, ADR-SEO-001 | `.github/workflows/audit-seo-notfound.yml`, `docs/adr/ADR-SEO-001-*.md` | Preservar indexação (#2113) |
 | Ferramentas públicas com dado (calculadora, comparador, glossário, perguntas, blog) | rotas públicas Next.js | Utilidade antes do CTA |
 | Classificação setorial e viabilidade como inteligência pública | `backend/filter/`, `backend/viability.py`, `backend/sectors_data.yaml` | Diferencial verificável, sem paywall |
-| Captura de lead / CTA consultivo | `LeadCapture`, `/consultoria-b2g` | Ponte para CONFENGE (#2114, #2117) |
+| Captura de lead / CTA consultivo | `LeadCapture`, `/consultoria-b2g`, `backend/leads/` | Ponte para CONFENGE (#2114, #2117) |
+| Consumer `public_read_v1` | `backend/public_read/` | Fronteira server-side; cutover por flag (#2108) |
+| Isolation budgets | `backend/public_read/isolation.py` | SmartLic degrada; extra-cli não (#2116) |
+| Eligibility pSEO | `backend/pseo/eligibility.py` | Não indexar combinação vazia (#2118) |
 | Health público e observabilidade da superfície | `/health/*`, Sentry | Confiabilidade do inbound |
 
 ## KEEP + ADAPT

@@ -64,6 +64,9 @@ ALL_SOURCES = frozenset({
     "lead_magnet_1", "lead_magnet_2", "lead_magnet_3",
     "newsletter", "exit_intent", "seo_banner",
     "partial_preview",
+    "family_tender", "family_contract", "family_company",
+    "family_organ", "family_municipality", "family_observatory",
+    "family_tool", "home",
 })
 
 NEW_SOURCES = frozenset({
@@ -107,6 +110,15 @@ class LeadCaptureRequest(BaseModel):
     utm_source: Optional[str] = None
     utm_campaign: Optional[str] = None
     referer_path: Optional[str] = None
+    utm_medium: Optional[str] = None
+    cta_id: Optional[str] = None
+    route_family: Optional[str] = None
+    entity_type: Optional[str] = None
+    entity_public_id: Optional[str] = None
+    landing_url: Optional[str] = None
+    referrer: Optional[str] = None
+    correlation_id: Optional[str] = None
+    consent_version: Optional[str] = None
 
     model_config = ConfigDict(extra="ignore")
 
@@ -132,6 +144,8 @@ class LeadCaptureResponse(BaseModel):
 
     success: bool
     id: Optional[str] = None
+    receipt_id: Optional[str] = None
+    handoff_state: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -277,4 +291,51 @@ async def capture_lead(
     except Exception:
         logger.warning("lead_magnet: failed to enqueue delivery job", exc_info=True)
 
-    return LeadCaptureResponse(success=True, id=inserted_id)
+    receipt_id: str | None = None
+    handoff_state: str | None = None
+    try:
+        from leads.outbox import accept_lead, receipt_for
+
+        record = accept_lead(
+            {
+                "email": req.email,
+                "nome": req.nome,
+                "empresa": req.empresa,
+                "telefone": req.telefone,
+                "mensagem": req.mensagem,
+                "source": req.source,
+                "cta_id": req.cta_id,
+                "route_family": req.route_family,
+                "entity_type": req.entity_type,
+                "entity_public_id": req.entity_public_id,
+                "landing_url": req.landing_url or req.origin_url,
+                "referrer": req.referrer or req.referer_path,
+                "utm_source": req.utm_source,
+                "utm_medium": req.utm_medium,
+                "utm_campaign": req.utm_campaign,
+                "correlation_id": req.correlation_id,
+                "consent_version": req.consent_version,
+            }
+        )
+        receipt = receipt_for(record)
+        receipt_id = receipt["receipt_id"]
+        handoff_state = receipt["handoff_state"]
+        try:
+            from metrics import INBOUND_LEAD_ACCEPTED
+
+            INBOUND_LEAD_ACCEPTED.labels(
+                family=req.route_family or "unknown",
+                cta_id=req.cta_id or "none",
+                state=handoff_state or "accepted",
+            ).inc()
+        except Exception:
+            pass
+    except Exception:
+        logger.warning("lead_outbox_failed", exc_info=True)
+
+    return LeadCaptureResponse(
+        success=True,
+        id=inserted_id,
+        receipt_id=receipt_id,
+        handoff_state=handoff_state,
+    )

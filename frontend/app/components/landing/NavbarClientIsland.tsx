@@ -72,10 +72,10 @@ export function NavScrollButton({ sectionId, label }: { sectionId: string; label
  * Phase 0 — all items except SaaS point to /consultoria-b2g with ?modalidade= query param.
  */
 const SOLUCOES_ITEMS = [
-  { label: 'SaaS', href: '/buscar', description: 'Produto principal de busca' },
-  { label: 'Radar B2G', href: '/consultoria-b2g?modalidade=radar', description: 'Monitoramento de editais' },
-  { label: 'Report B2G', href: '/consultoria-b2g?modalidade=report', description: 'Relatórios de mercado' },
-  { label: 'Intel Reports', href: '/consultoria-b2g?modalidade=intel', description: 'Inteligência competitiva' },
+  { label: 'Licitações', href: '/licitacoes', description: 'Decidir se vale disputar' },
+  { label: 'Contratos', href: '/contratos', description: 'Risco e oportunidade homologada' },
+  { label: 'Empresas', href: '/cnpj', description: 'Carteira pública por CNPJ' },
+  { label: 'Consultoria CONFENGE', href: '/consultoria-b2g', description: 'Diagnóstico sem criar conta' },
 ] as const;
 
 export function NavSolucoesDropdown() {
@@ -184,10 +184,10 @@ export function NavbarAuthCTA() {
         Entrar
       </Link>
       <Link
-        href="/signup?source=header-cta"
+        href="/consultoria-b2g?cta=cta.home.diagnostico"
         className="bg-brand-navy hover:bg-brand-blue-hover text-white text-sm font-medium px-4 py-1.5 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
       >
-        Comece Gratis
+        Diagnóstico CONFENGE
       </Link>
     </>
   );

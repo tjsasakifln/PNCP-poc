@@ -190,13 +190,13 @@ export default async function EstatisticasPage() {
           Analise editais do seu setor em tempo real
         </h2>
         <p className="text-indigo-700 text-sm mb-4">
-          Filtre oportunidades por setor, UF e valor. 14 dias grátis, sem cartão de crédito.
+          Filtre oportunidades por setor, UF e valor. Sem login para o recorte público.
         </p>
         <a
-          href="/signup"
+          href="/consultoria-b2g?cta=cta.observatory.leitura"
           className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg px-6 py-2.5 text-sm transition-colors"
         >
-          Começar análise gratuita
+          Pedir leitura à CONFENGE
         </a>
       </section>
 

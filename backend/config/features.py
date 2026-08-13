@@ -292,6 +292,8 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     # Default false — checkout, trial, upgrade and new plans are 410.
     # Set true only to temporarily re-enable the legado path.
     "SAAS_COMMERCE_ENABLED": ("SAAS_COMMERCE_ENABLED", "false"),
+    # #2108 / #2116: extra-cli isolation. Mode is PUBLIC_READ_V1_MODE env (string).
+    "PUBLIC_READ_KILL_SWITCH": ("PUBLIC_READ_KILL_SWITCH", "false"),
     # --- A/B Testing ---
     "ab_experiments_enabled": ("AB_EXPERIMENTS_ENABLED", "false"),
     # --- Feature Gates (unreleased features) ---

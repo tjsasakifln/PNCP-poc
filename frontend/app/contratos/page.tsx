@@ -5,6 +5,7 @@ import { ALL_UFS, UF_NAMES } from '@/lib/programmatic';
 import { buildCanonical } from '@/lib/seo';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
+import { PublicFamilyShell } from '@/app/components/intelligence/PublicFamilyShell';
 
 export const metadata: Metadata = {
   title: 'Contratos Públicos por Setor e Estado — SmartLic',
@@ -121,6 +122,7 @@ export default function ContratosHubPage() {
             </div>
           </div>
         </div>
+        <PublicFamilyShell family="contract" />
       </main>
       <Footer />
     </>

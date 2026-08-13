@@ -8003,6 +8003,95 @@
         "title": "FPKeywordSuggestion",
         "type": "object"
       },
+      "FamilyRead": {
+        "properties": {
+          "contract_version": {
+            "default": "v1.0.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "divergence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Divergence",
+            "type": "array"
+          },
+          "entity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicEntity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "family": {
+            "title": "Family",
+            "type": "string"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SurfaceHealth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicEntity"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "row_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Count"
+          },
+          "served_from": {
+            "enum": [
+              "public_read_v1",
+              "legacy",
+              "last_known_good",
+              "blocked"
+            ],
+            "title": "Served From",
+            "type": "string"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SnapshotMeta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "family",
+          "mode",
+          "served_from"
+        ],
+        "title": "FamilyRead",
+        "type": "object"
+      },
       "FaqItem": {
         "properties": {
           "answer": {
@@ -10864,6 +10953,39 @@
             ],
             "title": "Cnpj"
           },
+          "consent_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Version"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "cta_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cta Id"
+          },
           "email": {
             "title": "Email",
             "type": "string"
@@ -10878,6 +11000,39 @@
               }
             ],
             "title": "Empresa"
+          },
+          "entity_public_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Public Id"
+          },
+          "entity_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Type"
+          },
+          "landing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landing Url"
           },
           "mensagem": {
             "anyOf": [
@@ -10941,6 +11096,28 @@
             ],
             "title": "Referer Path"
           },
+          "referrer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referrer"
+          },
+          "route_family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route Family"
+          },
           "sector": {
             "anyOf": [
               {
@@ -10989,6 +11166,17 @@
             ],
             "title": "Utm Campaign"
           },
+          "utm_medium": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utm Medium"
+          },
           "utm_source": {
             "anyOf": [
               {
@@ -11011,6 +11199,17 @@
       "LeadCaptureResponse": {
         "description": "Body for POST /v1/lead-capture (201).",
         "properties": {
+          "handoff_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handoff State"
+          },
           "id": {
             "anyOf": [
               {
@@ -11021,6 +11220,17 @@
               }
             ],
             "title": "Id"
+          },
+          "receipt_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Id"
           },
           "success": {
             "title": "Success",
@@ -14648,6 +14858,100 @@
           "filled_fields"
         ],
         "title": "ProfileCompletenessResponse",
+        "type": "object"
+      },
+      "PublicEntity": {
+        "additionalProperties": true,
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "canonical_id": {
+            "title": "Canonical Id",
+            "type": "string"
+          },
+          "completeness": {
+            "default": "UNKNOWN",
+            "enum": [
+              "COMPLETE",
+              "INCOMPLETE",
+              "UNKNOWN",
+              "BLOCKED"
+            ],
+            "title": "Completeness",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "family": {
+            "title": "Family",
+            "type": "string"
+          },
+          "freshness": {
+            "default": "UNKNOWN",
+            "enum": [
+              "FRESH",
+              "STALE",
+              "FAILED",
+              "BLOCKED",
+              "UNKNOWN"
+            ],
+            "title": "Freshness",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "title": "Provenance",
+            "type": "object"
+          },
+          "reason_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reason Codes",
+            "type": "array"
+          },
+          "source_updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Updated At"
+          }
+        },
+        "required": [
+          "canonical_id",
+          "family"
+        ],
+        "title": "PublicEntity",
         "type": "object"
       },
       "PublicFeatureFlagItem": {
@@ -18707,6 +19011,73 @@
         "title": "SloDashboardResponse",
         "type": "object"
       },
+      "SnapshotMeta": {
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "completeness": {
+            "default": "UNKNOWN",
+            "enum": [
+              "COMPLETE",
+              "INCOMPLETE",
+              "UNKNOWN",
+              "BLOCKED"
+            ],
+            "title": "Completeness",
+            "type": "string"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          },
+          "contract_version": {
+            "default": "v1.0.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "title": "SnapshotMeta",
+        "type": "object"
+      },
       "SourceHealthEntry": {
         "additionalProperties": true,
         "description": "Per-source health state.",
@@ -19205,6 +19576,97 @@
           "valor_total"
         ],
         "title": "SupplierEntry",
+        "type": "object"
+      },
+      "SurfaceHealth": {
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "completeness": {
+            "default": "UNKNOWN",
+            "enum": [
+              "COMPLETE",
+              "INCOMPLETE",
+              "UNKNOWN",
+              "BLOCKED"
+            ],
+            "title": "Completeness",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_refresh_status": {
+            "default": "NEVER",
+            "title": "Last Refresh Status",
+            "type": "string"
+          },
+          "query_p95_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query P95 Ms"
+          },
+          "refreshed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refreshed At"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "view_name": {
+            "title": "View Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "view_name"
+        ],
+        "title": "SurfaceHealth",
         "type": "object"
       },
       "SurveyAggregateResponse": {
@@ -36083,6 +36545,80 @@
         "summary": "Top 5 fornecedores por volume de contratos no setor (p\u00fablico)",
         "tags": [
           "pseo-data"
+        ]
+      }
+    },
+    "/v1/public-read/health": {
+      "get": {
+        "operationId": "public_read_health_v1_public_read_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Public Read Health V1 Public Read Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Public Read Health",
+        "tags": [
+          "public-read"
+        ]
+      }
+    },
+    "/v1/public-read/{family}/{public_id}": {
+      "get": {
+        "operationId": "public_read_family_v1_public_read__family___public_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "family",
+            "required": true,
+            "schema": {
+              "title": "Family",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "public_id",
+            "required": true,
+            "schema": {
+              "title": "Public Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Read Family",
+        "tags": [
+          "public-read"
         ]
       }
     },

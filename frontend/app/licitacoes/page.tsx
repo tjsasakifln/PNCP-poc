@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { PublicFamilyShell } from "@/app/components/intelligence/PublicFamilyShell";
 import { SECTORS, fetchSectorStats, formatBRL } from "@/lib/sectors";
 
 /**
@@ -9,14 +10,14 @@ import { SECTORS, fetchSectorStats, formatBRL } from "@/lib/sectors";
 export const metadata: Metadata = {
   title: "Licitações Públicas 2026 — Editais Abertos por Setor | SmartLic",
   description:
-    "Encontre licitações públicas abertas em 2026: TI, Saúde, Engenharia, Alimentos e mais. Análise com IA e score de viabilidade. Teste grátis 14 dias.",
+    "Encontre licitações públicas abertas em 2026: TI, Saúde, Engenharia, Alimentos e mais. Dado verificável, fonte e freshness à vista.",
   alternates: {
     canonical: "https://smartlic.tech/licitacoes",
   },
   openGraph: {
     title: "Licitações Públicas 2026 — Editais por Setor | SmartLic",
     description:
-      "Encontre licitações públicas abertas em 2026. Análise com IA, score de viabilidade. 14 dias grátis.",
+      "Encontre licitações públicas abertas em 2026. Dado público, fonte e recorte por setor.",
     url: "https://smartlic.tech/licitacoes",
     type: "website",
     locale: "pt_BR",
@@ -129,6 +130,8 @@ export default async function LicitacoesIndexPage() {
           </Link>
         </div>
       </section>
+
+      <PublicFamilyShell family="tender" />
 
       {/* JSON-LD */}
       <script

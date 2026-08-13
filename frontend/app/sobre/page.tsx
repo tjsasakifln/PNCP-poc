@@ -30,7 +30,7 @@ const organizationSchema = {
   '@type': 'Organization',
   name: 'CONFENGE Avaliações e Inteligência Artificial LTDA',
   url: 'https://smartlic.tech',
-  description: 'Plataforma de inteligência em licitações públicas que transforma decisões de intuitivas para objetivas.',
+  description: 'Braço público de inteligência e inbound da CONFENGE. Não é um SaaS de assinatura.',
   foundingDate: '2024',
   contactPoint: {
     '@type': 'ContactPoint',

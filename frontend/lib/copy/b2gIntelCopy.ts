@@ -96,22 +96,22 @@ export interface MarketSocialCopy {
 // ============================================================================
 
 export const b2gHero: B2GHeroCopy = {
-  headline: "SmartLic transforma dados públicos em vantagem competitiva.",
+  headline: "Inteligência pública de licitações da CONFENGE.",
 
   subheadlines: [
-    "Pare de disputar editais errados.",
-    "Seu concorrente já sabe quais órgãos vão comprar antes de você.",
-    "Enquanto outros esperam o edital sair, você antecipa o movimento do governo.",
+    "Consulte o fato. Veja a fonte. Decida se pede diagnóstico.",
+    "Empresa, contrato, licitação, órgão e município no mesmo grafo.",
+    "O SmartLic publica o dado. A CONFENGE opera a decisão.",
   ],
 
   cta: {
-    primary: "Ver em ação",
-    primaryHref: "/signup?source=hero-b2g",
-    secondary: "Falar com especialista",
+    primary: "Explorar dados públicos",
+    primaryHref: "/licitacoes",
+    secondary: "Pedir diagnóstico CONFENGE",
     secondaryHref: "/consultoria-b2g",
   },
 
-  trustLine: "Acesso completo. Sem cartão. Cancele em 1 clique.",
+  trustLine: "Sem login para consultar. Sem trial. Sem plano.",
 };
 
 // ============================================================================

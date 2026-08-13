@@ -58,17 +58,17 @@ describe('MobileMenu', () => {
   });
 
   // Navigation links
-  it('includes Home, Planos, Consultoria links', () => {
+  it('includes Home, Licitações, Consultoria links', () => {
     render(<MobileMenu {...defaultProps} />);
     expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('Planos')).toBeInTheDocument();
+    expect(screen.getByText('Licitações')).toBeInTheDocument();
     expect(screen.getByText('Consultoria')).toBeInTheDocument();
   });
 
-  it('shows Entrar and Comece Gratis for unauthenticated users', () => {
+  it('shows Entrar and Diagnóstico CONFENGE for unauthenticated users', () => {
     render(<MobileMenu {...defaultProps} user={null} />);
     expect(screen.getByText('Entrar')).toBeInTheDocument();
-    expect(screen.getByText('Comece Gratis')).toBeInTheDocument();
+    expect(screen.getByText('Diagnóstico CONFENGE')).toBeInTheDocument();
   });
 
   it('shows Ir para Busca for authenticated users', () => {
