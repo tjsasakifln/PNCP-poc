@@ -47,7 +47,6 @@ router = APIRouter(
     tags=["checkout"],
     dependencies=[
         Depends(checkout_rate_limit),
-        Depends(require_saas_commerce),
     ],
 )
 
@@ -195,6 +194,7 @@ async def _ensure_stripe_price(product: dict) -> str:
 async def create_one_time_checkout(
     payload: CheckoutRequest,
     user: dict = Depends(require_auth),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Create a Stripe Checkout Session for a one-time digital product purchase.
 
@@ -310,6 +310,7 @@ async def create_one_time_checkout(
 async def create_api_subscription_checkout(
     payload: ApiSubscriptionCheckoutRequest,
     user: dict = Depends(require_auth),
+    _frozen=Depends(require_saas_commerce),
 ):
     """Create a Stripe Checkout Session for an API tier subscription.
 

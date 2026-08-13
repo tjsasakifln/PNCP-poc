@@ -90,16 +90,43 @@ def test_plan_checkout_returns_410():
     assert res.status_code == 410
 
 
-def test_signup_shaped_route_returns_410():
-    """Signup/trial uses the same dependency; isolate it from rate-limit factories."""
+def test_signup_route_returns_410():
+    from routes.auth_signup import router
+
     app = FastAPI()
+    app.include_router(router)
+    res = TestClient(app).post(
+        "/auth/signup",
+        json={
+            "email": "freeze@example.com",
+            "password": "ValidPass123!",
+        },
+    )
+    assert res.status_code == 410
+    assert res.json()["detail"]["error_code"] == SAAS_COMMERCE_FROZEN_CODE
 
-    @app.post("/auth/signup")
-    def _signup(_frozen=None):
-        require_saas_commerce()
-        return {"ok": True}
 
-    res = TestClient(app).post("/auth/signup")
+def test_checkout_session_get_is_not_410():
+    """Thank-you poll must stay readable for in-flight Stripe redirects."""
+    client = _checkout_client()
+    res = client.get("/api/checkout/session/cs_test_inflight")
+    assert res.status_code != 410
+
+
+def test_admin_command_checkout_returns_410():
+    from admin import require_admin_ops
+    from routes.admin_command import router
+
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[require_admin_ops] = lambda: {
+        "id": "admin-freeze",
+        "email": "admin@example.com",
+    }
+    res = TestClient(app).post(
+        "/v1/admin/subscriptions/command",
+        json={"email": "enterprise@example.com"},
+    )
     assert res.status_code == 410
     assert res.json()["detail"]["error_code"] == SAAS_COMMERCE_FROZEN_CODE
 

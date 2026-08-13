@@ -15,7 +15,7 @@ SAAS_COMMERCE_NEXT = "/consultoria-b2g"
 FROZEN_DETAIL: dict[str, str] = {
     "error_code": SAAS_COMMERCE_FROZEN_CODE,
     "message": (
-        "Novas assinaturas, trials e checkouts estão encerrados. "
+        "Novas assinaturas, trials, checkouts e upgrades estão encerrados. "
         "O SmartLic é o braço público de inbound da CONFENGE."
     ),
     "next": SAAS_COMMERCE_NEXT,

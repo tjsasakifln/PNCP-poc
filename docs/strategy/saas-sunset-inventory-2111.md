@@ -24,6 +24,8 @@ Impossível iniciar nova assinatura, trial, checkout, upgrade comercial ou plano
 | `POST /api/subscriptions/update-billing-period` | SUNSET NOW → 410 | 1 |
 | `POST /trial/extend` | SUNSET NOW → 410 | 1 |
 | `POST /auth/signup` (trial/card) | SUNSET NOW → 410 | 1 |
+| `POST /v1/admin/subscriptions/command` | SUNSET NOW → 410 | 1 |
+| `GET /api/checkout/session/{id}` | KEEP + ADAPT | 1 (thank-you / `/obrigado`) |
 
 ## Inventário por família
 
