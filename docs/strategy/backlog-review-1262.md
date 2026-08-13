@@ -37,7 +37,7 @@ Issues fechadas de billing, founders, viral K-factor, microtransações e cache 
 
 ## Labels e milestones
 
-- `roadmap:now` = somente caminho crítico (as 10 issues P0 acima, incluindo #1262).
+- `roadmap:now` = somente caminho crítico (as 9 issues P0 SmartLic acima, incluindo #1262; extra-cli#354 é dependência externa).
 - `roadmap:next` = #2109, #2118.
 - `roadmap:later` = #2107.
 - Label `Paused-Revenue-Dependent` (MRR) não se aplica a nenhuma issue aberta; descrição atualizada para não implicar meta de assinatura.

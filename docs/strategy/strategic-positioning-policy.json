@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "adr": "ADR-STRAT-001",
+  "issue": "#1262",
+  "description": "Policy for scripts/check_strategic_positioning.py. Python only loads and evaluates.",
+  "workflow_paths": [
+    "README.md",
+    "PRD.md",
+    "ROADMAP.md",
+    "CLAUDE.md",
+    "docs/DEPLOYMENT.md",
+    "docs/architecture/system-architecture.md",
+    "frontend/public/llms.txt",
+    "docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md",
+    "docs/strategy/**",
+    "scripts/check_strategic_positioning.py",
+    ".github/workflows/strategic-positioning-check.yml"
+  ],
+  "files": {
+    "README.md": {
+      "required": ["extra-cli", "CONFENGE", "ADR-STRAT-001", "public_read_v1", "#1262"],
+      "forbidden": [
+        "Paid trials",
+        "Stripe live billing",
+        "SaaS, 14-day free trial",
+        "Business Model\\s*\\n\\s*SaaS",
+        "Production SaaS",
+        "b2b-saas",
+        "b2g-saas"
+      ]
+    },
+    "frontend/public/llms.txt": {
+      "required": ["CONFENGE", "extra-cli", "Não é um produto de assinatura"],
+      "forbidden": [
+        "plataforma SaaS",
+        "/planos",
+        "R\\$297/mês",
+        "R\\$397/mês"
+      ]
+    },
+    "docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md": {
+      "required": ["Status", "Accepted", "extra-cli", "Warmbly", "public_read_v1"]
+    },
+    "docs/strategy/critical-path.md": {
+      "required": ["#1262", "#2111", "#2113", "extra-cli#354", "#2108", "#2112", "Warmbly"]
+    },
+    "docs/strategy/runtime-destination.md": {
+      "required": ["FastAPI", "Redis", "ARQ", "Supabase", "Railway", "Warmbly"]
+    },
+    "docs/strategy/capability-disposition-1262.md": {
+      "required": ["KEEP + PRIORITIZE", "KEEP + ADAPT", "SUNSET", "REPLACE", "DEFER"]
+    }
+  },
+  "header_rules": {
+    "PRD.md": {
+      "lines": 40,
+      "must_cite": ["ADR-STRAT-001"],
+      "positioning_any": [
+        "não é um SaaS independente",
+        "nao e um SaaS independente",
+        "não é um produto de assinatura",
+        "inbound da CONFENGE"
+      ],
+      "forbidden": [
+        "(?<!não tem )MRR(?!.{0,40}como objetivo)",
+        "objetivo do produto é.{0,40}assinatura",
+        "(?<!não é um )SaaS independente"
+      ]
+    },
+    "ROADMAP.md": {
+      "lines": 25,
+      "must_cite": ["ADR-STRAT-001"],
+      "must_cite_extended": {"#1262": 80},
+      "forbidden": [
+        "K-factor B2B",
+        "30% signups via viral",
+        "Wave 5 Monetization"
+      ]
+    }
+  },
+  "extra_forbidden_scan": {
+    "files": [
+      "CLAUDE.md",
+      "docs/DEPLOYMENT.md",
+      "docs/architecture/system-architecture.md"
+    ],
+    "patterns": [
+      "Paid trials",
+      "Stripe live billing",
+      "plataforma SaaS",
+      "Production SaaS"
+    ]
+  }
+}

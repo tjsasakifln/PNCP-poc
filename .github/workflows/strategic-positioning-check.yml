@@ -2,6 +2,7 @@ name: "Strategic positioning (ADR-STRAT-001)"
 
 # Impede que docs canônicos voltem a definir SmartLic como SaaS independente.
 # Issue: #1262
+# Policy: docs/strategy/strategic-positioning-policy.json
 
 on:
   pull_request:
@@ -9,10 +10,14 @@ on:
       - 'README.md'
       - 'PRD.md'
       - 'ROADMAP.md'
+      - 'CLAUDE.md'
+      - 'docs/DEPLOYMENT.md'
+      - 'docs/architecture/system-architecture.md'
       - 'frontend/public/llms.txt'
       - 'docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md'
       - 'docs/strategy/**'
       - 'scripts/check_strategic_positioning.py'
+      - 'scripts/tests/test_check_strategic_positioning.py'
       - '.github/workflows/strategic-positioning-check.yml'
   push:
     branches: [main]
@@ -20,10 +25,15 @@ on:
       - 'README.md'
       - 'PRD.md'
       - 'ROADMAP.md'
+      - 'CLAUDE.md'
+      - 'docs/DEPLOYMENT.md'
+      - 'docs/architecture/system-architecture.md'
       - 'frontend/public/llms.txt'
       - 'docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md'
       - 'docs/strategy/**'
       - 'scripts/check_strategic_positioning.py'
+      - 'scripts/tests/test_check_strategic_positioning.py'
+      - '.github/workflows/strategic-positioning-check.yml'
 
 permissions:
   contents: read
@@ -38,6 +48,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
       - name: Run positioning guard
         run: python3 scripts/check_strategic_positioning.py
+      - name: Regression tests for checker
+        run: python3 scripts/tests/test_check_strategic_positioning.py

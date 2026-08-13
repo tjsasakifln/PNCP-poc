@@ -4,7 +4,7 @@
 > Contato: tiago.sasaki@confenge.com.br | WhatsApp: +55 (48) 9 8834-4559
 
 > **SUPERSEDIDO NO POSICIONAMENTO — [ADR-STRAT-001](docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md) · [#1262](https://github.com/tjsasakifln/SmartLic/issues/1262) · 2026-08-13.**
-> O SmartLic **não é um SaaS independente** e **não tem MRR/assinatura como objetivo**. É o inbound plane público da CONFENGE, alimentado pelo extra-cli (`public_read_v1`). Este PRD permanece como especificação técnica do sistema legado (busca, classificação, SEO, rotas). Billing, trial, Stripe, quotas e DataLake próprio **não** são direção de produto. Fonte de verdade estratégica: ADR-STRAT-001. Caminho crítico: `docs/strategy/critical-path.md`.
+> O SmartLic **não é um SaaS independente** e **não tem MRR/assinatura como objetivo**. É o inbound plane público da CONFENGE. O contrato `public_read_v1` é o **alvo** de leitura após [extra-cli#354](https://github.com/tjsasakifln/extra-cli/issues/354) e o consumer [#2108](https://github.com/tjsasakifln/SmartLic/issues/2108) — ainda não é o producer-consumer vigente. Este PRD permanece como especificação técnica do sistema legado (busca, classificação, SEO, rotas). Billing, trial, Stripe, quotas e DataLake próprio **não** são direção de produto. Fonte de verdade estratégica: ADR-STRAT-001. Caminho crítico: `docs/strategy/critical-path.md`.
 
 **Versão:** 0.5.3 (posicionamento atualizado 2026-08-13)
 **Data:** Abril 2026 / adendo estratégico agosto 2026
@@ -27,7 +27,7 @@
 
 ### 0.1 O que é o SmartLic
 
-Braço público de inteligência e inbound da CONFENGE. Publica páginas e ferramentas indexáveis sobre licitações, contratos, órgãos, municípios e empresas, com base em fatos públicos canônicos do extra-cli. Não é produto de assinatura.
+Braço público de inteligência e inbound da CONFENGE. Publica páginas e ferramentas indexáveis sobre licitações, contratos, órgãos, municípios e empresas. A fonte canônica **alvo** é o extra-cli (`public_read_v1`) após extra-cli#354 e #2108; até o cutover o DataLake legado deste repositório ainda serve a apresentação. Não é produto de assinatura.
 
 **Diferenciais que permanecem (apresentação, não autoridade de dados):**
 - IA de classificação setorial (GPT-4.1-nano) com zero-match classification

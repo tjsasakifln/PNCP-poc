@@ -111,15 +111,14 @@ class TestRequirementsCryptographyPin:
     """AC10-AC11: cryptography must be pinned to an exact version."""
 
     def test_ac10_cryptography_pinned_exact(self):
-        """requirements.txt pins cryptography to a single 46.x release line.
+        """requirements.txt pins cryptography to a bounded 50.x release line.
 
-        CIG-BE-story-drift-cryptography-pin: STORY-303 AC10 originally required
-        ``cryptography==46.0.5`` (exact pin). After CVE-2026-26007 + CVE-2026-34073
-        fixes (DEBT-SYS-002), the constraint was widened to
-        ``cryptography>=46.0.6,<47.0.0`` — the upper bound on the major release
-        preserves fork-safety (47.x has not been validated) while still letting
-        the security floor advance with patch releases. AC10 is satisfied as
-        long as the constraint stays bounded inside the 46.x line.
+        STORY-303 AC10 originally required ``cryptography==46.0.5``. DEBT-SYS-002
+        widened that to ``>=46.0.6,<47.0.0``. On 2026-08-13 pip-audit reported
+        PYSEC-2026-3552 (fix 50.0.0), PYSEC-2026-3553/3554 (fix 49.0.0) and
+        GHSA-537c-gmf6-5ccf (fix 48.0.1) against 46.0.7. 47+ is published; the
+        46.x ceiling blocked the security floor. AC10 is satisfied by a bounded
+        pin on the 50.x line (floor 50.0.0 closes PYSEC-2026-3552).
         """
         import os
         import re
@@ -130,23 +129,20 @@ class TestRequirementsCryptographyPin:
         with open(req_path) as f:
             content = f.read()
 
-        # Accept either exact pin (==46.x.y) or the bounded range used post-DEBT-SYS-002.
-        exact = re.search(r"cryptography==46\.\d+\.\d+", content) is not None
+        exact = re.search(r"cryptography==50\.\d+\.\d+", content) is not None
         bounded = re.search(
-            r"cryptography>=46\.\d+\.\d+,<47\.0\.0", content
+            r"cryptography>=50\.\d+\.\d+,<51\.0\.0", content
         ) is not None
         assert exact or bounded, (
-            "requirements.txt must pin cryptography to the 46.x line "
-            "(==46.x.y exact OR >=46.x.y,<47.0.0 bounded)"
+            "requirements.txt must pin cryptography to the 50.x line "
+            "(==50.x.y exact OR >=50.x.y,<51.0.0 bounded) so PYSEC-2026-3552+ are closed"
         )
 
     def test_ac10_no_cryptography_greater_than(self):
-        """requirements.txt cryptography pin must be bounded to the 46.x line.
+        """requirements.txt cryptography pin must stay bounded (no bare >=).
 
-        Same rationale as ``test_ac10_cryptography_pinned_exact``: a bare ``>=``
-        without an upper bound would break fork-safety, but the
-        ``>=46.0.6,<47.0.0`` range introduced post-DEBT-SYS-002 keeps the upper
-        bound and is therefore acceptable.
+        Unbounded ``>=`` would allow an untested major. The 50.x range keeps
+        an upper bound after the 2026-08-13 CVE floor move.
         """
         import os
 
@@ -160,9 +156,13 @@ class TestRequirementsCryptographyPin:
             stripped = line.strip()
             if stripped.startswith("cryptography") and not stripped.startswith("#"):
                 if ">=" in stripped:
-                    assert "<47.0.0" in stripped, (
-                        f"cryptography must keep the <47.0.0 upper bound "
-                        f"(found: {stripped}). Unbounded >= breaks fork-safety."
+                    assert "<51.0.0" in stripped, (
+                        f"cryptography must keep the <51.0.0 upper bound "
+                        f"(found: {stripped}). Unbounded >= is not allowed."
+                    )
+                    assert ">=50." in stripped, (
+                        f"cryptography floor must be 50.x to close PYSEC-2026-3552 "
+                        f"(found: {stripped})."
                     )
 
     def test_ac11_cryptography_has_fork_safety_comment(self):

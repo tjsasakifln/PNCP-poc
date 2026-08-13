@@ -1,10 +1,10 @@
 # Cryptography SIGSEGV — Status de Monitoramento
 
 **Débito:** DEBT-SYS-002 (DEBT-206)
-**Severidade:** Crítica — SIGSEGV intermitente com C extensions
-**Status atual:** MONITORAMENTO ATIVO — pin <47.0 mantido (47.x ainda não existe — última: 46.0.6)
-**Última revisão:** 2026-03-30 (auditoria pip-audit executada)
-**Próxima revisão:** 2026-06-30 (Q3 2026)
+**Severidade:** Crítica — SIGSEGV intermitente com C extensions em Gunicorn `--preload`
+**Status atual:** PIN MOVIDO PARA 50.x — 47+ publicado; 46.0.7 tinha PYSEC-2026-3552/3553/3554 (CRITICAL). Runner de produção é uvicorn (CRIT-084), não gunicorn prefork. `--preload` continua proibido.
+**Última revisão:** 2026-08-13 (pip-audit no PR #2119)
+**Próxima revisão:** 2026-11-13 (Q4 2026)
 
 ---
 
@@ -22,10 +22,10 @@ durante inicialização do worker quando `cryptography >= 47.0` está instalada.
 ## Versão Atual Pinada
 
 ```
-cryptography>=46.0.5,<47.0.0       # CVE-2026-26007 fix + allow patch updates
+cryptography>=50.0.0,<51.0.0       # PYSEC-2026-3552/3553/3554 + GHSA-537c-gmf6-5ccf
 ```
 
-**Versão instalada em produção:** 46.0.6 (latest na faixa permitida, atualizado em 2026-03-30)
+**Piso 50.0.0:** PYSEC-2026-3552 (CVE-2026-69247 / GHSA-g6cj-pr64-35w5, Bleichenbacher em PKCS#7) só fecha em 50.0.0. PYSEC-2026-3553/3554 fecham em 49.0.0; GHSA-537c-gmf6-5ccf fecha em 48.0.1.
 
 ---
 

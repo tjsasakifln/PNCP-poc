@@ -2,7 +2,7 @@
 
 **Versao:** 9.0 | **Atualizado:** 2026-08-13 | **Status:** inbound CONFENGE — caminho crítico P0 vigente ([ADR-STRAT-001](docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md))
 
-> **Direção vigente ([#1262](https://github.com/tjsasakifln/SmartLic/issues/1262)):** SmartLic é o public discovery / intelligence / inbound plane da CONFENGE, alimentado pelo extra-cli. Não há tese de assinatura, trial, Stripe ou DataLake próprio. Documento operacional: [`docs/strategy/critical-path.md`](docs/strategy/critical-path.md).
+> **Direção vigente ([#1262](https://github.com/tjsasakifln/SmartLic/issues/1262)):** SmartLic é o public discovery / intelligence / inbound plane da CONFENGE. O consumo de `public_read_v1` ocorre **após** extra-cli#354 e #2108 no caminho crítico — o contrato ainda não é o producer-consumer vigente. Não há tese de assinatura, trial, Stripe ou DataLake próprio. Documento operacional: [`docs/strategy/critical-path.md`](docs/strategy/critical-path.md).
 
 ## Caminho crítico (único backlog que compete por recurso)
 
@@ -24,7 +24,7 @@ Ordem estrita. P1/P2 não furam esta fila.
 
 **Next (não agora):** #2109 product-as-content · #2118 pSEO só com dado único.  
 **Later:** #2107 assessment privado.  
-**Fora:** Warmbly, CRM, Kafka, K8s, segundo DataLake, novo billing.
+**Fora do go-live:** Warmbly (DEFER), CRM, Kafka, K8s, segundo DataLake, novo billing.
 
 O bloco abaixo (EPIC-GROWTH-VIRAL e fases 2026-04) é **histórico do período SaaS**. Não é o plano vigente.
 

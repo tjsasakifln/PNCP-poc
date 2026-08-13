@@ -26,7 +26,7 @@ A decisão de produto não é mais "monetizar assinatura". É **gerar demanda co
 
 O SmartLic deixa de ser um SaaS independente. A arquitetura estratégica autoritativa é:
 
-```
+```text
 extra-cli  = truth / data plane canônico
 SmartLic   = public discovery / intelligence / inbound plane
 CONFENGE   = conversion / service plane

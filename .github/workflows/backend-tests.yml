@@ -106,7 +106,8 @@ jobs:
       # FastAPI major upgrade (starlette is a FastAPI dep). Tracked separately.
       # CVE-2026-48818/CVE-2026-48817: starlette Windows UNC SSRF — Linux-only env, not applicable
       # CVE-2026-54283/CVE-2026-54282: starlette — pre-existing, FastAPI major upgrade needed
-      # GHSA-537c-gmf6-5ccf: cryptography 46.0.7 — pre-existing, upstream fix pending
+      # GHSA-537c-gmf6-5ccf was cryptography 46.0.7 (fixed in 48.0.1). Closed by
+      # the cryptography>=50.0.0 pin — do not re-add that ignore.
       - name: Vulnerability scan (pip-audit)
         run: |
           cd backend
@@ -115,9 +116,8 @@ jobs:
             --ignore-vuln CVE-2026-48818 \
             --ignore-vuln CVE-2026-48817 \
             --ignore-vuln CVE-2026-54283 \
-            --ignore-vuln CVE-2026-54282 \
-            --ignore-vuln GHSA-537c-gmf6-5ccf
-          echo "✅ pip-audit: no known vulnerabilities (6 CVEs ignored — tracked separately)"
+            --ignore-vuln CVE-2026-54282
+          echo "✅ pip-audit: no known vulnerabilities (5 starlette CVEs ignored — tracked separately)"
 
       # DEBT-123 AC9: Linting — intentionally non-blocking (advisory, not security)
       - name: Lint (ruff check)

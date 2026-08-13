@@ -56,16 +56,16 @@ google-api-python-client==2.198.0  # Google Sheets API client
 google-auth==2.55.1                # OAuth 2.0 authentication
 google-auth-oauthlib==1.4.0        # OAuth flow helpers
 google-auth-httplib2==0.4.0        # HTTP transport for Google APIs
-# cryptography pinned <47.0 due to SIGSEGV with C extensions in some environments.
-# See docs/security/cryptography-sigsegv-status.md for monitoring status.
-# Upgrade procedure: run scripts/security/check_cryptography_cves.py quarterly.
-# STORY-303: Pin exact — cryptography uses OpenSSL C bindings that are NOT fork-safe
-# with Gunicorn --preload. Any upgrade MUST be tested with:
+# cryptography 50.x: PYSEC-2026-3552 (CVE-2026-69247, needs 50.0.0),
+# PYSEC-2026-3553 / PYSEC-2026-3554 (fixed in 49.0.0), GHSA-537c-gmf6-5ccf (fixed 48.0.1).
+# The 46.x upper bound is no longer tenable: 47+ exists and 46.0.7 is CRITICAL-vulnerable.
+# Fork-safety: OpenSSL C bindings are still NOT fork-safe with Gunicorn --preload.
+# Production runner is uvicorn (CRIT-084), not gunicorn prefork. Keep --preload disabled.
+# Upgrade procedure: scripts/security/check_cryptography_cves.py + test_cryptography_load.py
+# Any further major MUST be tested with:
 #   gunicorn main:app -k uvicorn.workers.UvicornWorker -w 2 --preload --timeout 30
-# If workers SIGSEGV, the new version is not fork-safe. Keep --preload disabled (start.sh).
-# DEBT-018 SYS-028: Upgrade path evaluated. Pin >=46.0.5 to allow patch updates
-# while keeping fork-safety guarantee. Major upgrades require manual testing.
-cryptography>=46.0.6,<47.0.0       # CVE-2026-26007 + CVE-2026-34073 fix; 47.x unreleased (DEBT-SYS-002)
+# See docs/security/cryptography-sigsegv-status.md.
+cryptography>=50.0.0,<51.0.0       # PYSEC-2026-3552/3553/3554 + GHSA-537c-gmf6-5ccf
 
 # Transactional email (STORY-225)
 resend>=2.30.1,<3.0.0

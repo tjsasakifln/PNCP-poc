@@ -23,7 +23,7 @@ Nenhuma issue P1/P2 disputa recursos com esta sequência. Trabalho paralelo só 
 
 ## Dependências cross-repo
 
-```
+```text
 extra-cli#289 (IDs/eventos canônicos) ─┐
 extra-cli#273 (dedup/lineage)         ─┼─► extra-cli#354 (public_read_v1) ─► SmartLic#2108 ─► #2112
                                         │

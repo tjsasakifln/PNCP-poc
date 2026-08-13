@@ -8,7 +8,7 @@
 
 **Live:** [smartlic.tech](https://smartlic.tech) · Braço público de inbound da [CONFENGE](https://confenge.com.br)
 
-> **Decisão vigente ([#1262](https://github.com/tjsasakifln/SmartLic/issues/1262), [ADR-STRAT-001](./docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md)):** o SmartLic **não** é um SaaS independente. Não vende assinatura, não opera trial e não é autoridade de dados. Transforma fatos públicos canônicos do `extra-cli` em superfícies úteis, indexáveis e verificáveis, conduzindo demanda qualificada à consultoria CONFENGE.
+> **Decisão vigente ([#1262](https://github.com/tjsasakifln/SmartLic/issues/1262), [ADR-STRAT-001](./docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md)):** o SmartLic **não** é um SaaS independente. Não vende assinatura, não opera trial e não é autoridade de dados. Transforma fatos públicos em superfícies úteis, indexáveis e verificáveis. O caminho de leitura **alvo** é `extra-cli.public_read_v1` (após [extra-cli#354](https://github.com/tjsasakifln/extra-cli/issues/354) e [#2108](https://github.com/tjsasakifln/SmartLic/issues/2108)); o contrato ainda não é o producer-consumer vigente. A conversão é a consultoria CONFENGE.
 
 ---
 
