@@ -190,13 +190,14 @@ describe("PreviewCTA — click reveals preview", () => {
 
     // totalOpen=47, VISIBLE_COUNT=3 => remaining=44
     expect(
-      screen.getByText(/Cadastre-se grátis para ver os 44 editais restantes/)
+      screen.getByText(/Peça à CONFENGE a leitura dos 44 editais restantes/)
     ).toBeInTheDocument();
 
-    // Link de cadastro
-    const signupLink = screen.getByText("Cadastre-se grátis →");
-    expect(signupLink).toHaveAttribute("href", expect.stringContaining("/signup"));
-    expect(signupLink).toHaveAttribute("href", expect.stringContaining("ref=pseo-preview-pavimentacao-asfaltica-sc"));
+    const consultoriaLink = screen.getByText("Pedir leitura à CONFENGE →");
+    const href = consultoriaLink.getAttribute("href") || "";
+    expect(href).toContain("/consultoria-b2g");
+    expect(href).not.toContain("/signup");
+    expect(href).toContain("ref=pseo-preview-pavimentacao-asfaltica-sc");
   });
 
   it("chama fetch com setor e uf corretos", async () => {
@@ -280,7 +281,7 @@ describe("PreviewCTA — error state", () => {
     });
   });
 
-  it("mostra CTA de signup como fallback no estado de erro", async () => {
+  it("mostra CTA CONFENGE como fallback no estado de erro", async () => {
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     render(<PreviewCTA {...BASE_PROPS} />);
@@ -291,7 +292,12 @@ describe("PreviewCTA — error state", () => {
       expect(screen.getByTestId("preview-error")).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/Criar conta grátis/)).toBeInTheDocument();
+    const fallback = screen.getByText(/Pedir leitura à CONFENGE/);
+    expect(fallback).toBeInTheDocument();
+    expect(fallback.closest("a")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/consultoria-b2g"),
+    );
   });
 });
 
@@ -350,7 +356,7 @@ describe("PreviewCTA — sem UF (apenas setor)", () => {
 
     // remaining: totalOpen=10 - VISIBLE_COUNT=3 = 7
     expect(
-      screen.getByText(/Cadastre-se grátis para ver os 7 editais restantes/)
+      screen.getByText(/Peça à CONFENGE a leitura dos 7 editais restantes/)
     ).toBeInTheDocument();
   });
 });

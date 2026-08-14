@@ -192,9 +192,9 @@ export function buildOperationalDescription(
   switch (template) {
     case 'guia-transversal':
       if (ctx.sector) {
-        return `Descubra editais reais de ${ctx.subject} compatíveis com sua empresa no setor de ${ctx.sector}. Filtre por UF, valor e modalidade. Teste grátis.`;
+        return `Descubra editais reais de ${ctx.subject} compatíveis com sua empresa no setor de ${ctx.sector}. Filtre por UF, valor e modalidade. Dado público verificável.`;
       }
-      return `Descubra editais reais de ${ctx.subject} compatíveis com sua empresa. Filtre por UF, valor e modalidade. Teste grátis.`;
+      return `Descubra editais reais de ${ctx.subject} compatíveis com sua empresa. Filtre por UF, valor e modalidade. Dado público verificável.`;
 
     case 'setorial':
       if (ctx.uf && ctx.ufName && ctx.count !== undefined) {

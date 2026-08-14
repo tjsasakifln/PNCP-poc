@@ -355,7 +355,7 @@ export function generateSectorFAQs(
     },
     {
       question: `Preciso pagar para ver licitações de ${sectorName}?`,
-      answer: `Você pode testar o SmartLic grátis por 14 dias, sem cartão de crédito. O teste inclui busca com IA, análise de viabilidade e exportação de relatórios.`,
+      answer: `Não. A consulta de licitações de ${sectorName} nesta página é pública e gratuita. Para análise de viabilidade e diagnóstico comercial, peça um diagnóstico à CONFENGE.`,
     },
     {
       question: `Como receber alertas de novas licitações de ${sectorName}?`,
@@ -451,7 +451,7 @@ export function generatePanoramaFAQs(
     },
     {
       question: `Posso acompanhar licitações de ${sectorName} em tempo real?`,
-      answer: `Sim. O SmartLic monitora automaticamente PNCP, Portal de Compras Públicas e ComprasGov, atualizando dados a cada 24 horas. Teste grátis por 14 dias e receba alertas personalizados de novas oportunidades no seu setor.`,
+      answer: `Sim. O SmartLic monitora automaticamente PNCP, Portal de Compras Públicas e ComprasGov, atualizando dados a cada 24 horas. Para alertas e diagnóstico comercial no seu setor, fale com a CONFENGE.`,
     },
   ];
 }
@@ -832,8 +832,8 @@ export function generateLicitacoesFAQs(
       answer: `As modalidades mais frequentes variam conforme o objeto e valor estimado. Para ${sectorName}, predominam o pregão eletrônico (concorrência ampla), a concorrência eletrônica (obras e serviços de maior porte) e a dispensa para valores menores. A Lei 14.133/2021 incentiva o uso de modalidades eletrônicas, tornando a participação mais acessível a empresas de qualquer estado.`,
     },
     {
-      question: `Posso testar o SmartLic para buscar licitações de ${sectorName}?`,
-      answer: `Sim, o SmartLic oferece teste grátis de 14 dias sem necessidade de cartão de crédito. Durante o teste você tem acesso completo à busca com IA, análise de viabilidade por 4 fatores, pipeline de oportunidades e exportação de relatórios em Excel.`,
+      question: `Como aprofundar a busca de licitações de ${sectorName}?`,
+      answer: `A busca de licitações de ${sectorName} nesta página é pública e gratuita. Para triagem de viabilidade e diagnóstico comercial, peça um diagnóstico à CONFENGE.`,
     },
   ];
 }
@@ -977,7 +977,7 @@ export function generateContratosSetorFAQs(
     },
     {
       question: `Como monitorar novos contratos de ${sectorName}?`,
-      answer: `O SmartLic monitora automaticamente novas publicações de contratos e licitações de ${sectorName} no PNCP. Com o teste gratis de 14 dias você recebe alertas e análise de viabilidade por IA.`,
+      answer: `O SmartLic monitora automaticamente novas publicações de contratos e licitações de ${sectorName} no PNCP. Para alertas e análise de viabilidade com apoio consultivo, peça um diagnóstico à CONFENGE.`,
     },
   ];
 }

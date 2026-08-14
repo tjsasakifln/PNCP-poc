@@ -61,6 +61,53 @@ def test_public_surfaces_have_no_saas_cta_href_or_trial_copy():
     assert leaks == []
 
 
+IMPORT = re.compile(
+    r"""from\s+['"]([^'"]+)['"]|import\s+['"]([^'"]+)['"]"""
+)
+# Components known to be mounted by the six MVP families.
+MOUNTED_COMPONENTS = [
+    ROOT / "app/components/InlineTrialCTA.tsx",
+    ROOT / "app/components/StickyTrialCTA.tsx",
+    ROOT / "app/components/programmatic/PreviewCTA.tsx",
+]
+
+
+def _resolve_import(importer: Path, spec: str) -> Path | None:
+    if spec.startswith("@/"):
+        candidate = ROOT / spec[2:]
+    elif spec.startswith("."):
+        candidate = (importer.parent / spec).resolve()
+    else:
+        return None
+    if candidate.suffix:
+        return candidate if candidate.exists() else None
+    for suffix in (".tsx", ".ts"):
+        probe = Path(str(candidate) + suffix)
+        if probe.exists():
+            return probe
+    return None
+
+
+def _one_hop_from_families() -> set[Path]:
+    """Family pages plus one import hop (catches CTAs living outside app/{family})."""
+    files: set[Path] = {path.resolve() for path in MOUNTED_COMPONENTS if path.exists()}
+    pages: list[Path] = []
+    for root in FAMILY_ROOTS:
+        if not root.exists():
+            continue
+        pages.extend(root.rglob("*.tsx"))
+        pages.extend(root.rglob("*.ts"))
+    files.update(path.resolve() for path in pages)
+    for page in pages:
+        text = page.read_text(encoding="utf-8")
+        for match in IMPORT.finditer(text):
+            spec = match.group(1) or match.group(2)
+            resolved = _resolve_import(page, spec)
+            if resolved is not None:
+                files.add(resolved.resolve())
+    return files
+
+
 def test_mvp_families_have_no_object_saas_href():
     leaks: list[str] = []
     for root in FAMILY_ROOTS:
@@ -70,6 +117,21 @@ def test_mvp_families_have_no_object_saas_href():
             text = path.read_text(encoding="utf-8")
             if HREF_OBJECT.search(text) or HREF.search(text):
                 leaks.append(str(path.relative_to(ROOT)))
+    assert leaks == []
+
+
+def test_mvp_family_mounted_components_have_no_saas_cta():
+    """Follows one import hop from family pages. Must see the three CTAs."""
+    scanned = _one_hop_from_families()
+    required = {path.resolve() for path in MOUNTED_COMPONENTS if path.exists()}
+    assert required.issubset(scanned), (
+        "gate must reach InlineTrialCTA, StickyTrialCTA and PreviewCTA"
+    )
+    leaks: list[str] = []
+    for path in scanned:
+        text = path.read_text(encoding="utf-8")
+        if HREF.search(text) or HREF_OBJECT.search(text) or TRIAL.search(text):
+            leaks.append(str(path.relative_to(ROOT)))
     assert leaks == []
 
 

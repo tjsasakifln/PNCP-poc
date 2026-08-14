@@ -331,7 +331,7 @@ export default function PreviewCTA({
                 Tentar novamente
               </button>
               <Link
-                href={`/signup?ref=pseo-preview-error-${setor}${uf ? `-${uf.toLowerCase()}` : ""}&utm_medium=preview_error`}
+                href={`/consultoria-b2g?ref=pseo-preview-error-${setor}${uf ? `-${uf.toLowerCase()}` : ""}&utm_medium=preview_error`}
                 className="px-4 py-2 text-sm font-semibold text-white bg-brand-blue rounded-lg hover:bg-blue-700 transition-colors"
                 onClick={() => {
                   if (typeof window !== "undefined") {
@@ -339,7 +339,7 @@ export default function PreviewCTA({
                   }
                 }}
               >
-                Criar conta grátis →
+                Pedir leitura à CONFENGE →
               </Link>
             </div>
           </motion.div>
@@ -381,17 +381,17 @@ export default function PreviewCTA({
             >
               <p className="text-base font-semibold text-gray-900 dark:text-white mb-2">
                 {remaining > 0
-                  ? `Cadastre-se grátis para ver os ${remaining} editais restantes →`
-                  : "Cadastre-se grátis para monitorar novos editais →"}
+                  ? `Peça à CONFENGE a leitura dos ${remaining} editais restantes →`
+                  : "Peça à CONFENGE para monitorar novos editais →"}
               </p>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">
-                14 dias grátis, sem cartão de crédito. Alertas por email e análise de viabilidade com IA.
+                O dado fica público. A interpretação consultiva é da CONFENGE. Sem conta. Sem trial.
               </p>
               <Link
-                href={`/signup?ref=pseo-preview-${setor}${uf ? `-${uf.toLowerCase()}` : ""}`}
+                href={`/consultoria-b2g?ref=pseo-preview-${setor}${uf ? `-${uf.toLowerCase()}` : ""}`}
                 className="inline-block px-6 py-2.5 bg-brand-blue text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
               >
-                Cadastre-se grátis →
+                Pedir leitura à CONFENGE →
               </Link>
             </motion.div>
           </>

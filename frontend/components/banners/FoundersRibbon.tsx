@@ -23,10 +23,10 @@ export interface FoundersRibbonProps {
 
 export function FoundersRibbon({
   variant = "badge",
-  copy = "Acesso vitalício por R$997",
+  copy = "Pedir um diagnóstico à CONFENGE",
   src,
 }: FoundersRibbonProps) {
-  const href = `/fundadores${src ? `?src=${encodeURIComponent(src)}` : "?src=ribbon"}`;
+  const href = `/consultoria-b2g${src ? `?src=${encodeURIComponent(src)}` : "?src=ribbon"}`;
 
   const handleClick = () => {
     try {

@@ -325,9 +325,10 @@ describe('MKT-003 — programmatic.ts helpers', () => {
       expect(answerText).toContain('SmartLic');
     });
 
-    it('mentions "14 dias" free trial in at least one answer', () => {
+    it('points to CONFENGE diagnóstico, not a SaaS trial', () => {
       const answerText = faqs.map((f) => f.answer).join(' ');
-      expect(answerText).toContain('14 dias');
+      expect(answerText).toContain('CONFENGE');
+      expect(answerText).not.toMatch(/14 dias|teste gr[aá]tis/i);
     });
 
     it('mentions PNCP in at least one answer', () => {

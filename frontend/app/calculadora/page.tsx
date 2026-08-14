@@ -115,7 +115,7 @@ const faqSchema = {
       name: 'A calculadora é gratuita?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Sim, a calculadora é 100% gratuita e não requer cadastro. Para analisar as oportunidades em detalhe, você pode criar uma conta trial gratuita de 14 dias.',
+        text: 'Sim, a calculadora é 100% gratuita e não requer cadastro. Para analisar as oportunidades em detalhe e pedir um diagnóstico comercial, fale com a CONFENGE.',
       },
     },
     {

@@ -60,7 +60,7 @@ const faqSchema = {
       name: 'Preciso me cadastrar?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Não. A consulta por CNPJ é 100% gratuita e não requer cadastro. Para acessar análise detalhada de editais, você pode criar um trial gratuito de 14 dias.',
+        text: 'Não. A consulta por CNPJ é 100% gratuita e não requer cadastro. Para análise detalhada de editais e diagnóstico comercial, fale com a CONFENGE.',
       },
     },
     {
@@ -200,7 +200,7 @@ export default function CnpjLandingPage() {
         <h3>Preciso me cadastrar?</h3>
         <p>
           Não. A consulta por CNPJ é 100% gratuita e não requer cadastro.
-          Para acessar análise detalhada de editais, você pode criar um trial gratuito de 14 dias.
+          Para análise detalhada de editais e diagnóstico comercial, fale com a CONFENGE.
         </p>
 
         <h3>Como é calculado o Score B2G?</h3>
