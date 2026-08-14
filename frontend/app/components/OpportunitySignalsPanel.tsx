@@ -11,7 +11,7 @@
  *   - `opportunity_signal_view` on mount (once per render)
  *   - `opportunity_cta_click` on primary CTA click
  *
- * CTA rule (CRO-CTA-000): NEVER "Ver planos" or "Teste grátis" as primary CTA.
+ * CTA rule (CRO-CTA-000): NEVER SaaS trial or pricing CTAs as primary CTA.
  * The CTA must continue the visitor's search intent.
  */
 

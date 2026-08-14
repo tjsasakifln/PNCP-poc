@@ -8,7 +8,7 @@ interface Props {
   label?: string;
 }
 
-export default function StickyTrialCTA({ refParam, label = 'Testar 14 dias grátis' }: Props) {
+export default function StickyTrialCTA({ refParam, label = 'Pedir diagnóstico à CONFENGE' }: Props) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function StickyTrialCTA({ refParam, label = 'Testar 14 dias grát
   return (
     <div className="fixed bottom-0 inset-x-0 z-40 sm:hidden bg-white border-t border-gray-200 px-4 py-3 shadow-lg">
       <Link
-        href={`/signup?ref=${refParam}`}
+        href={`/consultoria-b2g?ref=${refParam}`}
         onClick={handleClick}
         className="block w-full bg-green-600 hover:bg-green-700 text-white text-center font-bold py-3 rounded-lg"
       >

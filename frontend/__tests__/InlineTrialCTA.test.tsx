@@ -16,14 +16,15 @@ describe('InlineTrialCTA', () => {
     (window as unknown as { mixpanel?: unknown }).mixpanel = originalMixpanel;
   });
 
-  it('renders the literal copy from issue #652', () => {
+  it('renders CONFENGE diagnostic copy, not a SaaS trial', () => {
     render(<InlineTrialCTA page="cnpj" source="cnpj-page" />);
     expect(
-      screen.getByText('Monitore contratos deste órgão — Teste grátis 14 dias'),
+      screen.getByText('Monitore contratos deste órgão — diagnóstico CONFENGE'),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/teste grátis|trial grátis|14 dias/i)).not.toBeInTheDocument();
   });
 
-  it('builds /signup link with source=cnpj-page and orgao=<cnpj>', () => {
+  it('builds /consultoria-b2g link with source=cnpj-page and orgao=<cnpj>', () => {
     render(
       <InlineTrialCTA
         page="cnpj"
@@ -31,14 +32,14 @@ describe('InlineTrialCTA', () => {
         extraParam={{ name: 'orgao', value: '01914765000108' }}
       />,
     );
-    const link = screen.getByRole('link', { name: /Começar trial grátis/ });
+    const link = screen.getByRole('link', { name: /diagnóstico à CONFENGE/i });
     expect(link).toHaveAttribute(
       'href',
-      '/signup?source=cnpj-page&orgao=01914765000108',
+      '/consultoria-b2g?source=cnpj-page&orgao=01914765000108',
     );
   });
 
-  it('builds /signup link with source=orgao-page and slug=<slug>', () => {
+  it('builds /consultoria-b2g link with source=orgao-page and slug=<slug>', () => {
     render(
       <InlineTrialCTA
         page="orgao"
@@ -46,17 +47,17 @@ describe('InlineTrialCTA', () => {
         extraParam={{ name: 'slug', value: 'prefeitura-de-floripa' }}
       />,
     );
-    const link = screen.getByRole('link', { name: /Começar trial grátis/ });
+    const link = screen.getByRole('link', { name: /diagnóstico à CONFENGE/i });
     expect(link).toHaveAttribute(
       'href',
-      '/signup?source=orgao-page&slug=prefeitura-de-floripa',
+      '/consultoria-b2g?source=orgao-page&slug=prefeitura-de-floripa',
     );
   });
 
   it('omits extra param when not provided', () => {
     render(<InlineTrialCTA page="cnpj" source="cnpj-page" />);
-    const link = screen.getByRole('link', { name: /Começar trial grátis/ });
-    expect(link).toHaveAttribute('href', '/signup?source=cnpj-page');
+    const link = screen.getByRole('link', { name: /diagnóstico à CONFENGE/i });
+    expect(link).toHaveAttribute('href', '/consultoria-b2g?source=cnpj-page');
   });
 
   it('fires Mixpanel cta_click with page+position on click (cnpj)', () => {
@@ -73,7 +74,7 @@ describe('InlineTrialCTA', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('link', { name: /Começar trial grátis/ }));
+    fireEvent.click(screen.getByRole('link', { name: /diagnóstico à CONFENGE/i }));
 
     expect(trackSpy).toHaveBeenCalledWith('cta_click', {
       page: 'cnpj',
@@ -95,7 +96,7 @@ describe('InlineTrialCTA', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('link', { name: /Começar trial grátis/ }));
+    fireEvent.click(screen.getByRole('link', { name: /diagnóstico à CONFENGE/i }));
 
     expect(trackSpy).toHaveBeenCalledWith('cta_click', {
       page: 'orgao',
@@ -107,7 +108,7 @@ describe('InlineTrialCTA', () => {
     delete (window as unknown as { mixpanel?: unknown }).mixpanel;
     render(<InlineTrialCTA page="cnpj" source="cnpj-page" />);
     expect(() =>
-      fireEvent.click(screen.getByRole('link', { name: /Começar trial grátis/ })),
+      fireEvent.click(screen.getByRole('link', { name: /diagnóstico à CONFENGE/i })),
     ).not.toThrow();
   });
 });

@@ -14,7 +14,7 @@ describe('StickyTrialCTA', () => {
 
   it('renders nothing when scrollY <= 600', () => {
     render(<StickyTrialCTA refParam="sticky-test" />);
-    expect(screen.queryByText(/Testar 14 dias grátis/)).toBeNull();
+    expect(screen.queryByText(/Pedir diagnóstico à CONFENGE/)).toBeNull();
   });
 
   it('renders the CTA link after scrolling beyond 600px', () => {
@@ -25,9 +25,10 @@ describe('StickyTrialCTA', () => {
       window.dispatchEvent(new Event('scroll'));
     });
 
-    const link = screen.getByRole('link', { name: /Testar 14 dias grátis/ });
+    const link = screen.getByRole('link', { name: /Pedir diagnóstico à CONFENGE/ });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', '/signup?ref=sticky-test');
+    expect(link).toHaveAttribute('href', '/consultoria-b2g?ref=sticky-test');
+    expect(link.getAttribute('href')).not.toContain('/signup');
   });
 
   it('uses sm:hidden so the bar is mobile-only', () => {
