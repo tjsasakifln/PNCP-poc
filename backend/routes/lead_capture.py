@@ -64,9 +64,18 @@ ALL_SOURCES = frozenset({
     "lead_magnet_1", "lead_magnet_2", "lead_magnet_3",
     "newsletter", "exit_intent", "seo_banner",
     "partial_preview",
+    "newsletter_footer", "lead_magnet_guia", "lead_magnet_checklist",
+    "licitacoes_setor",
     "family_tender", "family_contract", "family_company",
     "family_organ", "family_municipality", "family_observatory",
     "family_tool", "home",
+    # Shipped public-family LeadCapture sources (hyphen/underscore as in pages)
+    "cnpj-perfil", "cnpj-page", "cnpj_page",
+    "contratos-orgao",
+    "orgao-perfil", "orgao_page", "orgaos",
+    "municipio-page",
+    "licitacoes-setor", "licitacoes_page", "licitacoes-do-dia",
+    "fornecedor_page",
 })
 
 NEW_SOURCES = frozenset({

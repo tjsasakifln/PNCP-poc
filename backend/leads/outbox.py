@@ -16,6 +16,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -74,17 +75,29 @@ def build_idempotency_key(
     return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
+def _referrer_host(referrer: str) -> str:
+    parsed = urlparse(referrer)
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if host:
+        return host
+    # Bare host or path-only input — never substring-match "x.com" in a path.
+    candidate = referrer.split("/", 1)[0].split(":", 1)[0].lower()
+    return candidate
+
+
+def _host_matches(host: str, *roots: str) -> bool:
+    return any(host == root or host.endswith(f".{root}") for root in roots)
+
+
 def classify_referrer(referrer: str | None) -> str:
     if not referrer:
         return "direct"
-    lowered = referrer.lower()
-    if "google." in lowered:
+    host = _referrer_host(referrer)
+    if _host_matches(host, "google.com", "google.com.br", "bing.com", "duckduckgo.com"):
         return "organic_search"
-    if "bing." in lowered or "duckduckgo." in lowered:
-        return "organic_search"
-    if "smartlic.tech" in lowered:
+    if _host_matches(host, "smartlic.tech"):
         return "internal"
-    if "linkedin." in lowered or "twitter." in lowered or "x.com" in lowered:
+    if _host_matches(host, "linkedin.com", "twitter.com", "x.com"):
         return "social"
     return "referral"
 

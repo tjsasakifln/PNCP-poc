@@ -429,7 +429,7 @@ export default async function MunicipioSlugPage({ params }: Props) {
                 href={`/consultoria-b2g?ref=municipios-${slug}&source=municipio-page`}
                 className="inline-block px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-center"
               >
-                Receber alertas grátis 14 dias →
+                Pedir recorte local de oportunidades
               </Link>
               <Link
                 href="/observatorio"

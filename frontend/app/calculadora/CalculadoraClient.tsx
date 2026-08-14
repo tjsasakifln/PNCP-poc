@@ -411,7 +411,7 @@ export default function CalculadoraClient() {
             >
               Analisar as {resultado.totalEditais} oportunidades abertas no seu setor →
             </Link>
-            <p className="text-sm text-gray-500">Trial gratuito de 14 dias, sem cartão de crédito</p>
+            <p className="text-sm text-gray-500">A ferramenta é pública. O diagnóstico é serviço da CONFENGE.</p>
             <button
               onClick={recalcular}
               className="text-sm text-blue-600 hover:underline"

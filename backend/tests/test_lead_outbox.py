@@ -29,6 +29,10 @@ def test_referrer_classes():
     assert classify_referrer("https://www.google.com/search?q=cnpj") == "organic_search"
     assert classify_referrer("https://smartlic.tech/cnpj/123") == "internal"
     assert classify_referrer("https://linkedin.com/in/x") == "social"
+    assert classify_referrer("https://x.com/confenge") == "social"
+    assert classify_referrer("https://twitter.com/confenge") == "social"
+    assert classify_referrer("https://not-x.com/path") == "referral"
+    assert classify_referrer("https://evilx.com") == "referral"
 
 
 def _payload(**overrides):

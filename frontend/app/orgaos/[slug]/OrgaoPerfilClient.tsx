@@ -443,7 +443,7 @@ export default function OrgaoPerfilClient({ stats }: { stats: OrgaoStats }) {
         >
           {ctaText}
         </Link>
-        <p className="text-sm text-gray-500 mt-3">Trial gratuito de 14 dias, sem cartão de crédito</p>
+        <p className="text-sm text-gray-500 mt-3">Sem conta. Sem trial. A CONFENGE interpreta o dado público.</p>
       </div>
 
       {/* Aviso legal */}

@@ -392,9 +392,9 @@ export default async function ContratosSetorUfPage({ params }: Props) {
                         compact
                         cta={{
                           label: 'Explorar contratos similares',
-                          href: `/signup?ref=contratos-${setor}-${uf}&utm_source=pseo&utm_medium=organic&utm_content=contrato_page`,
+                          href: `/consultoria-b2g?ref=contratos-${setor}-${uf}&utm_source=pseo&utm_medium=organic&utm_content=contrato_page`,
                           secondaryLabel: 'Desbloquear órgãos compradores do segmento',
-                          secondaryHref: `/signup?ref=contratos-orgaos-${setor}`,
+                          secondaryHref: `/consultoria-b2g?ref=contratos-organs-${setor}`,
                         }}
                       />
                     </div>

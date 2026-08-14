@@ -308,7 +308,7 @@ function ctaContratoDetalhe(context: CtaContext): CtaConfig {
     buttonText: 'Explorar contratos similares',
     buttonLink: buildSignupHref(context.slug, 'contratos-similares'),
     secondaryText: 'Desbloquear órgãos compradores do segmento',
-    secondaryLink: '/consultoria-b2g?ref=contratos-orgaos',
+    secondaryLink: '/consultoria-b2g?ref=contratos-organs',
     socialProof: 'Dados de 2M+ contratos históricos do PNCP',
     campaign: 'contratos-similares',
   };

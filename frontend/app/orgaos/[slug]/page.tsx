@@ -334,7 +334,7 @@ export default async function OrgaoPerfilPage({
             signals={orgaoSignals}
             cta={{
               label: 'Ver editais deste órgão',
-              href: `/signup?ref=orgao-${slug}&utm_source=pseo&utm_medium=organic&utm_content=orgao_page`,
+              href: `/consultoria-b2g?ref=orgao-${slug}&utm_source=pseo&utm_medium=organic&utm_content=orgao_page`,
               secondaryLabel: 'Criar alerta de novos editais',
               secondaryHref: `/alertas-publicos?orgao=${encodeURIComponent(stats.nome)}`,
             }}
@@ -399,7 +399,7 @@ export default async function OrgaoPerfilPage({
         ]}
         postUnlockCta={{
           label: 'Buscar editais do meu setor',
-          href: `/signup?ref=orgao-aha-${slug}`,
+          href: `/consultoria-b2g?ref=orgao-aha-${slug}`,
         }}
       />
 
@@ -427,7 +427,7 @@ export default async function OrgaoPerfilPage({
               href={`/consultoria-b2g?ref=orgao-${slug}`}
               className="inline-block px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-center"
             >
-              Receber alertas grátis 14 dias →
+              Pedir mapa de compras deste órgão
             </Link>
             <Link
               href="/observatorio"

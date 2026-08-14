@@ -14,12 +14,14 @@ def deliver_handoff(record: dict[str, Any]) -> None:
     record["attempts"] = int(record.get("attempts") or 0) + 1
     sent = False
     try:
-        from email_service import EMAIL_ENABLED, send_plain_email
+        import email_service as _email_service
     except Exception:
-        send_plain_email = None
-        EMAIL_ENABLED = False
+        _email_service = None
 
-    if EMAIL_ENABLED and send_plain_email:
+    send_plain_email = getattr(_email_service, "send_plain_email", None) if _email_service else None
+    email_enabled = bool(getattr(_email_service, "EMAIL_ENABLED", False)) if _email_service else False
+
+    if email_enabled and callable(send_plain_email):
         body = (
             f"receipt={record['receipt_id']}\n"
             f"source={record.get('source')}\n"
