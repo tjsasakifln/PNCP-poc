@@ -160,7 +160,7 @@ class WorkflowTriggerTests(unittest.TestCase):
 
     def test_policy_is_what_the_script_loads(self):
         loaded = checker.load_policy(ROOT)
-        self.assertEqual(loaded["adr"], "ADR-STRAT-001")
+        self.assertEqual(loaded["adr"], "ADR-STRAT-002")
         self.assertEqual(checker.policy_path(ROOT), ROOT / checker.POLICY_REL)
 
 
