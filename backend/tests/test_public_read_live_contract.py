@@ -206,7 +206,7 @@ def live_pg():
 @pytest.fixture
 def live_env(live_pg, monkeypatch):
     from public_read.client import clear_last_known_good
-    from public_read.isolation import Backpressure, get_backpressure
+    from public_read.isolation import get_backpressure
 
     monkeypatch.setenv("PUBLIC_READ_V1_MODE", "shadow")
     monkeypatch.setenv("PUBLIC_READ_V1_DSN", live_pg["reader"])
@@ -330,3 +330,24 @@ def test_dsn_not_serialized_in_family_read(live_env):
     dumped = str(payload)
     assert "reader_test_only" not in dumped
     assert "postgresql://" not in dumped
+
+
+def test_serve_family_current_snapshot_latest(live_env):
+    """Hub path: extra-cli 089 VIEW → adapter without bind → serve_family."""
+    from public_read.adapters import read_family
+    from public_read.page_model import family_read_to_page_model
+    from public_read.serve import serve_family
+
+    public = read_family("current_snapshot", "latest")
+    assert public.served_from == "public_read_v1"
+    assert public.entity is not None
+    assert public.entity.canonical_id == live_env["snapshot_id"]
+    assert public.entity.as_of is not None
+    page = family_read_to_page_model(public)
+    assert page["empty"] is False
+    assert page["blocked"] is False
+
+    served = serve_family("current_snapshot", "latest")
+    assert served.served_from == "legacy"
+    assert "public_unavailable" not in served.divergence
+    assert "public_only" in served.divergence

@@ -166,3 +166,59 @@ def test_rollback_to_off_restores_legacy(monkeypatch):
     served = serve_family("tenders", "proc-1", legacy={"canonical_id": "proc-1", "title": "back"})
     assert served.served_from == "legacy"
     assert served.entity.display_name == "back"
+
+
+def test_current_snapshot_latest_does_not_bind_public_id(monkeypatch):
+    """Hubs probe GET current_snapshot/latest. The VIEW SQL has no %s."""
+    seen: dict = {}
+
+    def _fetchall(sql, params=None):
+        seen["sql"] = sql
+        seen["params"] = params
+        return [
+            {
+                "snapshot_id": "snp-hub",
+                "as_of": "2026-08-13T00:00:00+00:00",
+                "completeness": "COMPLETE",
+                "provenance": {"snapshot_id": "snp-hub"},
+            }
+        ]
+
+    monkeypatch.setattr("public_read.adapters.fetchall", _fetchall)
+    from public_read.adapters import read_family
+
+    public = read_family("current_snapshot", "latest")
+    assert "%s" not in seen["sql"]
+    assert seen["params"] == ()
+    assert public.served_from == "public_read_v1"
+    assert public.entity is not None
+    assert public.entity.canonical_id == "snp-hub"
+    assert public.entity.as_of is not None
+
+
+def test_serve_family_current_snapshot_latest_shadow(monkeypatch):
+    monkeypatch.setenv("PUBLIC_READ_V1_MODE", "shadow")
+
+    def _public(family, public_id):
+        assert family == "current_snapshot"
+        assert public_id == "latest"
+        return FamilyRead(
+            family="current_snapshot",
+            mode="shadow",
+            served_from="public_read_v1",
+            entity=PublicEntity(
+                canonical_id="snp-hub",
+                family="current_snapshot",
+                as_of="2026-08-13T00:00:00+00:00",
+                completeness="COMPLETE",
+                freshness="FRESH",
+            ),
+            row_count=1,
+        )
+
+    monkeypatch.setattr("public_read.serve.read_family", _public)
+    served = serve_family("current_snapshot", "latest")
+    assert served.served_from == "legacy"
+    assert served.entity is None
+    assert "public_unavailable" not in served.divergence
+    assert "public_only" in served.divergence

@@ -3,17 +3,9 @@ import type { JourneyContext } from "@/lib/conversion/journey";
 import {
   adapterFamilyFor,
   loadPublicFamily,
+  surfaceStateFromRead,
   type PublicFamilyPageModel,
 } from "@/lib/intelligence/loadPublicFamily";
-import type { SurfaceState } from "@/lib/intelligence/types";
-
-function surfaceFromRead(read: PublicFamilyPageModel | null): SurfaceState {
-  if (!read) return "unknown";
-  if (read.blocked || read.divergence.includes("public_unavailable")) return "blocked";
-  if (read.stale) return "stale";
-  if (read.empty) return "empty";
-  return "ok";
-}
 
 export async function PublicFamilyRead({
   family,
@@ -26,28 +18,33 @@ export async function PublicFamilyRead({
   setor?: string;
   uf?: string;
 }) {
-  const adapterFamily = publicId ? adapterFamilyFor(family) : "current_snapshot";
+  const hubProbe = !publicId;
+  const adapterFamily = hubProbe ? "current_snapshot" : adapterFamilyFor(family);
   const id = publicId || "latest";
   let read: PublicFamilyPageModel | null = null;
   try {
     read = await loadPublicFamily(adapterFamily, id);
   } catch {
-    read = {
-      family: adapterFamily,
-      served_from: "blocked",
-      mode: "shadow",
-      canonical_id: null,
-      display_name: null,
-      as_of: null,
-      completeness: null,
-      freshness: null,
-      reason_codes: [],
-      divergence: ["public_unavailable"],
-      blocked: true,
-      stale: false,
-      empty: true,
-      row_count: 0,
-    };
+    // Entity pages surface the failure. Hub watermark probes must not
+    // paint blocked/empty over a listing that already has coverage.
+    read = hubProbe
+      ? null
+      : {
+          family: adapterFamily,
+          served_from: "blocked",
+          mode: "shadow",
+          canonical_id: null,
+          display_name: null,
+          as_of: null,
+          completeness: null,
+          freshness: null,
+          reason_codes: [],
+          divergence: ["public_unavailable"],
+          blocked: true,
+          stale: false,
+          empty: true,
+          row_count: 0,
+        };
   }
   return (
     <PublicFamilyShell
@@ -55,7 +52,7 @@ export async function PublicFamilyRead({
       entityPublicId={publicId}
       setor={setor}
       uf={uf}
-      state={surfaceFromRead(read)}
+      state={surfaceStateFromRead(read, { hubProbe })}
       asOf={read?.as_of ?? null}
       reasonCodes={[...(read?.reason_codes || []), ...(read?.divergence || [])]}
     />

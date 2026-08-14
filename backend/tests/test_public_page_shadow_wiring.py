@@ -27,6 +27,16 @@ def test_loader_hits_adapter_route():
     assert "PUBLIC_READ_V1_DSN" not in text
 
 
+def test_hub_read_probes_snapshot_latest_without_painting_empty():
+    text = (ROOT / "frontend/app/components/intelligence/PublicFamilyRead.tsx").read_text(
+        encoding="utf-8"
+    )
+    assert 'hubProbe = !publicId' in text or "hubProbe = !publicId" in text
+    assert 'current_snapshot' in text
+    assert "surfaceStateFromRead" in text
+    assert "hubProbe" in text
+
+
 def test_licitacoes_hub_no_saas_cta():
     text = (ROOT / "frontend/app/licitacoes/page.tsx").read_text(encoding="utf-8")
     assert "Teste grátis" not in text

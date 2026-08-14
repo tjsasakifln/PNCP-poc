@@ -2,6 +2,7 @@ import {
   adapterFamilyFor,
   familyReadToPageModel,
   publicReadPath,
+  surfaceStateFromRead,
 } from "@/lib/intelligence/loadPublicFamily";
 
 describe("loadPublicFamily wiring", () => {
@@ -44,5 +45,43 @@ describe("loadPublicFamily wiring", () => {
     expect(page.empty).toBe(true);
     expect(page.blocked).toBe(true);
     expect(page.divergence).toContain("public_unavailable");
+  });
+
+  it("does not paint empty/blocked on a hub watermark probe", () => {
+    const emptyOff = familyReadToPageModel({
+      family: "current_snapshot",
+      served_from: "legacy",
+      mode: "off",
+      entity: null,
+      divergence: [],
+      row_count: 0,
+    });
+    expect(surfaceStateFromRead(emptyOff, { hubProbe: true })).toBe("unknown");
+    expect(surfaceStateFromRead(emptyOff)).toBe("empty");
+
+    const unavailable = familyReadToPageModel({
+      family: "current_snapshot",
+      served_from: "legacy",
+      mode: "shadow",
+      entity: null,
+      divergence: ["dsn_missing", "public_unavailable"],
+      row_count: 0,
+    });
+    expect(surfaceStateFromRead(unavailable, { hubProbe: true })).toBe("unknown");
+    expect(surfaceStateFromRead(unavailable)).toBe("blocked");
+
+    const watermark = familyReadToPageModel({
+      family: "current_snapshot",
+      served_from: "public_read_v1",
+      mode: "shadow",
+      entity: {
+        canonical_id: "snp-hub",
+        as_of: "2026-08-13T00:00:00+00:00",
+        completeness: "COMPLETE",
+        freshness: "FRESH",
+      },
+      row_count: 1,
+    });
+    expect(surfaceStateFromRead(watermark, { hubProbe: true })).toBe("ok");
   });
 });

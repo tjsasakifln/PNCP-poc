@@ -3,6 +3,8 @@
  * The browser never receives the extra-cli database credential.
  */
 
+import type { SurfaceState } from "@/lib/intelligence/types";
+
 export type PublicFamilyName =
   | "current_snapshot"
   | "tenders"
@@ -62,6 +64,24 @@ interface FamilyReadPayload {
   } | null;
   divergence?: string[];
   row_count?: number | null;
+}
+
+export function surfaceStateFromRead(
+  read: PublicFamilyPageModel | null,
+  options?: { hubProbe?: boolean },
+): SurfaceState {
+  if (!read) return "unknown";
+  if (options?.hubProbe) {
+    // Hub listings already have their own recorte. Snapshot/latest is a
+    // watermark probe — never claim the page is empty or blocked.
+    if (read.stale) return "stale";
+    if (read.as_of || (read.row_count ?? 0) > 0 || read.canonical_id) return "ok";
+    return "unknown";
+  }
+  if (read.blocked || read.divergence.includes("public_unavailable")) return "blocked";
+  if (read.stale) return "stale";
+  if (read.empty) return "empty";
+  return "ok";
 }
 
 export function familyReadToPageModel(body: FamilyReadPayload): PublicFamilyPageModel {

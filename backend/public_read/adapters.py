@@ -137,6 +137,17 @@ def read_surface_health() -> list[dict[str, Any]]:
     return fetchall("SELECT * FROM public_read_v1.surface_health LIMIT 20")
 
 
+def _query_params(sql: str, public_id: str) -> tuple[str, ...]:
+    """Bind public_id only when the family SQL has a placeholder.
+
+    current_snapshot is ``LIMIT 1`` with no WHERE. Passing ``('latest',)``
+    makes psycopg raise; the hub probe then looks like a coverage gap.
+    """
+    if "%s" not in sql:
+        return ()
+    return (public_id,)
+
+
 def read_family(family: str, public_id: str) -> FamilyRead:
     mode = get_public_read_mode().value
     sql = _FAMILY_SQL.get(family)
@@ -144,7 +155,7 @@ def read_family(family: str, public_id: str) -> FamilyRead:
         return _blocked(family, mode, "unknown_family")
 
     try:
-        rows = fetchall(sql, (public_id,))
+        rows = fetchall(sql, _query_params(sql, public_id))
     except PublicReadUnavailable as exc:
         cached = last_known_good(f"{family}:{public_id}")
         if cached:
