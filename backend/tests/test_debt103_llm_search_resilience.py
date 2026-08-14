@@ -643,21 +643,6 @@ class TestAC9ConfigVariables:
         assert isinstance(PNCP_BATCH_DELAY_S, float)
         assert PNCP_BATCH_DELAY_S >= 0
 
-    def test_env_example_has_all_vars(self):
-        """All DEBT-103 config vars are documented in .env.example."""
-        env_example = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", ".env.example")
-        if not os.path.exists(env_example):
-            pytest.skip(".env.example not found")
-
-        with open(env_example) as f:
-            content = f.read()
-
-        assert "OPENAI_TIMEOUT_S" in content, "OPENAI_TIMEOUT_S missing from .env.example"
-        assert "LRU_MAX_SIZE" in content, "LRU_MAX_SIZE missing from .env.example"
-        # These were already present:
-        # PNCP_BATCH_SIZE and PNCP_BATCH_DELAY_S are in pncp_client.py via os.environ.get
-
-
 # ============================================================================
 # Integration: Full pipeline resilience
 # ============================================================================

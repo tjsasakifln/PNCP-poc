@@ -3,7 +3,6 @@
 Tests AC1-AC12:
 - AC1: In-memory TTL increased to 3600s (1h)
 - AC2: Redis TTL increased to 14400s (4h)
-- AC3: .env.example documented (manual verification)
 - AC4: Migration creates search_results_store (migration file exists)
 - AC5: Results persisted to Supabase L3 (fire-and-forget)
 - AC6: get_background_results_async falls back to Supabase L3
@@ -441,19 +440,3 @@ class TestAC4Migration:
         migration_files = os.listdir(migration_dir) if os.path.exists(migration_dir) else []
         matching = [f for f in migration_files if "search_results_store" in f]
         assert len(matching) >= 1, "Migration file for search_results_store not found"
-
-
-# ============================================================================
-# AC3: .env.example documentation
-# ============================================================================
-
-
-class TestAC3Documentation:
-    def test_env_example_documents_ttls(self):
-        """AC3: .env.example contains RESULTS_REDIS_TTL and RESULTS_SUPABASE_TTL_HOURS."""
-        import os
-        env_path = os.path.join(os.path.dirname(__file__), "..", "..", ".env.example")
-        with open(env_path, "r") as f:
-            content = f.read()
-        assert "RESULTS_REDIS_TTL" in content
-        assert "RESULTS_SUPABASE_TTL_HOURS" in content

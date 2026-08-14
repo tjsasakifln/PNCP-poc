@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "path": ".github/workflows/audit-data-retention.yml",
+      "owner": "@tjsasakifln",
+      "reason": "Legacy privacy/retention verification until SmartLic #2111 archives retained data",
+      "expires_on": "2026-09-30"
+    },
+    {
+      "path": "scripts/audit-data-retention.sh",
+      "owner": "@tjsasakifln",
+      "reason": "Legacy privacy/retention verification until SmartLic #2111 archives retained data",
+      "expires_on": "2026-09-30"
+    },
+    {
+      "path": ".github/workflows/audit-rls-coverage.yml",
+      "owner": "@tjsasakifln",
+      "reason": "Legacy RLS verification for retained data only until SmartLic #2111",
+      "expires_on": "2026-09-30"
+    },
+    {
+      "path": ".github/workflows/rls-audit.yml",
+      "owner": "@tjsasakifln",
+      "reason": "Legacy RLS verification for retained data only until SmartLic #2111",
+      "expires_on": "2026-09-30"
+    }
+  ]
+}

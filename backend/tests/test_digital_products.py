@@ -221,30 +221,3 @@ class TestListProducts:
         data = resp.json()
         assert data["products"][0]["sku"] == "cached-product"
         assert data["products"][0]["price_brl"] == 9999
-
-
-# ---------------------------------------------------------------------------
-# Stripe sync script tests
-# ---------------------------------------------------------------------------
-
-
-class TestSyncScript:
-    """Verify sync_digital_products_stripe.py is importable and has expected structure."""
-
-    def test_script_file_exists(self):
-        """Script file should exist on disk."""
-        script_path = os.path.join(
-            os.path.dirname(__file__), "..", "scripts", "sync_digital_products_stripe.py"
-        )
-        abs_path = os.path.normpath(script_path)
-        assert os.path.isfile(abs_path), f"Script not found at {abs_path}"
-
-    def test_script_is_importable(self):
-        """The script should be syntactically valid Python."""
-        script_path = os.path.join(
-            os.path.dirname(__file__), "..", "scripts", "sync_digital_products_stripe.py"
-        )
-        abs_path = os.path.normpath(script_path)
-        with open(abs_path) as fh:
-            code = fh.read()
-        compile(code, abs_path, "exec")

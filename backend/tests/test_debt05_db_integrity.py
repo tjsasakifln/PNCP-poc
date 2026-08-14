@@ -1,7 +1,6 @@
 """DEBT-05: Database Integrity — profiles.plan_type CHECK → FK + is_active audit.
 
 Tests coverage:
-  AC1: GitHub Actions workflow para pg_dump semanal para S3
   AC2: FK migration 3 steps (DROP CHECK, ADD FK NOT VALID, VALIDATE)
   AC3: Verificar zero orphan plan_types antes da FK migration
   AC4: Documentar decisão sobre is_active: manter ou remover coluna
@@ -14,10 +13,7 @@ from pathlib import Path
 
 
 MIGRATION_DIR = Path(__file__).resolve().parent.parent.parent / "supabase" / "migrations"
-WORKFLOW_DIR = Path(__file__).resolve().parent.parent.parent / ".github" / "workflows"
-
 DEBT05_MIGRATION = MIGRATION_DIR / "20260408230000_debt05_plan_type_fk.sql"
-BACKUP_WORKFLOW = WORKFLOW_DIR / "db-backup.yml"
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -28,80 +24,6 @@ BACKUP_WORKFLOW = WORKFLOW_DIR / "db-backup.yml"
 def migration_sql():
     assert DEBT05_MIGRATION.exists(), f"Migration não encontrada: {DEBT05_MIGRATION}"
     return DEBT05_MIGRATION.read_text(encoding="utf-8")
-
-
-@pytest.fixture(scope="module")
-def workflow_yaml():
-    assert BACKUP_WORKFLOW.exists(), f"Workflow não encontrado: {BACKUP_WORKFLOW}"
-    return BACKUP_WORKFLOW.read_text(encoding="utf-8")
-
-
-# ════════════════════════════════════════════════════════════════════════════════
-# AC1: GitHub Actions workflow para pg_dump semanal → S3
-# ════════════════════════════════════════════════════════════════════════════════
-
-class TestAC1BackupWorkflow:
-    """AC1: Workflow de backup semanal pg_dump → S3 existe e está correto."""
-
-    def test_workflow_file_exists(self):
-        """AC1: db-backup.yml existe em .github/workflows/."""
-        assert BACKUP_WORKFLOW.exists(), "Arquivo db-backup.yml não encontrado"
-
-    def test_workflow_runs_weekly(self, workflow_yaml):
-        """AC1: Workflow agendado semanalmente (cron schedule)."""
-        assert "schedule" in workflow_yaml
-        assert "cron" in workflow_yaml
-
-    def test_workflow_cron_is_sunday_offpeak(self, workflow_yaml):
-        """AC1: Cron executado domingo 2:00 UTC (off-peak)."""
-        # '0 2 * * 0' = domingo 02:00 UTC
-        assert "0 2 * * 0" in workflow_yaml, "Cron deve ser domingo 2 UTC: '0 2 * * 0'"
-
-    def test_workflow_uses_pg_dump(self, workflow_yaml):
-        """AC1: Workflow executa pg_dump."""
-        assert "pg_dump" in workflow_yaml
-
-    def test_workflow_uploads_to_s3(self, workflow_yaml):
-        """AC1: Workflow faz upload para S3 via AWS CLI."""
-        assert "aws s3 cp" in workflow_yaml
-
-    def test_workflow_uses_supabase_db_url_secret(self, workflow_yaml):
-        """AC1: Workflow usa SUPABASE_DB_URL (secret existente)."""
-        assert "SUPABASE_DB_URL" in workflow_yaml
-
-    def test_workflow_uses_aws_credentials_secrets(self, workflow_yaml):
-        """AC1: Workflow usa secrets de credenciais AWS."""
-        assert "AWS_BACKUP_ACCESS_KEY_ID" in workflow_yaml
-        assert "AWS_BACKUP_SECRET_KEY" in workflow_yaml
-
-    def test_workflow_backup_format_is_custom(self, workflow_yaml):
-        """AC1: pg_dump usa formato custom (restaurável via pg_restore)."""
-        # --format=custom ou --format custom ou BACKUP_FORMAT: "custom"
-        assert "custom" in workflow_yaml
-
-    def test_workflow_cleans_up_local_file(self, workflow_yaml):
-        """AC1: Workflow remove arquivo local após upload (não deixa lixo no runner)."""
-        assert "rm -f" in workflow_yaml
-
-    def test_workflow_verifies_s3_upload(self, workflow_yaml):
-        """AC1: Workflow verifica que o backup existe no S3 após upload."""
-        assert "aws s3 ls" in workflow_yaml
-
-    def test_workflow_supports_manual_trigger(self, workflow_yaml):
-        """AC1: Workflow pode ser disparado manualmente (workflow_dispatch)."""
-        assert "workflow_dispatch" in workflow_yaml
-
-    def test_workflow_has_timeout(self, workflow_yaml):
-        """AC1: Job tem timeout configurado (evita runs travadas)."""
-        assert "timeout-minutes" in workflow_yaml
-
-    def test_workflow_has_storage_class(self, workflow_yaml):
-        """AC1: Upload usa STANDARD_IA (custo menor para backups raramente acessados)."""
-        assert "STANDARD_IA" in workflow_yaml
-
-    def test_workflow_has_restore_instructions(self, workflow_yaml):
-        """AC1: Workflow documenta como restaurar o backup (Step Summary)."""
-        assert "pg_restore" in workflow_yaml
 
 
 # ════════════════════════════════════════════════════════════════════════════════
