@@ -75,7 +75,7 @@ export async function generateMetadata({
   if (totalContracts > 0) {
     description += `${totalContracts.toLocaleString('pt-BR')} contratos históricos firmados em ${city.name}. `;
   }
-  description += `Dados consolidados de PNCP, PCP e ComprasGov. Filtre por modalidade, valor e prazo. Teste grátis.`;
+  description += `Dados consolidados de PNCP, PCP e ComprasGov. Filtre por modalidade, valor e prazo. Dado público verificável.`;
 
   return {
     title,

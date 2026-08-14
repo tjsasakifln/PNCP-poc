@@ -343,7 +343,7 @@ export default function AjudaFaqClient() {
               </Link>
             ) : (
               <Link
-                href="/signup?source=ajuda-contato"
+                href="/consultoria-b2g?source=ajuda-contato"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--brand-navy)] text-white
                            rounded-button font-semibold hover:bg-[var(--brand-blue)] transition-colors"
               >

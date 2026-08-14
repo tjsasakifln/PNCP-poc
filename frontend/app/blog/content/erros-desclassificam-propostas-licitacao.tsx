@@ -225,7 +225,7 @@ export default function ErrosDesclassificamPropostasLicitacao() {
           O SmartLic analisa editais do PNCP e outros portais, classifica relevância por setor e avalia viabilidade com 4 fatores — modalidade, prazo, valor e geografia. Foque nas oportunidades certas e reduza o desperdício de propostas.
         </p>
         <Link
-          href="/signup?ref=blog-erros-desclassificam"
+          href="/consultoria-b2g?ref=blog-erros-desclassificam"
           className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand/90 transition-colors"
         >
           Testar grátis por 14 dias →

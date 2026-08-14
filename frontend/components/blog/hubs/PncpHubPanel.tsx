@@ -107,7 +107,7 @@ export default async function PncpHubPanel() {
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
-            href="/signup?source=pncp-hub&utm_source=blog&utm_medium=hub&utm_content=pncp-guia"
+            href="/consultoria-b2g?source=pncp-hub&utm_source=blog&utm_medium=hub&utm_content=pncp-guia"
             className="inline-block bg-white text-brand-navy font-semibold px-6 py-3 rounded-button text-sm transition-all hover:scale-[1.02] active:scale-[0.98] text-center"
           >
             Consultar editais agora

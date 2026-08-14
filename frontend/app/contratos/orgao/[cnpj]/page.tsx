@@ -196,15 +196,15 @@ export default async function OrgaoContratosPage({ params }: Props) {
               </h2>
               <p className="text-sm text-gray-600 mb-4">O SmartLic rastreia novos editais e contratos automaticamente.</p>
               <TrackingLink
-                href={`/signup?utm_source=programmatic&utm_medium=cta&utm_campaign=conv-cta-001&utm_content=contratos-orgao&page_cnpj=${cnpj}`}
+                href={`/consultoria-b2g?utm_source=programmatic&utm_medium=cta&utm_campaign=conv-cta-001&utm_content=contratos-orgao&page_cnpj=${cnpj}`}
                 eventName="cta_clicked"
                 eventProps={{ cta_name: 'contratos_orgao_hero', destination: '/signup', page_type: 'contratos_orgao', page_cnpj: cnpj, orgao_nome: stats.orgao_nome }}
                 data-testid="pseo-cta-primary"
                 className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
               >
-                Teste grátis por 14 dias
+                Pedir um diagnóstico à CONFENGE
               </TrackingLink>
-              <p className="mt-2 text-xs text-gray-500">Sem cartão de crédito · 14 dias grátis</p>
+              <p className="mt-2 text-xs text-gray-500">Sem login · dado público verificável</p>
             </section>
           </div>
         </div>
@@ -316,7 +316,7 @@ export default async function OrgaoContratosPage({ params }: Props) {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <TrackingLink
-                href={`/signup?utm_source=programmatic&utm_medium=cta&utm_campaign=conv-cta-001&utm_content=contratos-orgao-similar&page_cnpj=${cnpj}`}
+                href={`/consultoria-b2g?utm_source=programmatic&utm_medium=cta&utm_campaign=conv-cta-001&utm_content=contratos-orgao-similar&page_cnpj=${cnpj}`}
                 eventName="cta_clicked"
                 eventProps={{ cta_name: 'contratos_orgao_similar', destination: '/signup', page_type: 'contratos_orgao', page_cnpj: cnpj, orgao_nome: stats.orgao_nome }}
                 className="inline-block px-5 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors text-center"
@@ -363,14 +363,14 @@ export default async function OrgaoContratosPage({ params }: Props) {
               O SmartLic rastreia licitações abertas nas fontes oficiais e avisa quando surgem oportunidades relevantes.
             </p>
             <TrackingLink
-              href={`/signup?utm_source=programmatic&utm_medium=cta&utm_campaign=conv-cta-001&utm_content=contratos-orgao-footer&page_cnpj=${cnpj}`}
+              href={`/consultoria-b2g?utm_source=programmatic&utm_medium=cta&utm_campaign=conv-cta-001&utm_content=contratos-orgao-footer&page_cnpj=${cnpj}`}
               eventName="cta_clicked"
               eventProps={{ cta_name: 'contratos_orgao_footer', destination: '/signup', page_type: 'contratos_orgao', page_cnpj: cnpj, orgao_nome: stats.orgao_nome }}
               className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Teste grátis por 14 dias
+              Pedir um diagnóstico à CONFENGE
             </TrackingLink>
-            <p className="mt-2 text-xs text-gray-500">Sem cartão de crédito · 14 dias grátis</p>
+            <p className="mt-2 text-xs text-gray-500">Sem login · dado público verificável</p>
           </section>
 
           <LeadCapture

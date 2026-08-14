@@ -223,7 +223,7 @@ export default function CnpjPerfilClient({ perfil }: { perfil: PerfilB2G }) {
           semana.
         </p>
         <Link
-          href={`/signup?ref=cnpj-mid&setor=${perfil.setor_detectado}&uf=${empresa.uf}`}
+          href={`/consultoria-b2g?ref=cnpj-mid&setor=${perfil.setor_detectado}&uf=${empresa.uf}`}
           data-testid="pseo-cta-primary"
           className="text-sm font-bold text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md whitespace-nowrap w-full sm:w-auto text-center"
           onClick={() => {
@@ -350,7 +350,7 @@ export default function CnpjPerfilClient({ perfil }: { perfil: PerfilB2G }) {
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
         <p className="text-gray-700 mb-4">{contextText}</p>
         <Link
-          href={`/signup?${ctaRef}`}
+          href={`/consultoria-b2g?${ctaRef}`}
           className="inline-block w-full sm:w-auto py-3 px-8 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 transition-colors text-center shadow-lg"
           onClick={() => {
             if (typeof window !== 'undefined' && window.mixpanel) {

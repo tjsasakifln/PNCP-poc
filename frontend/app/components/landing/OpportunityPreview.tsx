@@ -132,7 +132,7 @@ export default function OpportunityPreview() {
 
             {/* CTA */}
             <a
-              href="/signup?source=opportunity-preview"
+              href="/consultoria-b2g?source=opportunity-preview"
               className="block w-full text-center text-sm font-semibold text-brand-blue hover:text-brand-blue-hover py-2 rounded-lg border border-brand-blue/30 hover:border-brand-blue/50 hover:bg-brand-blue-subtle transition-all"
               data-testid={`opportunity-cta-${opp.id}`}
             >
@@ -145,7 +145,7 @@ export default function OpportunityPreview() {
       <AnimateOnScroll delay={200}>
         <div className="text-center mt-10">
           <a
-            href="/signup?source=opportunity-preview-bottom"
+            href="/consultoria-b2g?source=opportunity-preview-bottom"
             className="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue hover:text-brand-blue-hover transition-colors"
             data-testid="opportunity-preview-cta"
           >

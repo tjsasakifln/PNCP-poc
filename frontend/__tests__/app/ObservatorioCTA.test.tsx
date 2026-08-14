@@ -15,7 +15,7 @@ describe('ObservatorioCTA', () => {
     mockUseUser.mockReturnValue({ user: null, authLoading: false });
     render(<ObservatorioCTA />);
     const link = screen.getByRole('link', { name: /ver editais do meu setor/i });
-    expect(link).toHaveAttribute('href', '/signup?ref=observatorio-hub');
+    expect(link).toHaveAttribute('href', '/consultoria-b2g?ref=observatorio-hub');
   });
 
   it('renders buscar link when user is authenticated', () => {
@@ -29,6 +29,6 @@ describe('ObservatorioCTA', () => {
     mockUseUser.mockReturnValue({ user: null, authLoading: true });
     render(<ObservatorioCTA />);
     const link = screen.getByRole('link', { name: /ver editais do meu setor/i });
-    expect(link).toHaveAttribute('href', '/signup?ref=observatorio-hub');
+    expect(link).toHaveAttribute('href', '/consultoria-b2g?ref=observatorio-hub');
   });
 });

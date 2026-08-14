@@ -149,9 +149,9 @@ describe('STORY-273 AC4: /sobre page', () => {
       expect(screen.getByText('Experimente com seus próprios dados')).toBeInTheDocument();
     });
 
-    it('should have signup link', () => {
+    it('should have consultoria CTA', () => {
       const ctaLink = screen.getByRole('link', { name: /Analisar oportunidades/ });
-      expect(ctaLink).toHaveAttribute('href', '/signup?source=sobre-cta');
+      expect(ctaLink).toHaveAttribute('href', '/consultoria-b2g?source=sobre-cta');
     });
   });
 

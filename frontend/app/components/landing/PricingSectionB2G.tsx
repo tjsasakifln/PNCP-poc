@@ -49,7 +49,7 @@ export default function PricingSectionB2G() {
         animate={shouldAnimate ? 'visible' : 'hidden'}
       >
         <motion.div variants={fadeInUp}>
-          <Link href="/planos" data-testid="pricing-cta">
+          <Link href="/consultoria-b2g" data-testid="pricing-cta">
             <GradientButton variant="primary" size="lg" glow={true}>
               Ver planos
             </GradientButton>

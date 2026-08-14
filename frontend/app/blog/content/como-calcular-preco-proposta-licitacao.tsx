@@ -364,7 +364,7 @@ export default function ComoCalcularPrecoPropostaLicitacao() {
           modalidade — direto no painel, sem precisar garimpar portal por portal.
         </p>
         <Link
-          href="/signup?ref=blog-preco-proposta"
+          href="/consultoria-b2g?ref=blog-preco-proposta"
           className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand/90 transition-colors"
         >
           Testar grátis por 14 dias →

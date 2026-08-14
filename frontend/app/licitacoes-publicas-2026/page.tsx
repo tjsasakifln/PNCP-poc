@@ -323,7 +323,7 @@ export default async function LicitacoesPublicas2026Page() {
               {/* CTA primário — acima da dobra */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/signup?source=hub-licitacoes-2026&utm_source=organic&utm_medium=pseo&utm_content=hero-cta"
+                  href="/consultoria-b2g?source=hub-licitacoes-2026&utm_source=organic&utm_medium=pseo&utm_content=hero-cta"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors shadow-md"
                 >
                   Buscar Editais Grátis
@@ -559,7 +559,7 @@ export default async function LicitacoesPublicas2026Page() {
                   Use nossa busca para encontrar editais abertos no seu setor e estado agora.
                 </p>
                 <Link
-                  href="/signup?source=hub-licitacoes-2026&utm_content=recent-editais-fallback"
+                  href="/consultoria-b2g?source=hub-licitacoes-2026&utm_content=recent-editais-fallback"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Buscar Editais Agora
@@ -660,13 +660,13 @@ export default async function LicitacoesPublicas2026Page() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
-                href="/signup?source=hub-licitacoes-2026&utm_source=organic&utm_medium=pseo&utm_content=bottom-cta"
+                href="/consultoria-b2g?source=hub-licitacoes-2026&utm_source=organic&utm_medium=pseo&utm_content=bottom-cta"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors shadow-md"
               >
-                Teste Grátis por 14 Dias
+                Pedir um diagnóstico à CONFENGE
               </Link>
               <Link
-                href="/planos"
+                href="/consultoria-b2g"
                 className="inline-flex items-center justify-center px-6 py-3 border-2 border-white/60 text-white font-semibold rounded-lg hover:border-white hover:bg-white/10 transition-colors"
               >
                 Ver Planos

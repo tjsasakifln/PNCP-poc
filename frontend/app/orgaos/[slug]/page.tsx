@@ -291,7 +291,7 @@ export default async function OrgaoPerfilPage({
           {stats.licitacoes_30d} editais · {stats.nome}
         </span>
         <Link
-          href={`/signup?ref=orgao-${slug}-sticky`}
+          href={`/consultoria-b2g?ref=orgao-${slug}-sticky`}
           className="px-4 py-2 bg-brand-blue rounded-lg text-sm font-semibold whitespace-nowrap"
         >
           Receber alertas →
@@ -424,7 +424,7 @@ export default async function OrgaoPerfilPage({
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
-              href={`/signup?ref=orgao-${slug}`}
+              href={`/consultoria-b2g?ref=orgao-${slug}`}
               className="inline-block px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-center"
             >
               Receber alertas grátis 14 dias →

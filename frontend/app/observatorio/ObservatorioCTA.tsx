@@ -26,13 +26,13 @@ export function ObservatorioCTA() {
         </Link>
       ) : (
         <Link
-          href="/signup?ref=observatorio-hub"
+          href="/consultoria-b2g?ref=observatorio-hub"
           className="inline-block px-7 py-3 bg-white text-brand-navy font-bold rounded-xl hover:bg-gray-100 transition-colors"
         >
           Ver editais do meu setor →
         </Link>
       )}
-      <p className="mt-3 text-xs text-white/70">14 dias grátis, sem cartão de crédito.</p>
+      <p className="mt-3 text-xs text-white/70">sem login, dado verificável.</p>
     </section>
   );
 }

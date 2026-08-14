@@ -244,7 +244,7 @@ export default function RoiIaLicitacoesCalculadoraRetorno() {
       <BlogInlineCTA
         slug="roi-ia-licitacoes-calculadora-retorno"
         campaign="b2g"
-        ctaMessage="Calcule o ROI no SmartLic — 14 dias grátis."
+        ctaMessage="Calcule o ROI no SmartLic — Dado público verificável."
         ctaText="Começar Trial Gratuito"
       />
 

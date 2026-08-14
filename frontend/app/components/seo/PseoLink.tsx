@@ -4,7 +4,7 @@
  *
  * Usage (in server or client components):
  *   <PseoLink
- *     href="/signup?ref=contratos"
+ *     href="/consultoria-b2g?ref=contratos"
  *     eventName="pseo_alert_signup"
  *     sourceTemplate="contrato_page"
  *     setor="pavimentacao-asfaltica"

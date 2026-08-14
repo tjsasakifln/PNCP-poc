@@ -246,7 +246,7 @@ export default function MelhoresPlataformasLicitacao2026Ranking() {
       <BlogInlineCTA
         slug="melhores-plataformas-licitacao-2026-ranking"
         campaign="guias"
-        ctaMessage="Plataforma com IA de classificação setorial — 14 dias grátis."
+        ctaMessage="Plataforma com IA de classificação setorial — Dado público verificável."
         ctaText="Começar Trial Gratuito"
       />
 

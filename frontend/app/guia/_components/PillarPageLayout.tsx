@@ -156,14 +156,14 @@ export default function PillarPageLayout({ pillar, children, sections }: PillarP
                   Automatize a triagem de editais
                 </h3>
                 <p className="text-ink-secondary mb-4">
-                  O SmartLic monitora as fontes oficiais de licitações 24/7 e usa IA para classificar relevância setorial por empresa. Teste grátis por 14 dias, sem cartão.
+                  O SmartLic monitora as fontes oficiais de licitações 24/7 e usa IA para classificar relevância setorial por empresa. A CONFENGE interpreta o dado público e opera a decisão.
                 </p>
                 <Link
-                  href="/signup?ref=pillar-inline-cta"
+                  href="/consultoria-b2g?ref=pillar-inline-cta"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-brand-blue/90 transition-colors"
                   data-testid="pillar-inline-cta"
                 >
-                  Começar teste grátis de 14 dias
+                  Pedir um diagnóstico à CONFENGE
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </aside>

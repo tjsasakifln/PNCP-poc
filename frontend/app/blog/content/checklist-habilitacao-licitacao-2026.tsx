@@ -430,7 +430,7 @@ export default function ChecklistHabilitacaoLicitacao2026() {
           Prepare sua documentação com antecedência e pare de perder oportunidades por erro burocrático.
         </p>
         <Link
-          href="/signup?ref=blog-checklist-habilitacao"
+          href="/consultoria-b2g?ref=blog-checklist-habilitacao"
           className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand/90 transition-colors"
         >
           Testar Grátis por 14 Dias →

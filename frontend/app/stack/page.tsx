@@ -42,7 +42,7 @@ export default function StackPage() {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'BRL',
-      description: '14 dias grátis',
+      description: 'dado público verificável',
     },
   };
 
@@ -190,10 +190,10 @@ export default function StackPage() {
               Teste o SmartLic gratuitamente e veja como essa stack entrega resultados em segundos.
             </p>
             <Link
-              href="/signup?source=stack"
+              href="/consultoria-b2g?source=stack"
               className="mt-6 inline-block rounded-lg bg-white text-brand-blue font-semibold px-6 py-3 hover:bg-blue-50 transition-colors"
             >
-              14 dias grátis →
+              dado público verificável →
             </Link>
           </div>
         </section>

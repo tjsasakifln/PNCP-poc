@@ -181,7 +181,7 @@ export default function PSEOTemplate({ ctx, dataBlock }: Props) {
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
-              href={`/signup?ref=${ctaRef}`}
+              href={`/consultoria-b2g?ref=${ctaRef}`}
               className="inline-block px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
             >
               Receber alertas grátis 14 dias →
@@ -278,7 +278,7 @@ export default function PSEOTemplate({ ctx, dataBlock }: Props) {
             {total} editais abertos · {ctx.setor}
           </span>
           <Link
-            href={`/signup?ref=${ctaRef}-sticky`}
+            href={`/consultoria-b2g?ref=${ctaRef}-sticky`}
             className="px-4 py-2 bg-brand-blue rounded-lg text-sm font-semibold whitespace-nowrap"
           >
             Receber alertas →

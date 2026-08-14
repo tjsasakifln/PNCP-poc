@@ -358,7 +358,7 @@ export default function ImpugnacaoEditalQuandoComoContestar() {
           que realmente importam para o seu negócio.
         </p>
         <Link
-          href="/signup?ref=blog-impugnacao-edital"
+          href="/consultoria-b2g?ref=blog-impugnacao-edital"
           className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand/90 transition-colors"
         >
           Testar grátis por 14 dias →

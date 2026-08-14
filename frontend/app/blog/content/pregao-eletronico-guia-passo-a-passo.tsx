@@ -505,7 +505,7 @@ export default function PregaoEletronicoGuiaPassoAPasso() {
           editais manualmente.
         </p>
         <Link
-          href="/signup?ref=blog-pregao-eletronico"
+          href="/consultoria-b2g?ref=blog-pregao-eletronico"
           className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand/90 transition-colors"
         >
           Testar Grátis por 14 Dias →

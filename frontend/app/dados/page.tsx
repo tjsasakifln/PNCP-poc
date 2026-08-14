@@ -224,7 +224,7 @@ export default async function DadosPage() {
           negócio.
         </p>
         <Link
-          href="/signup"
+          href="/consultoria-b2g"
           className="inline-block rounded-xl bg-white px-8 py-3 text-sm font-bold text-blue-700 shadow hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white/60"
         >
           Criar conta gratuita — 14 dias sem cartão

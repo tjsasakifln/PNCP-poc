@@ -646,7 +646,7 @@ export default function LicitacoesLimpezaFacilities2026() {
       {/* CTA Section */}
       <div className="not-prose mt-8 sm:mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-5 sm:p-8 text-center border border-brand-blue/20">
         <p className="text-lg sm:text-xl font-bold text-ink mb-2">
-          Encontre editais de limpeza e facilities com o SmartLic — 14 dias grátis
+          Encontre editais de limpeza e facilities com o SmartLic — dado público verificável
         </p>
         <p className="text-sm sm:text-base text-ink-secondary mb-4 sm:mb-6 max-w-lg mx-auto">
           O SmartLic monitora o PNCP e classifica editais por setor usando IA.
@@ -654,10 +654,10 @@ export default function LicitacoesLimpezaFacilities2026() {
           seu perfil — filtradas por UF, valor e modalidade.
         </p>
         <Link
-          href="/signup?source=blog&article=licitações-limpeza-facilities-2026&utm_source=blog&utm_medium=cta&utm_content=licitações-limpeza-facilities-2026&utm_campaign=guias"
+          href="/consultoria-b2g?source=blog&article=licitações-limpeza-facilities-2026&utm_source=blog&utm_medium=cta&utm_content=licitações-limpeza-facilities-2026&utm_campaign=guias"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          Teste Grátis por 14 Dias
+          Pedir um diagnóstico à CONFENGE
         </Link>
         <p className="text-xs text-ink-secondary mt-3">
           Sem cartão de crédito. Veja todas as funcionalidades na{' '}

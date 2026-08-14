@@ -177,7 +177,7 @@ export default function SmartlicVsEffectiComparacao2026() {
             </tr>
             <tr>
               <td className="py-3 px-3 font-medium">Trial/demo</td>
-              <td className="py-3 px-3">14 dias grátis, sem cartão de crédito</td>
+              <td className="py-3 px-3">sem login, dado verificável</td>
               <td className="py-3 px-3">Demo agendada com equipe comercial</td>
             </tr>
             <tr>

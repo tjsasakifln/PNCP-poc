@@ -461,7 +461,7 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
 
       <p>
         O{' '}
-        <Link href="/planos" className="text-brand-navy dark:text-brand-blue hover:underline">
+        <Link href="/consultoria-b2g" className="text-brand-navy dark:text-brand-blue hover:underline">
           SmartLic
         </Link>{' '}
         foi projetado para esse cenário: busca multi-fonte (PNCP, Portal
@@ -482,10 +482,10 @@ export default function AnaliseEditalDiferencialCompetitivoConsultoria() {
           cliente não encontra em nenhum outro lugar.
         </p>
         <Link
-          href="/signup?source=blog&article=analise-edital-diferencial-competitivo-consultoria&utm_source=blog&utm_medium=cta&utm_content=analise-edital-diferencial-competitivo-consultoria&utm_campaign=consultorias"
+          href="/consultoria-b2g?source=blog&article=analise-edital-diferencial-competitivo-consultoria&utm_source=blog&utm_medium=cta&utm_content=analise-edital-diferencial-competitivo-consultoria&utm_campaign=consultorias"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          Teste Grátis por 14 Dias
+          Pedir um diagnóstico à CONFENGE
         </Link>
         <p className="text-xs text-ink-secondary mt-3">
           Sem cartão de crédito.{' '}

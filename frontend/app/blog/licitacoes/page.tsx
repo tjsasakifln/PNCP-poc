@@ -121,13 +121,13 @@ export default function LicitacoesIndexPage() {
             </h3>
             <p className="text-white/80 mb-6 max-w-xl mx-auto">
               O SmartLic monitora todos os 15 setores em todos os 27 estados do Brasil, com dados ao vivo.
-              Teste grátis 14 dias — sem cartão de crédito.
+              Dado público verificável. Diagnóstico com a CONFENGE.
             </p>
             <Link
-              href="/signup?source=blog&utm_source=blog&utm_medium=programmatic&utm_content=licitacoes-index"
+              href="/consultoria-b2g?source=blog&utm_source=blog&utm_medium=programmatic&utm_content=licitacoes-index"
               className="inline-block bg-white text-brand-navy font-semibold px-6 py-3 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              Começar Teste Grátis
+              Pedir um diagnóstico à CONFENGE
             </Link>
           </div>
         </div>

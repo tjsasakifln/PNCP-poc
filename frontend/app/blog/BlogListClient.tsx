@@ -111,10 +111,10 @@ export default function BlogListClient({
                   viabilidade por IA.
                 </p>
                 <Link
-                  href="/signup?source=blog-listing-cta"
+                  href="/consultoria-b2g?source=blog-listing-cta"
                   className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 py-2.5 rounded-button text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  Comece Grátis
+                  Pedir diagnóstico
                 </Link>
               </div>
             )}

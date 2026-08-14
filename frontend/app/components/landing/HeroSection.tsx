@@ -29,7 +29,7 @@ const HERO_SCREENSHOT_BLUR =
  * REPO-007: Founding disclaimer below CTAs
  * COPY-LANDING-004 (#1003): Beachhead anti-assessor + trust signals 2026
  *  - V1 headline: "Pare de pagar R$3.000/mês ao assessor que copia o PNCP"
- *  - CTA primário: "Testar 14 dias grátis →" + sub "Sem cartão. Cancele em 1 clique."
+ *  - CTA primário: "Pedir um diagnóstico à CONFENGE →" + sub "Sem cartão. Cancele em 1 clique."
  *  - CTA secundário: ancoragem Plano Fundadores R$997
  *  - Founder-led visível: nome + cargo + LinkedIn (Schema.org Person já em StructuredData.tsx)
  *  - Trust signals 2026: founder + changelog + roadmap + 60d garantia (substitui "Sem dados fabricados")
@@ -133,7 +133,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             variants={fadeInUp}
             data-testid="hero-microcompromisso"
           >
-            Sem cartão. Cancele em 1 clique. Comece em 2 minutos.
+            Consulta pública, sem login. A CONFENGE opera a decisão.
           </motion.p>
 
           {/* COPY-COP-005: Consistência — Microcompromisso antes do CTA principal */}
@@ -142,7 +142,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             variants={fadeInUp}
           >
             <Link
-              href="/signup?source=hero-preview"
+              href="/consultoria-b2g?source=hero-preview"
               className="text-sm text-brand-blue hover:text-brand-blue-hover underline-offset-2 hover:underline transition-colors"
               data-testid="hero-micro-commitment"
             >

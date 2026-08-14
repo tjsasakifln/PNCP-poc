@@ -101,7 +101,7 @@ export interface CtaContext {
 // Constants
 // ---------------------------------------------------------------------------
 
-const DEFAULT_SIGNUP_HREF = '/signup?source=blog&utm_source=blog&utm_medium=programmatic';
+const DEFAULT_SIGNUP_HREF = '/consultoria-b2g?source=blog&utm_source=blog&utm_medium=programmatic';
 
 /** Portuguese preposition map for Brazilian states. */
 const UF_PREPOSITIONS: Record<string, string> = {
@@ -308,7 +308,7 @@ function ctaContratoDetalhe(context: CtaContext): CtaConfig {
     buttonText: 'Explorar contratos similares',
     buttonLink: buildSignupHref(context.slug, 'contratos-similares'),
     secondaryText: 'Desbloquear órgãos compradores do segmento',
-    secondaryLink: '/signup?ref=contratos-órgãos',
+    secondaryLink: '/consultoria-b2g?ref=contratos-orgaos',
     socialProof: 'Dados de 2M+ contratos históricos do PNCP',
     campaign: 'contratos-similares',
   };

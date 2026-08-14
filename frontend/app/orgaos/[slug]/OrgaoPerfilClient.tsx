@@ -199,7 +199,7 @@ export default function OrgaoPerfilClient({ stats }: { stats: OrgaoStats }) {
           por este órgão nos últimos 30 dias.
         </p>
         <Link
-          href={`/signup?ref=orgao-mid&uf=${uf}&utm_source=pseo&utm_medium=organic&utm_content=orgao_page`}
+          href={`/consultoria-b2g?ref=orgao-mid&uf=${uf}&utm_source=pseo&utm_medium=organic&utm_content=orgao_page`}
           data-testid="pseo-cta-primary"
           className="text-sm font-bold text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md whitespace-nowrap w-full sm:w-auto text-center"
           onClick={() => {
@@ -422,7 +422,7 @@ export default function OrgaoPerfilClient({ stats }: { stats: OrgaoStats }) {
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
         <p className="text-gray-700 mb-4">{contextText}</p>
         <Link
-          href={`/signup?ref=orgao&uf=${uf}&utm_source=pseo&utm_medium=organic&utm_content=orgao_page`}
+          href={`/consultoria-b2g?ref=orgao&uf=${uf}&utm_source=pseo&utm_medium=organic&utm_content=orgao_page`}
           className="inline-block w-full sm:w-auto py-3 px-8 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 transition-colors text-center shadow-lg"
           onClick={() => {
             if (typeof window !== 'undefined' && window.mixpanel) {

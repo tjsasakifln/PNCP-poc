@@ -155,7 +155,7 @@ export function NavSolucoesDropdown() {
 
 /**
  * NavbarAuthCTA: Auth-aware CTA buttons (desktop).
- * Shows loading placeholder, "Ir para Busca" for logged-in, or "Entrar" + "Comece Gratis" for visitors.
+ * Shows loading placeholder, "Ir para Busca" for logged-in, or "Entrar" + diagnóstico CONFENGE for visitors.
  */
 export function NavbarAuthCTA() {
   const { user, loading } = useAuth();

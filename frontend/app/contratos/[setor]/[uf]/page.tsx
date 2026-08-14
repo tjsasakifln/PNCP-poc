@@ -301,7 +301,7 @@ export default async function ContratosSetorUfPage({ params }: Props) {
             {totalContracts} contratos · {sector.name} {ufName}
           </span>
           <Link
-            href={`/signup?ref=contratos-${setor}-${uf}-sticky`}
+            href={`/consultoria-b2g?ref=contratos-${setor}-${uf}-sticky`}
             className="px-4 py-2 bg-brand-blue rounded-lg text-sm font-semibold whitespace-nowrap"
           >
             Receber alertas →
@@ -485,7 +485,7 @@ export default async function ContratosSetorUfPage({ params }: Props) {
                       .
                     </p>
                     <PseoLink
-                      href={`/signup?ref=contratos-mid&setor=${setor}&uf=${uf}`}
+                      href={`/consultoria-b2g?ref=contratos-mid&setor=${setor}&uf=${uf}`}
                       className="text-sm font-bold text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md whitespace-nowrap w-full sm:w-auto text-center"
                       eventName="pseo_alert_signup"
                       sourceTemplate="contrato_page"
@@ -584,7 +584,7 @@ export default async function ContratosSetorUfPage({ params }: Props) {
                       )}
                     </div>
                     <PseoLink
-                      href={`/signup?ref=contratos-mid&setor=${setor}&uf=${uf}`}
+                      href={`/consultoria-b2g?ref=contratos-mid&setor=${setor}&uf=${uf}`}
                       className="inline-block px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-sm"
                       eventName="pseo_alert_signup"
                       sourceTemplate="contrato_page"
@@ -622,7 +622,7 @@ export default async function ContratosSetorUfPage({ params }: Props) {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <PseoLink
-                href={`/signup?ref=contratos-${setor}-${uf}`}
+                href={`/consultoria-b2g?ref=contratos-${setor}-${uf}`}
                 className="inline-block px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-center"
                 eventName="pseo_alert_signup"
                 sourceTemplate="contrato_page"

@@ -73,7 +73,7 @@ export default function SeoBannerCta({ setor, uf }: SeoBannerCtaProps) {
             </p>
           </div>
           <Link
-            href={`/signup?source=${utmSource}`}
+            href={`/consultoria-b2g?source=${utmSource}`}
             className="inline-flex items-center px-6 py-3 bg-white text-brand-navy font-bold
                        rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap text-sm"
           >
@@ -81,7 +81,7 @@ export default function SeoBannerCta({ setor, uf }: SeoBannerCtaProps) {
           </Link>
         </div>
         <p className="mt-3 text-xs text-white/60">
-          14 dias grátis, sem cartão. Resultado em 3 minutos.
+          sem login, dado verificável. Resultado em 3 minutos.
         </p>
       </div>
     </section>
