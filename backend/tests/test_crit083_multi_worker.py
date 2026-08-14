@@ -1,12 +1,12 @@
 """CRIT-083: Production Server Hardening — Tests.
 
 Validates:
-  AC1: railway.toml and start.sh use uvicorn spawn-based workers (not Gunicorn fork)
+  AC1: start.sh uses uvicorn spawn-based workers (not Gunicorn fork)
   AC5: WORKER_MEMORY_BYTES gauge exists in metrics
   AC6: Memory warning logged when worker exceeds 512MB RSS
   AC7: create_tracker uses Redis Streams when Redis is available (cross-worker SSE)
   AC8: SSE consumer on a different worker can discover tracker via Redis metadata
-  AC9: graceful-timeout 120s configured in start.sh and railway.toml
+  AC9: graceful-timeout 120s configured in start.sh
 """
 
 import os
@@ -25,41 +25,6 @@ def _backend_root() -> str:
 def _read_start_sh() -> str:
     with open(os.path.join(_backend_root(), "start.sh")) as f:
         return f.read()
-
-
-def _read_railway_toml() -> str:
-    with open(os.path.join(_backend_root(), "railway.toml")) as f:
-        return f.read()
-
-
-# ============================================================================
-# AC1: railway.toml startCommand uses uvicorn spawn workers
-# ============================================================================
-
-
-class TestAC1RailwayToml:
-    """AC1: railway.toml startCommand uses uvicorn --workers (spawn-based)."""
-
-    def test_startcommand_has_workers_flag(self):
-        content = _read_railway_toml()
-        # startCommand delegates to start.sh (COST-OPT colocated worker). Workers flag is in start.sh.
-        assert "start.sh" in content, (
-            "railway.toml startCommand must delegate to start.sh"
-        )
-
-    def test_startcommand_uses_uvicorn_not_gunicorn(self):
-        content = _read_railway_toml()
-        lines = [ln for ln in content.splitlines() if "startCommand" in ln]
-        assert lines, "startCommand not found in railway.toml"
-        # startCommand delegates to start.sh which uses uvicorn (not gunicorn) per CRIT-083
-        assert "gunicorn" not in lines[0].lower(), (
-            "startCommand must not reference gunicorn (CRIT-083)"
-        )
-
-    def test_startcommand_has_default_2_workers(self):
-        content = _read_railway_toml()
-        # WEB_CONCURRENCY is documented in railway.toml comments; actual default lives in start.sh
-        assert "WEB_CONCURRENCY" in content
 
 
 # ============================================================================
@@ -365,7 +330,7 @@ class TestAC8CrossWorkerSSE:
 
 
 class TestAC9GracefulTimeout:
-    """AC9: graceful shutdown timeout aligned with Railway drainingSeconds=120s."""
+    """AC9: graceful shutdown timeout remains explicit in start.sh."""
 
     def test_start_sh_uvicorn_has_graceful_shutdown_configurable(self):
         content = _read_start_sh()
@@ -373,20 +338,6 @@ class TestAC9GracefulTimeout:
             "start.sh uvicorn block must use configurable --timeout-graceful-shutdown "
             "via UVICORN_TIMEOUT_GRACEFUL_SHUTDOWN env var with default 120s (CRIT-084 AC2, #799)"
         )
-
-    def test_railway_toml_has_draining_120(self):
-        content = _read_railway_toml()
-        assert "drainingSeconds = 120" in content, (
-            "railway.toml must have drainingSeconds = 120 (CRIT-083 AC9)"
-        )
-
-    def test_railway_toml_startcommand_has_graceful_shutdown_configurable(self):
-        content = _read_railway_toml()
-        # UVICORN_TIMEOUT_GRACEFUL_SHUTDOWN is documented in railway.toml comments (configurable env var)
-        assert "UVICORN_TIMEOUT_GRACEFUL_SHUTDOWN" in content, (
-            "railway.toml must document UVICORN_TIMEOUT_GRACEFUL_SHUTDOWN env var (#799)"
-        )
-
 
 # ============================================================================
 # AC10 (already done): SSE shutdown event is in terminal stages

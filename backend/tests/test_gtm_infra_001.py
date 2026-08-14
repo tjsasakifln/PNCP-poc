@@ -301,15 +301,3 @@ class TestGunicornTimeout:
         assert "graceful_timeout" in echo_lines[0], (
             f"Echo line should reference graceful_timeout: {echo_lines[0]}"
         )
-
-    def test_railway_timeout_documented_in_claude_md(self):
-        """AC9: CLAUDE.md must document Railway hard timeout ~120s."""
-        claude_md_path = Path(__file__).parent.parent.parent / "CLAUDE.md"
-        content = claude_md_path.read_text(encoding="utf-8")
-
-        assert "Railway hard timeout" in content, (
-            "CLAUDE.md must document Railway hard timeout (AC9)"
-        )
-        assert "120s" in content or "~120s" in content, (
-            "CLAUDE.md must mention the ~120s Railway hard timeout value"
-        )

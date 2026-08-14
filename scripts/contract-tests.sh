@@ -8,7 +8,7 @@
 #
 # Usage:
 #   ./scripts/contract-tests.sh                          # TestClient local
-#   BACKEND_URL=https://api.smartlic.tech ./scripts/contract-tests.sh # remote
+#   BACKEND_URL=http://127.0.0.1:8000 ./scripts/contract-tests.sh # local explicit target
 #   ./scripts/contract-tests.sh --specs                  # mostra schemas expected
 #   ./scripts/contract-tests.sh --help                   # show help
 #

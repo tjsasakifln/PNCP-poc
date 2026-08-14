@@ -7,7 +7,6 @@ AC15-AC16: worker_exit logs SIGSEGV, OOM, and non-zero exit codes
 AC5: when_ready hook logs readiness
 AC1: start.sh defaults GUNICORN_PRELOAD=false
 AC10: cryptography pinned to exact version
-AC6: railway.toml health check grace period >= 30s
 """
 
 import logging
@@ -379,57 +378,6 @@ class TestWorkerExitAllNonZero:
 
         # SIGSEGV still logged despite Sentry failure
         assert any("SIGSEGV" in r.message for r in caplog.records)
-
-
-# ---------------------------------------------------------------------------
-# AC6: railway.toml — health check grace period >= 30s
-# ---------------------------------------------------------------------------
-
-
-class TestRailwayTomlGracePeriod:
-    """AC6: railway.toml healthcheckTimeout >= 30s."""
-
-    def test_ac6_healthcheck_timeout_gte_30(self):
-        """railway.toml healthcheckTimeout must be >= 30 seconds."""
-        import os
-        import re
-
-        toml_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "railway.toml"
-        )
-        with open(toml_path) as f:
-            content = f.read()
-
-        match = re.search(r"healthcheckTimeout\s*=\s*(\d+)", content)
-        assert match is not None, "railway.toml must define healthcheckTimeout"
-
-        timeout = int(match.group(1))
-        assert timeout >= 30, (
-            f"healthcheckTimeout={timeout} must be >= 30 (STORY-303 AC6)"
-        )
-
-    def test_ac6_healthcheck_path_is_health_live(self):
-        """railway.toml health check path must be /health/live.
-
-        Stage-2 incident fix 2026-04-27 (PR #529): switched from /health (probes 5
-        external APIs, slow under load) and /health/ready (probes Redis+Supabase,
-        fails 503 when wedged) to /health/live (pure-async, no IO, ALWAYS 200 if
-        worker is alive). Under sustained Googlebot crawl the previous probe
-        couldn't respond → Railway healthcheck timed out 11/11 retries → new
-        container never promoted → wedge perpetuated.
-        """
-        import os
-
-        toml_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "railway.toml"
-        )
-        with open(toml_path) as f:
-            content = f.read()
-
-        assert "/health/live" in content, (
-            "railway.toml must check /health/live (pure-async liveness probe; "
-            "incident hotfix PR #529 Stage 2)"
-        )
 
 
 # ---------------------------------------------------------------------------

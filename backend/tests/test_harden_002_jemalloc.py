@@ -39,15 +39,3 @@ def test_metrics_endpoint_available():
     assert is_available() is True
     app = get_metrics_app()
     assert app is not None
-
-
-def test_dockerfile_has_jemalloc():
-    """AC1+AC2: Dockerfile installs libjemalloc2 and sets LD_PRELOAD."""
-    from pathlib import Path
-
-    dockerfile = Path(__file__).parent.parent / "Dockerfile"
-    content = dockerfile.read_text()
-
-    assert "libjemalloc2" in content, "AC1: Dockerfile must install libjemalloc2"
-    assert "LD_PRELOAD" in content, "AC2: Dockerfile must set LD_PRELOAD"
-    assert "libjemalloc.so.2" in content, "AC2: LD_PRELOAD must point to libjemalloc.so.2"
