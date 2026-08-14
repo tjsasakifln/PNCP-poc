@@ -1,15 +1,8 @@
-name: "Deploy to Production (Railway)"
+name: "Legacy Bridge Deployment (manual only)"
 
+# ADR-STRAT-002: SmartLic has no automatic product deployment.
+# Manual execution is allowed only for the temporary bridge tracked in #2115.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'railway.toml'
-      - 'backend/railway.toml'
-      - 'frontend/railway.toml'
-      - 'supabase/migrations/**'
   workflow_dispatch:
     inputs:
       service:
