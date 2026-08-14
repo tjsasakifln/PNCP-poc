@@ -10,3 +10,5 @@ The only approved runtime end state is:
 - canonical truth and `public_read_v1` in `extra-cli`;
 - commercial action in Warmbly;
 - SmartLic redirect/bridge removed after monitored cutover.
+
+The only authorized #2115 remainder is the isolated hash-pinned bridge in `bridge/` (11 URL-specific 301s + default 410). Docs that still call #2115 a Netcup FastAPI/Next runtime are SUPERSEDED — see `bridge/docs/SUPERSEDED-NETCUP-PRODUCT.md`. Live DNS/TLS cutover is BLOCKED until a named proxy+cert exist.

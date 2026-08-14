@@ -16,14 +16,20 @@ migration:
   owners:
     - https://github.com/tjsasakifln/web-cfg/issues/62
     - https://github.com/tjsasakifln/SmartLic/issues/2115
-  bridge_status: target_not_yet_authorized
+  bridge_status: manifesto_pinned_cutover_blocked
   bridge_rule: url_specific_redirects_only
+  manifesto_sha256: c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d
+  manifesto_commit: 3f112bfbd9e6b042691e1c09812af00f42735adb
+  execute_redirects: 11
+  default_status: 410
   netcup_rebuild_authorized: false
 observed_dns_2026_08_14:
   smartlic.tech: 69.46.46.88
+  www.smartlic.tech: 69.46.46.117
   api.smartlic.tech: 1us7c4ob.up.railway.app
 observed_http_2026_08_14:
   smartlic.tech: railway_edge_fallback_404
+  www.smartlic.tech: tls_san_mismatch
   api.smartlic.tech: railway_edge_fallback_404
 netcup_cleanup_2026_08_14:
   smartlic_units: not_found

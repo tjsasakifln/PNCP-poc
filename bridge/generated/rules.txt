@@ -1,0 +1,16 @@
+# manifesto=c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d
+# config=c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68
+# default=410
+legacy_path	target_url	status
+/blog/aditivos-contratuais-o-que-sao-como-monitorar	https://confenge.com.br/aditivos-obras-publicas/	301
+/blog/orgaos-risco-atraso-pagamento-licitacao	https://confenge.com.br/atrasos-prorrogacao-obras-publicas/	301
+/glossario/aditivo-contratual	https://confenge.com.br/aditivos-obras-publicas/	301
+/glossario/mapa-de-riscos	https://confenge.com.br/conteudos/matriz-de-riscos-reequilibrio-economico-financeiro/	301
+/glossario/matriz-de-riscos	https://confenge.com.br/conteudos/matriz-de-riscos-reequilibrio-economico-financeiro/	301
+/glossario/medicao	https://confenge.com.br/medicoes-glosas-obras-publicas/	301
+/glossario/reajuste	https://confenge.com.br/reequilibrio-obras-publicas/	301
+/glossario/reequilibrio-economico-financeiro	https://confenge.com.br/reequilibrio-obras-publicas/	301
+/perguntas/indice-reajuste-contrato-publico	https://confenge.com.br/reequilibrio-obras-publicas/	301
+/perguntas/prazo-pagamento-contrato-publico	https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/	301
+/perguntas/reequilibrio-economico-financeiro	https://confenge.com.br/reequilibrio-obras-publicas/	301
+*	(none)	410

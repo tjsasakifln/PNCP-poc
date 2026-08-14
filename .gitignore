@@ -29,6 +29,10 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+# NTFS/WSL is case-insensitive: the Python MANIFEST rule above would
+# also hide bridge/manifest/ (the pinned web-cfg#62 execute set).
+!bridge/manifest/
+!bridge/manifest/**
 pip-log.txt
 pip-delete-this-directory.txt
 

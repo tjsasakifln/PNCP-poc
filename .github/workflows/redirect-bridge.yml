@@ -1,0 +1,28 @@
+name: Redirect Bridge
+
+on:
+  pull_request:
+    paths:
+      - "bridge/**"
+      - ".github/workflows/redirect-bridge.yml"
+  push:
+    paths:
+      - "bridge/**"
+      - ".github/workflows/redirect-bridge.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Generate from pinned manifesto
+        run: python3 -m bridge.generate --check
+      - name: Unit tests
+        run: python3 -m unittest discover -s bridge/tests -v

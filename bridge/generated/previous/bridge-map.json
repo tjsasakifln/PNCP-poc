@@ -1,0 +1,12 @@
+{
+  "config_sha256": "e313eae3228052cce28bff59368b382713f9570c7f4ac67b372f56431f3668b2",
+  "default_status": 410,
+  "expiry_review": "pre-bridge",
+  "manifesto_sha256": "c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d",
+  "observation_window_days": 28,
+  "owner": "SmartLic#2115",
+  "persist": [],
+  "pinned_commit": "3f112bfbd9e6b042691e1c09812af00f42735adb",
+  "redirects": [],
+  "removal_trigger": "pre-bridge — no 301s active"
+}
