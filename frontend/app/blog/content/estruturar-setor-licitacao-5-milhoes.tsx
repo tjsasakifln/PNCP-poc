@@ -454,7 +454,7 @@ export default function EstruturarSetorLicitacao5Milhões() {
         (monitoramento automatizado de múltiplos portais), a triagem (classificação por
         relevância e viabilidade) e o controle de pipeline (visão consolidada de todas as
         oportunidades em andamento com prazos e status). O{' '}
-        <Link href="/planos">SmartLic</Link> cobre essas três áreas em uma única plataforma,
+        <Link href="/consultoria-b2g">SmartLic</Link> cobre essas três áreas em uma única plataforma,
         permitindo que a equipe enxuta opere com a mesma eficiência de departamentos maiores.
       </p>
 
@@ -469,14 +469,14 @@ export default function EstruturarSetorLicitacao5Milhões() {
           enxuta foque em elaborar propostas vencedoras.
         </p>
         <Link
-          href="/signup?source=blog&article=estruturar-setor-licitação-5-milhões&utm_source=blog&utm_medium=cta&utm_content=estruturar-setor-licitação-5-milhões&utm_campaign=b2g"
+          href="/consultoria-b2g?source=blog&article=estruturar-setor-licitação-5-milhões&utm_source=blog&utm_medium=cta&utm_content=estruturar-setor-licitação-5-milhões&utm_campaign=b2g"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          Teste Grátis por 14 Dias
+          Pedir um diagnóstico à CONFENGE
         </Link>
         <p className="text-xs text-ink-secondary mt-3">
           Sem cartão de crédito.{' '}
-          <Link href="/planos" className="underline hover:text-ink">
+          <Link href="/consultoria-b2g" className="underline hover:text-ink">
             Ver planos
           </Link>
         </p>

@@ -211,7 +211,7 @@ export default function MeiMicroempresaVantagensLicitacoes() {
         O volume de licitações exclusivas para ME/EPP é enorme — e a competição é menor porque
         grandes empresas estão legalmente excluídas. Para monitorar esses editais sem precisar
         acessar portal por portal, use uma ferramenta como o{' '}
-        <Link href="/signup?ref=blog-mei-me-epp">SmartLic</Link>, que agrega múltiplas fontes e
+        <Link href="/consultoria-b2g?ref=blog-mei-me-epp">SmartLic</Link>, que agrega múltiplas fontes e
         aplica filtros automaticamente.
       </p>
 
@@ -423,10 +423,10 @@ export default function MeiMicroempresaVantagensLicitacoes() {
         <p className="text-ink-secondary mb-4">
           O SmartLic filtra automaticamente licitações exclusivas para microempresas e EPP,
           aplica IA para classificar relevância e calcula viabilidade — tudo em uma busca.
-          14 dias grátis, sem cartão.
+          sem login, dado verificável.
         </p>
         <Link
-          href="/signup?ref=blog-mei-me-epp"
+          href="/consultoria-b2g?ref=blog-mei-me-epp"
           className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand/90 transition-colors"
         >
           Começar gratuitamente →

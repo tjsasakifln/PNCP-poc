@@ -80,7 +80,7 @@ export default function HistoricalContractsFallback(props: Props) {
       {/* CTA de alertas — exclusivo do contexto de fallback (zero-editais) */}
       <div className="not-prose bg-brand-blue-subtle/50 rounded-lg p-4 sm:p-5 border border-brand-blue/15 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-10">
         <p className="text-sm sm:text-base text-[var(--ink)] font-medium text-center sm:text-left flex-1">
-          {buildCtaTitle(props)} — teste grátis por 14 dias, sem cartão.
+          {buildCtaTitle(props)} — peça um diagnóstico à CONFENGE.
         </p>
         <Link
           href={signupHref}

@@ -288,7 +288,7 @@ export default function ComoEscolherPlataformaIaLicitacoes() {
       <BlogInlineCTA
         slug="como-escolher-plataforma-ia-licitacoes"
         campaign="guias"
-        ctaMessage="Aplique os 7 critérios no SmartLic — 14 dias grátis."
+        ctaMessage="Aplique os 7 critérios no SmartLic — Dado público verificável."
         ctaText="Começar Trial Gratuito"
       />
 

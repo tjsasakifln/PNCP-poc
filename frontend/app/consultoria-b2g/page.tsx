@@ -19,7 +19,7 @@ import ConsultoriaForm from './ConsultoriaForm';
 export const metadata: Metadata = {
   title: 'Consultoria B2G — Inteligência em Licitações | SmartLic',
   description:
-    'Radar operacional, relatórios profundos e operação consultiva para empresas B2G. Monitoramento, análise de concorrência e viabilidade. Sem mensalidade mínima na fase de validação.',
+    'A CONFENGE interpreta o dado público do SmartLic: go/no-go de licitação, carteira de empresa, risco de contrato e recorte local. Sem trial e sem plano de software.',
   alternates: {
     canonical: '/consultoria-b2g',
   },
@@ -55,9 +55,9 @@ const faqItems = [
     answer: 'Sim. Sem multa e sem burocracia.',
   },
   {
-    question: 'O que diferencia do SmartLic SaaS?',
+    question: 'O que diferencia o SmartLic da CONFENGE?',
     answer:
-      'No SaaS você opera. Na consultoria, operamos para você. Entregamos o briefing, você decide.',
+      'O SmartLic publica o fato público. A CONFENGE interpreta, diagnostica e opera a decisão comercial.',
   },
 ];
 

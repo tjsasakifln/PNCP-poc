@@ -241,7 +241,7 @@ export default function SicafComoCadastrarManterAtivo2026() {
           O SmartLic agrega editais do PNCP, ComprasNet e outros portais em uma busca única, com filtros por setor, UF e valor estimado. Saiba com antecedência quais licitações estão abertas no seu segmento — e prepare sua documentação antes que o prazo feche.
         </p>
         <Link
-          href="/signup?ref=blog-sicaf-cadastrar"
+          href="/consultoria-b2g?ref=blog-sicaf-cadastrar"
           className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand/90 transition-colors"
         >
           Testar grátis por 14 dias →

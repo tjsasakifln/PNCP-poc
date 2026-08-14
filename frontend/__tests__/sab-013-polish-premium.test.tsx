@@ -179,10 +179,10 @@ describe("SAB-013 Track 3: Footer (AC7-AC8)", () => {
   });
 
   // AC8: Public area keeps full footer
-  it("AC8: public Footer has all sections (Sobre, Planos, Suporte, Legal)", () => {
+  it("AC8: public Footer has all sections (Sobre, CONFENGE, Suporte, Legal)", () => {
     render(<Footer />);
     expect(screen.getByText("Sobre")).toBeInTheDocument();
-    expect(screen.getByText("Planos")).toBeInTheDocument();
+    expect(screen.getByText("CONFENGE")).toBeInTheDocument();
     expect(screen.getByText("Suporte")).toBeInTheDocument();
     expect(screen.getByText("Legal")).toBeInTheDocument();
   });

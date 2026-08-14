@@ -12,7 +12,7 @@ interface CnpjProps {
 /**
  * Intel Report CTA for /cnpj/[cnpj] pages (#632).
  *
- * Unauthenticated click → redirect to /signup?intent=intel_report.
+ * Unauthenticated click → redirect to /consultoria-b2g (SaaS signup is sunset).
  * Authenticated click → Stripe Checkout for Raio-X do Concorrente (R$197).
  *
  * Must be a separate "use client" file because the parent page.tsx is a
@@ -39,7 +39,7 @@ export default function IntelReportCTA({ cnpj }: CnpjProps) {
       });
 
       if (res.status === 401) {
-        router.push(`/signup?redirect=/cnpj/${cnpj}&intent=intel_report`);
+        router.push(`/consultoria-b2g?ref=cnpj-${cnpj}&intent=intel_report`);
         return;
       }
 
@@ -126,7 +126,7 @@ export function SectorUfIntelReportCTA({
 
       if (res.status === 401) {
         router.push(
-          `/signup?redirect=${encodeURIComponent(fallbackRedirect)}&intent=intel_report_sector`
+          `/consultoria-b2g?ref=sector-${sectorId}-${uf}&intent=intel_report_sector`
         );
         return;
       }

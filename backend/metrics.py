@@ -127,6 +127,24 @@ LLM_BATCH_TIMEOUT = _create_counter(
     labelnames=["phase"],  # "zero_match_batch", "zero_match_individual", "arbiter"
 )
 
+INBOUND_LEAD_ACCEPTED = _create_counter(
+    "smartlic_inbound_lead_accepted_total",
+    "Leads accepted by the CONFENGE handoff outbox",
+    labelnames=["family", "cta_id", "state"],
+)
+
+PUBLIC_READ_ISOLATION = _create_counter(
+    "smartlic_public_read_isolation_total",
+    "public_read_v1 consumer isolation events",
+    labelnames=["reason"],
+)
+
+PUBLIC_READ_SERVED = _create_counter(
+    "smartlic_public_read_served_total",
+    "Family reads served by the public_read adapter",
+    labelnames=["family", "served_from"],
+)
+
 # CRIT-003 AC22: Time spent in each pipeline state
 STATE_DURATION = _create_histogram(
     "smartlic_search_state_duration_seconds",

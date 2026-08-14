@@ -33,14 +33,14 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
           {/* SAB-006: Absorbed beta counter */}
           <AnimateOnScroll delay={150} data-testid="beta-counter">
             <p className="text-sm mb-8 text-white/60">
-              14 dias grátis. Cancele quando quiser.
+              Sem conta. Sem trial. Sem plano.
             </p>
           </AnimateOnScroll>
 
           <AnimateOnScroll delay={200}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
-                href="/signup?source=landing-cta"
+                href="/consultoria-b2g?source=landing-cta"
                 className="w-full sm:w-auto bg-white text-brand-navy hover:bg-surface-1 font-bold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] text-center text-lg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/50"
                 data-testid="final-cta-primary"
               >
@@ -48,11 +48,11 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
               </a>
               {/* COPY-LANDING-004 (#1003): Cross-sell sutil Plano Fundadores */}
               <a
-                href="/planos#fundadores"
+                href="/consultoria-b2g#fundadores"
                 className="w-full sm:w-auto border border-white/40 text-white hover:bg-white/10 font-semibold px-8 py-4 rounded-button transition-all text-center text-base focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/50"
                 data-testid="final-cta-fundadores"
               >
-                Vagas Fundadores se encerram: R$997 vitalício →
+                Falar com a CONFENGE →
               </a>
             </div>
           </AnimateOnScroll>
@@ -67,7 +67,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
               <span className="hidden sm:inline text-white/30">|</span>
               <span>Critérios objetivos</span>
               <span className="hidden sm:inline text-white/30">|</span>
-              <span>Cancelamento em 1 clique</span>
+              <span>Fonte e data à vista</span>
             </div>
           </AnimateOnScroll>
 
@@ -77,7 +77,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
             visibleClass="opacity-100"
           >
             <p className="mt-3 text-sm text-white/50">
-              Últimas vagas do plano vitalício R$997. Se não agir hoje, pode perder — o edital e a vaga.
+              O dado fica público. A interpretação consultiva é da CONFENGE.
             </p>
           </AnimateOnScroll>
         </div>

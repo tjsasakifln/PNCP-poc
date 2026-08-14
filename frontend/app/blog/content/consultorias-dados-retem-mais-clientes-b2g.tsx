@@ -502,10 +502,10 @@ export default function ConsultoriasDadosRetemMaisClientesB2g() {
           em relatórios de valor para seus clientes.
         </p>
         <Link
-          href="/signup?source=blog&article=consultorias-dados-retem-mais-clientes-b2g&utm_source=blog&utm_medium=cta&utm_content=consultorias-dados-retem-mais-clientes-b2g&utm_campaign=consultorias"
+          href="/consultoria-b2g?source=blog&article=consultorias-dados-retem-mais-clientes-b2g&utm_source=blog&utm_medium=cta&utm_content=consultorias-dados-retem-mais-clientes-b2g&utm_campaign=consultorias"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          Teste Grátis por 14 Dias
+          Pedir um diagnóstico à CONFENGE
         </Link>
         <p className="text-xs text-ink-secondary mt-3">
           Sem cartão de crédito.{' '}

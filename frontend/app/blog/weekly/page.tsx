@@ -202,10 +202,10 @@ export default function WeeklyDigestIndexPage() {
               avisa você assim que surgirem oportunidades para o seu setor.
             </p>
             <Link
-              href="/signup"
+              href="/consultoria-b2g"
               className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-brand-blue text-white font-semibold hover:bg-brand-blue/90 transition-colors text-sm"
             >
-              Começar gratuitamente — 14 dias grátis
+              Pedir um diagnóstico à CONFENGE
             </Link>
           </section>
         </div>

@@ -140,10 +140,10 @@ export default function MasterclassListPage() {
             </h2>
             <p className="mt-3 text-blue-100 max-w-lg mx-auto leading-relaxed">
               O SmartLic analisa automaticamente a viabilidade de cada edital para o seu setor —
-              14 dias grátis, sem cartão de crédito.
+              sem login, dado verificável.
             </p>
             <Link
-              href="/signup?source=masterclass-listing"
+              href="/consultoria-b2g?source=masterclass-listing"
               className="mt-6 inline-block rounded-lg bg-white text-brand-blue font-bold px-8 py-3 hover:bg-blue-50 transition-colors"
             >
               Começar gratuitamente →

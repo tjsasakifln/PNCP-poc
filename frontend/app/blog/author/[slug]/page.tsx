@@ -166,13 +166,13 @@ export default async function AuthorPage({
           <div className="mt-12 rounded-2xl bg-brand-blue p-8 text-center text-white">
             <h2 className="text-2xl font-bold">Descubra editais do seu setor</h2>
             <p className="mt-2 text-blue-100 max-w-lg mx-auto">
-              Análise de viabilidade com IA para cada edital — 14 dias grátis, sem cartão.
+              Análise de viabilidade com IA para cada edital — sem login, dado verificável.
             </p>
             <Link
-              href="/signup?source=author"
+              href="/consultoria-b2g?source=author"
               className="mt-6 inline-block rounded-lg bg-white text-brand-blue font-semibold px-6 py-3 hover:bg-blue-50 transition-colors"
             >
-              Comece grátis →
+              Pedir um diagnóstico à CONFENGE →
             </Link>
           </div>
         </section>

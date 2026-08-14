@@ -106,6 +106,19 @@ describe("FoundersTopBanner", () => {
     mockUseUser.mockReturnValue(TRIAL_USER);
   });
 
+  it("is sunset and does not recruit seats (#2111)", () => {
+    const { container } = render(<FoundersTopBanner />);
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe.skip("FoundersTopBanner legado (sunset)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    mockUseUser.mockReturnValue(TRIAL_USER);
+  });
+
   afterEach(() => {
     localStorage.clear();
   });

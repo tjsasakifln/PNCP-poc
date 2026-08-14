@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import CalculadoraClient from './CalculadoraClient';
 import ContentPageLayout from '../components/ContentPageLayout';
 import { LeadCapture } from '@/components/LeadCapture';
+import { PublicFamilyShell } from '@/app/components/intelligence/PublicFamilyShell';
 import { CopyEmbedButton } from './CopyEmbedButton';
 import { SECTORS } from '@/lib/sectors';
 import { UF_NAMES, getUfPrep } from '@/lib/programmatic';
@@ -246,7 +247,7 @@ export default function CalculadoraPage({}: {
         <h3>A calculadora é gratuita?</h3>
         <p>
           Sim, a calculadora é 100% gratuita e não requer cadastro. Para analisar as oportunidades
-          em detalhe, você pode criar uma conta trial gratuita de 14 dias.
+          em detalhe, peça um diagnóstico à CONFENGE — sem criar conta.
         </p>
 
         <h3>Quantos setores estão disponíveis?</h3>
@@ -255,6 +256,7 @@ export default function CalculadoraPage({}: {
           Obras, passando por TI, Saúde, Alimentos e Facilities.
         </p>
       </section>
+      <PublicFamilyShell family="tool" />
     </ContentPageLayout>
   );
 }

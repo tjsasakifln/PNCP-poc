@@ -8,6 +8,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { ObservatorioCTA } from './ObservatorioCTA';
+import { PublicFamilyRead } from '@/app/components/intelligence/PublicFamilyRead';
 
 export const metadata: Metadata = {
   title: 'Observatório de Licitações',
@@ -123,6 +124,7 @@ export default function ObservatorioPage() {
             </Link>
           </p>
         </section>
+        <PublicFamilyRead family="observatory" />
       </main>
     </>
   );

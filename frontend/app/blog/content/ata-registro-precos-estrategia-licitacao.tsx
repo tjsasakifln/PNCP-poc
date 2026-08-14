@@ -423,7 +423,7 @@ export default function AtaRegistroPrecosEstrategiaLicitacao() {
           portfólio de ARPs com inteligência, não com volume.
         </p>
         <Link
-          href="/signup?ref=blog-ata-registro-precos"
+          href="/consultoria-b2g?ref=blog-ata-registro-precos"
           className="inline-block bg-brand text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand/90 transition-colors"
         >
           Testar grátis por 14 dias →

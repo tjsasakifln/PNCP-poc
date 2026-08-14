@@ -14,6 +14,7 @@ interface LeadCaptureProps {
 export function LeadCapture({ source, heading, description, setor, uf, buttonText }: LeadCaptureProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [receiptId, setReceiptId] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,6 +28,8 @@ export function LeadCapture({ source, heading, description, setor, uf, buttonTex
         body: JSON.stringify({ email, source, setor, uf }),
       });
       if (res.ok) {
+        const body = (await res.json()) as { receipt_id?: string };
+        setReceiptId(body.receipt_id || null);
         setStatus('success');
       } else {
         setStatus('error');
@@ -38,10 +41,18 @@ export function LeadCapture({ source, heading, description, setor, uf, buttonTex
 
   if (status === 'success') {
     return (
-      <div className="rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-6 text-center">
+      <div
+        className="rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-6 text-center"
+        data-testid="lead-receipt"
+      >
         <p className="text-green-800 dark:text-green-200 font-medium">
-          Pronto! Seu guia de oportunidades B2G chegará em instantes.
+          Pedido recebido. A CONFENGE retoma a partir deste recibo.
         </p>
+        {receiptId ? (
+          <p className="mt-2 font-mono text-sm text-green-900 dark:text-green-100" data-testid="lead-receipt-id">
+            Recibo {receiptId}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -68,7 +79,7 @@ export function LeadCapture({ source, heading, description, setor, uf, buttonTex
           disabled={status === 'loading'}
           className="px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap"
         >
-          {status === 'loading' ? 'Enviando...' : buttonText || 'Receber Grátis'}
+          {status === 'loading' ? 'Enviando...' : buttonText || 'Receber o recorte'}
         </button>
       </form>
       {status === 'error' && (

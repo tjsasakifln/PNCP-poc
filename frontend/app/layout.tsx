@@ -62,11 +62,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://smartlic.tech"),
   // GTM-COPY-006 AC1: Decision-strategy positioning (max 60 chars)
   title: {
-    default: `SmartLic — Máquina de Receita Previsível para Empresas B2G`,
+    default: `SmartLic — Inteligência pública de licitações da CONFENGE`,
     template: `%s | ${APP_NAME}`,
   },
-  // GTM-COPY-006 AC2: Result-oriented, no unverifiable claims (max 155 chars)
-  description: "Veja editais que sua empresa perderia — e os que ela pode vencer. Filtro estratégico em 27 estados para empresas B2G que querem resultado real em licitações públicas.",
+  description: "Consulte empresas, contratos, licitações, órgãos e municípios com dados públicos verificáveis. Braço de inbound da CONFENGE — sem assinatura e sem trial.",
   // GTM-COPY-006 AC3: Decision-territory keywords (not generic search)
   keywords: [
     "como avaliar licitação antes de participar",

@@ -77,7 +77,7 @@ export default function HeroB2GIntel() {
           <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-1)] px-4 py-1.5 mb-8">
             <span className="w-2 h-2 rounded-full bg-[var(--success)]" />
             <span className="text-sm font-medium text-[var(--ink-secondary)] tracking-wide">
-              INTELIGÊNCIA COMERCIAL B2G
+              INTELIGÊNCIA PÚBLICA B2G
             </span>
           </div>
 
@@ -125,7 +125,7 @@ export default function HeroB2GIntel() {
           <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-1)] px-4 py-1.5 mb-8">
             <span className="w-2 h-2 rounded-full bg-[var(--success)]" />
             <span className="text-sm font-medium text-[var(--ink-secondary)] tracking-wide">
-              INTELIGÊNCIA COMERCIAL B2G
+              INTELIGÊNCIA PÚBLICA B2G
             </span>
           </div>
 

@@ -201,11 +201,11 @@ export default async function CaseDetailPage({
             Rode uma análise para o seu setor
           </h2>
           <p className="text-ink-secondary mb-6 max-w-lg mx-auto">
-            14 dias grátis, sem cartão de crédito. Descubra quantos editais compatíveis
+            sem login, dado verificável. Descubra quantos editais compatíveis
             estão abertos agora para a sua empresa.
           </p>
           <Link
-            href={`/signup?ref=case-${c.slug}`}
+            href={`/consultoria-b2g?ref=case-${c.slug}`}
             className="inline-flex items-center px-6 py-3 bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold rounded-button transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             Começar análise gratuita →

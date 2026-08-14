@@ -78,7 +78,7 @@ export async function generateMetadata({
   const description =
     `Encontre licitações de ${sector.name.toLowerCase()} em ${city.name} (${ufName}). ` +
     `${total > 0 ? `${total} editais ativos nos últimos 10 dias. ` : ''}` +
-    `Dados consolidados de PNCP, PCP e ComprasGov. Filtre por valor, modalidade e prazo. Teste grátis.`;
+    `Dados consolidados de PNCP, PCP e ComprasGov. Filtre por valor, modalidade e prazo. Dado público verificável.`;
 
   return {
     title,

@@ -221,7 +221,7 @@ export default function ConsultoriasPage() {
                 Agendar conversa →
               </a>
               <Link
-                href="/signup?plan=consultoria"
+                href="/consultoria-b2g?plan=consultoria"
                 className="inline-block bg-white hover:bg-slate-100 text-slate-900 font-semibold px-8 py-4 rounded-lg transition-colors"
               >
                 Testar 14 dias grátis →
@@ -385,7 +385,7 @@ export default function ConsultoriasPage() {
                   Agendar conversa
                 </a>
                 <Link
-                  href="/signup?plan=consultoria"
+                  href="/consultoria-b2g?plan=consultoria"
                   className="flex-1 text-center bg-white hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 font-semibold py-4 px-6 rounded-lg border border-slate-300 dark:border-slate-600 transition-colors"
                 >
                   Testar 14 dias grátis

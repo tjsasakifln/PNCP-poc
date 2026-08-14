@@ -346,7 +346,7 @@ export function LicitacoesPreview({
                 Assine para ver todas as oportunidades com links diretos e exportar para Excel.
               </p>
               <Link
-                href="/planos"
+                href="/consultoria-b2g"
                 className="block w-full py-2.5 bg-brand-navy text-white rounded-button font-semibold hover:bg-brand-blue-hover transition-colors text-center"
               >
                 Ver Planos

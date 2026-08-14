@@ -62,6 +62,7 @@ from routes.dados_publicos import router as dados_publicos_router
 from routes.alertas_publicos import router as alertas_publicos_router
 from routes.lead_capture import router as lead_capture_router
 from routes.lead_magnet import router as lead_magnet_router
+from routes.public_read import router as public_read_router
 from routes.comparador import router as comparador_router
 from routes.seo_admin import router as seo_admin_router
 from routes.sitemap_cnpjs import router as sitemap_cnpjs_router
@@ -152,6 +153,7 @@ _v1_routers = [
     alertas_publicos_router,
     lead_capture_router,
     lead_magnet_router,
+    public_read_router,
     comparador_router,
     seo_admin_router,
     sitemap_cnpjs_router,

@@ -256,7 +256,7 @@ export default function SmartlicVsLicitanetComparacao() {
       <BlogInlineCTA
         slug="smartlic-vs-licitanet-comparacao"
         campaign="guias"
-        ctaMessage="Teste a classificação por IA do SmartLic — 14 dias grátis."
+        ctaMessage="Teste a classificação por IA do SmartLic — Dado público verificável."
         ctaText="Começar Trial Gratuito"
       />
 

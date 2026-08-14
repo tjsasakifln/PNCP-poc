@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { buildCanonical, SITE_URL } from '@/lib/seo';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
+import { PublicFamilyShell } from '@/app/components/intelligence/PublicFamilyShell';
 import ComparadorClient from './ComparadorClient';
 
 export const revalidate = 3600;
@@ -116,6 +117,7 @@ export default function ComparadorPage() {
         >
           <ComparadorClient />
         </Suspense>
+        <PublicFamilyShell family="tool" />
       </main>
 
       <Footer />

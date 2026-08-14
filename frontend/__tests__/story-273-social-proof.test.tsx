@@ -95,9 +95,9 @@ jest.mock('../app/components/landing/PersonasSection', () => {
   };
 });
 
-jest.mock('../app/components/landing/PricingSectionB2G', () => {
-  return function MockPricingSectionB2G() {
-    return <section data-testid="pricing-b2g">PricingSectionB2G</section>;
+jest.mock('../app/components/landing/PublicIntelligenceSection', () => {
+  return function MockPublicIntelligenceSection() {
+    return <section data-testid="public-intelligence-section">PublicIntelligenceSection</section>;
   };
 });
 
@@ -173,7 +173,7 @@ describe('STORY-273 + REPO-COMMS #1289: Landing Page Social Proof Integration', 
       expect(screen.getByTestId('terminal-comparison')).toBeInTheDocument();
       expect(screen.getByTestId('social-proof-metrics')).toBeInTheDocument();
       expect(screen.getByTestId('personas-section')).toBeInTheDocument();
-      expect(screen.getByTestId('pricing-b2g')).toBeInTheDocument();
+      expect(screen.getByTestId('public-intelligence-section')).toBeInTheDocument();
       expect(screen.getByTestId('market-social-proof')).toBeInTheDocument();
       expect(screen.getByTestId('newsletter-footer')).toBeInTheDocument();
       expect(screen.getByTestId('footer')).toBeInTheDocument();
@@ -190,7 +190,7 @@ describe('STORY-273 + REPO-COMMS #1289: Landing Page Social Proof Integration', 
       expect(screen.queryByTestId('credibility-section')).not.toBeInTheDocument();
     });
 
-    it('should maintain correct section order: Hero → Antecipe → Terminal → SocialProof → Personas → Pricing → MarketSocialProof', () => {
+    it('should maintain correct section order: Hero → Antecipe → Terminal → SocialProof → Personas → Intelligence → MarketSocialProof', () => {
       const main = screen.getByRole('main');
       const html = main.innerHTML;
 
@@ -199,15 +199,15 @@ describe('STORY-273 + REPO-COMMS #1289: Landing Page Social Proof Integration', 
       const terminalIdx = html.indexOf('data-testid="terminal-comparison"');
       const socialIdx = html.indexOf('data-testid="social-proof-metrics"');
       const personasIdx = html.indexOf('data-testid="personas-section"');
-      const pricingIdx = html.indexOf('data-testid="pricing-b2g"');
+      const intelligenceIdx = html.indexOf('data-testid="public-intelligence-section"');
       const marketIdx = html.indexOf('data-testid="market-social-proof"');
 
       expect(heroIdx).toBeLessThan(antecipeIdx);
       expect(antecipeIdx).toBeLessThan(terminalIdx);
       expect(terminalIdx).toBeLessThan(socialIdx);
       expect(socialIdx).toBeLessThan(personasIdx);
-      expect(personasIdx).toBeLessThan(pricingIdx);
-      expect(pricingIdx).toBeLessThan(marketIdx);
+      expect(personasIdx).toBeLessThan(intelligenceIdx);
+      expect(intelligenceIdx).toBeLessThan(marketIdx);
     });
   });
 });

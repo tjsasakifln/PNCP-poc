@@ -229,10 +229,10 @@ export default async function AlertasPage({ params }: Props) {
               Filtre e analise todas as licitações de {sector.name}
             </h3>
             <p className="text-white/80 mb-6">
-              Score de viabilidade, alertas por email, exportação Excel. 14 dias grátis.
+              Score de viabilidade, alertas por email, exportação Excel. Dado público verificável.
             </p>
             <Link
-              href={`/signup?ref=alertas-${setor}-${uf}&utm_source=pseo&utm_medium=organic&utm_content=blog_hub`}
+              href={`/consultoria-b2g?ref=alertas-${setor}-${uf}&utm_source=pseo&utm_medium=organic&utm_content=blog_hub`}
               className="inline-block px-8 py-4 bg-white text-brand-navy font-bold rounded-xl hover:bg-gray-100 transition-colors text-lg shadow-lg"
             >
               Analisar Oportunidades →

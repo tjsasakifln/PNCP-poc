@@ -53,16 +53,16 @@ describe('LandingNavbar — UX-345', () => {
       expect(entrarLink.className.length).toBeGreaterThan(0);
     });
 
-    it('shows "Comece Gratis" button linking to /signup?source=header-cta', () => {
+    it('shows Diagnóstico CONFENGE linking to consultoria', () => {
       render(<LandingNavbar />);
-      const ctaLink = screen.getByRole('link', { name: 'Comece Gratis' });
+      const ctaLink = screen.getByRole('link', { name: 'Diagnóstico CONFENGE' });
       expect(ctaLink).toBeInTheDocument();
-      expect(ctaLink).toHaveAttribute('href', '/signup?source=header-cta');
+      expect(ctaLink).toHaveAttribute('href', '/consultoria-b2g?cta=cta.home.diagnostico');
     });
 
-    it('"Comece Gratis" has primary filled style (bg-brand-navy)', () => {
+    it('Diagnóstico CONFENGE has primary filled style (bg-brand-navy)', () => {
       render(<LandingNavbar />);
-      const ctaLink = screen.getByRole('link', { name: 'Comece Gratis' });
+      const ctaLink = screen.getByRole('link', { name: 'Diagnóstico CONFENGE' });
       expect(ctaLink.className).toMatch(/bg-brand-navy/);
     });
 

@@ -55,7 +55,8 @@ Ver onda 1. GET `/plans`, GET founding availability, GET subscription status = `
 
 | Item | Destino | Motivo |
 |------|---------|--------|
-| `/pricing`, `/planos`, `/signup`, `/fundadores` | SUNSET AFTER DEPENDENCY | Redirect só com #2113 + copy #2114 |
+| `/pricing`, `/planos`, `/signup` | SUNSET NOW | 301 → `/consultoria-b2g` (onda 2, 2026-08-13) |
+| `/fundadores` | SUNSET NOW | 301 → `/sobre` |
 | CTAs pSEO → `/signup` | REPLACE | Onda 2 / #2114 |
 | `/consultoria-b2g`, LeadCapture | KEEP + ADAPT | Destino do 410 `next` |
 

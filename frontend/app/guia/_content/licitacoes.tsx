@@ -232,7 +232,7 @@ export default function LicitacoesContent() {
         Empresas B2G que faturam consistentemente acima de R$ 5 milhões/ano em contratos públicos não monitoram PNCP manualmente. Elas usam plataformas que integram múltiplas fontes (PNCP + Compras.gov + Portal de Compras Públicas + sistemas estaduais), aplicam filtros setoriais por keywords e exclusões, rodam classificação de relevância com IA e entregam ao analista humano apenas os 5-10 editais do dia que realmente merecem leitura integral.
       </p>
       <p>
-        O <Link href="/">SmartLic</Link> é a plataforma brasileira especializada nisso: busca multi-fonte com deduplicação por hash de conteúdo, classificação setorial GPT-4.1-nano (85%+ precisão), análise de viabilidade 4-fatores nativa, pipeline kanban para editais em tracking. 14 dias grátis, sem cartão — uma empresa B2G média recupera o custo da assinatura em um único contrato ganho no primeiro mês.
+        O <Link href="/">SmartLic</Link> é a plataforma brasileira especializada nisso: busca multi-fonte com deduplicação por hash de conteúdo, classificação setorial GPT-4.1-nano (85%+ precisão), análise de viabilidade 4-fatores nativa, pipeline kanban para editais em tracking. sem login, dado verificável — uma empresa B2G média recupera o custo da assinatura em um único contrato ganho no primeiro mês.
       </p>
 
       <p className="!mt-12 text-sm text-ink-secondary italic not-prose">

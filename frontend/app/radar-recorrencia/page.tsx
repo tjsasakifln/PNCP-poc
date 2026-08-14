@@ -41,7 +41,7 @@ function UpgradeBanner() {
           recorencia de contratacoes. Disponível no plano SmartLic Command.
         </p>
         <a
-          href="/planos?ref=radar-recorrencia"
+          href="/consultoria-b2g?ref=radar-recorrencia"
           className="inline-block rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
         >
           Conhecer o SmartLic Command &rarr;

@@ -66,7 +66,7 @@ export default function FinalCTATI() {
 
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
-          href={`/signup?source=blog-ti${focoQuery}`}
+          href={`/consultoria-b2g?source=blog-ti${focoQuery}`}
           className="inline-block bg-white text-brand-navy font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98] text-center"
         >
           {selectedFoco

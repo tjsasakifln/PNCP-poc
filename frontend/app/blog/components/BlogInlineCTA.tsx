@@ -60,13 +60,13 @@ export default function BlogInlineCTA({
   return (
     <div className="not-prose my-8 sm:my-10 bg-brand-blue-subtle/50 dark:bg-brand-navy/10 rounded-lg p-4 sm:p-5 border border-brand-blue/15 flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
       <p className="text-sm sm:text-base text-ink font-medium text-center sm:text-left flex-1">
-        {ctaMessage || 'Teste grátis 14 dias \u2014 sem cartão de crédito'}
+        {ctaMessage || 'dado público verificável \u2014 sem cartão de crédito'}
       </p>
       <Link
         href={href}
         className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-4 py-2 rounded-button text-sm transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
       >
-        {ctaText || 'Testar 14 dias grátis'}
+        {ctaText || 'Pedir um diagnóstico à CONFENGE'}
       </Link>
     </div>
   );

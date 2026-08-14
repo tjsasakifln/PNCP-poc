@@ -67,6 +67,7 @@ describe('LandingNavbar — NavbarAuthCTA (client island)', () => {
       // Should NOT show Entrar or Comece Gratis during loading
       expect(screen.queryByRole('link', { name: /Entrar/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: /Comece Gratis/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /Diagnóstico CONFENGE/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: /Ir para Busca/i })).not.toBeInTheDocument();
     });
   });
@@ -87,12 +88,12 @@ describe('LandingNavbar — NavbarAuthCTA (client island)', () => {
       expect(entrarLink).toHaveAttribute('href', '/login');
     });
 
-    it('should show "Comece Gratis" link when not authenticated', () => {
+    it('should show CONFENGE diagnostic CTA when not authenticated', () => {
       render(<NavbarAuthCTA />);
 
-      const signupLink = screen.getByRole('link', { name: /Comece Gratis/i });
+      const signupLink = screen.getByRole('link', { name: /Diagnóstico CONFENGE/i });
       expect(signupLink).toBeInTheDocument();
-      expect(signupLink).toHaveAttribute('href', '/signup?source=header-cta');
+      expect(signupLink).toHaveAttribute('href', '/consultoria-b2g?cta=cta.home.diagnostico');
     });
 
     it('should NOT show "Ir para Busca" when not authenticated', () => {
@@ -128,6 +129,7 @@ describe('LandingNavbar — NavbarAuthCTA (client island)', () => {
       render(<NavbarAuthCTA />);
 
       expect(screen.queryByRole('link', { name: /Comece Gratis/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /Diagnóstico CONFENGE/i })).not.toBeInTheDocument();
     });
 
     it('should maintain button styling consistency for logged-in state', () => {
@@ -177,10 +179,10 @@ describe('LandingNavbar — NavSolucoesDropdown (REPO-010)', () => {
     const trigger = screen.getByTestId('nav-solucoes-dropdown');
     fireEvent.click(trigger);
 
-    expect(screen.getByRole('menuitem', { name: /SaaS/i })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /Radar B2G/i })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /Report B2G/i })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /Intel Reports/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Licitações/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Contratos/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Empresas/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Consultoria CONFENGE/i })).toBeInTheDocument();
   });
 
   it('should have correct hrefs for all dropdown items', () => {
@@ -188,10 +190,10 @@ describe('LandingNavbar — NavSolucoesDropdown (REPO-010)', () => {
 
     fireEvent.click(screen.getByTestId('nav-solucoes-dropdown'));
 
-    expect(screen.getByRole('menuitem', { name: /SaaS/i })).toHaveAttribute('href', '/buscar');
-    expect(screen.getByRole('menuitem', { name: /Radar B2G/i })).toHaveAttribute('href', '/consultoria-b2g?modalidade=radar');
-    expect(screen.getByRole('menuitem', { name: /Report B2G/i })).toHaveAttribute('href', '/consultoria-b2g?modalidade=report');
-    expect(screen.getByRole('menuitem', { name: /Intel Reports/i })).toHaveAttribute('href', '/consultoria-b2g?modalidade=intel');
+    expect(screen.getByRole('menuitem', { name: /Licitações/i })).toHaveAttribute('href', '/licitacoes');
+    expect(screen.getByRole('menuitem', { name: /Contratos/i })).toHaveAttribute('href', '/contratos');
+    expect(screen.getByRole('menuitem', { name: /Empresas/i })).toHaveAttribute('href', '/cnpj');
+    expect(screen.getByRole('menuitem', { name: /Consultoria CONFENGE/i })).toHaveAttribute('href', '/consultoria-b2g');
   });
 
   it('should toggle aria-expanded when clicked', () => {
@@ -213,7 +215,7 @@ describe('LandingNavbar — NavSolucoesDropdown (REPO-010)', () => {
     fireEvent.click(screen.getByTestId('nav-solucoes-dropdown'));
     expect(screen.getByRole('menu')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('menuitem', { name: /SaaS/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Licitações/i }));
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 });
@@ -243,12 +245,12 @@ describe('LandingNavbar — Static RSC elements', () => {
     expect(logo).toHaveTextContent('SmartLic.tech');
   });
 
-  it('should show Planos link', () => {
+  it('should show Licitações link instead of Planos', () => {
     render(<LandingNavbar />);
 
-    const planosLink = screen.getByRole('link', { name: /^Planos$/i });
-    expect(planosLink).toBeInTheDocument();
-    expect(planosLink).toHaveAttribute('href', '/planos');
+    const licitacoesLink = screen.getByRole('link', { name: /^Licitações$/i });
+    expect(licitacoesLink).toBeInTheDocument();
+    expect(licitacoesLink).toHaveAttribute('href', '/licitacoes');
   });
 
   it('should show Consultoria link with correct data-testid (REPO-010)', () => {

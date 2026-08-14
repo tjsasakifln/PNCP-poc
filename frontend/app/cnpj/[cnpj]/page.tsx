@@ -277,7 +277,7 @@ export default async function CnpjPerfilPage({
             compact
             cta={{
               label: 'Analisar padrão de vitórias',
-              href: `/signup?ref=cnpj-${cnpj}&utm_source=pseo&utm_medium=organic&utm_content=cnpj_page`,
+              href: `/consultoria-b2g?ref=cnpj-${cnpj}&utm_source=pseo&utm_medium=organic&utm_content=cnpj_page`,
               secondaryLabel: 'Mapear possíveis contratantes',
               secondaryHref: `/fornecedores/${cnpj}`,
             }}

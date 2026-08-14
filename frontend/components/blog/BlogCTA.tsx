@@ -10,7 +10,7 @@ import ZeroEditalsCTA from './ZeroEditalsCTA';
  *
  * CRO-CTA-000: Supports the intent-based CTA system. Pass `pageType` to
  * derive CTA config via getCtaByIntent(), or pass `ctaConfig` directly
- * for full control. When neither is passed, defaults to legacy behaviour.
+ * for full control. When neither is passed, defaults to CONFENGE diagnostic.
  *
  * Variants:
  * - inline: Inserted mid-content (compact)
@@ -39,7 +39,7 @@ interface BlogCTAProps {
 }
 
 function buildHref(slug: string): string {
-  return `/signup?source=blog&utm_source=blog&utm_medium=programmatic&utm_content=${encodeURIComponent(slug)}`;
+  return `/consultoria-b2g?source=blog&utm_source=blog&utm_medium=programmatic&utm_content=${encodeURIComponent(slug)}`;
 }
 
 function buildCTAText(setor?: string, uf?: string, ufCode?: string, count?: number): string {
@@ -59,7 +59,7 @@ function buildCTAText(setor?: string, uf?: string, ufCode?: string, count?: numb
     parts[0] += ` ${getUfPrep(ufCode)} ${uf}`;
   }
 
-  parts.push('teste grátis 14 dias');
+  parts.push('dado público verificável');
   return parts.join(' — ');
 }
 
@@ -118,13 +118,13 @@ function LegacyFinalCTA({ setor, uf, ufCode, count, slug, contractsCount, contra
       </h3>
       <p className="text-white/80 mb-6 max-w-xl mx-auto">
         Filtre por viabilidade real, receba alertas automáticos e exporte relatórios.
-        Teste grátis 14 dias — sem cartão de crédito.
+        Dado público verificável. Diagnóstico com a CONFENGE.
       </p>
       <Link
         href={href}
         className="inline-block bg-white text-brand-navy font-semibold px-6 py-3 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98]"
       >
-        Começar Teste Grátis
+        Pedir um diagnóstico à CONFENGE
       </Link>
     </div>
   );
@@ -169,7 +169,7 @@ function IntentFinalCTA({ pageType, setor, uf, ufCode, count, slug, totalValue }
  * CRO-CTA-000 priority:
  * 1. ctaConfig prop -> direct render via CtaIntent
  * 2. pageType prop -> derive via getCtaByIntent -> render via CtaIntent
- * 3. neither -> legacy "Teste Gratis" behaviour
+ * 3. neither -> CONFENGE diagnostic destination
  */
 export default function BlogCTA({ variant, pageType, ctaConfig, ...rest }: BlogCTAProps) {
   // Priority 1: Direct CtaConfig override

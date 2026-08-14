@@ -75,14 +75,14 @@ export async function generateMetadata({
   return {
     robots: { index: true },
     title: `Melhores oportunidades para empresas de ${sector.name} | SmartLic`,
-    description: `Encontre ${totalOpen > 0 ? `${totalOpen} ` : ""}editais abertos de ${sector.name} em ${topUfs}. Análise com IA e score de viabilidade. Teste grátis 14 dias.`,
+    description: `Encontre ${totalOpen > 0 ? `${totalOpen} ` : ""}editais abertos de ${sector.name} em ${topUfs}. Análise com IA e score de viabilidade. dado público verificável.`,
     alternates: {
       canonical: canonicalUrl,
     },
     // AC11: Open Graph
     openGraph: {
       title: `Melhores oportunidades para empresas de ${sector.name} | SmartLic`,
-      description: `Encontre editais abertos de ${sector.name}. Análise com IA e score de viabilidade. Teste grátis 14 dias.`,
+      description: `Encontre editais abertos de ${sector.name}. Análise com IA e score de viabilidade. dado público verificável.`,
       url: canonicalUrl,
       type: "website",
       locale: "pt_BR",
@@ -140,7 +140,7 @@ export default async function SectorPage({
             {stats?.total_open ?? 0} editais abertos · {sector.name}
           </span>
           <Link
-            href={`/signup?ref=licitacoes-${sector.slug}-sticky`}
+            href={`/consultoria-b2g?ref=licitacoes-${sector.slug}-sticky`}
             className="px-4 py-2 bg-brand-blue rounded-lg text-sm font-semibold whitespace-nowrap"
           >
             Receber alertas →
@@ -285,7 +285,7 @@ export default async function SectorPage({
             Análise de viabilidade com IA, filtros por região e valor, alertas por email.
           </p>
           <TrackedCTALink
-            href={`/signup?ref=licitacoes-${sector.slug}`}
+            href={`/consultoria-b2g?ref=licitacoes-${sector.slug}`}
             className="inline-block px-8 py-3 bg-brand-blue text-white font-semibold
                        rounded-lg hover:bg-blue-700 transition-colors text-lg"
             eventName="pseo_cta_click"
@@ -294,7 +294,7 @@ export default async function SectorPage({
             Analisar as {stats?.total_open || ""} oportunidades agora
           </TrackedCTALink>
           <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            14 dias grátis, sem cartão. Resultado em 3 minutos.
+            sem login, dado verificável. Resultado em 3 minutos.
           </p>
         </div>
       </section>
@@ -423,7 +423,7 @@ export default async function SectorPage({
             control: (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
                 <p className="text-blue-800 font-semibold">
-                  Comece agora — teste grátis 14 dias
+                  Comece agora — dado público verificável
                 </p>
                 <p className="text-blue-600 text-sm mt-1">
                   Sem cartão de crédito
@@ -457,17 +457,17 @@ export default async function SectorPage({
           </h3>
           <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
             Filtre por estado, valor e modalidade. Receba análise de viabilidade automática.
-            Exporte para Excel. Teste grátis por 14 dias.
+            Exporte para Excel. Pedir um diagnóstico à CONFENGE.
           </p>
           <TrackedCTALink
-            href={`/signup?ref=licitacoes-${sector.slug}`}
+            href={`/consultoria-b2g?ref=licitacoes-${sector.slug}`}
             className="inline-block px-8 py-4 bg-white text-brand-navy font-bold rounded-xl hover:bg-gray-100 transition-colors text-lg shadow-lg"
             eventName="pseo_cta_click"
             eventProps={{ setor, cta_position: "banner_bottom_faq", cta_label: "analisar_oportunidades_setor" }}
           >
             Analisar Oportunidades de {sector.name}
           </TrackedCTALink>
-          <p className="mt-4 text-white/60 text-sm">14 dias grátis, sem cartão. Resultado em 3 minutos.</p>
+          <p className="mt-4 text-white/60 text-sm">sem login, dado verificável. Resultado em 3 minutos.</p>
         </div>
       </section>
 
@@ -549,11 +549,11 @@ export default async function SectorPage({
               Comece a analisar licitações de {sector.name} agora
             </p>
             <p className="text-sm text-ink-secondary mt-1">
-              14 dias grátis, sem cartão. Resultado em 3 minutos.
+              sem login, dado verificável. Resultado em 3 minutos.
             </p>
           </div>
           <TrackedCTALink
-            href={`/signup?ref=licitacoes-${sector.slug}`}
+            href={`/consultoria-b2g?ref=licitacoes-${sector.slug}`}
             className="px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
             eventName="pseo_cta_click"
             eventProps={{ setor, cta_position: "compact_uf_grid", cta_label: "comecar_gratis" }}

@@ -119,13 +119,13 @@ export default function PerguntasPage() {
           <div className="mt-12 rounded-2xl bg-brand-blue p-8 text-center text-white">
             <h2 className="text-2xl font-bold">Não encontrou o que procura?</h2>
             <p className="mt-2 text-blue-100 max-w-lg mx-auto">
-              Analise editais do seu setor com inteligência artificial — 14 dias grátis, sem cartão.
+              Analise editais do seu setor com inteligência artificial — sem login, dado verificável.
             </p>
             <Link
-              href="/signup?source=perguntas"
+              href="/consultoria-b2g?source=perguntas"
               className="mt-6 inline-block rounded-lg bg-white text-brand-blue font-semibold px-6 py-3 hover:bg-blue-50 transition-colors"
             >
-              Comece grátis →
+              Pedir um diagnóstico à CONFENGE →
             </Link>
           </div>
         </section>

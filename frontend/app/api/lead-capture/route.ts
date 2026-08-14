@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
       utm_campaign,
       utm_content,
       utm_term,
+      cta_id,
+      route_family,
+      landing_url,
     } = body as Record<string, string | undefined>;
 
     const phoneDigits = typeof telefone === 'string' ? telefone.replace(/\D/g, '') : '';
@@ -64,6 +67,9 @@ export async function POST(request: NextRequest) {
         utm_campaign: utm_campaign || null,
         utm_content: utm_content || null,
         utm_term: utm_term || null,
+        cta_id: cta_id || null,
+        route_family: route_family || null,
+        landing_url: landing_url || resolvedOriginUrl,
         captured_at: new Date().toISOString(),
       }),
     });
@@ -80,7 +86,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return NextResponse.json({
+      success: true,
+      receipt_id: payload.receipt_id ?? null,
+      handoff_state: payload.handoff_state ?? null,
+    });
   } catch (error) {
     console.error('Lead capture error:', error);
     return NextResponse.json(

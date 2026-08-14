@@ -81,7 +81,7 @@ export default function ConsultoriaUpsellBanner({ isTrialing }: ConsultoriaUpsel
         Com o plano Consultoria você atende até 20 CNPJs de clientes por R$ 997/mês — economia de 60% vs múltiplas
         licenças Pro.{' '}
         <Link
-          href="/planos?highlight=consultoria"
+          href="/consultoria-b2g?highlight=consultoria"
           onClick={handleClick}
           className="font-medium text-indigo-700 hover:underline"
         >

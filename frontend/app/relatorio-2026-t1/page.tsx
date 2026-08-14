@@ -268,7 +268,7 @@ export default function RelatorioPanorama2026T1Page() {
             O SmartLic monitora as fontes oficiais em tempo real e entrega as oportunidades relevantes para sua empresa, filtradas por IA.
           </p>
           <Link
-            href="/signup"
+            href="/consultoria-b2g"
             className="inline-block py-4 px-10 rounded-xl font-bold text-lg text-blue-900 bg-white hover:bg-blue-50 transition-colors shadow-xl"
           >
             Testar grátis por 14 dias

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Campanha inbound CONFENGE (2026-08-13)
+
+- Superfície pública deixa de vender plano/trial/signup: 301 de `/planos`, `/pricing`, `/signup` → `/consultoria-b2g`; `/fundadores` → `/sobre`.
+- Marca e jornada declarativa (`route_family` → CTA CONFENGE) nas seis famílias MVP.
+- Consumer `public_read_v1` com flag `PUBLIC_READ_V1_MODE` (default `off`) e isolation budgets (#2108/#2116).
+- Outbox de lead com recibo e handoff CONFENGE (#2117).
+- Eligibility gate pSEO (#2118) e runbook Netcup executável (#2115).
+
+
 ### Changed — Sunset SaaS onda 1
 - **Freeze comercial ([#2111](https://github.com/tjsasakifln/SmartLic/issues/2111))** — `SAAS_COMMERCE_ENABLED` default `false`. Checkout, founding, intel-reports, setup-intent, upgrade, mudança de período, extensão de trial e signup comercial retornam HTTP 410 com `error_code=SAAS_COMMERCE_FROZEN`. Webhooks, cancelamento e URLs públicas indexadas permanecem. Inventário: `docs/strategy/saas-sunset-inventory-2111.md`. Rollback: `SAAS_COMMERCE_ENABLED=true`.
 

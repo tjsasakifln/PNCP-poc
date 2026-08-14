@@ -108,6 +108,7 @@ export default function DiagnosticForm({
 
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [receiptId, setReceiptId] = useState<string | null>(null);
 
   // Fire form_started only once on first field interaction.
   const startedRef = useRef(false);
@@ -154,6 +155,9 @@ export default function DiagnosticForm({
           mensagem: mensagem.trim() || undefined,
           telefone: telefone.replace(/\D/g, '') || undefined,
           source,
+          cta_id: 'cta.consultoria.submit',
+          route_family: 'consultoria',
+          landing_url: '/consultoria-b2g',
           ...utms,
         }),
       });
@@ -171,6 +175,15 @@ export default function DiagnosticForm({
         setStatus('error');
         return;
       }
+
+      let receipt: string | null = null;
+      try {
+        const data = (await res.json()) as { receipt_id?: string };
+        receipt = data.receipt_id || null;
+      } catch {
+        receipt = null;
+      }
+      setReceiptId(receipt);
 
       trackFormSubmitted({
         form_name: 'diagnostic_form',
@@ -208,8 +221,13 @@ export default function DiagnosticForm({
         data-testid="diagnostic-form-success"
       >
         <p className="text-green-800 dark:text-green-200 font-medium">
-          Diagnóstico solicitado! Você receberá seu guia personalizado em instantes e nossa equipe retornará em até 48 horas.
+          Diagnóstico solicitado. A CONFENGE retoma a partir deste recibo.
         </p>
+        {receiptId ? (
+          <p className="mt-2 font-mono text-sm text-green-900 dark:text-green-100" data-testid="diagnostic-form-receipt">
+            Recibo {receiptId}
+          </p>
+        ) : null}
       </div>
     );
   }

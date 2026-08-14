@@ -593,10 +593,10 @@ export default function Lei14133GuiaFornecedores() {
           por setor com IA e avalia viabilidade em 4 fatores. Adaptado à nova lei.
         </p>
         <Link
-          href="/signup?source=blog&article=lei-14133-guia-fornecedores&utm_source=blog&utm_medium=cta&utm_content=lei-14133-guia-fornecedores&utm_campaign=guias"
+          href="/consultoria-b2g?source=blog&article=lei-14133-guia-fornecedores&utm_source=blog&utm_medium=cta&utm_content=lei-14133-guia-fornecedores&utm_campaign=guias"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          Teste Grátis por 14 Dias
+          Pedir um diagnóstico à CONFENGE
         </Link>
         <p className="text-xs text-ink-secondary mt-3">
           Sem cartão de crédito. Veja todas as funcionalidades na{' '}

@@ -408,7 +408,7 @@ export default function ComparadorClient() {
           — e dá uma nota de viabilidade para você focar nas melhores oportunidades.
         </p>
         <Link
-          href="/signup?ref=comparador"
+          href="/consultoria-b2g?ref=comparador"
           className="inline-block rounded-lg bg-[var(--brand-blue)] px-6 py-3 font-semibold text-white transition hover:opacity-90"
         >
           Testar grátis por 14 dias →

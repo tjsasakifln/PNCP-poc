@@ -161,7 +161,7 @@ export async function generateMetadata({
 
   return {
     title: `${total > 0 ? `${total} ` : ''}Licitações de ${sector.name} ${getUfPrep(ufUpper)} ${ufName}${modalidadeSuffix} — ${getMonthYear()}`,
-    description: `Encontre ${total > 0 ? total : ''} licitações de ${sector.name.toLowerCase()}${modalidadeInfo ? ` via ${modalidadeInfo.name}` : ''} ${getUfPrep(ufUpper)} ${ufName}. Dados ao vivo de PNCP, PCP e ComprasGov${contractsClause}. Filtre por valor, modalidade e prazo. Teste grátis.`,
+    description: `Encontre ${total > 0 ? total : ''} licitações de ${sector.name.toLowerCase()}${modalidadeInfo ? ` via ${modalidadeInfo.name}` : ''} ${getUfPrep(ufUpper)} ${ufName}. Dados ao vivo de PNCP, PCP e ComprasGov${contractsClause}. Filtre por valor, modalidade e prazo. Dado público verificável.`,
     robots: { index: !flaggedDuplicate },
     alternates: { canonical: canonicalUrl },
     openGraph: {

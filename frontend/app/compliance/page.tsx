@@ -148,10 +148,10 @@ export default function ComplianceHubPage() {
               governamentais.
             </p>
             <Link
-              href="/signup"
+              href="/consultoria-b2g"
               className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Teste grátis por 14 dias
+              Pedir um diagnóstico à CONFENGE
             </Link>
           </section>
         </div>

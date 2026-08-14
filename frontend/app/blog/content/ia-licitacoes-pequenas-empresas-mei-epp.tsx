@@ -223,7 +223,7 @@ export default function IaLicitacoesPequenasEmpresasMeiEpp() {
       <BlogInlineCTA
         slug="ia-licitacoes-pequenas-empresas-mei-epp"
         campaign="b2g"
-        ctaMessage="Monitore editais ME/EPP no seu setor — 14 dias grátis."
+        ctaMessage="Monitore editais ME/EPP no seu setor — Dado público verificável."
         ctaText="Testar Grátis"
       />
 

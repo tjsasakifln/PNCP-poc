@@ -182,7 +182,7 @@ export default function SmartlicVsPlanilhaExcelQuandoAutomatizar() {
       <BlogInlineCTA
         slug="smartlic-vs-planilha-excel-quando-automatizar"
         campaign="guias"
-        ctaMessage="Compare SmartLic vs planilha — 14 dias grátis."
+        ctaMessage="Compare SmartLic vs planilha — Dado público verificável."
         ctaText="Testar Agora — Sem Cartão"
       />
 

@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import ContentPageLayout from '../components/ContentPageLayout';
 import OrgaoSearchForm from './OrgaoSearchForm';
 import { LeadCapture } from '@/components/LeadCapture';
+import { PublicFamilyRead } from '@/app/components/intelligence/PublicFamilyRead';
 
 export const metadata: Metadata = {
   title: 'Órgãos Compradores — Licitações por Órgão Público',
@@ -207,7 +208,7 @@ export default function OrgaosLandingPage() {
         <p>
           Não. A consulta de órgãos compradores é 100% gratuita e não exige cadastro.
           Para acessar análise detalhada de editais, monitoramento automático e alertas,
-          você pode criar um trial gratuito de 14 dias no SmartLic.
+          a CONFENGE interpreta o recorte quando a decisão for comercial.
         </p>
 
         <h3>Quais informações estão disponíveis?</h3>
@@ -218,6 +219,7 @@ export default function OrgaosLandingPage() {
           volume de compras e os editais abertos mais recentes com prazos e valores.
         </p>
       </section>
+      <PublicFamilyRead family="organ" />
     </ContentPageLayout>
   );
 }

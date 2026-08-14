@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { PublicFamilyRead } from "@/app/components/intelligence/PublicFamilyRead";
+import { FamilyCta } from "@/app/components/conversion/FamilyCta";
 import { SECTORS, fetchSectorStats, formatBRL } from "@/lib/sectors";
 
 /**
@@ -9,14 +11,14 @@ import { SECTORS, fetchSectorStats, formatBRL } from "@/lib/sectors";
 export const metadata: Metadata = {
   title: "Licitações Públicas 2026 — Editais Abertos por Setor | SmartLic",
   description:
-    "Encontre licitações públicas abertas em 2026: TI, Saúde, Engenharia, Alimentos e mais. Análise com IA e score de viabilidade. Teste grátis 14 dias.",
+    "Encontre licitações públicas abertas em 2026: TI, Saúde, Engenharia, Alimentos e mais. Dado verificável, fonte e freshness à vista.",
   alternates: {
     canonical: "https://smartlic.tech/licitacoes",
   },
   openGraph: {
     title: "Licitações Públicas 2026 — Editais por Setor | SmartLic",
     description:
-      "Encontre licitações públicas abertas em 2026. Análise com IA, score de viabilidade. 14 dias grátis.",
+      "Encontre licitações públicas abertas em 2026. Dado público, fonte e recorte por setor.",
     url: "https://smartlic.tech/licitacoes",
     type: "website",
     locale: "pt_BR",
@@ -120,15 +122,11 @@ export default async function LicitacoesIndexPage() {
             O SmartLic busca, filtra e classifica licitações por relevância com IA.
             Economize horas de busca manual.
           </p>
-          <Link
-            href="/signup"
-            className="inline-block px-8 py-3 bg-brand-blue text-white font-semibold
-                       rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Teste grátis por 14 dias
-          </Link>
+          <FamilyCta context={{ family: "tender" }} />
         </div>
       </section>
+
+      <PublicFamilyRead family="tender" />
 
       {/* JSON-LD */}
       <script

@@ -289,7 +289,7 @@ export default function ComoEvitarPrejuizo() {
           automaticamente — antes que você gaste um centavo.
         </p>
         <Link
-          href="/signup?source=content-prejuizo"
+          href="/consultoria-b2g?source=content-prejuizo"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
           Comece Grátis
