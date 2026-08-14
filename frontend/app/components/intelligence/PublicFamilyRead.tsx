@@ -3,15 +3,11 @@ import type { JourneyContext } from "@/lib/conversion/journey";
 import {
   adapterFamilyFor,
   loadPublicFamily,
+  type PublicFamilyPageModel,
 } from "@/lib/intelligence/loadPublicFamily";
 import type { SurfaceState } from "@/lib/intelligence/types";
 
-function surfaceFromRead(read: {
-  blocked: boolean;
-  stale: boolean;
-  empty: boolean;
-  divergence: string[];
-} | null): SurfaceState {
+function surfaceFromRead(read: PublicFamilyPageModel | null): SurfaceState {
   if (!read) return "unknown";
   if (read.blocked || read.divergence.includes("public_unavailable")) return "blocked";
   if (read.stale) return "stale";
@@ -32,17 +28,25 @@ export async function PublicFamilyRead({
 }) {
   const adapterFamily = publicId ? adapterFamilyFor(family) : "current_snapshot";
   const id = publicId || "latest";
-  let read = null;
+  let read: PublicFamilyPageModel | null = null;
   try {
     read = await loadPublicFamily(adapterFamily, id);
   } catch {
     read = {
+      family: adapterFamily,
+      served_from: "blocked",
+      mode: "shadow",
+      canonical_id: null,
+      display_name: null,
+      as_of: null,
+      completeness: null,
+      freshness: null,
+      reason_codes: [],
+      divergence: ["public_unavailable"],
       blocked: true,
       stale: false,
       empty: true,
-      divergence: ["public_unavailable"],
-      as_of: null,
-      reason_codes: [],
+      row_count: 0,
     };
   }
   return (

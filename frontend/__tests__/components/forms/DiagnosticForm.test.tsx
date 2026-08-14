@@ -162,10 +162,10 @@ describe('DiagnosticForm', () => {
     it('renders success message on 200 response', async () => {
       global.fetch = jest.fn().mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true }),
+        json: async () => ({ success: true, receipt_id: 'rec-consultoria' }),
       } as Response) as jest.Mock;
 
-      render(<DiagnosticForm source="test" />);
+      render(<DiagnosticForm source="consultoria-b2g" />);
       fillRequiredFields();
 
       fireEvent.click(screen.getByTestId('diagnostic-form-submit'));
@@ -176,9 +176,12 @@ describe('DiagnosticForm', () => {
         ).toBeInTheDocument();
       });
 
-      expect(screen.getByTestId('diagnostic-form-success')).toHaveTextContent(
-        'Diagnóstico solicitado! Você receberá seu guia personalizado em instantes e nossa equipe retornará em até 48 horas.'
-      );
+      expect(screen.getByTestId('diagnostic-form-receipt')).toHaveTextContent('rec-consultoria');
+      expect(screen.queryByText('maria@empresa.com')).not.toBeInTheDocument();
+      const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+      expect(body.source).toBe('consultoria-b2g');
+      expect(body.cta_id).toBe('cta.consultoria.submit');
+      expect(body.route_family).toBe('consultoria');
     });
 
     it('calls onSuccess callback on success', async () => {

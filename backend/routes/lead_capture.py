@@ -60,7 +60,7 @@ LeadCaptureSource = Literal[
 
 ALL_SOURCES = frozenset({
     "calculadora", "cnpj", "alertas",
-    "consultoria", "radar", "report", "intel", "diagnostico",
+    "consultoria", "consultoria-b2g", "radar", "report", "intel", "diagnostico",
     "lead_magnet_1", "lead_magnet_2", "lead_magnet_3",
     "newsletter", "exit_intent", "seo_banner",
     "partial_preview",
