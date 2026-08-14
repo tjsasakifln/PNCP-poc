@@ -48,9 +48,9 @@ describe('IntentLandingLayout', () => {
         <p>Content</p>
       </IntentLandingLayout>,
     );
-    const logoLink = screen.getByRole('link', { name: /smartlic/i });
-    expect(logoLink).toBeInTheDocument();
-    expect(logoLink).toHaveAttribute('href', '/');
+    const homeLinks = screen.getAllByRole('link').filter((el) => el.getAttribute('href') === '/');
+    expect(homeLinks.length).toBeGreaterThan(0);
+    expect(homeLinks[0]).toHaveTextContent(/smartlic/i);
   });
 
   it('renders the Footer with site-footer id', () => {

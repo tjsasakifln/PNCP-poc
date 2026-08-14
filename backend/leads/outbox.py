@@ -29,7 +29,7 @@ UNFINISHED = frozenset({"accepted", "queued", "failed"})
 
 _LOCK = threading.Lock()
 _MEMORY: dict[str, dict[str, Any]] = {}
-_LOADED = False
+_INDEX = {"loaded": False}
 
 
 class LeadOutboxError(RuntimeError):
@@ -47,10 +47,9 @@ def outbox_path() -> Path:
 
 def reset_outbox_state() -> None:
     """Test helper. Does not delete the file."""
-    global _LOADED
     with _LOCK:
         _MEMORY.clear()
-        _LOADED = False
+        _INDEX["loaded"] = False
 
 
 def build_idempotency_key(
@@ -129,8 +128,7 @@ def _persist_jsonl(record: dict[str, Any]) -> None:
 
 
 def _load_index_locked() -> None:
-    global _LOADED
-    if _LOADED:
+    if _INDEX["loaded"]:
         return
     path = outbox_path()
     if path.exists():
@@ -147,7 +145,7 @@ def _load_index_locked() -> None:
                 key = record.get("idempotency_key")
                 if key:
                     _MEMORY[str(key)] = record
-    _LOADED = True
+    _INDEX["loaded"] = True
 
 
 def _handoff(record: dict[str, Any]) -> None:

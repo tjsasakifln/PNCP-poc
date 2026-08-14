@@ -3,7 +3,7 @@
  * STORY-230 AC5-AC8: FAQ page contact section auth-awareness
  *
  * Tests:
- * - AC5: Unauthenticated users see "Criar Conta para Contato" linking to /signup
+ * - AC5: Unauthenticated users see "Falar com a CONFENGE" linking to /consultoria-b2g
  * - AC5: Authenticated users see "Enviar Mensagem" linking to /mensagens
  * - AC7: Anonymous user can access /ajuda content
  * - AC8: Anonymous clicking "Contato" does NOT redirect to login
@@ -37,9 +37,9 @@ describe('AjudaPage', () => {
       render(<AjudaPage />);
     });
 
-    it('should show "Criar Conta para Contato" button linking to signup', () => {
-      const signupButton = screen.getByText('Criar Conta para Contato');
-      expect(signupButton.closest('a')).toHaveAttribute('href', '/signup?source=ajuda-contato');
+    it('should show CONFENGE contact CTA for anonymous visitors', () => {
+      const contact = screen.getByText('Falar com a CONFENGE');
+      expect(contact.closest('a')).toHaveAttribute('href', '/consultoria-b2g?source=ajuda-contato');
     });
 
     it('should NOT show "Enviar Mensagem" link to /mensagens', () => {
@@ -77,8 +77,8 @@ describe('AjudaPage', () => {
     });
 
     it('should render FAQ categories', () => {
-      expect(screen.getAllByText('Como Buscar').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('Planos').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/Como Buscar|Central de Ajuda/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Opções de Acesso').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('Pagamentos').length).toBeGreaterThanOrEqual(1);
     });
 

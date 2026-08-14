@@ -3,7 +3,7 @@
  *
  * Validates the CTA on /cnpj/[cnpj] pages:
  * - Renders with correct copy
- * - Redirects to /signup when unauthenticated (401 from checkout endpoint)
+ * - Redirects to /consultoria-b2g when unauthenticated (401 from checkout endpoint)
  * - Redirects to checkout_url on successful checkout
  * - Fires Mixpanel events
  */
@@ -40,7 +40,7 @@ describe("IntelReportCTA", () => {
     ).toBeInTheDocument();
   });
 
-  it("redirects to /signup when checkout returns 401", async () => {
+  it("redirects to /consultoria-b2g when checkout returns 401", async () => {
     const mockPush = jest.fn();
     (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
 
@@ -55,7 +55,7 @@ describe("IntelReportCTA", () => {
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith(
-        `/signup?redirect=/cnpj/${cnpj}&intent=intel_report`,
+        `/consultoria-b2g?ref=cnpj-${cnpj}&intent=intel_report`,
       );
     });
   });

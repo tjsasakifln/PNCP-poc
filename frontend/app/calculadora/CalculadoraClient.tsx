@@ -406,7 +406,7 @@ export default function CalculadoraClient() {
           {/* CTA */}
           <div className="text-center space-y-4">
             <Link
-              href={`/consultoria-b2g?ref=calculadora&setor=${setor}&uf=${uf}`}
+              href={`/consultoria-b2g?ref=calculadora&setor=${encodeURIComponent(setor)}&uf=${encodeURIComponent(uf)}`}
               className="inline-block w-full sm:w-auto py-4 px-8 rounded-xl font-bold text-lg text-white bg-green-600 hover:bg-green-700 transition-colors shadow-lg"
             >
               Analisar as {resultado.totalEditais} oportunidades abertas no seu setor →

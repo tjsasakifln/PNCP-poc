@@ -255,7 +255,7 @@ describe('BlogCTA (AC6)', () => {
     );
 
     expect(screen.getByText(/15 licitações/i)).toBeInTheDocument();
-    expect(screen.getByText(/Começar Teste Grátis/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pedir um diagnóstico à CONFENGE/i)).toBeInTheDocument();
   });
 
   it('includes UTM params in href', () => {

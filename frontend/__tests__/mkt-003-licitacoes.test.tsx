@@ -1170,13 +1170,14 @@ describe('MKT-003 — BlogCTA component (unit)', () => {
       expect(screen.getByText(/42/)).toBeInTheDocument();
     });
 
-    it('links to /signup with UTM params', () => {
+    it('links to /consultoria-b2g with UTM params', () => {
       render(
         <RealBlogCTA variant="inline" setor="Saúde" uf="São Paulo" count={42} slug="saude-sp" />,
       );
       const link = screen.getByRole('link', { name: 'Comece Agora' });
       const href = link.getAttribute('href') || '';
-      expect(href).toContain('/signup');
+      expect(href).toContain('/consultoria-b2g');
+      expect(href).not.toContain('/signup');
       expect(href).toContain('utm_source=blog');
       expect(href).toContain('utm_medium=programmatic');
       expect(href).toContain('saude-sp');
@@ -1189,11 +1190,12 @@ describe('MKT-003 — BlogCTA component (unit)', () => {
       expect(screen.getByText('Comece Agora')).toBeInTheDocument();
     });
 
-    it('includes "teste grátis 14 dias" in text', () => {
+    it('does not advertise a SaaS trial', () => {
       render(
         <RealBlogCTA variant="inline" setor="Saúde" uf="SP" count={0} slug="saude-sp" />,
       );
-      expect(screen.getByText(/teste grátis 14 dias/)).toBeInTheDocument();
+      expect(screen.queryByText(/teste grátis 14 dias/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/dado público verificável/i)).toBeInTheDocument();
     });
   });
 
@@ -1222,29 +1224,31 @@ describe('MKT-003 — BlogCTA component (unit)', () => {
       expect(heading.textContent).toContain('Saúde');
     });
 
-    it('links to /signup with UTM params', () => {
+    it('links to /consultoria-b2g with UTM params', () => {
       render(
         <RealBlogCTA variant="final" setor="Saúde" uf="São Paulo" count={42} slug="saude-sp" />,
       );
-      const link = screen.getByRole('link', { name: 'Começar Teste Grátis' });
+      const link = screen.getByRole('link', { name: /diagnóstico à CONFENGE/i });
       const href = link.getAttribute('href') || '';
-      expect(href).toContain('/signup');
+      expect(href).toContain('/consultoria-b2g');
+      expect(href).not.toContain('/signup');
       expect(href).toContain('utm_source=blog');
       expect(href).toContain('saude-sp');
     });
 
-    it('mentions "14 dias" free trial in body text', () => {
+    it('does not mention a free trial in body text', () => {
       render(
         <RealBlogCTA variant="final" setor="Saúde" uf="São Paulo" count={42} slug="saude-sp" />,
       );
-      expect(screen.getByText(/14 dias/)).toBeInTheDocument();
+      expect(screen.queryByText(/14 dias/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/Diagnóstico com a CONFENGE/i)).toBeInTheDocument();
     });
 
-    it('renders "Começar Teste Grátis" CTA button', () => {
+    it('renders CONFENGE diagnostic CTA button', () => {
       render(
         <RealBlogCTA variant="final" setor="Engenharia" uf="MG" count={20} slug="engenharia-mg" />,
       );
-      expect(screen.getByText('Começar Teste Grátis')).toBeInTheDocument();
+      expect(screen.getByText('Pedir um diagnóstico à CONFENGE')).toBeInTheDocument();
     });
   });
 });
