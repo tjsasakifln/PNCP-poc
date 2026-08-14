@@ -17,7 +17,7 @@ import re
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from rate_limiter import require_rate_limit
@@ -291,11 +291,9 @@ async def capture_lead(
     except Exception:
         logger.warning("lead_magnet: failed to enqueue delivery job", exc_info=True)
 
-    receipt_id: str | None = None
-    handoff_state: str | None = None
-    try:
-        from leads.outbox import accept_lead, receipt_for
+    from leads.outbox import LeadOutboxError, accept_lead, receipt_for
 
+    try:
         record = accept_lead(
             {
                 "email": req.email,
@@ -317,21 +315,23 @@ async def capture_lead(
                 "consent_version": req.consent_version,
             }
         )
-        receipt = receipt_for(record)
-        receipt_id = receipt["receipt_id"]
-        handoff_state = receipt["handoff_state"]
-        try:
-            from metrics import INBOUND_LEAD_ACCEPTED
+    except LeadOutboxError as exc:
+        logger.warning("lead_outbox_persist_failed")
+        raise HTTPException(status_code=503, detail="lead_outbox_unavailable") from exc
 
-            INBOUND_LEAD_ACCEPTED.labels(
-                family=req.route_family or "unknown",
-                cta_id=req.cta_id or "none",
-                state=handoff_state or "accepted",
-            ).inc()
-        except Exception:
-            pass
+    receipt = receipt_for(record)
+    receipt_id = receipt["receipt_id"]
+    handoff_state = receipt["handoff_state"]
+    try:
+        from metrics import INBOUND_LEAD_ACCEPTED
+
+        INBOUND_LEAD_ACCEPTED.labels(
+            family=req.route_family or "unknown",
+            cta_id=req.cta_id or "none",
+            state=handoff_state or "accepted",
+        ).inc()
     except Exception:
-        logger.warning("lead_outbox_failed", exc_info=True)
+        logger.info("lead_analytics_failed receipt=%s", receipt_id)
 
     return LeadCaptureResponse(
         success=True,

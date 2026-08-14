@@ -48,6 +48,8 @@ stripe==11.6.0
 redis==5.3.1  # Feature flag caching (STORY-171)
 # sqlalchemy and psycopg2-binary moved to requirements-dev.txt (STORY-201)
 # Kept in database.py for test backward compat only
+# extra-cli public_read_v1 consumer (#2108) — server-side only, never in the browser.
+psycopg[binary]==3.2.10
 
 # Google Sheets API integration (STORY-180)
 # ACTIVE: Used in oauth.py, google_sheets.py, routes/export_sheets.py

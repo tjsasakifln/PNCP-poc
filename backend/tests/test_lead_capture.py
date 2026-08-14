@@ -275,6 +275,21 @@ class TestFailOpen:
             resp = _post(client, {"email": "test@example.com", "source": "calculadora"})
         assert resp.status_code == 201
         assert resp.json()["success"] is True
+        assert resp.json().get("receipt_id")
+
+
+class TestOutboxDurability:
+    def test_persist_failure_returns_503(self, client, mock_supabase, tmp_path, monkeypatch):
+        blocked = tmp_path / "not-a-dir"
+        blocked.write_text("file")
+        monkeypatch.setenv("LEAD_OUTBOX_PATH", str(blocked / "outbox.jsonl"))
+        from leads.outbox import reset_outbox_state
+
+        reset_outbox_state()
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("routes.lead_capture.require_rate_limit", return_value=lambda: None):
+            resp = _post(client, {"email": "outbox@example.com", "source": "consultoria"})
+        assert resp.status_code == 503
 
 
 # ---------------------------------------------------------------------------

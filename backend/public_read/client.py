@@ -2,6 +2,7 @@
 
 No browser credentials. No writes. No access to public schema.
 DSN must live in server env PUBLIC_READ_V1_DSN.
+Supports psycopg3 first, then psycopg2.
 """
 
 from __future__ import annotations
@@ -31,13 +32,17 @@ def store_last_known_good(family: str, payload: Any) -> None:
     _LAST_KNOWN_GOOD[family] = payload
 
 
+def clear_last_known_good() -> None:
+    _LAST_KNOWN_GOOD.clear()
+
+
 def session_options(budgets: IsolationBudgets | None = None) -> list[str]:
     cfg = budgets or load_budgets()
     return [
         "SET default_transaction_read_only = on",
-        f"SET statement_timeout = '{cfg.statement_timeout_ms}'",
-        f"SET lock_timeout = '{cfg.lock_timeout_ms}'",
-        "SET idle_in_transaction_session_timeout = '5000'",
+        f"SET statement_timeout = '{cfg.statement_timeout_ms}ms'",
+        f"SET lock_timeout = '{cfg.lock_timeout_ms}ms'",
+        "SET idle_in_transaction_session_timeout = '5000ms'",
         "SET search_path TO public_read_v1, pg_temp",
     ]
 
@@ -48,9 +53,26 @@ class PublicReadUnavailable(RuntimeError):
         self.reason = reason
 
 
+def _connect(dsn: str, connect_timeout: float) -> Any:
+    timeout = max(int(connect_timeout), 1)
+    try:
+        import psycopg
+
+        return psycopg.connect(dsn, connect_timeout=timeout, autocommit=True)
+    except ImportError:
+        pass
+    try:
+        import psycopg2
+    except ImportError as exc:
+        raise PublicReadUnavailable("psycopg_missing") from exc
+    conn = psycopg2.connect(dsn, connect_timeout=timeout)
+    conn.autocommit = True
+    return conn
+
+
 @contextmanager
 def public_read_connection() -> Iterator[Any]:
-    """Yield a psycopg connection or raise PublicReadUnavailable."""
+    """Yield a read-only connection or raise PublicReadUnavailable."""
     if is_kill_switch_on():
         raise PublicReadUnavailable("kill_switch")
     if not should_read_public():
@@ -64,18 +86,15 @@ def public_read_connection() -> Iterator[Any]:
     if reason:
         raise PublicReadUnavailable(reason)
 
+    conn = None
     try:
-        try:
-            import psycopg
-        except ImportError as exc:
-            raise PublicReadUnavailable("psycopg_missing") from exc
-
         budgets = load_budgets()
-        conn = psycopg.connect(
-            dsn,
-            connect_timeout=int(budgets.connect_timeout_s),
-            autocommit=True,
-        )
+        try:
+            conn = _connect(dsn, budgets.connect_timeout_s)
+        except PublicReadUnavailable:
+            raise
+        except Exception as exc:
+            raise PublicReadUnavailable("connect_failed") from exc
         try:
             with conn.cursor() as cur:
                 for stmt in session_options(budgets):
@@ -88,10 +107,14 @@ def public_read_connection() -> Iterator[Any]:
 
 
 def fetchall(sql: str, params: tuple[Any, ...] | None = None) -> list[dict[str, Any]]:
-    """Bounded read. Callers must pass parameterized SQL with LIMIT."""
+    """Bounded read. Callers must pass parameterized SQL with LIMIT. No retry."""
     with public_read_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params or ())
-            columns = [desc.name for desc in cur.description] if cur.description else []
+            description = cur.description or []
+            columns = []
+            for desc in description:
+                name = getattr(desc, "name", None)
+                columns.append(name if name is not None else desc[0])
             rows = cur.fetchall()
     return [dict(zip(columns, row, strict=True)) for row in rows]

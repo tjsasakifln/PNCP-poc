@@ -35,6 +35,25 @@ describe("journey", () => {
     expect(cta.href).not.toMatch(/signup|planos|pricing/);
     expect(SAAS_CTA_DENYLIST).toContain("/signup");
   });
+
+  it("covers the six MVP families with CONFENGE destinations", () => {
+    const families = [
+      "tender",
+      "contract",
+      "company",
+      "organ",
+      "municipality",
+      "observatory",
+    ] as const;
+    for (const family of families) {
+      const cta = resolveJourney({ family, entityPublicId: "id-1" });
+      expect(cta.family).toBe(family);
+      expect(cta.href).toContain("/consultoria-b2g");
+      expect(cta.href).toContain(`family=${family}`);
+      expect(cta.href).not.toMatch(/signup|planos|pricing|fundadores|founding|checkout/);
+      expect(cta.label.toLowerCase()).not.toMatch(/teste grátis|assine|upgrade|trial/);
+    }
+  });
 });
 
 describe("surface classification", () => {

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from public_read.adapters import read_family
 from public_read.contract import CONTRACT_FAMILIES, CONTRACT_VERSION, FamilyRead
 from public_read.flags import get_public_read_mode, is_kill_switch_on
 from public_read.isolation import get_backpressure
+from public_read.serve import serve_family
 
 router = APIRouter(prefix="/public-read", tags=["public-read"])
 
@@ -54,4 +54,4 @@ async def public_read_family(family: str, public_id: str) -> FamilyRead:
         raise HTTPException(status_code=404, detail="unknown_family")
     if len(public_id) > 128:
         raise HTTPException(status_code=422, detail="public_id_too_long")
-    return read_family(mapped, public_id)
+    return serve_family(mapped, public_id)

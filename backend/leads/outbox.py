@@ -1,16 +1,18 @@
 """Durable lead outbox — #2117.
 
-Idempotent, retryable, no PII in URLs or client analytics.
-Analytics outage must not drop the lead.
+Persist first, then handoff. Analytics is never on this path.
+Idempotency survives process restart via JSONL reload.
+Retry/reprocess never mints a second receipt.
 """
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import logging
 import os
-import tempfile
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -19,9 +21,35 @@ from uuid import uuid4
 logger = logging.getLogger(__name__)
 
 CONSENT_VERSION = "2026-08-confenge-v1"
-OUTBOX_PATH = Path(os.getenv("LEAD_OUTBOX_PATH", "/tmp/smartlic-lead-outbox.jsonl"))
+PRODUCTION_OUTBOX_PATH = "/var/lib/smartlic/lead-outbox.jsonl"
+DEV_OUTBOX_PATH = "/tmp/smartlic-lead-outbox.jsonl"
+PII_FIELDS = frozenset({"email", "nome", "empresa", "telefone", "mensagem"})
+UNFINISHED = frozenset({"accepted", "queued", "failed"})
 
+_LOCK = threading.Lock()
 _MEMORY: dict[str, dict[str, Any]] = {}
+_LOADED = False
+
+
+class LeadOutboxError(RuntimeError):
+    """Durable persist failed. Caller must not claim success."""
+
+
+def outbox_path() -> Path:
+    configured = os.getenv("LEAD_OUTBOX_PATH")
+    if configured:
+        return Path(configured)
+    if Path("/var/lib/smartlic").is_dir():
+        return Path(PRODUCTION_OUTBOX_PATH)
+    return Path(DEV_OUTBOX_PATH)
+
+
+def reset_outbox_state() -> None:
+    """Test helper. Does not delete the file."""
+    global _LOADED
+    with _LOCK:
+        _MEMORY.clear()
+        _LOADED = False
 
 
 def build_idempotency_key(
@@ -71,21 +99,56 @@ def receipt_for(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _durable_line(record: dict[str, Any]) -> dict[str, Any]:
+    # Persist contact fields server-side. Never persist free-text mensagem.
+    return {key: value for key, value in record.items() if key != "mensagem"}
+
+
 def _persist_jsonl(record: dict[str, Any]) -> None:
-    OUTBOX_PATH.parent.mkdir(parents=True, exist_ok=True)
-    line = json.dumps(record, ensure_ascii=False, default=str)
-    # Atomic-ish append: write to temp then append to dest.
-    fd, tmp = tempfile.mkstemp(prefix="lead-outbox-", suffix=".jsonl")
+    path = outbox_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps(_durable_line(record), ensure_ascii=False, default=str) + "\n"
+    with path.open("a", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _load_index_locked() -> None:
+    global _LOADED
+    if _LOADED:
+        return
+    path = outbox_path()
+    if path.exists():
+        with path.open("r", encoding="utf-8") as handle:
+            for raw in handle:
+                raw = raw.strip()
+                if not raw:
+                    continue
+                try:
+                    record = json.loads(raw)
+                except json.JSONDecodeError:
+                    logger.warning("lead_outbox_corrupt_line")
+                    continue
+                key = record.get("idempotency_key")
+                if key:
+                    _MEMORY[str(key)] = record
+    _LOADED = True
+
+
+def _handoff(record: dict[str, Any]) -> None:
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(line + "\n")
-        with OUTBOX_PATH.open("a", encoding="utf-8") as dest:
-            dest.write(line + "\n")
-    finally:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
+        from leads.handoff import deliver_handoff
+
+        deliver_handoff(record)
+    except Exception:
+        record["handoff_state"] = "failed"
+        logger.warning("lead_handoff_failed receipt=%s", record["receipt_id"], exc_info=True)
+    try:
+        _persist_jsonl(record)
+    except OSError:
+        logger.warning("lead_outbox_state_persist_failed receipt=%s", record["receipt_id"])
 
 
 def accept_lead(payload: dict[str, Any]) -> dict[str, Any]:
@@ -97,48 +160,63 @@ def accept_lead(payload: dict[str, Any]) -> dict[str, Any]:
         payload.get("cta_id"),
         payload.get("entity_public_id"),
     )
-    existing = _MEMORY.get(key)
-    if existing:
-        existing["deduplicated"] = True
-        return existing
+    with _LOCK:
+        _load_index_locked()
+        existing = _MEMORY.get(key)
+        if existing:
+            existing["deduplicated"] = True
+            return existing
 
-    record = {
-        "receipt_id": str(uuid4()),
-        "idempotency_key": key,
-        "accepted_at": datetime.now(timezone.utc).isoformat(),
-        "handoff_state": "accepted",
-        "attempts": 0,
-        "consent_version": payload.get("consent_version") or CONSENT_VERSION,
-        "source": payload.get("source"),
-        "cta_id": payload.get("cta_id"),
-        "route_family": payload.get("route_family"),
-        "entity_type": payload.get("entity_type"),
-        "entity_public_id": payload.get("entity_public_id"),
-        "landing_url": payload.get("landing_url") or payload.get("origin_url"),
-        "referrer_class": classify_referrer(payload.get("referrer")),
-        "utm_source": payload.get("utm_source"),
-        "utm_medium": payload.get("utm_medium") or payload.get("medium"),
-        "utm_campaign": payload.get("utm_campaign"),
-        "correlation_id": payload.get("correlation_id") or str(uuid4()),
-        "email": payload.get("email"),
-        "nome": payload.get("nome"),
-        "empresa": payload.get("empresa"),
-        "telefone": payload.get("telefone") or payload.get("phone"),
-        "mensagem": payload.get("mensagem"),
-        "deduplicated": False,
-    }
-    _MEMORY[key] = record
-    try:
-        _persist_jsonl({k: v for k, v in record.items() if k != "mensagem"})
-    except OSError:
-        logger.warning("lead_outbox_fs_failed receipt=%s", record["receipt_id"])
+        record = {
+            "receipt_id": str(uuid4()),
+            "idempotency_key": key,
+            "accepted_at": datetime.now(timezone.utc).isoformat(),
+            "handoff_state": "accepted",
+            "attempts": 0,
+            "consent_version": payload.get("consent_version") or CONSENT_VERSION,
+            "source": payload.get("source"),
+            "cta_id": payload.get("cta_id"),
+            "route_family": payload.get("route_family"),
+            "entity_type": payload.get("entity_type"),
+            "entity_public_id": payload.get("entity_public_id"),
+            "landing_url": payload.get("landing_url") or payload.get("origin_url"),
+            "referrer_class": classify_referrer(payload.get("referrer")),
+            "utm_source": payload.get("utm_source"),
+            "utm_medium": payload.get("utm_medium") or payload.get("medium"),
+            "utm_campaign": payload.get("utm_campaign"),
+            "correlation_id": payload.get("correlation_id") or str(uuid4()),
+            "email": payload.get("email"),
+            "nome": payload.get("nome"),
+            "empresa": payload.get("empresa"),
+            "telefone": payload.get("telefone") or payload.get("phone"),
+            "mensagem": payload.get("mensagem"),
+            "deduplicated": False,
+        }
+        try:
+            _persist_jsonl(record)
+        except OSError as exc:
+            raise LeadOutboxError("persist_failed") from exc
+        _MEMORY[key] = record
 
-    try:
-        from leads.handoff import deliver_handoff
-
-        deliver_handoff(record)
-    except Exception:
-        record["handoff_state"] = "failed"
-        logger.warning("lead_handoff_failed receipt=%s", record["receipt_id"], exc_info=True)
-
+    _handoff(record)
     return record
+
+
+def reprocess_unfinished(limit: int = 50) -> list[dict[str, Any]]:
+    """Retry queued/failed/accepted leads without minting a new receipt."""
+    with _LOCK:
+        _load_index_locked()
+        pending = [
+            record
+            for record in _MEMORY.values()
+            if record.get("handoff_state") in UNFINISHED
+        ][:limit]
+    processed: list[dict[str, Any]] = []
+    for record in pending:
+        _handoff(record)
+        processed.append(record)
+    return processed
+
+
+def redact_for_log(record: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in record.items() if key not in PII_FIELDS}

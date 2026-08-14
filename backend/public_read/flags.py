@@ -29,6 +29,9 @@ def get_public_read_mode() -> PublicReadMode:
 
 
 def is_kill_switch_on() -> bool:
+    raw = os.getenv("PUBLIC_READ_KILL_SWITCH", "").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
     from config.features import get_feature_flag
 
     return bool(get_feature_flag("PUBLIC_READ_KILL_SWITCH"))

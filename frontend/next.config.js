@@ -63,8 +63,7 @@ const nextConfig = {
   // don't need CSP/X-Frame-Options. HSTS is enforced at Railway edge proxy level.
 
   // SEO: Redirect acentuado → slug canônico (ISSUE-SEO-004)
-  // SEO: Consolidar pricing pages — /pricing → /planos (ISSUE-SEO-005)
-  // #2111/#2113: founding/planos/signup saem do funil público sem chain.
+  // #2111/#2113: founding/planos/pricing/signup saem do funil público em um hop.
   async redirects() {
     return [
       ...buildLegacyLicitacoesRedirects(),

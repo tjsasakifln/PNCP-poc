@@ -51,11 +51,15 @@ jobs:
           HTTP_CODE=$(curl -s --max-time 90 --connect-timeout 30 -D "$HEADERS" -o /dev/null -w "%{http_code}" "${BACKEND_URL}/health/live" 2>&1 || echo "000")
           echo "HTTP $HTTP_CODE"
           if grep -qi '^x-railway-fallback: true' "$HEADERS"; then
-            echo "::error::Railway edge fallback (x-railway-fallback: true). This is abandoned Railway infra, not an app regression. See #2115 / #2121."
+            echo "::error::EDGE_FALLBACK Railway edge fallback (x-railway-fallback: true). Abandoned Railway infra, not an app 404. See #2115 / #2121."
+            [ "$FAIL_FAST" = "true" ] && exit 1
+          fi
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "::error::APP_UNHEALTHY liveness returned HTTP $HTTP_CODE"
             [ "$FAIL_FAST" = "true" ] && exit 1
           fi
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "::error::Liveness probe failed (HTTP $HTTP_CODE)"
+            echo "::error::APP_UNHEALTHY liveness probe failed (HTTP $HTTP_CODE) — 404 on /health/live is not a healthy unknown route"
             [ "$FAIL_FAST" = "true" ] && exit 1
           fi
 
@@ -94,6 +98,21 @@ jobs:
             [ "$FAIL_FAST" = "true" ] && exit 1
           fi
           echo "POST endpoint responds (HTTP $HTTP_CODE — expected 202/200/4xx)"
+
+      - name: Unknown path is not treated as healthy
+        run: |
+          echo "=== GET /__smoke-unknown-path__ ==="
+          HTTP_CODE=$(curl -s --max-time 30 --connect-timeout 10 -o /dev/null -w "%{http_code}" "${BACKEND_URL}/__smoke-unknown-path__" || echo "000")
+          echo "HTTP $HTTP_CODE"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "::error::Unknown path returned 200 — do not treat this as app healthy"
+            [ "$FAIL_FAST" = "true" ] && exit 1
+          fi
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "::error::APP_UNHEALTHY unknown path returned HTTP $HTTP_CODE"
+            [ "$FAIL_FAST" = "true" ] && exit 1
+          fi
+          echo "404/4xx on unknown path is not_found, not healthy"
 
       - name: Report failure as issue
         if: failure() && github.event_name == 'workflow_run'

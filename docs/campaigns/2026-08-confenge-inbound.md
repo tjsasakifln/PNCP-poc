@@ -11,8 +11,8 @@ Base: freeze #2111 (`fix/2111-saas-commerce-freeze` / PR #2120)
       → #2114 brand/journey
       → #2117 lead outbox
       → #2113 URL registry + 301
-  → extra-cli#354 / PR #358 (OPEN, not production)
-      → #2108 consumer boundary (flag off)
+  → extra-cli#354 / PR #358 (MERGED 2026-08-13, extra-cli main c5f3728b)
+      → #2108 consumer boundary (flag off|shadow; canary path implemented for tenders)
       → #2116 isolation
   → #2112 six public families
   → #2118 eligibility

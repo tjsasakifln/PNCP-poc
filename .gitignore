@@ -308,6 +308,7 @@ data/geocode_cache.json
 data/distance_cache.json
 *.sql
 !**/migrations/**/*.sql
+!backend/public_read/extra_cli_v1_fixture.sql
 
 # STORY-B2G-001: outreach lead data is LGPD-sensitive — keep local only
 data/outreach/leads-*.csv
