@@ -277,6 +277,32 @@ class TestFailOpen:
         assert resp.json()["success"] is True
         assert resp.json().get("receipt_id")
 
+    def test_missing_supabase_config_still_persists_outbox(self, client, tmp_path, monkeypatch):
+        """get_supabase() raising must not skip persist-first accept_lead."""
+        monkeypatch.setenv("LEAD_OUTBOX_PATH", str(tmp_path / "outbox.jsonl"))
+        from leads.outbox import reset_outbox_state
+
+        reset_outbox_state()
+        with patch(
+            "supabase_client.get_supabase",
+            side_effect=RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set"),
+        ), patch("routes.lead_capture.require_rate_limit", return_value=lambda: None):
+            resp = _post(client, {
+                "email": "nosb@confenge.com.br",
+                "source": "licitacoes-setor",
+                "cta_id": "cta.tender.go_nogo",
+                "route_family": "tender",
+                "landing_url": "https://smartlic.tech/licitacoes/saude",
+                "correlation_id": "corr-no-supabase",
+            })
+        assert resp.status_code == 201, resp.text
+        body = resp.json()
+        assert body["success"] is True
+        assert body.get("receipt_id")
+        raw = (tmp_path / "outbox.jsonl").read_text(encoding="utf-8")
+        assert "cta.tender.go_nogo" in raw
+        assert "corr-no-supabase" in raw
+
 
 class TestTendersVerticalCapture:
     def test_one_submit_one_receipt_and_retry_is_idempotent(

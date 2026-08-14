@@ -164,27 +164,26 @@ class LeadCaptureResponse(BaseModel):
 
 async def _store_in_legacy_leads(req: LeadCaptureRequest) -> None:
     """Upsert a row into the original ``leads`` table (old sources only)."""
-    from supabase_client import get_supabase, sb_execute
-
-    sb = get_supabase()
-    lead_row = {
-        "email": req.email.lower().strip(),
-        "source": req.source,
-        "setor": req.sector,
-        "uf": req.uf.upper() if req.uf else None,
-        "captured_at": req.captured_at or datetime.now(timezone.utc).isoformat(),
-        "nome": req.nome,
-        "empresa": req.empresa,
-        "cnpj": req.cnpj,
-        "telefone": req.telefone,
-        "modalidade_interesse": req.modalidade_interesse,
-        "mensagem": req.mensagem,
-        "utm_source": req.utm_source,
-        "utm_campaign": req.utm_campaign,
-        "referer_path": req.referer_path,
-    }
-
     try:
+        from supabase_client import get_supabase, sb_execute
+
+        sb = get_supabase()
+        lead_row = {
+            "email": req.email.lower().strip(),
+            "source": req.source,
+            "setor": req.sector,
+            "uf": req.uf.upper() if req.uf else None,
+            "captured_at": req.captured_at or datetime.now(timezone.utc).isoformat(),
+            "nome": req.nome,
+            "empresa": req.empresa,
+            "cnpj": req.cnpj,
+            "telefone": req.telefone,
+            "modalidade_interesse": req.modalidade_interesse,
+            "mensagem": req.mensagem,
+            "utm_source": req.utm_source,
+            "utm_campaign": req.utm_campaign,
+            "referer_path": req.referer_path,
+        }
         await _run_with_budget(
             sb_execute(
                 sb.table("leads").upsert(lead_row, on_conflict="email,source"),
@@ -210,29 +209,28 @@ async def _store_in_lead_captures(
 
     Returns the new row id on success, ``None`` on failure (fail-open).
     """
-    from supabase_client import get_supabase, sb_execute
-
-    sb = get_supabase()
-    row = {
-        "email": req.email.lower().strip(),
-        "source": req.source,
-        "sector": req.sector,
-        "origin_url": req.origin_url,
-        "metadata": {
-            "uf": req.uf,
-            "nome": req.nome,
-            "empresa": req.empresa,
-            "cnpj": req.cnpj,
-            "telefone": req.telefone,
-            "modalidade_interesse": req.modalidade_interesse,
-            "mensagem": req.mensagem,
-            "utm_source": req.utm_source,
-            "utm_campaign": req.utm_campaign,
-            "referer_path": req.referer_path,
-        },
-    }
-
     try:
+        from supabase_client import get_supabase, sb_execute
+
+        sb = get_supabase()
+        row = {
+            "email": req.email.lower().strip(),
+            "source": req.source,
+            "sector": req.sector,
+            "origin_url": req.origin_url,
+            "metadata": {
+                "uf": req.uf,
+                "nome": req.nome,
+                "empresa": req.empresa,
+                "cnpj": req.cnpj,
+                "telefone": req.telefone,
+                "modalidade_interesse": req.modalidade_interesse,
+                "mensagem": req.mensagem,
+                "utm_source": req.utm_source,
+                "utm_campaign": req.utm_campaign,
+                "referer_path": req.referer_path,
+            },
+        }
         result = await _run_with_budget(
             sb_execute(
                 sb.table("lead_captures").insert(row),
