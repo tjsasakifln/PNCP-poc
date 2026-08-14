@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Fail if canonical docs still define SmartLic as an independent SaaS.
+"""Fail if canonical docs violate SmartLic migration-only boundaries.
 
-Guards ADR-STRAT-001 / issue #1262. Stdlib only.
+Guards ADR-STRAT-002 / web-cfg#61. Stdlib only.
 
 Policy lives in docs/strategy/strategic-positioning-policy.json.
 This module only loads that policy and evaluates the tree.
@@ -163,8 +163,8 @@ def evaluate(root: Path | None = None, policy: dict | None = None) -> list[str]:
         for hit in find_affirmative_hits(pat, rm_header):
             errors.append(f"ROADMAP.md header still contains superseded growth/SaaS objective: {hit}")
 
-    if not re.search(r"\*\*Status:\*\*\s*Accepted|Status \| Accepted", adr):
-        errors.append("ADR-STRAT-001 must have Status Accepted")
+    if not re.search(r"\*\*Status:\*\*\s*SUPERSEDED|Status \| SUPERSEDED", adr, flags=re.IGNORECASE):
+        errors.append("ADR-STRAT-001 must have Status SUPERSEDED")
 
     return errors
 
@@ -185,7 +185,7 @@ def main(root: Path | None = None) -> int:
             print(f"  - {err}", file=sys.stderr)
         return 1
 
-    print("Strategic positioning check passed (ADR-STRAT-001 / #1262).")
+    print("Strategic positioning check passed (ADR-STRAT-002 / web-cfg#61).")
     return 0
 
 
