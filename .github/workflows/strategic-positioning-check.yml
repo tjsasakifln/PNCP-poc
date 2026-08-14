@@ -1,8 +1,4 @@
-name: "Strategic positioning (ADR-STRAT-001)"
-
-# Impede que docs canônicos voltem a definir SmartLic como SaaS independente.
-# Issue: #1262
-# Policy: docs/strategy/strategic-positioning-policy.json
+name: "Strategic positioning (ADR-STRAT-002)"
 
 on:
   pull_request:
@@ -44,7 +40,7 @@ concurrency:
 
 jobs:
   check:
-    name: Canonical docs vs ADR-STRAT-001
+    name: Migration-only boundaries
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
