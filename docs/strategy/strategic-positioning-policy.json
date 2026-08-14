@@ -1,8 +1,8 @@
 {
-  "version": 1,
-  "adr": "ADR-STRAT-001",
-  "issue": "#1262",
-  "description": "Policy for scripts/check_strategic_positioning.py. Python only loads and evaluates.",
+  "version": 2,
+  "adr": "ADR-STRAT-002",
+  "issue": "web-cfg#61",
+  "description": "Policy for migration-only SmartLic positioning. Python loads and evaluates this file.",
   "workflow_paths": [
     "README.md",
     "PRD.md",
@@ -18,20 +18,32 @@
   ],
   "files": {
     "README.md": {
-      "required": ["extra-cli", "CONFENGE", "ADR-STRAT-001", "public_read_v1", "#1262"],
+      "required": [
+        "legacy migration source",
+        "confenge.com.br",
+        "extra-cli",
+        "web-cfg",
+        "warmbly",
+        "ADR-STRAT-002"
+      ],
       "forbidden": [
-        "Paid trials",
-        "Stripe live billing",
-        "SaaS, 14-day free trial",
-        "Business Model\\s*\\n\\s*SaaS",
+        "é o braço público",
+        "ativo de descoberta e inbound",
+        "public discovery / intelligence / inbound plane",
         "Production SaaS",
-        "b2b-saas",
-        "b2g-saas"
+        "Stripe live billing"
       ]
     },
     "frontend/public/llms.txt": {
-      "required": ["CONFENGE", "extra-cli", "Não é um produto de assinatura"],
+      "required": [
+        "legacy migration source",
+        "confenge.com.br",
+        "extra-cli",
+        "Warmbly",
+        "ADR-STRAT-002"
+      ],
       "forbidden": [
+        "Inteligência pública de licitações brasileiras",
         "plataforma SaaS",
         "/planos",
         "R\\$297/mês",
@@ -39,41 +51,74 @@
       ]
     },
     "docs/adr/ADR-STRAT-001-smartlic-confenge-inbound.md": {
-      "required": ["Status", "Accepted", "extra-cli", "Warmbly", "public_read_v1"]
+      "required": [
+        "Status | SUPERSEDED",
+        "ADR-STRAT-002",
+        "extra-cli",
+        "Warmbly",
+        "legacy migration source"
+      ]
     },
     "docs/strategy/critical-path.md": {
-      "required": ["#1262", "#2111", "#2113", "extra-cli#354", "#2108", "#2112", "Warmbly"]
+      "required": [
+        "ADR-STRAT-002",
+        "web-cfg #62",
+        "web-cfg #63",
+        "#2115",
+        "#2111",
+        "Warmbly"
+      ]
     },
     "docs/strategy/runtime-destination.md": {
-      "required": ["FastAPI", "Redis", "ARQ", "Supabase", "Railway", "Warmbly"]
+      "required": [
+        "no permanent runtime destination",
+        "FastAPI",
+        "Redis",
+        "ARQ",
+        "Supabase",
+        "Railway",
+        "Warmbly"
+      ]
     },
     "docs/strategy/capability-disposition-1262.md": {
-      "required": ["KEEP + PRIORITIZE", "KEEP + ADAPT", "SUNSET", "REPLACE", "DEFER"]
+      "required": [
+        "MIGRATE",
+        "REDIRECT",
+        "RETIRE",
+        "TEMPORARY BRIDGE",
+        "web-cfg #63"
+      ]
     }
   },
   "header_rules": {
     "PRD.md": {
       "lines": 40,
-      "must_cite": ["ADR-STRAT-001"],
+      "must_cite": [
+        "ADR-STRAT-002"
+      ],
       "positioning_any": [
-        "não é um SaaS independente",
-        "nao e um SaaS independente",
-        "não é um produto de assinatura",
-        "inbound da CONFENGE"
+        "legacy migration package",
+        "decommissioning",
+        "not an active product"
       ],
       "forbidden": [
-        "(?<!não tem )MRR(?!.{0,40}como objetivo)",
-        "objetivo do produto é.{0,40}assinatura",
-        "(?<!não é um )SaaS independente"
+        "inbound da CONFENGE",
+        "produto de assinatura",
+        "SaaS independente"
       ]
     },
     "ROADMAP.md": {
       "lines": 25,
-      "must_cite": ["ADR-STRAT-001"],
-      "must_cite_extended": {"#1262": 80},
+      "must_cite": [
+        "ADR-STRAT-002"
+      ],
+      "must_cite_extended": {
+        "#2111": 80
+      },
       "forbidden": [
+        "inbound CONFENGE",
+        "relançamento público",
         "K-factor B2B",
-        "30% signups via viral",
         "Wave 5 Monetization"
       ]
     }
@@ -85,10 +130,11 @@
       "docs/architecture/system-architecture.md"
     ],
     "patterns": [
-      "Paid trials",
-      "Stripe live billing",
+      "é o braço público",
+      "ativo de descoberta e inbound",
       "plataforma SaaS",
-      "Production SaaS"
+      "Production SaaS",
+      "SmartLic é o public discovery"
     ]
   }
 }
