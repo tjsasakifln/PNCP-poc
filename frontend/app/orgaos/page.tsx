@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import ContentPageLayout from '../components/ContentPageLayout';
 import OrgaoSearchForm from './OrgaoSearchForm';
 import { LeadCapture } from '@/components/LeadCapture';
-import { PublicFamilyShell } from '@/app/components/intelligence/PublicFamilyShell';
+import { PublicFamilyRead } from '@/app/components/intelligence/PublicFamilyRead';
 
 export const metadata: Metadata = {
   title: 'Órgãos Compradores — Licitações por Órgão Público',
@@ -219,7 +219,7 @@ export default function OrgaosLandingPage() {
           volume de compras e os editais abertos mais recentes com prazos e valores.
         </p>
       </section>
-      <PublicFamilyShell family="organ" />
+      <PublicFamilyRead family="organ" />
     </ContentPageLayout>
   );
 }

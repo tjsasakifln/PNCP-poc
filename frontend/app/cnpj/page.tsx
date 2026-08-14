@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import ContentPageLayout from '../components/ContentPageLayout';
 import CnpjSearchForm from './CnpjSearchForm';
 import { LeadCapture } from '@/components/LeadCapture';
-import { PublicFamilyShell } from '@/app/components/intelligence/PublicFamilyShell';
+import { PublicFamilyRead } from '@/app/components/intelligence/PublicFamilyRead';
 
 export const metadata: Metadata = {
   title: 'Consulta CNPJ B2G — Histórico de Contratos Públicos',
@@ -224,7 +224,7 @@ export default function CnpjLandingPage() {
           limite de consultas, não exige cadastro e não há custo.
         </p>
       </section>
-      <PublicFamilyShell family="company" />
+      <PublicFamilyRead family="company" />
     </ContentPageLayout>
   );
 }

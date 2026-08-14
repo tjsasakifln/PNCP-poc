@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { buildCanonical } from '@/lib/seo';
 import LandingNavbar from '@/app/components/landing/LandingNavbar';
 import Footer from '@/app/components/Footer';
-import { PublicFamilyShell } from '@/app/components/intelligence/PublicFamilyShell';
+import { PublicFamilyRead } from '@/app/components/intelligence/PublicFamilyRead';
 
 // Sprint 4 Parte 13: hub de municípios para SEO programático
 export const metadata: Metadata = {
@@ -181,7 +181,7 @@ export default function MunicipiosHubPage() {
               Pedir recorte local à CONFENGE
             </Link>
           </section>
-          <PublicFamilyShell family="municipality" />
+          <PublicFamilyRead family="municipality" />
         </div>
       </main>
       <Footer />

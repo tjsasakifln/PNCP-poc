@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { PublicFamilyShell } from "@/app/components/intelligence/PublicFamilyShell";
+import { PublicFamilyRead } from "@/app/components/intelligence/PublicFamilyRead";
+import { FamilyCta } from "@/app/components/conversion/FamilyCta";
 import { SECTORS, fetchSectorStats, formatBRL } from "@/lib/sectors";
 
 /**
@@ -121,17 +122,11 @@ export default async function LicitacoesIndexPage() {
             O SmartLic busca, filtra e classifica licitações por relevância com IA.
             Economize horas de busca manual.
           </p>
-          <Link
-            href="/signup"
-            className="inline-block px-8 py-3 bg-brand-blue text-white font-semibold
-                       rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Teste grátis por 14 dias
-          </Link>
+          <FamilyCta context={{ family: "tender" }} />
         </div>
       </section>
 
-      <PublicFamilyShell family="tender" />
+      <PublicFamilyRead family="tender" />
 
       {/* JSON-LD */}
       <script

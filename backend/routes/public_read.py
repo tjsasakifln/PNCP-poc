@@ -12,6 +12,8 @@ from public_read.serve import serve_family
 router = APIRouter(prefix="/public-read", tags=["public-read"])
 
 _FAMILY_ALIAS = {
+    "snapshot": "current_snapshot",
+    "current_snapshot": "current_snapshot",
     "tender": "tenders",
     "licitacoes": "tenders",
     "contract": "contracts",
@@ -44,6 +46,7 @@ async def public_read_health() -> dict:
 async def public_read_family(family: str, public_id: str) -> FamilyRead:
     mapped = _FAMILY_ALIAS.get(family, family)
     if mapped not in {
+        "current_snapshot",
         "tenders",
         "contracts",
         "entities",

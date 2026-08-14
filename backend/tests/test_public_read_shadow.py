@@ -56,6 +56,39 @@ def test_shadow_serves_legacy_and_classifies(monkeypatch):
     assert page["stale"] is True
 
 
+def test_shadow_missing_dsn_is_unavailable_not_agreement(monkeypatch):
+    monkeypatch.setenv("PUBLIC_READ_V1_MODE", "shadow")
+    monkeypatch.delenv("PUBLIC_READ_V1_DSN", raising=False)
+    served = serve_family(
+        "tenders",
+        "proc-1",
+        legacy={"canonical_id": "proc-1", "title": "legado"},
+    )
+    assert served.served_from == "legacy"
+    assert served.entity.display_name == "legado"
+    assert "public_unavailable" in served.divergence
+    assert "dsn_missing" in served.divergence
+
+
+def test_shadow_without_legacy_does_not_look_like_agreement(monkeypatch):
+    monkeypatch.setenv("PUBLIC_READ_V1_MODE", "shadow")
+
+    def _public(family, public_id):
+        return FamilyRead(
+            family=family,
+            mode="shadow",
+            served_from="public_read_v1",
+            entity=PublicEntity(canonical_id=public_id, family=family, display_name="extra"),
+            row_count=1,
+        )
+
+    monkeypatch.setattr("public_read.serve.read_family", _public)
+    served = serve_family("tenders", "proc-1")
+    assert served.served_from == "legacy"
+    assert served.entity is None
+    assert "public_only" in served.divergence
+
+
 def test_off_never_calls_public(monkeypatch):
     monkeypatch.setenv("PUBLIC_READ_V1_MODE", "off")
 

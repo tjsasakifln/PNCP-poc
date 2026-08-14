@@ -20,6 +20,10 @@ from public_read.flags import get_public_read_mode
 
 # Predicates and LIMITs match extra-cli public_read_v1.query_budgets.
 _FAMILY_SQL = {
+    "current_snapshot": """
+        SELECT * FROM public_read_v1.current_snapshot
+        LIMIT 1
+    """,
     "tenders": """
         SELECT * FROM public_read_v1.tenders
         WHERE process_key = %s
@@ -53,6 +57,7 @@ _FAMILY_SQL = {
 }
 
 _CANONICAL_KEY = {
+    "current_snapshot": "snapshot_id",
     "tenders": "process_key",
     "contracts": "process_key",
     "entities": "entity_id",

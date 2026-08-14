@@ -120,37 +120,79 @@ def live_pg():
     if grant.returncode != 0:
         _write_fail(grant.stdout + "\n" + grant.stderr)
         pytest.fail("failed to grant CONNECT to reader role")
+    kind = _psql(
+        admin,
+        "SELECT table_type FROM information_schema.tables "
+        "WHERE table_schema='public_read_v1' AND table_name='tenders'",
+    )
+    if "VIEW" not in kind.stdout:
+        _write_fail(kind.stdout + "\n" + kind.stderr)
+        pytest.fail("public_read_v1.tenders must be a VIEW from extra-cli 089, not a table")
     snapshot_id = f"snp-{uuid.uuid4().hex[:12]}"
     as_of = "2026-08-13T12:00:00+00"
+    hx = "ab" * 32
+    hx2 = "cd" * 32
+    hx3 = "ef" * 32
     seed = f"""
-    TRUNCATE public_read_v1.tenders, public_read_v1.contracts, public_read_v1.entities,
-             public_read_v1.suppliers, public_read_v1.organs, public_read_v1.municipalities,
-             public_read_v1.current_snapshot, public_read_v1.surface_health;
-    INSERT INTO public_read_v1.current_snapshot
-        (snapshot_id, as_of, content_hash, completeness, provenance, closed_at)
-    VALUES ('{snapshot_id}', '{as_of}', repeat('ab', 32), 'COMPLETE',
-            jsonb_build_object('snapshot_id', '{snapshot_id}'), '{as_of}');
-    INSERT INTO public_read_v1.tenders
-        (event_id, process_key, event_type, status_code, title, publication_at,
-         official_number, as_of, source_updated_at, completeness, reason_codes,
-         source, source_uri, provenance)
+    DELETE FROM public.canonical_snapshot_event_revisions;
+    DELETE FROM public.canonical_snapshot_source_watermarks;
+    DELETE FROM public.canonical_public_snapshots;
+    DELETE FROM public.canonical_event_entity_links;
+    DELETE FROM public.canonical_event_revisions;
+    DELETE FROM public.canonical_public_events_v1;
+    DELETE FROM public.canonical_public_observations;
+    DELETE FROM public.canonical_public_entities_v2;
+    INSERT INTO public.canonical_public_entities_v2
+        (entity_id, entity_type, strong_key, display_name, created_by_policy)
+    VALUES ('ent-process-1', 'process', '{PROCESS_KEY}', 'Processo uniforme', 'canonical-events-v1');
+    INSERT INTO public.canonical_public_observations
+        (observation_id, source, source_record_id, source_version, raw_sha256,
+         observed_at, source_uri, payload_hash, payload)
     VALUES (
-        'evt-tender-1', '{PROCESS_KEY}', 'tender_publication', 'open',
-        'Aquisição de uniformes escolares', '{as_of}', '001/2026',
-        '{as_of}', '{as_of}', 'COMPLETE', ARRAY[]::TEXT[],
-        'pncp', 'https://pncp.gov.br/app/editais/{PROCESS_KEY}',
-        jsonb_build_object('snapshot_id', '{snapshot_id}', 'observation_id', 'obs-1',
-                           'raw_sha256', repeat('cd', 32), 'revision_id', 'rev-1')
+        'obs-1', 'pncp', '{PROCESS_KEY}', 'v1', '{hx2}',
+        '{as_of}', 'https://pncp.gov.br/app/editais/{PROCESS_KEY}', '{hx3}',
+        '{{"title": "Aquisição de uniformes escolares"}}'::JSONB
     );
-    INSERT INTO public_read_v1.surface_health
-        (view_name, enabled, refreshed_at, last_refresh_status, snapshot_id, as_of, completeness, provenance)
-    VALUES ('tenders', TRUE, '{as_of}', 'VALID', '{snapshot_id}', '{as_of}', 'COMPLETE',
-            jsonb_build_object('snapshot_id', '{snapshot_id}'));
+    INSERT INTO public.canonical_public_events_v1
+        (event_id, event_type, process_key, subject_entity_id, official_number, created_by_policy)
+    VALUES ('evt-tender-1', 'tender_publication', '{PROCESS_KEY}', 'ent-process-1', '001/2026', 'canonical-events-v1');
+    INSERT INTO public.canonical_event_revisions
+        (revision_id, event_id, valid_from, system_from, status_code, title,
+         publication_at, official_number, fact_hash, fact_payload,
+         created_from_observation_id, policy_version)
+    VALUES (
+        'rev-1', 'evt-tender-1', '{as_of}', '{as_of}', 'open',
+        'Aquisição de uniformes escolares', '{as_of}', '001/2026', '{hx}',
+        '{{"status_code":"open","title":"Aquisição de uniformes escolares"}}'::JSONB,
+        'obs-1', 'canonical-events-v1'
+    );
+    INSERT INTO public.canonical_event_entity_links
+        (event_id, entity_id, relation_type, observation_id, confidence, policy_version)
+    VALUES ('evt-tender-1', 'ent-process-1', 'subject_process', 'obs-1', 1, 'canonical-events-v1');
+    INSERT INTO public.canonical_public_snapshots
+        (snapshot_id, cutoff_at, universe_hash, policy_hash, schema_hash, adapter_hash,
+         data_hash, document_hash, dossier_hash, state, required_pair_count,
+         relevant_dossier_count, blockers, content_hash, closed_at, created_by)
+    VALUES (
+        '{snapshot_id}', '{as_of}', '{hx}', '{hx}', '{hx}', '{hx}',
+        '{hx}', '{hx}', '{hx}', 'READY_CANONICAL', 1, 0, '[]'::JSONB,
+        '{hx}', '{as_of}', 'contract-fixture'
+    );
+    INSERT INTO public.canonical_snapshot_source_watermarks
+        (snapshot_id, source, source_run_id, watermark_at, freshness_state,
+         completeness_state, applicable_pair_count, evaluated_pair_count, evidence_hash)
+    VALUES ('{snapshot_id}', 'pncp', 'run-1', '{as_of}', 'FRESH', 'COMPLETE', 1, 1, '{hx}');
+    INSERT INTO public.canonical_snapshot_event_revisions
+        (snapshot_id, event_id, revision_id, fact_hash)
+    VALUES ('{snapshot_id}', 'evt-tender-1', 'rev-1', '{hx}');
+    UPDATE public.public_read_surface_health_internal
+       SET last_refresh_status = 'VALID', refreshed_at = '{as_of}', last_error = NULL
+     WHERE view_name = 'tenders';
     """
     seeded = _psql(admin, seed)
     if seeded.returncode != 0:
         _write_fail(seeded.stdout + "\n" + seeded.stderr)
-        pytest.fail("failed to seed canonical tender fixture")
+        pytest.fail("failed to seed READY_CANONICAL membership via public.canonical_*")
     yield {
         "admin": admin,
         "reader": READER_DSN if admin == ADMIN_DSN else os.environ.get("PUBLIC_READ_TEST_READER_DSN", READER_DSN),
@@ -175,6 +217,25 @@ def live_env(live_pg, monkeypatch):
     pressure._window_count = 0
     yield live_pg
     clear_last_known_good()
+
+
+def test_producer_surface_is_extra_cli_views(live_env):
+    admin = live_env["admin"]
+    kind = _psql(
+        admin,
+        "SELECT table_name, table_type FROM information_schema.tables "
+        "WHERE table_schema='public_read_v1' AND table_name IN "
+        "('tenders','current_snapshot','contracts') ORDER BY table_name",
+    )
+    assert kind.returncode == 0
+    assert kind.stdout.count("VIEW") >= 3
+    via_view = _psql(
+        admin,
+        f"SELECT process_key, title FROM public_read_v1.tenders WHERE process_key = '{PROCESS_KEY}'",
+    )
+    assert via_view.returncode == 0
+    assert PROCESS_KEY in via_view.stdout
+    assert "Aquisição de uniformes escolares" in via_view.stdout
 
 
 def test_round_trip_tenders_to_page_model(live_env):
@@ -222,8 +283,8 @@ def test_reader_cannot_write_or_escape_schema(live_env):
         with conn.cursor() as cur:
             with pytest.raises(Exception):
                 cur.execute(
-                    "INSERT INTO public_read_v1.tenders (event_id, process_key, event_type, as_of, completeness) "
-                    "VALUES ('x', 'y', 'tender_publication', NOW(), 'COMPLETE')"
+                    "INSERT INTO public_read_v1.tenders (event_id, process_key, event_type) "
+                    "VALUES ('x', 'y', 'tender_publication')"
                 )
             with pytest.raises(Exception):
                 cur.execute("UPDATE public_read_v1.tenders SET title = 'hack' WHERE process_key = %s", (PROCESS_KEY,))
@@ -231,6 +292,10 @@ def test_reader_cannot_write_or_escape_schema(live_env):
                 cur.execute("DELETE FROM public_read_v1.tenders WHERE process_key = %s", (PROCESS_KEY,))
             with pytest.raises(Exception):
                 cur.execute("CREATE TABLE public_read_v1.owned (id int)")
+            with pytest.raises(Exception):
+                cur.execute("SELECT * FROM public.canonical_public_events_v1 LIMIT 1")
+            with pytest.raises(Exception):
+                cur.execute("INSERT INTO public.canonical_public_events_v1 (event_id) VALUES ('x')")
             with pytest.raises(Exception):
                 cur.execute("SELECT * FROM pg_catalog.pg_authid LIMIT 1")
 

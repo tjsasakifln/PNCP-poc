@@ -16,6 +16,7 @@ from typing import Any
 
 from public_read.adapters import read_family
 from public_read.canary import CANARY_FAMILY, canary_family_allowed
+from public_read.client import PublicReadUnavailable
 from public_read.contract import CONTRACT_VERSION, FamilyRead, PublicEntity, SnapshotMeta
 from public_read.dual_read import compare_reads, is_blocking
 from public_read.flags import (
@@ -80,13 +81,26 @@ def _legacy_read(family: str, public_id: str, legacy: dict[str, Any] | None, mod
     )
 
 
-def _probe_public(family: str, public_id: str) -> FamilyRead | None:
+def _unavailable(family: str, mode: str, reason: str) -> FamilyRead:
+    return FamilyRead(
+        family=family,
+        contract_version=CONTRACT_VERSION,
+        mode=mode,
+        served_from="blocked",
+        divergence=[reason, "public_unavailable"],
+    )
+
+
+def _probe_public(family: str, public_id: str, mode: str) -> FamilyRead | None:
+    """Consult extra-cli. Never swallow a producer failure as agreement."""
     if not should_read_public():
         return None
     try:
         return read_family(family, public_id)
+    except PublicReadUnavailable as exc:
+        return _unavailable(family, mode, exc.reason)
     except Exception:
-        return None
+        return _unavailable(family, mode, "public_unavailable")
 
 
 def _canary_wants_public(family: str, codes: list[str]) -> bool:
@@ -105,12 +119,20 @@ def serve_family(
 ) -> FamilyRead:
     mode = get_public_read_mode()
     mode_value = mode.value
-    public = _probe_public(family, public_id)
+    public = _probe_public(family, public_id, mode_value)
     legacy_read = _legacy_read(family, public_id, legacy, mode_value)
 
     codes: list[str] = []
-    if public is not None:
+    if public is None:
+        if mode is PublicReadMode.SHADOW:
+            codes = ["public_not_consulted"]
+    else:
         codes = compare_reads(legacy, public)
+        if public.served_from == "blocked" and "public_unavailable" not in codes:
+            codes.append("public_unavailable")
+        for extra in public.divergence:
+            if extra not in codes:
+                codes.append(extra)
 
     if mode is PublicReadMode.SHADOW or not should_serve_public():
         legacy_read.divergence = codes
