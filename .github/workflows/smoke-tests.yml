@@ -5,7 +5,7 @@ name: "Smoke Tests (Post-Deploy)"
 
 on:
   workflow_run:
-    workflows: ["Deploy to Production (Railway)"]
+    workflows: ["Legacy Bridge Deployment (manual only)"]
     types:
       - completed
   workflow_dispatch:
