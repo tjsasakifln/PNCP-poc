@@ -9,9 +9,47 @@ interface LeadCaptureProps {
   setor?: string;         // A2: sector context from parent
   uf?: string;            // A2: UF context from parent
   buttonText?: string;    // custom button label (default: "Receber Grátis")
+  ctaId?: string;
+  routeFamily?: string;
+  entityPublicId?: string;
 }
 
-export function LeadCapture({ source, heading, description, setor, uf, buttonText }: LeadCaptureProps) {
+function attributionFromBrowser() {
+  if (typeof window === "undefined") {
+    return {
+      landing_url: undefined as string | undefined,
+      referrer: undefined as string | undefined,
+      utm_source: undefined as string | undefined,
+      utm_medium: undefined as string | undefined,
+      utm_campaign: undefined as string | undefined,
+      correlation_id: undefined as string | undefined,
+    };
+  }
+  const params = new URLSearchParams(window.location.search);
+  return {
+    landing_url: `${window.location.origin}${window.location.pathname}${window.location.search}`,
+    referrer: document.referrer || undefined,
+    utm_source: params.get("utm_source") || undefined,
+    utm_medium: params.get("utm_medium") || undefined,
+    utm_campaign: params.get("utm_campaign") || undefined,
+    correlation_id:
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : undefined,
+  };
+}
+
+export function LeadCapture({
+  source,
+  heading,
+  description,
+  setor,
+  uf,
+  buttonText,
+  ctaId,
+  routeFamily,
+  entityPublicId,
+}: LeadCaptureProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [receiptId, setReceiptId] = useState<string | null>(null);
@@ -25,7 +63,17 @@ export function LeadCapture({ source, heading, description, setor, uf, buttonTex
       const res = await fetch('/api/lead-capture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, source, setor, uf }),
+        body: JSON.stringify({
+          email,
+          source,
+          setor,
+          uf,
+          cta_id: ctaId,
+          route_family: routeFamily,
+          entity_public_id: entityPublicId || setor,
+          entity_type: routeFamily ? "sector" : undefined,
+          ...attributionFromBrowser(),
+        }),
       });
       if (res.ok) {
         const body = (await res.json()) as { receipt_id?: string };

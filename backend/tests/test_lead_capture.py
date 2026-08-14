@@ -278,6 +278,78 @@ class TestFailOpen:
         assert resp.json().get("receipt_id")
 
 
+class TestTendersVerticalCapture:
+    def test_one_submit_one_receipt_and_retry_is_idempotent(
+        self, client, mock_supabase, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("LEAD_OUTBOX_PATH", str(tmp_path / "tenders-outbox.jsonl"))
+        from leads.outbox import reset_outbox_state
+
+        reset_outbox_state()
+        payload = {
+            "email": "lead@confenge.com.br",
+            "source": "licitacoes-setor",
+            "cta_id": "cta.tender.go_nogo",
+            "route_family": "tender",
+            "entity_public_id": "saude",
+            "landing_url": "https://smartlic.tech/licitacoes/saude",
+            "referrer": "https://www.google.com/search?q=saude",
+            "utm_source": "google",
+            "utm_medium": "organic",
+            "correlation_id": "corr-http-tenders",
+            "nome": "Ana",
+            "telefone": "11999999999",
+            "mensagem": "segredo-nao-vazar",
+        }
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("routes.lead_capture.require_rate_limit", return_value=lambda: None):
+            first = _post(client, payload)
+            second = _post(client, payload)
+        assert first.status_code == 201, first.text
+        assert second.status_code == 201, second.text
+        assert first.json()["receipt_id"] == second.json()["receipt_id"]
+        body = first.json()
+        assert body["success"] is True
+        assert "email" not in body
+        assert "nome" not in body
+        assert "telefone" not in body
+        assert "mensagem" not in body
+        assert "segredo-nao-vazar" not in first.text
+        raw = (tmp_path / "tenders-outbox.jsonl").read_text(encoding="utf-8")
+        assert raw.count("corr-http-tenders") >= 1
+        assert "cta.tender.go_nogo" in raw
+        assert "https://smartlic.tech/licitacoes/saude" in raw
+        assert "segredo-nao-vazar" not in raw
+
+    def test_handoff_failure_still_accepts_one_lead(
+        self, client, mock_supabase, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("LEAD_OUTBOX_PATH", str(tmp_path / "tenders-fail.jsonl"))
+        from leads.outbox import reset_outbox_state
+
+        reset_outbox_state()
+
+        def _boom(record):
+            record["attempts"] = int(record.get("attempts") or 0) + 1
+            raise RuntimeError("destination down")
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("routes.lead_capture.require_rate_limit", return_value=lambda: None), \
+             patch("leads.handoff.deliver_handoff", _boom):
+            resp = _post(client, {
+                "email": "fail@confenge.com.br",
+                "source": "licitacoes-setor",
+                "cta_id": "cta.tender.go_nogo",
+                "route_family": "tender",
+                "entity_public_id": "saude",
+                "landing_url": "https://smartlic.tech/licitacoes/saude",
+            })
+        assert resp.status_code == 201, resp.text
+        assert resp.json()["success"] is True
+        assert resp.json()["handoff_state"] == "failed"
+        assert resp.json()["receipt_id"]
+
+
 class TestConsultoriaB2GSource:
     def test_consultoria_b2g_source_accepted(self, client, mock_supabase, tmp_path, monkeypatch):
         monkeypatch.setenv("LEAD_OUTBOX_PATH", str(tmp_path / "outbox.jsonl"))

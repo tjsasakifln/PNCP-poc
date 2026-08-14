@@ -34,6 +34,7 @@ import { PseoLink } from "@/app/components/seo/PseoLink";
 import PreviewCTA from "@/app/components/programmatic/PreviewCTA";
 import SectorUfIntelReportCTA from "@/app/components/SectorUfIntelReportCTA";
 import { AbTest } from "@/components/AbTest";
+import { PublicFamilyRead } from "@/app/components/intelligence/PublicFamilyRead";
 
 /**
  * STORY-324 AC5: SSG with ISR 6h for sector landing pages.
@@ -143,7 +144,7 @@ export default async function SectorPage({
             href={`/consultoria-b2g?ref=licitacoes-${sector.slug}-sticky`}
             className="px-4 py-2 bg-brand-blue rounded-lg text-sm font-semibold whitespace-nowrap"
           >
-            Receber alertas →
+            Pedir diagnóstico →
           </Link>
         </div>
       </div>
@@ -201,6 +202,8 @@ export default async function SectorPage({
           )}
         </section>
       )}
+
+      {await PublicFamilyRead({ family: "tender", setor })}
 
       {/* AC6: Sample Table */}
       {stats && stats.sample_items.length > 0 && (
@@ -294,7 +297,7 @@ export default async function SectorPage({
             Analisar as {stats?.total_open || ""} oportunidades agora
           </TrackedCTALink>
           <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            sem login, dado verificável. Resultado em 3 minutos.
+            sem cadastro. Dado público verificável. A CONFENGE interpreta o recorte.
           </p>
         </div>
       </section>
@@ -408,8 +411,11 @@ export default async function SectorPage({
         <LeadCapture
           source="licitacoes-setor"
           setor={setor}
-          heading={`Receba alertas semanais de licitações de ${sector.name}`}
-          description="Novos editais toda semana no seu email, filtrados por setor. Sem spam — cancele a qualquer momento."
+          ctaId="cta.tender.go_nogo"
+          routeFamily="tender"
+          entityPublicId={setor}
+          heading={`Receba o recorte semanal de licitações de ${sector.name}`}
+          description="Novos editais do setor no seu email. Sem conta. Sem trial. Cancele a qualquer momento."
         />
       </div>
 
@@ -423,10 +429,10 @@ export default async function SectorPage({
             control: (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
                 <p className="text-blue-800 font-semibold">
-                  Comece agora — dado público verificável
+                  Pedir diagnóstico à CONFENGE — dado público verificável
                 </p>
                 <p className="text-blue-600 text-sm mt-1">
-                  Sem cartão de crédito
+                  Sem conta. Sem trial.
                 </p>
               </div>
             ),
@@ -549,16 +555,16 @@ export default async function SectorPage({
               Comece a analisar licitações de {sector.name} agora
             </p>
             <p className="text-sm text-ink-secondary mt-1">
-              sem login, dado verificável. Resultado em 3 minutos.
+              sem cadastro. Dado público verificável. A CONFENGE interpreta o recorte.
             </p>
           </div>
           <TrackedCTALink
             href={`/consultoria-b2g?ref=licitacoes-${sector.slug}`}
             className="px-6 py-3 bg-brand-blue text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
             eventName="pseo_cta_click"
-            eventProps={{ setor, cta_position: "compact_uf_grid", cta_label: "comecar_gratis" }}
+            eventProps={{ setor, cta_position: "compact_uf_grid", cta_label: "pedir_diagnostico" }}
           >
-            Começar Grátis →
+            Pedir diagnóstico à CONFENGE →
           </TrackedCTALink>
         </div>
       </section>
@@ -611,7 +617,7 @@ export default async function SectorPage({
       <section className="max-w-5xl mx-auto px-4 pb-4">
         <FoundersRibbon
           variant="contextual"
-          copy="Receba inteligência B2G sem mensalidade. Acesso vitalício R$997."
+          copy="A CONFENGE interpreta este recorte e opera a decisão comercial."
           src="pseo_licitacoes"
         />
       </section>

@@ -28,6 +28,10 @@ export async function POST(request: NextRequest) {
       cta_id,
       route_family,
       landing_url,
+      referrer,
+      correlation_id,
+      entity_public_id,
+      entity_type,
     } = body as Record<string, string | undefined>;
 
     const phoneDigits = typeof telefone === 'string' ? telefone.replace(/\D/g, '') : '';
@@ -70,6 +74,10 @@ export async function POST(request: NextRequest) {
         cta_id: cta_id || null,
         route_family: route_family || null,
         landing_url: landing_url || resolvedOriginUrl,
+        referrer: referrer || null,
+        correlation_id: correlation_id || null,
+        entity_public_id: entity_public_id || resolvedSector,
+        entity_type: entity_type || null,
         captured_at: new Date().toISOString(),
       }),
     });

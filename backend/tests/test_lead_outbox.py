@@ -123,3 +123,53 @@ def test_idempotency_key_stable():
     a = build_idempotency_key("a@b.com", None, "cnpj", "cta.x", "1", "2026-08-13")
     b = build_idempotency_key("A@B.com", None, "cnpj", "cta.x", "1", "2026-08-13")
     assert a == b
+
+
+def test_tenders_vertical_attribution_and_no_pii_in_receipt():
+    first = accept_lead(
+        _payload(
+            source="licitacoes-setor",
+            cta_id="cta.tender.go_nogo",
+            route_family="tender",
+            entity_public_id="saude",
+            landing_url="https://smartlic.tech/licitacoes/saude?utm_source=google&utm_medium=organic",
+            referrer="https://www.google.com/search?q=licitacoes+saude",
+            utm_source="google",
+            utm_medium="organic",
+            correlation_id="corr-tenders-1",
+        )
+    )
+    second = accept_lead(
+        _payload(
+            source="licitacoes-setor",
+            cta_id="cta.tender.go_nogo",
+            route_family="tender",
+            entity_public_id="saude",
+            landing_url="https://smartlic.tech/licitacoes/saude?utm_source=google&utm_medium=organic",
+            referrer="https://www.google.com/search?q=licitacoes+saude",
+            utm_source="google",
+            utm_medium="organic",
+            correlation_id="corr-tenders-1",
+        )
+    )
+    assert first["receipt_id"] == second["receipt_id"]
+    assert second["deduplicated"] is True
+    assert first["landing_url"].startswith("https://smartlic.tech/licitacoes/saude")
+    assert first["route_family"] == "tender"
+    assert first["cta_id"] == "cta.tender.go_nogo"
+    assert first["utm_source"] == "google"
+    assert first["utm_medium"] == "organic"
+    assert first["referrer_class"] == "organic_search"
+    assert first["correlation_id"] == "corr-tenders-1"
+    receipt = receipt_for(first)
+    redacted = redact_for_log(first)
+    for payload in (receipt, redacted):
+        assert "email" not in payload
+        assert "nome" not in payload
+        assert "telefone" not in payload
+        assert "mensagem" not in payload
+    assert receipt["accepted"] is True
+    assert redacted["landing_url"]
+    assert redacted["cta_id"] == "cta.tender.go_nogo"
+    assert redacted["route_family"] == "tender"
+    assert redacted["correlation_id"] == "corr-tenders-1"

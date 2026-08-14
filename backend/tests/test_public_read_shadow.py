@@ -196,6 +196,108 @@ def test_current_snapshot_latest_does_not_bind_public_id(monkeypatch):
     assert public.entity.as_of is not None
 
 
+def test_canary_holds_on_identity_mismatch(monkeypatch):
+    monkeypatch.setenv("PUBLIC_READ_V1_MODE", "canary")
+    monkeypatch.setenv("PUBLIC_READ_CANARY_FAMILY", "tenders")
+
+    def _public(family, public_id):
+        return FamilyRead(
+            family=family,
+            mode="canary",
+            served_from="public_read_v1",
+            entity=PublicEntity(
+                canonical_id="other-id",
+                family=family,
+                display_name="drifted",
+                freshness="FRESH",
+            ),
+            row_count=1,
+        )
+
+    monkeypatch.setattr("public_read.serve.read_family", _public)
+    served = serve_family(
+        "tenders",
+        "proc-1",
+        legacy={"canonical_id": "proc-1", "title": "legado", "freshness": "FRESH"},
+    )
+    assert served.served_from == "legacy"
+    assert "identity_mismatch" in served.divergence
+    assert served.entity is not None
+    assert served.entity.display_name == "legado"
+
+
+def test_kill_switch_restores_legacy_and_skips_public(monkeypatch):
+    monkeypatch.setenv("PUBLIC_READ_V1_MODE", "on")
+    monkeypatch.setenv("PUBLIC_READ_KILL_SWITCH", "1")
+
+    def _boom(*_a, **_k):
+        raise AssertionError("kill switch must not consult public_read")
+
+    monkeypatch.setattr("public_read.serve.read_family", _boom)
+    served = serve_family(
+        "tenders",
+        "proc-1",
+        legacy={"canonical_id": "proc-1", "title": "safe-legacy"},
+    )
+    assert served.served_from == "legacy"
+    assert served.entity is not None
+    assert served.entity.display_name == "safe-legacy"
+
+
+def test_adapter_last_known_good_on_unavailable(monkeypatch):
+    from public_read.adapters import read_family
+    from public_read.client import (
+        PublicReadUnavailable,
+        clear_last_known_good,
+        store_last_known_good,
+    )
+
+    clear_last_known_good()
+    store_last_known_good(
+        "tenders:proc-1",
+        FamilyRead(
+            family="tenders",
+            mode="shadow",
+            served_from="public_read_v1",
+            entity=PublicEntity(
+                canonical_id="proc-1",
+                family="tenders",
+                display_name="cached tender",
+                freshness="FRESH",
+            ),
+            row_count=1,
+        ),
+    )
+
+    def _boom(*_a, **_k):
+        raise PublicReadUnavailable("dsn_missing")
+
+    monkeypatch.setattr("public_read.adapters.fetchall", _boom)
+    cached = read_family("tenders", "proc-1")
+    assert cached.served_from == "last_known_good"
+    assert cached.entity is not None
+    assert cached.entity.display_name == "cached tender"
+    assert "dsn_missing" in cached.divergence
+    clear_last_known_good()
+
+
+def test_family_read_never_serializes_dsn(monkeypatch):
+    monkeypatch.setenv("PUBLIC_READ_V1_MODE", "shadow")
+    monkeypatch.setenv("PUBLIC_READ_V1_DSN", "postgresql://secret-user:secret-pass@host/db")
+    served = serve_family(
+        "tenders",
+        "proc-1",
+        legacy={"canonical_id": "proc-1", "title": "legado"},
+    )
+    dumped = served.model_dump()
+    text = str(dumped)
+    assert "secret-user" not in text
+    assert "secret-pass" not in text
+    assert "postgresql://" not in text
+    page = family_read_to_page_model(served)
+    assert "secret-pass" not in str(page)
+
+
 def test_serve_family_current_snapshot_latest_shadow(monkeypatch):
     monkeypatch.setenv("PUBLIC_READ_V1_MODE", "shadow")
 
