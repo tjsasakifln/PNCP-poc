@@ -81,7 +81,7 @@ const faqSchema = {
       name: 'Preciso me cadastrar?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Não. A consulta de órgãos compradores é 100% gratuita e não exige cadastro. Para acessar análise detalhada de editais, monitoramento automático e alertas, você pode criar um trial gratuito de 14 dias no SmartLic.',
+        text: 'Não. A consulta de órgãos compradores é 100% gratuita e não exige cadastro. Para análise detalhada de editais, monitoramento e diagnóstico comercial, fale com a CONFENGE.',
       },
     },
     {

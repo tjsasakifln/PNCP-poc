@@ -10,7 +10,7 @@
  *     setor="pavimentacao-asfaltica"
  *     uf="SC"
  *   >
- *     Testar 14 dias gratis
+ *     Pedir diagnóstico à CONFENGE
  *   </PseoLink>
  *
  * Zero breaking change — extends native Link props. All extra tracking

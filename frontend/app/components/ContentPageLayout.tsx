@@ -73,10 +73,10 @@ export default function ContentPageLayout({
                     critérios de viabilidade.
                   </p>
                   <Link
-                    href="/signup?source=conteudo"
+                    href="/consultoria-b2g?source=conteudo"
                     className="block text-center bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-4 py-2.5 rounded-button text-sm sm:text-base transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                   >
-                    Comece Grátis
+                    Pedir diagnóstico à CONFENGE
                   </Link>
                 </div>
 

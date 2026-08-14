@@ -629,7 +629,7 @@ export default async function ContratosSetorUfPage({ params }: Props) {
                 setor={setor}
                 uf={ufUpper}
               >
-                Receber alertas grátis 14 dias →
+                Pedir diagnóstico à CONFENGE →
               </PseoLink>
               <Link
                 href={`/observatorio/${setor}`}
