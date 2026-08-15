@@ -1,0 +1,36 @@
+# systemd unit — TLS terminator only.
+# Prefer the distro `caddy` package; this unit is the least-privilege shape
+# if you must ship a dedicated unit. User=caddy, not root.
+# Caddyfile: copy bridge/generated/Caddyfile → /etc/caddy/Caddyfile
+# Certs: /var/lib/caddy (0700, user caddy). Never copy keys into Git.
+
+[Unit]
+Description=SmartLic #2115 Caddy TLS terminator (ACME SAN apex+www)
+Documentation=https://github.com/tjsasakifln/SmartLic/issues/2115
+After=network-online.target smartlic-bridge.service
+Wants=network-online.target
+Requires=smartlic-bridge.service
+
+[Service]
+Type=notify
+User=caddy
+Group=caddy
+ExecStart=/usr/bin/caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+LimitNPROC=512
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/caddy /var/log/caddy
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+Environment=SMARTLIC_ACME_EMAIL=
+EnvironmentFile=-/etc/smartlic-bridge/env
+
+[Install]
+WantedBy=multi-user.target
