@@ -119,9 +119,25 @@ def validate_schema(data: Any) -> None:
             _require(field in entry, f"entry[{index}] sem campo obrigatório {field}")
 
         legacy = entry["legacy_url"]
-        _require(isinstance(legacy, str) and legacy.startswith("https://smartlic.tech"), f"legacy_url inválido: {legacy!r}")
+        _require(isinstance(legacy, str), f"legacy_url inválido: {legacy!r}")
+        legacy_parts = urlsplit(legacy)
+        legacy_origin_error = (
+            "legacy_url deve usar exatamente a origem https://smartlic.tech, "
+            "sem credenciais, porta, query ou fragment: "
+            f"{legacy!r}"
+        )
+        _require(
+            legacy_parts.scheme == "https"
+            and legacy_parts.hostname == "smartlic.tech"
+            and legacy_parts.port is None
+            and legacy_parts.username is None
+            and legacy_parts.password is None
+            and not legacy_parts.query
+            and not legacy_parts.fragment,
+            legacy_origin_error,
+        )
         _require("*" not in legacy, f"wildcard proibido em legacy_url: {legacy}")
-        path = normalize_path(urlsplit(legacy).path)
+        path = normalize_path(legacy_parts.path)
         _require(path not in seen_legacy, f"duplicata de path legado: {path}")
         seen_legacy.add(path)
 

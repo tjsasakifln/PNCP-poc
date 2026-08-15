@@ -140,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
+        # SIGINT is the operator's expected clean-shutdown path.
         pass
     finally:
         snapshot = getattr(httpd, "bridge_state", None)

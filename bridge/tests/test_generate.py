@@ -171,6 +171,22 @@ class FailClosedSchemaTests(unittest.TestCase):
             validate_schema(data)
         self.assertIn("wildcard", str(ctx.exception))
 
+    def test_lookalike_legacy_origins_fail(self) -> None:
+        for unsafe in (
+            "https://smartlic.tech.attacker.invalid/path",
+            "https://smartlic.tech@attacker.invalid/path",
+            "https://smartlic.tech:444/path",
+            "https://smartlic.tech/path?token=secret",
+        ):
+            with self.subTest(unsafe=unsafe):
+                data = json.loads(json.dumps(self.data))
+                redirect = next(
+                    entry for entry in data["entries"] if entry["decision"] == "REDIRECT"
+                )
+                redirect["legacy_url"] = unsafe
+                with self.assertRaises(ManifestError):
+                    validate_schema(data)
+
     def test_http_target_fails(self) -> None:
         data = json.loads(json.dumps(self.data))
         for entry in data["entries"]:
