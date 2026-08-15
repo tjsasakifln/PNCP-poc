@@ -73,6 +73,8 @@ def validate_deploy_kit(root: Path | None = None) -> None:
                 raise ManifestError(f"chave privada no kit: {path}")
     writeup = (base / "docs" / "CUTOVER.md").read_text(encoding="utf-8")
     assert_cutover_writeup(writeup)
+    readiness = (base / "docs" / "CUTOVER_READINESS.md").read_text(encoding="utf-8")
+    assert_cutover_readiness_writeup(readiness)
 
 
 def assert_cutover_writeup(text: str) -> None:
@@ -84,3 +86,25 @@ def assert_cutover_writeup(text: str) -> None:
     _require("smartlic.tech" in text and "www.smartlic.tech" in text, "CUTOVER.md sem apex+www")
     _require("Let's Encrypt" in text or "ACME" in text, "CUTOVER.md sem caminho ACME")
     _require("BEGIN PRIVATE" not in text, "CUTOVER.md não pode conter chave privada")
+    _require("CUTOVER_READINESS.md" in text, "CUTOVER.md deve apontar para CUTOVER_READINESS.md")
+
+
+def assert_cutover_readiness_writeup(text: str) -> None:
+    """Engineering READY vs live BLOCKED must stay separate. Cutover is not applied."""
+    _require("## READY" in text, "CUTOVER_READINESS.md sem secção READY")
+    _require("## BLOCKED" in text, "CUTOVER_READINESS.md sem secção BLOCKED")
+    _require("BRIDGE_PUBLIC_IPV4" in text, "CUTOVER_READINESS.md sem BRIDGE_PUBLIC_IPV4")
+    _require("SMARTLIC_ACME_EMAIL" in text or "ACME email" in text, "CUTOVER_READINESS.md sem ACME email")
+    _require("python3 -m bridge.generate --rollback" in text, "CUTOVER_READINESS.md sem rollback 410-only")
+    _require("69.46.46.88" in text, "CUTOVER_READINESS.md sem rollback apex A")
+    _require("app.smartlic.tech." in text, "CUTOVER_READINESS.md sem rollback www CNAME")
+    lowered = text.lower()
+    for banned in (
+        "dns applied",
+        "tls issued in production",
+        "first production 301 observed",
+    ):
+        _require(banned not in lowered, f"CUTOVER_READINESS.md não pode afirmar {banned!r}")
+    _require("does not claim live cutover completed" in lowered, "CUTOVER_READINESS.md deve negar cutover live")
+    _require("cutover completed." not in lowered.replace("does not claim live cutover completed.", ""),
+             "CUTOVER_READINESS.md não pode afirmar cutover completed")

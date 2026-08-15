@@ -5,13 +5,14 @@ Isolated surface. Executes only the hash-pinned execute set from [web-cfg#62](ht
 | Pin | Value |
 |---|---|
 | Manifesto SHA-256 | `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d` |
-| web-cfg commit | `3f112bfbd9e6b042691e1c09812af00f42735adb` |
+| web-cfg commit (map pin) | `3f112bfbd9e6b042691e1c09812af00f42735adb` |
+| web-cfg commit (citation after #68 rebase) | `dad3414c7a0073d0c1860d19704cff7e2a6e3b24` (same manifesto bytes; map not regenerated) |
 | Rules | 11 URL-specific 301s + default 410 |
 | Owner | SmartLic#2115 |
 | Cost | UNKNOWN |
 | Expiry | 28 days after the first production 301 of this hash |
 | Removal trigger | window complete + zero residual priority errors + #2111 archive gate |
-| Live DNS/TLS cutover | **CUTOVER_READY** (see `docs/CUTOVER.md`; owner applies DNS/ACME) |
+| Live DNS/TLS cutover | engineering **CUTOVER_READY**; live apply **BLOCKED** (`docs/CUTOVER_READINESS.md`) |
 
 ```text
 python3 -m bridge.generate

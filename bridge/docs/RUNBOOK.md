@@ -3,7 +3,8 @@
 **Owner:** SmartLic#2115 operator (Gage / @devops for DNS).  
 **Cost:** UNKNOWN until an invoice exists. Expected: DNS + TLS + a static 301/410 edge (cents to low dollars). Railway app cost should go to zero — do not keep the failed app as the bridge.  
 **Manifesto SHA-256:** `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d`  
-**web-cfg commit:** `3f112bfbd9e6b042691e1c09812af00f42735adb`
+**web-cfg commit (map pin):** `3f112bfbd9e6b042691e1c09812af00f42735adb`  
+**web-cfg commit (citation after #68 rebase):** `dad3414c7a0073d0c1860d19704cff7e2a6e3b24` (same manifesto bytes)
 
 ## What this is
 

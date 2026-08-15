@@ -9,6 +9,7 @@ from pathlib import Path
 
 from bridge.errors import ManifestError
 from bridge.generate import (
+    _map_payload,
     assert_pinned_hash,
     assert_terminator_safe,
     emit,
@@ -23,6 +24,8 @@ from bridge.generate import (
 )
 from bridge.policy import CompiledMap, RedirectRule
 from bridge.pins import (
+    CITED_MANIFESTO_COMMIT,
+    PINNED_COMMIT,
     PINNED_CONFIG_SHA256,
     PINNED_REDIRECT_COUNT,
     PINNED_SHA256,
@@ -42,6 +45,14 @@ class GeneratePinnedManifestTests(unittest.TestCase):
         self.assertEqual(digest, PINNED_SHA256)
         self.assertEqual(sha256_bytes(self.raw), PINNED_SHA256)
         self.assertEqual(self.compiled.manifesto_sha256, PINNED_SHA256)
+        self.assertEqual(self.compiled.config_sha256, PINNED_CONFIG_SHA256)
+
+    def test_cited_rebase_commit_is_not_baked_into_config_hash(self) -> None:
+        payload = _map_payload(self.compiled)
+        self.assertEqual(payload["pinned_commit"], PINNED_COMMIT)
+        self.assertEqual(payload["pinned_commit"], "3f112bfbd9e6b042691e1c09812af00f42735adb")
+        self.assertNotEqual(CITED_MANIFESTO_COMMIT, PINNED_COMMIT)
+        self.assertNotIn(CITED_MANIFESTO_COMMIT, payload["pinned_commit"])
         self.assertEqual(self.compiled.config_sha256, PINNED_CONFIG_SHA256)
 
     def test_dirty_bytes_are_rejected(self) -> None:

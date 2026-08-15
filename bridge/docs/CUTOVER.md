@@ -1,12 +1,12 @@
 # CUTOVER — SmartLic#2115 redirect bridge
 
-**Status:** `CUTOVER_READY`
+**Status:** engineering `CUTOVER_READY`; live DNS/TLS/ACME **BLOCKED**. See `CUTOVER_READINESS.md`.
 
-Engineering gates below are closed. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg#68 remains OPEN as a human accept of the 11-row set; this bridge consumes only the published pin and does not rewrite it.
+This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY vs BLOCKED record. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg#68 remains OPEN as a human accept of the 11-row set; this bridge consumes only the published pin and does not rewrite it.
 
 | Gate | Value |
 |---|---|
-| Pin | `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d` (web-cfg `3f112bfbd9e6b042691e1c09812af00f42735adb`) |
+| Pin | `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d` (map embeds `3f112bfbd9e6b042691e1c09812af00f42735adb`; same bytes now at `dad3414c`) |
 | Config hash | `c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68` |
 | Execute set | exactly 11 URL-specific 301s + default 410 |
 | TLS path | Caddy ACME, one SAN cert `smartlic.tech` + `www.smartlic.tech` |
@@ -150,6 +150,6 @@ The 28-day observation window starts at the first production 301 of this hash �
 4. **TLS/DNS/rollback:** this file.
 5. **Probes:** unit tests + `--probe-targets` + serve ×2.
 6. **Security:** non-root, firewall, no-PII logs, no keys in Git.
-7. **Status:** `CUTOVER_READY`
-8. **Remaining human action:** owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, drops the kit, applies the Cloudflare records above. `@devops` push of this branch if not yet on origin.
-9. **Next action:** owner apply. Then first production 301 starts the 28-day window. Do not expand into #2111.
+7. **Status:** engineering `CUTOVER_READY`; live cutover **BLOCKED** (`CUTOVER_READINESS.md`).
+8. **Remaining human action:** owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, drops the kit, accepts web-cfg#68, applies the Cloudflare records above. `@devops` push of this branch if not yet on origin.
+9. **Next action:** owner apply. Then first production 301 starts the 28-day window. Do not expand into #2111 removals.

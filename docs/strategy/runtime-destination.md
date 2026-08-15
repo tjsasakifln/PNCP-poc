@@ -11,4 +11,4 @@ The only approved runtime end state is:
 - commercial action in Warmbly;
 - SmartLic redirect/bridge removed after monitored cutover.
 
-The only authorized #2115 remainder is the isolated hash-pinned bridge in `bridge/` (11 URL-specific 301s + default 410). Docs that still call #2115 a Netcup FastAPI/Next runtime are SUPERSEDED — see `bridge/docs/SUPERSEDED-NETCUP-PRODUCT.md`. Status: `CUTOVER_READY` — Caddy TLS terminator → `127.0.0.1:8765`; owner applies DNS/ACME (`bridge/docs/CUTOVER.md`).
+The only authorized #2115 remainder is the isolated hash-pinned bridge in `bridge/` (11 URL-specific 301s + default 410). Docs that still call #2115 a Netcup FastAPI/Next runtime are SUPERSEDED — see `bridge/docs/SUPERSEDED-NETCUP-PRODUCT.md`. Engineering status: `CUTOVER_READY`. Live DNS/TLS/ACME: **BLOCKED** until the owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL` (`bridge/docs/CUTOVER_READINESS.md`).

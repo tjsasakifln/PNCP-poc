@@ -7,6 +7,7 @@ import unittest
 from bridge.deploy_kit import (
     assert_bridge_unit_safe,
     assert_caddy_unit_safe,
+    assert_cutover_readiness_writeup,
     assert_cutover_writeup,
     assert_firewall_safe,
     validate_deploy_kit,
@@ -73,6 +74,18 @@ class DeployKitTests(unittest.TestCase):
         self.assertIn("CUTOVER_READY", text)
         self.assertIn("69.46.46.88", text)
         self.assertIn("69.46.46.117", text)
+
+    def test_cutover_readiness_separates_ready_from_blocked(self) -> None:
+        from pathlib import Path
+
+        text = (Path(__file__).resolve().parents[1] / "docs" / "CUTOVER_READINESS.md").read_text(
+            encoding="utf-8"
+        )
+        assert_cutover_readiness_writeup(text)
+        self.assertIn("BRIDGE_PUBLIC_IPV4", text)
+        self.assertIn("python3 -m bridge.generate --rollback", text)
+        self.assertIn("does not claim live cutover completed", text.lower())
+        self.assertNotIn("dns applied", text.lower())
 
     def test_unsafe_unit_fails_closed(self) -> None:
         with self.assertRaises(ManifestError):

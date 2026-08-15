@@ -10,7 +10,10 @@ from __future__ import annotations
 PINNED_SHA256 = "c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d"
 # SHA-256 of the canonical map payload (not the on-disk file, which also stores this digest).
 PINNED_CONFIG_SHA256 = "c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68"
+# Baked into generated/bridge-map.json. Changing this regenerates the config hash.
 PINNED_COMMIT = "3f112bfbd9e6b042691e1c09812af00f42735adb"
+# Citation only — same manifesto bytes after web-cfg#68 rebase. Do not swap PINNED_COMMIT.
+CITED_MANIFESTO_COMMIT = "dad3414c7a0073d0c1860d19704cff7e2a6e3b24"
 PINNED_VERSION = "v1"
 PINNED_SCHEMA = "smartlic-confenge-manifesto-v1"
 PINNED_REDIRECT_COUNT = 11
