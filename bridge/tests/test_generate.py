@@ -101,6 +101,10 @@ class GeneratePinnedManifestTests(unittest.TestCase):
             self.assertIn("www.smartlic.tech", caddy)
             self.assertIn("{$SMARTLIC_ACME_EMAIL}", caddy)
             self.assertIn("auto_https disable_redirects", caddy)
+            from bridge.generate import URI_QUERY_STRIP
+
+            self.assertIn(URI_QUERY_STRIP, caddy)
+            self.assertNotIn("request>uri query", caddy)
             self.assertNotIn("reverse_proxy 127.0.0.1:8000", caddy)
             self.assertNotIn("reverse_proxy 127.0.0.1:3000", caddy)
             self.assertNotIn("BEGIN PRIVATE KEY", caddy)

@@ -29,7 +29,7 @@
 		format filter {
 			wrap console
 			fields {
-				request>uri query
+				request>uri regexp "\?.*" ""
 				request>headers>Cookie delete
 				request>headers>Authorization delete
 			}

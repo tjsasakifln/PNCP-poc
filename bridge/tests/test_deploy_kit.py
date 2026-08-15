@@ -12,7 +12,13 @@ from bridge.deploy_kit import (
     validate_deploy_kit,
 )
 from bridge.errors import ManifestError
-from bridge.generate import GENERATED_DIR, assert_terminator_safe, load_and_compile
+from bridge.generate import (
+    GENERATED_DIR,
+    URI_QUERY_STRIP,
+    assert_terminator_safe,
+    load_and_compile,
+    render_caddyfile,
+)
 
 
 class DeployKitTests(unittest.TestCase):
@@ -28,6 +34,36 @@ class DeployKitTests(unittest.TestCase):
         self.assertIn("reverse_proxy 127.0.0.1:8765", text)
         self.assertNotIn("127.0.0.1:8000", text)
         self.assertNotIn("127.0.0.1:3000", text)
+        self.assertIn(URI_QUERY_STRIP, text)
+        self.assertNotIn("request>uri query", text)
+
+    def test_render_caddyfile_strips_query_with_regexp_not_noop_query_filter(self) -> None:
+        import re
+
+        compiled = load_and_compile()
+        rendered = render_caddyfile(compiled)
+        self.assertIn(URI_QUERY_STRIP, rendered)
+        parsed = re.search(r'regexp "([^"]+)" "([^"]*)"', URI_QUERY_STRIP)
+        self.assertIsNotNone(parsed)
+        pattern, replacement = parsed.group(1), parsed.group(2)
+        sample = (
+            "/glossario/reajuste?email=ada@example.com&cnpj=00000000000191"
+            "&token=secret&utm_source=gsc"
+        )
+        stripped = re.sub(pattern, replacement, sample)
+        self.assertEqual(stripped, "/glossario/reajuste")
+        for leaked in ("email", "cnpj", "token", "ada@", "utm_source", "?"):
+            self.assertNotIn(leaked, stripped)
+
+    def test_bare_query_filter_is_rejected(self) -> None:
+        compiled = load_and_compile()
+        broken = render_caddyfile(compiled).replace(
+            URI_QUERY_STRIP,
+            "request>uri query",
+        )
+        with self.assertRaises(ManifestError) as ctx:
+            assert_terminator_safe(broken)
+        self.assertRegex(str(ctx.exception), r"query|PII|regexp")
 
     def test_cutover_writeup_has_required_observations(self) -> None:
         from pathlib import Path

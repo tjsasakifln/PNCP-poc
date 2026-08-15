@@ -329,9 +329,13 @@ _TERMINATOR_REQUIRED = (
     "reverse_proxy 127.0.0.1:8765",
     "auto_https disable_redirects",
     "{$SMARTLIC_ACME_EMAIL}",
-    "request>uri query",
+    "request>uri regexp",
     "tls {",
 )
+# Official Caddy `query` only mutates named keys. A bare `request>uri query`
+# is a no-op and leaves email/cnpj/token in the terminator access log.
+# Replace the query (and the '?') so the logged URI is path-only.
+URI_QUERY_STRIP = 'request>uri regexp "\\?.*" ""'
 _TERMINATOR_FORBIDDEN_PREFIX = "reverse_proxy 127.0.0.1:"
 _TERMINATOR_FORBIDDEN_PORTS = ("8000", "3000")
 _TERMINATOR_FORBIDDEN_KEYS = (
@@ -354,6 +358,15 @@ def assert_terminator_safe(text: str) -> None:
     for token in _TERMINATOR_FORBIDDEN_KEYS:
         _require(token.lower() not in lowered, f"Caddyfile inseguro: {token}")
     _require("redir /" not in lowered, "Caddyfile não pode redir /*")
+    _require(
+        URI_QUERY_STRIP in text,
+        "Caddyfile deve stripar a query da URI (regexp \\?.* → vazio)",
+    )
+    if "request>uri query" in text:
+        raise ManifestError(
+            "Caddyfile: `request>uri query` sem delete/replace/hash não remove PII; "
+            "usar regexp que corta tudo após '?'"
+        )
 
 
 def render_caddyfile(compiled: CompiledMap) -> str:
@@ -396,7 +409,7 @@ def render_caddyfile(compiled: CompiledMap) -> str:
         "		format filter {",
         "			wrap console",
         "			fields {",
-        "				request>uri query",
+        "				" + URI_QUERY_STRIP,
         "				request>headers>Cookie delete",
         "				request>headers>Authorization delete",
         "			}",
