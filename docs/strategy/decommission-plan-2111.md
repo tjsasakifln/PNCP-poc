@@ -18,6 +18,17 @@ Classes (only these):
 
 Destination owners when known: `web-cfg` (public surface), `extra-cli` (facts / public_read), `Warmbly` (commercial action), `archive` (read-only evidence).
 
+Campaign class mapping (ADR-STRAT-002 execute; does not replace the shipped tokens above):
+
+| Shipped class | Campaign class | When |
+|---|---|---|
+| `KEEP_UNTIL_REDIRECT_WINDOW` | `KEEP_TEMP_BRIDGE` | Item is required for the #2115 bridge, DNS/TLS rollback, or 28-day observation |
+| `KEEP_UNTIL_REDIRECT_WINDOW` | `LEGAL_RETENTION` | Item is required for fiscal / LGPD / PII / existing-customer cancel only |
+| `MIGRATE` | `MIGRATED` | Destination owner already holds the capability; local copy is evidence only |
+| `MIGRATE` | `MIGRATE` | Harvest/transfer still open (web-cfg#63 / extra-cli) |
+| `RETIRE` | `RETIRE` | No destination; delete only after zero-use evidence |
+| `UNKNOWN` | `UNKNOWN` | Fail closed — do not invent a tighter class |
+
 ## 1. Jobs
 
 Source: `backend/jobs/queue/config.py`, `backend/jobs/cron/`, `backend/jobs/queue/jobs.py`. Live ARQ/pg_cron execution: **UNKNOWN** (Railway worker not probed; do not start it).
@@ -160,3 +171,25 @@ Nothing is removed until the corresponding proof is written into #2111. “Code 
 ## Next action
 
 Keep stores/secrets/webhooks classified `KEEP_UNTIL_REDIRECT_WINDOW` until #2115 produces the first production 301 of hash `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d` and the 28-day window completes. Then execute the zero-use table above, family by family, on #2111 — never as a side effect of the bridge PR.
+
+## Execution 2026-08-15 (post-#2133, no live cutover)
+
+Classification started. Product feature freeze remains permanent. Repo **not** archived.
+
+| Family | Campaign class | Removed this run? | Why |
+|---|---|---|---|
+| `bridge/` serve + Caddy + `redirect-bridge.yml` | `KEEP_TEMP_BRIDGE` | no | Only authorized remaining runtime; not installed on a public IP |
+| Ingestion / DataLake / crawler / SEO jobs | `RETIRE` | no | Code remains in tree as evidence; no SmartLic worker was started; Railway deploys already disabled (#2132) |
+| Product health canaries / LLM / trial mail | `RETIRE` | no | Same — do not start a worker to prove absence |
+| Redis / OpenAI / Sentry / Mixpanel / Resend / Railway tokens | `RETIRE` | no | Live last-used UNKNOWN without owner dashboard login |
+| Cloudflare token / `$SMARTLIC_ACME_EMAIL` | `KEEP_TEMP_BRIDGE` | no | Required for cutover/rollback; values ABSENT in this environment |
+| Stripe secrets + existing-customer cancel / billing portal | `LEGAL_RETENTION` | no | Fiscal + residual cancel; new checkout already 410 |
+| Supabase Auth / profiles / messages / LGPD export | `LEGAL_RETENTION` | no | PII obligations until tickets close |
+| `pncp_raw_bids` / supplier contracts | `MIGRATE` | no | extra-cli / web-cfg#63 harvest not proven complete |
+| `confenge.com.br` public surface | `MIGRATED` | n/a | Already owned by web-cfg (#68 merged) |
+| `smartlic.tech` apex/www DNS+TLS | `KEEP_TEMP_BRIDGE` | no | Rollback target; still Railway fallback 404 |
+| `api` / `app` Railway names | `RETIRE` | no | Leave `app` until www rollback no longer needs the CNAME |
+| Product CI (backend/frontend/e2e/SEO/k6) | `RETIRE` | no | 14-day zero-use clock starts after first production 301; not started |
+| `backend/start.sh` FastAPI/Redis/ARQ | `RETIRE` | no | File is residue, not a live process. Do not execute it |
+
+Nothing was deleted from stores, secrets, or hosting in this run. Proven-unused **runtime** remains dead: no Railway/FastAPI/Next.js/Supabase/Redis/workers revived; no crawler/DataLake/public API as a permanent SmartLic process.

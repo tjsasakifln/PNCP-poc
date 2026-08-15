@@ -42,6 +42,12 @@ class DecommissionPlan2111Tests(unittest.TestCase):
         self.assertNotIn("SUNSET NOW", self.text)
         self.assertNotIn("KEEP + ADAPT", self.text)
 
+    def test_campaign_class_mapping_is_explicit(self) -> None:
+        for token in ("KEEP_TEMP_BRIDGE", "MIGRATED", "LEGAL_RETENTION"):
+            self.assertIn(f"`{token}`", self.text)
+        self.assertIn("Campaign class mapping", self.text)
+        self.assertIn("## Execution 2026-08-15", self.text)
+
     def test_zero_use_plan_covers_every_family(self) -> None:
         table = self.text.split("## Zero-use evidence plan", 1)[1]
         for family in ("Jobs", "Secrets", "Stores", "Domains", "Webhooks", "Billing", "Auth", "PII"):
