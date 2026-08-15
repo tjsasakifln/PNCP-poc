@@ -10,10 +10,12 @@ from pathlib import Path
 from bridge.errors import ManifestError
 from bridge.generate import (
     assert_pinned_hash,
+    assert_terminator_safe,
     emit,
     empty_retire_map,
     load_and_compile,
     load_manifest_bytes,
+    main as generate_main,
     probe_targets,
     rollback,
     sha256_bytes,
@@ -21,6 +23,7 @@ from bridge.generate import (
 )
 from bridge.policy import CompiledMap, RedirectRule
 from bridge.pins import (
+    PINNED_CONFIG_SHA256,
     PINNED_REDIRECT_COUNT,
     PINNED_SHA256,
     REDIRECT_STATUS,
@@ -39,6 +42,7 @@ class GeneratePinnedManifestTests(unittest.TestCase):
         self.assertEqual(digest, PINNED_SHA256)
         self.assertEqual(sha256_bytes(self.raw), PINNED_SHA256)
         self.assertEqual(self.compiled.manifesto_sha256, PINNED_SHA256)
+        self.assertEqual(self.compiled.config_sha256, PINNED_CONFIG_SHA256)
 
     def test_dirty_bytes_are_rejected(self) -> None:
         dirty = self.raw + b"\n"
@@ -91,9 +95,15 @@ class GeneratePinnedManifestTests(unittest.TestCase):
                 self.compiled.config_sha256,
             )
             caddy = (Path(first) / "Caddyfile").read_text(encoding="utf-8")
+            assert_terminator_safe(caddy)
             self.assertIn("reverse_proxy 127.0.0.1:8765", caddy)
+            self.assertIn("smartlic.tech", caddy)
+            self.assertIn("www.smartlic.tech", caddy)
+            self.assertIn("{$SMARTLIC_ACME_EMAIL}", caddy)
+            self.assertIn("auto_https disable_redirects", caddy)
             self.assertNotIn("reverse_proxy 127.0.0.1:8000", caddy)
             self.assertNotIn("reverse_proxy 127.0.0.1:3000", caddy)
+            self.assertNotIn("BEGIN PRIVATE KEY", caddy)
             self.assertNotRegex(caddy, r"redir\s+/\*")
 
     def test_generated_map_contains_only_approved_redirects(self) -> None:
@@ -195,6 +205,24 @@ class RollbackTests(unittest.TestCase):
             decision = resolve(rolled, ready_path, "", "smartlic.tech")
             self.assertEqual(decision.status, 410)
             self.assertIsNone(decision.location)
+
+    def test_rollback_cli_against_previous_is_410_only(self) -> None:
+        compiled = load_and_compile()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            emit(compiled, root)
+            emit(empty_retire_map(), root / "previous")
+            rc = generate_main(["--out", str(root), "--rollback"])
+            self.assertEqual(rc, 0)
+            from bridge.generate import compiled_from_map_file
+            from bridge.policy import resolve
+
+            rolled = compiled_from_map_file(root / "bridge-map.json")
+            self.assertEqual(rolled.redirects, ())
+            for rule in compiled.redirects:
+                decision = resolve(rolled, rule.path, "", "smartlic.tech")
+                self.assertEqual(decision.status, 410, rule.path)
+                self.assertIsNone(decision.location, rule.path)
 
 
 class ProbeTargetsTests(unittest.TestCase):

@@ -62,6 +62,25 @@ def make_handler(state: BridgeState):
 
         def _handle(self) -> None:
             parts = urlsplit(self.path)
+            if parts.path in {"/__bridge/health", "/__bridge/metrics"}:
+                payload = {
+                    "status": "ok",
+                    "manifesto_sha256": compiled.manifesto_sha256,
+                    "config_sha256": compiled.config_sha256,
+                    "redirects": len(compiled.redirects),
+                    "default_status": compiled.default_status,
+                    "counts": state.snapshot(),
+                }
+                body = json.dumps(payload, sort_keys=True).encode("utf-8") + b"\n"
+                self.send_response(200)
+                for key, value in security_headers(compiled):
+                    self.send_header(key, value)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                if self.command != "HEAD":
+                    self.wfile.write(body)
+                return
             decision = resolve(compiled, parts.path, parts.query, self.headers.get("Host"))
             state.hit(decision.rule_id, decision.status)
             self.send_response(decision.status)
@@ -89,7 +108,9 @@ def make_handler(state: BridgeState):
 
 
 def serve(compiled: CompiledMap, host: str, port: int) -> ThreadingHTTPServer:
-    httpd = ThreadingHTTPServer((host, port), make_handler(BridgeState(compiled)))
+    state = BridgeState(compiled)
+    httpd = ThreadingHTTPServer((host, port), make_handler(state))
+    httpd.bridge_state = state  # type: ignore[attr-defined]
     return httpd
 
 
@@ -121,12 +142,22 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         pass
     finally:
+        snapshot = getattr(httpd, "bridge_state", None)
+        counts = snapshot.snapshot() if snapshot is not None else {}
         httpd.server_close()
         if args.metrics_file:
-            handler = httpd.RequestHandlerClass
-            # metrics live on the shared state closed over by the handler factory
             args.metrics_file.write_text(
-                json.dumps({"note": "process stopped; counters were process-local"}, indent=2) + "\n",
+                json.dumps(
+                    {
+                        "manifesto_sha256": compiled.manifesto_sha256,
+                        "config_sha256": compiled.config_sha256,
+                        "redirects": len(compiled.redirects),
+                        "counts": counts,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
                 encoding="utf-8",
             )
     return 0

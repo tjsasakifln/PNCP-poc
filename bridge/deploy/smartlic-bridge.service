@@ -1,0 +1,37 @@
+# systemd unit — local 301/410 process only.
+# Install: /etc/systemd/system/smartlic-bridge.service
+# Isolated redirect process. No product application runtime.
+
+[Unit]
+Description=SmartLic #2115 redirect bridge (301/410 only)
+Documentation=https://github.com/tjsasakifln/SmartLic/issues/2115
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+WorkingDirectory=/opt/smartlic-bridge
+Environment=PYTHONPATH=/opt/smartlic-bridge
+ExecStart=/usr/bin/python3 -m bridge.serve --host 127.0.0.1 --port 8765
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=smartlic-bridge
+
+[Install]
+WantedBy=multi-user.target

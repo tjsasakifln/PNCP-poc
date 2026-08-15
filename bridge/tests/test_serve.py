@@ -69,13 +69,49 @@ class ServeLaunchTests(unittest.TestCase):
         rule = self.compiled.redirects[0]
         first = self._one_run(18765, rule)
         second = self._one_run(18766, rule)
-        self.assertEqual(first, second)
+        comparable = ("ready_status", "ready_location", "unmapped_status", "unmapped_location",
+                      "login_status", "login_location", "config_hash", "manifest_ok")
+        self.assertEqual({k: first[k] for k in comparable}, {k: second[k] for k in comparable})
         self.assertEqual(first["ready_status"], 301)
         self.assertEqual(first["ready_location"], rule.target_url)
         self.assertEqual(first["unmapped_status"], 410)
         self.assertIsNone(first["unmapped_location"])
+        self.assertEqual(first["login_status"], 410)
+        self.assertIsNone(first["login_location"])
         self.assertEqual(first["config_hash"], self.compiled.config_sha256)
         self.assertEqual(first["manifest_ok"], PINNED_SHA256)
+        self.assertIn(PINNED_SHA256, first["banner"])
+        self.assertIn(self.compiled.config_sha256, first["banner"])
+        self.assertIn("SERVE_OK", first["banner"])
+        self.assertIn("SERVE_OK", second["banner"])
+
+    def test_all_ready_paths_and_410_negatives_over_http(self) -> None:
+        proc = self._launch(18767)
+        try:
+            banner = self._wait_ready(proc)
+            self.assertIn("SERVE_OK", banner)
+            self.assertIn(PINNED_SHA256, banner)
+            for rule in self.compiled.redirects:
+                status, location, cfg = self._hit(18767, rule.path)
+                self.assertEqual(status, 301, rule.path)
+                self.assertEqual(location, rule.target_url, rule.path)
+                self.assertEqual(cfg, self.compiled.config_sha256)
+            for path in ("/login", "/signup", "/pricing", "/webhooks", "/v1", "/webhooks/stripe", "/v1/search"):
+                status, location, _cfg = self._hit(18767, path)
+                self.assertEqual(status, 410, path)
+                self.assertIsNone(location, path)
+            health = self._hit_body(18767, "/__bridge/health")
+            self.assertEqual(health["status"], "ok")
+            self.assertEqual(health["manifesto_sha256"], PINNED_SHA256)
+            self.assertEqual(health["config_sha256"], self.compiled.config_sha256)
+            self.assertEqual(health["redirects"], 11)
+        finally:
+            proc.terminate()
+            try:
+                proc.communicate(timeout=3)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.communicate(timeout=3)
 
     def _one_run(self, port: int, rule) -> dict:
         proc = self._launch(port)
@@ -84,14 +120,19 @@ class ServeLaunchTests(unittest.TestCase):
             self.assertIn(PINNED_SHA256, banner)
             ready_status, ready_loc, cfg = self._hit(port, rule.path)
             unmapped_status, unmapped_loc, cfg2 = self._hit(port, "/not-mapped-2115")
+            login_status, login_loc, cfg3 = self._hit(port, "/login")
             self.assertEqual(cfg, cfg2)
+            self.assertEqual(cfg, cfg3)
             return {
                 "ready_status": ready_status,
                 "ready_location": ready_loc,
                 "unmapped_status": unmapped_status,
                 "unmapped_location": unmapped_loc,
+                "login_status": login_status,
+                "login_location": login_loc,
                 "config_hash": cfg,
                 "manifest_ok": PINNED_SHA256 if PINNED_SHA256 in banner else "",
+                "banner": banner,
             }
         finally:
             proc.terminate()
@@ -100,6 +141,20 @@ class ServeLaunchTests(unittest.TestCase):
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.communicate(timeout=3)
+
+    def _hit_body(self, port: int, path: str) -> dict:
+        import json
+
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        try:
+            conn.request("GET", path, headers={"Host": "smartlic.tech"})
+            resp = conn.getresponse()
+            raw = resp.read()
+            self.assertEqual(resp.status, 200, path)
+            self.assertIsNone(resp.getheader("Location"))
+            return json.loads(raw.decode("utf-8"))
+        finally:
+            conn.close()
 
 
 class NoProductRuntimeTests(unittest.TestCase):
@@ -111,6 +166,9 @@ class NoProductRuntimeTests(unittest.TestCase):
             root / "policy.py",
             root / "pins.py",
             root / "generated" / "Caddyfile",
+            root / "deploy" / "smartlic-bridge.service",
+            root / "deploy" / "caddy-bridge.service",
+            root / "deploy" / "nftables.conf",
         ]
         banned = (
             "import fastapi",

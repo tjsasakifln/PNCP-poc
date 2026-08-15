@@ -19,11 +19,11 @@ python3 -m unittest discover -s bridge/tests -v
 python3 -m bridge.serve --host 127.0.0.1 --port 8765
 ```
 
-`generated/Caddyfile` is a future TLS terminator that reverse-proxies **only** to `127.0.0.1:8765`. It must never proxy `:8000` or `:3000`.
+`generated/Caddyfile` is the TLS terminator: ACME SAN `smartlic.tech` + `www.smartlic.tech`, reverse-proxy **only** to `127.0.0.1:8765`. It must never proxy `:8000` or `:3000`. Units and firewall: `bridge/deploy/`.
 
 ## Observation window
 
-Starts at the first production 301 of this hash. Duration: **28 days**. Not started (cutover BLOCKED).
+Starts at the first production 301 of this hash. Duration: **28 days**. Not started (engineering `CUTOVER_READY`; owner has not applied DNS).
 
 ### Investigate if
 
@@ -49,13 +49,6 @@ Rollback = one command, see `ROLLBACK.md`. It does **not** redeploy SmartLic.
 - Remove `smartlic.tech` hosting/DNS only after: window complete, zero residual priority errors, later-discovered critical backlinks accepted or remapped, SmartLic#2111 archive gate.
 - Temporary exceptions expire. Kill switch = `generated/previous/` (410-only pre-bridge map).
 
-## Cutover (external) — still BLOCKED
+## Cutover — CUTOVER_READY (owner apply)
 
-Do not change DNS until all of these exist:
-
-1. Named reverse proxy + cert covering `smartlic.tech` and `www.smartlic.tech`.
-2. Health 200 on every ready CONFENGE target (`--probe-targets`).
-3. Documented one-step rollback rehearsal (already in tests).
-4. Same `config.sha256` on the candidate and the observed process.
-
-Until then the verdict is **BLOCKED** for live DNS/TLS. The in-repo half is reviewable.
+Named path, rollback, probes and pin are closed. Exact Cloudflare records and the remaining human commands are in `CUTOVER.md`. Do not change DNS from this checkout without owner authorization.

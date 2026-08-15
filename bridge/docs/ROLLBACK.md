@@ -28,7 +28,7 @@ python3 -m bridge.generate
 
 ## DNS / TLS rollback
 
-If a future cutover pointed `smartlic.tech` at this bridge, restore the **previous DNS/proxy records** (exported in `PREFLIGHT-2026-08-14.md`: apex `69.46.46.88`, www `69.46.46.117`). That is a DNS change, not a product redeploy. This change does **not** perform that DNS change.
+If cutover pointed `smartlic.tech` at this bridge, restore the **previous DNS records** exactly (see `CUTOVER.md`): apex A `69.46.46.88` TTL 60; delete www A; recreate www CNAME `app.smartlic.tech.` TTL 300. That is a DNS change, not a product redeploy. This change does **not** perform that DNS change.
 
 ## Rehearsal
 

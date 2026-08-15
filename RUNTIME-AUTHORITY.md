@@ -16,7 +16,9 @@ migration:
   owners:
     - https://github.com/tjsasakifln/web-cfg/issues/62
     - https://github.com/tjsasakifln/SmartLic/issues/2115
-  bridge_status: manifesto_pinned_cutover_blocked
+  bridge_status: cutover_ready
+  tls_path: caddy_acme_san_apex_www_to_127.0.0.1:8765
+  destination_ip: owner_supplied_BRIDGE_PUBLIC_IPV4
   bridge_rule: url_specific_redirects_only
   manifesto_sha256: c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d
   manifesto_commit: 3f112bfbd9e6b042691e1c09812af00f42735adb

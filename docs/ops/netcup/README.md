@@ -1,34 +1,18 @@
+> **SUPERSEDED (2026-08-14).** #2115 is **not** a Netcup SmartLic application. Do not install Next.js, FastAPI, Redis, ARQ, Caddy product units, or `/opt/smartlic` as a public runtime. Authorized remainder: hash-pinned 11 URL-specific 301s + default 410 in `bridge/`. See `bridge/docs/SUPERSEDED-NETCUP-PRODUCT.md` and `RUNTIME-AUTHORITY.md`.
+
 # Runtime mínimo Netcup — #2115
 
-Topologia alvo:
+**Status:** SUPERSEDED — historical evidence only.
+
+The topology below (Caddy → Next :3000 / FastAPI :8000 / Redis / ARQ) described a product rebuild that is **forbidden**. `deploy/netcup/` was removed. Do not recreate it.
+
+Historical target (do not execute):
 
 ```text
 Caddy (TLS)
-  → Next.js :3000   KEEP
-  → FastAPI :8000   TEMPORARY adapter
-      → extra-cli public_read_v1 (SELECT-only)  REPLACE do DataLake SmartLic
+  → Next.js :3000
+  → FastAPI :8000
+      → extra-cli public_read_v1
 ```
 
-| Componente | Destino | Motivo |
-|---|---|---|
-| Next.js | KEEP | Superfície pública e patrimônio SEO |
-| FastAPI | TEMPORARY | Adapter de apresentação até o cutover |
-| Redis | TEMPORARY | Cache/rate-limit na transição |
-| ARQ / workers | REMOVE after dependency | Ingestão e billing saem |
-| Supabase | TEMPORARY store | Não é autoridade |
-| Stripe | REMOVE after zero-use | #2111 |
-| Railway | REMOVE | Produção atual responde `x-railway-fallback: true` (404) |
-
-Scripts em `deploy/netcup/` são executáveis. Sem acesso SSH neste ciclo, o runbook é o artefato.
-
-## Boot
-
-1. `sudo ./deploy/netcup/install.sh`
-2. Preencher `/etc/smartlic/smartlic.env` a partir do example.
-3. Publicar release em `/opt/smartlic/releases/<sha>` e apontar `current`.
-4. `systemctl enable --now caddy smartlic-adapter smartlic-web`
-5. `./deploy/netcup/validate-env.sh && ./deploy/netcup/healthcheck.sh`
-
-Rollback: `./deploy/netcup/rollback.sh <sha>`.
-
-Backup: somente estado SmartLic (`/var/lib/smartlic/lead-outbox.jsonl` e env). Nunca dump do extra-cli.
+Authorized bridge path: Caddy ACME SAN apex+www → `127.0.0.1:8765`. Status `CUTOVER_READY` in `bridge/docs/CUTOVER.md`. Do not restore this product topology.

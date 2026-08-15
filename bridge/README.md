@@ -11,7 +11,7 @@ Isolated surface. Executes only the hash-pinned execute set from [web-cfg#62](ht
 | Cost | UNKNOWN |
 | Expiry | 28 days after the first production 301 of this hash |
 | Removal trigger | window complete + zero residual priority errors + #2111 archive gate |
-| Live DNS/TLS cutover | **BLOCKED** (see `docs/PREFLIGHT-2026-08-14.md`) |
+| Live DNS/TLS cutover | **CUTOVER_READY** (see `docs/CUTOVER.md`; owner applies DNS/ACME) |
 
 ```text
 python3 -m bridge.generate
@@ -19,4 +19,4 @@ python3 -m unittest discover -s bridge/tests -v
 python3 -m bridge.serve --host 127.0.0.1 --port 8765
 ```
 
-Docs: `docs/RUNBOOK.md`, `docs/ROLLBACK.md`, `docs/OBSERVABILITY.md`.
+Docs: `docs/CUTOVER.md`, `docs/RUNBOOK.md`, `docs/ROLLBACK.md`, `docs/OBSERVABILITY.md`.
