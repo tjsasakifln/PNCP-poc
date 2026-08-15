@@ -70,3 +70,5 @@ Ready CONFENGE targets observed 200: `/aditivos-obras-publicas/`, `/atrasos-pror
 Implement the in-repo hash-pinned 301/410 bridge. Do **not** change live DNS/TLS in this change. External cutover stays BLOCKED until a named reverse-proxy + certificate covering apex+www + rollback record exist.
 
 Successor write-up (2026-08-15): `CUTOVER.md` names that path and records status `CUTOVER_READY`. This dated preflight is unchanged evidence.
+
+Successor citation (2026-08-15, post-#68 rebase, #68 still OPEN): PR HEAD `13a27abdd6f4e41f2eb646cdf738461aef4756ac`; manifesto-carrying commit `dad3414c7a0073d0c1860d19704cff7e2a6e3b24`. Manifesto SHA-256 **UNCHANGED**. Map pin stays `3f112bfb`.

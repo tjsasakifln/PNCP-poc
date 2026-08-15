@@ -16,7 +16,7 @@ Engineering gates can be `CUTOVER_READY` while live DNS/TLS remains **BLOCKED**.
 These are closed on PR #2133 HEAD. They are not production proof.
 
 1. **Approved execute set** — exactly 11 URL-specific REDIRECT rows, all `status=ready`, all `expected_http=301`. 1244 RETIRE rows stay default 410. No `/*` → CONFENGE home, no `/consultoria-b2g/`.
-2. **Hash pin unchanged** — manifesto SHA-256 `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d`. Config hash `c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68`. Map still embeds original pin commit `3f112bfbd9e6b042691e1c09812af00f42735adb`. After web-cfg#68 rebase the same bytes live at `dad3414c7a0073d0c1860d19704cff7e2a6e3b24` (citation only — map not regenerated).
+2. **Hash pin unchanged** — manifesto SHA-256 `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d`. Config hash `c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68`. Map still embeds original pin commit `3f112bfbd9e6b042691e1c09812af00f42735adb`. web-cfg#68 is still **OPEN** at HEAD `13a27abdd6f4e41f2eb646cdf738461aef4756ac`; the manifesto-carrying commit on that HEAD is `dad3414c7a0073d0c1860d19704cff7e2a6e3b24` (same bytes — map not regenerated).
 3. **Default 410** — unmapped paths, `/`, `/login`, `/signup`, `/planos`, `/pricing`, `/webhooks/*`, `/v1/*` return 410 with no `Location`.
 4. **No wildcard / no chain** — validator rejects `*` and generic targets. Caddy `auto_https disable_redirects` so HTTP stays one 301 hop. Policy `hops=1` on ready rows.
 5. **Query allowlist + PII stripped** — persist list from the manifesto (`utm_*`, `jornada`, `origem`, `route_family`, `cta_id`, `asset_id`, `correlation_id`, `tema`). `email` / `phone` / `name` / `cnpj` / `cpf` / `token` dropped. Caddy logs strip `?.*`.
@@ -34,7 +34,7 @@ Do not apply DNS, Cloudflare, TLS, or ACME until a human owner fills the inputs 
 1. **`$BRIDGE_PUBLIC_IPV4`** — no authorized public IPv4 exists in discovery. Apex still `69.46.46.88` (Railway).
 2. **`$SMARTLIC_ACME_EMAIL`** — Let's Encrypt account contact. Empty in `bridge/deploy/env.example`. Not a secret, still owner-supplied.
 3. **Cloudflare apply authorization** — NS remain `jermaine` / `ryleigh`. Token / zone id never committed. Owner must apply the records in `CUTOVER.md`.
-4. **web-cfg#68** — still OPEN. In-repo 11-row accept is ready for a human. Pin bytes are frozen. Do not invent a new execute set if #68 later changes the hash.
+4. **web-cfg#68** — still OPEN at HEAD `13a27abd`. In-repo 11-row accept is ready for a human. Pin bytes are frozen. Do not invent a new execute set if #68 later changes the hash.
 5. **Live TLS covering apex+www** — 2026-08-15 read-only: apex cert SAN `smartlic.tech` only (expires 2026-09-16); `www.smartlic.tech` TLS hostname mismatch (`*.up.railway.app`). HTTP apex is Railway fallback **404** (`x-railway-fallback: true`).
 6. **Observation window** — 28 days after the first production 301 of this hash. **Not started.**
 7. **#2115 DoD** — “verified, observed and removed.” Observation and removal cannot happen without the forbidden live DNS step.

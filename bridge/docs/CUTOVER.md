@@ -2,11 +2,11 @@
 
 **Status:** engineering `CUTOVER_READY`; live DNS/TLS/ACME **BLOCKED**. See `CUTOVER_READINESS.md`.
 
-This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY vs BLOCKED record. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg#68 remains OPEN as a human accept of the 11-row set; this bridge consumes only the published pin and does not rewrite it.
+This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY vs BLOCKED record. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg#68 remains OPEN at HEAD `13a27abd` as a human accept of the 11-row set; this bridge consumes only the published pin and does not rewrite it.
 
 | Gate | Value |
 |---|---|
-| Pin | `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d` (map embeds `3f112bfbd9e6b042691e1c09812af00f42735adb`; same bytes now at `dad3414c`) |
+| Pin | `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d` (map embeds `3f112bfbd9e6b042691e1c09812af00f42735adb`; same bytes at `dad3414c` on #68 HEAD `13a27abd`) |
 | Config hash | `c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68` |
 | Execute set | exactly 11 URL-specific 301s + default 410 |
 | TLS path | Caddy ACME, one SAN cert `smartlic.tech` + `www.smartlic.tech` |

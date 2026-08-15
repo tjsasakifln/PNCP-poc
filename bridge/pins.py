@@ -14,6 +14,10 @@ PINNED_CONFIG_SHA256 = "c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660
 PINNED_COMMIT = "3f112bfbd9e6b042691e1c09812af00f42735adb"
 # Citation only — same manifesto bytes after web-cfg#68 rebase. Do not swap PINNED_COMMIT.
 CITED_MANIFESTO_COMMIT = "dad3414c7a0073d0c1860d19704cff7e2a6e3b24"
+# Real current web-cfg#68 HEAD (still OPEN). Docs-only commit after dad3414c.
+# Not baked into the map. Do not swap PINNED_COMMIT when this moves.
+COUNTERPART_HEAD = "13a27abdd6f4e41f2eb646cdf738461aef4756ac"
+COUNTERPART_PR_STATE = "OPEN"
 PINNED_VERSION = "v1"
 PINNED_SCHEMA = "smartlic-confenge-manifesto-v1"
 PINNED_REDIRECT_COUNT = 11

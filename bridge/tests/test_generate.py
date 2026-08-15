@@ -25,6 +25,8 @@ from bridge.generate import (
 from bridge.policy import CompiledMap, RedirectRule
 from bridge.pins import (
     CITED_MANIFESTO_COMMIT,
+    COUNTERPART_HEAD,
+    COUNTERPART_PR_STATE,
     PINNED_COMMIT,
     PINNED_CONFIG_SHA256,
     PINNED_REDIRECT_COUNT,
@@ -53,6 +55,11 @@ class GeneratePinnedManifestTests(unittest.TestCase):
         self.assertEqual(payload["pinned_commit"], "3f112bfbd9e6b042691e1c09812af00f42735adb")
         self.assertNotEqual(CITED_MANIFESTO_COMMIT, PINNED_COMMIT)
         self.assertNotIn(CITED_MANIFESTO_COMMIT, payload["pinned_commit"])
+        self.assertEqual(COUNTERPART_PR_STATE, "OPEN")
+        self.assertEqual(COUNTERPART_HEAD, "13a27abdd6f4e41f2eb646cdf738461aef4756ac")
+        self.assertNotEqual(COUNTERPART_HEAD, PINNED_COMMIT)
+        self.assertNotIn(COUNTERPART_HEAD, payload["pinned_commit"])
+        self.assertNotIn("counterpart_head", payload)
         self.assertEqual(self.compiled.config_sha256, PINNED_CONFIG_SHA256)
 
     def test_dirty_bytes_are_rejected(self) -> None:

@@ -23,6 +23,9 @@ migration:
   manifesto_sha256: c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d
   manifesto_commit: 3f112bfbd9e6b042691e1c09812af00f42735adb
   manifesto_commit_cited_after_68_rebase: dad3414c7a0073d0c1860d19704cff7e2a6e3b24
+  counterpart_pr: web-cfg#68
+  counterpart_state: OPEN
+  counterpart_head: 13a27abdd6f4e41f2eb646cdf738461aef4756ac
   execute_redirects: 11
   default_status: 410
   netcup_rebuild_authorized: false
