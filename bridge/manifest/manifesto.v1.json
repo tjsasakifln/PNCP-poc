@@ -13,7 +13,7 @@
     "supersedes": {
       "schema": "smartlic-confenge-manifesto-v1",
       "sha256": "c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d",
-      "note": "v2 keeps the same 11 ready CONFENGE 301s. Vocabulary expands to six actions. Previously-RETIRE rows whose job has a named future surface are HOLD_TARGET_NOT_READY (fail-closed 410, no Location)."
+      "note": "v2 keeps 11 ready CONFENGE 301s. Vocabulary expands to six actions. Previously-RETIRE rows whose job has a named future surface are HOLD_TARGET_NOT_READY (fail-closed 410, no Location). WEB-017 remapped /blog/orgaos-risco-atraso-pagamento-licitacao from /atrasos-prorrogacao-obras-publicas/ to /conteudos/atraso-pagamento-contrato-publico-suspender/ (payment-delay job)."
     },
     "economic_rule": "REDIRECT_301/MIGRATE only with a ready 1:1 CONFENGE target (HTTPS 200, host confenge.com.br, indexable, no SmartLic brand). Future destinations are HOLD_TARGET_NOT_READY. Volume, ease and sunk cost do not qualify. Zero indiscriminate home/parent redirects.",
     "live_gsc": "UNKNOWN",
@@ -7815,12 +7815,12 @@
       "clicks": "UNKNOWN",
       "backlinks": "UNKNOWN",
       "referrers": "UNKNOWN",
-      "unique_utility": "Indexable delay pillar aligned to #60 execution pressure.",
+      "unique_utility": "Indexable #60 payment-pressure article with next action. /atrasos-prorrogacao-obras-publicas/ is a different job (prazo/caminho crítico).",
       "action": "REDIRECT_301",
       "decision": "REDIRECT_301",
-      "target": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/",
-      "target_url": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/",
-      "reason": "Legacy post is about payment-delay risk in public contracts; CONFENGE pillar is delay/prorrogação in obras.",
+      "target": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
+      "target_url": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
+      "reason": "Legacy post is about payment-delay risk in public contracts. CONFENGE article answers late public-contract payment and the contractor's documented response — not work-delay/prorrogação.",
       "owner": "web-cfg (@dev) — CONFENGE public surface",
       "priority": "P1",
       "rollback_impact": "High — ready 301s are the only preserved equity hop; reverting this hash restores 410-only.",
@@ -7839,8 +7839,8 @@
         "notes": "frontend/lib/blog.ts"
       },
       "target_absence_justification": "",
-      "semantic_equivalence": "Legacy post is about payment-delay risk in public contracts; CONFENGE pillar is delay/prorrogação in obras.",
-      "equivalence_utility": "Indexable delay pillar aligned to #60 execution pressure.",
+      "semantic_equivalence": "Legacy post is about payment-delay risk in public contracts. CONFENGE article answers late public-contract payment and the contractor's documented response — not work-delay/prorrogação.",
+      "equivalence_utility": "Indexable #60 payment-pressure article with next action. /atrasos-prorrogacao-obras-publicas/ is a different job (prazo/caminho crítico).",
       "preconditions": [
         "target https://confenge.com.br/atrasos-prorrogacao-obras-publicas/ returns 200 on the candidate SHA",
         "canonical is CONFENGE-only",
@@ -7849,7 +7849,7 @@
       ],
       "status": "ready",
       "expected_http": 301,
-      "expected_canonical": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/",
+      "expected_canonical": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
       "query_string_rule": {
         "mode": "allowlist",
         "persist": [
@@ -7889,8 +7889,8 @@
       "removal_trigger": "Remove smartlic.tech bridge only after: 28-day observation of this hash, zero residual priority 404/5xx/chain, critical backlinks (if any become known) point at CONFENGE or are accepted as retired, and SmartLic#2111 archive gate.",
       "bridge_owner": "SmartLic#2115 — redirect bridge only after this manifesto hash",
       "legacy_exact_or_pattern": "exact",
-      "destination_canonical": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/",
-      "equivalence_rationale": "Legacy post is about payment-delay risk in public contracts; CONFENGE pillar is delay/prorrogação in obras.",
+      "destination_canonical": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
+      "equivalence_rationale": "Legacy post is about payment-delay risk in public contracts. CONFENGE article answers late public-contract payment and the contractor's documented response — not work-delay/prorrogação.",
       "http_status": 301,
       "no_chain": true,
       "no_loop": true,
@@ -7926,7 +7926,7 @@
           },
           "expect": {
             "status": 301,
-            "location": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/"
+            "location": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/"
           }
         },
         {
@@ -7938,7 +7938,7 @@
           },
           "expect": {
             "status": 301,
-            "location": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/"
+            "location": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/"
           }
         },
         {
@@ -7950,7 +7950,7 @@
           },
           "expect": {
             "status": 301,
-            "location": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/"
+            "location": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/"
           }
         },
         {
@@ -7962,7 +7962,7 @@
           },
           "expect": {
             "status": 301,
-            "location_prefix": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/",
+            "location_prefix": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
             "keep": [
               "utm_source",
               "jornada"
@@ -7978,7 +7978,7 @@
           },
           "expect": {
             "status": 301,
-            "location": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/",
+            "location": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
             "forbid": [
               "email",
               "cnpj"

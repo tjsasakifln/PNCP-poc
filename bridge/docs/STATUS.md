@@ -1,11 +1,14 @@
 # Status — SmartLic equity migration (web-cfg#62)
 
-**Verdict:** `PARTIAL_TARGETS_READY`
+**Verdict:** `READY_BEHIND_HUMAN_GATE`
 
 | Field | Value |
 |---|---|
 | Date | 2026-08-16 |
-| Inventory SHA-256 | `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023` |
+| Inventory SHA-256 | `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9` |
+| web-cfg commit | `8a2f4d5bce7e23d0308246ed45ed4d58752984ac` (PR #97 OPEN) |
+| Config hash | `fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4` |
+| Supersedes | `3c5a5b7a…` / `78b7ebb9` (payment-delay remapped) |
 | Ready REDIRECT_301 | 11 |
 | HOLD_TARGET_NOT_READY | 54 |
 | RETIRE_410 | 1190 |

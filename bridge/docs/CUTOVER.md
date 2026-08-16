@@ -6,8 +6,8 @@ This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY 
 
 | Gate | Value |
 |---|---|
-| Pin | `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023` (map embeds `78b7ebb9f8c26b754e5571248d014be305fbcf40`) |
-| Config hash | `f535ad0ae64c8b6b69fdd1699fa940536d9182f75af1c09aaf97e7edaa34138d` |
+| Pin | `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9` (map embeds `8a2f4d5bce7e23d0308246ed45ed4d58752984ac`) |
+| Config hash | `fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4` |
 | Execute set | exactly 11 URL-specific 301s + 54 HOLD fail-closed + default 410 |
 | TLS path | Caddy ACME, one SAN cert `smartlic.tech` + `www.smartlic.tech` |
 | Proxy | `reverse_proxy 127.0.0.1:8765` only (`python3 -m bridge.serve`) |
@@ -144,12 +144,12 @@ The 28-day observation window starts at the first production 301 of this hash �
 
 ## Close-out
 
-1. **PR/commits:** follow-up on #2133 (`feat/2115-redirect-bridge`) — deploy kit + CUTOVER_READY write-up. Manifesto/map pins unchanged.
+1. **PR/commits:** follow-up on #2135 (`chore/redirect-bridge-2115`) — consume web-cfg#97 pin `9e5667c1…` / `8a2f4d5b`. Do not mix with superseded `3c5a5b7a…` / `78b7ebb9`.
 2. **Baseline:** table above (Cloudflare; apex `69.46.46.88`; www CNAME → `69.46.46.117`).
 3. **Architecture/config:** Caddy → `127.0.0.1:8765`; generated Caddyfile + `bridge/deploy/*`.
 4. **TLS/DNS/rollback:** this file.
 5. **Probes:** unit tests + `--probe-targets` + serve ×2.
 6. **Security:** non-root, firewall, no-PII logs, no keys in Git.
 7. **Status:** engineering `CUTOVER_READY`; live cutover **BLOCKED** (`CUTOVER_READINESS.md`).
-8. **Remaining human action:** owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, drops the kit, accepts web-cfg#68, applies the Cloudflare records above. `@devops` push of this branch if not yet on origin.
+8. **Remaining human action:** owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, drops the kit, accepts web-cfg#97 (11-row set including remapped payment-delay), applies the Cloudflare records above. `@devops` push of this branch if not yet on origin.
 9. **Next action:** owner apply. Then first production 301 starts the 28-day window. Do not expand into #2111 removals.

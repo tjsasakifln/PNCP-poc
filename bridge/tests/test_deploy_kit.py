@@ -86,7 +86,7 @@ class DeployKitTests(unittest.TestCase):
         self.assertIn("python3 -m bridge.generate --rollback", text)
         self.assertIn("does not claim live cutover completed", text.lower())
         self.assertNotIn("dns applied", text.lower())
-        self.assertIn("78b7ebb9f8c26b754e5571248d014be305fbcf40", text)
+        self.assertIn("8a2f4d5bce7e23d0308246ed45ed4d58752984ac", text)
         self.assertRegex(text, r"\*\*OPEN\*\*|PR OPEN|OPEN on")
 
     def test_unsafe_unit_fails_closed(self) -> None:

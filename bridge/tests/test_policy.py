@@ -17,6 +17,7 @@ class PolicyReadyRedirectTests(unittest.TestCase):
 
     def test_every_ready_rule_is_one_hop_301_to_manifest_target(self) -> None:
         self.assertEqual(len(self.compiled.redirects), 11)
+        self.assertEqual(len(self.compiled.holds), 54)
         for rule in self.compiled.redirects:
             decision = resolve(self.compiled, rule.path, "", "smartlic.tech")
             self.assertEqual(decision.status, REDIRECT_STATUS, rule.path)
@@ -26,6 +27,21 @@ class PolicyReadyRedirectTests(unittest.TestCase):
             self.assertEqual(host, TARGET_HOSTNAME, rule.path)
             self.assertNotEqual(decision.location, "https://confenge.com.br/")
             self.assertNotIn("/consultoria-b2g", decision.location)
+
+    def test_payment_delay_resolver_uses_remapped_target(self) -> None:
+        decision = resolve(
+            self.compiled,
+            "/blog/orgaos-risco-atraso-pagamento-licitacao",
+            "",
+            "smartlic.tech",
+        )
+        self.assertEqual(decision.status, REDIRECT_STATUS)
+        self.assertEqual(
+            decision.location,
+            "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
+        )
+        self.assertNotIn("/atrasos-prorrogacao-obras-publicas/", decision.location or "")
+        self.assertEqual(decision.hops, 1)
 
     def test_www_alias_is_same_one_hop(self) -> None:
         for rule in self.compiled.redirects:

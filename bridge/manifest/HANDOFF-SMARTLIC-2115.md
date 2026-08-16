@@ -2,14 +2,15 @@
 
 **Pinned inventory:** `data/migrations/smartlic-url-map/inventory.v2.json`  
 **Byte-identical projection:** `data/migration/smartlic-confenge/manifesto.v1.json`  
-**SHA-256:** `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023`  
+**SHA-256:** `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9`  
+**web-cfg commit:** `8a2f4d5bce7e23d0308246ed45ed4d58752984ac` (PR #97 OPEN)  
 **Version:** `v2`  
 **Schema:** `smartlic-url-map-v2`  
 **web-cfg issue:** https://github.com/tjsasakifln/web-cfg/issues/62  
 **Execute issue:** https://github.com/tjsasakifln/SmartLic/issues/2115  
 **Do not execute against any other file, branch, or unhashed edit.**
 
-Supersedes pin `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d` (v1 REDIRECT/RETIRE-only). The 11 ready CONFENGE 301s are unchanged. Vocabulary is now the six actions; 54 previously-RETIRE rows whose job has a named future surface are `HOLD_TARGET_NOT_READY` (fail-closed 410, no Location).
+Supersedes pin `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023` / `78b7ebb9` (v2 before payment-delay remap). The remapped ready row is `/blog/orgaos-risco-atraso-pagamento-licitacao` → `/conteudos/atraso-pagamento-contrato-publico-suspender/` (not `/atrasos-prorrogacao-obras-publicas/`). Vocabulary remains the six actions; 54 HOLD_TARGET_NOT_READY rows stay fail-closed 410, no Location.
 
 Recompute: `python3 -c "from pathlib import Path; import hashlib; print(hashlib.sha256(Path('data/migrations/smartlic-url-map/inventory.v2.json').read_bytes()).hexdigest())"`  
 Must match `data/migrations/smartlic-url-map/inventory.v2.sha256` and `data/migration/smartlic-confenge/manifesto.v1.sha256`.
@@ -29,7 +30,7 @@ Single hop. HTTPS. Drop query string except the allowlist (`utm_*`, `jornada`, `
 | legacy_url | target_url | HTTP | owner |
 |---|---|---:|---|
 | `https://smartlic.tech/blog/aditivos-contratuais-o-que-sao-como-monitorar` | `https://confenge.com.br/aditivos-obras-publicas/` | 301 | SmartLic#2115 |
-| `https://smartlic.tech/blog/orgaos-risco-atraso-pagamento-licitacao` | `https://confenge.com.br/atrasos-prorrogacao-obras-publicas/` | 301 | SmartLic#2115 |
+| `https://smartlic.tech/blog/orgaos-risco-atraso-pagamento-licitacao` | `https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/` | 301 | SmartLic#2115 |
 | `https://smartlic.tech/glossario/aditivo-contratual` | `https://confenge.com.br/aditivos-obras-publicas/` | 301 | SmartLic#2115 |
 | `https://smartlic.tech/glossario/mapa-de-riscos` | `https://confenge.com.br/conteudos/matriz-de-riscos-reequilibrio-economico-financeiro/` | 301 | SmartLic#2115 |
 | `https://smartlic.tech/glossario/matriz-de-riscos` | `https://confenge.com.br/conteudos/matriz-de-riscos-reequilibrio-economico-financeiro/` | 301 | SmartLic#2115 |

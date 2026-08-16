@@ -1,21 +1,24 @@
-"""Invariants of the hash-pinned web-cfg#62 execute set.
+"""Invariants of the hash-pinned web-cfg#62 / PR #97 execute set.
 
 These constants describe SHA-256
-``3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023``.
+``9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9``.
 A different inventory file must fail closed before any artifact is emitted.
 """
 
 from __future__ import annotations
 
-PINNED_SHA256 = "3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023"
+PINNED_SHA256 = "9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9"
 # SHA-256 of the canonical map payload (not the on-disk file, which also stores this digest).
-# Regenerated after v2 inventory + HOLD fail-closed list; filled after `python3 -m bridge.generate`.
-PINNED_CONFIG_SHA256 = "f535ad0ae64c8b6b69fdd1699fa940536d9182f75af1c09aaf97e7edaa34138d"
-PINNED_COMMIT = "78b7ebb9f8c26b754e5571248d014be305fbcf40"
-# Historical v1 pin (same 11 ready 301s). Docs only.
+# Regenerated after web-cfg#97 remapped payment-delay row; filled after `python3 -m bridge.generate`.
+PINNED_CONFIG_SHA256 = "fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4"
+PINNED_COMMIT = "8a2f4d5bce7e23d0308246ed45ed4d58752984ac"
+# Historical v1 pin (same 11 ready 301s except later remaps). Docs only.
 CITED_MANIFESTO_COMMIT = "dad3414c7a0073d0c1860d19704cff7e2a6e3b24"
-SUPERSEDED_SHA256 = "c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d"
-COUNTERPART_HEAD = "78b7ebb9f8c26b754e5571248d014be305fbcf40"
+# Immediate predecessor consume (v2 before payment-delay remap).
+SUPERSEDED_SHA256 = "3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023"
+SUPERSEDED_V1_SHA256 = "c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d"
+SUPERSEDED_COMMIT = "78b7ebb9f8c26b754e5571248d014be305fbcf40"
+COUNTERPART_HEAD = "8a2f4d5bce7e23d0308246ed45ed4d58752984ac"
 COUNTERPART_PR_STATE = "OPEN"
 COUNTERPART_MERGED_AT = ""
 PINNED_VERSION = "v2"

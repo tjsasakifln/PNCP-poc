@@ -1,7 +1,7 @@
 {
-  "config_sha256": "f535ad0ae64c8b6b69fdd1699fa940536d9182f75af1c09aaf97e7edaa34138d",
+  "config_sha256": "fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4",
   "default_status": 410,
-  "expiry_review": "28 days after first production 301 of 3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023",
+  "expiry_review": "28 days after first production 301 of 9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9",
   "holds": [
     "/blog/checklist-habilitacao-licitacao-2026",
     "/blog/clausulas-escondidas-editais-licitacao",
@@ -58,7 +58,7 @@
     "/perguntas/subcontratacao-permitida-licitacao",
     "/perguntas/vigencia-contrato-administrativo"
   ],
-  "manifesto_sha256": "3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023",
+  "manifesto_sha256": "9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9",
   "observation_window_days": 28,
   "owner": "SmartLic#2115",
   "persist": [
@@ -75,7 +75,7 @@
     "correlation_id",
     "tema"
   ],
-  "pinned_commit": "78b7ebb9f8c26b754e5571248d014be305fbcf40",
+  "pinned_commit": "8a2f4d5bce7e23d0308246ed45ed4d58752984ac",
   "redirects": [
     {
       "expected_canonical": "https://confenge.com.br/aditivos-obras-publicas/",
@@ -100,7 +100,7 @@
       "target_url": "https://confenge.com.br/aditivos-obras-publicas/"
     },
     {
-      "expected_canonical": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/",
+      "expected_canonical": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
       "expected_http": 301,
       "family": "blog-editorial",
       "owner": "SmartLic#2115 — redirect bridge only after this manifesto hash",
@@ -119,7 +119,7 @@
         "correlation_id",
         "tema"
       ],
-      "target_url": "https://confenge.com.br/atrasos-prorrogacao-obras-publicas/"
+      "target_url": "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/"
     },
     {
       "expected_canonical": "https://confenge.com.br/aditivos-obras-publicas/",

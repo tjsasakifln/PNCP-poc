@@ -52,14 +52,15 @@ class GeneratePinnedManifestTests(unittest.TestCase):
     def test_cited_rebase_commit_is_not_baked_into_config_hash(self) -> None:
         payload = _map_payload(self.compiled)
         self.assertEqual(payload["pinned_commit"], PINNED_COMMIT)
-        self.assertEqual(payload["pinned_commit"], "78b7ebb9f8c26b754e5571248d014be305fbcf40")
+        self.assertEqual(payload["pinned_commit"], "8a2f4d5bce7e23d0308246ed45ed4d58752984ac")
         self.assertNotEqual(CITED_MANIFESTO_COMMIT, PINNED_COMMIT)
         self.assertNotIn(CITED_MANIFESTO_COMMIT, payload["pinned_commit"])
         self.assertEqual(COUNTERPART_PR_STATE, "OPEN")
         self.assertEqual(COUNTERPART_HEAD, PINNED_COMMIT)
-        self.assertEqual(COUNTERPART_HEAD, "78b7ebb9f8c26b754e5571248d014be305fbcf40")
+        self.assertEqual(COUNTERPART_HEAD, "8a2f4d5bce7e23d0308246ed45ed4d58752984ac")
         self.assertNotIn("counterpart_head", payload)
         self.assertEqual(self.compiled.config_sha256, PINNED_CONFIG_SHA256)
+        self.assertNotEqual(PINNED_SHA256, "3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023")
 
     def test_dirty_bytes_are_rejected(self) -> None:
         dirty = self.raw + b"\n"
@@ -91,6 +92,23 @@ class GeneratePinnedManifestTests(unittest.TestCase):
             self.assertTrue(rule.target_url.startswith("https://confenge.com.br/"))
             self.assertNotEqual(rule.target_url, "https://confenge.com.br/")
             self.assertNotIn("/consultoria-b2g", rule.target_url)
+
+    def test_payment_delay_ready_row_uses_remapped_target(self) -> None:
+        path = "/blog/orgaos-risco-atraso-pagamento-licitacao"
+        self.assertIn(path, self.compiled.by_path)
+        rule = self.compiled.by_path[path]
+        remapped = "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/"
+        self.assertEqual(rule.target_url, remapped)
+        self.assertEqual(rule.expected_canonical, remapped)
+        self.assertNotIn("/atrasos-prorrogacao-obras-publicas/", rule.target_url)
+        data = json.loads(self.raw)
+        entry = next(
+            item
+            for item in data["entries"]
+            if item["legacy_url"].endswith(path)
+        )
+        self.assertEqual(entry["target_url"], remapped)
+        self.assertEqual(entry["expected_http"], REDIRECT_STATUS)
 
     def test_no_wildcard_or_home_rule(self) -> None:
         for rule in self.compiled.redirects:
