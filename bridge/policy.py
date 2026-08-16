@@ -30,6 +30,7 @@ class CompiledMap:
     persist: tuple[str, ...]
     redirects: tuple[RedirectRule, ...]
     by_path: Mapping[str, RedirectRule] = field(repr=False)
+    holds: tuple[str, ...] = ()
     default_status: int = 410
     observation_window_days: int = 28
     owner: str = "SmartLic#2115"
@@ -98,6 +99,14 @@ def resolve(
         )
 
     norm = normalize_path(path)
+    if norm in set(compiled.holds):
+        return Decision(
+            status=compiled.default_status,
+            location=None,
+            rule_id="hold-fail-closed",
+            family="hold",
+            hops=0,
+        )
     rule = compiled.by_path.get(norm)
     if rule is None:
         return Decision(

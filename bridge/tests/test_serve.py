@@ -100,6 +100,19 @@ class ServeLaunchTests(unittest.TestCase):
                 status, location, _cfg = self._hit(18767, path)
                 self.assertEqual(status, 410, path)
                 self.assertIsNone(location, path)
+            hold_status, hold_loc, _cfg = self._hit(
+                18767, "/blog/como-consultar-contratos-publicos-pncp"
+            )
+            self.assertEqual(hold_status, 410)
+            self.assertIsNone(hold_loc)
+            ready_path = self.compiled.redirects[0].path
+            pii = ready_path + "?email=ada@example.com&cnpj=00000000000191&token=secret"
+            pii_status, pii_loc, _cfg = self._hit(18767, pii)
+            self.assertEqual(pii_status, 301)
+            self.assertIsNotNone(pii_loc)
+            self.assertNotIn("email=", pii_loc)
+            self.assertNotIn("cnpj=", pii_loc)
+            self.assertNotIn("token=", pii_loc)
             health = self._hit_body(18767, "/__bridge/health")
             self.assertEqual(health["status"], "ok")
             self.assertEqual(health["manifesto_sha256"], PINNED_SHA256)

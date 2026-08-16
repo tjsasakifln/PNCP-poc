@@ -6,7 +6,7 @@ Minimum path. No FastAPI, Next.js, Redis, ARQ, Supabase, or Railway product runt
 Internet :80/:443
     → Caddy (ACME SAN: smartlic.tech + www.smartlic.tech)
         → 127.0.0.1:8765  python3 -m bridge.serve
-            → 11 URL-specific 301  |  default 410
+            → 11 URL-specific 301  |  HOLD/RETIRE/unmapped 410
 ```
 
 ## Host
@@ -18,8 +18,8 @@ Any public IPv4 the owner names as `BRIDGE_PUBLIC_IPV4`. This environment did no
 1. Create users/dirs. Caddy's distro package already has `caddy`. The bridge unit uses `DynamicUser=yes`.
 2. Copy the repo's `bridge/` tree to `/opt/smartlic-bridge/bridge` (so `python3 -m bridge.serve` works with `PYTHONPATH=/opt/smartlic-bridge`).
 3. `python3 -m bridge.generate --check` on the host. Confirm `GENERATE_OK` and hashes:
-   - manifesto `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d`
-   - config `c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68`
+   - manifesto `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023`
+   - config `f535ad0ae64c8b6b69fdd1699fa940536d9182f75af1c09aaf97e7edaa34138d`
 4. `install -d -o caddy -g caddy -m 0700 /var/lib/caddy`
 5. `install -m 0644 bridge/generated/Caddyfile /etc/caddy/Caddyfile`
 6. `install -d -m 0750 /etc/smartlic-bridge && cp bridge/deploy/env.example /etc/smartlic-bridge/env` and fill `SMARTLIC_ACME_EMAIL` + `BRIDGE_PUBLIC_IPV4`.

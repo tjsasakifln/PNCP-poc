@@ -81,6 +81,26 @@ class PolicyRetireAndNegativesTests(unittest.TestCase):
         self.assertEqual(decision.status, DEFAULT_STATUS)
         self.assertIsNone(decision.location)
 
+    def test_hold_paths_are_fail_closed_410(self) -> None:
+        self.assertGreaterEqual(len(self.compiled.holds), 1)
+        for path in self.compiled.holds:
+            decision = resolve(self.compiled, path, "", "smartlic.tech")
+            self.assertEqual(decision.status, DEFAULT_STATUS, path)
+            self.assertIsNone(decision.location, path)
+            self.assertEqual(decision.rule_id, "hold-fail-closed", path)
+            self.assertEqual(decision.hops, 0, path)
+
+    def test_pncp_hold_is_not_a_home_redirect(self) -> None:
+        decision = resolve(
+            self.compiled,
+            "/blog/como-consultar-contratos-publicos-pncp",
+            "",
+            "smartlic.tech",
+        )
+        self.assertEqual(decision.status, 410)
+        self.assertIsNone(decision.location)
+        self.assertEqual(decision.rule_id, "hold-fail-closed")
+
 
 class QueryAllowlistTests(unittest.TestCase):
     @classmethod

@@ -2,13 +2,13 @@
 
 **Status:** engineering `CUTOVER_READY`; live DNS/TLS/ACME **BLOCKED**. See `CUTOVER_READINESS.md`.
 
-This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY vs BLOCKED record. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg#68 remains OPEN at HEAD `13a27abd` as a human accept of the 11-row set; this bridge consumes only the published pin and does not rewrite it.
+This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY vs BLOCKED record. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg `feat/smartlic-equity-migration-62` is the counterpart pin; this bridge consumes only that hash.
 
 | Gate | Value |
 |---|---|
-| Pin | `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d` (map embeds `3f112bfbd9e6b042691e1c09812af00f42735adb`; same bytes at `dad3414c` on #68 HEAD `13a27abd`) |
-| Config hash | `c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68` |
-| Execute set | exactly 11 URL-specific 301s + default 410 |
+| Pin | `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023` (map embeds `78b7ebb9f8c26b754e5571248d014be305fbcf40`) |
+| Config hash | `f535ad0ae64c8b6b69fdd1699fa940536d9182f75af1c09aaf97e7edaa34138d` |
+| Execute set | exactly 11 URL-specific 301s + 54 HOLD fail-closed + default 410 |
 | TLS path | Caddy ACME, one SAN cert `smartlic.tech` + `www.smartlic.tech` |
 | Proxy | `reverse_proxy 127.0.0.1:8765` only (`python3 -m bridge.serve`) |
 | Target host | `https://confenge.com.br` (Netlify). Ready targets probed HTTPS 200 |

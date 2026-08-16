@@ -19,17 +19,24 @@ from bridge.errors import ManifestError
 from bridge.pins import (
     BRIDGE_OWNER,
     DEFAULT_STATUS,
+    FAIL_CLOSED_DECISIONS,
     FORBIDDEN_GENERIC_TARGETS,
     FORBIDDEN_TARGET_PATHS,
+    HOLD_DECISIONS,
     OBSERVATION_WINDOW_DAYS,
     PINNED_CANONICAL_HOST,
     PINNED_COMMIT,
+    PINNED_HOLD_COUNT,
+    PINNED_IGNORE_COUNT,
+    PINNED_LEGAL_COUNT,
     PINNED_LEGACY_HOST,
+    PINNED_MIGRATE_COUNT,
     PINNED_REDIRECT_COUNT,
     PINNED_RETIRE_COUNT,
     PINNED_SCHEMA,
     PINNED_SHA256,
     PINNED_VERSION,
+    REDIRECT_DECISIONS,
     REDIRECT_STATUS,
     TARGET_HOSTNAME,
 )
@@ -96,7 +103,7 @@ def validate_schema(data: Any) -> None:
     entries = data.get("entries")
     _require(isinstance(meta, dict), "meta ausente ou inválido")
     _require(isinstance(entries, list), "entries ausente ou inválido")
-    _require(meta.get("version") == PINNED_VERSION, "meta.version ausente ou diferente de v1")
+    _require(meta.get("version") == PINNED_VERSION, "meta.version ausente ou diferente de v2")
     _require(meta.get("schema") == PINNED_SCHEMA, "meta.schema ausente ou diferente do pin")
     _require(
         meta.get("canonical_public_host") == PINNED_CANONICAL_HOST,
@@ -106,11 +113,23 @@ def validate_schema(data: Any) -> None:
         meta.get("legacy_host") == PINNED_LEGACY_HOST,
         "legacy_host deve ser https://smartlic.tech",
     )
-    _require(len(entries) == PINNED_REDIRECT_COUNT + PINNED_RETIRE_COUNT, "contagem total de entries diverge do pin")
+    pinned_total = (
+        PINNED_REDIRECT_COUNT
+        + PINNED_RETIRE_COUNT
+        + PINNED_HOLD_COUNT
+        + PINNED_MIGRATE_COUNT
+        + PINNED_IGNORE_COUNT
+        + PINNED_LEGAL_COUNT
+    )
+    _require(len(entries) == pinned_total, "contagem total de entries diverge do pin")
 
     seen_legacy: set[str] = set()
     redirect_n = 0
     retire_n = 0
+    hold_n = 0
+    migrate_n = 0
+    ignore_n = 0
+    legal_n = 0
     persist_sets: set[tuple[str, ...]] = set()
 
     for index, entry in enumerate(entries):
@@ -146,16 +165,21 @@ def validate_schema(data: Any) -> None:
         _require(isinstance(qrule, dict), f"query_string_rule inválido em {legacy}")
         persist = tuple(qrule.get("persist") or ())
 
-        if decision == "REDIRECT":
-            redirect_n += 1
+        if decision in REDIRECT_DECISIONS:
+            if decision == "MIGRATE":
+                migrate_n += 1
+            else:
+                redirect_n += 1
             for field in REQUIRED_REDIRECT_FIELDS:
-                _require(entry.get(field), f"REDIRECT {legacy} sem {field}")
-            _require(entry.get("status") == "ready", f"REDIRECT {legacy} não está ready")
-            _require(entry.get("expected_http") == REDIRECT_STATUS, f"REDIRECT {legacy} expected_http != 301")
-            _require(persist, f"REDIRECT {legacy} sem allowlist de query")
+                _require(entry.get(field), f"{decision} {legacy} sem {field}")
+            _require(entry.get("status") == "ready", f"{decision} {legacy} não está ready")
+            _require(entry.get("expected_http") == REDIRECT_STATUS, f"{decision} {legacy} expected_http != 301")
+            _require(persist, f"{decision} {legacy} sem allowlist de query")
             persist_sets.add(persist)
-            _assert_safe_target(entry["target_url"], legacy)
-            _assert_safe_target(entry["expected_canonical"], legacy)
+            target = entry.get("target_url") or entry.get("target")
+            canon = entry.get("expected_canonical") or entry.get("destination_canonical")
+            _assert_safe_target(target, legacy)
+            _assert_safe_target(canon, legacy)
             monitoring = entry["monitoring"]
             _require(isinstance(monitoring, dict), f"monitoring inválido em {legacy}")
             _require(
@@ -165,17 +189,36 @@ def validate_schema(data: Any) -> None:
             _require(entry.get("bridge_owner"), f"bridge_owner ausente em {legacy}")
             _require(entry.get("rollback"), f"rollback ausente em {legacy}")
             _require(entry.get("removal_trigger"), f"removal_trigger ausente em {legacy}")
-        elif decision == "RETIRE":
-            retire_n += 1
-            _require(entry.get("status") == "decided", f"RETIRE {legacy} status != decided")
-            _require(entry.get("expected_http") == DEFAULT_STATUS, f"RETIRE {legacy} expected_http != 410")
-            target = entry.get("target_url")
-            _require(target in (None, ""), f"RETIRE {legacy} não pode ter target_url ({target!r})")
+        elif decision in FAIL_CLOSED_DECISIONS:
+            target = entry.get("target_url") if "target_url" in entry else entry.get("target")
+            _require(target in (None, ""), f"{decision} {legacy} não pode ter target ({target!r})")
+            _require(entry.get("expected_http") == DEFAULT_STATUS, f"{decision} {legacy} expected_http != 410")
+            if decision in HOLD_DECISIONS:
+                hold_n += 1
+                _require(entry.get("status") == "hold", f"HOLD {legacy} status != hold")
+                _require((entry.get("skip_reason") or "").strip(), f"HOLD {legacy} sem skip_reason")
+                intended = (entry.get("intended_future_surface") or "").strip()
+                _require(intended, f"HOLD {legacy} sem intended_future_surface")
+                _require(
+                    not intended.startswith("https://"),
+                    f"HOLD {legacy} não pode pinhar URL viva em intended_future_surface",
+                )
+            elif decision in {"IGNORE_NONCANONICAL"}:
+                ignore_n += 1
+            elif decision in {"LEGAL_SECURITY_HOLD"}:
+                legal_n += 1
+            else:
+                retire_n += 1
+                _require(entry.get("status") == "decided", f"RETIRE {legacy} status != decided")
         else:
             raise ManifestError(f"decisão desconhecida em {legacy}: {decision}")
 
     _require(redirect_n == PINNED_REDIRECT_COUNT, f"REDIRECT ready={redirect_n}, pin={PINNED_REDIRECT_COUNT}")
     _require(retire_n == PINNED_RETIRE_COUNT, f"RETIRE={retire_n}, pin={PINNED_RETIRE_COUNT}")
+    _require(hold_n == PINNED_HOLD_COUNT, f"HOLD={hold_n}, pin={PINNED_HOLD_COUNT}")
+    _require(migrate_n == PINNED_MIGRATE_COUNT, f"MIGRATE={migrate_n}, pin={PINNED_MIGRATE_COUNT}")
+    _require(ignore_n == PINNED_IGNORE_COUNT, f"IGNORE={ignore_n}, pin={PINNED_IGNORE_COUNT}")
+    _require(legal_n == PINNED_LEGAL_COUNT, f"LEGAL={legal_n}, pin={PINNED_LEGAL_COUNT}")
     _require(len(persist_sets) == 1, "allowlists de query divergem entre REDIRECT ready")
 
 
@@ -198,19 +241,26 @@ def _assert_safe_target(target: str, legacy: str) -> None:
 def compile_execute_set(data: dict[str, Any], manifesto_sha256: str) -> CompiledMap:
     persist: tuple[str, ...] = ()
     rules: list[RedirectRule] = []
+    holds: list[str] = []
     removal = ""
     for entry in data["entries"]:
-        if entry["decision"] != "REDIRECT":
+        decision = entry["decision"]
+        legacy_path = normalize_path(urlsplit(entry["legacy_url"]).path)
+        if decision in HOLD_DECISIONS:
+            holds.append(legacy_path)
+            continue
+        if decision not in REDIRECT_DECISIONS:
             continue
         qrule = entry["query_string_rule"]
         persist = tuple(qrule["persist"])
         removal = str(entry.get("removal_trigger") or removal)
-        legacy_path = normalize_path(urlsplit(entry["legacy_url"]).path)
+        target = entry.get("target_url") or entry.get("target")
+        canon = entry.get("expected_canonical") or entry.get("destination_canonical") or target
         rules.append(
             RedirectRule(
                 path=legacy_path,
-                target_url=entry["target_url"],
-                expected_canonical=entry["expected_canonical"],
+                target_url=target,
+                expected_canonical=canon,
                 family=str(entry.get("family") or "redirect"),
                 owner=str(entry.get("bridge_owner") or BRIDGE_OWNER),
                 persist=persist,
@@ -218,7 +268,9 @@ def compile_execute_set(data: dict[str, Any], manifesto_sha256: str) -> Compiled
             )
         )
     rules.sort(key=lambda r: r.path)
+    holds = sorted(set(holds))
     _require(len(rules) == PINNED_REDIRECT_COUNT, "compile_execute_set: contagem != pin")
+    _require(len(holds) == PINNED_HOLD_COUNT, "compile_execute_set: HOLD contagem != pin")
     by_path = {rule.path: rule for rule in rules}
     compiled = CompiledMap(
         manifesto_sha256=manifesto_sha256,
@@ -226,6 +278,7 @@ def compile_execute_set(data: dict[str, Any], manifesto_sha256: str) -> Compiled
         persist=persist,
         redirects=tuple(rules),
         by_path=by_path,
+        holds=tuple(holds),
         default_status=DEFAULT_STATUS,
         observation_window_days=OBSERVATION_WINDOW_DAYS,
         owner=BRIDGE_OWNER,
@@ -240,6 +293,7 @@ def compile_execute_set(data: dict[str, Any], manifesto_sha256: str) -> Compiled
         persist=compiled.persist,
         redirects=compiled.redirects,
         by_path=compiled.by_path,
+        holds=compiled.holds,
         default_status=compiled.default_status,
         observation_window_days=compiled.observation_window_days,
         owner=compiled.owner,
@@ -258,6 +312,7 @@ def _map_payload(compiled: CompiledMap) -> dict[str, Any]:
         "expiry_review": compiled.expiry_review,
         "removal_trigger": compiled.removal_trigger,
         "persist": list(compiled.persist),
+        "holds": list(compiled.holds),
         "redirects": [
             {
                 "path": rule.path,
@@ -301,6 +356,7 @@ def compiled_from_map_file(path: Path) -> CompiledMap:
         persist=tuple(data.get("persist") or ()),
         redirects=tuple(rules),
         by_path=by_path,
+        holds=tuple(data.get("holds") or ()),
         default_status=int(data.get("default_status") or DEFAULT_STATUS),
         observation_window_days=int(data.get("observation_window_days") or OBSERVATION_WINDOW_DAYS),
         owner=str(data.get("owner") or BRIDGE_OWNER),
@@ -320,6 +376,7 @@ def empty_retire_map(manifesto_sha256: str = PINNED_SHA256) -> CompiledMap:
         "expiry_review": "pre-bridge",
         "removal_trigger": "pre-bridge — no 301s active",
         "persist": [],
+        "holds": [],
         "redirects": [],
     }
     digest = sha256_bytes(_canonical_json(payload))

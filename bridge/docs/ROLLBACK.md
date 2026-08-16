@@ -4,7 +4,7 @@ Restore the last known bridge map. Do **not** start FastAPI, Next.js, Redis, ARQ
 
 ## Current last-known state
 
-`bridge/generated/previous/bridge-map.json` is the **pre-bridge** map: zero 301s, default 410. That is the honest state before the first 301 of hash `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d`.
+`bridge/generated/previous/bridge-map.json` is the **pre-bridge** map: zero 301s, default 410. That is the honest state before the first 301 of hash `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023`.
 
 ## Command
 
