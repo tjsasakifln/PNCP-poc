@@ -26,6 +26,8 @@ from bridge.policy import CompiledMap, RedirectRule
 from bridge.pins import (
     CITED_MANIFESTO_COMMIT,
     COUNTERPART_HEAD,
+    COUNTERPART_MERGE_COMMIT,
+    COUNTERPART_MERGED_AT,
     COUNTERPART_PR_STATE,
     PINNED_COMMIT,
     PINNED_CONFIG_SHA256,
@@ -55,10 +57,17 @@ class GeneratePinnedManifestTests(unittest.TestCase):
         self.assertEqual(payload["pinned_commit"], "8a2f4d5bce7e23d0308246ed45ed4d58752984ac")
         self.assertNotEqual(CITED_MANIFESTO_COMMIT, PINNED_COMMIT)
         self.assertNotIn(CITED_MANIFESTO_COMMIT, payload["pinned_commit"])
-        self.assertEqual(COUNTERPART_PR_STATE, "OPEN")
+        self.assertEqual(COUNTERPART_PR_STATE, "MERGED")
+        self.assertEqual(COUNTERPART_MERGED_AT, "2026-08-16T23:20:14Z")
         self.assertEqual(COUNTERPART_HEAD, PINNED_COMMIT)
         self.assertEqual(COUNTERPART_HEAD, "8a2f4d5bce7e23d0308246ed45ed4d58752984ac")
+        self.assertEqual(
+            COUNTERPART_MERGE_COMMIT, "bcc3fd6e19baf495962abd6c8edf33a2cb3304c7"
+        )
+        self.assertNotEqual(COUNTERPART_MERGE_COMMIT, PINNED_COMMIT)
         self.assertNotIn("counterpart_head", payload)
+        self.assertNotIn("counterpart_merge_commit", payload)
+        self.assertNotIn(COUNTERPART_MERGE_COMMIT, json.dumps(payload))
         self.assertEqual(self.compiled.config_sha256, PINNED_CONFIG_SHA256)
         self.assertNotEqual(PINNED_SHA256, "3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023")
 

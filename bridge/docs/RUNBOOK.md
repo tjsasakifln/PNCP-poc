@@ -4,7 +4,7 @@
 **Cost:** UNKNOWN until an invoice exists. Expected: DNS + TLS + a static 301/410 edge (cents to low dollars). Railway app cost should go to zero — do not keep the failed app as the bridge.  
 **Manifesto SHA-256:** `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9`  
 **web-cfg commit (map pin):** `8a2f4d5bce7e23d0308246ed45ed4d58752984ac`  
-**web-cfg counterpart:** **OPEN** PR #97 on `feat/smartlic-equity-migration-62`  
+**web-cfg counterpart:** **MERGED** PR #97 (`bcc3fd6e`) on web-cfg **main**  
 **Config hash:** `fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4`  
 **Supersedes:** `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023` / `78b7ebb9` (payment-delay remapped onto `/conteudos/atraso-pagamento-contrato-publico-suspender/`)
 

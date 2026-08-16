@@ -1,12 +1,12 @@
 # Status — SmartLic equity migration (web-cfg#62)
 
-**Verdict:** `READY_BEHIND_HUMAN_GATE`
+**Verdict:** `PIN_SYNCED_CUTOVER_READY`
 
 | Field | Value |
 |---|---|
 | Date | 2026-08-16 |
 | Inventory SHA-256 | `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9` |
-| web-cfg commit | `8a2f4d5bce7e23d0308246ed45ed4d58752984ac` (PR #97 OPEN) |
+| web-cfg commit | `8a2f4d5bce7e23d0308246ed45ed4d58752984ac` (PR #97 MERGED `bcc3fd6e` on main) |
 | Config hash | `fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4` |
 | Supersedes | `3c5a5b7a…` / `78b7ebb9` (payment-delay remapped) |
 | Ready REDIRECT_301 | 11 |
@@ -31,8 +31,8 @@ The execute set of 11 URL-specific 301s is decided and tested. Unready equivalen
 
 ## Integration order
 
-1. Land web-cfg pin (this inventory hash) on `feat/smartlic-equity-migration-62`.
-2. SmartLic vendors the same bytes and re-pins `bridge/pins.py`.
-3. Human accepts the 11-row execute set.
+1. Land web-cfg pin (this inventory hash) on **main** — done: PR #97 MERGED `bcc3fd6e`.
+2. SmartLic vendors the same bytes and re-pins `bridge/pins.py` — this consume.
+3. Human accept of the 11-row execute set — satisfied by merging #97.
 4. Owner applies DNS/TLS using `SmartLic/bridge/docs/CUTOVER.md` — not from this checkout.
 5. 28-day observation. Then #2111 archive gate. Do not close #62/#2115 before that.

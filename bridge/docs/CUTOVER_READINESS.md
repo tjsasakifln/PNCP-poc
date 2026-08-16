@@ -2,23 +2,24 @@
 
 **Recorded:** 2026-08-16  
 **This document does not claim live cutover completed.**  
-Engineering gates can be `CUTOVER_READY` while live DNS/TLS remains **BLOCKED**.
+Engineering gates can be `PIN_SYNCED_CUTOVER_READY` while live DNS/TLS remains **BLOCKED**.
 
-**Goal verdict:** `READY_BEHIND_HUMAN_GATE`
+**Goal verdict:** `PIN_SYNCED_CUTOVER_READY`
 
 | Lane | Verdict |
 |---|---|
 | In-repo bridge (hash pin, 11 301s, 54 HOLD fail-closed, default 410, tests, deploy kit) | **READY** |
+| Pin sync vs web-cfg **main** (`9e5667c1…` after WEB-017 / #97 MERGED) | **READY** |
 | Live DNS / Cloudflare / TLS / ACME / first production 301 | **BLOCKED** |
-| web-cfg#62 human accept + merge | **BLOCKED** (PR OPEN) |
+| web-cfg#62 parent issue | **OPEN** (PR #97 MERGED; issue stays open until live observation) |
 | #2115 issue DoD (verified + observed + removed) | **BLOCKED** |
 
 ## READY
 
-These are closed on PR #2135 HEAD after the web-cfg#97 re-pin. They are not production proof.
+These are closed on PR #2135 HEAD after consuming web-cfg **main**. They are not production proof.
 
 1. **Approved execute set** — exactly 11 URL-specific REDIRECT_301 rows, all `status=ready`, all `expected_http=301`. 1190 RETIRE_410 and 54 HOLD_TARGET_NOT_READY rows stay default 410 (HOLD has no Location). No `/*` → CONFENGE home, no `/consultoria-b2g/`. Payment-delay ready row is `/blog/orgaos-risco-atraso-pagamento-licitacao` → `/conteudos/atraso-pagamento-contrato-publico-suspender/` (not `/atrasos-prorrogacao-obras-publicas/`).
-2. **Hash pin** — inventory SHA-256 `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9`. Config hash `fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4`. Map embeds web-cfg commit `8a2f4d5bce7e23d0308246ed45ed4d58752984ac`. Supersedes `3c5a5b7a…` / `78b7ebb9` (not mixed).
+2. **Hash pin** — inventory SHA-256 `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9`. Config hash `fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4`. Map embeds web-cfg inventory commit `8a2f4d5bce7e23d0308246ed45ed4d58752984ac`. Counterpart merge on main: `bcc3fd6e19baf495962abd6c8edf33a2cb3304c7` (PR #97 MERGED). Supersedes `3c5a5b7a…` / `78b7ebb9` (not mixed).
 3. **Default 410** — unmapped paths, `/`, `/login`, `/signup`, `/planos`, `/pricing`, `/webhooks/*`, `/v1/*` return 410 with no `Location`.
 4. **No wildcard / no chain** — validator rejects `*` and generic targets. Caddy `auto_https disable_redirects` so HTTP stays one 301 hop. Policy `hops=1` on ready rows.
 5. **Query allowlist + PII stripped** — persist list from the manifesto (`utm_*`, `jornada`, `origem`, `route_family`, `cta_id`, `asset_id`, `correlation_id`, `tema`). `email` / `phone` / `name` / `cnpj` / `cpf` / `token` dropped. Caddy logs strip `?.*`.
@@ -27,7 +28,7 @@ These are closed on PR #2135 HEAD after the web-cfg#97 re-pin. They are not prod
 8. **Rollback to 410-only** — `python3 -m bridge.generate --rollback` restores `generated/previous/` (zero 301s). Does not start SmartLic.
 9. **No SmartLic runtime** — stdlib `python3 -m bridge.serve` only. No FastAPI / Next.js / Redis / ARQ / Supabase / Stripe / `deploy/netcup` product boot.
 10. **11/11 CONFENGE targets re-proved live** — HTTPS GET ×2 on 2026-08-15: HTTP 200, host `confenge.com.br`, hops=0, no SmartLic brand, no soft-404. Runs agreed.
-11. **Shipped tests + real entry** — `python3 -m bridge.generate --check` → `GENERATE_OK`. `python3 -m unittest discover -s bridge/tests -q` → ≥48 OK ×2. `python3 -m bridge.serve` launched twice on loopback: all 11 ready 301 + exact Location (payment-delay remapped); all 54 HOLD + `/` + `/login` + unmapped 410, no Location; config hash identical.
+11. **Shipped tests + real entry** — `python3 -m bridge.generate --check` → `GENERATE_OK`. `python3 -m unittest discover -s bridge/tests -q` ×2. `python3 -m bridge.serve` launched twice on loopback: all 11 ready 301 + exact Location (payment-delay remapped); all 54 HOLD + `/` + `/login` + unmapped 410, no Location; config hash identical.
 
 ## BLOCKED
 
@@ -36,7 +37,7 @@ Do not apply DNS, Cloudflare, TLS, or ACME until a human owner fills the inputs 
 1. **`$BRIDGE_PUBLIC_IPV4`** — no authorized public IPv4 exists in discovery. Apex still `69.46.46.88` (Railway).
 2. **`$SMARTLIC_ACME_EMAIL`** — Let's Encrypt account contact. Empty in `bridge/deploy/env.example`. Not a secret, still owner-supplied.
 3. **Cloudflare apply authorization** — NS remain `jermaine` / `ryleigh`. Token / zone id never committed. Owner must apply the records in `CUTOVER.md`.
-4. **web-cfg#62 counterpart** — OPEN as PR #97 on `feat/smartlic-equity-migration-62` at `8a2f4d5b`. Human has not accepted the 11-row set. Pin bytes are frozen to this hash. Do not invent a new execute set if that PR later changes the hash.
+4. **web-cfg#62 parent** — remains OPEN. PR #97 is MERGED; the pin on main is `9e5667c1…`. Do not invent a new execute set if later main commits change the hash — fail closed as `BLOCKED_ON_WEB_PIN`.
 5. **Live TLS covering apex+www** — 2026-08-15 read-only: apex cert SAN `smartlic.tech` only (expires 2026-09-16); `www.smartlic.tech` TLS hostname mismatch (`*.up.railway.app`). HTTP apex is Railway fallback **404** (`x-railway-fallback: true`).
 6. **Observation window** — 28 days after the first production 301 of this hash. **Not started.**
 7. **#2115 DoD** — “verified, observed and removed.” Observation and removal cannot happen without the forbidden live DNS step.
@@ -55,12 +56,13 @@ Also required before DNS:
 
 | Input | Why |
 |---|---|
-| Human accept of the 11-row set on web-cfg#97 | Counterpart remains the authority for the execute set |
 | Cloudflare API token + zone id (local only) | To PATCH apex A and replace www CNAME |
 | Confirmation that `:80` on `$BRIDGE_PUBLIC_IPV4` reaches Caddy | ACME HTTP-01 |
 | Explicit “apply DNS now” from the founder / owner | This repository must not mutate live DNS |
 
 Optional (not blocking engineering, blocking GSC close-out later): Search Console Change-of-Address — **HUMAN ACTION**, not started, not this PR.
+
+web-cfg#97 MERGED is no longer a human input. The 11-row set including remapped payment-delay is the pin on main.
 
 ## Exact rollback
 
@@ -96,4 +98,4 @@ Do not treat these as a product runtime. They are the rollback target.
 
 ## Next action (single)
 
-Owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, installs `bridge/deploy/`, accepts web-cfg#97, then applies the Cloudflare records in `CUTOVER.md`. Not before. Do not expand into #2111 removals from this file.
+Owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, installs `bridge/deploy/`, then applies the Cloudflare records in `CUTOVER.md`. Not before. Do not expand into #2111 removals from this file.

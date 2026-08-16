@@ -87,7 +87,8 @@ class DeployKitTests(unittest.TestCase):
         self.assertIn("does not claim live cutover completed", text.lower())
         self.assertNotIn("dns applied", text.lower())
         self.assertIn("8a2f4d5bce7e23d0308246ed45ed4d58752984ac", text)
-        self.assertRegex(text, r"\*\*OPEN\*\*|PR OPEN|OPEN on")
+        self.assertIn("PIN_SYNCED_CUTOVER_READY", text)
+        self.assertRegex(text, r"#97.*MERGED|PR #97.*MERGED|MERGED.*#97")
 
     def test_unsafe_unit_fails_closed(self) -> None:
         with self.assertRaises(ManifestError):

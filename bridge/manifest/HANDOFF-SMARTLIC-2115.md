@@ -3,7 +3,7 @@
 **Pinned inventory:** `data/migrations/smartlic-url-map/inventory.v2.json`  
 **Byte-identical projection:** `data/migration/smartlic-confenge/manifesto.v1.json`  
 **SHA-256:** `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9`  
-**web-cfg commit:** `8a2f4d5bce7e23d0308246ed45ed4d58752984ac` (PR #97 OPEN)  
+**web-cfg commit:** `8a2f4d5bce7e23d0308246ed45ed4d58752984ac` (PR #97 MERGED `bcc3fd6e` on main)  
 **Version:** `v2`  
 **Schema:** `smartlic-url-map-v2`  
 **web-cfg issue:** https://github.com/tjsasakifln/web-cfg/issues/62  

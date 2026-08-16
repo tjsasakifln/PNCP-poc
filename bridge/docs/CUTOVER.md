@@ -1,12 +1,12 @@
 # CUTOVER — SmartLic#2115 redirect bridge
 
-**Status:** engineering `CUTOVER_READY`; live DNS/TLS/ACME **BLOCKED**. See `CUTOVER_READINESS.md`.
+**Status:** engineering `PIN_SYNCED_CUTOVER_READY` (`CUTOVER_READY` behind live gates); live DNS/TLS/ACME **BLOCKED**. See `CUTOVER_READINESS.md`.
 
-This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY vs BLOCKED record. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg `feat/smartlic-equity-migration-62` is the counterpart pin; this bridge consumes only that hash.
+This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY vs BLOCKED record. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg **main** (PR #97 MERGED at `bcc3fd6e`) is the counterpart pin; this bridge consumes only that hash.
 
 | Gate | Value |
 |---|---|
-| Pin | `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9` (map embeds `8a2f4d5bce7e23d0308246ed45ed4d58752984ac`) |
+| Pin | `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9` (map embeds `8a2f4d5bce7e23d0308246ed45ed4d58752984ac`; counterpart merge `bcc3fd6e`) |
 | Config hash | `fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4` |
 | Execute set | exactly 11 URL-specific 301s + 54 HOLD fail-closed + default 410 |
 | TLS path | Caddy ACME, one SAN cert `smartlic.tech` + `www.smartlic.tech` |
@@ -144,12 +144,12 @@ The 28-day observation window starts at the first production 301 of this hash �
 
 ## Close-out
 
-1. **PR/commits:** follow-up on #2135 (`chore/redirect-bridge-2115`) — consume web-cfg#97 pin `9e5667c1…` / `8a2f4d5b`. Do not mix with superseded `3c5a5b7a…` / `78b7ebb9`.
+1. **PR/commits:** follow-up on #2135 (`chore/redirect-bridge-2115`) — consume web-cfg **main** pin `9e5667c1…` / inventory commit `8a2f4d5b` after #97 MERGED (`bcc3fd6e`). Do not mix with superseded `3c5a5b7a…` / `78b7ebb9`.
 2. **Baseline:** table above (Cloudflare; apex `69.46.46.88`; www CNAME → `69.46.46.117`).
 3. **Architecture/config:** Caddy → `127.0.0.1:8765`; generated Caddyfile + `bridge/deploy/*`.
 4. **TLS/DNS/rollback:** this file.
 5. **Probes:** unit tests + `--probe-targets` + serve ×2.
 6. **Security:** non-root, firewall, no-PII logs, no keys in Git.
-7. **Status:** engineering `CUTOVER_READY`; live cutover **BLOCKED** (`CUTOVER_READINESS.md`).
-8. **Remaining human action:** owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, drops the kit, accepts web-cfg#97 (11-row set including remapped payment-delay), applies the Cloudflare records above. `@devops` push of this branch if not yet on origin.
+7. **Status:** engineering `PIN_SYNCED_CUTOVER_READY`; live cutover **BLOCKED** (`CUTOVER_READINESS.md`).
+8. **Remaining human action:** owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, drops the kit, applies the Cloudflare records above. web-cfg#97 is already MERGED. `@devops` push of this branch if not yet on origin.
 9. **Next action:** owner apply. Then first production 301 starts the 28-day window. Do not expand into #2111 removals.
