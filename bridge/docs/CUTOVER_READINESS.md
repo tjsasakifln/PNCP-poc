@@ -6,6 +6,10 @@ Engineering gates can be `PIN_SYNCED_CUTOVER_READY` while live DNS/TLS remains *
 
 **Goal verdict:** `PIN_SYNCED_CUTOVER_READY`
 
+## Preflight hard gate
+
+Owner must run `python3 -m bridge.preflight` immediately before apply. Any `PREFLIGHT_BLOCKED` names the exact field and next action and refuses DNS/TLS apply. Preflight does not mutate DNS/TLS and does not print secrets. Local/staging black-box + `python3 -m bridge.generate --rollback` are required steps of that command. `first-production-301` stays unobserved until a real post-apply probe of apex/www returns 301 + pinned Location + matching config hash.
+
 | Lane | Verdict |
 |---|---|
 | In-repo bridge (hash pin, 11 301s, 54 HOLD fail-closed, default 410, tests, deploy kit) | **READY** |
@@ -98,4 +102,4 @@ Do not treat these as a product runtime. They are the rollback target.
 
 ## Next action (single)
 
-Owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, installs `bridge/deploy/`, then applies the Cloudflare records in `CUTOVER.md`. Not before. Do not expand into #2111 removals from this file.
+Owner runs `python3 -m bridge.preflight`, supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, installs `bridge/deploy/`, then applies the Cloudflare records in `CUTOVER.md` only if preflight is not `BLOCKED`. web-cfg#97 is already MERGED. Not before. Do not expand into #2111 removals from this file.

@@ -87,6 +87,8 @@ def assert_cutover_writeup(text: str) -> None:
     _require("Let's Encrypt" in text or "ACME" in text, "CUTOVER.md sem caminho ACME")
     _require("BEGIN PRIVATE" not in text, "CUTOVER.md não pode conter chave privada")
     _require("CUTOVER_READINESS.md" in text, "CUTOVER.md deve apontar para CUTOVER_READINESS.md")
+    _require("python3 -m bridge.preflight" in text, "CUTOVER.md deve exigir o preflight como hard gate")
+    _require("hard gate" in text.lower(), "CUTOVER.md deve nomear o preflight como hard gate")
 
 
 def assert_cutover_readiness_writeup(text: str) -> None:
@@ -96,6 +98,7 @@ def assert_cutover_readiness_writeup(text: str) -> None:
     _require("BRIDGE_PUBLIC_IPV4" in text, "CUTOVER_READINESS.md sem BRIDGE_PUBLIC_IPV4")
     _require("SMARTLIC_ACME_EMAIL" in text or "ACME email" in text, "CUTOVER_READINESS.md sem ACME email")
     _require("python3 -m bridge.generate --rollback" in text, "CUTOVER_READINESS.md sem rollback 410-only")
+    _require("python3 -m bridge.preflight" in text, "CUTOVER_READINESS.md deve citar o preflight")
     _require("69.46.46.88" in text, "CUTOVER_READINESS.md sem rollback apex A")
     _require("app.smartlic.tech." in text, "CUTOVER_READINESS.md sem rollback www CNAME")
     lowered = text.lower()

@@ -4,6 +4,8 @@
 
 This file is the operator plan. `CUTOVER_READINESS.md` is the unambiguous READY vs BLOCKED record. Live DNS/TLS/ACME on a public IP is **owner-apply only** and is **not** performed from this repository. web-cfg **main** (PR #97 MERGED at `bcc3fd6e`) is the counterpart pin; this bridge consumes only that hash.
 
+**Hard gate before any apply:** `python3 -m bridge.preflight`. `PREFLIGHT_BLOCKED` refuses DNS/TLS apply. The preflight does not mutate DNS/TLS and does not print secrets. It prints the exact apply and rollback commands below without executing them. `first-production-301` stays unobserved until a real post-apply probe of apex/www.
+
 | Gate | Value |
 |---|---|
 | Pin | `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9` (map embeds `8a2f4d5bce7e23d0308246ed45ed4d58752984ac`; counterpart merge `bcc3fd6e`) |
@@ -110,6 +112,14 @@ That restores the 2026-08-14 baseline. It does **not** start SmartLic.
 
 ## Owner-only apply (single remaining human action)
 
+Do not apply until preflight is not `BLOCKED`:
+
+```text
+python3 -m bridge.preflight
+# PREFLIGHT_BLOCKED field=<exact field> action=<exact next action> → stop
+# PREFLIGHT_OK → owner may paste the printed Cloudflare commands locally
+```
+
 Fill `/etc/smartlic-bridge/env`:
 
 ```text
@@ -151,5 +161,5 @@ The 28-day observation window starts at the first production 301 of this hash �
 5. **Probes:** unit tests + `--probe-targets` + serve ×2.
 6. **Security:** non-root, firewall, no-PII logs, no keys in Git.
 7. **Status:** engineering `PIN_SYNCED_CUTOVER_READY`; live cutover **BLOCKED** (`CUTOVER_READINESS.md`).
-8. **Remaining human action:** owner supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL`, drops the kit, applies the Cloudflare records above. web-cfg#97 is already MERGED. `@devops` push of this branch if not yet on origin.
-9. **Next action:** owner apply. Then first production 301 starts the 28-day window. Do not expand into #2111 removals.
+8. **Remaining human action:** owner runs `python3 -m bridge.preflight`, supplies `$BRIDGE_PUBLIC_IPV4` + `$SMARTLIC_ACME_EMAIL` + local Cloudflare creds, drops the kit, applies the Cloudflare records above only if preflight is not `BLOCKED`. web-cfg#97 is already MERGED. `@devops` push of this branch if not yet on origin.
+9. **Next action:** owner apply after a non-BLOCKED preflight. Then a real apex/www probe may record `first-production-301` and start the 28-day window. Do not expand into #2111 removals.

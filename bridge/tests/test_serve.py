@@ -192,6 +192,7 @@ class NoProductRuntimeTests(unittest.TestCase):
             root / "serve.py",
             root / "policy.py",
             root / "pins.py",
+            root / "preflight.py",
             root / "generated" / "Caddyfile",
             root / "deploy" / "smartlic-bridge.service",
             root / "deploy" / "caddy-bridge.service",
