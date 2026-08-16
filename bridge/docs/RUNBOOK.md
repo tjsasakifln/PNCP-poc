@@ -20,8 +20,12 @@ python3 -m bridge.generate --check         # same + hash self-check
 python3 -m bridge.generate --probe-targets # also require live 200 on CONFENGE targets
 python3 -m unittest discover -s bridge/tests -v
 python3 -m bridge.serve --host 127.0.0.1 --port 8765
+python3 -m bridge.serve --host 127.0.0.1 --port 8765 --records-file /tmp/bridge-window.jsonl --export-file /tmp/bridge-window-export.json
+python3 -m bridge.observe --records /tmp/bridge-window.jsonl --export /tmp/bridge-window-export.json
 python3 -m bridge.preflight                # hard gate; BLOCKED refuses owner apply
 ```
+
+Persisted JSONL/export retain **35 days** (28+7) then delete. They are not a warehouse. Loopback records are process-local and do not start the observation window.
 
 `generated/Caddyfile` is the TLS terminator: ACME SAN `smartlic.tech` + `www.smartlic.tech`, reverse-proxy **only** to `127.0.0.1:8765`. It must never proxy `:8000` or `:3000`. Units and firewall: `bridge/deploy/`.
 
@@ -44,6 +48,7 @@ Starts at the first production 301 of this hash. Duration: **28 days**. Not star
 - ≥1 ready row loops or chains.
 - ≥1 ready CONFENGE target 5xx for > 15 minutes.
 - Lead persist path down during the window.
+- Window export `signals.rollback` is true (unexpected 404, 5xx, hops>1, errors, or target-health FAIL). Unexpected 404 is counted and must stay 0 — never rewrite it to a home 301.
 
 Rollback = one command, see `ROLLBACK.md`. It does **not** redeploy SmartLic.
 

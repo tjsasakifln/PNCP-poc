@@ -403,6 +403,9 @@ _TERMINATOR_REQUIRED = (
     "auto_https disable_redirects",
     "{$SMARTLIC_ACME_EMAIL}",
     "request>uri regexp",
+    "request>headers>User-Agent delete",
+    "request>remote_ip delete",
+    "request>client_ip delete",
     "tls {",
 )
 # Official Caddy `query` only mutates named keys. A bare `request>uri query`
@@ -434,6 +437,18 @@ def assert_terminator_safe(text: str) -> None:
     _require(
         URI_QUERY_STRIP in text,
         "Caddyfile deve stripar a query da URI (regexp \\?.* → vazio)",
+    )
+    _require(
+        "request>headers>User-Agent delete" in text,
+        "Caddyfile deve apagar User-Agent do log",
+    )
+    _require(
+        "request>remote_ip delete" in text,
+        "Caddyfile deve apagar remote_ip do log",
+    )
+    _require(
+        "request>client_ip delete" in text,
+        "Caddyfile deve apagar client_ip do log",
     )
     if "request>uri query" in text:
         raise ManifestError(
@@ -485,6 +500,9 @@ def render_caddyfile(compiled: CompiledMap) -> str:
         "				" + URI_QUERY_STRIP,
         "				request>headers>Cookie delete",
         "				request>headers>Authorization delete",
+        "				request>headers>User-Agent delete",
+        "				request>remote_ip delete",
+        "				request>client_ip delete",
         "			}",
         "		}",
         "	}",

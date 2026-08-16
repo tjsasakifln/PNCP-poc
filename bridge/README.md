@@ -20,6 +20,7 @@ Isolated surface. Executes only the hash-pinned execute set from [web-cfg#62](ht
 python3 -m bridge.generate
 python3 -m unittest discover -s bridge/tests -v
 python3 -m bridge.serve --host 127.0.0.1 --port 8765
+python3 -m bridge.observe --records window.jsonl --export window-export.json
 python3 -m bridge.preflight   # hard gate before any owner DNS/TLS apply
 ```
 
