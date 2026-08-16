@@ -61,12 +61,17 @@ LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1", "0.0.0.0"})
 REFUSED_PROBE_SOURCES = frozenset(
     {"fixture", "mock", "heuristic", "loopback", "dry-run", "preview", "local"}
 )
-SECRET_VALUE_RE = re.compile(
-    r"(?i)(CF_API_TOKEN|CF_ZONE_ID|AUTHORIZATION|API_TOKEN|BEARER)"
-    r"\s*[:=]\s*([^\s\"']+)"
+# Assignments only. Values that are $ENV refs or `...` placeholders stay intact.
+SECRET_ASSIGN_RE = re.compile(
+    r"(?i)\b(CF_API_TOKEN|CF_ZONE_ID|API_TOKEN)\s*[:=]\s*(?!\$|\.{3}(?:\s|$))([^\s\"']+)"
+)
+# HTTP header with a literal bearer, not `Authorization: Bearer $CF_API_TOKEN`.
+BEARER_LITERAL_RE = re.compile(
+    r"(?i)(Authorization\s*:\s*Bearer\s+)(?!\$)(\S+)"
 )
 PRIVATE_KEY_RE = re.compile(r"BEGIN (RSA |EC |OPENSSH )?PRIVATE")
-TOKENISH_RE = re.compile(r"\b(?:sk_live_|sk_test_|cf_|ghp_|github_pat_)[A-Za-z0-9_\-]{8,}")
+# Real token prefixes only. Do not match identifiers such as cf_api_token.
+TOKENISH_RE = re.compile(r"\b(?:sk_live_|sk_test_|ghp_|github_pat_)[A-Za-z0-9_\-]{8,}")
 
 ACTIONS = {
     "BRIDGE_PUBLIC_IPV4": (
@@ -249,8 +254,9 @@ def env_value(name: str, environ: Mapping[str, str] | None = None) -> str | None
 
 
 def redact_secrets(text: str) -> str:
-    """Strip token assignments and private-key material from printed text."""
-    redacted = SECRET_VALUE_RE.sub(r"\1=<redacted>", text)
+    """Strip leaked token values. Keep $ENV command templates and identifiers."""
+    redacted = SECRET_ASSIGN_RE.sub(r"\1=<redacted>", text)
+    redacted = BEARER_LITERAL_RE.sub(r"\1<redacted>", redacted)
     redacted = PRIVATE_KEY_RE.sub("BEGIN <redacted-key>", redacted)
     redacted = TOKENISH_RE.sub("<redacted-token>", redacted)
     return redacted

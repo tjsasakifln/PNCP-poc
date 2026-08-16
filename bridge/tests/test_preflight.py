@@ -319,6 +319,10 @@ class CliMissingInputsTests(unittest.TestCase):
             self.assertIn('"status": "BLOCKED"', proc.stdout)
             self.assertIn("python3 -m bridge.generate --rollback", proc.stdout)
             self.assertIn("api.cloudflare.com", proc.stdout)
+            self.assertIn("Authorization: Bearer $CF_API_TOKEN", proc.stdout)
+            self.assertNotIn("Authorization=<redacted>", proc.stdout)
+            self.assertIn('"name": "cf_api_token"', proc.stdout)
+            self.assertNotIn("<redacted-token>", proc.stdout)
             self.assertNotIn("BEGIN PRIVATE", proc.stdout + proc.stderr)
         self.assertEqual(
             [line for line in first.stdout.splitlines() if line.startswith("PREFLIGHT_")][0],
@@ -331,6 +335,9 @@ class CliMissingInputsTests(unittest.TestCase):
         blob = proc.stdout + proc.stderr
         self.assertNotIn(secret, blob)
         self.assertIn("PREFLIGHT_BLOCKED", proc.stdout)
+        self.assertIn("Authorization: Bearer $CF_API_TOKEN", proc.stdout)
+        self.assertNotIn("Authorization=<redacted>", proc.stdout)
+        self.assertIn('"name": "cf_api_token"', proc.stdout)
         self.assertNotIn("BEGIN PRIVATE", blob)
 
 
@@ -361,6 +368,22 @@ class RedactTests(unittest.TestCase):
         self.assertNotIn("abcd1234", out)
         self.assertNotIn("BEGIN PRIVATE KEY", out)
         self.assertIn("<redacted>", out)
+
+    def test_redact_keeps_env_ref_apply_templates_and_check_names(self) -> None:
+        raw = (
+            'curl -H "Authorization: Bearer $CF_API_TOKEN"\n'
+            "# export CF_API_TOKEN=... CF_ZONE_ID=...\n"
+            '"name": "cf_api_token"\n'
+            "Authorization: Bearer leaked-literal-token\n"
+            "sk_live_abcdefghijklmnop\n"
+        )
+        out = redact_secrets(raw)
+        self.assertIn("Authorization: Bearer $CF_API_TOKEN", out)
+        self.assertIn("# export CF_API_TOKEN=... CF_ZONE_ID=...", out)
+        self.assertIn('"name": "cf_api_token"', out)
+        self.assertNotIn("leaked-literal-token", out)
+        self.assertNotIn("sk_live_abcdefghijklmnop", out)
+        self.assertIn("Authorization: Bearer <redacted>", out)
 
 
 class DocsGateTests(unittest.TestCase):
