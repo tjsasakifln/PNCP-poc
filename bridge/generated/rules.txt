@@ -1,9 +1,9 @@
-# manifesto=c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d
-# config=c07c1a5dc99932ae0536380e904379418b6a16015c02ac3c80f36660ab79ea68
+# manifesto=9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9
+# config=fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4
 # default=410
 legacy_path	target_url	status
 /blog/aditivos-contratuais-o-que-sao-como-monitorar	https://confenge.com.br/aditivos-obras-publicas/	301
-/blog/orgaos-risco-atraso-pagamento-licitacao	https://confenge.com.br/atrasos-prorrogacao-obras-publicas/	301
+/blog/orgaos-risco-atraso-pagamento-licitacao	https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/	301
 /glossario/aditivo-contratual	https://confenge.com.br/aditivos-obras-publicas/	301
 /glossario/mapa-de-riscos	https://confenge.com.br/conteudos/matriz-de-riscos-reequilibrio-economico-financeiro/	301
 /glossario/matriz-de-riscos	https://confenge.com.br/conteudos/matriz-de-riscos-reequilibrio-economico-financeiro/	301

@@ -1,12 +1,13 @@
 {
-  "config_sha256": "e313eae3228052cce28bff59368b382713f9570c7f4ac67b372f56431f3668b2",
+  "config_sha256": "9ba079b93df6b00c0d96710b6192d053bbda3153be3b86d2d64d5961aa7195f6",
   "default_status": 410,
   "expiry_review": "pre-bridge",
-  "manifesto_sha256": "c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d",
+  "holds": [],
+  "manifesto_sha256": "9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9",
   "observation_window_days": 28,
   "owner": "SmartLic#2115",
   "persist": [],
-  "pinned_commit": "3f112bfbd9e6b042691e1c09812af00f42735adb",
+  "pinned_commit": "8a2f4d5bce7e23d0308246ed45ed4d58752984ac",
   "redirects": [],
   "removal_trigger": "pre-bridge — no 301s active"
 }

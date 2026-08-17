@@ -2,10 +2,11 @@
 
 **Owner:** SmartLic#2115 operator (Gage / @devops for DNS).  
 **Cost:** UNKNOWN until an invoice exists. Expected: DNS + TLS + a static 301/410 edge (cents to low dollars). Railway app cost should go to zero — do not keep the failed app as the bridge.  
-**Manifesto SHA-256:** `c2cee8362321099205b76b11f89485d4248a00b8abbbda354d15964f6b316e0d`  
-**web-cfg commit (map pin):** `3f112bfbd9e6b042691e1c09812af00f42735adb`  
-**web-cfg#68:** still **OPEN** at HEAD `13a27abdd6f4e41f2eb646cdf738461aef4756ac`  
-**web-cfg commit (citation after #68 rebase):** `dad3414c7a0073d0c1860d19704cff7e2a6e3b24` (same manifesto bytes)
+**Manifesto SHA-256:** `9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9`  
+**web-cfg commit (map pin):** `8a2f4d5bce7e23d0308246ed45ed4d58752984ac`  
+**web-cfg counterpart:** **MERGED** PR #97 (`bcc3fd6e`) on web-cfg **main**  
+**Config hash:** `fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4`  
+**Supersedes:** `3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023` / `78b7ebb9` (payment-delay remapped onto `/conteudos/atraso-pagamento-contrato-publico-suspender/`)
 
 ## What this is
 

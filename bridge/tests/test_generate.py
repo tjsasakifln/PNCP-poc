@@ -26,6 +26,8 @@ from bridge.policy import CompiledMap, RedirectRule
 from bridge.pins import (
     CITED_MANIFESTO_COMMIT,
     COUNTERPART_HEAD,
+    COUNTERPART_MERGE_COMMIT,
+    COUNTERPART_MERGED_AT,
     COUNTERPART_PR_STATE,
     PINNED_COMMIT,
     PINNED_CONFIG_SHA256,
@@ -52,15 +54,22 @@ class GeneratePinnedManifestTests(unittest.TestCase):
     def test_cited_rebase_commit_is_not_baked_into_config_hash(self) -> None:
         payload = _map_payload(self.compiled)
         self.assertEqual(payload["pinned_commit"], PINNED_COMMIT)
-        self.assertEqual(payload["pinned_commit"], "3f112bfbd9e6b042691e1c09812af00f42735adb")
+        self.assertEqual(payload["pinned_commit"], "8a2f4d5bce7e23d0308246ed45ed4d58752984ac")
         self.assertNotEqual(CITED_MANIFESTO_COMMIT, PINNED_COMMIT)
         self.assertNotIn(CITED_MANIFESTO_COMMIT, payload["pinned_commit"])
-        self.assertEqual(COUNTERPART_PR_STATE, "OPEN")
-        self.assertEqual(COUNTERPART_HEAD, "13a27abdd6f4e41f2eb646cdf738461aef4756ac")
-        self.assertNotEqual(COUNTERPART_HEAD, PINNED_COMMIT)
-        self.assertNotIn(COUNTERPART_HEAD, payload["pinned_commit"])
+        self.assertEqual(COUNTERPART_PR_STATE, "MERGED")
+        self.assertEqual(COUNTERPART_MERGED_AT, "2026-08-16T23:20:14Z")
+        self.assertEqual(COUNTERPART_HEAD, PINNED_COMMIT)
+        self.assertEqual(COUNTERPART_HEAD, "8a2f4d5bce7e23d0308246ed45ed4d58752984ac")
+        self.assertEqual(
+            COUNTERPART_MERGE_COMMIT, "bcc3fd6e19baf495962abd6c8edf33a2cb3304c7"
+        )
+        self.assertNotEqual(COUNTERPART_MERGE_COMMIT, PINNED_COMMIT)
         self.assertNotIn("counterpart_head", payload)
+        self.assertNotIn("counterpart_merge_commit", payload)
+        self.assertNotIn(COUNTERPART_MERGE_COMMIT, json.dumps(payload))
         self.assertEqual(self.compiled.config_sha256, PINNED_CONFIG_SHA256)
+        self.assertNotEqual(PINNED_SHA256, "3c5a5b7aeb173a16cfb65c0314827d9022ba1b387901d1718e4fdfcbd0363023")
 
     def test_dirty_bytes_are_rejected(self) -> None:
         dirty = self.raw + b"\n"
@@ -73,7 +82,7 @@ class GeneratePinnedManifestTests(unittest.TestCase):
         ready = [
             entry
             for entry in data["entries"]
-            if entry["decision"] == "REDIRECT" and entry["status"] == "ready"
+            if entry["decision"] in {"REDIRECT", "REDIRECT_301"} and entry["status"] == "ready"
         ]
         self.assertEqual(len(ready), PINNED_REDIRECT_COUNT)
         self.assertEqual(len(self.compiled.redirects), PINNED_REDIRECT_COUNT)
@@ -92,6 +101,23 @@ class GeneratePinnedManifestTests(unittest.TestCase):
             self.assertTrue(rule.target_url.startswith("https://confenge.com.br/"))
             self.assertNotEqual(rule.target_url, "https://confenge.com.br/")
             self.assertNotIn("/consultoria-b2g", rule.target_url)
+
+    def test_payment_delay_ready_row_uses_remapped_target(self) -> None:
+        path = "/blog/orgaos-risco-atraso-pagamento-licitacao"
+        self.assertIn(path, self.compiled.by_path)
+        rule = self.compiled.by_path[path]
+        remapped = "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/"
+        self.assertEqual(rule.target_url, remapped)
+        self.assertEqual(rule.expected_canonical, remapped)
+        self.assertNotIn("/atrasos-prorrogacao-obras-publicas/", rule.target_url)
+        data = json.loads(self.raw)
+        entry = next(
+            item
+            for item in data["entries"]
+            if item["legacy_url"].endswith(path)
+        )
+        self.assertEqual(entry["target_url"], remapped)
+        self.assertEqual(entry["expected_http"], REDIRECT_STATUS)
 
     def test_no_wildcard_or_home_rule(self) -> None:
         for rule in self.compiled.redirects:
@@ -141,7 +167,11 @@ class FailClosedSchemaTests(unittest.TestCase):
         cls.data = json.loads(load_manifest_bytes())
 
     def _redirect(self) -> dict:
-        return next(entry for entry in self.data["entries"] if entry["decision"] == "REDIRECT")
+        return next(
+            entry
+            for entry in self.data["entries"]
+            if entry["decision"] in {"REDIRECT", "REDIRECT_301"}
+        )
 
     def test_missing_version_fails(self) -> None:
         data = json.loads(json.dumps(self.data))
@@ -160,7 +190,7 @@ class FailClosedSchemaTests(unittest.TestCase):
     def test_generic_home_target_fails(self) -> None:
         data = json.loads(json.dumps(self.data))
         for entry in data["entries"]:
-            if entry["decision"] == "REDIRECT":
+            if entry["decision"] in {"REDIRECT", "REDIRECT_301"}:
                 entry["target_url"] = "https://confenge.com.br/"
                 entry["expected_canonical"] = "https://confenge.com.br/"
                 break
@@ -171,7 +201,7 @@ class FailClosedSchemaTests(unittest.TestCase):
     def test_consultoria_fallback_target_fails(self) -> None:
         data = json.loads(json.dumps(self.data))
         for entry in data["entries"]:
-            if entry["decision"] == "REDIRECT":
+            if entry["decision"] in {"REDIRECT", "REDIRECT_301"}:
                 entry["target_url"] = "https://confenge.com.br/consultoria-b2g/"
                 entry["expected_canonical"] = "https://confenge.com.br/consultoria-b2g/"
                 break
@@ -182,7 +212,7 @@ class FailClosedSchemaTests(unittest.TestCase):
     def test_wildcard_legacy_fails(self) -> None:
         data = json.loads(json.dumps(self.data))
         for entry in data["entries"]:
-            if entry["decision"] == "REDIRECT":
+            if entry["decision"] in {"REDIRECT", "REDIRECT_301"}:
                 entry["legacy_url"] = "https://smartlic.tech/*"
                 break
         with self.assertRaises(ManifestError) as ctx:
@@ -199,7 +229,7 @@ class FailClosedSchemaTests(unittest.TestCase):
             with self.subTest(unsafe=unsafe):
                 data = json.loads(json.dumps(self.data))
                 redirect = next(
-                    entry for entry in data["entries"] if entry["decision"] == "REDIRECT"
+                    entry for entry in data["entries"] if entry["decision"] in {"REDIRECT", "REDIRECT_301"}
                 )
                 redirect["legacy_url"] = unsafe
                 with self.assertRaises(ManifestError):
@@ -208,7 +238,7 @@ class FailClosedSchemaTests(unittest.TestCase):
     def test_http_target_fails(self) -> None:
         data = json.loads(json.dumps(self.data))
         for entry in data["entries"]:
-            if entry["decision"] == "REDIRECT":
+            if entry["decision"] in {"REDIRECT", "REDIRECT_301"}:
                 entry["target_url"] = entry["target_url"].replace("https://", "http://")
                 break
         with self.assertRaises(ManifestError):
@@ -217,7 +247,7 @@ class FailClosedSchemaTests(unittest.TestCase):
     def test_redirect_not_ready_fails(self) -> None:
         data = json.loads(json.dumps(self.data))
         for entry in data["entries"]:
-            if entry["decision"] == "REDIRECT":
+            if entry["decision"] in {"REDIRECT", "REDIRECT_301"}:
                 entry["status"] = "blocked"
                 break
         with self.assertRaises(ManifestError):

@@ -17,6 +17,7 @@ class PolicyReadyRedirectTests(unittest.TestCase):
 
     def test_every_ready_rule_is_one_hop_301_to_manifest_target(self) -> None:
         self.assertEqual(len(self.compiled.redirects), 11)
+        self.assertEqual(len(self.compiled.holds), 54)
         for rule in self.compiled.redirects:
             decision = resolve(self.compiled, rule.path, "", "smartlic.tech")
             self.assertEqual(decision.status, REDIRECT_STATUS, rule.path)
@@ -26,6 +27,21 @@ class PolicyReadyRedirectTests(unittest.TestCase):
             self.assertEqual(host, TARGET_HOSTNAME, rule.path)
             self.assertNotEqual(decision.location, "https://confenge.com.br/")
             self.assertNotIn("/consultoria-b2g", decision.location)
+
+    def test_payment_delay_resolver_uses_remapped_target(self) -> None:
+        decision = resolve(
+            self.compiled,
+            "/blog/orgaos-risco-atraso-pagamento-licitacao",
+            "",
+            "smartlic.tech",
+        )
+        self.assertEqual(decision.status, REDIRECT_STATUS)
+        self.assertEqual(
+            decision.location,
+            "https://confenge.com.br/conteudos/atraso-pagamento-contrato-publico-suspender/",
+        )
+        self.assertNotIn("/atrasos-prorrogacao-obras-publicas/", decision.location or "")
+        self.assertEqual(decision.hops, 1)
 
     def test_www_alias_is_same_one_hop(self) -> None:
         for rule in self.compiled.redirects:
@@ -80,6 +96,26 @@ class PolicyRetireAndNegativesTests(unittest.TestCase):
         decision = resolve(self.compiled, "/", "", "smartlic.tech")
         self.assertEqual(decision.status, DEFAULT_STATUS)
         self.assertIsNone(decision.location)
+
+    def test_hold_paths_are_fail_closed_410(self) -> None:
+        self.assertGreaterEqual(len(self.compiled.holds), 1)
+        for path in self.compiled.holds:
+            decision = resolve(self.compiled, path, "", "smartlic.tech")
+            self.assertEqual(decision.status, DEFAULT_STATUS, path)
+            self.assertIsNone(decision.location, path)
+            self.assertEqual(decision.rule_id, "hold-fail-closed", path)
+            self.assertEqual(decision.hops, 0, path)
+
+    def test_pncp_hold_is_not_a_home_redirect(self) -> None:
+        decision = resolve(
+            self.compiled,
+            "/blog/como-consultar-contratos-publicos-pncp",
+            "",
+            "smartlic.tech",
+        )
+        self.assertEqual(decision.status, 410)
+        self.assertIsNone(decision.location)
+        self.assertEqual(decision.rule_id, "hold-fail-closed")
 
 
 class QueryAllowlistTests(unittest.TestCase):
