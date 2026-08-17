@@ -92,6 +92,14 @@ class PolicyRetireAndNegativesTests(unittest.TestCase):
         self.assertEqual(decision.status, DEFAULT_STATUS)
         self.assertIsNone(decision.location)
 
+    def test_crlf_in_localhost_host_is_not_treated_as_loopback(self) -> None:
+        rule = self.compiled.redirects[0]
+        injected = "127.0.0.1:9\r\nLocation: https://evil.example/"
+        decision = resolve(self.compiled, rule.path, "", injected)
+        self.assertEqual(decision.status, DEFAULT_STATUS)
+        self.assertIsNone(decision.location)
+        self.assertEqual(decision.hops, 0)
+
     def test_root_is_410_not_home_redirect(self) -> None:
         decision = resolve(self.compiled, "/", "", "smartlic.tech")
         self.assertEqual(decision.status, DEFAULT_STATUS)

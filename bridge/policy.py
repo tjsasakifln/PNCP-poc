@@ -76,6 +76,10 @@ def _host_allowed(host: str | None) -> bool:
 
     if host is None or host == "":
         return True
+    # Reject injected request-lines (CRLF/NUL/space) before the port split so
+    # `127.0.0.1:9\r\nLocation: https://evil` cannot pass as localhost.
+    if any(ch in host for ch in ("\r", "\n", "\x00", " ", "/", "\\", "@")):
+        return False
     hostname = host.split(":", 1)[0].lower()
     if hostname in {"localhost", "127.0.0.1", "::1"}:
         return True
