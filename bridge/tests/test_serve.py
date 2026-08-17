@@ -190,6 +190,7 @@ class NoProductRuntimeTests(unittest.TestCase):
         shipped = [
             root / "generate.py",
             root / "serve.py",
+            root / "observe.py",
             root / "policy.py",
             root / "pins.py",
             root / "preflight.py",
@@ -207,6 +208,9 @@ class NoProductRuntimeTests(unittest.TestCase):
             "import stripe",
             "reverse_proxy 127.0.0.1:8000",
             "reverse_proxy 127.0.0.1:3000",
+            "mixpanel",
+            "prometheus_client",
+            "opentelemetry",
         )
         hits: list[str] = []
         for path in shipped:

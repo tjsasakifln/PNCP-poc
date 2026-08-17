@@ -148,6 +148,9 @@ class GeneratePinnedManifestTests(unittest.TestCase):
             from bridge.generate import URI_QUERY_STRIP
 
             self.assertIn(URI_QUERY_STRIP, caddy)
+            self.assertIn("request>headers>User-Agent delete", caddy)
+            self.assertIn("request>remote_ip delete", caddy)
+            self.assertIn("request>client_ip delete", caddy)
             self.assertNotIn("request>uri query", caddy)
             self.assertNotIn("reverse_proxy 127.0.0.1:8000", caddy)
             self.assertNotIn("reverse_proxy 127.0.0.1:3000", caddy)

@@ -150,7 +150,7 @@ The 28-day observation window starts at the first production 301 of this hash â€
 
 ## Observability (removal trigger)
 
-`GET /__bridge/health` returns hashes + process-local counts by `rule_id` / status. Retention if persisted: 35 days. Removal: window complete + zero residual priority errors + #2111 archive gate. Do not start #2111 from this change.
+`GET /__bridge/health` returns hashes + process-local counts + a `window` summary (301/410/404/errors/target-health + process-local first-301 bound to the config hash). Structured records omit query values, raw IP, and User-Agent. Retention if persisted: 35 days. Export for web-cfg: `python3 -m bridge.observe --records <jsonl> --export <json>` (or serve `--export-file`). Loopback first-301 is not production. Removal: window complete + zero residual priority errors + #2111 archive gate. Do not start #2111 from this change.
 
 ## Close-out
 

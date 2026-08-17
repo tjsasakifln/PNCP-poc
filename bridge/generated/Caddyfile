@@ -32,6 +32,9 @@
 				request>uri regexp "\?.*" ""
 				request>headers>Cookie delete
 				request>headers>Authorization delete
+				request>headers>User-Agent delete
+				request>remote_ip delete
+				request>client_ip delete
 			}
 		}
 	}

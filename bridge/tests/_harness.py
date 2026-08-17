@@ -6,6 +6,7 @@ import http.client
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Mapping
@@ -110,8 +111,23 @@ def assert_no_pii(text: str | None, *, label: str) -> None:
             raise AssertionError(f"{label}: PII key leaked ({token})")
 
 
+def _stderr_chunks(proc: subprocess.Popen[str]) -> list[str]:
+    chunks = getattr(proc, "_bridge_stderr_chunks", None)
+    if not isinstance(chunks, list):
+        return []
+    return chunks
+
+
+def _wait_stderr_drain(proc: subprocess.Popen[str], timeout: float = 2.0) -> None:
+    done = getattr(proc, "_bridge_stderr_done", None)
+    if isinstance(done, threading.Event):
+        done.wait(timeout)
+
+
 def launch_serve(port: int) -> subprocess.Popen[str]:
-    return subprocess.Popen(
+    # Serve emits one JSONL record per request on stderr. PIPE without a
+    # reader deadlocks the inventory blackbox (~1256 paths). Drain it.
+    proc = subprocess.Popen(
         [
             sys.executable,
             "-m",
@@ -128,6 +144,22 @@ def launch_serve(port: int) -> subprocess.Popen[str]:
         stderr=subprocess.PIPE,
         text=True,
     )
+    chunks: list[str] = []
+    done = threading.Event()
+
+    def _drain() -> None:
+        try:
+            if proc.stderr is not None:
+                for line in proc.stderr:
+                    chunks.append(line)
+        finally:
+            done.set()
+
+    thread = threading.Thread(target=_drain, name=f"serve-stderr-{port}", daemon=True)
+    thread.start()
+    proc._bridge_stderr_chunks = chunks  # type: ignore[attr-defined]
+    proc._bridge_stderr_done = done  # type: ignore[attr-defined]
+    return proc
 
 
 def wait_ready(proc: subprocess.Popen[str], timeout: float = 5.0) -> str:
@@ -136,7 +168,8 @@ def wait_ready(proc: subprocess.Popen[str], timeout: float = 5.0) -> str:
     buf = ""
     while time.time() < deadline:
         if proc.poll() is not None:
-            err = proc.stderr.read() if proc.stderr else ""
+            _wait_stderr_drain(proc, timeout=1.0)
+            err = "".join(_stderr_chunks(proc))
             raise AssertionError(f"serve.py exited {proc.returncode}: {err}")
         line = proc.stdout.readline()
         buf += line
@@ -148,12 +181,22 @@ def wait_ready(proc: subprocess.Popen[str], timeout: float = 5.0) -> str:
 
 def stop_serve(proc: subprocess.Popen[str]) -> tuple[str, str]:
     proc.terminate()
+    out = ""
     try:
-        out, err = proc.communicate(timeout=3)
+        if proc.stdout is not None:
+            out = proc.stdout.read() or ""
+        proc.wait(timeout=3)
     except subprocess.TimeoutExpired:
         proc.kill()
-        out, err = proc.communicate(timeout=3)
-    return out or "", err or ""
+        if proc.stdout is not None:
+            out = (out or "") + (proc.stdout.read() or "")
+        proc.wait(timeout=3)
+    _wait_stderr_drain(proc, timeout=2.0)
+    if proc.stdout is not None:
+        proc.stdout.close()
+    if proc.stderr is not None:
+        proc.stderr.close()
+    return out or "", "".join(_stderr_chunks(proc))
 
 
 def http_get(
