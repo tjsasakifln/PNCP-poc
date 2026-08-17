@@ -20,6 +20,7 @@ python3 -m bridge.generate --check         # same + hash self-check
 python3 -m bridge.generate --probe-targets # also require live 200 on CONFENGE targets
 python3 -m unittest discover -s bridge/tests -v
 python3 -m bridge.serve --host 127.0.0.1 --port 8765
+python3 -m bridge.preflight                # hard gate; BLOCKED refuses owner apply
 ```
 
 `generated/Caddyfile` is the TLS terminator: ACME SAN `smartlic.tech` + `www.smartlic.tech`, reverse-proxy **only** to `127.0.0.1:8765`. It must never proxy `:8000` or `:3000`. Units and firewall: `bridge/deploy/`.
