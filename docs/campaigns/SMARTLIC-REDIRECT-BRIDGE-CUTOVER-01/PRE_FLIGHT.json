@@ -1,0 +1,453 @@
+{
+  "action": "export BRIDGE_PUBLIC_IPV4=<public IPv4 of the chosen host>",
+  "apply_commands": [
+    "# APPLY — owner-only; preflight does not execute these",
+    "# export CF_API_TOKEN=... CF_ZONE_ID=... BRIDGE_PUBLIC_IPV4=...",
+    "curl -sS -H \"Authorization: Bearer $CF_API_TOKEN\" \"https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?name=smartlic.tech,www.smartlic.tech\"",
+    "curl -sS -X POST -H \"Authorization: Bearer $CF_API_TOKEN\" -H \"Content-Type: application/json\" \"https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records\" --data '{\"type\":\"A\",\"name\":\"www\",\"content\":\"$BRIDGE_PUBLIC_IPV4\",\"ttl\":300,\"proxied\":false}'",
+    "curl -sS -X DELETE -H \"Authorization: Bearer $CF_API_TOKEN\" \"https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$WWW_CNAME_ID\"",
+    "curl -sS -X PATCH -H \"Authorization: Bearer $CF_API_TOKEN\" -H \"Content-Type: application/json\" \"https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$APEX_A_ID\" --data '{\"type\":\"A\",\"name\":\"smartlic.tech\",\"content\":\"$BRIDGE_PUBLIC_IPV4\",\"ttl\":60,\"proxied\":false}'"
+  ],
+  "blackbox": {
+    "action": "",
+    "banner": "SERVE_OK host=127.0.0.1 port=35415 manifesto=9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9 config=fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4 redirects=11\n",
+    "config_sha256": "fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4",
+    "field": "BLACKBOX",
+    "hold_path": "/blog/checklist-habilitacao-licitacao-2026",
+    "hold_status": 410,
+    "login_status": 410,
+    "manifesto_sha256": "9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9",
+    "ready_location": "https://confenge.com.br/aditivos-obras-publicas/",
+    "ready_path": "/blog/aditivos-contratuais-o-que-sao-como-monitorar",
+    "ready_status": 301,
+    "rollback": {
+      "action": "",
+      "banner": "SERVE_OK host=127.0.0.1 port=43801 manifesto=9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9 config=9ba079b93df6b00c0d96710b6192d053bbda3153be3b86d2d64d5961aa7195f6 redirects=0\n",
+      "field": "ROLLBACK",
+      "from_config_sha256": "fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4",
+      "manifesto_sha256": "9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9",
+      "ready_path_location": null,
+      "ready_path_status": 410,
+      "redirects": 0,
+      "rollback_config_sha256": "9ba079b93df6b00c0d96710b6192d053bbda3153be3b86d2d64d5961aa7195f6",
+      "status": "PASS"
+    },
+    "slash_status": 410,
+    "status": "PASS"
+  },
+  "caddy": {
+    "detail": "caddy binary not on PATH; accepted fallback is serve ×2 + assert_terminator_safe",
+    "launcher": "caddy",
+    "status": "CADDY_ABSENT"
+  },
+  "campaign": "SMARTLIC-REDIRECT-BRIDGE-CUTOVER-01",
+  "canonical_consume": {
+    "based_on": "origin/main",
+    "branch": "main",
+    "pr": 2135,
+    "state": "MERGED",
+    "this_branch": "goal/smartlic-redirect-cutover-20260818"
+  },
+  "checks": [
+    {
+      "action": "export BRIDGE_PUBLIC_IPV4=<public IPv4 of the chosen host>",
+      "detail": "missing",
+      "field": "BRIDGE_PUBLIC_IPV4",
+      "name": "bridge_public_ipv4",
+      "status": "BLOCKED"
+    },
+    {
+      "action": "export SMARTLIC_ACME_EMAIL=<ops contact for Let's Encrypt>",
+      "detail": "missing",
+      "field": "SMARTLIC_ACME_EMAIL",
+      "name": "smartlic_acme_email",
+      "status": "BLOCKED"
+    },
+    {
+      "action": "export CF_API_TOKEN (local only; never commit; preflight does not call Cloudflare)",
+      "detail": "missing",
+      "field": "CF_API_TOKEN",
+      "name": "cf_api_token",
+      "status": "BLOCKED"
+    },
+    {
+      "action": "export CF_ZONE_ID (local only; never commit)",
+      "detail": "missing",
+      "field": "CF_ZONE_ID",
+      "name": "cf_zone_id",
+      "status": "BLOCKED"
+    },
+    {
+      "action": "",
+      "detail": "sha256=9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9 commit=8a2f4d5bce7e23d0308246ed45ed4d58752984ac",
+      "field": "WEB_CFG_PIN",
+      "name": "webcfg_pin",
+      "status": "PASS"
+    },
+    {
+      "action": "",
+      "detail": "fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4",
+      "field": "BRIDGE_CONFIG_HASH",
+      "name": "bridge_config_hash",
+      "status": "PASS"
+    },
+    {
+      "action": "",
+      "detail": "redirects=11 host=confenge.com.br",
+      "field": "WEB_CFG_DESTINATION",
+      "name": "webcfg_destination",
+      "status": "PASS"
+    },
+    {
+      "action": "export SMARTLIC_ACME_EMAIL=<ops contact for Let's Encrypt>",
+      "detail": "missing",
+      "field": "SMARTLIC_ACME_EMAIL",
+      "name": "tls_acme",
+      "status": "BLOCKED"
+    },
+    {
+      "action": "",
+      "detail": "22/80/443 public; 8765 loopback",
+      "field": "PORTS",
+      "name": "ports",
+      "status": "PASS"
+    },
+    {
+      "action": "",
+      "detail": "validate_deploy_kit ok",
+      "field": "LEAST_PRIVILEGE",
+      "name": "least_privilege",
+      "status": "PASS"
+    },
+    {
+      "action": "export BRIDGE_PUBLIC_IPV4=<public IPv4 of the chosen host>",
+      "detail": "BRIDGE_PUBLIC_IPV4 missing",
+      "field": "DNS_TARGET",
+      "name": "dns_target",
+      "status": "BLOCKED"
+    },
+    {
+      "action": "",
+      "detail": "ready=/blog/aditivos-contratuais-o-que-sao-como-monitorar rollback_hash=9ba079b93df6b00c0d96710b6192d053bbda3153be3b86d2d64d5961aa7195f6",
+      "field": "BLACKBOX",
+      "name": "blackbox",
+      "status": "PASS"
+    }
+  ],
+  "config_sha256": "fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4",
+  "dns": {
+    "apex": {
+      "addresses": [
+        "69.46.46.88"
+      ],
+      "error": null,
+      "hostname": "smartlic.tech"
+    },
+    "baseline_apex": "69.46.46.88",
+    "baseline_www": "69.46.46.117",
+    "target": null,
+    "www": {
+      "addresses": [
+        "69.46.46.117"
+      ],
+      "error": null,
+      "hostname": "www.smartlic.tech"
+    }
+  },
+  "dns_inventory": {
+    "bridge_public_ipv4": null,
+    "credentials_present": {
+      "BRIDGE_PUBLIC_IPV4": false,
+      "CF_API_TOKEN": false,
+      "CF_ZONE_ID": false,
+      "SMARTLIC_ACME_EMAIL": false
+    },
+    "do_not_change": [
+      "NS",
+      "TXT",
+      "MX",
+      "api.smartlic.tech",
+      "app.smartlic.tech"
+    ],
+    "getaddrinfo": {
+      "apex_error": null,
+      "api.smartlic.tech": [
+        "69.46.46.116"
+      ],
+      "api_error": null,
+      "smartlic.tech": [
+        "69.46.46.88"
+      ],
+      "www.smartlic.tech": [
+        "69.46.46.117"
+      ],
+      "www_error": null
+    },
+    "observed_at": "2026-08-18T03:16:50Z",
+    "owner": "Cloudflare NS jermaine/ryleigh; records are the 2026-08-14/15 Railway baseline",
+    "records": [
+      {
+        "answers": [
+          {
+            "data": "69.46.46.88",
+            "name": "smartlic.tech",
+            "ttl": 60,
+            "type": 1
+          }
+        ],
+        "name": "smartlic.tech",
+        "status": 0,
+        "type": "A"
+      },
+      {
+        "answers": [],
+        "name": "smartlic.tech",
+        "status": 0,
+        "type": "AAAA"
+      },
+      {
+        "answers": [
+          {
+            "data": "jermaine.ns.cloudflare.com.",
+            "name": "smartlic.tech",
+            "ttl": 86400,
+            "type": 2
+          },
+          {
+            "data": "ryleigh.ns.cloudflare.com.",
+            "name": "smartlic.tech",
+            "ttl": 86400,
+            "type": 2
+          }
+        ],
+        "name": "smartlic.tech",
+        "status": 0,
+        "type": "NS"
+      },
+      {
+        "answers": [
+          {
+            "data": "\"google-site-verification=Aw8-Y5ify3ORrRN69yYgmAehSdO-3G5O65yW5Y3VEto\"",
+            "name": "smartlic.tech",
+            "ttl": 3600,
+            "type": 16
+          }
+        ],
+        "name": "smartlic.tech",
+        "status": 0,
+        "type": "TXT"
+      },
+      {
+        "answers": [
+          {
+            "data": "0 smartlic.tech.",
+            "name": "smartlic.tech",
+            "ttl": 300,
+            "type": 15
+          }
+        ],
+        "name": "smartlic.tech",
+        "status": 0,
+        "type": "MX"
+      },
+      {
+        "answers": [
+          {
+            "data": "app.smartlic.tech.",
+            "name": "www.smartlic.tech",
+            "ttl": 300,
+            "type": 5
+          },
+          {
+            "data": "1376dcda.up.railway.app.",
+            "name": "app.smartlic.tech",
+            "ttl": 300,
+            "type": 5
+          },
+          {
+            "data": "69.46.46.117",
+            "name": "1376dcda.up.railway.app",
+            "ttl": 60,
+            "type": 1
+          }
+        ],
+        "name": "www.smartlic.tech",
+        "status": 0,
+        "type": "A"
+      },
+      {
+        "answers": [
+          {
+            "data": "app.smartlic.tech.",
+            "name": "www.smartlic.tech",
+            "ttl": 300,
+            "type": 5
+          }
+        ],
+        "name": "www.smartlic.tech",
+        "status": 0,
+        "type": "CNAME"
+      },
+      {
+        "answers": [
+          {
+            "data": "1us7c4ob.up.railway.app.",
+            "name": "api.smartlic.tech",
+            "ttl": 300,
+            "type": 5
+          },
+          {
+            "data": "69.46.46.116",
+            "name": "1us7c4ob.up.railway.app",
+            "ttl": 60,
+            "type": 1
+          }
+        ],
+        "name": "api.smartlic.tech",
+        "status": 0,
+        "type": "A"
+      },
+      {
+        "answers": [
+          {
+            "data": "1us7c4ob.up.railway.app.",
+            "name": "api.smartlic.tech",
+            "ttl": 300,
+            "type": 5
+          }
+        ],
+        "name": "api.smartlic.tech",
+        "status": 0,
+        "type": "CNAME"
+      },
+      {
+        "answers": [
+          {
+            "data": "1376dcda.up.railway.app.",
+            "name": "app.smartlic.tech",
+            "ttl": 300,
+            "type": 5
+          }
+        ],
+        "name": "app.smartlic.tech",
+        "status": 0,
+        "type": "CNAME"
+      }
+    ],
+    "rollback_target": {
+      "apex_A": "69.46.46.88",
+      "apex_ttl": 60,
+      "www_A_via_cname": "69.46.46.117",
+      "www_CNAME": "app.smartlic.tech.",
+      "www_ttl": 300
+    },
+    "secrets_printed": false,
+    "tls": {
+      "smartlic.tech": {
+        "error": null,
+        "ok": true,
+        "sans": [
+          "smartlic.tech"
+        ]
+      },
+      "www.smartlic.tech": {
+        "error": "SSLCertVerificationError",
+        "ok": false,
+        "sans": []
+      }
+    }
+  },
+  "dns_mutated": false,
+  "field": "BRIDGE_PUBLIC_IPV4",
+  "first_production_301": {
+    "action": "after apply, capture a real probe of https://smartlic.tech/<ready> or https://www.smartlic.tech/<ready> returning 301 + pinned Location + matching X-Bridge-Config-Hash; fixture/mock/loopback refused",
+    "detail": "no live post-apply probe supplied",
+    "field": "first-production-301",
+    "status": "UNOBSERVED",
+    "written": false
+  },
+  "generate": {
+    "generate_main_rc": 0,
+    "runs": [
+      {
+        "returncode": 0,
+        "run": 1,
+        "stderr": "",
+        "stdout": "GENERATE_OK manifesto=9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9 config=fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4 redirects=11 default=410"
+      },
+      {
+        "returncode": 0,
+        "run": 2,
+        "stderr": "",
+        "stdout": "GENERATE_OK manifesto=9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9 config=fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4 redirects=11 default=410"
+      }
+    ],
+    "status": "GENERATE_OK"
+  },
+  "manifesto_sha256": "9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9",
+  "open_prs_touching_bridge": [
+    {
+      "number": 2150,
+      "title": "docs(ops): PRODUCTION-CLOSEOUT-01 SmartLic preflight remains BLOCKED",
+      "touches_execute_set": false
+    }
+  ],
+  "pinned_commit": "8a2f4d5bce7e23d0308246ed45ed4d58752984ac",
+  "pins": {
+    "canonical_host": "https://confenge.com.br",
+    "config_sha256": "fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4",
+    "default_status": 410,
+    "holds": 54,
+    "ignore": 0,
+    "legacy_host": "https://smartlic.tech",
+    "legal": 0,
+    "manifesto_sha256": "9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9",
+    "migrate": 0,
+    "persist": [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_content",
+      "utm_term",
+      "jornada",
+      "origem",
+      "route_family",
+      "cta_id",
+      "asset_id",
+      "correlation_id",
+      "tema"
+    ],
+    "pinned_commit": "8a2f4d5bce7e23d0308246ed45ed4d58752984ac",
+    "redirects": 11,
+    "retire": 1190,
+    "schema": "smartlic-url-map-v2",
+    "version": "v2"
+  },
+  "rollback_commands": [
+    "# ROLLBACK — config (executed in staging by preflight; not live DNS)",
+    "python3 -m bridge.generate --rollback",
+    "# ROLLBACK — DNS (printed only; restore 2026-08-14/15 baseline)",
+    "curl -sS -X PATCH -H \"Authorization: Bearer $CF_API_TOKEN\" -H \"Content-Type: application/json\" \"https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$APEX_A_ID\" --data '{\"type\":\"A\",\"name\":\"smartlic.tech\",\"content\":\"69.46.46.88\",\"ttl\":60,\"proxied\":false}'",
+    "curl -sS -X DELETE -H \"Authorization: Bearer $CF_API_TOKEN\" \"https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$WWW_A_ID\"",
+    "curl -sS -X POST -H \"Authorization: Bearer $CF_API_TOKEN\" -H \"Content-Type: application/json\" \"https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records\" --data '{\"type\":\"CNAME\",\"name\":\"www\",\"content\":\"app.smartlic.tech.\",\"ttl\":300,\"proxied\":false}'"
+  ],
+  "status": "BLOCKED",
+  "tls": {
+    "apex": {
+      "error": null,
+      "hostname": "smartlic.tech",
+      "ok": true,
+      "sans": [
+        "smartlic.tech"
+      ]
+    },
+    "note": "read-only observation; Railway SAN mismatch is expected before apply",
+    "www": {
+      "error": "SSLCertVerificationError",
+      "hostname": "www.smartlic.tech",
+      "ok": false,
+      "sans": []
+    }
+  },
+  "tls_mutated": false
+}

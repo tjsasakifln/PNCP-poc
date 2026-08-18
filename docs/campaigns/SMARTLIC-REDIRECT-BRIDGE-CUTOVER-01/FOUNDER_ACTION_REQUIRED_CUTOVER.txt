@@ -1,0 +1,64 @@
+FOUNDER_ACTION_REQUIRED_CUTOVER
+campaign=SMARTLIC-REDIRECT-BRIDGE-CUTOVER-01
+verdict=CUTOVER READY
+blocker=credential/console possession only (BRIDGE_PUBLIC_IPV4, SMARTLIC_ACME_EMAIL, CF_API_TOKEN, CF_ZONE_ID)
+do_not_redesign=use generated Caddyfile + python3 -m bridge.serve; do not rebuild SmartLic
+manifesto_sha256=9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9
+config_sha256=fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4
+pinned_commit=8a2f4d5bce7e23d0308246ed45ed4d58752984ac
+
+HOSTNAMES
+  smartlic.tech
+  www.smartlic.tech
+  do_not_change=NS TXT MX api.smartlic.tech app.smartlic.tech
+
+DNS APPLY (Cloudflare, proxied=false, after host :80 reaches Caddy)
+  type=A  name=smartlic.tech      value=$BRIDGE_PUBLIC_IPV4  ttl=60
+  type=A  name=www.smartlic.tech  value=$BRIDGE_PUBLIC_IPV4  ttl=300
+  then DELETE www CNAME app.smartlic.tech.
+  leave NS jermaine/ryleigh, TXT google-site-verification, MX 0 smartlic.tech., api, app
+
+DEPLOY / RELOAD (on the host named by $BRIDGE_PUBLIC_IPV4)
+  1. copy bridge/ → /opt/smartlic-bridge/bridge ; PYTHONPATH=/opt/smartlic-bridge
+  2. python3 -m bridge.generate --check
+     expect: GENERATE_OK manifesto=9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9 config=fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4 redirects=11 default=410
+  3. install -d -o caddy -g caddy -m 0700 /var/lib/caddy
+  4. install -m 0644 bridge/generated/Caddyfile /etc/caddy/Caddyfile
+  5. install -d -m 0750 /etc/smartlic-bridge && cp bridge/deploy/env.example /etc/smartlic-bridge/env
+     fill BRIDGE_PUBLIC_IPV4 and SMARTLIC_ACME_EMAIL (mode 0640)
+  6. install bridge/deploy/smartlic-bridge.service and caddy-bridge.service
+     systemctl enable --now smartlic-bridge caddy-bridge
+  7. apply bridge/deploy/nftables.conf
+     ss -lntp :8765 on 127.0.0.1 only; :80/:443 on public IP
+  8. local rehearse: curl -sI -H 'Host: smartlic.tech' http://127.0.0.1:8765/glossario/reajuste
+     expect HTTP/1.0 301   Location: https://confenge.com.br/reequilibrio-obras-publicas/
+  9. then apply DNS above; wait ACME
+
+TLS VERIFY
+  echo | openssl s_client -servername smartlic.tech -connect smartlic.tech:443 2>/dev/null | openssl x509 -noout -ext subjectAltName
+  expect DNS:smartlic.tech and DNS:www.smartlic.tech on one certificate
+
+CURL CANARIES (after TLS)
+  curl -sI https://smartlic.tech/glossario/reajuste
+    expect: HTTP/2 301
+            Location: https://confenge.com.br/reequilibrio-obras-publicas/
+            X-Bridge-Config-Hash: fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4
+  curl -sI https://smartlic.tech/login
+    expect: HTTP/2 410
+            no Location header
+  curl -sI https://www.smartlic.tech/glossario/reajuste
+    expect: same 301 as apex (valid SAN)
+
+DNS ROLLBACK
+  type=A     name=smartlic.tech      value=69.46.46.88         ttl=60
+  DELETE     name=www A
+  type=CNAME name=www.smartlic.tech  value=app.smartlic.tech.  ttl=300  proxied=false
+
+CONFIG ROLLBACK
+  python3 -m bridge.generate --rollback && systemctl reload caddy-bridge
+  expect: every previously-ready path returns 410 and no Location
+
+DO NOT
+  recover api.smartlic.tech as an API (tombstone/410 only if ever pointed here)
+  301 /* or /consultoria-b2g or home
+  hunt a Railway token or restore SmartLic app
