@@ -1,6 +1,8 @@
 # SMARTLIC-LIVE-CUTOVER-EXECUTION-02
 
-Status: `BLOCKED_SAFETY_CONFLICT`
+Status: `BLOCKED_SINGLE_EXTERNAL_ACTION`
+
+Safety note: extra-cli/warmbly `159.195.18.88` is a live conflict (`api.confenge.com.br` :80/:443). `bridge.apply` refuses that IPv4. That is not the remaining action.
 
 Not `CUTOVER_READY`. Not `SMARTLIC_RESTORED`. Not `PRODUCT_LIVE`.
 No first production 301 of pin
