@@ -1,0 +1,21 @@
+{
+  "blocker": "credential/console possession only",
+  "campaign": "SMARTLIC-REDIRECT-BRIDGE-CUTOVER-01",
+  "config_sha256": "fd391e3667541953e6a830135c863f75452a27c879308fd0012d517740e537a4",
+  "decision": "REDIRECT",
+  "default_status": 410,
+  "destination_owner": "web-cfg / confenge.com.br",
+  "exit_criterion": "Remove smartlic.tech bridge only after: 28-day observation of this hash, zero residual priority 404/5xx/chain, critical backlinks (if any become known) point at CONFENGE or are accepted as retired, and SmartLic#2111 archive gate.",
+  "first_production_301": null,
+  "holds": 54,
+  "live_apply": false,
+  "manifesto_sha256": "9e5667c127fc5494f5849aece2234b13a1c1db10257a17274545019634506ca9",
+  "pinned_commit": "8a2f4d5bce7e23d0308246ed45ed4d58752984ac",
+  "railway_off_path": false,
+  "recorded_at": "2026-08-18T03:16:50Z",
+  "redirects": 11,
+  "retire": 1190,
+  "rollback": "python3 -m bridge.generate --rollback ; DNS apex A 69.46.46.88 TTL 60; delete www A; recreate www CNAME app.smartlic.tech. TTL 300",
+  "schema": "smartlic-url-map-v2",
+  "verdict": "CUTOVER READY"
+}
