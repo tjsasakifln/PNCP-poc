@@ -12,13 +12,18 @@ from pathlib import Path
 from unittest.mock import patch
 
 from bridge.apply import (
+    CANONICAL_PUBLIC_ZONE,
+    FORBIDDEN_CF_ZONE_NAMES,
     FORBIDDEN_DNS_NAMES,
+    HOSTNAME_RETIRED_ACTION,
     SINGLE_HUMAN_ACTION,
     apply_dns,
+    assert_cf_zone_allowed,
     assert_plan_safe,
     assert_runtime_commands_safe,
     credential_presence,
     dns_plan,
+    hostname_retired,
     load_authorized_env,
     main as apply_main,
     missing_credentials,
@@ -31,9 +36,49 @@ from bridge.generate import load_and_compile
 from bridge.observe import evaluate_signals
 from bridge.pins import PINNED_CONFIG_SHA256, PINNED_SHA256
 from bridge.policy import resolve
-from bridge.preflight import ProductionProbe, start_observation_window
+from bridge.preflight import DnsObservation, ProductionProbe, TlsObservation, start_observation_window
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _dns(hostname: str, *addrs: str) -> DnsObservation:
+    return DnsObservation(hostname=hostname, addresses=tuple(addrs))
+
+
+def _tls(hostname: str, ok: bool = False) -> TlsObservation:
+    return TlsObservation(hostname=hostname, ok=ok)
+
+
+def _observe_empty(hostname: str) -> DnsObservation:
+    return _dns(hostname)
+
+
+def _observe_railway(hostname: str) -> DnsObservation:
+    if hostname == "smartlic.tech":
+        return _dns(hostname, "69.46.46.88")
+    if hostname == "www.smartlic.tech":
+        return _dns(hostname, "69.46.46.117")
+    if hostname == "api.smartlic.tech":
+        return _dns(hostname, "69.46.46.116")
+    return _dns(hostname)
+
+
+def _zone_aware_transport(zone_name: str = "smartlic.tech"):
+    calls: list[tuple[str, str]] = []
+
+    def transport(method: str, url: str, headers, body):
+        calls.append((method, url))
+        if body:
+            assert b"api.smartlic.tech" not in body
+            assert b"confenge.com.br" not in body
+        if method == "GET" and "/dns_records" not in url and "/zones/" in url:
+            return {"success": True, "result": {"name": zone_name, "id": "zone"}}
+        if method == "GET":
+            return {"success": True, "result": []}
+        return {"success": True, "result": {"id": "rec"}}
+
+    transport.calls = calls  # type: ignore[attr-defined]
+    return transport
 
 
 class AuthorizedEnvTests(unittest.TestCase):
@@ -130,17 +175,7 @@ class ApplyDnsFailClosedTests(unittest.TestCase):
         self.assertEqual(result["action"], SINGLE_HUMAN_ACTION)
 
     def test_dummy_secrets_never_write_api_hostname(self) -> None:
-        calls: list[tuple[str, str]] = []
-
-        def transport(method: str, url: str, headers, body):
-            calls.append((method, url))
-            self.assertNotIn("api.smartlic.tech", url)
-            if body:
-                self.assertNotIn(b"api.smartlic.tech", body)
-            if method == "GET":
-                return {"success": True, "result": []}
-            return {"success": True, "result": {"id": "rec"}}
-
+        transport = _zone_aware_transport("smartlic.tech")
         result = apply_dns(
             dns_plan("1.1.1.1"),
             token="dummy-token",
@@ -148,10 +183,39 @@ class ApplyDnsFailClosedTests(unittest.TestCase):
             transport=transport,
         )
         self.assertTrue(result["applied"])
-        self.assertGreater(len(calls), 0)
-        joined = " ".join(url for _method, url in calls)
+        self.assertGreater(len(transport.calls), 0)
+        joined = " ".join(url for _method, url in transport.calls)
         self.assertNotIn("api.smartlic.tech", joined)
         self.assertNotIn("app.smartlic.tech", joined)
+        self.assertNotIn("confenge.com.br", joined)
+
+    def test_confenge_zone_is_refused_before_any_record_write(self) -> None:
+        transport = _zone_aware_transport("confenge.com.br")
+        with self.assertRaises(ManifestError) as ctx:
+            apply_dns(
+                dns_plan("1.1.1.1"),
+                token="dummy-token",
+                zone_id="dummy-zone",
+                transport=transport,
+            )
+        self.assertIn("BLOCKED_SAFETY_CONFLICT", str(ctx.exception))
+        self.assertIn("confenge.com.br", str(ctx.exception))
+        writes = [method for method, _url in transport.calls if method != "GET"]
+        self.assertEqual(writes, [])
+
+
+class HostnameRetiredTests(unittest.TestCase):
+    def test_empty_apex_and_www_are_retired(self) -> None:
+        self.assertTrue(hostname_retired((), ()))
+        self.assertFalse(hostname_retired(("69.46.46.88",), ()))
+        self.assertFalse(hostname_retired((), ("69.46.46.117",)))
+
+    def test_confenge_zone_name_is_forbidden(self) -> None:
+        self.assertIn(CANONICAL_PUBLIC_ZONE, FORBIDDEN_CF_ZONE_NAMES)
+        with self.assertRaises(ManifestError) as ctx:
+            assert_cf_zone_allowed("confenge.com.br")
+        self.assertIn("BLOCKED_SAFETY_CONFLICT", str(ctx.exception))
+        assert_cf_zone_allowed("smartlic.tech")
 
     def test_default_transport_is_not_attached_implicitly(self) -> None:
         with self.assertRaises(ManifestError):
@@ -286,17 +350,26 @@ class RunApplyCliTests(unittest.TestCase):
                     env_file=env_file,
                     transport=transport,
                     attach_live_transport=True,
+                    observe_dns_fn=_observe_railway,
+                    observe_tls_fn=_tls,
                 )
         self.assertIn("BLOCKED_SAFETY_CONFLICT", str(ctx.exception))
         self.assertEqual(calls, [])
 
     def test_run_apply_without_secrets_is_blocked_and_secretless(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            payload = run_apply(environ={}, env_file=Path(tmp) / "missing")
+            payload = run_apply(
+                environ={},
+                env_file=Path(tmp) / "missing",
+                observe_dns_fn=_observe_railway,
+                observe_tls_fn=_tls,
+            )
         self.assertEqual(payload["status"], "BLOCKED_SINGLE_EXTERNAL_ACTION")
         self.assertFalse(payload["applied"])
         self.assertFalse(any(payload["credential_presence"].values()))
         self.assertEqual(payload["action"], SINGLE_HUMAN_ACTION)
+        self.assertEqual(payload["decision"], "REDIRECT")
+        self.assertFalse(payload["hostname_retired"])
         self.assertEqual(payload["manifesto_sha256"], PINNED_SHA256)
         self.assertEqual(payload["config_sha256"], PINNED_CONFIG_SHA256)
         blob = json.dumps(payload)
@@ -304,6 +377,38 @@ class RunApplyCliTests(unittest.TestCase):
         self.assertNotRegex(blob, r"CF_API_TOKEN=[A-Za-z0-9_\-]{8,}")
         for token in ("fastapi", "uvicorn", "railway", "redis"):
             self.assertNotIn(token, blob.lower())
+
+    def test_run_apply_retired_hostname_does_not_ask_for_isolated_ip(self) -> None:
+        calls: list[tuple[str, str]] = []
+
+        def transport(method: str, url: str, headers, body):
+            calls.append((method, url))
+            raise AssertionError("must not write DNS for a retired hostname")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            env_file = Path(tmp) / "env"
+            env_file.write_text(
+                "BRIDGE_PUBLIC_IPV4=1.1.1.1\n"
+                "SMARTLIC_ACME_EMAIL=ops@example.com\n",
+                encoding="utf-8",
+            )
+            payload = run_apply(
+                environ={"CF_API_TOKEN": "dummy", "CF_ZONE_ID": "dummy"},
+                env_file=env_file,
+                transport=transport,
+                attach_live_transport=True,
+                observe_dns_fn=_observe_empty,
+                observe_tls_fn=_tls,
+            )
+        self.assertEqual(payload["status"], "BLOCKED_SAFETY_CONFLICT")
+        self.assertEqual(payload["decision"], "RETIRE")
+        self.assertTrue(payload["hostname_retired"])
+        self.assertFalse(payload["applied"])
+        self.assertEqual(payload["action"], HOSTNAME_RETIRED_ACTION)
+        self.assertEqual(payload["canonical_public_zone"], "confenge.com.br")
+        self.assertEqual(payload["dns_plan"], [])
+        self.assertEqual(calls, [])
+        self.assertIsNone(payload["observation"]["observation_started_at"])
 
     def test_apply_main_does_not_open_network_without_secrets(self) -> None:
         def boom(*_args, **_kwargs):
@@ -331,6 +436,8 @@ class RunApplyCliTests(unittest.TestCase):
                 env_file=Path(tmp) / "missing",
                 first_production_probe=probe,
                 observation_path=Path(tmp) / "obs.json",
+                observe_dns_fn=_observe_empty,
+                observe_tls_fn=_tls,
             )
         self.assertIsNone(payload["observation"]["observation_started_at"])
         self.assertNotEqual(payload["observation"]["first_production_301"], "OBSERVED")
@@ -373,5 +480,14 @@ class ServeStillResolvesPinnedMapTests(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 2)
         payload = json.loads(proc.stdout)
-        self.assertEqual(payload["status"], "BLOCKED_SINGLE_EXTERNAL_ACTION")
-        self.assertIn("CF_API_TOKEN", payload["missing"])
+        self.assertIn(
+            payload["status"],
+            {"BLOCKED_SINGLE_EXTERNAL_ACTION", "BLOCKED_SAFETY_CONFLICT"},
+        )
+        self.assertFalse(payload["applied"])
+        if payload["status"] == "BLOCKED_SAFETY_CONFLICT":
+            self.assertTrue(payload["hostname_retired"])
+            self.assertEqual(payload["decision"], "RETIRE")
+            self.assertEqual(payload["action"], HOSTNAME_RETIRED_ACTION)
+        else:
+            self.assertIn("CF_API_TOKEN", payload["missing"])

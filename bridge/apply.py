@@ -7,7 +7,10 @@ Authorized credential routes only:
 
 Never prints secret values. Never mutates api.smartlic.tech, app,
 NS, TXT, or MX. Never starts a SmartLic product runtime.
+Never writes smartlic.tech records into the confenge.com.br zone.
 Loopback/fixture/mock probes cannot start the 28-day window.
+Founder retired smartlic.tech as a public hostname — apply must not
+resurrect it with an isolated bridge IPv4.
 """
 
 from __future__ import annotations
@@ -30,8 +33,10 @@ from bridge.pins import (
 )
 from bridge.preflight import (
     BASELINE_APEX_A,
+    DnsObservation,
     LIVE_HOSTS,
     ProductionProbe,
+    TlsObservation,
     env_value,
     is_public_ipv4,
     observe_dns,
@@ -48,6 +53,14 @@ AUTHORIZED_ENV_NAMES = (
 )
 AUTHORIZED_ENV_FILE = Path("/etc/smartlic-bridge/env")
 ALLOWED_DNS_NAMES = frozenset({"smartlic.tech", "www.smartlic.tech"})
+CANONICAL_PUBLIC_ZONE = "confenge.com.br"
+FORBIDDEN_CF_ZONE_NAMES = frozenset(
+    {
+        "confenge.com.br",
+        "www.confenge.com.br",
+        "api.confenge.com.br",
+    }
+)
 FORBIDDEN_DNS_NAMES = frozenset(
     {
         "api.smartlic.tech",
@@ -79,8 +92,15 @@ SINGLE_HUMAN_ACTION = (
     "Write /etc/smartlic-bridge/env (mode 0640) on an isolated public IPv4 "
     "host that is not 159.195.18.88 (extra-cli/warmbly prod) with "
     "BRIDGE_PUBLIC_IPV4=<that isolated IPv4> and SMARTLIC_ACME_EMAIL="
-    "<ops contact>, export CF_API_TOKEN and CF_ZONE_ID in the apply shell, "
-    "then re-run `python3 -m bridge.apply`."
+    "<ops contact>, export CF_API_TOKEN and CF_ZONE_ID for zone "
+    "smartlic.tech (never confenge.com.br) in the apply shell, then "
+    "re-run `python3 -m bridge.apply`."
+)
+HOSTNAME_RETIRED_ACTION = (
+    "Do not provision an isolated IPv4 and do not write smartlic.tech DNS. "
+    "Founder retired that hostname. Canonical public surface is "
+    "confenge.com.br. Do not insert smartlic.tech records into the "
+    "confenge.com.br Cloudflare zone."
 )
 
 Transport = Callable[[str, str, Mapping[str, str], bytes | None], dict[str, Any]]
@@ -131,6 +151,33 @@ def credential_presence(values: Mapping[str, str]) -> dict[str, bool]:
 
 def missing_credentials(values: Mapping[str, str]) -> tuple[str, ...]:
     return tuple(name for name in AUTHORIZED_ENV_NAMES if not values.get(name, "").strip())
+
+
+def hostname_retired(
+    apex_addresses: tuple[str, ...] | list[str],
+    www_addresses: tuple[str, ...] | list[str],
+) -> bool:
+    """True when apex+www no longer resolve — founder retired the hostname."""
+    return not tuple(apex_addresses) and not tuple(www_addresses)
+
+
+def assert_cf_zone_allowed(zone_name: str | None) -> None:
+    name = (zone_name or "").strip().lower().rstrip(".")
+    if not name:
+        raise ManifestError("BLOCKED_SAFETY_CONFLICT: CF zone name is empty")
+    if name in FORBIDDEN_CF_ZONE_NAMES:
+        raise ManifestError(
+            "BLOCKED_SAFETY_CONFLICT: refuse to mutate canonical public zone "
+            f"{name}"
+        )
+    if name != "smartlic.tech":
+        raise ManifestError(
+            "BLOCKED_SAFETY_CONFLICT: CF_ZONE_ID is not smartlic.tech"
+        )
+
+
+def _zone_url(zone_id: str) -> str:
+    return f"{CF_API}/zones/{zone_id}"
 
 
 def dns_plan(target_ip: str) -> tuple[DnsMutation, ...]:
@@ -280,6 +327,9 @@ def apply_dns(
             "apply_dns refused: live Cloudflare transport is not attached; "
             "pass an explicit transport only after host health is proven"
         )
+    zone_payload = transport("GET", _zone_url(zone_id), _cf_headers(token), None)
+    zone_name = str(((zone_payload or {}).get("result") or {}).get("name") or "")
+    assert_cf_zone_allowed(zone_name)
     results: list[dict[str, Any]] = []
     for item in plan:
         headers = _cf_headers(token)
@@ -379,6 +429,8 @@ def run_apply(
     attach_live_transport: bool = False,
     first_production_probe: ProductionProbe | None = None,
     observation_path: Path | None = None,
+    observe_dns_fn: Callable[[str], DnsObservation] = observe_dns,
+    observe_tls_fn: Callable[[str], TlsObservation] = observe_tls,
 ) -> dict[str, Any]:
     compiled = load_and_compile()
     if compiled.manifesto_sha256 != PINNED_SHA256 or compiled.config_sha256 != PINNED_CONFIG_SHA256:
@@ -386,24 +438,41 @@ def run_apply(
     values = load_authorized_env(environ, env_file)
     presence = credential_presence(values)
     missing = missing_credentials(values)
-    plan = None
-    target_ip = values.get("BRIDGE_PUBLIC_IPV4")
-    if target_ip and is_public_ipv4(target_ip):
-        plan = dns_plan(target_ip)
-        assert_plan_safe(plan)
     commands = runtime_install_commands()
     dns_current = {
-        "apex": observe_dns("smartlic.tech").addresses,
-        "www": observe_dns("www.smartlic.tech").addresses,
-        "api": observe_dns("api.smartlic.tech").addresses,
+        "apex": observe_dns_fn("smartlic.tech").addresses,
+        "www": observe_dns_fn("www.smartlic.tech").addresses,
+        "api": observe_dns_fn("api.smartlic.tech").addresses,
     }
-    tls_current = {
-        "apex_ok": observe_tls("smartlic.tech").ok,
-        "www_ok": observe_tls("www.smartlic.tech").ok,
-    }
+    retired = hostname_retired(dns_current["apex"], dns_current["www"])
+    plan = None
+    target_ip = values.get("BRIDGE_PUBLIC_IPV4")
+    # Retired hostname: do not build a resurrection DNS plan even if an IPv4 exists.
+    if not retired and target_ip and is_public_ipv4(target_ip):
+        plan = dns_plan(target_ip)
+        assert_plan_safe(plan)
+    if retired or not dns_current["apex"]:
+        tls_current = {"apex_ok": False, "www_ok": False, "skipped": True}
+    else:
+        tls_current = {
+            "apex_ok": observe_tls_fn("smartlic.tech").ok,
+            "www_ok": observe_tls_fn("www.smartlic.tech").ok,
+        }
+    if retired:
+        status = "BLOCKED_SAFETY_CONFLICT"
+        action = HOSTNAME_RETIRED_ACTION
+    elif missing:
+        status = "BLOCKED_SINGLE_EXTERNAL_ACTION"
+        action = SINGLE_HUMAN_ACTION
+    else:
+        status = "READY_TO_APPLY"
+        action = ""
     payload: dict[str, Any] = {
-        "status": "BLOCKED_SINGLE_EXTERNAL_ACTION" if missing else "READY_TO_APPLY",
+        "status": status,
         "campaign": "SMARTLIC-LIVE-CUTOVER-EXECUTION-02",
+        "decision": "RETIRE" if retired else "REDIRECT",
+        "canonical_public_zone": CANONICAL_PUBLIC_ZONE,
+        "hostname_retired": retired,
         "manifesto_sha256": compiled.manifesto_sha256,
         "config_sha256": compiled.config_sha256,
         "pinned_commit": PINNED_COMMIT,
@@ -430,7 +499,7 @@ def run_apply(
         "tls_current": tls_current,
         "applied": False,
         "observation": None,
-        "action": SINGLE_HUMAN_ACTION if missing else "",
+        "action": action,
     }
 
     def _observation(*, persist: bool) -> dict[str, Any]:
@@ -447,7 +516,7 @@ def run_apply(
             "written": result.get("written"),
         }
 
-    if missing:
+    if retired or missing:
         payload["observation"] = _observation(persist=False)
         return json.loads(redact_secrets(json.dumps(payload, ensure_ascii=False)))
 
