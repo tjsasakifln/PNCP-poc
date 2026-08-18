@@ -85,6 +85,15 @@ class DnsPlanSafetyTests(unittest.TestCase):
         with self.assertRaises(ManifestError):
             dns_plan("127.0.0.1")
 
+    def test_extra_cli_prod_ip_is_safety_conflict(self) -> None:
+        from bridge.apply import FORBIDDEN_SHARED_IPV4
+
+        self.assertIn("159.195.18.88", FORBIDDEN_SHARED_IPV4)
+        with self.assertRaises(ManifestError) as ctx:
+            dns_plan("159.195.18.88")
+        self.assertIn("BLOCKED_SAFETY_CONFLICT", str(ctx.exception))
+        self.assertNotIn("api.smartlic.tech", str(ctx.exception))
+
     def test_api_name_cannot_be_forced_into_plan(self) -> None:
         plan = list(dns_plan("1.1.1.1"))
         from bridge.apply import DnsMutation
@@ -257,6 +266,30 @@ class ObservationWindowStartTests(unittest.TestCase):
 
 
 class RunApplyCliTests(unittest.TestCase):
+    def test_run_apply_refuses_shared_extra_cli_ip_without_dns_write(self) -> None:
+        calls: list[str] = []
+
+        def transport(method: str, url: str, headers, body):
+            calls.append(url)
+            raise AssertionError("must not write DNS for shared extra-cli IPv4")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            env_file = Path(tmp) / "env"
+            env_file.write_text(
+                "BRIDGE_PUBLIC_IPV4=159.195.18.88\n"
+                "SMARTLIC_ACME_EMAIL=ops@example.com\n",
+                encoding="utf-8",
+            )
+            with self.assertRaises(ManifestError) as ctx:
+                run_apply(
+                    environ={"CF_API_TOKEN": "dummy", "CF_ZONE_ID": "dummy"},
+                    env_file=env_file,
+                    transport=transport,
+                    attach_live_transport=True,
+                )
+        self.assertIn("BLOCKED_SAFETY_CONFLICT", str(ctx.exception))
+        self.assertEqual(calls, [])
+
     def test_run_apply_without_secrets_is_blocked_and_secretless(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             payload = run_apply(environ={}, env_file=Path(tmp) / "missing")

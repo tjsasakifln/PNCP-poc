@@ -1,6 +1,6 @@
 # SMARTLIC-LIVE-CUTOVER-EXECUTION-02
 
-Status: `BLOCKED_SINGLE_EXTERNAL_ACTION`
+Status: `BLOCKED_SAFETY_CONFLICT`
 
 Not `CUTOVER_READY`. Not `SMARTLIC_RESTORED`. Not `PRODUCT_LIVE`.
 No first production 301 of pin
@@ -48,8 +48,16 @@ two restart cycles identical; `generate --rollback` rehearsal 410-only; no produ
 Shipped `python3 -m bridge.apply` fail-closes without secrets, refuses `api.smartlic.tech`,
 refuses product commands, and refuses to set `observation_started_at` from loopback/fixture/mock.
 
+## Safety conflict
+
+Already-configured SSH reaches extra-cli/warmbly production `159.195.18.88`
+(`api.confenge.com.br` on :80/:443; docker warmbly stack). `bridge.apply` now
+refuses that IPv4. `/opt/smartlic` product tree was not started. nginx was not
+edited. DNS was not pointed at this host.
+
 ## Single residual human action
 
-Write `/etc/smartlic-bridge/env` (mode 0640) on one SSH-reachable public IPv4 host with
-`BRIDGE_PUBLIC_IPV4=<that IPv4>` and `SMARTLIC_ACME_EMAIL=<ops contact>`, export
-`CF_API_TOKEN` and `CF_ZONE_ID` in the apply shell, then re-run `python3 -m bridge.apply`.
+Write `/etc/smartlic-bridge/env` (mode 0640) on an **isolated** public IPv4 host
+that is **not** `159.195.18.88`, with `BRIDGE_PUBLIC_IPV4=<that isolated IPv4>`
+and `SMARTLIC_ACME_EMAIL=<ops contact>`, export `CF_API_TOKEN` and `CF_ZONE_ID`
+in the apply shell, then re-run `python3 -m bridge.apply`.

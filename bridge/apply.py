@@ -54,6 +54,8 @@ FORBIDDEN_DNS_NAMES = frozenset(
         "app.smartlic.tech",
     }
 )
+# extra-cli / warmbly production — already terminates api.confenge.com.br on :80/:443.
+FORBIDDEN_SHARED_IPV4 = frozenset({"159.195.18.88"})
 FORBIDDEN_DNS_TYPES = frozenset({"NS", "TXT", "MX", "AAAA"})
 PRODUCT_RUNTIME_TOKENS = (
     "fastapi",
@@ -74,8 +76,9 @@ PRODUCT_RUNTIME_TOKENS = (
 )
 CF_API = "https://api.cloudflare.com/client/v4"
 SINGLE_HUMAN_ACTION = (
-    "Write /etc/smartlic-bridge/env (mode 0640) on one SSH-reachable public "
-    "IPv4 host with BRIDGE_PUBLIC_IPV4=<that IPv4> and SMARTLIC_ACME_EMAIL="
+    "Write /etc/smartlic-bridge/env (mode 0640) on an isolated public IPv4 "
+    "host that is not 159.195.18.88 (extra-cli/warmbly prod) with "
+    "BRIDGE_PUBLIC_IPV4=<that isolated IPv4> and SMARTLIC_ACME_EMAIL="
     "<ops contact>, export CF_API_TOKEN and CF_ZONE_ID in the apply shell, "
     "then re-run `python3 -m bridge.apply`."
 )
@@ -133,6 +136,10 @@ def missing_credentials(values: Mapping[str, str]) -> tuple[str, ...]:
 def dns_plan(target_ip: str) -> tuple[DnsMutation, ...]:
     if not is_public_ipv4(target_ip):
         raise ManifestError("dns_plan refused: target is not a public IPv4")
+    if target_ip in FORBIDDEN_SHARED_IPV4:
+        raise ManifestError(
+            "dns_plan refused: BLOCKED_SAFETY_CONFLICT shared extra-cli/warmbly IPv4"
+        )
     return (
         DnsMutation(
             op="upsert",
