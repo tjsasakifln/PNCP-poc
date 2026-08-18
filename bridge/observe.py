@@ -203,9 +203,10 @@ def evaluate_signals(
         and bool(config_hash)
     )
     window_elapsed = False
-    if window_started and prod.get("captured_at"):
+    started_raw = prod.get("observation_started_at") or prod.get("captured_at")
+    if window_started and started_raw:
         try:
-            started = datetime.fromisoformat(str(prod["captured_at"]).replace("Z", "+00:00"))
+            started = datetime.fromisoformat(str(started_raw).replace("Z", "+00:00"))
             moment = now or utc_now()
             window_elapsed = moment >= started + timedelta(days=WINDOW_DAYS)
         except ValueError:

@@ -22,6 +22,8 @@ python3 -m unittest discover -s bridge/tests -v
 python3 -m bridge.serve --host 127.0.0.1 --port 8765
 python3 -m bridge.observe --records window.jsonl --export window-export.json
 python3 -m bridge.preflight   # hard gate before any owner DNS/TLS apply
+python3 -m bridge.apply       # fail-closed live DNS apply; refuses missing creds / api revive / product runtime
+python3 -m bridge.monitor --out window-daily.json
 ```
 
 Docs: `docs/CUTOVER.md`, `docs/CUTOVER_READINESS.md`, `docs/RUNBOOK.md`, `docs/ROLLBACK.md`, `docs/OBSERVABILITY.md`.
