@@ -32,6 +32,11 @@ Eleven CONFENGE destinations HTTPS 200 via shipped `probe_targets`.
 Authorized extra-cli CF token sees only `confenge.com.br` (0 zones named
 `smartlic.tech`). That token must not be exported into apply.
 
+Provision claim recheck (authorized routes only): still false. Vault has
+confenge.com.br CF/Netlify/GSC only. extra-cli SSH is `159.195.18.88` with
+no `/etc/smartlic-bridge`. This WSL laptop (`177.132.192.183`) is residential
+NAT, not the isolated bridge host.
+
 ## Apply
 
 `python3 -m bridge.apply` → `BLOCKED_SINGLE_EXTERNAL_ACTION` / `applied=false`
