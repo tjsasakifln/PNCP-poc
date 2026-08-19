@@ -15,7 +15,6 @@ from bridge.apply import (
     CANONICAL_PUBLIC_ZONE,
     FORBIDDEN_CF_ZONE_NAMES,
     FORBIDDEN_DNS_NAMES,
-    HOSTNAME_RETIRED_ACTION,
     SINGLE_HUMAN_ACTION,
     apply_dns,
     assert_cf_zone_allowed,
@@ -23,7 +22,6 @@ from bridge.apply import (
     assert_runtime_commands_safe,
     credential_presence,
     dns_plan,
-    hostname_retired,
     load_authorized_env,
     main as apply_main,
     missing_credentials,
@@ -204,12 +202,7 @@ class ApplyDnsFailClosedTests(unittest.TestCase):
         self.assertEqual(writes, [])
 
 
-class HostnameRetiredTests(unittest.TestCase):
-    def test_empty_apex_and_www_are_retired(self) -> None:
-        self.assertTrue(hostname_retired((), ()))
-        self.assertFalse(hostname_retired(("69.46.46.88",), ()))
-        self.assertFalse(hostname_retired((), ("69.46.46.117",)))
-
+class CanonicalZoneGuardTests(unittest.TestCase):
     def test_confenge_zone_name_is_forbidden(self) -> None:
         self.assertIn(CANONICAL_PUBLIC_ZONE, FORBIDDEN_CF_ZONE_NAMES)
         with self.assertRaises(ManifestError) as ctx:
@@ -368,8 +361,6 @@ class RunApplyCliTests(unittest.TestCase):
         self.assertFalse(payload["applied"])
         self.assertFalse(any(payload["credential_presence"].values()))
         self.assertEqual(payload["action"], SINGLE_HUMAN_ACTION)
-        self.assertEqual(payload["decision"], "REDIRECT")
-        self.assertFalse(payload["hostname_retired"])
         self.assertEqual(payload["manifesto_sha256"], PINNED_SHA256)
         self.assertEqual(payload["config_sha256"], PINNED_CONFIG_SHA256)
         blob = json.dumps(payload)
@@ -378,13 +369,7 @@ class RunApplyCliTests(unittest.TestCase):
         for token in ("fastapi", "uvicorn", "railway", "redis"):
             self.assertNotIn(token, blob.lower())
 
-    def test_run_apply_retired_hostname_does_not_ask_for_isolated_ip(self) -> None:
-        calls: list[tuple[str, str]] = []
-
-        def transport(method: str, url: str, headers, body):
-            calls.append((method, url))
-            raise AssertionError("must not write DNS for a retired hostname")
-
+    def test_run_apply_empty_dns_with_isolated_ip_is_ready_to_apply(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             env_file = Path(tmp) / "env"
             env_file.write_text(
@@ -395,20 +380,32 @@ class RunApplyCliTests(unittest.TestCase):
             payload = run_apply(
                 environ={"CF_API_TOKEN": "dummy", "CF_ZONE_ID": "dummy"},
                 env_file=env_file,
-                transport=transport,
-                attach_live_transport=True,
                 observe_dns_fn=_observe_empty,
                 observe_tls_fn=_tls,
             )
-        self.assertEqual(payload["status"], "BLOCKED_SAFETY_CONFLICT")
-        self.assertEqual(payload["decision"], "RETIRE")
-        self.assertTrue(payload["hostname_retired"])
+        self.assertEqual(payload["status"], "READY_TO_APPLY")
         self.assertFalse(payload["applied"])
-        self.assertEqual(payload["action"], HOSTNAME_RETIRED_ACTION)
+        self.assertEqual(payload["action"], "")
+        names = {row["name"] for row in payload["dns_plan"]}
+        self.assertEqual(names, {"smartlic.tech", "www.smartlic.tech"})
+        self.assertGreater(len(payload["dns_plan"]), 0)
         self.assertEqual(payload["canonical_public_zone"], "confenge.com.br")
-        self.assertEqual(payload["dns_plan"], [])
-        self.assertEqual(calls, [])
         self.assertIsNone(payload["observation"]["observation_started_at"])
+
+    def test_run_apply_empty_dns_without_creds_is_single_external_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = run_apply(
+                environ={},
+                env_file=Path(tmp) / "missing",
+                observe_dns_fn=_observe_empty,
+                observe_tls_fn=_tls,
+            )
+        self.assertEqual(payload["status"], "BLOCKED_SINGLE_EXTERNAL_ACTION")
+        self.assertFalse(payload["applied"])
+        self.assertEqual(payload["action"], SINGLE_HUMAN_ACTION)
+        self.assertIn("CF_API_TOKEN", payload["missing"])
+        self.assertIn("BRIDGE_PUBLIC_IPV4", payload["missing"])
+        self.assertEqual(payload["dns_plan"], [])
 
     def test_apply_main_does_not_open_network_without_secrets(self) -> None:
         def boom(*_args, **_kwargs):
@@ -480,14 +477,7 @@ class ServeStillResolvesPinnedMapTests(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 2)
         payload = json.loads(proc.stdout)
-        self.assertIn(
-            payload["status"],
-            {"BLOCKED_SINGLE_EXTERNAL_ACTION", "BLOCKED_SAFETY_CONFLICT"},
-        )
+        self.assertEqual(payload["status"], "BLOCKED_SINGLE_EXTERNAL_ACTION")
         self.assertFalse(payload["applied"])
-        if payload["status"] == "BLOCKED_SAFETY_CONFLICT":
-            self.assertTrue(payload["hostname_retired"])
-            self.assertEqual(payload["decision"], "RETIRE")
-            self.assertEqual(payload["action"], HOSTNAME_RETIRED_ACTION)
-        else:
-            self.assertIn("CF_API_TOKEN", payload["missing"])
+        self.assertEqual(payload["action"], SINGLE_HUMAN_ACTION)
+        self.assertIn("CF_API_TOKEN", payload["missing"])

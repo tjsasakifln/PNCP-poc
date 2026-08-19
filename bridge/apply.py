@@ -9,8 +9,8 @@ Never prints secret values. Never mutates api.smartlic.tech, app,
 NS, TXT, or MX. Never starts a SmartLic product runtime.
 Never writes smartlic.tech records into the confenge.com.br zone.
 Loopback/fixture/mock probes cannot start the 28-day window.
-Founder retired smartlic.tech as a public hostname — apply must not
-resurrect it with an isolated bridge IPv4.
+Empty apex/www DNS is the cutover start state, not a RETIRE of the
+11-row map. Isolated IPv4 + smartlic.tech CF creds are still required.
 """
 
 from __future__ import annotations
@@ -96,12 +96,6 @@ SINGLE_HUMAN_ACTION = (
     "smartlic.tech (never confenge.com.br) in the apply shell, then "
     "re-run `python3 -m bridge.apply`."
 )
-HOSTNAME_RETIRED_ACTION = (
-    "Do not provision an isolated IPv4 and do not write smartlic.tech DNS. "
-    "Founder retired that hostname. Canonical public surface is "
-    "confenge.com.br. Do not insert smartlic.tech records into the "
-    "confenge.com.br Cloudflare zone."
-)
 
 Transport = Callable[[str, str, Mapping[str, str], bytes | None], dict[str, Any]]
 
@@ -151,14 +145,6 @@ def credential_presence(values: Mapping[str, str]) -> dict[str, bool]:
 
 def missing_credentials(values: Mapping[str, str]) -> tuple[str, ...]:
     return tuple(name for name in AUTHORIZED_ENV_NAMES if not values.get(name, "").strip())
-
-
-def hostname_retired(
-    apex_addresses: tuple[str, ...] | list[str],
-    www_addresses: tuple[str, ...] | list[str],
-) -> bool:
-    """True when apex+www no longer resolve — founder retired the hostname."""
-    return not tuple(apex_addresses) and not tuple(www_addresses)
 
 
 def assert_cf_zone_allowed(zone_name: str | None) -> None:
@@ -444,24 +430,20 @@ def run_apply(
         "www": observe_dns_fn("www.smartlic.tech").addresses,
         "api": observe_dns_fn("api.smartlic.tech").addresses,
     }
-    retired = hostname_retired(dns_current["apex"], dns_current["www"])
     plan = None
     target_ip = values.get("BRIDGE_PUBLIC_IPV4")
-    # Retired hostname: do not build a resurrection DNS plan even if an IPv4 exists.
-    if not retired and target_ip and is_public_ipv4(target_ip):
+    # Empty/degraded DNS is the cutover start state — still plan apex/www A records.
+    if target_ip and is_public_ipv4(target_ip):
         plan = dns_plan(target_ip)
         assert_plan_safe(plan)
-    if retired or not dns_current["apex"]:
+    if not dns_current["apex"]:
         tls_current = {"apex_ok": False, "www_ok": False, "skipped": True}
     else:
         tls_current = {
             "apex_ok": observe_tls_fn("smartlic.tech").ok,
             "www_ok": observe_tls_fn("www.smartlic.tech").ok,
         }
-    if retired:
-        status = "BLOCKED_SAFETY_CONFLICT"
-        action = HOSTNAME_RETIRED_ACTION
-    elif missing:
+    if missing:
         status = "BLOCKED_SINGLE_EXTERNAL_ACTION"
         action = SINGLE_HUMAN_ACTION
     else:
@@ -470,9 +452,7 @@ def run_apply(
     payload: dict[str, Any] = {
         "status": status,
         "campaign": "SMARTLIC-LIVE-CUTOVER-EXECUTION-02",
-        "decision": "RETIRE" if retired else "REDIRECT",
         "canonical_public_zone": CANONICAL_PUBLIC_ZONE,
-        "hostname_retired": retired,
         "manifesto_sha256": compiled.manifesto_sha256,
         "config_sha256": compiled.config_sha256,
         "pinned_commit": PINNED_COMMIT,
@@ -516,13 +496,16 @@ def run_apply(
             "written": result.get("written"),
         }
 
-    if retired or missing:
+    if missing:
         payload["observation"] = _observation(persist=False)
         return json.loads(redact_secrets(json.dumps(payload, ensure_ascii=False)))
 
     live_transport = transport
     if live_transport is None and attach_live_transport:
         live_transport = default_transport
+    if live_transport is None:
+        payload["observation"] = _observation(persist=False)
+        return json.loads(redact_secrets(json.dumps(payload, ensure_ascii=False)))
     dns_result = apply_dns(
         plan or (),
         token=values.get("CF_API_TOKEN"),
