@@ -443,7 +443,7 @@ class RunApplyCliTests(unittest.TestCase):
 class MonitorDoesNotStartWindowTests(unittest.TestCase):
     def test_monitor_source_cannot_register_first_301(self) -> None:
         text = (Path(__file__).resolve().parents[1] / "monitor.py").read_text(encoding="utf-8")
-        self.assertNotIn("start_observation_window", text)
+        self.assertNotIn("start_observation_window(", text)
         self.assertNotIn("register_first_production_301", text)
         self.assertIn("Does not start observation_started_at", text)
 

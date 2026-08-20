@@ -16,9 +16,9 @@ from pathlib import Path
 from typing import Any
 
 from bridge.generate import load_and_compile
-from bridge.observe import assert_no_pii, evaluate_signals
+from bridge.observe import assert_no_pii, evaluate_signals, observation_exit_fields
 from bridge.pins import PINNED_CONFIG_SHA256, PINNED_SHA256
-from bridge.preflight import LIVE_HOSTS, observe_tls
+from bridge.preflight import LIVE_HOSTS, TlsObservation, observe_tls
 
 HOLD_SAMPLE = "/blog/como-consultar-contratos-publicos-pncp"
 GONE_PATHS = ("/", "/login", "/signup", "/pricing", "/webhooks", "/v1")
@@ -57,46 +57,74 @@ def _head(host: str, path: str) -> dict[str, Any]:
         conn.close()
 
 
-def collect_daily_snapshot(*, observation: dict[str, Any] | None = None) -> dict[str, Any]:
+def collect_daily_snapshot(
+    *,
+    observation: dict[str, Any] | None = None,
+    head_fn=None,
+    tls_fn=None,
+    clock=None,
+    now=None,
+) -> dict[str, Any]:
+    """Bounded snapshot. Does not start the 28-day observation window."""
+    probe = head_fn or _head
+    tls_probe = tls_fn or observe_tls
     compiled = load_and_compile()
     ready_hits = []
     gone_hits = []
     for host in sorted(LIVE_HOSTS):
         for rule in compiled.redirects:
-            ready_hits.append(_head(host, rule.path))
+            ready_hits.append(probe(host, rule.path))
         for path in GONE_PATHS + (HOLD_SAMPLE, "/not-mapped-2115-monitor"):
-            gone_hits.append(_head(host, path))
-    tls = {host: {"ok": observe_tls(host).ok, "sans": list(observe_tls(host).sans)} for host in sorted(LIVE_HOSTS)}
+            gone_hits.append(probe(host, path))
+    tls: dict[str, dict[str, bool]] = {}
+    for host in sorted(LIVE_HOSTS):
+        seen = tls_probe(host)
+        ok = bool(seen.ok) if isinstance(seen, TlsObservation) else bool(seen)
+        tls[host] = {"ok": ok}
     hash_ok = all(
         (row.get("config_hash") == PINNED_CONFIG_SHA256) or row.get("status") in {0, 404}
         for row in ready_hits
     )
+    chain_hits = sum(1 for row in ready_hits if int(row.get("hops") or 0) > 1)
+    loop_hits = sum(1 for row in ready_hits if row.get("loop"))
+    ready_301 = sum(1 for row in ready_hits if row.get("status") == 301)
     signals = evaluate_signals(
         {
             "config_sha256": compiled.config_sha256,
             "counts": {
+                "301": ready_301,
                 "404": sum(1 for row in ready_hits + gone_hits if row.get("status") == 404),
                 "errors": sum(1 for row in ready_hits + gone_hits if row.get("error")),
                 "5xx": sum(1 for row in ready_hits + gone_hits if int(row.get("status") or 0) >= 500),
-                "chain_gt1": 0,
+                "chain_gt1": chain_hits,
+                "loop": loop_hits,
             },
             "target_health": {"status": "UNOBSERVED"},
         },
         production_first_301=observation,
+        now=now,
+    )
+    exit_fields = observation_exit_fields(
+        signals,
+        production_first_301=observation,
+        removal_trigger=compiled.removal_trigger,
+        config_sha256=compiled.config_sha256,
     )
     payload = {
-        "ts": utc_now(),
+        "ts": (clock or utc_now)() if callable(clock) else utc_now(),
         "manifesto_sha256": PINNED_SHA256,
         "config_sha256": PINNED_CONFIG_SHA256,
         "ready_checked": len(ready_hits),
         "gone_checked": len(gone_hits),
-        "ready_301": sum(1 for row in ready_hits if row.get("status") == 301),
+        "ready_301": ready_301,
         "gone_410": sum(1 for row in gone_hits if row.get("status") == 410),
-        "tls": {host: {"ok": tls[host]["ok"]} for host in tls},
+        "tls": tls,
         "hash_header_pin_ok": hash_ok,
         "signals": signals,
+        "exit": exit_fields,
         "observation_started_at": (observation or {}).get("observation_started_at"),
         "first_production_301": (observation or {}).get("first_production_301") or "UNOBSERVED",
+        "window_start_invoked": False,
     }
     assert_no_pii(json.dumps(payload, ensure_ascii=False, sort_keys=True))
     return payload
