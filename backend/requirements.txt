@@ -11,7 +11,7 @@ fastapi==0.141.1
 # CRIT-SIGSEGV-v2: uvicorn WITHOUT [standard] extras. uvloop causes intermittent
 # SIGSEGV in production (chardet/hiredis/cryptography C extension interaction).
 # Performance diff is negligible for single-worker uvicorn standalone mode.
-uvicorn==0.52.3
+uvicorn==0.52.4
 gunicorn==23.0.0
 pydantic[email]==2.13.4
 pydantic-settings==2.15.0
@@ -54,7 +54,7 @@ psycopg[binary]==3.3.4
 # Google Sheets API integration (STORY-180)
 # ACTIVE: Used in oauth.py, google_sheets.py, routes/export_sheets.py
 # Provides: Google OAuth login + export search results to Google Sheets
-google-api-python-client==2.198.0  # Google Sheets API client
+google-api-python-client==2.199.0  # Google Sheets API client
 google-auth==2.56.3                # OAuth 2.0 authentication
 google-auth-oauthlib==1.4.0        # OAuth flow helpers
 google-auth-httplib2==0.4.1        # HTTP transport for Google APIs
