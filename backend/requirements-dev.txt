@@ -27,7 +27,7 @@ ruff==0.16.5
 mypy==1.20.2
 
 # Property-based / fuzz testing (STORY-6.7)
-hypothesis>=6.165.10
+hypothesis>=6.167.1
 
 # Mutation testing (STORY-6.6) — runs in CI (Linux); not supported on Windows
 mutmut>=2.4.0
